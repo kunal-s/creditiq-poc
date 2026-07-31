@@ -167,7 +167,7 @@ function PolicyConfigurator() {
           </label>
         </div>
 
-        <div className="grid gap-4 2xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <div className="grid gap-4 [@media(min-width:1700px)]:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
           <div className="space-y-4">
             {/* ratio set */}
             <Panel

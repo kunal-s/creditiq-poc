@@ -148,7 +148,7 @@ function UsersAndRoles() {
           </Panel>
         )}
 
-        <div className="grid gap-4 2xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+        <div className="grid gap-4 [@media(min-width:1700px)]:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
           <Panel title="People" subtitle={`${s.users.length} users in the Continental Commercial Bank tenant`}>
             <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-[12.5px]">
               <thead>

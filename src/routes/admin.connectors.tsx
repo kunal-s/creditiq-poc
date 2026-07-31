@@ -85,7 +85,7 @@ function ConnectorSettings() {
           </div>
         )}
 
-        <div className="grid gap-4 2xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
+        <div className="grid gap-4 [@media(min-width:1700px)]:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
           <Panel title="Sources" subtitle="Provider, health over the last 30 days, consent basis and retention.">
             <ul className="divide-y divide-border">
               {s.connectors.map((c) => {

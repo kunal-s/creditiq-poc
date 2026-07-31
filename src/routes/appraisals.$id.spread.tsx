@@ -170,6 +170,8 @@ function SpreadWorkspace() {
           </div>
 
           {/* Discrepancy banner */}
+          <span id="gst-turnover" className="block scroll-mt-24" aria-hidden />
+          <span id="bank-credits" className="block scroll-mt-24" aria-hidden />
           <div className="rounded border border-flag/35 bg-flag-soft px-4 py-3">
             <p className="flex items-center gap-1.5 text-[12.5px] font-semibold text-flag-foreground">
               <CircleAlert className="h-3.5 w-3.5" /> {DISCREPANCY_BANNER.title}
@@ -210,7 +212,7 @@ function SpreadWorkspace() {
           />
 
           <SpreadBlock
-            id="bank-credits"
+            id="balance-sheet"
             title="Balance sheet"
             subtitle="INR crore · as at 31 March of each year"
             items={BS_ITEMS}
@@ -223,6 +225,10 @@ function SpreadWorkspace() {
           />
 
           {/* Ratios */}
+          <span id="bureau-conduct" className="block scroll-mt-24" aria-hidden />
+          <span id="charges" className="block scroll-mt-24" aria-hidden />
+          <span id="identity-block" className="block scroll-mt-24" aria-hidden />
+          <span id="screening" className="block scroll-mt-24" aria-hidden />
           <Panel
             title="Ratios against CCB policy"
             subtitle={`Computed on ${focus} figures · thresholds from the credit policy manual, effective 01 April 2026`}
@@ -237,11 +243,11 @@ function SpreadWorkspace() {
                     type="button"
                     onClick={() => setInspect({ kind: "ratio", key: r.key })}
                     className={cn(
-                      "border-b border-r border-border px-4 py-3 text-left transition-colors hover:bg-accent",
+                      "flex flex-col border-b border-r border-border px-4 py-3 text-left transition-colors hover:bg-accent",
                       active && "bg-accent ring-1 ring-inset ring-primary/40",
                     )}
                   >
-                    <p className="text-[11.5px] text-muted-foreground">{r.label}</p>
+                    <p className="min-h-[32px] text-[11.5px] leading-snug text-muted-foreground">{r.label}</p>
                     <p
                       className={cn(
                         "mt-0.5 text-[20px] font-semibold tabular-nums",
@@ -257,14 +263,14 @@ function SpreadWorkspace() {
                     </p>
                     <span
                       className={cn(
-                        "mt-1 inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10.5px] font-medium",
+                        "mt-1 inline-flex w-fit items-center gap-1 rounded border px-1.5 py-0.5 text-[10.5px] font-medium",
                         RATIO_TONE[status],
                       )}
                     >
                       <span className="h-1.5 w-1.5 rounded-full bg-current" />
                       {RATIO_LABEL[status]}
                     </span>
-                    <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
+                    <p className="mt-1 min-h-[42px] text-[11px] leading-snug text-muted-foreground">
                       {r.policy?.text ?? "No hard policy threshold"}
                     </p>
                   </button>

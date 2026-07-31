@@ -21,12 +21,14 @@ import { Route as AppraisalsNewRouteImport } from './routes/appraisals.new'
 import { Route as EntitiesSlugRouteImport } from './routes/entities.$slug'
 import { Route as PeopleSlugRouteImport } from './routes/people.$slug'
 import { Route as AppraisalsIdIndexRouteImport } from './routes/appraisals.$id.index'
+import { Route as AppraisalsIdConsentRouteImport } from './routes/appraisals.$id.consent'
 import { Route as AppraisalsIdCrossVerificationRouteImport } from './routes/appraisals.$id.cross-verification'
 import { Route as AppraisalsIdDataRouteImport } from './routes/appraisals.$id.data'
 import { Route as AppraisalsIdDraftRouteImport } from './routes/appraisals.$id.draft'
 import { Route as AppraisalsIdIdentityRouteImport } from './routes/appraisals.$id.identity'
 import { Route as AppraisalsIdSpreadRouteImport } from './routes/appraisals.$id.spread'
 import { Route as AppraisalsIdSubmissionRouteImport } from './routes/appraisals.$id.submission'
+import { Route as AppraisalsIdUploadRouteImport } from './routes/appraisals.$id.upload'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -88,6 +90,11 @@ const AppraisalsIdIndexRoute = AppraisalsIdIndexRouteImport.update({
   path: '/appraisals/$id/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppraisalsIdConsentRoute = AppraisalsIdConsentRouteImport.update({
+  id: '/appraisals/$id/consent',
+  path: '/appraisals/$id/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppraisalsIdCrossVerificationRoute =
   AppraisalsIdCrossVerificationRouteImport.update({
     id: '/appraisals/$id/cross-verification',
@@ -119,6 +126,11 @@ const AppraisalsIdSubmissionRoute = AppraisalsIdSubmissionRouteImport.update({
   path: '/appraisals/$id/submission',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppraisalsIdUploadRoute = AppraisalsIdUploadRouteImport.update({
+  id: '/appraisals/$id/upload',
+  path: '/appraisals/$id/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -132,12 +144,14 @@ export interface FileRoutesByFullPath {
   '/entities/$slug': typeof EntitiesSlugRoute
   '/people/$slug': typeof PeopleSlugRoute
   '/appraisals/': typeof AppraisalsIndexRoute
+  '/appraisals/$id/consent': typeof AppraisalsIdConsentRoute
   '/appraisals/$id/cross-verification': typeof AppraisalsIdCrossVerificationRoute
   '/appraisals/$id/data': typeof AppraisalsIdDataRoute
   '/appraisals/$id/draft': typeof AppraisalsIdDraftRoute
   '/appraisals/$id/identity': typeof AppraisalsIdIdentityRoute
   '/appraisals/$id/spread': typeof AppraisalsIdSpreadRoute
   '/appraisals/$id/submission': typeof AppraisalsIdSubmissionRoute
+  '/appraisals/$id/upload': typeof AppraisalsIdUploadRoute
   '/appraisals/$id/': typeof AppraisalsIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -152,12 +166,14 @@ export interface FileRoutesByTo {
   '/entities/$slug': typeof EntitiesSlugRoute
   '/people/$slug': typeof PeopleSlugRoute
   '/appraisals': typeof AppraisalsIndexRoute
+  '/appraisals/$id/consent': typeof AppraisalsIdConsentRoute
   '/appraisals/$id/cross-verification': typeof AppraisalsIdCrossVerificationRoute
   '/appraisals/$id/data': typeof AppraisalsIdDataRoute
   '/appraisals/$id/draft': typeof AppraisalsIdDraftRoute
   '/appraisals/$id/identity': typeof AppraisalsIdIdentityRoute
   '/appraisals/$id/spread': typeof AppraisalsIdSpreadRoute
   '/appraisals/$id/submission': typeof AppraisalsIdSubmissionRoute
+  '/appraisals/$id/upload': typeof AppraisalsIdUploadRoute
   '/appraisals/$id': typeof AppraisalsIdIndexRoute
 }
 export interface FileRoutesById {
@@ -173,12 +189,14 @@ export interface FileRoutesById {
   '/entities/$slug': typeof EntitiesSlugRoute
   '/people/$slug': typeof PeopleSlugRoute
   '/appraisals/': typeof AppraisalsIndexRoute
+  '/appraisals/$id/consent': typeof AppraisalsIdConsentRoute
   '/appraisals/$id/cross-verification': typeof AppraisalsIdCrossVerificationRoute
   '/appraisals/$id/data': typeof AppraisalsIdDataRoute
   '/appraisals/$id/draft': typeof AppraisalsIdDraftRoute
   '/appraisals/$id/identity': typeof AppraisalsIdIdentityRoute
   '/appraisals/$id/spread': typeof AppraisalsIdSpreadRoute
   '/appraisals/$id/submission': typeof AppraisalsIdSubmissionRoute
+  '/appraisals/$id/upload': typeof AppraisalsIdUploadRoute
   '/appraisals/$id/': typeof AppraisalsIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -195,12 +213,14 @@ export interface FileRouteTypes {
     | '/entities/$slug'
     | '/people/$slug'
     | '/appraisals/'
+    | '/appraisals/$id/consent'
     | '/appraisals/$id/cross-verification'
     | '/appraisals/$id/data'
     | '/appraisals/$id/draft'
     | '/appraisals/$id/identity'
     | '/appraisals/$id/spread'
     | '/appraisals/$id/submission'
+    | '/appraisals/$id/upload'
     | '/appraisals/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -215,12 +235,14 @@ export interface FileRouteTypes {
     | '/entities/$slug'
     | '/people/$slug'
     | '/appraisals'
+    | '/appraisals/$id/consent'
     | '/appraisals/$id/cross-verification'
     | '/appraisals/$id/data'
     | '/appraisals/$id/draft'
     | '/appraisals/$id/identity'
     | '/appraisals/$id/spread'
     | '/appraisals/$id/submission'
+    | '/appraisals/$id/upload'
     | '/appraisals/$id'
   id:
     | '__root__'
@@ -235,12 +257,14 @@ export interface FileRouteTypes {
     | '/entities/$slug'
     | '/people/$slug'
     | '/appraisals/'
+    | '/appraisals/$id/consent'
     | '/appraisals/$id/cross-verification'
     | '/appraisals/$id/data'
     | '/appraisals/$id/draft'
     | '/appraisals/$id/identity'
     | '/appraisals/$id/spread'
     | '/appraisals/$id/submission'
+    | '/appraisals/$id/upload'
     | '/appraisals/$id/'
   fileRoutesById: FileRoutesById
 }
@@ -256,12 +280,14 @@ export interface RootRouteChildren {
   EntitiesSlugRoute: typeof EntitiesSlugRoute
   PeopleSlugRoute: typeof PeopleSlugRoute
   AppraisalsIndexRoute: typeof AppraisalsIndexRoute
+  AppraisalsIdConsentRoute: typeof AppraisalsIdConsentRoute
   AppraisalsIdCrossVerificationRoute: typeof AppraisalsIdCrossVerificationRoute
   AppraisalsIdDataRoute: typeof AppraisalsIdDataRoute
   AppraisalsIdDraftRoute: typeof AppraisalsIdDraftRoute
   AppraisalsIdIdentityRoute: typeof AppraisalsIdIdentityRoute
   AppraisalsIdSpreadRoute: typeof AppraisalsIdSpreadRoute
   AppraisalsIdSubmissionRoute: typeof AppraisalsIdSubmissionRoute
+  AppraisalsIdUploadRoute: typeof AppraisalsIdUploadRoute
   AppraisalsIdIndexRoute: typeof AppraisalsIdIndexRoute
 }
 
@@ -351,6 +377,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppraisalsIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/appraisals/$id/consent': {
+      id: '/appraisals/$id/consent'
+      path: '/appraisals/$id/consent'
+      fullPath: '/appraisals/$id/consent'
+      preLoaderRoute: typeof AppraisalsIdConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/appraisals/$id/cross-verification': {
       id: '/appraisals/$id/cross-verification'
       path: '/appraisals/$id/cross-verification'
@@ -393,6 +426,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppraisalsIdSubmissionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/appraisals/$id/upload': {
+      id: '/appraisals/$id/upload'
+      path: '/appraisals/$id/upload'
+      fullPath: '/appraisals/$id/upload'
+      preLoaderRoute: typeof AppraisalsIdUploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -408,12 +448,14 @@ const rootRouteChildren: RootRouteChildren = {
   EntitiesSlugRoute: EntitiesSlugRoute,
   PeopleSlugRoute: PeopleSlugRoute,
   AppraisalsIndexRoute: AppraisalsIndexRoute,
+  AppraisalsIdConsentRoute: AppraisalsIdConsentRoute,
   AppraisalsIdCrossVerificationRoute: AppraisalsIdCrossVerificationRoute,
   AppraisalsIdDataRoute: AppraisalsIdDataRoute,
   AppraisalsIdDraftRoute: AppraisalsIdDraftRoute,
   AppraisalsIdIdentityRoute: AppraisalsIdIdentityRoute,
   AppraisalsIdSpreadRoute: AppraisalsIdSpreadRoute,
   AppraisalsIdSubmissionRoute: AppraisalsIdSubmissionRoute,
+  AppraisalsIdUploadRoute: AppraisalsIdUploadRoute,
   AppraisalsIdIndexRoute: AppraisalsIdIndexRoute,
 }
 export const routeTree = rootRouteImport

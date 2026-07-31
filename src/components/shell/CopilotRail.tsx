@@ -50,6 +50,97 @@ function contextFor(pathname: string): Ctx {
         },
       },
     };
+  if (pathname.includes("/consent"))
+    return {
+      scope: "Consent journey — Northwind Manufacturing Ltd",
+      note: "Plain language for the borrower: what is being shared, with whom, for how long, and how to stop it.",
+      actions: [
+        "What am I actually agreeing to",
+        "Can the bank take money from my account",
+        "What happens if I decline",
+        "How do I withdraw this later",
+      ],
+      answers: {
+        "What am I actually agreeing to": {
+          text: "You are letting Continental Commercial Bank read the transactions and balances on two accounts — Meridian Bank current account ending 4471 and Horizon Bank cash credit account ending 2205 — for 01 April 2025 to 31 March 2026. It is read-only, it is fetched once, and it is used only to assess this limit enhancement.",
+          citations: ["Consent artefact CONS-2026-0418-A, purpose code 103", "Appraisal CAM-2026-0418"],
+        },
+        "Can the bank take money from my account": {
+          text: "No. This permission carries no payment instruction and no login credentials. It lets your bank see statements; it cannot move money, change a mandate or open anything new.",
+          citations: ["Account Aggregator consent template, data-access scope"],
+        },
+        "What happens if I decline": {
+          text: "Nothing is fetched from either bank. Your appraisal continues, but you will be asked to send bank statements for the same window yourself, and your analyst records them as supplied by you rather than fetched under consent. It usually adds a few days.",
+          citations: ["CCB data policy, CAM v4.2 section 2.4 — fallback provenance"],
+        },
+        "How do I withdraw this later": {
+          text: "From your Account Aggregator app, or by telling Marcus Chen at the Pune Corporate Branch. Withdrawing stops any further access immediately. Statements already shared for this appraisal stay on the file, because the credit decision has to remain reconstructable.",
+          citations: ["Consent artefact CONS-2026-0418-A, revocation clause", "CCB retention schedule"],
+        },
+      },
+    };
+  if (pathname.includes("/upload"))
+    return {
+      scope: "Manual upload fallback",
+      note: "Documents supplied here are marked provenance 'fallback', not 'consent', everywhere they are used.",
+      actions: [
+        "Check this upload matches the borrower on file",
+        "What do I still need to upload",
+        "Does fallback data weaken the memo",
+      ],
+      answers: {
+        "Check this upload matches the borrower on file": {
+          text: "On the statement supplied for account 4471 the account holder reads 'Northwind Manufacturing Ltd', the PAN on the header is AABCN4521Q and the IFSC is MERI0000318 — all three agree with the confirmed entity. The period runs 01 April 2025 to 31 March 2026 with no missing months and no page gaps in the pagination.",
+          citations: [
+            "Meridian_Bank_4471_Apr2025-Mar2026.pdf, pages 1 and 148",
+            "Confirmed entity, CIN U27310MH2009PLC198435",
+          ],
+        },
+        "What do I still need to upload": {
+          text: "Only the Horizon Bank cash credit statement for account 2205 over the same window. GST, bureau, registry, charges, LEI and three years of audited financials with ITR acknowledgements are already in.",
+          citations: ["Acquisition console, appraisal CAM-2026-0418"],
+        },
+        "Does fallback data weaken the memo": {
+          text: "It does not stop the spread, but assurance is lower: a supplied PDF is not verified at source. The figure trail records provenance 'fallback' and the cross-verification section notes it, which is what the examiner walk-through looks for.",
+          citations: ["CCB CAM template v4.2, evidence assurance grades"],
+        },
+      },
+    };
+  if (pathname.includes("/data"))
+    return {
+      scope: "Data acquisition — Northwind Manufacturing Ltd",
+      note: "Seven permitted sources. Bank data waits on borrower consent; adverse media returned partial after one feed timed out.",
+      actions: [
+        "What is still missing before I can spread this",
+        "Explain the CERSAI charge",
+        "Why is adverse media only partial",
+        "How fresh is this evidence set",
+      ],
+      answers: {
+        "What is still missing before I can spread this": {
+          text: "One blocking gap: bank-account data for Meridian 4471 and Horizon 2205 over 01 April 2025 to 31 March 2026, which is still awaiting the borrower's Account Aggregator consent. Without it the bank-credits versus declared-turnover line cannot be run. Adverse media is partial because one feed timed out — non-blocking, but retry it before submission. Everything else is received: GST returns, CIBIL Commercial, MCA and CERSAI, LEI, and three years of audited financials with ITR.",
+          citations: [
+            "Acquisition console, appraisal CAM-2026-0418 — 31 July 2026",
+            "CCB CAM template v4.2, completeness rule 2.1",
+          ],
+        },
+        "Explain the CERSAI charge": {
+          text: "One subsisting charge, ID 100482913, in favour of Continental Commercial Bank for INR 12.20 cr, created 30 August 2025 over stock and book debts — that is our own existing Cash Credit. One older charge, ID 100311874, held by Horizon Bank for INR 4.50 cr from November 2021, was satisfied on 18 January 2024. No other lender holds a subsisting charge, so the proposed enhancement to INR 18.50 cr needs a modification of our existing charge rather than a fresh first charge.",
+          citations: [
+            "CERSAI charge register, CIN U27310MH2009PLC198435",
+            "MCA index of charges — updated 24 July 2026",
+          ],
+        },
+        "Why is adverse media only partial": {
+          text: "Two of three feeds returned clean — 412 documents on national press, zero hits on sanctions and watchlists for the entity, the group and the three DINs. The regional-language aggregator timed out after 30 seconds and scanned nothing, so the screen is incomplete rather than negative. Retry is on the row; the run so far shows only routine trade-press coverage of a new OEM order win.",
+          citations: ["Screening run SCR-2026-118842 — 30 July 2026, 07:16"],
+        },
+        "How fresh is this evidence set": {
+          text: "Registry, charges and LEI were pulled 30 July 2026 at 07:10, GST at 07:12 and the bureau report at 07:14, all inside the 30-day freshness rule. The audited financials and ITR were ingested from Marcus Chen's upload on 28 July 2026. Bank data has no timestamp yet because nothing has been fetched.",
+          citations: ["Acquisition console provenance log", "CCB data policy, CAM v4.2 section 2.2"],
+        },
+      },
+    };
   if (pathname === "/")
     return {
       scope: "Credit Workbench",

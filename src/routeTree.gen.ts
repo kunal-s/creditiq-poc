@@ -16,6 +16,7 @@ import { Route as AdminConnectorsRouteImport } from './routes/admin.connectors'
 import { Route as AdminPolicyRouteImport } from './routes/admin.policy'
 import { Route as AdminTemplatesRouteImport } from './routes/admin.templates'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as AppraisalsIndexRouteImport } from './routes/appraisals.index'
 import { Route as AppraisalsNewRouteImport } from './routes/appraisals.new'
 
 const IndexRoute = IndexRouteImport.update({
@@ -53,6 +54,11 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   path: '/admin/users',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppraisalsIndexRoute = AppraisalsIndexRouteImport.update({
+  id: '/appraisals/',
+  path: '/appraisals/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppraisalsNewRoute = AppraisalsNewRouteImport.update({
   id: '/appraisals/new',
   path: '/appraisals/new',
@@ -68,6 +74,7 @@ export interface FileRoutesByFullPath {
   '/admin/templates': typeof AdminTemplatesRoute
   '/admin/users': typeof AdminUsersRoute
   '/appraisals/new': typeof AppraisalsNewRoute
+  '/appraisals/': typeof AppraisalsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -78,6 +85,7 @@ export interface FileRoutesByTo {
   '/admin/templates': typeof AdminTemplatesRoute
   '/admin/users': typeof AdminUsersRoute
   '/appraisals/new': typeof AppraisalsNewRoute
+  '/appraisals': typeof AppraisalsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -89,6 +97,7 @@ export interface FileRoutesById {
   '/admin/templates': typeof AdminTemplatesRoute
   '/admin/users': typeof AdminUsersRoute
   '/appraisals/new': typeof AppraisalsNewRoute
+  '/appraisals/': typeof AppraisalsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -101,6 +110,7 @@ export interface FileRouteTypes {
     | '/admin/templates'
     | '/admin/users'
     | '/appraisals/new'
+    | '/appraisals/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -111,6 +121,7 @@ export interface FileRouteTypes {
     | '/admin/templates'
     | '/admin/users'
     | '/appraisals/new'
+    | '/appraisals'
   id:
     | '__root__'
     | '/'
@@ -121,6 +132,7 @@ export interface FileRouteTypes {
     | '/admin/templates'
     | '/admin/users'
     | '/appraisals/new'
+    | '/appraisals/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -132,6 +144,7 @@ export interface RootRouteChildren {
   AdminTemplatesRoute: typeof AdminTemplatesRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AppraisalsNewRoute: typeof AppraisalsNewRoute
+  AppraisalsIndexRoute: typeof AppraisalsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -185,6 +198,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/appraisals/': {
+      id: '/appraisals/'
+      path: '/appraisals'
+      fullPath: '/appraisals/'
+      preLoaderRoute: typeof AppraisalsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/appraisals/new': {
       id: '/appraisals/new'
       path: '/appraisals/new'
@@ -204,6 +224,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminTemplatesRoute: AdminTemplatesRoute,
   AdminUsersRoute: AdminUsersRoute,
   AppraisalsNewRoute: AppraisalsNewRoute,
+  AppraisalsIndexRoute: AppraisalsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -82,6 +82,114 @@ function contextFor(pathname: string): Ctx {
         },
       },
     };
+  if (pathname.startsWith("/admin/policy"))
+    return {
+      scope: "Ratio policy — Continental Commercial Bank",
+      note: "Draft policy v6.3 against published v6.2. I back-test any threshold you move against the 142 live exposures in the West Region book before you publish.",
+      actions: [
+        "Show me which current borrowers this threshold change would reclassify",
+        "What happens to Northwind if I raise the current ratio floor to 1.30x",
+        "Which ratios cannot be relaxed",
+      ],
+      answers: {
+        "Show me which current borrowers this threshold change would reclassify": {
+          text: "On the seeded book of eight, raising the current-ratio acceptable floor from 1.20x to 1.30x moves four borrowers. Northwind Manufacturing Ltd at 1.28x goes acceptable to marginal, Trident Industrial Packaging Pvt Ltd at 1.24x goes acceptable to marginal, Sahyadri Pharma Distributors Pvt Ltd at 1.21x goes acceptable to marginal, and Konkan Steel Traders Pvt Ltd at 1.09x is already adverse and stays there. Aurora Foods Ltd at 1.52x is untouched. Extrapolated across the 142 live West Region exposures on the same distribution, expect roughly 31 reclassifications, of which none become adverse — the marginal band absorbs them.",
+          citations: [
+            "Draft ratio policy v6.3 against published v6.2",
+            "Seeded portfolio, current-ratio column, spreads as at 31 July 2026",
+          ],
+        },
+        "What happens to Northwind if I raise the current ratio floor to 1.30x": {
+          text: "Northwind's FY2025 current ratio is 1.28x, computed from current assets of INR 68.42 cr over current liabilities of INR 53.45 cr in the audited balance sheet. At a 1.30x floor it reclassifies from acceptable to marginal. That does not change the CCB-4 grade on its own — the financial-risk sub-score falls by two points to 61, still inside the CCB-4 band of 55 to 69 — but it adds a covenant line to the recommendation, and the July refresh already showed the ratio drifting to 1.19x, which would then be adverse rather than marginal.",
+          citations: [
+            "Northwind FY2025 audited balance sheet, spread line Current assets and Current liabilities",
+            "CCB risk grid, CCB-4 band 55 to 69",
+          ],
+        },
+        "Which ratios cannot be relaxed": {
+          text: "Two carry hard floors that this screen will not let you go below. The current ratio has a board floor of 1.10x for manufacturing exposures, and DSCR has a policy floor of 1.20x for term exposures above INR 10 cr. Anything below either is an adverse classification requiring Chief Credit Officer sign-off, so relaxing the configured threshold under the floor would put the tenant out of policy rather than change the outcome.",
+          citations: ["CCB Credit Risk Policy v6.2, clause 4.2 board floors"],
+        },
+      },
+    };
+  if (pathname.startsWith("/admin/templates"))
+    return {
+      scope: "CAM template designer — CCB house style",
+      note: "Eight sections, formal and evidence-led tone, citations in line. I can propose structure but I never publish a template.",
+      actions: [
+        "Draft a section outline for a new Trade Finance annexure",
+        "Which sections are mandatory under CCB policy",
+        "What changes in Northwind's memo if I move Risk Assessment up",
+      ],
+      answers: {
+        "Draft a section outline for a new Trade Finance annexure": {
+          text: "I would place it after Facility Structure and before Risk Assessment, at about 320 words with every figure cited. Four headings: Trade cycle and instrument mix — LC and BG usage against sanctioned sublimits, evidenced from core banking; Counterparty and country exposure — buyer concentration and geography, evidenced from GST outward supplies; Devolvement and invocation history — 36 months from core banking conduct; and Documentary discipline — bill discounting overdues and negotiation delays. Three of the four draw on sources already connected, so nothing new is needed from the borrower.",
+          citations: ["CCB CAM template v4.2 running order", "Connected sources: GST returns, CCB core and origination"],
+        },
+        "Which sections are mandatory under CCB policy": {
+          text: "Clause 3.1 makes four sections mandatory in every CAM and this screen will not let you switch them off: Borrower and Group Profile, Financial Analysis, Risk Assessment, and Recommendation. The remaining four — Facility Structure, GST and Bureau Findings, Security and Covenants, and Conduct of Account — are at the tenant's discretion, though dropping GST and Bureau Findings would leave rule XV-04's output with nowhere to land in the memo.",
+          citations: ["CCB Credit Risk Policy v6.2, clause 3.1"],
+        },
+        "What changes in Northwind's memo if I move Risk Assessment up": {
+          text: "Only the running order and the citation numbering. The body text is generated per section from the same evidence set, so moving Risk Assessment above Financial Analysis puts the turnover contradiction and its adjudication on page one, before the reader has seen the spread it arises from. In-line citations renumber automatically; endnotes would regroup per section. My advice is to leave it after Financial Analysis so the contradiction reads as a conclusion rather than an assertion.",
+          citations: ["Northwind memo CAM-2026-0418, sections 3 and 5"],
+        },
+      },
+    };
+  if (pathname.startsWith("/admin/connectors"))
+    return {
+      scope: "Connectors and consent — CCB tenant",
+      note: "Eight sources, one degraded. I can tell you exactly what stops being provable if a source is switched off.",
+      actions: [
+        "What breaks if I switch off the bureau connector",
+        "Why is adverse media degraded",
+        "Is a 30-day consent window enough",
+      ],
+      answers: {
+        "What breaks if I switch off the bureau connector": {
+          text: "Three things, in order of seriousness. Cross-verification rule XV-11 loses one of its two corroborating sources for undisclosed lenders, which is how the Crestline Capital facility of INR 4.20 cr was found on Northwind. Existing obligations then come only from the borrower's own declaration, so the Conduct of Account section rests on internal conduct alone. And the rating model's conduct input degrades, which under CCB's evidence-quality overlay caps the achievable grade at CCB-3 regardless of financials. The bureau is marked as required in this tenant for that reason.",
+          citations: ["Cross-verification rule XV-11", "CCB rating model, evidence-quality overlay"],
+        },
+        "Why is adverse media degraded": {
+          text: "Refinitiv World-Check has been timing out on batch screening since 24 July under provider incident REF-88214. Success rate over 30 days is 71.5% against a 99% target and median latency is 28.4 seconds. On Northwind's run the entity screen returned hits but the batch timed out on two of the three directors. The appraisal continued with a partial marker rather than blocking, and the gap is recorded in Risk Assessment and in the audit ledger.",
+          citations: ["Connector health, adverse media and sanctions", "Northwind acquisition run, 31 July 2026, 07:33 partial"],
+        },
+        "Is a 30-day consent window enough": {
+          text: "For a first appraisal, yes — Northwind's median time from consent to submitted memo was nine days. It is thin for periodic review: the July refresh on Northwind found the bank-statement consent taken on 14 July had lapsed before the refresh ran, which is why the refreshed dossier shows bank figures as unavailable and falls back to two-source triangulation. A 60-day window with the reminder at 10 days would have avoided that without widening the purpose.",
+          citations: ["Northwind consent record, taken 14 July 2026", "Northwind refresh, bank figures unavailable"],
+        },
+      },
+    };
+  if (pathname.startsWith("/admin/users"))
+    return {
+      scope: "Users and roles — CCB tenant",
+      note: "Nine people, six roles. I check every role change against segregation of duties before it takes effect.",
+      actions: [
+        "Who can approve a memo above INR 25 crore",
+        "Does anyone author and approve",
+        "What would break if Elena became a Credit Manager",
+      ],
+      answers: {
+        "Who can approve a memo above INR 25 crore": {
+          text: "Two people. Anand Iyer as committee chair holds authority to INR 40 cr and has approved 27 memos. Ingrid Larsson as Chief Credit Officer is unlimited within board policy, with 12 approvals on record. Sofia Almeida stops at INR 25 cr and only for CCB-1 to CCB-3, so Northwind's INR 25.25 cr aggregate at CCB-4 is above her delegation and routes to Anand Iyer.",
+          citations: ["Delegated authority matrix, CCB West Region", "Northwind CAM-2026-0418 routing"],
+        },
+        "Does anyone author and approve": {
+          text: "Not today. No user holds a role that is both authoring and approving, and no approver on this tenant has authored memos. If you moved a Credit Analyst or Relationship Manager into Credit Manager or Chief Credit Officer, policy 2.4 would raise a watch conflict immediately — the person could not approve any memo they had authored, and the screen would flag them.",
+          citations: ["CCB Credit Risk Policy 2.4, segregation of duties"],
+        },
+        "What would break if Elena became a Credit Manager": {
+          text: "She has 34 authored memos on record, so the change raises a watch conflict rather than a clean move: she must not approve any memo she authored, which includes CAM-2026-0418 on Northwind, currently awaiting review. In practice CAM-2026-0418 would have to reroute to Anand Iyer, and her four open exceptions would need reassignment before her authoring rights lapse.",
+          citations: ["User record, Elena Rossi — 34 authored", "Exception queue, owner filter — Elena Rossi"],
+        },
+      },
+    };
+  if (pathname.startsWith("/admin"))
+    return {
+      scope: "Admin — Continental Commercial Bank",
+      note: "The control plane: ratio policy, CAM template, connectors and roles. I explain the consequence of a change; I never publish one.",
+      actions: ["What changed in this tenant recently", "Which settings block submissions", "Who owns credit policy here"],
+    };
   if (pathname.startsWith("/exceptions"))
     return {
       scope: "Exception queue — West Region",

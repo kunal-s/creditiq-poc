@@ -162,6 +162,57 @@ function contextFor(pathname: string): Ctx {
         "Rank discrepancies by credit impact",
       ],
     };
+  if (pathname.includes("/spread"))
+    return {
+      scope: "Financial spread — Northwind Manufacturing Ltd",
+      note: "Three audited years are spread and the CCB ratios are computed. One balance-sheet figure is waiting on your confirmation, and the GST turnover gap is parked for cross-verification.",
+      actions: [
+        "Trace this figure to source",
+        "Explain why DSCR is 1.61",
+        "Which ratios are close to breaching",
+        "What is the low-confidence figure",
+      ],
+      answers: {
+        "Trace this figure to source": {
+          text: "FY2025 turnover of 142.31 cr comes from line I, 'Revenue from operations', on page 14 of Northwind_Manufacturing_Audited_FS_FY2025.pdf, where it reads 1,42,31,08,442 — uploaded by Marcus Chen on 28 July 2026 and carried as fallback provenance because it was supplied rather than pulled. FY2024 118.74 cr and FY2023 96.42 cr come from the FY2024 statement and its comparatives. PAT 6.94 cr is tied additionally to the ITR-6 acknowledgement for AY2025-26. Click any cell and the source panel lands on the page and line.",
+          citations: [
+            "Northwind_Manufacturing_Audited_FS_FY2025.pdf — page 14, line I",
+            "Northwind_Manufacturing_Audited_FS_FY2024.pdf — pages 11 to 13",
+            "ITR-6 acknowledgement 418277340290925, AY2025-26",
+          ],
+        },
+        "Explain why DSCR is 1.61": {
+          text: "Cash available for debt service is PAT 6.94 cr plus depreciation 4.28 cr plus finance costs 4.55 cr, so 15.77 cr. Debt service is finance costs 4.55 cr plus scheduled principal repayments of 5.24 cr on the Horizon Bank term loan, so 9.79 cr. That gives 1.61x against the CCB policy floor of 1.50. It was 1.72x in FY2024; the erosion is finance costs rising 21% on higher cash-credit utilisation while PAT grew 14%. The proposed enhancement is not yet loaded into the denominator.",
+          citations: [
+            "Audited FS FY2025 — page 14, finance costs and depreciation",
+            "ITR-6 AY2025-26 — profit after tax 6,94,02,415",
+            "CIBIL Commercial report 2026073000418 — section 4, scheduled repayments",
+            "CCB credit policy manual, DSCR floor 1.50, effective 01 April 2026",
+          ],
+        },
+        "Which ratios are close to breaching": {
+          text: "Three to watch. Working-capital cycle at 87 days is already 12 days beyond the 75-day auto-components benchmark and has lengthened 16 days in three years. DSCR at 1.61x is 7% above its 1.50 floor and fell 0.11x in one year. Current ratio at 1.28x is 7% above its 1.20 floor and has fallen in each of the three years. TOL/TNW at 2.34x and interest coverage at 3.42x both have real headroom.",
+          citations: [
+            "CCB credit policy manual, sections 4.1 to 4.4",
+            "CreditIQ spread, FY2023 to FY2025, appraisal CAM-2026-0418",
+          ],
+        },
+        "What is the low-confidence figure": {
+          text: "Current liabilities for FY2025, spread at 32.70 cr. Page 12 of the audited statement splits other current liabilities across two schedules, and the extracted total of 6.32 cr does not tie to schedule 11's 6.33 cr — a one-lakh difference that I will not silently absorb. It feeds the current ratio, so I have routed it for a human check rather than confirming it myself. Correcting it records the original extraction and your reason to the audit trail.",
+          citations: [
+            "Northwind_Manufacturing_Audited_FS_FY2025.pdf — page 12 and schedule 11",
+            "CCB extraction policy: any figure below 0.90 extraction confidence is routed for maker check",
+          ],
+        },
+        "Why do GST turnover and the financials differ": {
+          text: "GSTR-3B outward supplies for FY2025 total 147.77 cr against 142.31 cr of declared revenue, a gap of 5.46 cr. Credits into the two consented accounts total 136.85 cr. The gap is consistent with scrap sales and inter-unit stock transfers being taxable but not revenue, though I have not tested that. The spread carries the audited figure unchanged; the reconciliation belongs to cross-verification.",
+          citations: [
+            "GSTR-3B FY2025 aggregate, GSTIN 27AABCN4521Q1ZP",
+            "Account Aggregator bundle under consent CONS-2026-0418-A",
+          ],
+        },
+      },
+    };
   if (pathname.startsWith("/appraisals/new"))
     return {
       scope: "New appraisal intake",

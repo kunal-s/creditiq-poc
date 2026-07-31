@@ -493,7 +493,7 @@ function ChangeRow({
             <Link
               to={`/appraisals/$id/${c.to.kind}`}
               params={{ id: appraisalId }}
-              hash={c.to.anchor?.replace("#", "")}
+              {...(c.to.anchor ? { hash: c.to.anchor.replace("#", "") } : {})}
               className="mt-2 inline-flex items-center gap-1 text-[12px] font-medium text-primary hover:underline"
             >
               <FileText className="h-3 w-3" /> Open the source

@@ -167,7 +167,7 @@ function PolicyConfigurator() {
           </label>
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <div className="grid gap-4 2xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
           <div className="space-y-4">
             {/* ratio set */}
             <Panel
@@ -206,7 +206,8 @@ function PolicyConfigurator() {
                   </div>
                 </div>
               )}
-              <table className="w-full text-[12.5px]">
+              <div className="overflow-x-auto">
+              <table className="w-full min-w-[820px] text-[12.5px]">
                 <thead>
                   <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
                     <th className="px-4 py-2 font-medium">Ratio</th>
@@ -274,11 +275,13 @@ function PolicyConfigurator() {
                   })}
                 </tbody>
               </table>
+              </div>
             </Panel>
 
             {/* grid */}
             <Panel title="Risk-rating grid" subtitle="CCB-1 to CCB-8, the score bands behind them, and which grades sit in the watch band.">
-              <table className="w-full text-[12.5px]">
+              <div className="overflow-x-auto">
+              <table className="w-full min-w-[820px] text-[12.5px]">
                 <thead>
                   <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
                     <th className="px-4 py-2 font-medium">Grade</th>
@@ -330,6 +333,7 @@ function PolicyConfigurator() {
                   })}
                 </tbody>
               </table>
+              </div>
             </Panel>
           </div>
 

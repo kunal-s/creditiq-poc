@@ -222,6 +222,118 @@ function contextFor(pathname: string): Ctx {
         "Draft the Northwind discrepancy note",
       ],
     };
+  if (pathname.includes("/draft"))
+    return {
+      scope: "CAM draft — Northwind Manufacturing Ltd",
+      note: "Eight sections in CCB template v4.2, drafted from the resolved evidence. Every quantitative claim is cited; anything you change is marked as yours.",
+      actions: [
+        "Tighten this section",
+        "Justify the CCB-4 rating",
+        "Rewrite the risk narrative to reflect flag one",
+        "Which claims in this memo are uncited",
+      ],
+      answers: {
+        "Tighten this section": {
+          text: "The risk section runs to 214 words against the template's 150-word guide, mostly because the mitigants are listed twice. A tighter version keeps all seven citations and reads: financial score CCB-3, one-notch overlay for the open serious finding, revenue quality as the binding risk with the supportable limit at INR 15.80 cr on evidenced turnover, understated leverage from the Crestline obligation taking DSCR to 1.44x, then mitigants in one sentence. Press 'Regenerate with copilot' on the section to load it — it lands marked as copilot text accepted by you, and you can edit it before it counts as yours.",
+          citations: [
+            "CCB CAM template v4.2, section 7 length guide",
+            "Flags XV-0418-01 and XV-0418-02",
+            "Spread ratio grid — DSCR restated 1.44x",
+          ],
+        },
+        "Justify the CCB-4 rating": {
+          text: "The financial score alone supports CCB-3: turnover CAGR of 21.5% to INR 142.31 cr, TOL/TNW 2.34x against a 3.00x ceiling, DSCR 1.61x against a 1.25x floor, current ratio 1.28x against a 1.20x floor, and a clean bureau record at CMR-4 with no overdues in 24 months. The evidence-quality overlay in rating model v3.1 applies a one-notch downgrade wherever a serious cross-verification finding is open or accepted, and XV-0418-01 is exactly that — a turnover gap of INR 22.48 cr to GST and INR 20.87 cr to bank credits, present in all twelve months. That is what takes it to CCB-4 (watch). Restating for the undisclosed Crestline obligation would not on its own move it further; it costs 0.17x of DSCR and 0.06x of TOL/TNW.",
+          citations: [
+            "CCB rating model v3.1, qualitative overlay — evidence quality",
+            "Spread ratio grid FY2025",
+            "Flag XV-0418-01 evidence set",
+            "TransUnion CIBIL Commercial, CMR-4, pulled 29 July 2026",
+          ],
+        },
+        "Rewrite the risk narrative to reflect flag one": {
+          text: "Suggested wording: \u201cThe dominant risk on this proposal is revenue quality. Declared FY2025 turnover of INR 142.31 cr is contradicted by GST outward supplies of INR 119.83 cr and customer credits of INR 121.44 cr into the two consented accounts, sources that agree with one another to within INR 1.61 cr and diverge from the declaration in every one of the twelve months. Drawing power on the requested INR 18.50 cr Cash Credit is sized off that contested turnover; on evidenced turnover the supportable limit is INR 15.80 cr. Sanction is therefore recommended at the lower limit pending a written reconciliation.\u201d Every figure in that paragraph is already cited in section 6, so the citations carry over unchanged.",
+          citations: [
+            "Flag XV-0418-01",
+            "GSTR-3B aggregate FY2024-25 — INR 119.83 cr",
+            "Account Aggregator credit summary — INR 121.44 cr",
+            "Nayak method assessment, 25% of projected turnover",
+          ],
+        },
+        "Which claims in this memo are uncited": {
+          text: "None of the quantitative ones. Every number in the eight sections resolves to a citation: the registry facts to MCA and GSTN, the conduct figures to the bureau and the consented statements, the financials and ratios to the spread and its underlying documents, and the three findings to the discrepancy board. Three qualitative statements carry no citation by design — the assessment of mitigants in section 7, the recommendation itself in section 8, and the sentence attributing the call to the analyst. Those are judgement, not evidence, and the template intends them to be unsourced.",
+          citations: ["CCB CAM template v4.2, citation policy 2.4"],
+        },
+      },
+    };
+  if (pathname.includes("/rating"))
+    return {
+      scope: "Rating and recommendation — Northwind Manufacturing Ltd",
+      note: "CCB-4 is the model's first cut. The rating that leaves this screen is yours, and any move from the first cut is recorded with a reason.",
+      actions: [
+        "What would move this to CCB-3 or CCB-5",
+        "How was the first cut produced",
+        "Is the reduced limit defensible",
+      ],
+      answers: {
+        "What would move this to CCB-3 or CCB-5": {
+          text: "To CCB-3, two things have to happen: the borrower reconciles FY2025 turnover to GST and bank credits with documentation the committee accepts, and the Crestline Financial Services obligation is disclosed and registered. That lifts the evidence-quality overlay, and the financial score of CCB-3 stands on its own. To CCB-5, either the reconciliation fails or INR 121.44 cr is taken as the true revenue base — on that base EBITDA margin falls to about 12.8% of a much smaller number, DSCR restates to 1.44x with the Crestline obligation, and the non-disclosure becomes a management-quality mark rather than an oversight. A second consecutive year of a turnover gap would make CCB-5 the floor rather than the risk case.",
+          citations: [
+            "CCB rating model v3.1, financial score and qualitative overlay",
+            "Flags XV-0418-01 and XV-0418-02",
+            "Spread ratio grid — DSCR 1.61x, restated 1.44x",
+          ],
+        },
+        "How was the first cut produced": {
+          text: "Financial score from the three-year spread: growth, margin, leverage, coverage and liquidity, which maps to CCB-3. Behavioural score from conduct — 91.4% average CC utilisation, no cheque returns, CMR-4 with no overdues in 24 months — which is neutral. Then the evidence-quality overlay, one notch down for an open serious finding. CCB-4, watch. I produced the first cut; I have not confirmed it, and the model cannot. Confirmation is attributed to you.",
+          citations: [
+            "CCB rating model v3.1",
+            "Spread FY2023 to FY2025",
+            "Meridian Bank 4471 conduct summary under consent",
+          ],
+        },
+        "Is the reduced limit defensible": {
+          text: "Yes, and the arithmetic is short. Nayak assessment at 25% of turnover gives INR 18.50 cr on declared turnover of INR 142.31 cr and INR 15.80 cr on the independently evidenced INR 121.44 cr. Recommending the lower figure keeps the bank inside the evidence rather than inside the declaration, and the balance of INR 2.70 cr is left available on a satisfactory reconciliation. It costs the borrower nothing if the declaration is correct.",
+          citations: [
+            "Nayak method, CCB working capital assessment policy",
+            "Account Aggregator credit summary — INR 121.44 cr",
+          ],
+        },
+      },
+    };
+  if (pathname.includes("/submission"))
+    return {
+      scope: "Submission and routing — Northwind Manufacturing Ltd",
+      note: "The checklist reads the live state of this appraisal. The serious turnover finding must be adjudicated and the rating confirmed by a human before the memo can leave.",
+      actions: [
+        "Summarise this memo for the committee cover note",
+        "What is still blocking submission",
+        "Who sees this after I submit",
+      ],
+      answers: {
+        "Summarise this memo for the committee cover note": {
+          text: "Suggested cover note: \u201cNorthwind Manufacturing Ltd (CAM-2026-0418, Pune Corporate Branch) seeks enhancement of its Cash Credit limit from INR 12.20 cr to INR 18.50 cr with an LC/BG line of INR 6.75 cr. Turnover has compounded at 21.5% to INR 142.31 cr with PAT of INR 6.94 cr, and leverage and coverage remain inside policy at TOL/TNW 2.34x and DSCR 1.61x. Cross-verification found that declared FY2025 turnover is contradicted by GST filings of INR 119.83 cr and bank credits of INR 121.44 cr, and identified an undisclosed obligation of INR 52.50 lakh a year to Crestline Financial Services. The proposal is rated CCB-4 (watch) and is recommended at a reduced Cash Credit limit of INR 15.80 cr, sized on independently evidenced turnover, with the balance released on a satisfactory reconciliation and five sanction conditions.\u201d That is 128 words, which fits the committee papers' cover box.",
+          citations: [
+            "Memo sections 2, 4, 6, 7 and 8",
+            "Flags XV-0418-01 and XV-0418-02",
+            "CCB committee papers format, cover box 130-word limit",
+          ],
+        },
+        "What is still blocking submission": {
+          text: "Two hard checks, in this order. First, flag XV-0418-01 — the turnover contradiction — must carry a recorded adjudication; the rule is that a serious cross-verification finding cannot be passed to the committee undecided. Second, the rating must be confirmed by you on the rating panel: CCB-4 is currently the model's first cut, and an unconfirmed rating is not a rating. The advisory items — the two non-serious findings and how many sections you have rewritten — do not block; they simply travel with the memo as they stand.",
+          citations: [
+            "CCB CAM template v4.2, rule 4.1",
+            "CCB credit policy, human confirmation of internal ratings",
+          ],
+        },
+        "Who sees this after I submit": {
+          text: "Sofia Almeida, Credit Manager for the West Region, first — review targeted 08 July 2026 under a two-working-day service level. From there it lists for the West Region Credit Committee, chaired by Anand Iyer, at the sitting on 14 July 2026; total exposure of INR 25.25 cr is inside that committee's INR 50 cr delegation, so it does not escalate. The memo also appears in the memo library at the moment of submission, with the full evidence pack, every citation and the override trail attached.",
+          citations: [
+            "CCB delegation of authority matrix, West Region",
+            "Routing configuration, CAM-2026-0418",
+          ],
+        },
+      },
+    };
   if (pathname.includes("/cross-verification"))
     return {
       scope: "Cross-Verification",

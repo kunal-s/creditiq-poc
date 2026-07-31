@@ -50,6 +50,38 @@ function contextFor(pathname: string): Ctx {
         },
       },
     };
+  if (pathname.startsWith("/audit"))
+    return {
+      scope: "Audit ledger — examiner walk-through",
+      note: "Read-only. I answer strictly from the recorded ledger; where the record is silent, I say so rather than infer.",
+      actions: [
+        "Walk me through how the turnover figure was arrived at",
+        "List every human override in this memo",
+        "Who adjudicated the serious flag and why",
+        "What is different about the Aurora record",
+      ],
+      answers: {
+        "Walk me through how the turnover figure was arrived at": {
+          text: "Three sources returned a figure for FY2025. The audited statement uploaded by Marcus Chen on 31 July at 07:14 shows INR 142.31 cr on page 14, line I. GSTN returned INR 119.83 cr across twelve GSTR-3B returns at 07:04, with no human handling. The Account Aggregator bundle under consent CONS-2026-0418-A returned customer credits of INR 121.44 cr at 07:09. The extraction engine mapped the declared figure into the spread at 07:21; rule XV-04 compared the three at 07:36 and raised a serious contradiction at 15.8% and 14.7% against a 5% tolerance. At 07:41 Elena Rossi accepted the finding rather than resolving it, recording that the two independent sources agree within INR 1.61 cr, and the memo was then run on evidenced turnover of INR 121.44 cr with the limit cut to INR 15.80 cr. Every step is in the trace panel under 'FY2025 turnover carried into the memo'.",
+          citations: [
+            "Ledger CAM-2026-0418, events NW-02, NW-03, NW-04, NW-05, NW-06, NW-07",
+            "Trace nw-turnover, seven steps",
+          ],
+        },
+        "List every human override in this memo": {
+          text: "Two overrides are recorded on CAM-2026-0418, both by Elena Rossi, Credit Analyst, both with the original value retained. At 08:01 the recommended Cash Credit was overridden from INR 18.50 cr to INR 15.80 cr, reason: drawing power at 20% of evidenced turnover of INR 121.44 cr supports INR 15.80 cr. At 08:03 the internal rating was held at CCB-4 (watch) against a CCB-3 model score, reason: policy 6.3 requires a one-notch downgrade wherever a serious finding is accepted rather than resolved, and the restated DSCR is 1.44x. Separately, one human edit is recorded at 07:58 on Risk Assessment. Nothing else in this memo was changed by hand. Aurora's CAM-2026-0402 has no overrides at all — one edit on Banking Conduct and nothing more.",
+          citations: ["Ledger CAM-2026-0418, events NW-11, NW-12, NW-13", "Ledger CAM-2026-0402, event AU-05"],
+        },
+        "Who adjudicated the serious flag and why": {
+          text: "Elena Rossi, Credit Analyst, at 07:41 on 31 July 2026. She accepted XV-0418-01 as a genuine risk rather than resolving it, and her recorded reasoning is verbatim in the ledger: both independent sources agree within INR 1.61 cr and the shortfall is present in all twelve months, so it is a level difference and not a timing effect; the assessment is run on evidenced turnover of INR 121.44 cr with drawing power sized at INR 15.80 cr pending the borrower's reconciliation. That adjudication is what unblocked submission, and the finding carried forward into the memo rather than disappearing.",
+          citations: ["Ledger CAM-2026-0418, event NW-07", "Flag XV-0418-01, adjudication record"],
+        },
+        "What is different about the Aurora record": {
+          text: "Aurora Foods is the clean run. All five sources returned complete on 9 June 2026 with no fallback upload, declared turnover of INR 88.15 cr agreed with GST to within 1.2% and with bank credits to within 1.9%, and all 22 cross-verification rules passed with a single informational note on seasonality. The rating model returned CCB-2 with no qualitative overlay, and the analyst accepted it unchanged. The only human change in the whole memo is a two-sentence addition to Banking Conduct explaining the festive-season utilisation peak. The committee sanctioned it on 12 June 2026 and the memo was sealed read-only at 15:41.",
+          citations: ["Ledger CAM-2026-0402, events AU-01 through AU-08"],
+        },
+      },
+    };
   if (pathname.startsWith("/exceptions"))
     return {
       scope: "Exception queue — West Region",

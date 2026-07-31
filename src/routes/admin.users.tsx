@@ -148,9 +148,9 @@ function UsersAndRoles() {
           </Panel>
         )}
 
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+        <div className="grid gap-4 2xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
           <Panel title="People" subtitle={`${s.users.length} users in the Continental Commercial Bank tenant`}>
-            <table className="w-full text-[12.5px]">
+            <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-[12.5px]">
               <thead>
                 <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
                   <th className="px-4 py-2 font-medium">Name</th>
@@ -211,7 +211,7 @@ function UsersAndRoles() {
                   );
                 })}
               </tbody>
-            </table>
+            </table></div>
           </Panel>
 
           <div className="space-y-4">

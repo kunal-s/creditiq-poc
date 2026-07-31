@@ -300,7 +300,7 @@ function PolicyConfigurator() {
                     const holders = BOOK.filter((b) => b.score >= g.scoreFrom && b.score <= g.scoreTo);
                     return (
                       <tr key={g.grade} className={cn(changed && "bg-flag-soft/40", g.watch && "border-l-2 border-l-flag")}>
-                        <td className="px-4 py-2 font-medium text-foreground">{g.grade}</td>
+                        <td className="whitespace-nowrap px-4 py-2 font-medium text-foreground">{g.grade}</td>
                         <td className="px-2 py-2 text-muted-foreground">{g.label}</td>
                         <td className="px-2 py-2 text-muted-foreground">{g.band}</td>
                         <td className="px-2 py-2">

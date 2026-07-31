@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuditRouteImport } from './routes/audit'
+import { Route as ExceptionsRouteImport } from './routes/exceptions'
 import { Route as MemosRouteImport } from './routes/memos'
 import { Route as AdminConnectorsRouteImport } from './routes/admin.connectors'
 import { Route as AdminPolicyRouteImport } from './routes/admin.policy'
@@ -38,6 +39,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuditRoute = AuditRouteImport.update({
   id: '/audit',
   path: '/audit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExceptionsRoute = ExceptionsRouteImport.update({
+  id: '/exceptions',
+  path: '/exceptions',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MemosRoute = MemosRouteImport.update({
@@ -135,6 +141,7 @@ const AppraisalsIdUploadRoute = AppraisalsIdUploadRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/audit': typeof AuditRoute
+  '/exceptions': typeof ExceptionsRoute
   '/memos': typeof MemosRoute
   '/admin/connectors': typeof AdminConnectorsRoute
   '/admin/policy': typeof AdminPolicyRoute
@@ -157,6 +164,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/audit': typeof AuditRoute
+  '/exceptions': typeof ExceptionsRoute
   '/memos': typeof MemosRoute
   '/admin/connectors': typeof AdminConnectorsRoute
   '/admin/policy': typeof AdminPolicyRoute
@@ -180,6 +188,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/audit': typeof AuditRoute
+  '/exceptions': typeof ExceptionsRoute
   '/memos': typeof MemosRoute
   '/admin/connectors': typeof AdminConnectorsRoute
   '/admin/policy': typeof AdminPolicyRoute
@@ -204,6 +213,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/audit'
+    | '/exceptions'
     | '/memos'
     | '/admin/connectors'
     | '/admin/policy'
@@ -226,6 +236,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/audit'
+    | '/exceptions'
     | '/memos'
     | '/admin/connectors'
     | '/admin/policy'
@@ -248,6 +259,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/audit'
+    | '/exceptions'
     | '/memos'
     | '/admin/connectors'
     | '/admin/policy'
@@ -271,6 +283,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuditRoute: typeof AuditRoute
+  ExceptionsRoute: typeof ExceptionsRoute
   MemosRoute: typeof MemosRoute
   AdminConnectorsRoute: typeof AdminConnectorsRoute
   AdminPolicyRoute: typeof AdminPolicyRoute
@@ -305,6 +318,13 @@ declare module '@tanstack/react-router' {
       path: '/audit'
       fullPath: '/audit'
       preLoaderRoute: typeof AuditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/exceptions': {
+      id: '/exceptions'
+      path: '/exceptions'
+      fullPath: '/exceptions'
+      preLoaderRoute: typeof ExceptionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/memos': {
@@ -439,6 +459,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuditRoute: AuditRoute,
+  ExceptionsRoute: ExceptionsRoute,
   MemosRoute: MemosRoute,
   AdminConnectorsRoute: AdminConnectorsRoute,
   AdminPolicyRoute: AdminPolicyRoute,

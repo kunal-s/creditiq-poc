@@ -50,8 +50,6 @@ function contextFor(pathname: string): Ctx {
         },
       },
     };
-  if (pathname.startsWith("/exceptions"))
-    return EXCEPTIONS_CTX;
   if (pathname.startsWith("/audit"))
     return {
       scope: "Audit ledger — examiner walk-through",
@@ -84,7 +82,7 @@ function contextFor(pathname: string): Ctx {
         },
       },
     };
-  if (false)
+  if (pathname.startsWith("/exceptions"))
     return {
       scope: "Exception queue — West Region",
       note: "Open cross-verification findings across every appraisal on the book, oldest and most severe first.",

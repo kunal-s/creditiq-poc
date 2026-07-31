@@ -117,7 +117,7 @@ function IdentityStep() {
                   {entity.sector} · {entity.status}
                 </p>
               </div>
-              <div className="text-right text-[11.5px] text-muted-foreground">
+              <div className="text-[11.5px] text-muted-foreground">
                 <span className="field-label block">Existing exposure</span>
                 <span className="text-[12.5px] text-foreground">{entity.exposure}</span>
               </div>
@@ -238,18 +238,18 @@ function IdentityStep() {
           >
             <ul className="divide-y divide-border">
               {directors.map((d) => (
-                <li key={d.slug} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2.5">
+                <li key={d.slug} className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)] items-center gap-x-4 gap-y-1 px-4 py-2.5">
                   <Link
                     to="/people/$slug"
                     params={{ slug: d.slug }}
-                    className="w-56 shrink-0 text-[13px] font-medium text-foreground hover:text-primary hover:underline"
+                    className="truncate text-[13px] font-medium text-foreground hover:text-primary hover:underline"
                   >
                     {d.name}
                   </Link>
-                  <span className="w-44 text-[12px] text-muted-foreground">{d.role}</span>
+                  <span className="text-[12px] text-muted-foreground">{d.role}</span>
                   <span className="text-[12px] text-muted-foreground tabular">DIN {d.din}</span>
-                  <span className="text-[12px] text-muted-foreground">Appointed {d.appointed}</span>
-                  <span className="ml-auto text-[12px] text-foreground tabular">{d.shareholding}</span>
+                  <span className="col-start-1 text-[11.5px] text-muted-foreground">Appointed {d.appointed}</span>
+                  <span className="text-right text-[12px] text-foreground tabular">{d.shareholding}</span>
                 </li>
               ))}
             </ul>

@@ -94,7 +94,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "Credit Workbench — CreditIQ" },
       { name: "twitter:description", content: "CreditIQ workbench" },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/472cdb81-8095-43d6-86db-bec0aa9c2c31/id-preview-ee57d52e--a8f93fcf-db98-427e-91b0-c11c7dfcfaee.lovable.app-1785483944810.png" },

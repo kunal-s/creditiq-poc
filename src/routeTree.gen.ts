@@ -19,6 +19,7 @@ import { Route as AdminTemplatesRouteImport } from './routes/admin.templates'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AppraisalsIndexRouteImport } from './routes/appraisals.index'
 import { Route as AppraisalsNewRouteImport } from './routes/appraisals.new'
+import { Route as BorrowersSlugRouteImport } from './routes/borrowers.$slug'
 import { Route as EntitiesSlugRouteImport } from './routes/entities.$slug'
 import { Route as PeopleSlugRouteImport } from './routes/people.$slug'
 import { Route as AppraisalsIdIndexRouteImport } from './routes/appraisals.$id.index'
@@ -80,6 +81,11 @@ const AppraisalsIndexRoute = AppraisalsIndexRouteImport.update({
 const AppraisalsNewRoute = AppraisalsNewRouteImport.update({
   id: '/appraisals/new',
   path: '/appraisals/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BorrowersSlugRoute = BorrowersSlugRouteImport.update({
+  id: '/borrowers/$slug',
+  path: '/borrowers/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EntitiesSlugRoute = EntitiesSlugRouteImport.update({
@@ -154,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/admin/templates': typeof AdminTemplatesRoute
   '/admin/users': typeof AdminUsersRoute
   '/appraisals/new': typeof AppraisalsNewRoute
+  '/borrowers/$slug': typeof BorrowersSlugRoute
   '/entities/$slug': typeof EntitiesSlugRoute
   '/people/$slug': typeof PeopleSlugRoute
   '/appraisals/': typeof AppraisalsIndexRoute
@@ -178,6 +185,7 @@ export interface FileRoutesByTo {
   '/admin/templates': typeof AdminTemplatesRoute
   '/admin/users': typeof AdminUsersRoute
   '/appraisals/new': typeof AppraisalsNewRoute
+  '/borrowers/$slug': typeof BorrowersSlugRoute
   '/entities/$slug': typeof EntitiesSlugRoute
   '/people/$slug': typeof PeopleSlugRoute
   '/appraisals': typeof AppraisalsIndexRoute
@@ -203,6 +211,7 @@ export interface FileRoutesById {
   '/admin/templates': typeof AdminTemplatesRoute
   '/admin/users': typeof AdminUsersRoute
   '/appraisals/new': typeof AppraisalsNewRoute
+  '/borrowers/$slug': typeof BorrowersSlugRoute
   '/entities/$slug': typeof EntitiesSlugRoute
   '/people/$slug': typeof PeopleSlugRoute
   '/appraisals/': typeof AppraisalsIndexRoute
@@ -229,6 +238,7 @@ export interface FileRouteTypes {
     | '/admin/templates'
     | '/admin/users'
     | '/appraisals/new'
+    | '/borrowers/$slug'
     | '/entities/$slug'
     | '/people/$slug'
     | '/appraisals/'
@@ -253,6 +263,7 @@ export interface FileRouteTypes {
     | '/admin/templates'
     | '/admin/users'
     | '/appraisals/new'
+    | '/borrowers/$slug'
     | '/entities/$slug'
     | '/people/$slug'
     | '/appraisals'
@@ -277,6 +288,7 @@ export interface FileRouteTypes {
     | '/admin/templates'
     | '/admin/users'
     | '/appraisals/new'
+    | '/borrowers/$slug'
     | '/entities/$slug'
     | '/people/$slug'
     | '/appraisals/'
@@ -302,6 +314,7 @@ export interface RootRouteChildren {
   AdminTemplatesRoute: typeof AdminTemplatesRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AppraisalsNewRoute: typeof AppraisalsNewRoute
+  BorrowersSlugRoute: typeof BorrowersSlugRoute
   EntitiesSlugRoute: typeof EntitiesSlugRoute
   PeopleSlugRoute: typeof PeopleSlugRoute
   AppraisalsIndexRoute: typeof AppraisalsIndexRoute
@@ -387,6 +400,13 @@ declare module '@tanstack/react-router' {
       path: '/appraisals/new'
       fullPath: '/appraisals/new'
       preLoaderRoute: typeof AppraisalsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/borrowers/$slug': {
+      id: '/borrowers/$slug'
+      path: '/borrowers/$slug'
+      fullPath: '/borrowers/$slug'
+      preLoaderRoute: typeof BorrowersSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/entities/$slug': {
@@ -486,6 +506,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminTemplatesRoute: AdminTemplatesRoute,
   AdminUsersRoute: AdminUsersRoute,
   AppraisalsNewRoute: AppraisalsNewRoute,
+  BorrowersSlugRoute: BorrowersSlugRoute,
   EntitiesSlugRoute: EntitiesSlugRoute,
   PeopleSlugRoute: PeopleSlugRoute,
   AppraisalsIndexRoute: AppraisalsIndexRoute,

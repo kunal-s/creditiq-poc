@@ -222,6 +222,66 @@ function contextFor(pathname: string): Ctx {
         "Draft the Northwind discrepancy note",
       ],
     };
+  if (pathname.startsWith("/borrowers/"))
+    return {
+      scope: "Borrower dossier — Northwind Manufacturing Ltd",
+      note: "Four memos since 2023, rated CCB-4, next review 31 August 2026. A refresh against v4 is available; the bank-data consent behind it has expired.",
+      actions: [
+        "What deteriorated since the last review",
+        "Draft an early-warning note for the current-ratio breach",
+        "Why are the bank figures a month old",
+      ],
+      answers: {
+        "What deteriorated since the last review": {
+          text: "Three things moved against you and one held. The current ratio slipped from 1.28x to 1.19x on the June 2026 provisionals, which is below CCB's 1.20x minimum and the first breach since the 2023 sanction — creditors stretched to INR 31.60 cr while receivables stayed flat. Quarterly turnover fell to INR 31.14 cr against an FY2025 run rate of INR 35.58 cr, a 12.5% softening, with June at INR 9.02 cr the weakest month in eighteen. The Crestline Financial Services obligation raised as flag XV-0418-02 grew from INR 4,37,500 to INR 6,12,000 a month from the April instalment, INR 73.44 lakh a year, still unregistered. DSCR eased from 1.61x to 1.54x, inside policy. Only conduct held: CMR-4 unchanged, no overdues in 27 months, all returns filed on time.",
+          citations: [
+            "Provisional balance sheet, quarter ended 30 June 2026",
+            "GSTR-3B April, May and June 2026",
+            "Meridian Bank 4471, April to June 2026",
+            "TransUnion CIBIL Commercial, pulled 31 July 2026",
+          ],
+        },
+        "Draft an early-warning note for the current-ratio breach": {
+          text: "Suggested note: \u201cEarly warning — liquidity. Northwind Manufacturing Ltd's current ratio has fallen to 1.19x on the provisional balance sheet for the quarter ended 30 June 2026, against 1.28x at the last appraisal and CCB's 1.20x minimum. Current assets of INR 62.84 cr cover current liabilities of INR 52.81 cr; the movement is on the liability side, with creditors at INR 31.60 cr against INR 26.90 cr, while receivables were flat at INR 29.42 cr. Coming alongside a 12.5% fall in quarterly turnover and a non-bank obligation that has grown to INR 73.44 lakh a year, this is treated as a liquidity warning rather than a timing effect. Recommended: creditor ageing and a stock statement for the September quarter, and monthly monitoring of the ratio until it is back above 1.20x.\u201d Every figure there is already evidenced in the refresh.",
+          citations: [
+            "Provisional balance sheet, 30 June 2026 (branch-supplied, unaudited)",
+            "CCB ratio policy — current ratio minimum 1.20x",
+            "Refresh changes CHG-01, CHG-02, CHG-03",
+          ],
+        },
+        "Why are the bank figures a month old": {
+          text: "Because consent CONS-2026-0418-A expired on 24 July 2026. It ran for thirty days from 24 June under the borrower's Account Aggregator authorisation, signed by Rajesh Malhotra, and covered the Meridian Bank current account 4471 and OD account 8802. Everything else in the refresh is current: GST direct from GSTN, the bureau pull from 31 July, the registry and charge index, and the branch-supplied provisionals. The Crestline change is the one item resting on the expired window, so it reads to 30 June only. Request fresh consent from the banner and the bank figures advance to 30 July.",
+          citations: [
+            "Consent record CONS-2026-0418-A",
+            "Account Aggregator authorisation, 30-day window",
+          ],
+        },
+      },
+    };
+  if (pathname === "/memos")
+    return {
+      scope: "Memo library — West Region",
+      note: "Four borrowers on the book, thirteen memos on record. One is with the committee, one is due for review inside sixty days.",
+      actions: [
+        "Which borrowers are due for review",
+        "Where is each borrower right now",
+        "Which borrower has deteriorated",
+      ],
+      answers: {
+        "Which borrowers are due for review": {
+          text: "One inside sixty days: Northwind Manufacturing Ltd on 31 August 2026, rated CCB-4, and its dossier already shows a current-ratio breach on the June quarter. Trident Industrial Packaging Ltd follows on 30 September 2026 but its memo is still in draft, so the review will be met by the sanction itself. Aurora Foods Ltd is not due until 30 June 2027. Sahyadri Pharma Distributors is a first sanction with no review date set.",
+          citations: ["Memo library review schedule", "Northwind dossier refresh, 31 July 2026"],
+        },
+        "Where is each borrower right now": {
+          text: "Northwind Manufacturing Ltd, CAM-2026-0418, is in committee review at CCB-4 with three open cross-verification findings. Aurora Foods Ltd, CAM-2026-0402, was completed on 12 June 2026 at CCB-2 with no findings. Trident Industrial Packaging Ltd, CAM-2026-0421, is drafting — five of eight sections written on a INR 14.30 cr term loan. Sahyadri Pharma Distributors, CAM-2026-0426, is still gathering data and is waiting on the borrower's bank consent.",
+          citations: ["Appraisal register", "Memo library, 31 July 2026"],
+        },
+        "Which borrower has deteriorated": {
+          text: "Northwind, and only Northwind. Its refresh shows the current ratio through the 1.20x floor at 1.19x, quarterly turnover down 12.5%, and the undisclosed Crestline obligation up to INR 73.44 lakh a year. Aurora Foods improved at its last renewal — turnover INR 88.15 cr, current ratio 1.61x, DSCR 2.24x. The other two have no prior memo to deteriorate against.",
+          citations: ["Northwind dossier refresh CHG-01 to CHG-03", "Aurora Foods CAM-2026-0402"],
+        },
+      },
+    };
   if (pathname.includes("/draft"))
     return {
       scope: "CAM draft — Northwind Manufacturing Ltd",

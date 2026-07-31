@@ -97,7 +97,7 @@ function TopBar({
 
 function SideNav() {
   const { pathname, appraisal } = useActiveAppraisal();
-  const stepBase = appraisal ?? APPRAISALS[0];
+  const stepBaseId = appraisal?.id ?? "CAM-2026-0418";
 
   return (
     <nav className="hidden w-60 shrink-0 flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar py-3 text-sidebar-foreground md:flex">
@@ -108,7 +108,7 @@ function SideNav() {
           </p>
           <ul className="space-y-px">
             {group.items.map((item) => {
-              const to = item.step ? `/appraisals/${stepBase.id}/${item.to}` : item.to;
+              const to = item.step ? `/appraisals/${stepBaseId}/${item.to}` : item.to;
               const active =
                 item.to === "/" ? pathname === "/" : pathname === to || pathname.startsWith(to + "/");
               const isCurrentStep =

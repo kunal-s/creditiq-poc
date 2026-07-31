@@ -485,7 +485,7 @@ function ChangeRow({
         <span className="mt-0.5 shrink-0 text-[11.5px] text-muted-foreground">{open ? "Hide evidence" : "Evidence"}</span>
       </button>
       {open && (
-        <div className="grid gap-3 border-t border-border px-4 py-3 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="grid gap-3 border-t border-border px-4 py-3 2xl:grid-cols-[minmax(0,1fr)_300px]">
           <p className="text-[12.5px] leading-relaxed text-foreground">{c.narrative}</p>
           <div className="rounded border border-border bg-background px-3 py-2.5">
             <p className="field-label">Evidence</p>

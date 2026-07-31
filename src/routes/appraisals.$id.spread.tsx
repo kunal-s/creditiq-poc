@@ -604,9 +604,10 @@ function InspectorPanel({
           <SourceChip source={src.provenance} />
           {cell && <ConfidenceChip level={cell.confidence} />}
         </div>
-        <div className="rounded border border-border bg-surface-muted p-3">
+        <div className="overflow-hidden rounded border border-border bg-surface-muted p-3">
           <p className="flex items-start gap-1.5 text-[12.5px] font-medium text-foreground">
-            <FileText className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" /> {src.doc}
+            <FileText className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+            <span className="min-w-0 break-all">{src.doc}</span>
           </p>
           <p className="mt-1 text-[11.5px] text-muted-foreground">{src.locator}</p>
           <pre className="mt-2 overflow-x-auto whitespace-pre-wrap text-[11px] leading-relaxed text-muted-foreground">

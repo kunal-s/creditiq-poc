@@ -12,6 +12,11 @@ const TARGET_LABEL: Record<CiteTarget, string> = {
 
 export type { Citation };
 
+/** Stable display number for each citation, in registry order — reads like a footnote. */
+const CITE_NUMBER: Record<string, number> = Object.fromEntries(
+  Object.keys(CITATIONS).map((k, i) => [k, i + 1]),
+);
+
 export function CiteRef({
   cite,
   appraisalId,
@@ -38,8 +43,7 @@ export function CiteRef({
           : "border-info/35 bg-info-soft text-info hover:border-info hover:bg-info hover:text-background",
       )}
     >
-      {TARGET_LABEL[c.to].slice(0, 1)}
-      <span className="ml-0.5">{c.id}</span>
+      {CITE_NUMBER[c.id] ?? "•"}
     </button>
   );
 }

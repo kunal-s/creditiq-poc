@@ -79,8 +79,7 @@ function ConnectorSettings() {
             <Activity className="mt-0.5 h-4 w-4 shrink-0 text-flag-foreground" />
             <p className="text-[12.5px] text-flag-foreground">
               <span className="font-medium">{degraded[0]!.name} is {HEALTH_LABEL[degraded[0]!.health].toLowerCase()}.</span>{" "}
-              {degraded[0]!.note} Appraisals continue with a partial marker rather than blocking — Northwind's memo records the gap in
-              Risk Assessment.
+              {degraded[0]!.note} The gap is recorded in Northwind's Risk Assessment and in the audit ledger.
             </p>
           </div>
         )}

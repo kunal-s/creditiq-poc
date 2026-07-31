@@ -83,7 +83,12 @@ function RecordLink({ link, appraisalId }: { link: EventLink; appraisalId: strin
     );
   const to = APPRAISAL_ROUTES[link.target as keyof typeof APPRAISAL_ROUTES] ?? APPRAISAL_ROUTES.spread;
   return (
-    <Link to={to} params={{ id: appraisalId }} hash={link.anchor?.replace("#", "")} className={cls}>
+    <Link
+      to={to}
+      params={{ id: appraisalId }}
+      {...(link.anchor ? { hash: link.anchor.replace("#", "") } : {})}
+      className={cls}
+    >
       {link.label}
       <ArrowUpRight className="h-3 w-3" />
     </Link>

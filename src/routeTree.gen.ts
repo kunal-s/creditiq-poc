@@ -10,33 +10,128 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuditRouteImport } from './routes/audit'
+import { Route as MemosRouteImport } from './routes/memos'
+import { Route as AdminConnectorsRouteImport } from './routes/admin.connectors'
+import { Route as AdminPolicyRouteImport } from './routes/admin.policy'
+import { Route as AdminTemplatesRouteImport } from './routes/admin.templates'
+import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as AppraisalsNewRouteImport } from './routes/appraisals.new'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuditRoute = AuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MemosRoute = MemosRouteImport.update({
+  id: '/memos',
+  path: '/memos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminConnectorsRoute = AdminConnectorsRouteImport.update({
+  id: '/admin/connectors',
+  path: '/admin/connectors',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminPolicyRoute = AdminPolicyRouteImport.update({
+  id: '/admin/policy',
+  path: '/admin/policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminTemplatesRoute = AdminTemplatesRouteImport.update({
+  id: '/admin/templates',
+  path: '/admin/templates',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/admin/users',
+  path: '/admin/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppraisalsNewRoute = AppraisalsNewRouteImport.update({
+  id: '/appraisals/new',
+  path: '/appraisals/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/audit': typeof AuditRoute
+  '/memos': typeof MemosRoute
+  '/admin/connectors': typeof AdminConnectorsRoute
+  '/admin/policy': typeof AdminPolicyRoute
+  '/admin/templates': typeof AdminTemplatesRoute
+  '/admin/users': typeof AdminUsersRoute
+  '/appraisals/new': typeof AppraisalsNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/audit': typeof AuditRoute
+  '/memos': typeof MemosRoute
+  '/admin/connectors': typeof AdminConnectorsRoute
+  '/admin/policy': typeof AdminPolicyRoute
+  '/admin/templates': typeof AdminTemplatesRoute
+  '/admin/users': typeof AdminUsersRoute
+  '/appraisals/new': typeof AppraisalsNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/audit': typeof AuditRoute
+  '/memos': typeof MemosRoute
+  '/admin/connectors': typeof AdminConnectorsRoute
+  '/admin/policy': typeof AdminPolicyRoute
+  '/admin/templates': typeof AdminTemplatesRoute
+  '/admin/users': typeof AdminUsersRoute
+  '/appraisals/new': typeof AppraisalsNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/audit'
+    | '/memos'
+    | '/admin/connectors'
+    | '/admin/policy'
+    | '/admin/templates'
+    | '/admin/users'
+    | '/appraisals/new'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/audit'
+    | '/memos'
+    | '/admin/connectors'
+    | '/admin/policy'
+    | '/admin/templates'
+    | '/admin/users'
+    | '/appraisals/new'
+  id:
+    | '__root__'
+    | '/'
+    | '/audit'
+    | '/memos'
+    | '/admin/connectors'
+    | '/admin/policy'
+    | '/admin/templates'
+    | '/admin/users'
+    | '/appraisals/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuditRoute: typeof AuditRoute
+  MemosRoute: typeof MemosRoute
+  AdminConnectorsRoute: typeof AdminConnectorsRoute
+  AdminPolicyRoute: typeof AdminPolicyRoute
+  AdminTemplatesRoute: typeof AdminTemplatesRoute
+  AdminUsersRoute: typeof AdminUsersRoute
+  AppraisalsNewRoute: typeof AppraisalsNewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +143,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/audit': {
+      id: '/audit'
+      path: '/audit'
+      fullPath: '/audit'
+      preLoaderRoute: typeof AuditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/memos': {
+      id: '/memos'
+      path: '/memos'
+      fullPath: '/memos'
+      preLoaderRoute: typeof MemosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/connectors': {
+      id: '/admin/connectors'
+      path: '/admin/connectors'
+      fullPath: '/admin/connectors'
+      preLoaderRoute: typeof AdminConnectorsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/policy': {
+      id: '/admin/policy'
+      path: '/admin/policy'
+      fullPath: '/admin/policy'
+      preLoaderRoute: typeof AdminPolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/templates': {
+      id: '/admin/templates'
+      path: '/admin/templates'
+      fullPath: '/admin/templates'
+      preLoaderRoute: typeof AdminTemplatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/admin/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/appraisals/new': {
+      id: '/appraisals/new'
+      path: '/appraisals/new'
+      fullPath: '/appraisals/new'
+      preLoaderRoute: typeof AppraisalsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuditRoute: AuditRoute,
+  MemosRoute: MemosRoute,
+  AdminConnectorsRoute: AdminConnectorsRoute,
+  AdminPolicyRoute: AdminPolicyRoute,
+  AdminTemplatesRoute: AdminTemplatesRoute,
+  AdminUsersRoute: AdminUsersRoute,
+  AppraisalsNewRoute: AppraisalsNewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -106,7 +106,7 @@ function RatingPanel() {
         }
       />
 
-      <div className="grid gap-4 px-6 py-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid gap-4 px-6 py-5 xl:grid-cols-[minmax(0,1fr)_300px] 2xl:grid-cols-[minmax(0,1fr)_330px]">
         <div className="space-y-4">
           <Panel
             title="Internal risk rating"

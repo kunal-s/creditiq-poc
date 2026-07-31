@@ -167,7 +167,7 @@ function DraftWorkspace() {
         }
       />
 
-      <div className="grid gap-4 px-6 py-5 xl:grid-cols-[230px_minmax(0,1fr)_320px]">
+      <div className="grid gap-4 px-6 py-5 lg:grid-cols-[220px_minmax(0,1fr)] 2xl:grid-cols-[220px_minmax(0,1fr)_330px]">
         {/* section navigator */}
         <aside className="space-y-3">
           <div className="rounded border border-border bg-surface">
@@ -493,7 +493,7 @@ function DraftWorkspace() {
         </div>
 
         {/* right column: citation inspector + provenance */}
-        <aside className="space-y-3">
+        <aside className="grid gap-3 md:grid-cols-3 lg:col-start-2 2xl:col-start-3 2xl:row-start-1 2xl:block 2xl:space-y-3">
           <Panel title="Citation" subtitle="Follow any claim to the evidence it came from.">
             <div className="p-3">
               {cite ? (

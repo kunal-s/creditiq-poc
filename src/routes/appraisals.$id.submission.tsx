@@ -188,7 +188,7 @@ function SubmissionScreen() {
         }
       />
 
-      <div className="grid gap-4 px-6 py-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid gap-4 px-6 py-5 xl:grid-cols-[minmax(0,1fr)_310px] 2xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-4">
           {m.submitted ? (
             <div className="rounded border border-positive/30 bg-positive-soft px-4 py-3">

@@ -136,7 +136,7 @@ function BorrowerDossier() {
           {isNorthwind && (
             <div
               className={cn(
-                "flex flex-col gap-3 rounded border px-4 py-3 lg:flex-row lg:items-start",
+                "flex flex-col gap-3 rounded border px-4 py-3",
                 r.consent === "granted"
                   ? "border-positive/35 bg-positive-soft/50"
                   : r.consent === "requested"
@@ -144,8 +144,9 @@ function BorrowerDossier() {
                     : "border-flag/35 bg-flag-soft/50",
               )}
             >
-              <Clock className={cn("mt-0.5 hidden h-4 w-4 shrink-0 lg:block", r.consent === "granted" ? "text-positive" : r.consent === "requested" ? "text-info" : "text-flag")} />
-              <div className="min-w-0 flex-1 basis-[420px]">
+              <Clock className={cn("mt-0.5 h-4 w-4 shrink-0", r.consent === "granted" ? "text-positive" : r.consent === "requested" ? "text-info" : "text-flag")} />
+              <div className="flex gap-2">
+                <div className="min-w-0 flex-1">
                 <p className="text-[13px] font-medium text-foreground">
                   {r.consent === "granted"
                     ? `Fresh consent granted — bank figures re-pulled ${r.bankRefreshedAt}`
@@ -164,7 +165,8 @@ function BorrowerDossier() {
                   {CONSENT.scope} · granted {CONSENT.grantedOn} · {CONSENT.window} · signed by {CONSENT.signatory}
                 </p>
               </div>
-              <div className="flex shrink-0 flex-wrap items-center gap-2 lg:justify-end">
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
                 {r.consent === "expired" && (
                   <button
                     type="button"

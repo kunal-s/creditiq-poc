@@ -18,6 +18,7 @@ export const NAV: NavGroup[] = [
       { label: "Spread", to: "spread", step: true },
       { label: "Cross-Verification", to: "cross-verification", step: true },
       { label: "Draft and Review", to: "draft", step: true },
+      { label: "Rating and Recommendation", to: "rating", step: true },
       { label: "Submission", to: "submission", step: true },
     ],
   },

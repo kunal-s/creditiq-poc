@@ -48,7 +48,7 @@ export const Route = createFileRoute("/appraisals/$id/data")({
   component: DataAcquisitionConsole,
 });
 
-function StatusChip({ status, label }: { status: AcqSource["status"]; label?: string }) {
+function StatusChip({ status, label }: { status: AcqSource["status"]; label?: string | undefined }) {
   return (
     <span
       className={cn(

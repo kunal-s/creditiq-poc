@@ -38,7 +38,7 @@ export const KIND_TONE: Record<EventKind, string> = {
 
 export const HUMAN_KINDS: EventKind[] = ["edit", "override", "adjudication", "decision"];
 
-export type EventLink = { label: string; kind: "appraisal" | "borrower" | "person"; target: string; slug?: string; anchor?: string };
+export type EventLink = { label: string; kind: "appraisal" | "borrower" | "person"; target: string; slug?: string; anchor?: string | undefined };
 
 export type AuditEvent = {
   id: string;

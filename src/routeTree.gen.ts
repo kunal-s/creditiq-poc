@@ -18,6 +18,8 @@ import { Route as AdminTemplatesRouteImport } from './routes/admin.templates'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AppraisalsIndexRouteImport } from './routes/appraisals.index'
 import { Route as AppraisalsNewRouteImport } from './routes/appraisals.new'
+import { Route as EntitiesSlugRouteImport } from './routes/entities.$slug'
+import { Route as PeopleSlugRouteImport } from './routes/people.$slug'
 import { Route as AppraisalsIdIndexRouteImport } from './routes/appraisals.$id.index'
 import { Route as AppraisalsIdCrossVerificationRouteImport } from './routes/appraisals.$id.cross-verification'
 import { Route as AppraisalsIdDataRouteImport } from './routes/appraisals.$id.data'
@@ -71,6 +73,16 @@ const AppraisalsNewRoute = AppraisalsNewRouteImport.update({
   path: '/appraisals/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EntitiesSlugRoute = EntitiesSlugRouteImport.update({
+  id: '/entities/$slug',
+  path: '/entities/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PeopleSlugRoute = PeopleSlugRouteImport.update({
+  id: '/people/$slug',
+  path: '/people/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppraisalsIdIndexRoute = AppraisalsIdIndexRouteImport.update({
   id: '/appraisals/$id/',
   path: '/appraisals/$id/',
@@ -117,6 +129,8 @@ export interface FileRoutesByFullPath {
   '/admin/templates': typeof AdminTemplatesRoute
   '/admin/users': typeof AdminUsersRoute
   '/appraisals/new': typeof AppraisalsNewRoute
+  '/entities/$slug': typeof EntitiesSlugRoute
+  '/people/$slug': typeof PeopleSlugRoute
   '/appraisals/': typeof AppraisalsIndexRoute
   '/appraisals/$id/cross-verification': typeof AppraisalsIdCrossVerificationRoute
   '/appraisals/$id/data': typeof AppraisalsIdDataRoute
@@ -135,6 +149,8 @@ export interface FileRoutesByTo {
   '/admin/templates': typeof AdminTemplatesRoute
   '/admin/users': typeof AdminUsersRoute
   '/appraisals/new': typeof AppraisalsNewRoute
+  '/entities/$slug': typeof EntitiesSlugRoute
+  '/people/$slug': typeof PeopleSlugRoute
   '/appraisals': typeof AppraisalsIndexRoute
   '/appraisals/$id/cross-verification': typeof AppraisalsIdCrossVerificationRoute
   '/appraisals/$id/data': typeof AppraisalsIdDataRoute
@@ -154,6 +170,8 @@ export interface FileRoutesById {
   '/admin/templates': typeof AdminTemplatesRoute
   '/admin/users': typeof AdminUsersRoute
   '/appraisals/new': typeof AppraisalsNewRoute
+  '/entities/$slug': typeof EntitiesSlugRoute
+  '/people/$slug': typeof PeopleSlugRoute
   '/appraisals/': typeof AppraisalsIndexRoute
   '/appraisals/$id/cross-verification': typeof AppraisalsIdCrossVerificationRoute
   '/appraisals/$id/data': typeof AppraisalsIdDataRoute
@@ -174,6 +192,8 @@ export interface FileRouteTypes {
     | '/admin/templates'
     | '/admin/users'
     | '/appraisals/new'
+    | '/entities/$slug'
+    | '/people/$slug'
     | '/appraisals/'
     | '/appraisals/$id/cross-verification'
     | '/appraisals/$id/data'
@@ -192,6 +212,8 @@ export interface FileRouteTypes {
     | '/admin/templates'
     | '/admin/users'
     | '/appraisals/new'
+    | '/entities/$slug'
+    | '/people/$slug'
     | '/appraisals'
     | '/appraisals/$id/cross-verification'
     | '/appraisals/$id/data'
@@ -210,6 +232,8 @@ export interface FileRouteTypes {
     | '/admin/templates'
     | '/admin/users'
     | '/appraisals/new'
+    | '/entities/$slug'
+    | '/people/$slug'
     | '/appraisals/'
     | '/appraisals/$id/cross-verification'
     | '/appraisals/$id/data'
@@ -229,6 +253,8 @@ export interface RootRouteChildren {
   AdminTemplatesRoute: typeof AdminTemplatesRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AppraisalsNewRoute: typeof AppraisalsNewRoute
+  EntitiesSlugRoute: typeof EntitiesSlugRoute
+  PeopleSlugRoute: typeof PeopleSlugRoute
   AppraisalsIndexRoute: typeof AppraisalsIndexRoute
   AppraisalsIdCrossVerificationRoute: typeof AppraisalsIdCrossVerificationRoute
   AppraisalsIdDataRoute: typeof AppraisalsIdDataRoute
@@ -304,6 +330,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppraisalsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/entities/$slug': {
+      id: '/entities/$slug'
+      path: '/entities/$slug'
+      fullPath: '/entities/$slug'
+      preLoaderRoute: typeof EntitiesSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/people/$slug': {
+      id: '/people/$slug'
+      path: '/people/$slug'
+      fullPath: '/people/$slug'
+      preLoaderRoute: typeof PeopleSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/appraisals/$id/': {
       id: '/appraisals/$id/'
       path: '/appraisals/$id'
@@ -365,6 +405,8 @@ const rootRouteChildren: RootRouteChildren = {
   AdminTemplatesRoute: AdminTemplatesRoute,
   AdminUsersRoute: AdminUsersRoute,
   AppraisalsNewRoute: AppraisalsNewRoute,
+  EntitiesSlugRoute: EntitiesSlugRoute,
+  PeopleSlugRoute: PeopleSlugRoute,
   AppraisalsIndexRoute: AppraisalsIndexRoute,
   AppraisalsIdCrossVerificationRoute: AppraisalsIdCrossVerificationRoute,
   AppraisalsIdDataRoute: AppraisalsIdDataRoute,

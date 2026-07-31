@@ -117,8 +117,8 @@ function AuditLedger() {
 
   const memo = getAuditMemo(memoId);
   const events = useMemo(() => {
-    const merged = [...memo.events, ...sessionEvents(memo, xv, memoState)];
-    return merged.sort((a, b) => a.atSort - b.atSort);
+    const session = [...sessionEvents(memo, xv, memoState)].sort((a, b) => a.atSort - b.atSort);
+    return [...memo.events, ...session];
   }, [memo, xv, memoState]);
 
   const shown = events.filter((e) =>

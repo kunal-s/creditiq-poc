@@ -143,7 +143,7 @@ function Workbench() {
             </Link>
           </header>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[860px] text-[12.5px]">
+            <table className="w-full min-w-[720px] text-[12.5px]">
               <thead>
                 <tr className="border-b border-border text-left text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">
                   <th className="px-4 py-2 font-medium">Borrower</th>

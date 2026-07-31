@@ -27,7 +27,10 @@ export const NAV: NavGroup[] = [
   },
   {
     group: "Governance",
-    items: [{ label: "Audit and Examiner Walk-through", to: "/audit" }],
+    items: [
+      { label: "Exception Queue", to: "/exceptions" },
+      { label: "Audit and Examiner Walk-through", to: "/audit" },
+    ],
   },
   {
     group: "Admin",

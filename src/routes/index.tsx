@@ -227,9 +227,14 @@ function Workbench() {
         <section className="rounded border border-border bg-surface">
           <header className="flex items-center justify-between border-b border-border px-4 py-2.5">
             <h2 className="text-[14px] font-semibold">Needs attention</h2>
-            <span className="rounded bg-flag-soft px-1.5 py-0.5 text-[11px] font-medium text-flag-foreground">
-              {ATTENTION.length} items
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="rounded bg-flag-soft px-1.5 py-0.5 text-[11px] font-medium text-flag-foreground">
+                {ATTENTION.length} items
+              </span>
+              <Link to="/exceptions" className="text-[12px] font-medium text-primary hover:underline">
+                Exception queue
+              </Link>
+            </div>
           </header>
           <ul className="divide-y divide-border">
             {ATTENTION.map((item) => (
@@ -271,8 +276,15 @@ function Workbench() {
           <div className="flex items-start gap-2 border-t border-border bg-surface-muted px-4 py-3">
             <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
             <p className="text-[11.5px] leading-relaxed text-muted-foreground">
-              Copilot can draft the Northwind discrepancy note and the RM query email from the
-              underlying evidence.
+              Northwind's turnover discrepancy is blocking submission until it is adjudicated on the{" "}
+              <Link
+                to="/appraisals/$id/cross-verification"
+                params={{ id: "CAM-2026-0418" }}
+                className="font-medium text-primary hover:underline"
+              >
+                discrepancy board
+              </Link>
+              . Copilot can draft the risk note and the RM query from the underlying evidence.
             </p>
           </div>
         </section>

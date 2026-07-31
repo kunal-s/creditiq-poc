@@ -7,6 +7,76 @@ type Answer = { text: string; citations: string[] };
 type Ctx = { scope: string; note: string; actions: string[]; answers?: Record<string, Answer> };
 
 function contextFor(pathname: string): Ctx {
+  if (pathname.includes("/cross-verification"))
+    return {
+      scope: "Cross-verification — Northwind Manufacturing Ltd",
+      note: "Three contradictions on this borrower. One is serious and blocks submission until you adjudicate it.",
+      actions: [
+        "Why is flag one flagged",
+        "Draft the risk note for flag one",
+        "Show me the months where deposits fell short",
+        "What happens if I accept all three",
+      ],
+      answers: {
+        "Why is flag one flagged": {
+          text: "Because two independent sources disagree with the borrower's own numbers, and they agree with each other. FY2025 revenue in the audited statement and the ITR is INR 142.31 cr. GSTR-3B outward supplies for the same twelve months are INR 119.83 cr, and customer credits into Meridian 4471 and Horizon 2205 under consent are INR 121.44 cr — a gap of INR 22.48 cr and INR 20.87 cr. Rule XV-04 tolerates 5%; these are 15.8% and 14.7%. The two independent figures sit within INR 1.61 cr of each other, which makes an extraction error unlikely; either turnover is overstated or collections are moving outside the banking and GST system. I have not decided which — that is your call.",
+          citations: [
+            "Northwind_Manufacturing_Audited_FS_FY2025.pdf — page 14, line I",
+            "GSTN return ledger, 27AABCN4521Q1ZP, FY2024-25 aggregate",
+            "Account Aggregator bundle under consent CONS-2026-0418-A",
+            "CCB CAM template v4.2, cross-verification rule 4.1",
+          ],
+        },
+        "Draft the risk note for flag one": {
+          text: "Suggested wording: \u201cDeclared FY2025 turnover of INR 142.31 cr is not supported by independent evidence. GST outward supplies total INR 119.83 cr and customer credits into the two consented accounts total INR 121.44 cr, shortfalls of INR 22.48 cr and INR 20.87 cr respectively; the two independent sources agree with one another to within INR 1.61 cr. Pending the borrower's reconciliation, the assessment is run on the lower independently evidenced turnover of INR 121.44 cr and drawing power is sized accordingly.\u201d Press 'Draft the risk note' on the flag to load this into the adjudication box, then edit it — the wording is yours to sign off.",
+          citations: [
+            "Flag XV-0418-01, evidence set",
+            "CCB CAM template v4.2, risk narrative — revenue quality",
+          ],
+        },
+        "Show me the months where deposits fell short": {
+          text: "All twelve. The audited turnover implies INR 11.86 cr of sales a month; credits never exceed INR 12.18 cr and average INR 10.12 cr, with the widest shortfall in August 2024 at INR 2.74 cr and the narrowest in March 2025 at INR 0.32 cr. GST and bank credits track each other within INR 0.40 cr in every single month, so this is not a timing difference in one or two periods — it is a level difference across the year. The month table is on flag one under 'Show the twelve months'.",
+          citations: [
+            "Account Aggregator monthly credit summary, both accounts",
+            "GSTR-3B monthly outward supplies, FY2024-25",
+          ],
+        },
+        "What happens if I accept all three": {
+          text: "Flag one stops blocking and all three carry into the draft: revenue quality, leverage and debt service, and business concentration. Accepting flag two restates total debt with the implied Crestline residual of about INR 1.85 cr and moves DSCR from 1.61 to 1.44, still above the 1.25 floor. Accepting flag three records a soft-cap breach at 38.4% against 35% with the OEM contract as mitigant. Accepted findings reach the rating rationale, so the CCB-4 first cut should be re-run before submission.",
+          citations: [
+            "Flags XV-0418-01 / 02 / 03",
+            "CCB rating model, qualitative overlay — evidence quality",
+          ],
+        },
+      },
+    };
+  if (pathname.startsWith("/exceptions"))
+    return {
+      scope: "Exception queue — West Region",
+      note: "Open cross-verification findings across every appraisal on the book, oldest and most severe first.",
+      actions: [
+        "Which open exceptions are blocking a submission",
+        "What is the oldest thing sitting here",
+        "Which of these are mine",
+      ],
+      answers: {
+        "Which open exceptions are blocking a submission": {
+          text: "Two. XV-0418-01 on Northwind Manufacturing Ltd, appraisal CAM-2026-0418 — declared turnover INR 142.31 cr against GST of INR 119.83 cr and bank credits of INR 121.44 cr, raised today and owned by Elena Rossi. And XV-0426-01 on Sahyadri Pharma Distributors Pvt Ltd, appraisal CAM-2026-0426 — GSTR-3B for January and February 2026 are not on the GSTN ledger, so two months of the turnover test cannot be evidenced; that one is 11 days old and sits with Devika Sundaram. The other two exceptions, both on Trident Industrial Packaging, are reportable but not blocking.",
+          citations: [
+            "Exception queue, 31 July 2026",
+            "CCB CAM template v4.2, rule 4.1 — serious contradictions block submission",
+          ],
+        },
+        "What is the oldest thing sitting here": {
+          text: "XV-0426-01 on Sahyadri Pharma, raised 20 July 2026 and 11 days open. It is blocking and it is not moving: the missing GSTR-3B filings have to come from the borrower before the spread can be evidenced, so a chaser to Devika Sundaram is the practical next step.",
+          citations: ["Exception queue, appraisal CAM-2026-0426"],
+        },
+        "Which of these are mine": {
+          text: "Elena Rossi owns the three Northwind findings on CAM-2026-0418 and the bureau-overdue exception XV-0421-01 on Trident Industrial Packaging. Only the Northwind turnover flag blocks anything today.",
+          citations: ["Exception queue, owner filter — Elena Rossi"],
+        },
+      },
+    };
   if (pathname.includes("/identity"))
     return {
       scope: "Entity resolution — Northwind Manufacturing Ltd",

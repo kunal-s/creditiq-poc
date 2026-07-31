@@ -327,7 +327,7 @@ function TemplateDesigner() {
                           {para.length > 520 ? `${para.slice(0, 520)}…` : para}
                         </p>
                         {source?.facts && (
-                          <dl className="mt-1.5 grid gap-x-6 gap-y-0.5 sm:grid-cols-2">
+                          <dl className="mt-1.5 space-y-0.5">
                             {source.facts.slice(0, 4).map((f) => (
                               <div key={f.label} className="flex gap-2 text-[11.5px]">
                                 <dt className="w-32 shrink-0 text-muted-foreground">{f.label}</dt>

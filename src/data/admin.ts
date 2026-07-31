@@ -312,11 +312,11 @@ export type TemplateSection = {
 
 export const BASE_TEMPLATE: TemplateSection[] = [
   { id: "profile", title: "Borrower and Group Profile", purpose: "Legal identity, group perimeter, directors and shareholding.", required: true, enabled: true, words: 320, citations: "every-figure" },
-  { id: "facility", title: "Facility Requested and Purpose", purpose: "Limits sought, structure, security and end use.", required: true, enabled: true, words: 280, citations: "every-figure" },
+  { id: "facility", title: "Facility Requested and Purpose", purpose: "Limits sought, structure, security and end use.", required: false, enabled: true, words: 280, citations: "every-figure" },
   { id: "conduct", title: "Banking Conduct", purpose: "Utilisation, overdrawing, return of instruments, conduct with other banks.", required: false, enabled: true, words: 260, citations: "material-only" },
   { id: "financials", title: "Financial Analysis and Ratios", purpose: "Three-year spread, ratio table against policy, drawing-power assessment.", required: true, enabled: true, words: 520, citations: "every-figure" },
-  { id: "bureau", title: "GST and Bureau Findings", purpose: "Filing discipline, bureau enquiries, existing obligations and charges.", required: true, enabled: true, words: 300, citations: "every-figure" },
-  { id: "crossverify", title: "Cross-Verification Results", purpose: "Contradictions across sources and how each was adjudicated.", required: true, enabled: true, words: 380, citations: "every-figure" },
+  { id: "bureau", title: "GST and Bureau Findings", purpose: "Filing discipline, bureau enquiries, existing obligations and charges.", required: false, enabled: true, words: 300, citations: "every-figure" },
+  { id: "crossverify", title: "Cross-Verification Results", purpose: "Contradictions across sources and how each was adjudicated.", required: false, enabled: true, words: 380, citations: "every-figure" },
   { id: "risk", title: "Risk Assessment and Rating", purpose: "Rating grid, factors for and against, overlays and overrides.", required: true, enabled: true, words: 420, citations: "every-figure" },
   { id: "recommendation", title: "Recommendation", purpose: "The analyst's recommendation, conditions precedent and covenants.", required: true, enabled: true, words: 280, citations: "material-only" },
 ];

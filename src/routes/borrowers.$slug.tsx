@@ -144,8 +144,8 @@ function BorrowerDossier() {
                     : "border-flag/35 bg-flag-soft/50",
               )}
             >
-              <Clock className={cn("mt-0.5 h-4 w-4 shrink-0", r.consent === "granted" ? "text-positive" : r.consent === "requested" ? "text-info" : "text-flag")} />
               <div className="flex gap-2">
+                <Clock className={cn("mt-0.5 h-4 w-4 shrink-0", r.consent === "granted" ? "text-positive" : r.consent === "requested" ? "text-info" : "text-flag")} />
                 <div className="min-w-0 flex-1">
                 <p className="text-[13px] font-medium text-foreground">
                   {r.consent === "granted"

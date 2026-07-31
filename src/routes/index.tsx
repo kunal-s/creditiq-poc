@@ -25,13 +25,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Elena Rossi's credit workbench: in-flight appraisals, open discrepancies, upcoming reviews and portfolio turnaround at Continental Commercial Bank.",
+          "CreditIQ workbench",
       },
       { property: "og:title", content: "Credit Workbench — CreditIQ" },
       {
         property: "og:description",
         content:
-          "In-flight appraisals, cross-verification flags and portfolio turnaround for the West Region credit desk.",
+          "CreditIQ workbench",
       },
     ],
   }),

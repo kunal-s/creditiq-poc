@@ -79,22 +79,26 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "CreditIQ — Credit Appraisal Workbench" },
+      { title: "Credit Workbench — CreditIQ" },
       {
         name: "description",
         content:
-          "CreditIQ turns a borrower identifier into an evidence-backed Credit Appraisal Memorandum for commercial lending teams.",
+          "CreditIQ workbench",
       },
       { name: "author", content: "Continental Commercial Bank" },
-      { property: "og:title", content: "CreditIQ — Credit Appraisal Workbench" },
+      { property: "og:title", content: "Credit Workbench — CreditIQ" },
       {
         property: "og:description",
         content:
-          "Identifier-to-CAM automation for wholesale and mid-market credit teams: fetch, spread, cross-verify and draft.",
+          "CreditIQ workbench",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Credit Workbench — CreditIQ" },
+      { name: "twitter:description", content: "CreditIQ workbench" },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/472cdb81-8095-43d6-86db-bec0aa9c2c31/id-preview-ee57d52e--a8f93fcf-db98-427e-91b0-c11c7dfcfaee.lovable.app-1785483944810.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/472cdb81-8095-43d6-86db-bec0aa9c2c31/id-preview-ee57d52e--a8f93fcf-db98-427e-91b0-c11c7dfcfaee.lovable.app-1785483944810.png" },
     ],
     links: [
       {
@@ -107,7 +111,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap",
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
   }),
   shellComponent: RootShell,

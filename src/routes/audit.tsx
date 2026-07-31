@@ -431,7 +431,7 @@ function TimelineRow({
         </span>
       </button>
       {open && (
-        <div className="border-t border-border bg-surface-muted/40 px-4 py-3 pl-[136px]">
+        <div className="border-t border-border bg-surface-muted/40 px-4 py-3 lg:pl-[136px]">
           <p className="text-[12.5px] leading-relaxed text-foreground">{event.detail}</p>
           {(event.original || event.replacement) && (
             <div className="mt-2 grid gap-2 md:grid-cols-2">
@@ -456,10 +456,10 @@ function TimelineRow({
             </p>
           )}
           {event.meta && (
-            <dl className="mt-2 grid gap-x-6 gap-y-1 sm:grid-cols-2">
+            <dl className="mt-2 grid gap-x-6 gap-y-1 2xl:grid-cols-2">
               {event.meta.map((m) => (
                 <div key={m.label} className="flex gap-2 text-[12px]">
-                  <dt className="w-28 shrink-0 text-muted-foreground">{m.label}</dt>
+                  <dt className="w-24 shrink-0 text-muted-foreground">{m.label}</dt>
                   <dd className="min-w-0 flex-1 text-foreground">{m.value}</dd>
                 </div>
               ))}

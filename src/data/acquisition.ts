@@ -16,7 +16,7 @@ export type AcqSource = {
   findings: string[];
   downstream: { label: string; anchor: string };
   raw: { title: string; lines: string[] };
-  note?: string;
+  note?: string | undefined;
 };
 
 export const CONSENT_WINDOW = "01 April 2025 to 31 March 2026";

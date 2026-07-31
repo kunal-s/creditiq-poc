@@ -213,16 +213,6 @@ function contextFor(pathname: string): Ctx {
         },
       },
     };
-  if (pathname.includes("/never-cross-verification"))
-    return {
-      scope: "Cross-Verification",
-      note: "Triangulating declared financials, GST filings, bank credits and bureau conduct.",
-      actions: [
-        "Explain the turnover gap",
-        "Trace the undisclosed lender payment",
-        "Rank discrepancies by credit impact",
-      ],
-    };
   if (pathname.startsWith("/appraisals/new"))
     return {
       scope: "New appraisal intake",

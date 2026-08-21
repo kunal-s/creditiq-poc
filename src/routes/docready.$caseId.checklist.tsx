@@ -276,9 +276,9 @@ function ChecklistScreen() {
           <p className="tabular mt-1 text-[26px] font-semibold leading-none text-foreground">{r.score}%</p>
           <div className="mt-3 space-y-1.5 text-[12px]">
             {[
-              { k: "Settled", v: `${r.accepted} of ${r.total}` },
-              { k: "In review", v: r.inReview },
-              { k: "Outstanding", v: r.outstanding },
+              { k: "Satisfied", v: `${r.accepted} of ${r.total}` },
+              { k: "Insufficient", v: r.insufficient },
+              { k: "Missing", v: r.missing },
               { k: "Blocking open", v: r.blockingOpen },
             ].map((row) => (
               <div key={row.k} className="flex justify-between">
@@ -302,14 +302,14 @@ function ChecklistScreen() {
           </p>
           <p className="mt-1.5 text-[12.5px] leading-relaxed text-muted-foreground">
             {derived
-              ? "Re-derived against CCB SME checklist v3.1. Twelve items stand. Two would drop if the constitution were a proprietorship: director KYC and the board resolution. Two would be added above INR 5 cr: CMA data and a working capital projection — this ask is INR 4.55 cr, so they stay out. CGTMSE cover is not applicable because the term loan is secured on the Ichalkaranji unit."
-              : "Re-derive the checklist from constitution, MSME segment, product mix and ticket size, and see which items policy would add or drop."}
+              ? `Re-derived against the CCB MSME checklist. ${r.total} requirements stand for this case. The board resolution, MOA and AOA and director KYC exist only because the constitution is a private limited company. Valuation and insurance exist only because a term loan against property is in the mix; a clean cash credit case such as Fairwind Components carries sixteen items, not eighteen. CMA data and a projected balance sheet would be added above INR 5 cr — this ask is ${c.requested}, so they stay out.`
+              : "Re-derive the checklist from constitution, MSME segment, product mix, collateral and ticket size, and see which items policy would add or drop."}
           </p>
           <button
             type="button"
             onClick={() => {
               setDerived(true);
-              toast.success("Checklist re-derived — no change to the twelve items");
+              toast.success(`Checklist re-derived — ${r.total} requirements stand`);
             }}
             className="mt-3 w-full rounded bg-primary px-3 py-1.5 text-[12.5px] font-medium text-primary-foreground hover:bg-primary/90"
           >

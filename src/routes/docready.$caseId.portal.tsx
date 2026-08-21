@@ -55,52 +55,89 @@ function PortalPreview() {
 
         <div className="space-y-4 px-5 py-5">
           <p className="text-[13px] leading-relaxed text-foreground">
-            Dear {c.contact.name}, four items are still needed to complete your application for {c.requested} (
-            {c.facilities}). Each one is listed below with the reason it is required. You do not need to send anything
-            else.
+            Dear {c.contact.name}, {open.length} item{open.length === 1 ? "" : "s"} {open.length === 1 ? "is" : "are"}{" "}
+            still needed to complete your application for {c.requested} ({c.facilities}). They are grouped below by the
+            part of your file they belong to, and numbered so you can work through them in order. You do not need to
+            send anything else.
           </p>
 
           <div>
-            <p className="field-label mb-2">Still needed</p>
-            <ul className="space-y-2">
-              {open.map((i) => (
-                <li
-                  key={i.id}
-                  className={cn(
-                    "rounded border px-3.5 py-3",
-                    i.status === "rejected" ? "border-destructive/30 bg-destructive/5" : "border-border bg-background",
-                  )}
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="text-[13px] font-medium text-foreground">{i.name}</p>
-                      <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">{i.why}</p>
-                      {i.rejection && (
-                        <p className="mt-1.5 text-[12px] leading-relaxed text-destructive">
-                          Returned to you — {i.rejection}
+            <div className="mb-2 flex items-baseline justify-between gap-3">
+              <p className="field-label">Still needed — {open.length} item{open.length === 1 ? "" : "s"}</p>
+              <p className="tabular text-[11.5px] text-muted-foreground">
+                {done.length} of {done.length + open.length} already received
+              </p>
+            </div>
+
+            {open.length === 0 ? (
+              <p className="rounded border border-positive/30 bg-positive-soft px-3.5 py-3 text-[12.5px] text-positive">
+                Nothing further is needed from you. Thank you.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {(() => {
+                  let n = 0;
+                  return SECTIONS.filter((s) => open.some((i) => i.category === s)).map((section) => {
+                    const items = open.filter((i) => i.category === section);
+                    return (
+                      <div key={section}>
+                        <p className="mb-1.5 flex items-baseline gap-2 border-b border-border pb-1 text-[12.5px] font-semibold text-foreground">
+                          {SECTION_LABEL[section] ?? section}
+                          <span className="tabular text-[11px] font-normal text-muted-foreground">
+                            {items.length} item{items.length === 1 ? "" : "s"}
+                          </span>
                         </p>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        docReadyActions.simulateUpload(c.id, i.id);
-                        toast.success(`${i.name} uploaded`);
-                      }}
-                      className="inline-flex shrink-0 items-center gap-1.5 rounded bg-primary px-2.5 py-1.5 text-[12px] font-medium text-primary-foreground hover:bg-primary/90"
-                    >
-                      <Upload className="h-3.5 w-3.5" /> Upload
-                    </button>
-                  </div>
-                </li>
-              ))}
-              {open.length === 0 && (
-                <li className="rounded border border-positive/30 bg-positive-soft px-3.5 py-3 text-[12.5px] text-positive">
-                  Nothing further is needed from you. Thank you.
-                </li>
-              )}
-            </ul>
+                        <ul className="space-y-2">
+                          {items.map((i) => {
+                            n += 1;
+                            return (
+                              <li
+                                key={i.id}
+                                className={cn(
+                                  "rounded border px-3.5 py-3",
+                                  i.status === "rejected"
+                                    ? "border-destructive/30 bg-destructive/5"
+                                    : "border-border bg-background",
+                                )}
+                              >
+                                <div className="flex flex-wrap items-start justify-between gap-2">
+                                  <div className="flex min-w-0 gap-2.5">
+                                    <span className="tabular mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border border-border bg-surface-muted text-[11px] font-semibold text-muted-foreground">
+                                      {n}
+                                    </span>
+                                    <div className="min-w-0">
+                                      <p className="text-[13px] font-medium text-foreground">{i.name}</p>
+                                      <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">{i.why}</p>
+                                      {i.rejection && (
+                                        <p className="mt-1.5 text-[12px] leading-relaxed text-destructive">
+                                          Returned to you — {i.rejection}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      docReadyActions.simulateUpload(c.id, i.id);
+                                      toast.success(`${i.name} uploaded`);
+                                    }}
+                                    className="inline-flex shrink-0 items-center gap-1.5 rounded bg-primary px-2.5 py-1.5 text-[12px] font-medium text-primary-foreground hover:bg-primary/90"
+                                  >
+                                    <Upload className="h-3.5 w-3.5" /> Upload
+                                  </button>
+                                </div>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            )}
           </div>
+
 
           <div className="rounded border border-border bg-background px-3.5 py-3">
             <p className="flex items-center gap-1.5 text-[13px] font-medium text-foreground">

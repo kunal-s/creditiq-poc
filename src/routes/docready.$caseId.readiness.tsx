@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowRight, ShieldCheck, AlertTriangle, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Panel } from "@/components/identity/chips";
-import { docReadyActions, readiness, useDocReadyCase } from "@/data/docready";
+import { docReadyActions, readiness, STAGE_GATES, useDocReadyCase } from "@/data/docready";
 import { StatusChip } from "@/routes/docready.$caseId.checklist";
 import { cn } from "@/lib/utils";
 

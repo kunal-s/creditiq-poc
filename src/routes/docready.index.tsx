@@ -38,12 +38,12 @@ function ScoreBar({ score }: { score: number }) {
   );
 }
 
-const FILTERS = ["All cases", "Blocking gaps", "Ready for handoff", "Ageing over 14 days"] as const;
+const FILTERS = ["All cases", "Blocking gaps", "Ready for credit review", "Ageing over 14 days"] as const;
 
 function matches(c: DocReadyCase, f: (typeof FILTERS)[number]) {
   const r = readiness(c);
   if (f === "Blocking gaps") return r.blockingOpen > 0;
-  if (f === "Ready for handoff") return r.blockingOpen === 0;
+  if (f === "Ready for credit review") return r.blockingOpen === 0 && r.reviewGate;
   if (f === "Ageing over 14 days") return c.daysInCollection > 14;
   return true;
 }
@@ -70,8 +70,8 @@ function ReadinessConsole() {
     return {
       open: cases.length,
       blocking: scores.filter((s) => s.blockingOpen > 0).length,
-      ready: scores.filter((s) => s.blockingOpen === 0).length,
-      outstanding: scores.reduce((n, s) => n + s.outstanding, 0),
+      ready: scores.filter((s) => s.blockingOpen === 0 && s.reviewGate).length,
+      outstanding: scores.reduce((n, s) => n + s.insufficient + s.missing, 0),
       avgAge: Math.round(cases.reduce((n, c) => n + c.daysInCollection, 0) / cases.length),
     };
   }, [cases]);
@@ -85,7 +85,7 @@ function ReadinessConsole() {
         actions={
           <Link
             to="/docready/$caseId/checklist"
-            params={{ caseId: "DR-2026-0142" }}
+            params={{ caseId: "SGT-2026-0147" }}
             className="rounded bg-primary px-3 py-1.5 text-[12.5px] font-medium text-primary-foreground hover:bg-primary/90"
           >
             Open Southgate Textiles
@@ -98,9 +98,14 @@ function ReadinessConsole() {
           {[
             { label: "Open cases", value: totals.open, note: "in collection now" },
             { label: "Blocking gaps", value: totals.blocking, note: "cannot be appraised yet", tone: "text-destructive" },
-            { label: "Ready for handoff", value: totals.ready, note: "no blocking document missing", tone: "text-positive" },
-            { label: "Documents outstanding", value: totals.outstanding, note: "across all open cases" },
-            { label: "Average age", value: `${totals.avgAge} days`, note: "against a 12-day target" },
+            {
+              label: "Ready for credit review",
+              value: totals.ready,
+              note: "85% gate met, nothing blocking",
+              tone: "text-positive",
+            },
+            { label: "Requirements outstanding", value: totals.outstanding, note: "insufficient or missing" },
+            { label: "Average age", value: `${totals.avgAge} days`, note: "against a 12-day escalation point" },
           ].map((k) => (
             <div key={k.label} className="rounded border border-border bg-surface px-4 py-3">
               <p className="field-label">{k.label}</p>
@@ -185,11 +190,14 @@ function ReadinessConsole() {
                       <td className="px-4 py-2.5">
                         <ScoreBar score={r.score} />
                         <div className="mt-1 text-[11px] text-muted-foreground">
-                          {r.accepted} of {r.total} settled
+                          {r.accepted} of {r.total} satisfied
+                          {r.reviewGate ? " · 85% gate met" : " · below the 85% gate"}
                         </div>
                       </td>
                       <td className="px-4 py-2.5">
-                        <div className="tabular text-foreground">{r.outstanding} documents</div>
+                        <div className="tabular text-foreground">
+                          {r.insufficient} insufficient · {r.missing} missing
+                        </div>
                         {r.blockingOpen > 0 ? (
                           <span className="mt-1 inline-flex items-center gap-1 rounded border border-destructive/30 bg-destructive/10 px-1.5 py-0.5 text-[10.5px] font-medium text-destructive">
                             <AlertTriangle className="h-3 w-3" /> {r.blockingOpen} blocking
@@ -241,10 +249,12 @@ function ReadinessConsole() {
             <Sparkles className="h-3.5 w-3.5 text-primary" /> Copilot read on the queue
           </p>
           <p className="mt-1.5 max-w-4xl text-[12.5px] leading-relaxed text-muted-foreground">
-            Two cases will slip their target sanction date unless the outstanding ask closes this week. Southgate
-            Textiles is one signed audited statement and one stock statement away from handoff; Vashi Cold Storage
-            LLP has been open 21 days with three blocking documents and has not responded since 1 August 2026, which
-            is the pattern that usually ends in a withdrawn application.
+            Southgate Textiles at 64% is the case that needs your attention today: three blocking gaps, and one of them
+            is not a missing page but a contradiction — the Coimbatore title deed carries a Meridian Bank mortgage dated
+            March 2024 against a client declaration of nil existing facilities. The debtors and creditors ageing has been
+            open 13 days with two reminders, so it is past the 12-day escalation point. Fairwind Components reached 100%
+            and was cleared by Thomas Weber on 14 August 2026, so it can hand off to appraisal now. Brightline Foods was
+            received on 19 August; the collection link has gone to the client and nothing has come back yet.
           </p>
         </div>
       </div>

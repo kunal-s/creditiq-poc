@@ -34,32 +34,37 @@ const KIND_TONE: Record<ChaseEvent["kind"], string> = {
   call: "border-border bg-surface-muted text-muted-foreground",
   waiver: "border-border bg-surface-muted text-muted-foreground",
   handoff: "border-positive/40 bg-positive-soft text-positive",
+  escalation: "border-destructive/40 bg-destructive/10 text-destructive",
 };
 
 const KIND_LABEL: Record<ChaseEvent["kind"], string> = {
   request: "Request",
   reminder: "Reminder",
   upload: "Client upload",
-  rejection: "Rejection",
-  acceptance: "Acceptance",
+  rejection: "Insufficiency",
+  acceptance: "Cleared",
   call: "Call note",
   waiver: "Waiver",
   handoff: "Handoff",
+  escalation: "Escalation",
 };
 
-const DEFAULT_MESSAGE = `Dear Ms Kulkarni,
+const DEFAULT_MESSAGE = `Dear Ms Iyer,
 
-Thank you for the documents uploaded on 6 August. Four items remain before we can take Southgate Textiles' proposal into appraisal:
+Thank you for the documents sent through your collection link. The incorporation set, both audited years and the income tax returns are complete and need no further action. Seven items remain before Southgate Textiles' proposal can go to credit review:
 
-1. Audited FY2026 financial statements, signed with UDIN. CA Bhide has confirmed the audit closes on 19 August.
-2. Director KYC for Vikram Sethi, plus an address proof dated within the last two months.
-3. Bank statements for the twelve months to 31 July 2026 for all operating accounts. The quickest route is the Account Aggregator consent on your portal link, which takes about two minutes.
-4. Stock and debtors statement as at 31 July 2026 on your usual format.
+1. Board resolution for borrowing, signed and on company letterhead. The copy received on 8 August is unsigned and on plain paper.
+2. Provisional FY2026 financials, complete set. Pages 3 to 5 carrying the balance sheet were missing.
+3. GSTR-3B for August, September, October and November 2025. The eight months from December 2025 are already with us.
+4. Bank statements for the twelve months to 31 July 2026 for the Meridian Bank account ending 8830.
+5. Stock and book-debt statement as at 31 July 2026. The statement on file is as at 30 June and cannot support drawing power.
+6. Debtors and creditors ageing, requested on 8 August and reminded twice.
+7. Clarification on the mortgage in favour of Meridian Bank dated March 2024 recorded on the title deed of the Coimbatore unit, which does not sit with the nil-facilities declaration of 6 August.
 
-Nothing else is outstanding. The portal link in your earlier email remains valid until 17 August 2026.
+Nothing else is outstanding. Your collection link remains valid.
 
 Kind regards,
-Rohan Deshpande, Ichalkaranji SME Branch`;
+Priya Raghavan, Relationship Manager, Coimbatore SME Branch`;
 
 function CollectionScreen() {
   const { caseId } = Route.useParams();

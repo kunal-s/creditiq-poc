@@ -6,6 +6,9 @@ import { Panel } from "@/components/identity/chips";
 import {
   docReadyActions,
   readiness,
+  SECTIONS,
+  SECTION_WEIGHT,
+  INSUFFICIENCY_LABEL,
   STATUS_LABEL,
   useDocReadyCase,
   type ChecklistItem,
@@ -54,52 +57,23 @@ export function StatusChip({ status }: { status: DocStatus }) {
   );
 }
 
-const CATEGORIES: ChecklistItem["category"][] = [
-  "Constitution and KYC",
-  "Financial",
-  "Statutory",
-  "Banking",
-  "Security",
-  "Business",
-];
+const CATEGORIES: ChecklistItem["category"][] = SECTIONS;
 
 function ChecklistScreen() {
   const { caseId } = Route.useParams();
   const c = useDocReadyCase(caseId);
-  const [open, setOpen] = useState<string | null>("kyc-directors");
+  const [open, setOpen] = useState<string | null>("property-docs");
   const [derived, setDerived] = useState(false);
 
   if (!c) return null;
   const r = readiness(c);
-
-  if (!c.items.length) {
-    return (
-      <div className="px-6 py-5">
-        <Panel title="Checklist" subtitle="This case is carried in the console summary only.">
-          <p className="px-4 py-4 text-[12.5px] leading-relaxed text-muted-foreground">
-            {c.borrower} is tracked at case level in this build: {r.accepted} of {r.total} documents settled,{" "}
-            {r.outstanding} outstanding, {r.blockingOpen} of them blocking. The fully worked checklist, validation
-            trail and handoff run on{" "}
-            <Link
-              to="/docready/$caseId/checklist"
-              params={{ caseId: "DR-2026-0142" }}
-              className="font-medium text-primary hover:underline"
-            >
-              Southgate Textiles Pvt Ltd
-            </Link>
-            .
-          </p>
-        </Panel>
-      </div>
-    );
-  }
 
   return (
     <div className="grid gap-4 px-6 py-5 [@media(min-width:1500px)]:grid-cols-[minmax(0,1fr)_320px]">
       <div className="min-w-0 space-y-4">
         <Panel
           title="Required document set"
-          subtitle={`Twelve items derived from ${c.constitution.toLowerCase()}, ${c.segment.toLowerCase()} segment and the ${c.product.toLowerCase()} ask. Blocking items stop the appraisal; the rest do not.`}
+          subtitle={`${r.total} requirements derived from ${c.constitution.toLowerCase()}, ${c.segment.toLowerCase()} segment and the ${c.product.toLowerCase()} ask — not a static list. Blocking items stop credit review; the rest do not.`}
           action={
             <button
               type="button"
@@ -113,8 +87,11 @@ function ChecklistScreen() {
           <div className="divide-y divide-border">
             {CATEGORIES.filter((cat) => c.items.some((i) => i.category === cat)).map((cat) => (
               <div key={cat}>
-                <p className="bg-surface-muted/70 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  {cat}
+                <p className="flex items-center justify-between gap-2 bg-surface-muted/70 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <span>{cat}</span>
+                  <span className="tabular font-medium normal-case tracking-normal">
+                    weight {SECTION_WEIGHT[cat]}%
+                  </span>
                 </p>
                 <ul className="divide-y divide-border">
                   {c.items
@@ -141,8 +118,26 @@ function ChecklistScreen() {
                                     Blocking
                                   </span>
                                 )}
+                                {item.insufficiency && (
+                                  <span className="rounded border border-flag/35 bg-flag-soft px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-flag-foreground">
+                                    {INSUFFICIENCY_LABEL[item.insufficiency]}
+                                  </span>
+                                )}
+                                {item.escalate && (
+                                  <span className="rounded border border-destructive/35 bg-destructive/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-destructive">
+                                    Due for escalation
+                                  </span>
+                                )}
                               </span>
-                              <span className="mt-0.5 block text-[11.5px] text-muted-foreground">{item.basis}</span>
+                              <span className="mt-0.5 block text-[11.5px] text-muted-foreground">
+                                {item.basis}
+                                {typeof item.confidence === "number" && ` · extraction confidence ${item.confidence}%`}
+                                {typeof item.ageDays === "number" &&
+                                  item.status !== "accepted" &&
+                                  ` · open ${item.ageDays} days`}
+                                {typeof item.remindersSent === "number" &&
+                                  ` · ${item.remindersSent} reminder${item.remindersSent === 1 ? "" : "s"} sent`}
+                              </span>
                             </span>
                             <StatusChip status={item.status} />
                           </button>
@@ -174,7 +169,8 @@ function ChecklistScreen() {
 
                               {item.rejection && (
                                 <p className="rounded border border-destructive/30 bg-destructive/10 px-3 py-2 text-[12px] leading-relaxed text-destructive">
-                                  Rejected — {item.rejection}
+                                  {item.insufficiency ? INSUFFICIENCY_LABEL[item.insufficiency] : "Insufficient"} —{" "}
+                                  {item.rejection}
                                 </p>
                               )}
                               {item.waiverReason && (
@@ -280,9 +276,9 @@ function ChecklistScreen() {
           <p className="tabular mt-1 text-[26px] font-semibold leading-none text-foreground">{r.score}%</p>
           <div className="mt-3 space-y-1.5 text-[12px]">
             {[
-              { k: "Settled", v: `${r.accepted} of ${r.total}` },
-              { k: "In review", v: r.inReview },
-              { k: "Outstanding", v: r.outstanding },
+              { k: "Satisfied", v: `${r.accepted} of ${r.total}` },
+              { k: "Insufficient", v: r.insufficient },
+              { k: "Missing", v: r.missing },
               { k: "Blocking open", v: r.blockingOpen },
             ].map((row) => (
               <div key={row.k} className="flex justify-between">
@@ -306,14 +302,14 @@ function ChecklistScreen() {
           </p>
           <p className="mt-1.5 text-[12.5px] leading-relaxed text-muted-foreground">
             {derived
-              ? "Re-derived against CCB SME checklist v3.1. Twelve items stand. Two would drop if the constitution were a proprietorship: director KYC and the board resolution. Two would be added above INR 5 cr: CMA data and a working capital projection — this ask is INR 4.55 cr, so they stay out. CGTMSE cover is not applicable because the term loan is secured on the Ichalkaranji unit."
-              : "Re-derive the checklist from constitution, MSME segment, product mix and ticket size, and see which items policy would add or drop."}
+              ? `Re-derived against the CCB MSME checklist. ${r.total} requirements stand for this case. The board resolution, MOA and AOA and director KYC exist only because the constitution is a private limited company. Valuation and insurance exist only because a term loan against property is in the mix; a clean cash credit case such as Fairwind Components carries sixteen items, not eighteen. CMA data and a projected balance sheet would be added above INR 5 cr — this ask is ${c.requested}, so they stay out.`
+              : "Re-derive the checklist from constitution, MSME segment, product mix, collateral and ticket size, and see which items policy would add or drop."}
           </p>
           <button
             type="button"
             onClick={() => {
               setDerived(true);
-              toast.success("Checklist re-derived — no change to the twelve items");
+              toast.success(`Checklist re-derived — ${r.total} requirements stand`);
             }}
             className="mt-3 w-full rounded bg-primary px-3 py-1.5 text-[12.5px] font-medium text-primary-foreground hover:bg-primary/90"
           >

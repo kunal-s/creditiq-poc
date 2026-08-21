@@ -10,6 +10,10 @@ export const NAV: NavGroup[] = [
     ],
   },
   {
+    group: "DocReady",
+    items: [{ label: "Readiness Console", to: "/docready" }],
+  },
+  {
     group: "Appraisal",
     items: [
       { label: "New Appraisal", to: "/appraisals/new" },

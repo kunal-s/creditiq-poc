@@ -1,6 +1,7 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 import { useDocReadyCase, readiness } from "@/data/docready";
+import { DocViewerProvider } from "@/components/docviewer/DocViewer";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/docready/$caseId")({
@@ -35,6 +36,7 @@ function CaseLayout() {
   const r = readiness(c);
 
   return (
+    <DocViewerProvider>
     <div>
       <div className="border-b border-border bg-surface-muted/60 px-6 pt-4">
         <div className="rounded-md border border-border bg-surface shadow-sm">
@@ -142,5 +144,6 @@ function CaseLayout() {
 
       <Outlet />
     </div>
+    </DocViewerProvider>
   );
 }

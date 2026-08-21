@@ -668,6 +668,12 @@ const SOUTHGATE: DocReadyCase = {
     lastOpened: "12 August 2026",
     uploadsThroughLink: 7,
   },
+  nextActions: [
+    "Resolve the Meridian Bank mortgage contradiction — the Coimbatore title deed shows a charge dated March 2024 against a declaration of nil existing facilities. Seek the client's explanation and run a charge search.",
+    "Request the four missing GST periods, August to November 2025, so the twelve-month turnover test can be evidenced.",
+    "Request the stock and book-debt statement as at 31 July 2026; drawing power cannot be computed on a 52-day-old position.",
+    "Escalate the debtors and creditors ageing to Credit Operations — 13 days open, two reminders sent, past the 12-day threshold.",
+  ],
   items: SOUTHGATE_ITEMS,
   chase: SOUTHGATE_CHASE,
 };

@@ -7,6 +7,61 @@ type Answer = { text: string; citations: string[] };
 type Ctx = { scope: string; note: string; actions: string[]; answers?: Record<string, Answer> };
 
 function contextFor(pathname: string): Ctx {
+  if (pathname.startsWith("/docready/") && pathname.includes("/readiness"))
+    return {
+      scope: "DocReady readiness — Southgate Textiles Pvt Ltd",
+      note: "Readiness is weighted, not counted. I will say what still blocks the file and when it is likely to clear.",
+      actions: [
+        "What is still blocking the handoff",
+        "When will this file be ready",
+        "What carries across into the appraisal",
+      ],
+      answers: {
+        "What is still blocking the handoff": {
+          text: "One item, materially. The FY2026 financial statement failed attestation — no auditor signature, no UDIN, and the balance sheet is headed provisional. CCB ratio policy requires three audited years for a term loan of this size, so the spread cannot be built on it. The KYC set is the second gap: Vikram Sethi is missing entirely and his address proof, when supplied, was seven months old against the two-month rule. The missing co-operative bank sanction letter and the three late GST filings are recorded but non-blocking; they belong in the conduct narrative, not in the gate.",
+          citations: [
+            "Southgate_FS_FY2026_provisional.pdf — attestation check",
+            "MCA director list, CIN U17120PN2011PTC141288",
+            "CCB ratio and policy configuration — audited-years requirement",
+          ],
+        },
+        "When will this file be ready": {
+          text: "20 August 2026 on current commitments, nine days inside the 29 August target sanction date. The auditor has committed to the signed FY2026 set by 19 August, and the client's median response on portal asks across this case is two days, which covers the two KYC items. The one risk I would name is the bank statements: if Account Aggregator consent is not granted and statements come as PDFs for both accounts, comparable MSME cases took a further four to six days.",
+          citations: ["Chase ledger DR-2026-0142", "Portal response times, this case"],
+        },
+        "What carries across into the appraisal": {
+          text: "The handoff creates a CAM opened at the identity step with PAN, GSTIN, the Udyam registration, constitution and the Ichalkaranji SME Branch relationship already populated, plus the facility ask of INR 4.55 cr as CC and TL. Every accepted document is registered as present, so the pipeline does not re-ask the borrower for the two audited years, the GST filings or the accepted KYC. The handoff itself is written to the audit ledger with the document set attached.",
+          citations: ["DocReady handoff record", "Appraisal intake — prefilled identifiers"],
+        },
+      },
+    };
+  if (pathname.startsWith("/docready"))
+    return {
+      scope: "DocReady — MSME document readiness",
+      note: "Stage one of the engine: get a complete, usable file out of the client. I chase precisely, never in bulk.",
+      actions: [
+        "Why was the FY2026 statement rejected",
+        "Draft the next chase for Southgate",
+        "Which cases in the region are at risk",
+      ],
+      answers: {
+        "Why was the FY2026 statement rejected": {
+          text: "Attestation, not content. The figures extracted cleanly and are legible at 300 dpi, but there is no auditor signature, no UDIN on any page, and the balance sheet header reads 'provisional'. FY2024 and FY2025 are audited, signed and carry UDINs, so two of the three required years are already usable. The re-ask quotes exactly that defect rather than asking for 'financials' again — Southgate's auditor replied the same day with a 19 August commitment.",
+          citations: [
+            "Southgate_FS_FY2026_provisional.pdf — pages 1 to 9",
+            "Attestation rule: auditor signature and UDIN required",
+          ],
+        },
+        "Draft the next chase for Southgate": {
+          text: "One message, four items, no repetition of anything already received: the signed and UDIN-bearing FY2026 statement, KYC for Vikram Sethi, a current address proof for him dated within two months, and the second term-loan sanction letter that the CIBIL commercial report shows against the borrower. Suggested opening: 'Thank you for the documents received on 6 August — the FY2024 and FY2025 statements and the GST filings are complete and need no further action. Four items remain.' Press 'Draft the next chase' on the collection screen to load it.",
+          citations: ["Chase ledger DR-2026-0142", "Open checklist items, four"],
+        },
+        "Which cases in the region are at risk": {
+          text: "Three of the six open cases. Konkan Steel Traders has sat 19 days with two blocking gaps and no client reply in eleven — that is the one I would escalate to the relationship manager. Solapur Weaving Mills is at 41% readiness with the Udyam certificate never supplied. Vashi Cold Storage is a softer risk: readiness is high but the collateral valuation is with an external valuer, outside the client's control. The other three are tracking normally.",
+          citations: ["Readiness console, six open cases", "Collection aging by case"],
+        },
+      },
+    };
   if (pathname.includes("/cross-verification"))
     return {
       scope: "Cross-verification — Northwind Manufacturing Ltd",

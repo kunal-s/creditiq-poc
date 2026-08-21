@@ -1,10 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { CheckCircle2, AlertTriangle, XCircle, Sparkles } from "lucide-react";
+import { CheckCircle2, AlertTriangle, XCircle, Sparkles, FileText, GitCompareArrows } from "lucide-react";
 import { toast } from "sonner";
 import { Panel } from "@/components/identity/chips";
 import { docReadyActions, useDocReadyCase, type CheckOutcome } from "@/data/docready";
 import { StatusChip } from "@/routes/docready.$caseId.checklist";
+import { useDocViewer } from "@/components/docviewer/DocViewer";
+import { openingPage } from "@/data/doc-manifest";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/docready/$caseId/validation")({
@@ -56,6 +58,7 @@ function ValidationScreen() {
   const { caseId } = Route.useParams();
   const c = useDocReadyCase(caseId);
   const [open, setOpen] = useState<string | null>("property-docs");
+  const viewer = useDocViewer();
 
   if (!c) return null;
   const checked = c.items.filter((i) => (i.checks?.length ?? 0) > 0);
@@ -102,7 +105,28 @@ function ValidationScreen() {
                   className="flex w-full flex-wrap items-center gap-2 px-4 py-2.5 text-left hover:bg-surface-muted/60"
                 >
                   <span className="text-[13px] font-medium text-foreground">{item.name}</span>
-                  <span className="tabular text-[11px] text-muted-foreground">{item.fileName}</span>
+                  {viewer.doc(item.fileName) ? (
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        viewer.open({ mode: "single", filename: item.fileName! });
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          viewer.open({ mode: "single", filename: item.fileName! });
+                        }
+                      }}
+                      className="tabular inline-flex items-center gap-1 rounded border border-border bg-surface px-1.5 py-0.5 text-[11px] font-medium text-primary hover:bg-muted"
+                    >
+                      <FileText className="h-3 w-3" /> {item.fileName}
+                    </span>
+                  ) : (
+                    <span className="tabular text-[11px] text-muted-foreground">{item.fileName}</span>
+                  )}
                   <span className="ml-auto flex items-center gap-2">
                     <span className={cn("text-[11.5px] font-medium", TONE[worst])}>
                       {worst === "fail" ? "Check failed" : worst === "warn" ? "Caveat" : "All checks passed"}
@@ -122,6 +146,27 @@ function ValidationScreen() {
                             <span>
                               <span className="font-medium text-foreground">{k.label}</span>
                               <span className="text-muted-foreground"> — {k.detail}</span>
+                              {(() => {
+                                const doc = viewer.doc(item.fileName);
+                                const counterpart = doc?.contradicts?.[0];
+                                if (k.outcome !== "fail" || !doc || !counterpart) return null;
+                                const other = viewer.doc(counterpart);
+                                return (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      viewer.open({
+                                        mode: "compare",
+                                        left: { filename: doc.filename!, page: openingPage(doc) },
+                                        right: { filename: counterpart, page: openingPage(other) },
+                                      })
+                                    }
+                                    className="ml-1.5 inline-flex items-center gap-1 rounded border border-destructive/35 bg-destructive/10 px-1.5 py-0.5 text-[11px] font-medium text-destructive align-middle hover:bg-destructive/15"
+                                  >
+                                    <GitCompareArrows className="h-3 w-3" /> Compare both documents
+                                  </button>
+                                );
+                              })()}
                             </span>
                           </li>
                         );

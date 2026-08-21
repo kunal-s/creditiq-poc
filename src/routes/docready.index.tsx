@@ -190,11 +190,14 @@ function ReadinessConsole() {
                       <td className="px-4 py-2.5">
                         <ScoreBar score={r.score} />
                         <div className="mt-1 text-[11px] text-muted-foreground">
-                          {r.accepted} of {r.total} settled
+                          {r.accepted} of {r.total} satisfied
+                          {r.reviewGate ? " · 85% gate met" : " · below the 85% gate"}
                         </div>
                       </td>
                       <td className="px-4 py-2.5">
-                        <div className="tabular text-foreground">{r.outstanding} documents</div>
+                        <div className="tabular text-foreground">
+                          {r.insufficient} insufficient · {r.missing} missing
+                        </div>
                         {r.blockingOpen > 0 ? (
                           <span className="mt-1 inline-flex items-center gap-1 rounded border border-destructive/30 bg-destructive/10 px-1.5 py-0.5 text-[10.5px] font-medium text-destructive">
                             <AlertTriangle className="h-3 w-3" /> {r.blockingOpen} blocking

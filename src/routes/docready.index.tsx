@@ -38,12 +38,12 @@ function ScoreBar({ score }: { score: number }) {
   );
 }
 
-const FILTERS = ["All cases", "Blocking gaps", "Ready for handoff", "Ageing over 14 days"] as const;
+const FILTERS = ["All cases", "Blocking gaps", "Ready for credit review", "Ageing over 14 days"] as const;
 
 function matches(c: DocReadyCase, f: (typeof FILTERS)[number]) {
   const r = readiness(c);
   if (f === "Blocking gaps") return r.blockingOpen > 0;
-  if (f === "Ready for handoff") return r.blockingOpen === 0;
+  if (f === "Ready for credit review") return r.blockingOpen === 0 && r.reviewGate;
   if (f === "Ageing over 14 days") return c.daysInCollection > 14;
   return true;
 }

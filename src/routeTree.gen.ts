@@ -35,6 +35,7 @@ import { Route as AppraisalsIdSpreadRouteImport } from './routes/appraisals.$id.
 import { Route as AppraisalsIdSubmissionRouteImport } from './routes/appraisals.$id.submission'
 import { Route as AppraisalsIdUploadRouteImport } from './routes/appraisals.$id.upload'
 import { Route as DocreadyCaseIdChecklistRouteImport } from './routes/docready.$caseId.checklist'
+import { Route as DocreadyCaseIdCollectionRouteImport } from './routes/docready.$caseId.collection'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -167,6 +168,12 @@ const DocreadyCaseIdChecklistRoute = DocreadyCaseIdChecklistRouteImport.update({
   path: '/checklist',
   getParentRoute: () => DocreadyCaseIdRoute,
 } as any)
+const DocreadyCaseIdCollectionRoute =
+  DocreadyCaseIdCollectionRouteImport.update({
+    id: '/collection',
+    path: '/collection',
+    getParentRoute: () => DocreadyCaseIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -194,6 +201,7 @@ export interface FileRoutesByFullPath {
   '/appraisals/$id/submission': typeof AppraisalsIdSubmissionRoute
   '/appraisals/$id/upload': typeof AppraisalsIdUploadRoute
   '/docready/$caseId/checklist': typeof DocreadyCaseIdChecklistRoute
+  '/docready/$caseId/collection': typeof DocreadyCaseIdCollectionRoute
   '/appraisals/$id/': typeof AppraisalsIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -222,6 +230,7 @@ export interface FileRoutesByTo {
   '/appraisals/$id/submission': typeof AppraisalsIdSubmissionRoute
   '/appraisals/$id/upload': typeof AppraisalsIdUploadRoute
   '/docready/$caseId/checklist': typeof DocreadyCaseIdChecklistRoute
+  '/docready/$caseId/collection': typeof DocreadyCaseIdCollectionRoute
   '/appraisals/$id': typeof AppraisalsIdIndexRoute
 }
 export interface FileRoutesById {
@@ -251,6 +260,7 @@ export interface FileRoutesById {
   '/appraisals/$id/submission': typeof AppraisalsIdSubmissionRoute
   '/appraisals/$id/upload': typeof AppraisalsIdUploadRoute
   '/docready/$caseId/checklist': typeof DocreadyCaseIdChecklistRoute
+  '/docready/$caseId/collection': typeof DocreadyCaseIdCollectionRoute
   '/appraisals/$id/': typeof AppraisalsIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -281,6 +291,7 @@ export interface FileRouteTypes {
     | '/appraisals/$id/submission'
     | '/appraisals/$id/upload'
     | '/docready/$caseId/checklist'
+    | '/docready/$caseId/collection'
     | '/appraisals/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -309,6 +320,7 @@ export interface FileRouteTypes {
     | '/appraisals/$id/submission'
     | '/appraisals/$id/upload'
     | '/docready/$caseId/checklist'
+    | '/docready/$caseId/collection'
     | '/appraisals/$id'
   id:
     | '__root__'
@@ -337,6 +349,7 @@ export interface FileRouteTypes {
     | '/appraisals/$id/submission'
     | '/appraisals/$id/upload'
     | '/docready/$caseId/checklist'
+    | '/docready/$caseId/collection'
     | '/appraisals/$id/'
   fileRoutesById: FileRoutesById
 }
@@ -552,15 +565,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocreadyCaseIdChecklistRouteImport
       parentRoute: typeof DocreadyCaseIdRoute
     }
+    '/docready/$caseId/collection': {
+      id: '/docready/$caseId/collection'
+      path: '/collection'
+      fullPath: '/docready/$caseId/collection'
+      preLoaderRoute: typeof DocreadyCaseIdCollectionRouteImport
+      parentRoute: typeof DocreadyCaseIdRoute
+    }
   }
 }
 
 interface DocreadyCaseIdRouteChildren {
   DocreadyCaseIdChecklistRoute: typeof DocreadyCaseIdChecklistRoute
+  DocreadyCaseIdCollectionRoute: typeof DocreadyCaseIdCollectionRoute
 }
 
 const DocreadyCaseIdRouteChildren: DocreadyCaseIdRouteChildren = {
   DocreadyCaseIdChecklistRoute: DocreadyCaseIdChecklistRoute,
+  DocreadyCaseIdCollectionRoute: DocreadyCaseIdCollectionRoute,
 }
 
 const DocreadyCaseIdRouteWithChildren = DocreadyCaseIdRoute._addFileChildren(

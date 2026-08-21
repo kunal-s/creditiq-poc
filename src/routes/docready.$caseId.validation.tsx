@@ -38,20 +38,24 @@ const TONE: Record<CheckOutcome, string> = {
 };
 
 const EXPLANATIONS: Record<string, string> = {
-  "kyc-directors":
-    "Two independent rules failed. Completeness compares the KYC set against the MCA director list for CIN U17120PN2011PTC141288, which carries three directors — Anita Kulkarni, Rajeev Kulkarni and Vikram Sethi; only the first two were covered. Recency applies the two-month address-proof rule under the KYC Master Direction, and the mobile bill supplied for Vikram Sethi is dated 12 January 2026, seven months old. Neither is a judgement call, so the re-ask names exactly those two defects and nothing else.",
-  "fs-3y":
-    "The FY2024 and FY2025 statements are audited, signed and carry UDINs, so they are accepted and already usable for two years of the spread. The FY2026 set fails attestation: no auditor signature, no UDIN and the balance sheet is headed 'provisional'. CCB ratio policy requires three audited years for a term loan of this size, so this is blocking. The auditor has committed to 19 August 2026, which still clears the 29 August target sanction date.",
-  "sanction-others":
-    "Legibility passed. Completeness is a warning rather than a failure: the Kolhapur District Co-operative Bank letter is genuine and readable, but the CIBIL commercial report shows two live term loans against this borrower. One sanction letter is therefore missing, which understates total obligations and would flow through to the debt-service ratio at spread stage.",
+  "property-docs":
+    "Extraction was clean at 91% — the defect is not the document, it is what the document says. The title deed for the Coimbatore industrial unit records a mortgage in favour of Meridian Bank dated March 2024. That is read against two other documents already on file: the client's own declaration of nil existing facilities dated 06 August 2026, and the CCB bank statement set, which covers one account when the client has declared a second account with Meridian Bank ending 8830. Three documents, cross-read at collection time, produce a contradiction that would otherwise have surfaced only at appraisal. The re-ask asks Lakshmi Iyer to explain the charge, and a charge search has been raised in parallel.",
+  "bank-stmt":
+    "Legibility and period coverage both passed for the CCB current account: twelve continuous months to 31 July 2026 with no gap. Account coverage failed. The application declares two operating accounts and only one has been supplied; the Meridian Bank account ending 8830 is absent. Drawing power and turnover-to-credits testing cannot be completed on one account of two, so this is blocking rather than a caveat.",
+  "stock-statement":
+    "Extraction is reliable at 88% and the format is the bank's own. The failure is recency: the statement is drawn as at 30 June 2026, which is 52 days old at today's date against a 30-day maximum for stock and book-debt statements under CCB working-capital policy. Drawing power on a INR 2.85 cr cash credit limit cannot be computed on a stock position that old, so the re-ask is specific — the same statement drawn as at 31 July 2026.",
+  "board-resolution":
+    "The text of the resolution is correct and names the right facility and the right authorised signatories. Two form rules failed: it carries no director signature, and it is not on company letterhead. A borrowing resolution that is unsigned is not evidence of authority, so it cannot be cleared. The re-ask is narrow — the same resolution, signed by both directors, on Southgate letterhead.",
   gst:
-    "Coverage is complete for twenty-four months with no missing filing. The warning is filing discipline, not data quality: three FY2026 filings were late by 9, 14 and 17 days. That does not stop the appraisal, but it belongs in the memo's conduct narrative.",
+    "The eight returns supplied are genuine GSTR-3B filings and reconcile internally. Coverage failed: the requirement is twelve months and the set runs December 2025 to July 2026. August to November 2025 are absent, which is the exact ask. Nothing about the filings that did arrive is in doubt.",
+  "fs-fy2026-prov":
+    "The profit and loss for the part year is present and legible. Pages 3 to 5 are absent, which removes the balance sheet entirely, so no working-capital cycle or leverage position can be read for the current year. The audited FY2024 and FY2025 sets are unaffected and remain in the evidence set.",
 };
 
 function ValidationScreen() {
   const { caseId } = Route.useParams();
   const c = useDocReadyCase(caseId);
-  const [open, setOpen] = useState<string | null>("kyc-directors");
+  const [open, setOpen] = useState<string | null>("property-docs");
 
   if (!c) return null;
   const checked = c.items.filter((i) => (i.checks?.length ?? 0) > 0);

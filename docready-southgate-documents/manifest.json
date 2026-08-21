@@ -1,0 +1,263 @@
+{
+  "set_name": "docready-southgate-documents",
+  "generated_for": "Banking working-capital loan application demo (prototype document viewer)",
+  "disclaimer": "Every document in this set is a SYNTHETIC specimen created for demonstration. Not a real instrument. All identifiers are fictional.",
+  "reference_date": "21 August 2026",
+  "application": {
+    "received": "04 August 2026",
+    "cash_credit": "INR 2,85,00,000",
+    "term_loan": "INR 1,40,00,000",
+    "total": "INR 4,25,00,000",
+    "applicant": "Southgate Textiles Private Limited",
+    "cin": "U17291TZ2016PTC027431",
+    "pan": "AAHCS6612M",
+    "gstin": "33AAHCS6612M1ZQ",
+    "primary_bank": "Continental Commercial Bank, Coimbatore SME Branch",
+    "primary_account": "914020055831447"
+  },
+  "verdict_legend": {
+    "satisfied": "Requirement met by a well-formed document.",
+    "insufficient": "Document present but defective (see defect_type).",
+    "missing": "Required document not provided."
+  },
+  "defect_legend": {
+    "stale": "Position is out of date as at the reference date.",
+    "incomplete": "Document or series is missing pages/periods/execution.",
+    "inconsistent": "Content conflicts with another document in the set."
+  },
+  "document_count": 14,
+  "total_pages": 63,
+  "documents": [
+    {
+      "filename": "Southgate_Title_Deed_Coimbatore_Unit.pdf",
+      "title": "Registered Sale Deed - Coimbatore Industrial Unit (Plot 47)",
+      "requirement": "Clear title to collateral property, free of prior encumbrance",
+      "verdict": "insufficient",
+      "defect_type": "inconsistent",
+      "reason": "Page 3 records a subsisting equitable mortgage of the collateral in favour of Meridian Bank, contradicting the borrower's declaration of unencumbered security.",
+      "page_count": 4,
+      "evidence": [
+        {
+          "page": 3,
+          "snippet": "MORTGAGE BY DEPOSIT OF TITLE DEEDS"
+        },
+        {
+          "page": 3,
+          "snippet": "MERIDIAN BANK, Coimbatore Branch"
+        },
+        {
+          "page": 3,
+          "snippet": "Rs. 1,75,00,000 (Rupees One Crore Seventy-Five Lakh only)"
+        },
+        {
+          "page": 3,
+          "snippet": "14 March 2024"
+        }
+      ],
+      "contradicts": [
+        "Southgate_Nil_Facilities_Declaration.pdf",
+        "Southgate_CCB_CA_Statements_12m.pdf"
+      ]
+    },
+    {
+      "filename": "Southgate_Nil_Facilities_Declaration.pdf",
+      "title": "Declaration of Nil Existing Facilities and Unencumbered Security",
+      "requirement": "Borrower declaration of existing borrowings and charges",
+      "verdict": "insufficient",
+      "defect_type": "inconsistent",
+      "reason": "Declares no existing facilities and unencumbered collateral, directly contradicted by the Meridian mortgage on the title deed and the Meridian EMI outflows in the bank statement.",
+      "page_count": 1,
+      "evidence": [
+        {
+          "page": 1,
+          "snippet": "does not have any existing credit facilities"
+        },
+        {
+          "page": 1,
+          "snippet": "free from any encumbrance, mortgage, charge or prior claim"
+        }
+      ]
+    },
+    {
+      "filename": "Southgate_CCB_CA_Statements_12m.pdf",
+      "title": "Continental Commercial Bank - 12-Month Current Account Statement",
+      "requirement": "Statements for all bank accounts (12 months)",
+      "verdict": "insufficient",
+      "defect_type": "incomplete",
+      "reason": "Only one account is covered; a recurring monthly 'MERIDIAN BANK EMI DR' of 2,18,750 evidences a second banking relationship whose statement was never provided.",
+      "page_count": 10,
+      "evidence": [
+        {
+          "page": 1,
+          "snippet": "MERIDIAN BANK EMI DR"
+        },
+        {
+          "page": 10,
+          "snippet": "This statement pertains to current account 914020055831447 only"
+        }
+      ]
+    },
+    {
+      "filename": "Southgate_Stock_BookDebt_30Jun2026.pdf",
+      "title": "Stock and Book-Debt Statement as at 30 June 2026",
+      "requirement": "Current stock and book-debt statement for drawing power",
+      "verdict": "insufficient",
+      "defect_type": "stale",
+      "reason": "Position stated as at 30 June 2026 and signed 04 July 2026 - 52 days old as at the reference date of 21 August 2026; a current statement is required.",
+      "page_count": 2,
+      "evidence": [
+        {
+          "page": 1,
+          "snippet": "AS AT 30 JUNE 2026"
+        },
+        {
+          "page": 2,
+          "snippet": "Date of signing: 04 July 2026"
+        }
+      ]
+    },
+    {
+      "filename": "Southgate_GSTR3B_Dec2025_Jul2026.pdf",
+      "title": "GSTR-3B Returns Compilation (December 2025 - July 2026)",
+      "requirement": "Twelve months of GST returns",
+      "verdict": "insufficient",
+      "defect_type": "incomplete",
+      "reason": "Only eight periods (Dec 2025 - Jul 2026) are enclosed; the returns for August, September, October and November 2025 are absent from the file.",
+      "page_count": 9,
+      "evidence": [
+        {
+          "page": 1,
+          "snippet": "August 2025, September 2025, October 2025 and November 2025 are not enclosed"
+        },
+        {
+          "page": 1,
+          "snippet": "Returns enclosed in this compilation (eight periods)"
+        }
+      ]
+    },
+    {
+      "filename": "Southgate_Provisional_FY2026.pdf",
+      "title": "Provisional Financial Statements - 9M ended 31 December 2025",
+      "requirement": "Provisional financial statements (P&L and balance sheet)",
+      "verdict": "insufficient",
+      "defect_type": "incomplete",
+      "reason": "The balance sheet is absent - page numbering jumps from 'Page 2 of 7' to 'Page 6 of 7', so pages 3 to 5 carrying the balance sheet are missing.",
+      "page_count": 4,
+      "evidence": [
+        {
+          "page": 3,
+          "snippet": "Page 6 of 7"
+        },
+        {
+          "page": 2,
+          "snippet": "The Balance Sheet as at 31 December 2025, together with its supporting schedules, is set out on pages 3 to 5"
+        }
+      ]
+    },
+    {
+      "filename": "Southgate_Board_Resolution_draft.pdf",
+      "title": "Board Resolution - Borrowing Authority (Draft)",
+      "requirement": "Certified board resolution authorising borrowing (Sec 179(3)(d))",
+      "verdict": "insufficient",
+      "defect_type": "incomplete",
+      "reason": "On plain paper with no company letterhead, and the signature block is blank - no name, designation, signature or date - so the resolution is unexecuted.",
+      "page_count": 1,
+      "evidence": [
+        {
+          "page": 1,
+          "snippet": "to be signed by the Chairman / Company Secretary"
+        },
+        {
+          "page": 1,
+          "snippet": "Section 179(3)(d)"
+        }
+      ]
+    },
+    {
+      "filename": "Southgate_Certificate_of_Incorporation.pdf",
+      "title": "Certificate of Incorporation",
+      "requirement": "Certificate of incorporation with CIN",
+      "verdict": "satisfied",
+      "defect_type": null,
+      "reason": "Valid certificate of incorporation dated 18 March 2016 with CIN U17291TZ2016PTC027431 and PAN AAHCS6612M.",
+      "page_count": 1,
+      "evidence": []
+    },
+    {
+      "filename": "Southgate_MOA_AOA.pdf",
+      "title": "Memorandum and Articles of Association",
+      "requirement": "Constitutional documents with objects and borrowing powers",
+      "verdict": "satisfied",
+      "defect_type": null,
+      "reason": "Objects clause covers manufacture and sale of textiles and the articles confer borrowing powers (Article 84 / Section 179(3)(d)).",
+      "page_count": 6,
+      "evidence": []
+    },
+    {
+      "filename": "Southgate_Entity_PAN.pdf",
+      "title": "Entity PAN Allotment Intimation",
+      "requirement": "Company PAN proof",
+      "verdict": "satisfied",
+      "defect_type": null,
+      "reason": "PAN AAHCS6612M allotted to Southgate Textiles Private Limited, matching all other documents in the set.",
+      "page_count": 1,
+      "evidence": []
+    },
+    {
+      "filename": "Southgate_Director_KYC_Iyer_x2.pdf",
+      "title": "Director KYC Summary Sheets (x2)",
+      "requirement": "KYC for each director",
+      "verdict": "satisfied",
+      "defect_type": null,
+      "reason": "KYC summary for both directors with DIN, date of birth and address; personal identifiers are shown masked.",
+      "page_count": 2,
+      "evidence": []
+    },
+    {
+      "filename": "Southgate_Audited_FS_FY2024.pdf",
+      "title": "Audited Financial Statements FY2024",
+      "requirement": "Audited financial statements (latest two years)",
+      "verdict": "satisfied",
+      "defect_type": null,
+      "reason": "Audited statements to 31 March 2024 with clean auditor's opinion; revenue 18,42,67,400, EBITDA 2,21,12,088, PAT 87,34,210, net worth 4,62,18,750.",
+      "page_count": 9,
+      "evidence": []
+    },
+    {
+      "filename": "Southgate_Audited_FS_FY2025.pdf",
+      "title": "Audited Financial Statements FY2025",
+      "requirement": "Audited financial statements (latest two years)",
+      "verdict": "satisfied",
+      "defect_type": null,
+      "reason": "Audited statements to 31 March 2025 with FY2024 comparatives; revenue 23,17,84,900, EBITDA 2,89,73,113, PAT 1,14,62,880, net worth 5,76,81,630.",
+      "page_count": 9,
+      "evidence": []
+    },
+    {
+      "filename": "Southgate_ITR_FY2024_FY2025.pdf",
+      "title": "Income Tax Return Acknowledgements FY2024 & FY2025",
+      "requirement": "Income tax returns (latest two years)",
+      "verdict": "satisfied",
+      "defect_type": null,
+      "reason": "ITR-6 acknowledgements and computations for AY 2024-25 and AY 2025-26, reconciling to the audited profits.",
+      "page_count": 4,
+      "evidence": []
+    }
+  ],
+  "missing_requirements": [
+    {
+      "filename": null,
+      "title": "Meridian Bank account statement (second banking relationship)",
+      "requirement": "Statements for all bank accounts (12 months)",
+      "verdict": "missing",
+      "defect_type": null,
+      "reason": "A second banking relationship with Meridian Bank (account ending 8830) is evidenced by the monthly EMI in the Continental Commercial Bank statement and by the Meridian mortgage on the title deed, but no statement for that account was submitted.",
+      "page_count": 0,
+      "evidence": [],
+      "related_documents": [
+        "Southgate_CCB_CA_Statements_12m.pdf",
+        "Southgate_Title_Deed_Coimbatore_Unit.pdf"
+      ]
+    }
+  ]
+}

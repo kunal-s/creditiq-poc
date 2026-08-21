@@ -98,9 +98,14 @@ function ReadinessConsole() {
           {[
             { label: "Open cases", value: totals.open, note: "in collection now" },
             { label: "Blocking gaps", value: totals.blocking, note: "cannot be appraised yet", tone: "text-destructive" },
-            { label: "Ready for handoff", value: totals.ready, note: "no blocking document missing", tone: "text-positive" },
-            { label: "Documents outstanding", value: totals.outstanding, note: "across all open cases" },
-            { label: "Average age", value: `${totals.avgAge} days`, note: "against a 12-day target" },
+            {
+              label: "Ready for credit review",
+              value: totals.ready,
+              note: "85% gate met, nothing blocking",
+              tone: "text-positive",
+            },
+            { label: "Requirements outstanding", value: totals.outstanding, note: "insufficient or missing" },
+            { label: "Average age", value: `${totals.avgAge} days`, note: "against a 12-day escalation point" },
           ].map((k) => (
             <div key={k.label} className="rounded border border-border bg-surface px-4 py-3">
               <p className="field-label">{k.label}</p>

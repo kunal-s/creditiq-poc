@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Sparkles, Upload } from "lucide-react";
+import { ChevronDown, ChevronRight, FileText, Sparkles, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Panel } from "@/components/identity/chips";
 import {
@@ -14,6 +14,8 @@ import {
   type ChecklistItem,
   type DocStatus,
 } from "@/data/docready";
+import { useDocViewer } from "@/components/docviewer/DocViewer";
+import { openingPage } from "@/data/doc-manifest";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/docready/$caseId/checklist")({
@@ -64,6 +66,7 @@ function ChecklistScreen() {
   const c = useDocReadyCase(caseId);
   const [open, setOpen] = useState<string | null>("property-docs");
   const [derived, setDerived] = useState(false);
+  const viewer = useDocViewer();
 
   if (!c) return null;
   const r = readiness(c);
@@ -150,7 +153,26 @@ function ChecklistScreen() {
                                 <dl className="grid gap-x-6 gap-y-1 text-[12px] sm:grid-cols-2">
                                   <div className="flex gap-2">
                                     <dt className="w-24 shrink-0 text-muted-foreground">File</dt>
-                                    <dd className="min-w-0 text-foreground">{item.fileName}</dd>
+                                    <dd className="min-w-0 text-foreground">
+                                      {viewer.doc(item.fileName) ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const doc = viewer.doc(item.fileName)!;
+                                            viewer.open({
+                                              mode: "single",
+                                              filename: doc.filename!,
+                                              page: openingPage(doc),
+                                            });
+                                          }}
+                                          className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+                                        >
+                                          <FileText className="h-3 w-3" /> {item.fileName}
+                                        </button>
+                                      ) : (
+                                        item.fileName
+                                      )}
+                                    </dd>
                                   </div>
                                   <div className="flex gap-2">
                                     <dt className="w-24 shrink-0 text-muted-foreground">Received</dt>
@@ -246,6 +268,22 @@ function ChecklistScreen() {
                                     className="rounded border border-border px-2.5 py-1 text-[12px] font-medium text-muted-foreground hover:bg-muted"
                                   >
                                     Waive with reason
+                                  </button>
+                                )}
+                                {viewer.doc(item.fileName) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const doc = viewer.doc(item.fileName)!;
+                                      viewer.open({
+                                        mode: "single",
+                                        filename: doc.filename!,
+                                        page: openingPage(doc),
+                                      });
+                                    }}
+                                    className="inline-flex items-center gap-1.5 rounded border border-border px-2.5 py-1 text-[12px] font-medium text-primary hover:bg-muted"
+                                  >
+                                    <FileText className="h-3.5 w-3.5" /> Open document
                                   </button>
                                 )}
                                 {item.checks && item.checks.length > 0 && (

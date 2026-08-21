@@ -70,8 +70,8 @@ function ReadinessConsole() {
     return {
       open: cases.length,
       blocking: scores.filter((s) => s.blockingOpen > 0).length,
-      ready: scores.filter((s) => s.blockingOpen === 0).length,
-      outstanding: scores.reduce((n, s) => n + s.outstanding, 0),
+      ready: scores.filter((s) => s.blockingOpen === 0 && s.reviewGate).length,
+      outstanding: scores.reduce((n, s) => n + s.insufficient + s.missing, 0),
       avgAge: Math.round(cases.reduce((n, c) => n + c.daysInCollection, 0) / cases.length),
     };
   }, [cases]);
@@ -85,7 +85,7 @@ function ReadinessConsole() {
         actions={
           <Link
             to="/docready/$caseId/checklist"
-            params={{ caseId: "DR-2026-0142" }}
+            params={{ caseId: "SGT-2026-0147" }}
             className="rounded bg-primary px-3 py-1.5 text-[12.5px] font-medium text-primary-foreground hover:bg-primary/90"
           >
             Open Southgate Textiles

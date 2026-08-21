@@ -21,7 +21,7 @@ const docCache = new Map<string, Promise<any>>();
 function loadDoc(url: string) {
   let existing = docCache.get(url);
   if (!existing) {
-    existing = getPdfjs().then((pdfjs) => pdfjs.getDocument(url).promise);
+    existing = getPdfjs().then((pdfjs) => pdfjs.getDocument({ url }).promise);
     docCache.set(url, existing);
   }
   return existing;

@@ -36,10 +36,19 @@ function ReadinessScreen() {
   const soft = c.items.filter((i) => !i.blocking && i.status !== "accepted" && i.status !== "waived");
   const accepted = c.items.filter((i) => i.status === "accepted");
 
+  const gateOpen = blocking.length === 0 && r.reviewGate;
+  const oldest = [...c.items]
+    .filter((i) => i.status !== "accepted" && i.status !== "waived" && typeof i.ageDays === "number")
+    .sort((a, b) => (b.ageDays ?? 0) - (a.ageDays ?? 0))[0];
+
   const handoff = () => {
     const camId = docReadyActions.handoff(c.id);
     if (!camId) {
-      toast.error("Blocking documents are still outstanding");
+      toast.error(
+        blocking.length > 0
+          ? "Blocking documents are still outstanding"
+          : `Readiness is ${r.score}%, below the 85% credit review gate`,
+      );
       return;
     }
     toast.success(`Appraisal ${camId} created for ${c.borrower}`);
@@ -49,16 +58,18 @@ function ReadinessScreen() {
   return (
     <div className="grid gap-4 px-6 py-5 [@media(min-width:1500px)]:grid-cols-[minmax(0,1fr)_360px]">
       <div className="min-w-0 space-y-4">
-        {blocking.length > 0 ? (
+        {!gateOpen ? (
           <div className="flex flex-wrap items-start gap-3 rounded border border-destructive/35 bg-destructive/10 px-4 py-3">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
             <div className="min-w-0">
               <p className="text-[13px] font-semibold text-destructive">
-                {blocking.length} blocking document{blocking.length === 1 ? "" : "s"} outstanding — handoff is disabled
+                Not ready for credit review — {r.score}% against an 85% gate
+                {blocking.length > 0 &&
+                  `, with ${blocking.length} blocking requirement${blocking.length === 1 ? "" : "s"} open`}
               </p>
               <p className="mt-1 max-w-3xl text-[12.5px] leading-relaxed text-destructive/90">
                 An appraisal started on this file would stall at spread or cross-verification, so the handoff stays
-                shut until each of these is accepted or waived with a reason.
+                shut until the gate is met and every blocking requirement is satisfied or waived with a reason.
               </p>
             </div>
           </div>
@@ -66,18 +77,16 @@ function ReadinessScreen() {
           <div className="flex flex-wrap items-start gap-3 rounded border border-positive/40 bg-positive-soft px-4 py-3">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-positive" />
             <div className="min-w-0">
-              <p className="text-[13px] font-semibold text-positive">
-                File is complete enough to underwrite
-              </p>
+              <p className="text-[13px] font-semibold text-positive">Ready for credit review</p>
               <p className="mt-1 max-w-3xl text-[12.5px] leading-relaxed text-positive/90">
-                Nothing blocking remains. Handing off creates the appraisal, carries the identifiers and facility ask
-                across, and registers the accepted documents as already present.
+                The 85% gate is met and nothing blocking remains. Handing off creates the appraisal, carries the
+                identifiers and facility ask across, and registers the satisfied documents as already present.
               </p>
             </div>
           </div>
         )}
 
-        <Panel title="Readiness score" subtitle="Weighted by document importance, not a plain count of files.">
+        <Panel title="Readiness score" subtitle="Weighted by section and by document importance, not a plain count of files.">
           <div className="px-4 py-4">
             <div className="flex items-end gap-4">
               <p className="tabular text-[38px] font-semibold leading-none text-foreground">{r.score}%</p>
@@ -86,16 +95,49 @@ function ReadinessScreen() {
                   <div
                     className={cn(
                       "h-full rounded-full",
-                      r.score >= 90 ? "bg-positive" : r.score >= 65 ? "bg-flag" : "bg-destructive",
+                      r.score >= 100 ? "bg-positive" : r.score >= 85 ? "bg-positive" : r.score >= 65 ? "bg-flag" : "bg-destructive",
                     )}
                     style={{ width: `${r.score}%` }}
                   />
                 </div>
                 <p className="mt-1.5 text-[11.5px] text-muted-foreground">
-                  {r.accepted} of {r.total} items settled · {r.inReview} in review · {r.outstanding} outstanding
+                  {r.accepted} satisfied · {r.insufficient} insufficient · {r.missing} missing, of {r.total}{" "}
+                  requirements
                 </p>
               </div>
             </div>
+
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              {STAGE_GATES.map((g) => {
+                const met = r.score >= g.threshold;
+                return (
+                  <div
+                    key={g.label}
+                    className={cn(
+                      "rounded border px-3 py-2",
+                      met ? "border-positive/40 bg-positive-soft" : "border-border bg-surface-muted/50",
+                    )}
+                  >
+                    <p className="flex items-center justify-between gap-2 text-[12.5px] font-medium text-foreground">
+                      <span>{g.label}</span>
+                      <span className={cn("tabular text-[11.5px]", met ? "text-positive" : "text-muted-foreground")}>
+                        {met ? "Met" : "Not met"}
+                      </span>
+                    </p>
+                    <p className="tabular mt-0.5 text-[11.5px] text-muted-foreground">
+                      threshold {g.threshold}% · now {r.score}%
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+
+            {oldest && (
+              <p className="mt-3 text-[12px] text-muted-foreground">
+                Oldest open requirement: <span className="text-foreground">{oldest.name}</span>, {oldest.ageDays} days
+                {oldest.status === "not-requested" && ", never requested"}.
+              </p>
+            )}
           </div>
         </Panel>
 

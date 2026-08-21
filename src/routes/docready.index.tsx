@@ -249,10 +249,12 @@ function ReadinessConsole() {
             <Sparkles className="h-3.5 w-3.5 text-primary" /> Copilot read on the queue
           </p>
           <p className="mt-1.5 max-w-4xl text-[12.5px] leading-relaxed text-muted-foreground">
-            Two cases will slip their target sanction date unless the outstanding ask closes this week. Southgate
-            Textiles is one signed audited statement and one stock statement away from handoff; Vashi Cold Storage
-            LLP has been open 21 days with three blocking documents and has not responded since 1 August 2026, which
-            is the pattern that usually ends in a withdrawn application.
+            Southgate Textiles at 64% is the case that needs your attention today: three blocking gaps, and one of them
+            is not a missing page but a contradiction — the Coimbatore title deed carries a Meridian Bank mortgage dated
+            March 2024 against a client declaration of nil existing facilities. The debtors and creditors ageing has been
+            open 13 days with two reminders, so it is past the 12-day escalation point. Fairwind Components reached 100%
+            and was cleared by Thomas Weber on 14 August 2026, so it can hand off to appraisal now. Brightline Foods was
+            received on 19 August; the collection link has gone to the client and nothing has come back yet.
           </p>
         </div>
       </div>

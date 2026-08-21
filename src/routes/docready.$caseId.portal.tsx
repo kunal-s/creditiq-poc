@@ -24,6 +24,13 @@ export const Route = createFileRoute("/docready/$caseId/portal")({
   component: PortalPreview,
 });
 
+const SECTION_LABEL: Record<Section, string> = {
+  "Constitution and KYC": "A. Company and identity papers",
+  Financials: "B. Accounts, tax and GST",
+  "Banking and operations": "C. Banking and business operations",
+  "Collateral and security": "D. Security and property",
+};
+
 function PortalPreview() {
   const { caseId } = Route.useParams();
   const c = useDocReadyCase(caseId);

@@ -199,10 +199,10 @@ function ReadinessScreen() {
             <button
               type="button"
               onClick={handoff}
-              disabled={blocking.length > 0}
+              disabled={!gateOpen}
               className={cn(
                 "mt-3 flex w-full items-center justify-center gap-1.5 rounded px-3 py-2 text-[12.5px] font-medium",
-                blocking.length > 0
+                !gateOpen
                   ? "cursor-not-allowed bg-muted text-muted-foreground"
                   : "bg-primary text-primary-foreground hover:bg-primary/90",
               )}
@@ -211,21 +211,35 @@ function ReadinessScreen() {
             </button>
           )}
           <p className="mt-2 text-[11.5px] text-muted-foreground">
-            {blocking.length > 0
-              ? `Disabled until ${blocking.length} blocking item${blocking.length === 1 ? " is" : "s are"} settled.`
-              : "The handoff is written to the audit trail with the accepted document set attached."}
+            {!gateOpen
+              ? blocking.length > 0
+                ? `Disabled until the 85% gate is met and ${blocking.length} blocking requirement${
+                    blocking.length === 1 ? " is" : "s are"
+                  } settled.`
+                : `Disabled at ${r.score}%; the credit review gate is 85%.`
+              : "The handoff is written to the audit trail with the satisfied document set attached."}
           </p>
         </div>
 
         <div className="rounded border border-border bg-surface p-4">
           <p className="flex items-center gap-1.5 text-[13px] font-semibold">
-            <Sparkles className="h-3.5 w-3.5 text-primary" /> Predicted readiness
+            <Sparkles className="h-3.5 w-3.5 text-primary" /> Next best actions
           </p>
-          <p className="mt-1.5 text-[12.5px] leading-relaxed text-muted-foreground">
-            {blocking.length > 0
-              ? "On the auditor's 19 August commitment for the signed FY2026 statement, and the client's two-day median response on portal asks, this case reaches handoff on 20 August 2026 — nine days ahead of the 29 August target sanction date. The single risk is the bank statements: if Account Aggregator consent is not granted, manual statements for two accounts historically add four to six days."
-              : "Nothing is pending. On the last four MSME cases, a file handed off at this readiness level reached sanction in 6.2 days against a 12-day book average."}
-          </p>
+          {gateOpen ? (
+            <p className="mt-1.5 text-[12.5px] leading-relaxed text-muted-foreground">
+              Nothing is pending. {c.borrower} cleared every applicable requirement, so this file can be handed to
+              credit appraisal now and the borrower will not be asked for a document a second time.
+            </p>
+          ) : (
+            <ol className="mt-1.5 space-y-2 text-[12.5px] leading-relaxed text-muted-foreground">
+              {(c.nextActions ?? []).map((a, idx) => (
+                <li key={a} className="flex gap-2">
+                  <span className="tabular shrink-0 font-medium text-foreground">{idx + 1}.</span>
+                  <span>{a}</span>
+                </li>
+              ))}
+            </ol>
+          )}
         </div>
 
         <div className="rounded border border-border bg-surface p-4">

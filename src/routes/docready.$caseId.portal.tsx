@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CheckCircle2, Lock, Upload, Building2 } from "lucide-react";
 import { toast } from "sonner";
-import { docReadyActions, useDocReadyCase } from "@/data/docready";
+import { docReadyActions, useDocReadyCase, SECTIONS, type Section } from "@/data/docready";
 import { TENANT } from "@/data/seed";
 import { cn } from "@/lib/utils";
 

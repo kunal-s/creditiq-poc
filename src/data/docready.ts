@@ -102,6 +102,7 @@ export type DocReadyCase = {
   clearedBy?: string | undefined;
   clearedAt?: string | undefined;
   scoreOverride?: number | undefined;
+  nextActions?: string[] | undefined;
   items: ChecklistItem[];
   chase: ChaseEvent[];
   handedOffTo?: string | undefined;

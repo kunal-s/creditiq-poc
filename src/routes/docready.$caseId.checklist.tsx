@@ -169,7 +169,8 @@ function ChecklistScreen() {
 
                               {item.rejection && (
                                 <p className="rounded border border-destructive/30 bg-destructive/10 px-3 py-2 text-[12px] leading-relaxed text-destructive">
-                                  Rejected — {item.rejection}
+                                  {item.insufficiency ? INSUFFICIENCY_LABEL[item.insufficiency] : "Insufficient"} —{" "}
+                                  {item.rejection}
                                 </p>
                               )}
                               {item.waiverReason && (

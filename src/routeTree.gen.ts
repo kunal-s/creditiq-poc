@@ -20,6 +20,7 @@ import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AppraisalsIndexRouteImport } from './routes/appraisals.index'
 import { Route as AppraisalsNewRouteImport } from './routes/appraisals.new'
 import { Route as BorrowersSlugRouteImport } from './routes/borrowers.$slug'
+import { Route as DocreadyIndexRouteImport } from './routes/docready.index'
 import { Route as EntitiesSlugRouteImport } from './routes/entities.$slug'
 import { Route as PeopleSlugRouteImport } from './routes/people.$slug'
 import { Route as AppraisalsIdIndexRouteImport } from './routes/appraisals.$id.index'
@@ -86,6 +87,11 @@ const AppraisalsNewRoute = AppraisalsNewRouteImport.update({
 const BorrowersSlugRoute = BorrowersSlugRouteImport.update({
   id: '/borrowers/$slug',
   path: '/borrowers/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocreadyIndexRoute = DocreadyIndexRouteImport.update({
+  id: '/docready/',
+  path: '/docready/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EntitiesSlugRoute = EntitiesSlugRouteImport.update({
@@ -164,6 +170,7 @@ export interface FileRoutesByFullPath {
   '/entities/$slug': typeof EntitiesSlugRoute
   '/people/$slug': typeof PeopleSlugRoute
   '/appraisals/': typeof AppraisalsIndexRoute
+  '/docready/': typeof DocreadyIndexRoute
   '/appraisals/$id/consent': typeof AppraisalsIdConsentRoute
   '/appraisals/$id/cross-verification': typeof AppraisalsIdCrossVerificationRoute
   '/appraisals/$id/data': typeof AppraisalsIdDataRoute
@@ -189,6 +196,7 @@ export interface FileRoutesByTo {
   '/entities/$slug': typeof EntitiesSlugRoute
   '/people/$slug': typeof PeopleSlugRoute
   '/appraisals': typeof AppraisalsIndexRoute
+  '/docready': typeof DocreadyIndexRoute
   '/appraisals/$id/consent': typeof AppraisalsIdConsentRoute
   '/appraisals/$id/cross-verification': typeof AppraisalsIdCrossVerificationRoute
   '/appraisals/$id/data': typeof AppraisalsIdDataRoute
@@ -215,6 +223,7 @@ export interface FileRoutesById {
   '/entities/$slug': typeof EntitiesSlugRoute
   '/people/$slug': typeof PeopleSlugRoute
   '/appraisals/': typeof AppraisalsIndexRoute
+  '/docready/': typeof DocreadyIndexRoute
   '/appraisals/$id/consent': typeof AppraisalsIdConsentRoute
   '/appraisals/$id/cross-verification': typeof AppraisalsIdCrossVerificationRoute
   '/appraisals/$id/data': typeof AppraisalsIdDataRoute
@@ -242,6 +251,7 @@ export interface FileRouteTypes {
     | '/entities/$slug'
     | '/people/$slug'
     | '/appraisals/'
+    | '/docready/'
     | '/appraisals/$id/consent'
     | '/appraisals/$id/cross-verification'
     | '/appraisals/$id/data'
@@ -267,6 +277,7 @@ export interface FileRouteTypes {
     | '/entities/$slug'
     | '/people/$slug'
     | '/appraisals'
+    | '/docready'
     | '/appraisals/$id/consent'
     | '/appraisals/$id/cross-verification'
     | '/appraisals/$id/data'
@@ -292,6 +303,7 @@ export interface FileRouteTypes {
     | '/entities/$slug'
     | '/people/$slug'
     | '/appraisals/'
+    | '/docready/'
     | '/appraisals/$id/consent'
     | '/appraisals/$id/cross-verification'
     | '/appraisals/$id/data'
@@ -318,6 +330,7 @@ export interface RootRouteChildren {
   EntitiesSlugRoute: typeof EntitiesSlugRoute
   PeopleSlugRoute: typeof PeopleSlugRoute
   AppraisalsIndexRoute: typeof AppraisalsIndexRoute
+  DocreadyIndexRoute: typeof DocreadyIndexRoute
   AppraisalsIdConsentRoute: typeof AppraisalsIdConsentRoute
   AppraisalsIdCrossVerificationRoute: typeof AppraisalsIdCrossVerificationRoute
   AppraisalsIdDataRoute: typeof AppraisalsIdDataRoute
@@ -407,6 +420,13 @@ declare module '@tanstack/react-router' {
       path: '/borrowers/$slug'
       fullPath: '/borrowers/$slug'
       preLoaderRoute: typeof BorrowersSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docready/': {
+      id: '/docready/'
+      path: '/docready'
+      fullPath: '/docready/'
+      preLoaderRoute: typeof DocreadyIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/entities/$slug': {
@@ -510,6 +530,7 @@ const rootRouteChildren: RootRouteChildren = {
   EntitiesSlugRoute: EntitiesSlugRoute,
   PeopleSlugRoute: PeopleSlugRoute,
   AppraisalsIndexRoute: AppraisalsIndexRoute,
+  DocreadyIndexRoute: DocreadyIndexRoute,
   AppraisalsIdConsentRoute: AppraisalsIdConsentRoute,
   AppraisalsIdCrossVerificationRoute: AppraisalsIdCrossVerificationRoute,
   AppraisalsIdDataRoute: AppraisalsIdDataRoute,

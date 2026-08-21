@@ -20,6 +20,8 @@ import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AppraisalsIndexRouteImport } from './routes/appraisals.index'
 import { Route as AppraisalsNewRouteImport } from './routes/appraisals.new'
 import { Route as BorrowersSlugRouteImport } from './routes/borrowers.$slug'
+import { Route as DocreadyIndexRouteImport } from './routes/docready.index'
+import { Route as DocreadyCaseIdRouteImport } from './routes/docready.$caseId'
 import { Route as EntitiesSlugRouteImport } from './routes/entities.$slug'
 import { Route as PeopleSlugRouteImport } from './routes/people.$slug'
 import { Route as AppraisalsIdIndexRouteImport } from './routes/appraisals.$id.index'
@@ -32,6 +34,12 @@ import { Route as AppraisalsIdRatingRouteImport } from './routes/appraisals.$id.
 import { Route as AppraisalsIdSpreadRouteImport } from './routes/appraisals.$id.spread'
 import { Route as AppraisalsIdSubmissionRouteImport } from './routes/appraisals.$id.submission'
 import { Route as AppraisalsIdUploadRouteImport } from './routes/appraisals.$id.upload'
+import { Route as DocreadyCaseIdIndexRouteImport } from './routes/docready.$caseId.index'
+import { Route as DocreadyCaseIdChecklistRouteImport } from './routes/docready.$caseId.checklist'
+import { Route as DocreadyCaseIdCollectionRouteImport } from './routes/docready.$caseId.collection'
+import { Route as DocreadyCaseIdPortalRouteImport } from './routes/docready.$caseId.portal'
+import { Route as DocreadyCaseIdReadinessRouteImport } from './routes/docready.$caseId.readiness'
+import { Route as DocreadyCaseIdValidationRouteImport } from './routes/docready.$caseId.validation'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -86,6 +94,16 @@ const AppraisalsNewRoute = AppraisalsNewRouteImport.update({
 const BorrowersSlugRoute = BorrowersSlugRouteImport.update({
   id: '/borrowers/$slug',
   path: '/borrowers/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocreadyIndexRoute = DocreadyIndexRouteImport.update({
+  id: '/docready/',
+  path: '/docready/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocreadyCaseIdRoute = DocreadyCaseIdRouteImport.update({
+  id: '/docready/$caseId',
+  path: '/docready/$caseId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EntitiesSlugRoute = EntitiesSlugRouteImport.update({
@@ -149,6 +167,38 @@ const AppraisalsIdUploadRoute = AppraisalsIdUploadRouteImport.update({
   path: '/appraisals/$id/upload',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DocreadyCaseIdIndexRoute = DocreadyCaseIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DocreadyCaseIdRoute,
+} as any)
+const DocreadyCaseIdChecklistRoute = DocreadyCaseIdChecklistRouteImport.update({
+  id: '/checklist',
+  path: '/checklist',
+  getParentRoute: () => DocreadyCaseIdRoute,
+} as any)
+const DocreadyCaseIdCollectionRoute =
+  DocreadyCaseIdCollectionRouteImport.update({
+    id: '/collection',
+    path: '/collection',
+    getParentRoute: () => DocreadyCaseIdRoute,
+  } as any)
+const DocreadyCaseIdPortalRoute = DocreadyCaseIdPortalRouteImport.update({
+  id: '/portal',
+  path: '/portal',
+  getParentRoute: () => DocreadyCaseIdRoute,
+} as any)
+const DocreadyCaseIdReadinessRoute = DocreadyCaseIdReadinessRouteImport.update({
+  id: '/readiness',
+  path: '/readiness',
+  getParentRoute: () => DocreadyCaseIdRoute,
+} as any)
+const DocreadyCaseIdValidationRoute =
+  DocreadyCaseIdValidationRouteImport.update({
+    id: '/validation',
+    path: '/validation',
+    getParentRoute: () => DocreadyCaseIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -161,9 +211,11 @@ export interface FileRoutesByFullPath {
   '/admin/users': typeof AdminUsersRoute
   '/appraisals/new': typeof AppraisalsNewRoute
   '/borrowers/$slug': typeof BorrowersSlugRoute
+  '/docready/$caseId': typeof DocreadyCaseIdRouteWithChildren
   '/entities/$slug': typeof EntitiesSlugRoute
   '/people/$slug': typeof PeopleSlugRoute
   '/appraisals/': typeof AppraisalsIndexRoute
+  '/docready/': typeof DocreadyIndexRoute
   '/appraisals/$id/consent': typeof AppraisalsIdConsentRoute
   '/appraisals/$id/cross-verification': typeof AppraisalsIdCrossVerificationRoute
   '/appraisals/$id/data': typeof AppraisalsIdDataRoute
@@ -173,7 +225,13 @@ export interface FileRoutesByFullPath {
   '/appraisals/$id/spread': typeof AppraisalsIdSpreadRoute
   '/appraisals/$id/submission': typeof AppraisalsIdSubmissionRoute
   '/appraisals/$id/upload': typeof AppraisalsIdUploadRoute
+  '/docready/$caseId/checklist': typeof DocreadyCaseIdChecklistRoute
+  '/docready/$caseId/collection': typeof DocreadyCaseIdCollectionRoute
+  '/docready/$caseId/portal': typeof DocreadyCaseIdPortalRoute
+  '/docready/$caseId/readiness': typeof DocreadyCaseIdReadinessRoute
+  '/docready/$caseId/validation': typeof DocreadyCaseIdValidationRoute
   '/appraisals/$id/': typeof AppraisalsIdIndexRoute
+  '/docready/$caseId/': typeof DocreadyCaseIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -189,6 +247,7 @@ export interface FileRoutesByTo {
   '/entities/$slug': typeof EntitiesSlugRoute
   '/people/$slug': typeof PeopleSlugRoute
   '/appraisals': typeof AppraisalsIndexRoute
+  '/docready': typeof DocreadyIndexRoute
   '/appraisals/$id/consent': typeof AppraisalsIdConsentRoute
   '/appraisals/$id/cross-verification': typeof AppraisalsIdCrossVerificationRoute
   '/appraisals/$id/data': typeof AppraisalsIdDataRoute
@@ -198,7 +257,13 @@ export interface FileRoutesByTo {
   '/appraisals/$id/spread': typeof AppraisalsIdSpreadRoute
   '/appraisals/$id/submission': typeof AppraisalsIdSubmissionRoute
   '/appraisals/$id/upload': typeof AppraisalsIdUploadRoute
+  '/docready/$caseId/checklist': typeof DocreadyCaseIdChecklistRoute
+  '/docready/$caseId/collection': typeof DocreadyCaseIdCollectionRoute
+  '/docready/$caseId/portal': typeof DocreadyCaseIdPortalRoute
+  '/docready/$caseId/readiness': typeof DocreadyCaseIdReadinessRoute
+  '/docready/$caseId/validation': typeof DocreadyCaseIdValidationRoute
   '/appraisals/$id': typeof AppraisalsIdIndexRoute
+  '/docready/$caseId': typeof DocreadyCaseIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -212,9 +277,11 @@ export interface FileRoutesById {
   '/admin/users': typeof AdminUsersRoute
   '/appraisals/new': typeof AppraisalsNewRoute
   '/borrowers/$slug': typeof BorrowersSlugRoute
+  '/docready/$caseId': typeof DocreadyCaseIdRouteWithChildren
   '/entities/$slug': typeof EntitiesSlugRoute
   '/people/$slug': typeof PeopleSlugRoute
   '/appraisals/': typeof AppraisalsIndexRoute
+  '/docready/': typeof DocreadyIndexRoute
   '/appraisals/$id/consent': typeof AppraisalsIdConsentRoute
   '/appraisals/$id/cross-verification': typeof AppraisalsIdCrossVerificationRoute
   '/appraisals/$id/data': typeof AppraisalsIdDataRoute
@@ -224,7 +291,13 @@ export interface FileRoutesById {
   '/appraisals/$id/spread': typeof AppraisalsIdSpreadRoute
   '/appraisals/$id/submission': typeof AppraisalsIdSubmissionRoute
   '/appraisals/$id/upload': typeof AppraisalsIdUploadRoute
+  '/docready/$caseId/checklist': typeof DocreadyCaseIdChecklistRoute
+  '/docready/$caseId/collection': typeof DocreadyCaseIdCollectionRoute
+  '/docready/$caseId/portal': typeof DocreadyCaseIdPortalRoute
+  '/docready/$caseId/readiness': typeof DocreadyCaseIdReadinessRoute
+  '/docready/$caseId/validation': typeof DocreadyCaseIdValidationRoute
   '/appraisals/$id/': typeof AppraisalsIdIndexRoute
+  '/docready/$caseId/': typeof DocreadyCaseIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -239,9 +312,11 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/appraisals/new'
     | '/borrowers/$slug'
+    | '/docready/$caseId'
     | '/entities/$slug'
     | '/people/$slug'
     | '/appraisals/'
+    | '/docready/'
     | '/appraisals/$id/consent'
     | '/appraisals/$id/cross-verification'
     | '/appraisals/$id/data'
@@ -251,7 +326,13 @@ export interface FileRouteTypes {
     | '/appraisals/$id/spread'
     | '/appraisals/$id/submission'
     | '/appraisals/$id/upload'
+    | '/docready/$caseId/checklist'
+    | '/docready/$caseId/collection'
+    | '/docready/$caseId/portal'
+    | '/docready/$caseId/readiness'
+    | '/docready/$caseId/validation'
     | '/appraisals/$id/'
+    | '/docready/$caseId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -267,6 +348,7 @@ export interface FileRouteTypes {
     | '/entities/$slug'
     | '/people/$slug'
     | '/appraisals'
+    | '/docready'
     | '/appraisals/$id/consent'
     | '/appraisals/$id/cross-verification'
     | '/appraisals/$id/data'
@@ -276,7 +358,13 @@ export interface FileRouteTypes {
     | '/appraisals/$id/spread'
     | '/appraisals/$id/submission'
     | '/appraisals/$id/upload'
+    | '/docready/$caseId/checklist'
+    | '/docready/$caseId/collection'
+    | '/docready/$caseId/portal'
+    | '/docready/$caseId/readiness'
+    | '/docready/$caseId/validation'
     | '/appraisals/$id'
+    | '/docready/$caseId'
   id:
     | '__root__'
     | '/'
@@ -289,9 +377,11 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/appraisals/new'
     | '/borrowers/$slug'
+    | '/docready/$caseId'
     | '/entities/$slug'
     | '/people/$slug'
     | '/appraisals/'
+    | '/docready/'
     | '/appraisals/$id/consent'
     | '/appraisals/$id/cross-verification'
     | '/appraisals/$id/data'
@@ -301,7 +391,13 @@ export interface FileRouteTypes {
     | '/appraisals/$id/spread'
     | '/appraisals/$id/submission'
     | '/appraisals/$id/upload'
+    | '/docready/$caseId/checklist'
+    | '/docready/$caseId/collection'
+    | '/docready/$caseId/portal'
+    | '/docready/$caseId/readiness'
+    | '/docready/$caseId/validation'
     | '/appraisals/$id/'
+    | '/docready/$caseId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -315,9 +411,11 @@ export interface RootRouteChildren {
   AdminUsersRoute: typeof AdminUsersRoute
   AppraisalsNewRoute: typeof AppraisalsNewRoute
   BorrowersSlugRoute: typeof BorrowersSlugRoute
+  DocreadyCaseIdRoute: typeof DocreadyCaseIdRouteWithChildren
   EntitiesSlugRoute: typeof EntitiesSlugRoute
   PeopleSlugRoute: typeof PeopleSlugRoute
   AppraisalsIndexRoute: typeof AppraisalsIndexRoute
+  DocreadyIndexRoute: typeof DocreadyIndexRoute
   AppraisalsIdConsentRoute: typeof AppraisalsIdConsentRoute
   AppraisalsIdCrossVerificationRoute: typeof AppraisalsIdCrossVerificationRoute
   AppraisalsIdDataRoute: typeof AppraisalsIdDataRoute
@@ -409,6 +507,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BorrowersSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/docready/': {
+      id: '/docready/'
+      path: '/docready'
+      fullPath: '/docready/'
+      preLoaderRoute: typeof DocreadyIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docready/$caseId': {
+      id: '/docready/$caseId'
+      path: '/docready/$caseId'
+      fullPath: '/docready/$caseId'
+      preLoaderRoute: typeof DocreadyCaseIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/entities/$slug': {
       id: '/entities/$slug'
       path: '/entities/$slug'
@@ -493,8 +605,72 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppraisalsIdUploadRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/docready/$caseId/': {
+      id: '/docready/$caseId/'
+      path: '/'
+      fullPath: '/docready/$caseId/'
+      preLoaderRoute: typeof DocreadyCaseIdIndexRouteImport
+      parentRoute: typeof DocreadyCaseIdRoute
+    }
+    '/docready/$caseId/checklist': {
+      id: '/docready/$caseId/checklist'
+      path: '/checklist'
+      fullPath: '/docready/$caseId/checklist'
+      preLoaderRoute: typeof DocreadyCaseIdChecklistRouteImport
+      parentRoute: typeof DocreadyCaseIdRoute
+    }
+    '/docready/$caseId/collection': {
+      id: '/docready/$caseId/collection'
+      path: '/collection'
+      fullPath: '/docready/$caseId/collection'
+      preLoaderRoute: typeof DocreadyCaseIdCollectionRouteImport
+      parentRoute: typeof DocreadyCaseIdRoute
+    }
+    '/docready/$caseId/portal': {
+      id: '/docready/$caseId/portal'
+      path: '/portal'
+      fullPath: '/docready/$caseId/portal'
+      preLoaderRoute: typeof DocreadyCaseIdPortalRouteImport
+      parentRoute: typeof DocreadyCaseIdRoute
+    }
+    '/docready/$caseId/readiness': {
+      id: '/docready/$caseId/readiness'
+      path: '/readiness'
+      fullPath: '/docready/$caseId/readiness'
+      preLoaderRoute: typeof DocreadyCaseIdReadinessRouteImport
+      parentRoute: typeof DocreadyCaseIdRoute
+    }
+    '/docready/$caseId/validation': {
+      id: '/docready/$caseId/validation'
+      path: '/validation'
+      fullPath: '/docready/$caseId/validation'
+      preLoaderRoute: typeof DocreadyCaseIdValidationRouteImport
+      parentRoute: typeof DocreadyCaseIdRoute
+    }
   }
 }
+
+interface DocreadyCaseIdRouteChildren {
+  DocreadyCaseIdChecklistRoute: typeof DocreadyCaseIdChecklistRoute
+  DocreadyCaseIdCollectionRoute: typeof DocreadyCaseIdCollectionRoute
+  DocreadyCaseIdPortalRoute: typeof DocreadyCaseIdPortalRoute
+  DocreadyCaseIdReadinessRoute: typeof DocreadyCaseIdReadinessRoute
+  DocreadyCaseIdValidationRoute: typeof DocreadyCaseIdValidationRoute
+  DocreadyCaseIdIndexRoute: typeof DocreadyCaseIdIndexRoute
+}
+
+const DocreadyCaseIdRouteChildren: DocreadyCaseIdRouteChildren = {
+  DocreadyCaseIdChecklistRoute: DocreadyCaseIdChecklistRoute,
+  DocreadyCaseIdCollectionRoute: DocreadyCaseIdCollectionRoute,
+  DocreadyCaseIdPortalRoute: DocreadyCaseIdPortalRoute,
+  DocreadyCaseIdReadinessRoute: DocreadyCaseIdReadinessRoute,
+  DocreadyCaseIdValidationRoute: DocreadyCaseIdValidationRoute,
+  DocreadyCaseIdIndexRoute: DocreadyCaseIdIndexRoute,
+}
+
+const DocreadyCaseIdRouteWithChildren = DocreadyCaseIdRoute._addFileChildren(
+  DocreadyCaseIdRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -507,9 +683,11 @@ const rootRouteChildren: RootRouteChildren = {
   AdminUsersRoute: AdminUsersRoute,
   AppraisalsNewRoute: AppraisalsNewRoute,
   BorrowersSlugRoute: BorrowersSlugRoute,
+  DocreadyCaseIdRoute: DocreadyCaseIdRouteWithChildren,
   EntitiesSlugRoute: EntitiesSlugRoute,
   PeopleSlugRoute: PeopleSlugRoute,
   AppraisalsIndexRoute: AppraisalsIndexRoute,
+  DocreadyIndexRoute: DocreadyIndexRoute,
   AppraisalsIdConsentRoute: AppraisalsIdConsentRoute,
   AppraisalsIdCrossVerificationRoute: AppraisalsIdCrossVerificationRoute,
   AppraisalsIdDataRoute: AppraisalsIdDataRoute,

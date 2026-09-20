@@ -1,0 +1,4 @@
+# Python dependencies for the engine (Stage B onward).
+# No AGPL/GPL/LGPL runtime deps: PyMuPDF, Ghostscript, OCRmyPDF, img2pdf,
+# docxtpl and python-Levenshtein are excluded on licence grounds (see plan
+# section 4 and CLAUDE.md rule 10). Nothing added yet at Step 0.

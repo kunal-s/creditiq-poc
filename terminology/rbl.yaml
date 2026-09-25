@@ -1,0 +1,288 @@
+# RBL Bank (Business Banking Group) terminology for CreditIQ.
+# Authored and versioned with the code — this is UI vocabulary, not the
+# runtime-editable policy/checklist/rules config store (plan.md section 3-5).
+# Consumed through t() / useTerms() in src/config/terminology.ts.
+
+tenant:
+  bank:
+    name: RBL Bank
+    unit: Business Banking Group
+    hub: Mumbai hub
+    emailDomain: rblbank.com
+  brand:
+    mark: CI
+  product:
+    name: CreditIQ
+    documentTitleTemplate: "Credit Workbench — CreditIQ"
+    metaDescription: CreditIQ workbench
+  footer:
+    buildNote: "Build 1.0.0 · RBI-aligned retention"
+    dataPlaneNote: Consent-bound data plane
+
+nav:
+  group:
+    workbench: Workbench
+    intake: DocReady
+    appraisal: Appraisal
+    portfolio: Portfolio
+    governance: Governance
+    admin: Admin
+  home: Home
+  myAppraisals: My Appraisals
+  readinessConsole: Readiness Console
+  newApplication: New Application
+  memoLibrary: Memo Library
+  exceptionQueue: Exception Queue
+  auditLedger: Audit and Examiner Walk-through
+  templateDesigner: Template Designer
+  policyConfigurator: Ratio and Policy
+  connectorSettings: Connectors and Consent
+  usersAndRoles: Users and Roles
+
+stage:
+  identity: Identity
+  data: Data
+  spread: Spread
+  crossVerification: Cross-Verification
+  draft: Draft and Review
+  rating: Rating and Recommendation
+  submission: Submission
+  completed: Completed
+
+term:
+  application:
+    singular: application
+    title: Application
+  appraisal:
+    singular: appraisal
+    title: Appraisal
+  memo:
+    abbrev: CAM
+    full: Credit Appraisal Memorandum
+    singular: memo
+  memoLibrary: Memo Library
+  borrower:
+    singular: borrower
+  borrowerPortal: RM Portal
+  collectionLink: Collection link
+  finding: finding
+  exception: exception
+  exceptionQueue: Exception Queue
+  readiness: readiness
+  checklist: checklist
+  checklistTitle: Required document set
+  collection: collection
+  validation: validation
+  validationSubtitle: Machine checks by document
+  consent: consent
+  consentJourney: Consent journey
+  connector: connector
+  memoTemplate: CAM template
+  ratioPolicy: ratio policy
+  rating: rating
+  ratingInternal: Internal risk rating
+  committee: credit committee
+  sanction: sanction
+  disbursement: disbursement
+  deviation: deviation
+  override: override
+  waiver: waiver
+  handoff: handoff
+  examinerWalkthrough: Examiner Walk-through
+
+page:
+  home:
+    title: Credit Workbench
+  appraisals:
+    title: My Appraisals
+    eyebrow: Workbench
+  newApplication:
+    title: Start a new application
+    eyebrow: Appraisal
+  identity:
+    title: Entity resolution and confirmation
+  data:
+    title: Data acquisition console
+  spread:
+    title: Financial spread
+  crossVerification:
+    title: Cross-verification and discrepancy
+  draft:
+    title: CAM draft and review
+  rating:
+    title: Recommendation and risk rating
+  submission:
+    title: Submission and routing
+  consent:
+    title: Consent journey
+  upload:
+    title: Manual upload fallback
+  readiness:
+    title: Readiness Console
+    eyebrow: "DocReady · stage one"
+  memos:
+    title: Memo Library
+    eyebrow: Portfolio
+  exceptions:
+    title: Exception queue
+    eyebrow: "Governance · Exceptions"
+  audit:
+    title: Audit ledger and examiner walk-through
+    eyebrow: "Governance · Audit"
+  adminTemplates:
+    title: Template designer
+    eyebrow: "Admin · CAM template"
+  adminPolicy:
+    title: Ratio and policy configurator
+    eyebrow: "Admin · Credit policy"
+  adminConnectors:
+    title: Connector and consent settings
+    eyebrow: "Admin · Data sources"
+  adminUsers:
+    title: Users and roles
+    eyebrow: "Admin · Access"
+  signIn:
+    title: Sign in
+
+action:
+  simulateUpload: Simulate client upload
+  submit: "Submit and route to {reviewer}"
+  returnForData: Return for more data
+  decline: Decline
+  runCopilot: Run with copilot
+  draftChase: Draft the next chase
+  sendReminder: Send reminder
+  escalate: Escalate
+  waive: Waive
+  accept: Accept
+  reject: Reject
+  toggleCopilot: Copilot
+
+search:
+  placeholder: "Search borrower, PAN, GSTIN or memo reference"
+
+# Role catalogue and the user roster are config, not vocabulary — see
+# config/roles.yaml, served through GET /api/roles and the session.
+
+docStatus:
+  notRequested: Not requested
+  missing: Missing
+  inReview: In review
+  insufficient: Insufficient
+  satisfied: Satisfied
+  waived: Waived
+
+docDefect:
+  stale: Stale
+  incomplete: Incomplete
+  inconsistent: Inconsistent
+
+checklistSections:
+  constitutionKyc: Constitution and KYC
+  financials: Financials
+  bankingOperations: Banking and operations
+  collateralSecurity: Collateral and security
+
+readinessGates:
+  creditReview: Ready for credit review
+  disbursement: Ready for disbursement
+
+findingSeverity:
+  serious: Serious
+  moderate: Moderate
+  mild: Mild
+
+adjudicationOutcome:
+  resolvedWithEvidence: Resolved with evidence
+  acceptedAsGenuineRisk: Accepted as a genuine risk
+  moreInformationRequested: More information requested
+
+sourceStatus:
+  received: Received
+  partial: Partial
+  awaitingConsent: Awaiting consent
+  notAttempted: Not attempted
+
+ratioBand:
+  acceptable: Acceptable
+  marginal: Marginal
+  adverse: Adverse
+
+connectorHealth:
+  healthy: Healthy
+  degraded: Degraded
+  down: Down
+
+ratingGrid:
+  gradePrefix: CR
+  grades:
+    "1": Highest safety
+    "2": High safety
+    "3": Adequate safety
+    "4": Watch
+    "5": Moderate risk
+    "6": High risk
+    "7": Substantial risk
+    "8": Default or imminent default
+
+auditEventKind:
+  sourceReturned: Source returned
+  systemExtraction: System extraction
+  machineDraft: Machine draft
+  humanEdit: Human edit
+  humanOverride: Human override
+  adjudication: Adjudication
+  routing: Routing
+  decision: Decision
+
+docVerdict:
+  pass: Pass
+  fail: Fail
+  notApplicable: Not applicable
+
+memoStatus:
+  inCommitteeReview: In committee review
+  completed: Completed
+  inPreparation: In preparation
+  drafting: Drafting
+  refreshDue: Refresh due
+
+memoTone:
+  house: RBL house style
+  plainCommittee: Plain committee English
+  regulatoryDefensive: Regulatory-defensive
+
+memoSections:
+  borrowerGroupProfile: Borrower and Group Profile
+  facilityRequestedPurpose: Facility Requested and Purpose
+  bankingConduct: Banking Conduct
+  financialAnalysisRatios: Financial Analysis and Ratios
+  gstBureauFindings: GST and Bureau Findings
+  crossVerificationResults: Cross-Verification Results
+  riskAssessmentRating: Risk Assessment and Rating
+  recommendation: Recommendation
+
+intakeTabs:
+  checklist: Checklist
+  collection: Collection
+  validation: Validation
+  readiness: Readiness
+  borrowerPortal: RM Portal
+
+routing:
+  reviewerRole: Credit Manager
+  committee: Business Banking Group Credit Committee
+  committeeChairRole: Committee chair
+
+reminderCadence:
+  firstDays: 3
+  secondDays: 7
+  thirdDays: 12
+  channel: Email and WhatsApp
+
+branches:
+  - Coimbatore SME Branch
+  - Pune Corporate Branch
+  - Ludhiana Commercial Branch
+  - Surat Commercial Branch
+  - Mumbai hub

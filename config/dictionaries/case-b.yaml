@@ -1,0 +1,38 @@
+# FR-10 variable dictionary for Case B. No collateral or MPBF-specific
+# variables — the cash-credit-only request stays under the turnover-method
+# threshold (FR-3), and there is no collateral in this case.
+case_id: case-b
+variables:
+  - {var: entity.legal_name, group: entity, label: "Legal name", type: text, key_variable: true}
+  - {var: entity.pan, group: entity, label: PAN, type: text, key_variable: true}
+  - {var: entity.gstin, group: entity, label: GSTIN, type: text, key_variable: true}
+  - {var: entity.udyam, group: entity, label: "Udyam registration", type: text, key_variable: false}
+  - {var: entity.incorporation_date, group: entity, label: "Date of formation", type: date, key_variable: false}
+
+  - {var: fin.revenue, group: financials, label: Revenue, type: money_inr, key_variable: true}
+  - {var: fin.ebitda, group: financials, label: EBITDA, type: money_inr, key_variable: true}
+  - {var: fin.pat, group: financials, label: "Profit after tax", type: money_inr, key_variable: true}
+  - {var: fin.net_worth, group: financials, label: "Tangible net worth", type: money_inr, key_variable: true}
+  - {var: fin.total_debt, group: financials, label: "Total debt", type: money_inr, key_variable: true}
+  - {var: fin.current_assets, group: financials, label: "Current assets", type: money_inr, key_variable: true}
+  - {var: fin.current_liabilities, group: financials, label: "Current liabilities", type: money_inr, key_variable: true}
+
+  - {var: ratio.current_ratio, group: ratios, label: "Current ratio", type: ratio, key_variable: true}
+  - {var: ratio.tol_tnw, group: ratios, label: "TOL / TNW", type: ratio, key_variable: true}
+  - {var: ratio.dscr, group: ratios, label: DSCR, type: ratio, key_variable: true}
+  - {var: ratio.interest_coverage, group: ratios, label: "Interest coverage", type: ratio, key_variable: false}
+  - {var: ratio.debt_equity, group: ratios, label: "Debt / equity", type: ratio, key_variable: false}
+  - {var: ratio.wc_cycle, group: ratios, label: "Working-capital cycle", type: count, key_variable: false}
+
+  - {var: gst.taxable_value_annual, group: gst, label: "GST outward taxable value, annual", type: money_inr, key_variable: true}
+  - {var: gst.tax_paid_annual, group: gst, label: "GST tax paid, annual", type: money_inr, key_variable: false}
+  - {var: gst.periods_filed, group: gst, label: "GST periods filed", type: count, key_variable: true}
+
+  - {var: bank.closing_balance, group: bank, label: "Closing balance at period end", type: money_inr, key_variable: true}
+  - {var: bank.business_credits_annual, group: bank, label: "Business credits, annual", type: money_inr, key_variable: true}
+  - {var: bank.avg_balance, group: bank, label: "Average balance", type: money_inr, key_variable: false}
+
+  - {var: facility.existing_cc_limit, group: facility, label: "Existing cash credit limit", type: money_inr, key_variable: true}
+  - {var: facility.requested_cc_limit, group: facility, label: "Requested cash credit limit", type: money_inr, key_variable: true}
+  - {var: facility.stock_statement_date, group: facility, label: "Stock statement as-at date", type: date, key_variable: true}
+  - {var: facility.drawing_power, group: facility, label: "Drawing power", type: money_inr, key_variable: true}

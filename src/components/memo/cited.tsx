@@ -81,7 +81,11 @@ export function CitedText({
 }
 
 export function stripCitations(text: string) {
-  return text.replace(/\[\[[a-z0-9-]+\]\]/gi, "").replace(/\s+([.,;])/g, "$1").replace(/\s{2,}/g, " ").trim();
+  return text
+    .replace(/\[\[[a-z0-9-]+\]\]/gi, "")
+    .replace(/\s+([.,;])/g, "$1")
+    .replace(/\s{2,}/g, " ")
+    .trim();
 }
 
 export function CitationInspector({

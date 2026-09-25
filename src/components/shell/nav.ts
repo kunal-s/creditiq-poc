@@ -1,49 +1,59 @@
-export type NavItem = { label: string; to: string; step?: boolean };
-export type NavGroup = { group: string; items: NavItem[] };
+import { t } from "@/config/terminology";
 
-export const NAV: NavGroup[] = [
-  {
-    group: "Workbench",
-    items: [
-      { label: "Home", to: "/" },
-      { label: "My Appraisals", to: "/appraisals" },
-    ],
-  },
-  {
-    group: "DocReady",
-    items: [{ label: "Readiness Console", to: "/docready" }],
-  },
-  {
-    group: "Appraisal",
-    items: [
-      { label: "New Appraisal", to: "/appraisals/new" },
-      { label: "Identity", to: "identity", step: true },
-      { label: "Data", to: "data", step: true },
-      { label: "Spread", to: "spread", step: true },
-      { label: "Cross-Verification", to: "cross-verification", step: true },
-      { label: "Draft and Review", to: "draft", step: true },
-      { label: "Rating and Recommendation", to: "rating", step: true },
-      { label: "Submission", to: "submission", step: true },
-    ],
-  },
-  {
-    group: "Portfolio",
-    items: [{ label: "Memo Library", to: "/memos" }],
-  },
-  {
-    group: "Governance",
-    items: [
-      { label: "Exception Queue", to: "/exceptions" },
-      { label: "Audit and Examiner Walk-through", to: "/audit" },
-    ],
-  },
-  {
-    group: "Admin",
-    items: [
-      { label: "Template Designer", to: "/admin/templates" },
-      { label: "Ratio and Policy", to: "/admin/policy" },
-      { label: "Connectors and Consent", to: "/admin/connectors" },
-      { label: "Users and Roles", to: "/admin/users" },
-    ],
-  },
-];
+export type NavItem = { label: string; to: string; step?: boolean };
+export type NavGroup = { id: string; group: string; items: NavItem[] };
+
+export function buildNav(): NavGroup[] {
+  return [
+    {
+      id: "workbench",
+      group: t("nav.group.workbench"),
+      items: [
+        { label: t("nav.home"), to: "/" },
+        { label: t("nav.myAppraisals"), to: "/appraisals" },
+      ],
+    },
+    {
+      id: "intake",
+      group: t("nav.group.intake"),
+      items: [{ label: t("nav.readinessConsole"), to: "/docready" }],
+    },
+    {
+      id: "appraisal",
+      group: t("nav.group.appraisal"),
+      items: [
+        { label: t("nav.newApplication"), to: "/applications/new" },
+        { label: t("stage.identity"), to: "identity", step: true },
+        { label: t("stage.data"), to: "data", step: true },
+        { label: t("stage.spread"), to: "spread", step: true },
+        { label: t("stage.crossVerification"), to: "cross-verification", step: true },
+        { label: t("stage.draft"), to: "draft", step: true },
+        { label: t("stage.rating"), to: "rating", step: true },
+        { label: t("stage.submission"), to: "submission", step: true },
+      ],
+    },
+    {
+      id: "portfolio",
+      group: t("nav.group.portfolio"),
+      items: [{ label: t("nav.memoLibrary"), to: "/memos" }],
+    },
+    {
+      id: "governance",
+      group: t("nav.group.governance"),
+      items: [
+        { label: t("nav.exceptionQueue"), to: "/exceptions" },
+        { label: t("nav.auditLedger"), to: "/audit" },
+      ],
+    },
+    {
+      id: "admin",
+      group: t("nav.group.admin"),
+      items: [
+        { label: t("nav.templateDesigner"), to: "/admin/templates" },
+        { label: t("nav.policyConfigurator"), to: "/admin/policy" },
+        { label: t("nav.connectorSettings"), to: "/admin/connectors" },
+        { label: t("nav.usersAndRoles"), to: "/admin/users" },
+      ],
+    },
+  ];
+}

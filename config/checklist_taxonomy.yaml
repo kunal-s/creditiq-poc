@@ -1,0 +1,249 @@
+# Document checklist taxonomy: what's required, by constitution and by case
+# attribute. Consumed by engine/checklist.py's deriver, never read directly
+# by the checklist screens — those go through the published config store.
+
+sections:
+  - "Constitution and KYC"
+  - Financials
+  - "Banking and operations"
+  - "Collateral and security"
+
+section_weight:
+  "Constitution and KYC": 20
+  Financials: 30
+  "Banking and operations": 30
+  "Collateral and security": 20
+
+review_gate_threshold: 85
+disbursement_gate_threshold: 100
+
+items:
+  # --- Constitution and KYC ---
+  - id: coi
+    name: Certificate of incorporation
+    category: "Constitution and KYC"
+    constitutions: [private_limited]
+    why: Establishes legal existence and the date from which the borrowing entity has existed.
+    basis: Companies Act constitution requirement.
+    source: published_policy
+    blocking: true
+    weight: 5
+
+  - id: moa_aoa
+    name: Memorandum and Articles of Association
+    category: "Constitution and KYC"
+    constitutions: [private_limited]
+    why: Establishes the objects clause and borrowing powers.
+    basis: Companies Act constitution requirement.
+    source: published_policy
+    blocking: true
+    weight: 4
+
+  - id: board_resolution
+    name: Board resolution authorising the facility
+    category: "Constitution and KYC"
+    constitutions: [private_limited]
+    why: Evidences the company's authority to borrow and who may sign.
+    basis: Companies Act, delegation of powers.
+    source: published_policy
+    blocking: true
+    weight: 4
+
+  - id: proprietor_declaration
+    name: Proprietor's declaration of constitution
+    category: "Constitution and KYC"
+    constitutions: [proprietorship]
+    why: Confirms sole-proprietorship status and the proprietor's authority.
+    basis: RBL KYC policy for proprietorship accounts.
+    source: published_policy
+    blocking: true
+    weight: 5
+
+  - id: partnership_deed
+    name: Partnership deed
+    category: "Constitution and KYC"
+    constitutions: [partnership]
+    why: Establishes the partnership, profit shares and borrowing authority.
+    basis: Indian Partnership Act constitution requirement.
+    source: published_policy
+    blocking: true
+    weight: 5
+
+  - id: partner_authority_letter
+    name: Authority letter signed by all partners
+    category: "Constitution and KYC"
+    constitutions: [partnership]
+    why: Evidences which partner(s) may execute borrowing documents.
+    basis: RBL KYC policy for partnership accounts.
+    source: published_policy
+    blocking: true
+    weight: 4
+
+  - id: pan_entity
+    name: Entity PAN
+    category: "Constitution and KYC"
+    constitutions: [private_limited, proprietorship, partnership]
+    why: Primary tax identifier; cross-checked against every other filing.
+    basis: RBL KYC policy.
+    source: published_policy
+    blocking: true
+    weight: 3
+
+  - id: gst_registration
+    name: GST registration certificate
+    category: "Constitution and KYC"
+    constitutions: [private_limited, proprietorship, partnership]
+    why: Confirms GST registration and the principal place of business.
+    basis: RBL KYC policy.
+    source: published_policy
+    blocking: true
+    weight: 3
+
+  - id: udyam
+    name: Udyam registration
+    category: "Constitution and KYC"
+    constitutions: [private_limited, proprietorship, partnership]
+    why: Confirms MSME classification, which drives the assessment method (FR-3).
+    basis: MSMED Act registration.
+    source: regulatory
+    blocking: false
+    weight: 2
+
+  - id: kyc_promoters
+    name: KYC of directors, partners or proprietor
+    category: "Constitution and KYC"
+    constitutions: [private_limited, proprietorship, partnership]
+    why: Identity and address verification of the people behind the borrower.
+    basis: RBL KYC policy.
+    source: published_policy
+    blocking: true
+    weight: 4
+
+  # --- Financials ---
+  - id: fs_fy_minus2
+    name: Audited financial statements, second-latest year
+    category: Financials
+    constitutions: [private_limited, proprietorship, partnership]
+    why: Establishes the trend line behind the latest audited year.
+    basis: RBL credit policy, minimum audited history.
+    source: published_policy
+    blocking: true
+    weight: 5
+
+  - id: fs_fy_minus1
+    name: Audited financial statements, latest year
+    category: Financials
+    constitutions: [private_limited, proprietorship, partnership]
+    why: The primary basis for the spread and ratio assessment.
+    basis: RBL credit policy, minimum audited history.
+    source: published_policy
+    blocking: true
+    weight: 6
+
+  - id: fs_provisional
+    name: Provisional financial statements, current year
+    category: Financials
+    constitutions: [private_limited, proprietorship, partnership]
+    why: The most recent view of performance since the last audited year.
+    basis: RBL credit policy.
+    source: published_policy
+    blocking: true
+    weight: 5
+
+  - id: fs_projected
+    name: Projected financials, next year
+    category: Financials
+    constitutions: [private_limited, proprietorship, partnership]
+    why: Required to assess repayment capacity on a term facility.
+    basis: RBL credit policy for term lending.
+    source: published_policy
+    blocking: true
+    weight: 4
+    requires_attributes: [term_loan_requested]
+
+  - id: itr
+    name: Income Tax Return with computation, latest assessment year
+    category: Financials
+    constitutions: [private_limited, proprietorship, partnership]
+    why: Independent corroboration of profit and tax paid.
+    basis: RBL credit policy.
+    source: published_policy
+    blocking: true
+    weight: 4
+
+  - id: cma_data
+    name: CMA data
+    category: Financials
+    constitutions: [private_limited, proprietorship, partnership]
+    why: Required to compute the Maximum Permissible Bank Finance (MPBF).
+    basis: RBL credit policy, MPBF method (FR-3).
+    source: published_policy
+    blocking: true
+    weight: 6
+    requires_attributes: [mpbf_applicable]
+
+  # --- Banking and operations ---
+  - id: bank_statements
+    name: Bank statements, twelve months, all operative accounts
+    category: "Banking and operations"
+    constitutions: [private_limited, proprietorship, partnership]
+    why: Independent evidence of turnover and conduct.
+    basis: RBL credit policy.
+    source: published_policy
+    blocking: true
+    weight: 8
+
+  - id: gst_returns
+    name: GSTR-3B, twelve months
+    category: "Banking and operations"
+    constitutions: [private_limited, proprietorship, partnership]
+    why: Independent evidence of turnover, cross-checked against books and bank credits.
+    basis: RBL credit policy.
+    source: published_policy
+    blocking: true
+    weight: 8
+
+  - id: stock_statement
+    name: Stock and book-debt statement
+    category: "Banking and operations"
+    constitutions: [private_limited, proprietorship, partnership]
+    why: The basis for drawing-power computation on the cash credit account.
+    basis: RBL working-capital assessment policy.
+    source: published_policy
+    blocking: true
+    weight: 8
+    requires_attributes: [cash_credit_requested]
+
+  - id: ageing
+    name: Debtor and creditor ageing
+    category: "Banking and operations"
+    constitutions: [private_limited, proprietorship, partnership]
+    why: Supports drawing-power margin and concentration checks.
+    basis: RBL working-capital assessment policy.
+    source: published_policy
+    blocking: false
+    weight: 6
+    requires_attributes: [cash_credit_requested]
+
+  # --- Collateral and security ---
+  - id: title_document
+    name: Title document
+    category: "Collateral and security"
+    constitutions: [private_limited, proprietorship, partnership]
+    why: Evidences ownership and any subsisting charge on the offered security.
+    basis: "RBL security documentation policy. Taxonomy family: sale deed, encumbrance certificate, or title search report — any member satisfies this requirement."
+    source: published_policy
+    blocking: true
+    weight: 10
+    requires_attributes: [collateral_present]
+
+  - id: valuation_report
+    name: Valuation report
+    category: "Collateral and security"
+    constitutions: [private_limited, proprietorship, partnership]
+    why: Independent valuation of the offered security.
+    basis: RBL security documentation policy.
+    source: published_policy
+    blocking: true
+    weight: 10
+    requires_attributes: [collateral_present]

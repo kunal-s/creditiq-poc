@@ -21,6 +21,12 @@ dist-ssr
 .dev.vars
 
 .venv
+__pycache__/
+*.pyc
+
+# Local workflow area: plan and notes, private material, captures, data root.
+# Never committed. Never run `git clean -x` or `-X` here: it would delete it.
+/workflow/
 
 # Editor directories and files
 .vscode/*

@@ -1,28 +1,23 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { ArrowRight, Search, Sparkles, AlertTriangle, Clock } from "lucide-react";
+import { ArrowRight, Search, AlertTriangle, Clock } from "lucide-react";
 import { PageHeader } from "@/components/shell/PlaceholderPage";
 import { Panel } from "@/components/identity/chips";
 import { useDocReady, readiness, type DocReadyCase } from "@/data/docready";
-import { TENANT } from "@/data/seed";
+import { t } from "@/config/terminology";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/docready/")({
-  head: () => {
-    const title = "DocReady Readiness Console — CreditIQ";
-    const description =
-      "Document readiness across MSME and SME onboarding cases: readiness score, outstanding documents, blocking gaps, days in collection and owner.";
-    return {
-      meta: [
-        { title },
-        { name: "description", content: description },
-        { property: "og:title", content: title },
-        { property: "og:description", content: description },
-        { property: "og:type", content: "website" },
-        { name: "twitter:card", content: "summary_large_image" },
-      ],
-    };
-  },
+  head: () => ({
+    meta: [
+      { title: `${t("page.readiness.title")} — ${t("tenant.product.name")}` },
+      {
+        name: "description",
+        content:
+          "Document readiness across MSME and SME onboarding cases: readiness score, outstanding documents, blocking gaps, days in collection and owner.",
+      },
+    ],
+  }),
   component: ReadinessConsole,
 });
 
@@ -38,7 +33,12 @@ function ScoreBar({ score }: { score: number }) {
   );
 }
 
-const FILTERS = ["All cases", "Blocking gaps", "Ready for credit review", "Ageing over 14 days"] as const;
+const FILTERS = [
+  "All cases",
+  "Blocking gaps",
+  "Ready for credit review",
+  "Ageing over 14 days",
+] as const;
 
 function matches(c: DocReadyCase, f: (typeof FILTERS)[number]) {
   const r = readiness(c);
@@ -59,7 +59,9 @@ function ReadinessConsole() {
         .filter((c) => matches(c, filter))
         .filter((c) =>
           q.trim()
-            ? (c.borrower + c.id + c.product + c.branch).toLowerCase().includes(q.trim().toLowerCase())
+            ? (c.borrower + c.id + c.product + c.branch)
+                .toLowerCase()
+                .includes(q.trim().toLowerCase())
             : true,
         ),
     [cases, filter, q],
@@ -72,44 +74,55 @@ function ReadinessConsole() {
       blocking: scores.filter((s) => s.blockingOpen > 0).length,
       ready: scores.filter((s) => s.blockingOpen === 0 && s.reviewGate).length,
       outstanding: scores.reduce((n, s) => n + s.insufficient + s.missing, 0),
-      avgAge: Math.round(cases.reduce((n, c) => n + c.daysInCollection, 0) / cases.length),
+      avgAge: cases.length
+        ? Math.round(cases.reduce((n, c) => n + c.daysInCollection, 0) / cases.length)
+        : 0,
     };
   }, [cases]);
 
   return (
     <div>
       <PageHeader
-        eyebrow="DocReady · stage one"
-        title="Readiness Console"
-        purpose={`Document collection for MSME and SME proposals across ${TENANT.region}. A case leaves this console only when the file is complete enough to underwrite, then hands off into credit appraisal.`}
-        actions={
-          <Link
-            to="/docready/$caseId/checklist"
-            params={{ caseId: "SGT-2026-0147" }}
-            className="rounded bg-primary px-3 py-1.5 text-[12.5px] font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            Open Southgate Textiles
-          </Link>
-        }
+        eyebrow={t("page.readiness.eyebrow")}
+        title={t("page.readiness.title")}
+        purpose="Document collection for MSME and SME proposals. A case leaves this console only when the file is complete enough to underwrite, then hands off into credit appraisal."
       />
 
       <div className="space-y-4 px-6 py-5">
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           {[
             { label: "Open cases", value: totals.open, note: "in collection now" },
-            { label: "Blocking gaps", value: totals.blocking, note: "cannot be appraised yet", tone: "text-destructive" },
+            {
+              label: "Blocking gaps",
+              value: totals.blocking,
+              note: "cannot be appraised yet",
+              tone: "text-destructive",
+            },
             {
               label: "Ready for credit review",
               value: totals.ready,
               note: "85% gate met, nothing blocking",
               tone: "text-positive",
             },
-            { label: "Requirements outstanding", value: totals.outstanding, note: "insufficient or missing" },
-            { label: "Average age", value: `${totals.avgAge} days`, note: "against a 12-day escalation point" },
+            {
+              label: "Requirements outstanding",
+              value: totals.outstanding,
+              note: "insufficient or missing",
+            },
+            {
+              label: "Average age",
+              value: `${totals.avgAge} days`,
+              note: "against a 12-day escalation point",
+            },
           ].map((k) => (
             <div key={k.label} className="rounded border border-border bg-surface px-4 py-3">
               <p className="field-label">{k.label}</p>
-              <p className={cn("tabular mt-1 text-[22px] font-semibold leading-none", k.tone ?? "text-foreground")}>
+              <p
+                className={cn(
+                  "tabular mt-1 text-[22px] font-semibold leading-none",
+                  k.tone ?? "text-foreground",
+                )}
+              >
                 {k.value}
               </p>
               <p className="mt-1.5 text-[11.5px] text-muted-foreground">{k.note}</p>
@@ -185,7 +198,9 @@ function ReadinessConsole() {
                       </td>
                       <td className="px-4 py-2.5">
                         <div className="text-foreground">{c.product}</div>
-                        <div className="tabular mt-0.5 text-[11px] text-muted-foreground">{c.facilities}</div>
+                        <div className="tabular mt-0.5 text-[11px] text-muted-foreground">
+                          {c.facilities}
+                        </div>
                       </td>
                       <td className="px-4 py-2.5">
                         <ScoreBar score={r.score} />
@@ -213,7 +228,9 @@ function ReadinessConsole() {
                           <Clock className="h-3 w-3 text-muted-foreground" />
                           {c.daysInCollection}d
                         </span>
-                        <div className="mt-0.5 text-[11px] text-muted-foreground">last contact {c.lastContact}</div>
+                        <div className="mt-0.5 text-[11px] text-muted-foreground">
+                          last contact {c.lastContact}
+                        </div>
                       </td>
                       <td className="px-4 py-2.5">
                         <div className="text-foreground">{c.branch}</div>
@@ -234,7 +251,10 @@ function ReadinessConsole() {
                 })}
                 {rows.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-4 py-6 text-center text-[12.5px] text-muted-foreground">
+                    <td
+                      colSpan={8}
+                      className="px-4 py-6 text-center text-[12.5px] text-muted-foreground"
+                    >
                       No case matches this filter.
                     </td>
                   </tr>
@@ -243,20 +263,6 @@ function ReadinessConsole() {
             </table>
           </div>
         </Panel>
-
-        <div className="rounded border border-border bg-surface p-4">
-          <p className="flex items-center gap-1.5 text-[13px] font-semibold">
-            <Sparkles className="h-3.5 w-3.5 text-primary" /> Copilot read on the queue
-          </p>
-          <p className="mt-1.5 max-w-4xl text-[12.5px] leading-relaxed text-muted-foreground">
-            Southgate Textiles at 64% is the case that needs your attention today: three blocking gaps, and one of them
-            is not a missing page but a contradiction — the Coimbatore title deed carries a Meridian Bank mortgage dated
-            March 2024 against a client declaration of nil existing facilities. The debtors and creditors ageing has been
-            open 13 days with two reminders, so it is past the 12-day escalation point. Fairwind Components reached 100%
-            and was cleared by Thomas Weber on 14 August 2026, so it can hand off to appraisal now. Brightline Foods was
-            received on 19 August; the collection link has gone to the client and nothing has come back yet.
-          </p>
-        </div>
       </div>
     </div>
   );

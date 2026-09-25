@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   Search,
   Sparkles,
@@ -7,16 +7,21 @@ import {
   ShieldCheck,
   Bell,
   PanelRightClose,
+  LogOut,
 } from "lucide-react";
-import { NAV } from "./nav";
-import { APPRAISALS, CURRENT_USER, TENANT, STAGE_ROUTE } from "@/data/seed";
+import { buildNav } from "./nav";
+import { STAGE_ROUTE } from "@/api/types";
+import { useCases, findCase } from "@/domain/cases";
+import { useSession, signOut } from "@/domain/session";
+import { t } from "@/config/terminology";
 import { CopilotRail } from "@/components/shell/CopilotRail";
 import { cn } from "@/lib/utils";
 
 function useActiveAppraisal() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const match = pathname.match(/^\/appraisals\/(CAM-[\w-]+)/);
-  const appraisal = match ? APPRAISALS.find((a) => a.id === match[1]) : undefined;
+  const { data: cases } = useCases();
+  const match = pathname.match(/^\/appraisals\/([\w-]+)/);
+  const appraisal = match ? findCase(cases, match[1]) : undefined;
   return { pathname, appraisal };
 }
 
@@ -27,30 +32,32 @@ function TopBar({
   copilotOpen: boolean;
   onToggleCopilot: () => void;
 }) {
+  const session = useSession();
+
   return (
     <header className="flex h-14 shrink-0 items-center gap-4 border-b border-sidebar-border bg-sidebar px-4 text-sidebar-foreground">
       <Link to="/" className="flex items-center gap-2.5">
         <span className="grid h-7 w-7 place-items-center rounded bg-sidebar-primary text-[13px] font-bold text-sidebar-primary-foreground">
-          CI
+          {t("tenant.brand.mark")}
         </span>
         <span className="text-[15px] font-semibold tracking-tight text-sidebar-accent-foreground">
-          CreditIQ
+          {t("tenant.product.name")}
         </span>
       </Link>
       <div className="hidden h-6 w-px bg-sidebar-border md:block" />
       <div className="hidden min-w-0 flex-col leading-tight md:flex">
         <span className="truncate text-[13px] font-medium text-sidebar-accent-foreground">
-          {TENANT.bank}
+          {t("tenant.bank.name")}
         </span>
         <span className="truncate text-[11px] text-sidebar-foreground/70">
-          {TENANT.unit} · {TENANT.region}
+          {t("tenant.bank.unit")}
         </span>
       </div>
       <div className="relative mx-auto hidden w-full max-w-md lg:block">
         <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-sidebar-foreground/60" />
         <input
           aria-label="Search borrowers, memos and identifiers"
-          placeholder="Search borrower, PAN, GSTIN or memo reference"
+          placeholder={t("search.placeholder")}
           className="h-8 w-full rounded border border-sidebar-border bg-sidebar-accent/60 pl-8 pr-14 text-[13px] text-sidebar-accent-foreground placeholder:text-sidebar-foreground/55 focus:outline-none focus:ring-1 focus:ring-sidebar-ring"
         />
         <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-sidebar-border px-1.5 py-0.5 text-[10px] text-sidebar-foreground/60">
@@ -64,7 +71,6 @@ function TopBar({
           className="relative grid h-8 w-8 place-items-center rounded text-sidebar-foreground/80 hover:bg-sidebar-accent"
         >
           <Bell className="h-4 w-4" />
-          <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-flag" />
         </button>
         <button
           type="button"
@@ -76,20 +82,36 @@ function TopBar({
               : "border-sidebar-border text-sidebar-foreground/85 hover:bg-sidebar-accent",
           )}
         >
-          {copilotOpen ? <PanelRightClose className="h-3.5 w-3.5" /> : <Sparkles className="h-3.5 w-3.5" />}
-          Copilot
+          {copilotOpen ? (
+            <PanelRightClose className="h-3.5 w-3.5" />
+          ) : (
+            <Sparkles className="h-3.5 w-3.5" />
+          )}
+          {t("action.toggleCopilot")}
         </button>
-        <div className="ml-1 flex items-center gap-2 border-l border-sidebar-border pl-3">
-          <div className="hidden flex-col items-end leading-tight sm:flex">
-            <span className="text-[12.5px] font-medium text-sidebar-accent-foreground">
-              {CURRENT_USER.name}
+        {session && (
+          <div className="ml-1 flex items-center gap-2 border-l border-sidebar-border pl-3">
+            <div className="hidden flex-col items-end leading-tight sm:flex">
+              <span className="text-[12.5px] font-medium text-sidebar-accent-foreground">
+                {session.user.name}
+              </span>
+              <span className="text-[11px] text-sidebar-foreground/70">
+                {session.user.roleLabel}
+              </span>
+            </div>
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-sidebar-accent text-[12px] font-semibold text-sidebar-accent-foreground">
+              {session.user.initials}
             </span>
-            <span className="text-[11px] text-sidebar-foreground/70">{CURRENT_USER.role}</span>
+            <button
+              type="button"
+              aria-label="Sign out"
+              onClick={() => void signOut()}
+              className="grid h-8 w-8 place-items-center rounded text-sidebar-foreground/80 hover:bg-sidebar-accent"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+            </button>
           </div>
-          <span className="grid h-8 w-8 place-items-center rounded-full bg-sidebar-accent text-[12px] font-semibold text-sidebar-accent-foreground">
-            {CURRENT_USER.initials}
-          </span>
-        </div>
+        )}
       </div>
     </header>
   );
@@ -97,20 +119,26 @@ function TopBar({
 
 function SideNav() {
   const { pathname, appraisal } = useActiveAppraisal();
-  const stepBaseId = appraisal?.id ?? "CAM-2026-0418";
+  const session = useSession();
+  const nav = useMemo(buildNav, []);
+  const visibleNav = nav.filter((group) => session?.user.navGroups.includes(group.id));
+  const stepBaseId = appraisal?.id;
 
   return (
     <nav className="hidden w-60 shrink-0 flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar py-3 text-sidebar-foreground md:flex">
-      {NAV.map((group) => (
-        <div key={group.group} className="mb-4 px-2.5">
+      {visibleNav.map((group) => (
+        <div key={group.id} className="mb-4 px-2.5">
           <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.09em] text-sidebar-foreground/45">
             {group.group}
           </p>
           <ul className="space-y-px">
             {group.items.map((item) => {
+              if (item.step && !stepBaseId) return null;
               const to = item.step ? `/appraisals/${stepBaseId}/${item.to}` : item.to;
               const active =
-                item.to === "/" ? pathname === "/" : pathname === to || pathname.startsWith(to + "/");
+                item.to === "/"
+                  ? pathname === "/"
+                  : pathname === to || pathname.startsWith(to + "/");
               const isCurrentStep =
                 item.step && appraisal && STAGE_ROUTE[appraisal.stage] === item.to;
               return (
@@ -143,20 +171,35 @@ function SideNav() {
       ))}
       <div className="mt-auto px-4 pt-3 text-[11px] leading-snug text-sidebar-foreground/45">
         <span className="flex items-center gap-1.5">
-          <ShieldCheck className="h-3 w-3" /> Consent-bound data plane
+          <ShieldCheck className="h-3 w-3" /> {t("tenant.footer.dataPlaneNote")}
         </span>
-        <span className="mt-1 block">Build 4.2.1 · RBI-aligned retention</span>
+        <span className="mt-1 block">{t("tenant.footer.buildNote")}</span>
       </div>
     </nav>
   );
 }
 
-const PIPELINE = ["Identity", "Data", "Spread", "Cross-Verification", "Draft", "Submission"] as const;
+const PIPELINE_STAGES = [
+  "identity",
+  "data",
+  "spread",
+  "crossVerification",
+  "draft",
+  "submission",
+] as const;
 
 function ContextStrip() {
   const { appraisal } = useActiveAppraisal();
   if (!appraisal) return null;
-  const currentIndex = PIPELINE.indexOf(appraisal.stage as (typeof PIPELINE)[number]);
+  const stageOrder: (typeof appraisal.stage)[] = [
+    "Identity",
+    "Data",
+    "Spread",
+    "Cross-Verification",
+    "Draft",
+    "Submission",
+  ];
+  const currentIndex = stageOrder.indexOf(appraisal.stage);
 
   return (
     <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-border bg-surface px-5 py-2.5">
@@ -180,7 +223,7 @@ function ContextStrip() {
       </div>
 
       <div className="flex items-center gap-1">
-        {PIPELINE.map((stage, i) => {
+        {stageOrder.map((stage, i) => {
           const done = appraisal.stage === "Completed" || i < currentIndex;
           const current = i === currentIndex;
           return (
@@ -197,7 +240,7 @@ function ContextStrip() {
                     : "text-muted-foreground hover:bg-muted",
               )}
             >
-              {stage}
+              {t(`stage.${PIPELINE_STAGES[i]}`)}
             </Link>
           );
         })}

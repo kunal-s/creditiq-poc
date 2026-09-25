@@ -1,0 +1,70 @@
+# Role catalogue and the seeded sign-in directory for this POC instance.
+# Checked against the private stakeholder-name list before being added
+# (CLAUDE.md rule 3; plan.md C11/C12) — none of these names are real RBL
+# staff or the fictional picks the checklist excludes.
+#
+# This is authored config, not the runtime-editable policy/checklist/rules
+# store: nothing here changes without a new commit (plan.md section 3).
+
+roles:
+  - id: analyst
+    label: Credit Analyst
+  - id: rm
+    label: Relationship Manager
+  - id: credit-manager
+    label: Credit Manager
+  - id: cco
+    label: Chief Credit Officer
+  - id: admin
+    label: Administrator
+  - id: compliance
+    label: Compliance and Audit
+
+# Nav groups each role may see. Anything not listed here is not rendered
+# for that role (FR-19 role gating).
+navByRole:
+  analyst: [workbench, intake, appraisal, portfolio, governance]
+  rm: [workbench, intake, appraisal, portfolio]
+  credit-manager: [workbench, intake, appraisal, portfolio, governance]
+  cco: [workbench, intake, appraisal, portfolio, governance, admin]
+  admin: [admin, governance]
+  compliance: [governance]
+
+# Every seeded user signs in with this shared password — a POC convenience,
+# shown on the sign-in screen itself; no real data exists behind it yet.
+# Hash format: pbkdf2_sha256$<iterations>$<base64 salt>$<base64 digest>.
+auth:
+  demoPassword: "CreditIQ-2026!"
+  demoPasswordHash: "pbkdf2_sha256$200000$5LtmCZhjX1fDMqnRtfreVw==$q7H9/0TYT17znDSp4iPzeW2qgpxIfUeCE0ynPlkeORU="
+
+users:
+  - id: ananya-krishnan
+    name: Ananya Krishnan
+    role: analyst
+    email: ananya.krishnan@rblbank.com
+    branch: Mumbai hub
+  - id: arjun-deshpande
+    name: Arjun Deshpande
+    role: rm
+    email: arjun.deshpande@rblbank.com
+    branch: Pune Corporate Branch
+  - id: meenal-kulkarni
+    name: Meenal Kulkarni
+    role: credit-manager
+    email: meenal.kulkarni@rblbank.com
+    branch: Mumbai hub
+  - id: rohan-ferreira
+    name: Rohan Ferreira
+    role: cco
+    email: rohan.ferreira@rblbank.com
+    branch: Mumbai hub
+  - id: divya-menon
+    name: Divya Menon
+    role: admin
+    email: divya.menon@rblbank.com
+    branch: Mumbai hub
+  - id: siddharth-rane
+    name: Siddharth Rane
+    role: compliance
+    email: siddharth.rane@rblbank.com
+    branch: Mumbai hub

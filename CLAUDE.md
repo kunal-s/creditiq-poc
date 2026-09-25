@@ -4,15 +4,16 @@ This repository is the RBL Bank (Business Banking Group) instance of CreditIQ. I
 
 ## Read first
 
-- The approved build plan, the handoff note and the reference reports live outside this repository in `/app/app-creditiq-poc-work/`. Start with `HANDOFF.md`, then `plan.md`.
+- The approved build plan, the handoff note, the reference reports and the design reviews live in `workflow/docs/` (git-ignored, never committed). Start with `HANDOFF.md`, then `plan.md`.
+- Before building anything in the document-intelligence layer (intake to confidence gate), read `workflow/docs/reviews/2026-09-23-document-intelligence-review.md`; it reconciles the user's six-layer architecture (`workflow/docs/architecture/`) with the plan.
 - The reference reports are long. Load one only when the stage you are on needs it.
 - Work stage by stage (plan section 7) and stop for the user's sign-off at every checkpoint.
 
 ## Hard rules
 
-1. **WSL only.** Write nothing to the Windows filesystem or under `/mnt/c`. Code, data, captures, notes and temporary files stay on the WSL filesystem (`/tmp` for scratch). The Windows `Prospects/RBL` folder is read-only source material, and copies of it are already in the work area.
+1. **WSL only.** Write nothing to the Windows filesystem or under `/mnt/c`. Code, data, captures, notes and temporary files stay on the WSL filesystem (`/tmp` for scratch). The Windows `Prospects/RBL` folder (including its `RBL Poc` subfolder) is read-only source material. Copies of the FRD and the brief's OCR text live in `workflow/docs/reference/source/`. **Call transcripts are never copied into WSL**: read them in place in the Windows folder.
 2. **Never push to `upstream`.** It is the generic repository and it syncs to an external hosted editor. Push is disabled on purpose. Push only to a remote the user names.
-3. **Private material stays out of this repository**: the stakeholder-name list, pre-strip route captures, API keys (`/app/app-creditiq-poc-work/.env`), copies of source documents, and real case files (`/app/app-creditiq-poc-data/real`, mode 700). Never read `.env` values into a conversation.
+3. **Private material never enters git.** It all lives under the git-ignored `workflow/`: the stakeholder-name list and API keys (`workflow/private/`, mode 700), route captures (`workflow/captures/`; pre-strip ones contain removed names), copies of source documents (`workflow/docs/`), and all case data (`workflow/data/` is the default `CREDITIQ_DATA_ROOT`; real case files in `workflow/data/real`, mode 700). Never `git add -f` anything under `workflow/`. **Never run `git clean -x` or `-X`**: it deletes ignored files, which would wipe the data root and the audit ledger. Never read `.env` values into a conversation.
 4. **Configuration governs behaviour; nothing learns at runtime.** Pipeline, review, copilot and harness code must not be able to import the configuration writer. An administrator's publish creates a new immutable version; nothing is edited in place.
 5. **No wall clock in rules.** Age and window checks use the case's fixed `as_of` date.
 6. **Determinism is record and replay** of model responses. Do not send sampling parameters to model APIs.

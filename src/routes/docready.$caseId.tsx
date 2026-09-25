@@ -1,7 +1,7 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 import { useDocReadyCase, readiness } from "@/data/docready";
-import { DocViewerProvider } from "@/components/docviewer/DocViewer";
+import { t } from "@/config/terminology";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/docready/$caseId")({
@@ -9,11 +9,11 @@ export const Route = createFileRoute("/docready/$caseId")({
 });
 
 const TABS = [
-  { to: "checklist", label: "Checklist" },
-  { to: "collection", label: "Collection" },
-  { to: "validation", label: "Validation" },
-  { to: "readiness", label: "Readiness" },
-  { to: "portal", label: "Client portal" },
+  { to: "checklist", label: t("intakeTabs.checklist") },
+  { to: "collection", label: t("intakeTabs.collection") },
+  { to: "validation", label: t("intakeTabs.validation") },
+  { to: "readiness", label: t("intakeTabs.readiness") },
+  { to: "portal", label: t("intakeTabs.borrowerPortal") },
 ] as const;
 
 function CaseLayout() {
@@ -36,7 +36,6 @@ function CaseLayout() {
   const r = readiness(c);
 
   return (
-    <DocViewerProvider>
     <div>
       <div className="border-b border-border bg-surface-muted/60 px-6 pt-4">
         <div className="rounded-md border border-border bg-surface shadow-sm">
@@ -45,7 +44,9 @@ function CaseLayout() {
               <p className="field-label">
                 DocReady case · {c.segment} enterprise · {c.constitution}
               </p>
-              <h1 className="text-[19px] font-semibold tracking-tight text-foreground">{c.borrower}</h1>
+              <h1 className="text-[19px] font-semibold tracking-tight text-foreground">
+                {c.borrower}
+              </h1>
               <div className="tabular mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
                 <span>{c.id}</span>
                 <span className="text-border">|</span>
@@ -65,13 +66,19 @@ function CaseLayout() {
               <div className="min-w-[168px]">
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="field-label">Readiness</span>
-                  <span className="tabular text-[15px] font-semibold leading-none text-foreground">{r.score}%</span>
+                  <span className="tabular text-[15px] font-semibold leading-none text-foreground">
+                    {r.score}%
+                  </span>
                 </div>
                 <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
                   <div
                     className={cn(
                       "h-full rounded-full transition-all",
-                      r.reviewGate ? "bg-positive" : r.blockingOpen > 0 ? "bg-destructive" : "bg-flag",
+                      r.reviewGate
+                        ? "bg-positive"
+                        : r.blockingOpen > 0
+                          ? "bg-destructive"
+                          : "bg-flag",
                     )}
                     style={{ width: `${r.score}%` }}
                   />
@@ -141,9 +148,7 @@ function CaseLayout() {
         </nav>
       </div>
 
-
       <Outlet />
     </div>
-    </DocViewerProvider>
   );
 }

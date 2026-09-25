@@ -1,0 +1,117 @@
+# Case B: the clean case (plan.md section 6 "Case B triangulates by
+# construction"). Partnership, Ludhiana. Cash-credit-only request sized at
+# or below the turnover-method threshold (FR-3), so no MPBF question arises
+# here — that is exercised by Case A instead (departure 1). Takeover of an
+# existing cash credit from a fictional bank. Carries zero planted findings.
+#
+# Precision traps the ledger/document generator must still produce, and
+# which the reference evaluator must confirm all normalise to a pass (not
+# modelled as `plants`, since a plant is a finding and Case B has none):
+# a declared-lender EMI; an own-account sweep sized above 1.5x the turnover
+# tolerance; one loan disbursal credit; one reversed NEFT; one outward
+# cheque return; truncated customer-name variants in the bank narration;
+# GST-inclusive (gross) bank credits compared against GST taxable value plus
+# tax, not against net book turnover.
+#
+# Identifiers are pinned literals, checksum-valid where a checksum exists
+# (GSTIN). Existence against MCA/GST/Udyam/RBI/ICAI is the human
+# verification step (plan.md C11) — not yet done; see HANDOFF.md.
+schema: creditiq.samplecase/1
+case_id: case-b
+seed: 20260512
+
+timeline:
+  as_of: 2026-05-12
+  application_received: 2026-04-25
+  window_start: 2025-04-01
+  window_end: 2026-03-31
+  audited_fys: [2024, 2025]
+  provisional_fy: 2026
+  provisional_months: 12
+  provisional_signed_on: 2026-04-18
+
+entity:
+  legal_name: Satluj Hand Tools
+  constitution: partnership
+  activity: manufacturing
+  sector: Hand tools and light engineering goods
+  formed_on: 2011-09-02
+  employees: 34
+  msme_class: small
+  address:
+    line1: Focal Point, Phase VI
+    city: Ludhiana
+    state: Punjab
+    gst_state_code: "03"
+    pin: "141010"
+
+identifiers:
+  pan: AAFFS7821K
+  gstin: 03AAFFS7821K1Z3
+  cin: null
+  udyam: UDYAM-PB-12-0034567
+  tan: LUDS05678K
+
+people:
+  - id: p1
+    name: Harpreet Singh Dhillon
+    role: managing_partner
+    pan: AKWPD1234H
+    share_pct: 60
+  - id: p2
+    name: Gurmeet Kaur Sidhu
+    role: partner
+    pan: AKWPS5678J
+    share_pct: 40
+
+banks:
+  - id: bk1
+    name: Beas Commercial Bank
+    fictional: true
+    ifsc_prefix: BEAS
+
+lenders: []
+
+accounts:
+  - id: a1
+    bank: bk1
+    type: cash_credit
+    number: "041178562"
+    limit: 28000000
+    declared: true
+    statement_provided: true
+
+facilities_existing:
+  - id: f1
+    lender: bk1
+    type: cash_credit
+    amount: 28000000
+    account: a1
+    declared: true
+
+request:
+  facilities:
+    - type: cash_credit
+      nature: enhancement
+      amount: 35000000
+      purpose: Working capital for higher trading volumes
+  collateral_present: false
+  assessment_method_expected: turnover_method
+
+financial_model:
+  revenue:
+    2023: 108000000
+    2024: 131000000
+    2025: 152000000
+    2026: 170000000 # provisional FY, the bank statement's period
+  cost_ratios: {materials: 0.66, employee: 0.09, power: 0.025, other: 0.065}
+  tax_rate: 0.312
+  net_worth_opening: 9000000
+  working_capital_days: {inventory_days: 44, debtor_days: 38, creditor_days: 33}
+  gst_rate: 0.18
+
+plants: []
+
+baseline:
+  caught: []
+  missed: []

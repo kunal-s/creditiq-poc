@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-export const DOC_BASE = "/docready-southgate-documents";
+export const DOC_BASE = "/docready-documents";
 
 export type ManifestEvidence = { page: number; snippet: string };
 

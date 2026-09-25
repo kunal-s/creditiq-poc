@@ -137,7 +137,9 @@ export function PdfPage({
         />
       ))}
       {loading && !error && (
-        <p className="absolute inset-x-0 top-6 text-center text-[12px] text-muted-foreground">Rendering page…</p>
+        <p className="absolute inset-x-0 top-6 text-center text-[12px] text-muted-foreground">
+          Rendering page…
+        </p>
       )}
       {error && (
         <p className="rounded border border-destructive/30 bg-destructive/10 px-3 py-2 text-[12px] text-destructive">

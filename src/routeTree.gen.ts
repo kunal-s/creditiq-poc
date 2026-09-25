@@ -13,12 +13,13 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuditRouteImport } from './routes/audit'
 import { Route as ExceptionsRouteImport } from './routes/exceptions'
 import { Route as MemosRouteImport } from './routes/memos'
+import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as AdminConnectorsRouteImport } from './routes/admin.connectors'
 import { Route as AdminPolicyRouteImport } from './routes/admin.policy'
 import { Route as AdminTemplatesRouteImport } from './routes/admin.templates'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as ApplicationsNewRouteImport } from './routes/applications.new'
 import { Route as AppraisalsIndexRouteImport } from './routes/appraisals.index'
-import { Route as AppraisalsNewRouteImport } from './routes/appraisals.new'
 import { Route as BorrowersSlugRouteImport } from './routes/borrowers.$slug'
 import { Route as DocreadyIndexRouteImport } from './routes/docready.index'
 import { Route as DocreadyCaseIdRouteImport } from './routes/docready.$caseId'
@@ -61,6 +62,11 @@ const MemosRoute = MemosRouteImport.update({
   path: '/memos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SignInRoute = SignInRouteImport.update({
+  id: '/sign-in',
+  path: '/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminConnectorsRoute = AdminConnectorsRouteImport.update({
   id: '/admin/connectors',
   path: '/admin/connectors',
@@ -81,14 +87,14 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   path: '/admin/users',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApplicationsNewRoute = ApplicationsNewRouteImport.update({
+  id: '/applications/new',
+  path: '/applications/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppraisalsIndexRoute = AppraisalsIndexRouteImport.update({
   id: '/appraisals/',
   path: '/appraisals/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AppraisalsNewRoute = AppraisalsNewRouteImport.update({
-  id: '/appraisals/new',
-  path: '/appraisals/new',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BorrowersSlugRoute = BorrowersSlugRouteImport.update({
@@ -205,11 +211,12 @@ export interface FileRoutesByFullPath {
   '/audit': typeof AuditRoute
   '/exceptions': typeof ExceptionsRoute
   '/memos': typeof MemosRoute
+  '/sign-in': typeof SignInRoute
   '/admin/connectors': typeof AdminConnectorsRoute
   '/admin/policy': typeof AdminPolicyRoute
   '/admin/templates': typeof AdminTemplatesRoute
   '/admin/users': typeof AdminUsersRoute
-  '/appraisals/new': typeof AppraisalsNewRoute
+  '/applications/new': typeof ApplicationsNewRoute
   '/borrowers/$slug': typeof BorrowersSlugRoute
   '/docready/$caseId': typeof DocreadyCaseIdRouteWithChildren
   '/entities/$slug': typeof EntitiesSlugRoute
@@ -238,11 +245,12 @@ export interface FileRoutesByTo {
   '/audit': typeof AuditRoute
   '/exceptions': typeof ExceptionsRoute
   '/memos': typeof MemosRoute
+  '/sign-in': typeof SignInRoute
   '/admin/connectors': typeof AdminConnectorsRoute
   '/admin/policy': typeof AdminPolicyRoute
   '/admin/templates': typeof AdminTemplatesRoute
   '/admin/users': typeof AdminUsersRoute
-  '/appraisals/new': typeof AppraisalsNewRoute
+  '/applications/new': typeof ApplicationsNewRoute
   '/borrowers/$slug': typeof BorrowersSlugRoute
   '/entities/$slug': typeof EntitiesSlugRoute
   '/people/$slug': typeof PeopleSlugRoute
@@ -271,11 +279,12 @@ export interface FileRoutesById {
   '/audit': typeof AuditRoute
   '/exceptions': typeof ExceptionsRoute
   '/memos': typeof MemosRoute
+  '/sign-in': typeof SignInRoute
   '/admin/connectors': typeof AdminConnectorsRoute
   '/admin/policy': typeof AdminPolicyRoute
   '/admin/templates': typeof AdminTemplatesRoute
   '/admin/users': typeof AdminUsersRoute
-  '/appraisals/new': typeof AppraisalsNewRoute
+  '/applications/new': typeof ApplicationsNewRoute
   '/borrowers/$slug': typeof BorrowersSlugRoute
   '/docready/$caseId': typeof DocreadyCaseIdRouteWithChildren
   '/entities/$slug': typeof EntitiesSlugRoute
@@ -306,11 +315,12 @@ export interface FileRouteTypes {
     | '/audit'
     | '/exceptions'
     | '/memos'
+    | '/sign-in'
     | '/admin/connectors'
     | '/admin/policy'
     | '/admin/templates'
     | '/admin/users'
-    | '/appraisals/new'
+    | '/applications/new'
     | '/borrowers/$slug'
     | '/docready/$caseId'
     | '/entities/$slug'
@@ -339,11 +349,12 @@ export interface FileRouteTypes {
     | '/audit'
     | '/exceptions'
     | '/memos'
+    | '/sign-in'
     | '/admin/connectors'
     | '/admin/policy'
     | '/admin/templates'
     | '/admin/users'
-    | '/appraisals/new'
+    | '/applications/new'
     | '/borrowers/$slug'
     | '/entities/$slug'
     | '/people/$slug'
@@ -371,11 +382,12 @@ export interface FileRouteTypes {
     | '/audit'
     | '/exceptions'
     | '/memos'
+    | '/sign-in'
     | '/admin/connectors'
     | '/admin/policy'
     | '/admin/templates'
     | '/admin/users'
-    | '/appraisals/new'
+    | '/applications/new'
     | '/borrowers/$slug'
     | '/docready/$caseId'
     | '/entities/$slug'
@@ -405,11 +417,12 @@ export interface RootRouteChildren {
   AuditRoute: typeof AuditRoute
   ExceptionsRoute: typeof ExceptionsRoute
   MemosRoute: typeof MemosRoute
+  SignInRoute: typeof SignInRoute
   AdminConnectorsRoute: typeof AdminConnectorsRoute
   AdminPolicyRoute: typeof AdminPolicyRoute
   AdminTemplatesRoute: typeof AdminTemplatesRoute
   AdminUsersRoute: typeof AdminUsersRoute
-  AppraisalsNewRoute: typeof AppraisalsNewRoute
+  ApplicationsNewRoute: typeof ApplicationsNewRoute
   BorrowersSlugRoute: typeof BorrowersSlugRoute
   DocreadyCaseIdRoute: typeof DocreadyCaseIdRouteWithChildren
   EntitiesSlugRoute: typeof EntitiesSlugRoute
@@ -458,6 +471,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MemosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sign-in': {
+      id: '/sign-in'
+      path: '/sign-in'
+      fullPath: '/sign-in'
+      preLoaderRoute: typeof SignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/connectors': {
       id: '/admin/connectors'
       path: '/admin/connectors'
@@ -486,18 +506,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/applications/new': {
+      id: '/applications/new'
+      path: '/applications/new'
+      fullPath: '/applications/new'
+      preLoaderRoute: typeof ApplicationsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/appraisals/': {
       id: '/appraisals/'
       path: '/appraisals'
       fullPath: '/appraisals/'
       preLoaderRoute: typeof AppraisalsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/appraisals/new': {
-      id: '/appraisals/new'
-      path: '/appraisals/new'
-      fullPath: '/appraisals/new'
-      preLoaderRoute: typeof AppraisalsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/borrowers/$slug': {
@@ -677,11 +697,12 @@ const rootRouteChildren: RootRouteChildren = {
   AuditRoute: AuditRoute,
   ExceptionsRoute: ExceptionsRoute,
   MemosRoute: MemosRoute,
+  SignInRoute: SignInRoute,
   AdminConnectorsRoute: AdminConnectorsRoute,
   AdminPolicyRoute: AdminPolicyRoute,
   AdminTemplatesRoute: AdminTemplatesRoute,
   AdminUsersRoute: AdminUsersRoute,
-  AppraisalsNewRoute: AppraisalsNewRoute,
+  ApplicationsNewRoute: ApplicationsNewRoute,
   BorrowersSlugRoute: BorrowersSlugRoute,
   DocreadyCaseIdRoute: DocreadyCaseIdRouteWithChildren,
   EntitiesSlugRoute: EntitiesSlugRoute,

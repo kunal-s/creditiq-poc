@@ -1,0 +1,6 @@
+# Deployment-features config (plan.md C13): FR-19 bans dead ends, but live
+# connectivity is out of scope for this instance. Rather than build the
+# Account Aggregator journey and external connectors as no-op UI, they are
+# switched off here and the affected screens say so plainly.
+accountAggregatorEnabled: false
+externalConnectorsEnabled: false

@@ -4,15 +4,17 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import { reportLovableError } from "../lib/lovable-error-reporting";
+import { t } from "../config/terminology";
 import { AppShell } from "../components/shell/AppShell";
 import { Toaster } from "../components/ui/sonner";
+import { useSession } from "../domain/session";
 
 function NotFoundComponent() {
   return (
@@ -36,11 +38,11 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: { error: unknown; reset: () => void }) {
   console.error(error);
   const router = useRouter();
   useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
+    console.error("root error boundary:", error);
   }, [error]);
 
   return (
@@ -79,25 +81,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Credit Workbench — CreditIQ" },
+      { title: t("tenant.product.documentTitleTemplate") },
       {
         name: "description",
-        content:
-          "CreditIQ workbench",
+        content: t("tenant.product.metaDescription"),
       },
-      { name: "author", content: "Continental Commercial Bank" },
-      { property: "og:title", content: "Credit Workbench — CreditIQ" },
+      { name: "author", content: t("tenant.bank.name") },
+      { property: "og:title", content: t("tenant.product.documentTitleTemplate") },
       {
         property: "og:description",
-        content:
-          "CreditIQ workbench",
+        content: t("tenant.product.metaDescription"),
       },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Credit Workbench — CreditIQ" },
-      { name: "twitter:description", content: "CreditIQ workbench" },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/472cdb81-8095-43d6-86db-bec0aa9c2c31/id-preview-ee57d52e--a8f93fcf-db98-427e-91b0-c11c7dfcfaee.lovable.app-1785483944810.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/472cdb81-8095-43d6-86db-bec0aa9c2c31/id-preview-ee57d52e--a8f93fcf-db98-427e-91b0-c11c7dfcfaee.lovable.app-1785483944810.png" },
     ],
     links: [
       {
@@ -132,15 +127,36 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+function AuthGate() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const session = useSession();
+  const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    if (mounted && pathname !== "/sign-in" && !session) {
+      router.navigate({ to: "/sign-in" });
+    }
+  }, [mounted, pathname, session, router]);
+
+  if (pathname === "/sign-in") return <Outlet />;
+  if (!mounted || !session) return null;
+
+  return (
+    <AppShell>
+      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+      <Outlet />
+    </AppShell>
+  );
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AppShell>
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
-      </AppShell>
+      <AuthGate />
       <Toaster position="bottom-right" />
     </QueryClientProvider>
   );

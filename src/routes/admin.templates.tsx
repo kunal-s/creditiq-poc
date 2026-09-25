@@ -1,9 +1,10 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowDown, ArrowUp, ArrowUpRight, FileText, Sparkles, Upload } from "lucide-react";
+import { ArrowDown, ArrowUp, Sparkles, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shell/PlaceholderPage";
 import { Panel } from "@/components/identity/chips";
+import { EmptyState } from "@/components/shell/EmptyState";
 import {
   TONE_PRESETS,
   moveSection,
@@ -12,29 +13,22 @@ import {
   updateSection,
   useAdminState,
 } from "@/data/admin";
-import { SECTIONS } from "@/data/memo";
+import { useSession } from "@/domain/session";
+import { t } from "@/config/terminology";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/templates")({
-  head: () => {
-    const title = "CAM template designer — CreditIQ";
-    const description =
-      "Define Continental Commercial Bank's CAM structure, section order, house tone and citation style, previewed live against the seeded Northwind Manufacturing memo before publishing.";
-    return {
-      meta: [
-        { title },
-        { name: "description", content: description },
-        { property: "og:title", content: title },
-        { property: "og:description", content: description },
-        { property: "og:type", content: "website" },
-        { name: "twitter:card", content: "summary" },
-      ],
-    };
-  },
+  head: () => ({
+    meta: [
+      { title: `${t("page.adminTemplates.title")} — ${t("tenant.product.name")}` },
+      {
+        name: "description",
+        content: `Define ${t("tenant.bank.name")}'s CAM structure, section order, house tone and citation style.`,
+      },
+    ],
+  }),
   component: TemplateDesigner,
 });
-
-const strip = (s: string) => s.replace(/\[\[[a-z0-9-]+\]\]/gi, "").replace(/\s+([.,;])/g, "$1");
 
 const CITATION_LABEL = {
   "every-figure": "Cite every figure",
@@ -43,8 +37,10 @@ const CITATION_LABEL = {
 } as const;
 
 function TemplateDesigner() {
+  const session = useSession();
+  const actor = session?.user.name ?? "Unknown";
   const s = useAdminState();
-  const [version, setVersion] = useState("v4.3");
+  const [version, setVersion] = useState("v1.1");
   const [openSection, setOpenSection] = useState<string | null>(null);
 
   const tone = TONE_PRESETS.find((t) => t.id === s.templateSettings.tone)!;
@@ -54,17 +50,19 @@ function TemplateDesigner() {
   return (
     <div>
       <PageHeader
-        eyebrow="Admin · CAM template"
-        title="Template designer"
-        purpose="The bank's own memo: which sections appear, in what order, how long each runs, and the house tone the drafting engine writes in. Published templates shape every memo CreditIQ generates."
+        eyebrow={t("page.adminTemplates.eyebrow")}
+        title={t("page.adminTemplates.title")}
+        purpose={`The bank's own memo: which sections appear, in what order, how long each runs, and the house tone the drafting engine writes in. Published templates shape every memo ${t("tenant.product.name")} generates.`}
         actions={
           <>
-            <span className="hidden items-center gap-1.5 rounded border border-border bg-surface-muted px-2 py-1.5 text-[11.5px] text-muted-foreground lg:inline-flex">
-              Published: CCB CAM template v4.2 · 18 April 2026
-            </span>
+            {s.templatePublished && (
+              <span className="hidden items-center gap-1.5 rounded border border-border bg-surface-muted px-2 py-1.5 text-[11.5px] text-muted-foreground lg:inline-flex">
+                Published: {s.templatePublished.version} by {s.templatePublished.by}
+              </span>
+            )}
             <button
               onClick={() => {
-                publishTemplate(version);
+                publishTemplate(version, actor);
                 toast.success(`CAM template ${version} published`, {
                   description: `${enabled.length} sections, ${tone.label}. Applies to every memo drafted from now.`,
                 });
@@ -96,10 +94,20 @@ function TemplateDesigner() {
             <ol className="divide-y divide-border">
               {s.template.map((sec, i) => (
                 <li key={sec.id}>
-                  <div className={cn("flex items-start gap-3 px-4 py-2.5", !sec.enabled && "opacity-60")}>
-                    <span className="w-5 shrink-0 pt-0.5 text-[12px] tabular-nums text-muted-foreground">{i + 1}</span>
+                  <div
+                    className={cn(
+                      "flex items-start gap-3 px-4 py-2.5",
+                      !sec.enabled && "opacity-60",
+                    )}
+                  >
+                    <span className="w-5 shrink-0 pt-0.5 text-[12px] tabular-nums text-muted-foreground">
+                      {i + 1}
+                    </span>
                     <div className="min-w-0 flex-1">
-                      <button onClick={() => setOpenSection(openSection === sec.id ? null : sec.id)} className="block text-left">
+                      <button
+                        onClick={() => setOpenSection(openSection === sec.id ? null : sec.id)}
+                        className="block text-left"
+                      >
                         <p className="text-[13px] font-medium text-foreground">{sec.title}</p>
                         <p className="mt-0.5 text-[11.5px] text-muted-foreground">{sec.purpose}</p>
                       </button>
@@ -111,13 +119,15 @@ function TemplateDesigner() {
                           {CITATION_LABEL[sec.citations]}
                         </span>
                         {sec.required && (
-                          <span className="rounded border border-info/25 bg-info-soft px-1.5 py-0.5 text-info">Mandatory under CCB policy 3.1</span>
+                          <span className="rounded border border-info/25 bg-info-soft px-1.5 py-0.5 text-info">
+                            Mandatory section
+                          </span>
                         )}
                       </div>
                     </div>
                     <div className="flex shrink-0 items-center gap-1">
                       <button
-                        onClick={() => moveSection(sec.id, -1)}
+                        onClick={() => moveSection(sec.id, -1, actor)}
                         disabled={i === 0}
                         className="rounded border border-border p-1 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
                         aria-label={`Move ${sec.title} up`}
@@ -125,7 +135,7 @@ function TemplateDesigner() {
                         <ArrowUp className="h-3.5 w-3.5" />
                       </button>
                       <button
-                        onClick={() => moveSection(sec.id, 1)}
+                        onClick={() => moveSection(sec.id, 1, actor)}
                         disabled={i === s.template.length - 1}
                         className="rounded border border-border p-1 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
                         aria-label={`Move ${sec.title} down`}
@@ -135,14 +145,18 @@ function TemplateDesigner() {
                       <button
                         onClick={() => {
                           if (sec.required) {
-                            toast.error(`${sec.title} is mandatory`, { description: "CCB policy 3.1 requires this section in every CAM." });
+                            toast.error(`${sec.title} is mandatory`, {
+                              description: "Policy requires this section in every CAM.",
+                            });
                             return;
                           }
-                          updateSection(sec.id, { enabled: !sec.enabled });
+                          updateSection(sec.id, { enabled: !sec.enabled }, actor);
                         }}
                         className={cn(
                           "rounded border px-2 py-1 text-[11.5px]",
-                          sec.enabled ? "border-positive/30 bg-positive-soft text-positive" : "border-border bg-surface text-muted-foreground",
+                          sec.enabled
+                            ? "border-positive/30 bg-positive-soft text-positive"
+                            : "border-border bg-surface text-muted-foreground",
                         )}
                       >
                         {sec.enabled ? "On" : "Off"}
@@ -155,7 +169,7 @@ function TemplateDesigner() {
                         <span className="field-label">Section heading</span>
                         <input
                           value={sec.title}
-                          onChange={(e) => updateSection(sec.id, { title: e.target.value })}
+                          onChange={(e) => updateSection(sec.id, { title: e.target.value }, actor)}
                           className="mt-1 h-8 w-full rounded border border-border bg-surface px-2 text-[12.5px] text-foreground"
                         />
                       </label>
@@ -165,7 +179,9 @@ function TemplateDesigner() {
                           type="number"
                           step={20}
                           value={sec.words}
-                          onChange={(e) => updateSection(sec.id, { words: Number(e.target.value) || 0 })}
+                          onChange={(e) =>
+                            updateSection(sec.id, { words: Number(e.target.value) || 0 }, actor)
+                          }
                           className="mt-1 h-8 w-full rounded border border-border bg-surface px-2 text-[12.5px] tabular-nums text-foreground"
                         />
                       </label>
@@ -173,7 +189,9 @@ function TemplateDesigner() {
                         <span className="field-label">Purpose shown to the drafting engine</span>
                         <input
                           value={sec.purpose}
-                          onChange={(e) => updateSection(sec.id, { purpose: e.target.value })}
+                          onChange={(e) =>
+                            updateSection(sec.id, { purpose: e.target.value }, actor)
+                          }
                           className="mt-1 h-8 w-full rounded border border-border bg-surface px-2 text-[12.5px] text-foreground"
                         />
                       </label>
@@ -183,10 +201,12 @@ function TemplateDesigner() {
                           {(["every-figure", "material-only", "none"] as const).map((c) => (
                             <button
                               key={c}
-                              onClick={() => updateSection(sec.id, { citations: c })}
+                              onClick={() => updateSection(sec.id, { citations: c }, actor)}
                               className={cn(
                                 "rounded border px-2 py-1 text-[11.5px]",
-                                sec.citations === c ? "border-primary bg-primary/10 text-primary" : "border-border bg-surface text-muted-foreground hover:bg-muted",
+                                sec.citations === c
+                                  ? "border-primary bg-primary/10 text-primary"
+                                  : "border-border bg-surface text-muted-foreground hover:bg-muted",
                               )}
                             >
                               {CITATION_LABEL[c]}
@@ -201,7 +221,10 @@ function TemplateDesigner() {
             </ol>
           </Panel>
 
-          <Panel title="House tone and presentation" subtitle="How the drafting engine writes, for every memo in this tenant.">
+          <Panel
+            title="House tone and presentation"
+            subtitle="How the drafting engine writes, for every memo in this tenant."
+          >
             <div className="space-y-3 px-4 py-3">
               <div>
                 <p className="field-label">Tone</p>
@@ -209,10 +232,12 @@ function TemplateDesigner() {
                   {TONE_PRESETS.map((t) => (
                     <button
                       key={t.id}
-                      onClick={() => setTemplateSettings({ tone: t.id })}
+                      onClick={() => setTemplateSettings({ tone: t.id }, actor)}
                       className={cn(
                         "rounded border p-2.5 text-left",
-                        s.templateSettings.tone === t.id ? "border-primary bg-primary/5" : "border-border bg-surface hover:bg-muted",
+                        s.templateSettings.tone === t.id
+                          ? "border-primary bg-primary/5"
+                          : "border-border bg-surface hover:bg-muted",
                       )}
                     >
                       <p className="text-[12.5px] font-medium text-foreground">{t.label}</p>
@@ -225,17 +250,21 @@ function TemplateDesigner() {
                 <div>
                   <p className="field-label">Figures</p>
                   <div className="mt-1 flex flex-wrap gap-1.5">
-                    {([
-                      ["crore-2dp", "INR crore, 2 dp"],
-                      ["lakh-0dp", "INR lakh, 0 dp"],
-                      ["absolute", "Absolute rupees"],
-                    ] as const).map(([id, label]) => (
+                    {(
+                      [
+                        ["crore-2dp", "INR crore, 2 dp"],
+                        ["lakh-0dp", "INR lakh, 0 dp"],
+                        ["absolute", "Absolute rupees"],
+                      ] as const
+                    ).map(([id, label]) => (
                       <button
                         key={id}
-                        onClick={() => setTemplateSettings({ figures: id })}
+                        onClick={() => setTemplateSettings({ figures: id }, actor)}
                         className={cn(
                           "rounded border px-2 py-1 text-[11.5px]",
-                          s.templateSettings.figures === id ? "border-primary bg-primary/10 text-primary" : "border-border bg-surface text-muted-foreground hover:bg-muted",
+                          s.templateSettings.figures === id
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border bg-surface text-muted-foreground hover:bg-muted",
                         )}
                       >
                         {label}
@@ -246,16 +275,20 @@ function TemplateDesigner() {
                 <div>
                   <p className="field-label">Citations</p>
                   <div className="mt-1 flex flex-wrap gap-1.5">
-                    {([
-                      ["inline", "In-line after each claim"],
-                      ["endnote", "Endnotes per section"],
-                    ] as const).map(([id, label]) => (
+                    {(
+                      [
+                        ["inline", "In-line after each claim"],
+                        ["endnote", "Endnotes per section"],
+                      ] as const
+                    ).map(([id, label]) => (
                       <button
                         key={id}
-                        onClick={() => setTemplateSettings({ citations: id })}
+                        onClick={() => setTemplateSettings({ citations: id }, actor)}
                         className={cn(
                           "rounded border px-2 py-1 text-[11.5px]",
-                          s.templateSettings.citations === id ? "border-primary bg-primary/10 text-primary" : "border-border bg-surface text-muted-foreground hover:bg-muted",
+                          s.templateSettings.citations === id
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border bg-surface text-muted-foreground hover:bg-muted",
                         )}
                       >
                         {label}
@@ -268,7 +301,7 @@ function TemplateDesigner() {
                 <span className="field-label">Document header</span>
                 <input
                   value={s.templateSettings.header}
-                  onChange={(e) => setTemplateSettings({ header: e.target.value })}
+                  onChange={(e) => setTemplateSettings({ header: e.target.value }, actor)}
                   className="mt-1 h-8 w-full rounded border border-border bg-surface px-2 text-[12.5px] text-foreground"
                 />
               </label>
@@ -289,61 +322,40 @@ function TemplateDesigner() {
         {/* preview */}
         <div className="space-y-4">
           <Panel
-            title="Live preview — Northwind Manufacturing Ltd"
-            subtitle="The seeded memo rendered in the draft template, in the current order and tone."
-            action={
-              <Link
-                to="/appraisals/$id/draft"
-                params={{ id: "CAM-2026-0418" }}
-                className="flex h-8 items-center gap-1 rounded border border-border bg-surface px-2.5 text-[12px] hover:bg-muted"
-              >
-                Open the memo <ArrowUpRight className="h-3 w-3" />
-              </Link>
-            }
+            title="Structure preview"
+            subtitle="The draft template's order and tone. Section content is filled in once a memo is drafted."
           >
             <div className="max-h-[900px] overflow-y-auto px-5 py-4">
               <p className="border-b border-border pb-2 text-[11px] uppercase tracking-wide text-muted-foreground">
                 {s.templateSettings.header}
               </p>
-              <h3 className="mt-3 text-[15px] font-semibold text-foreground">
-                Credit Appraisal Memorandum — Northwind Manufacturing Ltd
-              </h3>
-              <p className="text-[12px] text-muted-foreground">
-                CAM-2026-0418 · Cash Credit enhancement to INR 18.50 cr and LC/BG INR 6.75 cr · Pune Corporate Branch · prepared by
-                Elena Rossi
-              </p>
-              <div className="mt-4 space-y-4">
-                {s.template
-                  .filter((sec) => sec.enabled)
-                  .map((sec, i) => {
-                    const source = SECTIONS.find((x) => x.id === sec.id);
-                    const para = source ? strip(source.body[0] ?? "") : "";
-                    return (
+              {s.template.filter((sec) => sec.enabled).length === 0 ? (
+                <EmptyState
+                  title="No sections enabled"
+                  description="Turn on at least one section to see the structure preview."
+                />
+              ) : (
+                <div className="mt-4 space-y-4">
+                  {s.template
+                    .filter((sec) => sec.enabled)
+                    .map((sec, i) => (
                       <section key={sec.id}>
                         <h4 className="text-[12.5px] font-semibold text-foreground">
                           {i + 1}. {sec.title}
                         </h4>
                         <p className="mt-1 text-[12.5px] leading-relaxed text-muted-foreground">
-                          {para.length > 520 ? `${para.slice(0, 520)}…` : para}
+                          {sec.purpose}
                         </p>
-                        {source?.facts && (
-                          <dl className="mt-1.5 space-y-0.5">
-                            {source.facts.slice(0, 4).map((f) => (
-                              <div key={f.label} className="flex gap-2 text-[11.5px]">
-                                <dt className="w-32 shrink-0 text-muted-foreground">{f.label}</dt>
-                                <dd className="min-w-0 flex-1 text-foreground">{f.value}</dd>
-                              </div>
-                            ))}
-                          </dl>
-                        )}
                         <p className="mt-1 text-[11px] text-muted-foreground">
                           {CITATION_LABEL[sec.citations]} · target {sec.words} words ·{" "}
-                          {s.templateSettings.citations === "inline" ? "citations in line" : "citations as endnotes"}
+                          {s.templateSettings.citations === "inline"
+                            ? "citations in line"
+                            : "citations as endnotes"}
                         </p>
                       </section>
-                    );
-                  })}
-              </div>
+                    ))}
+                </div>
+              )}
               <p className="mt-4 border-t border-border pt-2 text-[11.5px] text-muted-foreground">
                 {s.templateSettings.annexures.join(" · ")}
               </p>
@@ -355,11 +367,11 @@ function TemplateDesigner() {
               <Sparkles className="h-3.5 w-3.5 text-primary" /> Ask the copilot
             </p>
             <p className="mt-1 text-[12px] text-muted-foreground">
-              "Draft a section outline for a new Trade Finance annexure" — the copilot proposes headings, the evidence each needs and
-              where it should sit in the running order.
+              "Draft a section outline for a new Trade Finance annexure" — the copilot proposes
+              headings, the evidence each needs and where it should sit in the running order.
             </p>
             <p className="mt-2 flex items-center gap-1.5 text-[11.5px] text-muted-foreground">
-              <FileText className="h-3.5 w-3.5" /> Published templates shape every memo in the Memo Library.
+              Published templates shape every memo in the {t("nav.memoLibrary")}.
             </p>
           </div>
         </div>

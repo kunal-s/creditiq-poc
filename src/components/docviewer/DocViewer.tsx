@@ -1,5 +1,12 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
-import { ChevronLeft, ChevronRight, ExternalLink, FileText, GitCompareArrows, X } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  FileText,
+  GitCompareArrows,
+  X,
+} from "lucide-react";
 import {
   DEFECT_LABEL,
   DOC_BASE,
@@ -16,7 +23,11 @@ import { cn } from "@/lib/utils";
 
 type ViewerRequest =
   | { mode: "single"; filename: string; page?: number }
-  | { mode: "compare"; left: { filename: string; page?: number }; right: { filename: string; page?: number } };
+  | {
+      mode: "compare";
+      left: { filename: string; page?: number };
+      right: { filename: string; page?: number };
+    };
 
 type Ctx = {
   manifest: DocManifest | undefined;
@@ -43,13 +54,18 @@ export function DocViewerProvider({ children }: { children: ReactNode }) {
   const { data: manifest } = useDocManifest();
   const [request, setRequest] = useState<ViewerRequest | null>(null);
 
-  const doc = useCallback((filename: string | undefined | null) => findDoc(manifest, filename), [manifest]);
+  const doc = useCallback(
+    (filename: string | undefined | null) => findDoc(manifest, filename),
+    [manifest],
+  );
   const value = useMemo<Ctx>(() => ({ manifest, doc, open: setRequest }), [manifest, doc]);
 
   return (
     <DocViewerContext.Provider value={value}>
       {children}
-      {request && manifest && <ViewerPanel request={request} manifest={manifest} onClose={() => setRequest(null)} />}
+      {request && manifest && (
+        <ViewerPanel request={request} manifest={manifest} onClose={() => setRequest(null)} />
+      )}
     </DocViewerContext.Provider>
   );
 }
@@ -113,7 +129,7 @@ function ViewerPanel({
           </div>
           <div className="min-w-0 flex-1">
             <p className="field-label">
-              {compare ? "Cross-document comparison" : "Document viewer"} · specimen set, reference date{" "}
+              {compare ? "Cross-document comparison" : "Document viewer"} · reference date{" "}
               {manifest.reference_date}
             </p>
             <p className="truncate text-[14px] font-semibold text-foreground">
@@ -170,14 +186,18 @@ function Pane({
       <div className="space-y-2 border-b border-border bg-surface px-4 py-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="min-w-0">
-            <p className="truncate text-[12.5px] font-medium text-foreground">{doc?.title ?? filename}</p>
+            <p className="truncate text-[12.5px] font-medium text-foreground">
+              {doc?.title ?? filename}
+            </p>
             <p className="tabular truncate text-[11px] text-muted-foreground">{filename}</p>
           </div>
           {doc && <VerdictBadge doc={doc} />}
         </div>
 
         {doc?.reason && (
-          <p className="max-w-3xl text-[11.5px] leading-relaxed text-muted-foreground">{doc.reason}</p>
+          <p className="max-w-3xl text-[11.5px] leading-relaxed text-muted-foreground">
+            {doc.reason}
+          </p>
         )}
 
         <div className="flex items-center gap-2">
@@ -204,7 +224,8 @@ function Pane({
           </button>
           {highlights.length > 0 && (
             <span className="rounded border border-flag/35 bg-flag-soft px-1.5 py-0.5 text-[10.5px] font-medium text-flag-foreground">
-              {highlights.length} highlighted passage{highlights.length === 1 ? "" : "s"} on this page
+              {highlights.length} highlighted passage{highlights.length === 1 ? "" : "s"} on this
+              page
             </span>
           )}
           <a
@@ -240,7 +261,13 @@ function Pane({
       </div>
 
       <div className="min-h-0 flex-1 overflow-auto bg-surface-muted px-4 py-4">
-        <PdfPage url={url} page={page} highlights={highlights} width={width} onPageCount={setPageCount} />
+        <PdfPage
+          url={url}
+          page={page}
+          highlights={highlights}
+          width={width}
+          onPageCount={setPageCount}
+        />
       </div>
     </section>
   );

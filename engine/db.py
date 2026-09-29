@@ -244,9 +244,23 @@ def db_path(root: Path | None = None) -> Path:
 
 
 def migrate(conn: sqlite3.Connection) -> None:
-    current = conn.execute("PRAGMA user_version").fetchone()[0]
-    for index, script in enumerate(MIGRATIONS[current:], start=current + 1):
-        conn.executescript(f"BEGIN; {script}; PRAGMA user_version = {index}; COMMIT;")
+    """Run the migrations not yet applied. Safe when several connections
+    (the API and its job worker) open a new store at once: each migration
+    takes the write lock, and one that another connection has just applied
+    is skipped."""
+    while True:
+        current = conn.execute("PRAGMA user_version").fetchone()[0]
+        if current >= len(MIGRATIONS):
+            return
+        index = current + 1
+        try:
+            conn.executescript(f"BEGIN IMMEDIATE; {MIGRATIONS[current]}; PRAGMA user_version = {index}; COMMIT;")
+        except sqlite3.OperationalError:
+            if conn.in_transaction:
+                conn.execute("ROLLBACK")
+            if conn.execute("PRAGMA user_version").fetchone()[0] >= index:
+                continue
+            raise
 
 
 def connect(root: Path | None = None) -> sqlite3.Connection:

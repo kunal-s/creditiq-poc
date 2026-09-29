@@ -358,7 +358,7 @@ def process_files(
     placeholders = ",".join("?" * len(file_ids)) or "''"
     rows = conn.execute(
         f"""SELECT * FROM files WHERE case_id = ? AND id IN ({placeholders})
-            AND status = 'registered' AND processed_at IS NULL ORDER BY uploaded_at, id""",
+            AND status = 'registered' AND processed_at IS NULL ORDER BY uploaded_at, rowid""",
         (case_id, *file_ids),
     ).fetchall()
     if rows:

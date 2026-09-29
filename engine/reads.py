@@ -32,7 +32,7 @@ def _json(text: str | None):
 
 
 def files(conn: sqlite3.Connection, case_id: str) -> list[FileRecord]:
-    rows = conn.execute("SELECT * FROM files WHERE case_id = ? ORDER BY uploaded_at, original_name", (case_id,))
+    rows = conn.execute("SELECT * FROM files WHERE case_id = ? ORDER BY uploaded_at, rowid", (case_id,))
     return [FileRecord(**dict(row)) for row in rows]
 
 

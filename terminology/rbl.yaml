@@ -37,6 +37,7 @@ action:
   menu: Menu
   remove: Remove
   cancel: Cancel
+  goHome: Go to the workbench
 
 # Appraisal steps (FRD §6), in the prototype's order.
 step:
@@ -168,6 +169,12 @@ state:
   noCases:
     title: No applications yet
     description: Applications appear here once they are created.
+  pageNotFound:
+    title: Page not found
+    description: This page does not exist or has moved.
+  pageFailed:
+    title: This page did not load
+    description: Something went wrong while opening it. Try again, or go back to the workbench.
   pending:
     title: Nothing to show yet
     description: This view fills in once the case has been processed this far.

@@ -12,6 +12,7 @@ import {
 import type { FileRecord, LogicalDocument } from "@/api/types";
 import { useDocViewer } from "@/components/docviewer/DocViewer";
 import { t } from "@/config/terminology";
+import { useCan } from "@/domain/session";
 import {
   countFiles,
   formatBytes,
@@ -172,6 +173,7 @@ function DocumentRow({
 }) {
   const viewer = useDocViewer();
   const types = useDocumentTypes();
+  const canReview = useCan("review.read");
   const classified = (doc.classification?.types.length ?? 0) > 0;
 
   return (
@@ -213,7 +215,7 @@ function DocumentRow({
           </span>
         </Chip>
       )}
-      {!classified && !isDocumentInProgress(doc) && (
+      {!classified && !isDocumentInProgress(doc) && canReview && (
         <Link to="/exceptions" className="text-[11px] font-medium text-primary hover:underline">
           {t("documents.toReviewQueue")}
         </Link>

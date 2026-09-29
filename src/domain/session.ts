@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { api, configureAuth } from "@/api/client";
+import { api, ApiError, configureAuth } from "@/api/client";
 import type { SessionUser } from "@/api/types";
 
 const STORAGE_KEY = "creditiq.session";
@@ -56,7 +56,11 @@ function hydrate() {
           notify();
         }
       })
-      .catch(clear);
+      // Only a rejected session signs out; a failed request keeps the
+      // stored one (the next 401 from any endpoint clears it anyway).
+      .catch((error: unknown) => {
+        if (error instanceof ApiError && error.status === 401) clear();
+      });
   }
 }
 
@@ -85,6 +89,11 @@ export function useSession() {
     },
     () => null, // SSR: no session on the server render; the client hydrates and re-renders.
   );
+}
+
+/** Whether the signed-in user's role includes a permission (re-renders on change). */
+export function useCan(permission: string): boolean {
+  return useSession()?.user.permissions.includes(permission) ?? false;
 }
 
 export function can(permission: string): boolean {

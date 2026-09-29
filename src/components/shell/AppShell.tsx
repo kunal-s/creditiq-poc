@@ -2,7 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { useMemo, useState, type ReactNode } from "react";
 import { ChevronRight, LogOut, Menu } from "lucide-react";
 import { APPRAISAL_STEPS, buildNav, type NavGroup } from "./nav";
-import { useSession, signOut } from "@/domain/session";
+import { useCan, useSession, signOut } from "@/domain/session";
 import { formatInr, stageLabel, useCase, useLabels } from "@/domain/cases";
 import { DocViewerProvider } from "@/components/docviewer/DocViewer";
 import { t } from "@/config/terminology";
@@ -170,6 +170,7 @@ function ContextStrip() {
   const { pathname, caseId } = useActiveCaseId();
   const { data: c } = useCase(caseId);
   const labels = useLabels();
+  const canReview = useCan("review.read");
   // The DocReady workspace carries its own case header (its layout route).
   const onAppraisal = pathname.startsWith("/appraisals/");
   if (!caseId || !c || !onAppraisal) return null;
@@ -237,7 +238,7 @@ function ContextStrip() {
           <span className="field-label block">{t("term.rm")}</span>
           <span className="text-[12px] text-foreground">{c.rm}</span>
         </div>
-        {c.open_review_items > 0 && (
+        {c.open_review_items > 0 && canReview && (
           <Link
             to="/exceptions"
             className="rounded border border-flag/40 bg-flag-soft px-2 py-1 text-[11px] font-medium text-flag-foreground"

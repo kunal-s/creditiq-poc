@@ -7,6 +7,7 @@ import { ScoreBar } from "@/components/common/Panel";
 import { t } from "@/config/terminology";
 import { formatInr, stageLabel, useLabels } from "@/domain/cases";
 import { countItems, readyForCredit, useChecklist } from "@/domain/checklist";
+import { useCan } from "@/domain/session";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/docready/$caseId")({
@@ -23,6 +24,7 @@ function Layout({ c }: { c: CaseDetail }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const labels = useLabels();
   const checklist = useChecklist(c.id);
+  const canReview = useCan("review.read");
   const r = checklist.data;
   const counts = r ? countItems(r.items) : undefined;
 
@@ -130,7 +132,7 @@ function Layout({ c }: { c: CaseDetail }) {
                   <ShieldCheck className="h-3 w-3" /> {t("readinessGates.readyForCredit")}
                 </span>
               ) : null}
-              {c.open_review_items > 0 && (
+              {c.open_review_items > 0 && canReview && (
                 <Link
                   to="/exceptions"
                   className="inline-flex items-center gap-1 rounded border border-flag/40 bg-flag-soft px-2.5 py-1.5 text-[11.5px] font-medium text-flag-foreground"

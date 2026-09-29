@@ -3,6 +3,7 @@ import { AlertTriangle } from "lucide-react";
 import type { CaseSummary, Stage } from "@/api/types";
 import { formatDate, formatInr, stageLabel, stageRoute, useLabels } from "@/domain/cases";
 import { t } from "@/config/terminology";
+import { useCan } from "@/domain/session";
 import { cn } from "@/lib/utils";
 
 const stageTone: Record<Stage, string> = {
@@ -30,14 +31,23 @@ export function StageLink({ c }: { c: CaseSummary }) {
 }
 
 export function ReviewFlag({ count }: { count: number }) {
-  return count > 0 ? (
-    <Link
-      to="/exceptions"
-      className="inline-flex items-center gap-1 rounded border border-flag/40 bg-flag-soft px-1.5 py-0.5 text-[11.5px] font-medium text-flag-foreground"
-    >
+  const canReview = useCan("review.read");
+  const className =
+    "inline-flex items-center gap-1 rounded border border-flag/40 bg-flag-soft px-1.5 py-0.5 text-[11.5px] font-medium text-flag-foreground";
+  const body = (
+    <>
       <AlertTriangle className="h-3 w-3" />
       {t("cases.reviewOpen", { n: count })}
-    </Link>
+    </>
+  );
+  return count > 0 ? (
+    canReview ? (
+      <Link to="/exceptions" className={className}>
+        {body}
+      </Link>
+    ) : (
+      <span className={className}>{body}</span>
+    )
   ) : (
     <span className="text-[11.5px] text-muted-foreground">{t("cases.clear")}</span>
   );

@@ -277,6 +277,42 @@
         "title": "CaseDetail",
         "type": "object"
       },
+      "CaseProposal": {
+        "description": "What the pasted message proposes (F-04). Nothing is stored until the\nRM confirms and posts a CaseCreate (F-04.7).",
+        "properties": {
+          "duplicates": {
+            "items": {
+              "$ref": "#/components/schemas/CaseSummary"
+            },
+            "title": "Duplicates",
+            "type": "array"
+          },
+          "fields": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ProposedField"
+            },
+            "title": "Fields",
+            "type": "object"
+          },
+          "missing_minimum": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing Minimum",
+            "type": "array"
+          },
+          "text_sha256": {
+            "title": "Text Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text_sha256",
+          "fields"
+        ],
+        "title": "CaseProposal",
+        "type": "object"
+      },
       "CaseSummary": {
         "description": "Workbench row (F-01.4).",
         "properties": {
@@ -1482,6 +1518,77 @@
         "title": "PageInfo",
         "type": "object"
       },
+      "Party": {
+        "description": "A person or entity on the case: director, partner, proprietor,\nguarantor or the borrower itself (F-10.2).",
+        "properties": {
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "din": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Din"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kyc_document_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Kyc Document Ids",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "pan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pan"
+          },
+          "role": {
+            "enum": [
+              "borrower",
+              "director",
+              "partner",
+              "proprietor",
+              "guarantor",
+              "promoter"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "case_id",
+          "name",
+          "role",
+          "source"
+        ],
+        "title": "Party",
+        "type": "object"
+      },
       "PolicyRatio": {
         "properties": {
           "acceptable": {
@@ -1603,6 +1710,102 @@
         "title": "PolicySection",
         "type": "object"
       },
+      "ProposalRequest": {
+        "properties": {
+          "channel": {
+            "title": "Channel",
+            "type": "string"
+          },
+          "text": {
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "channel",
+          "text"
+        ],
+        "title": "ProposalRequest",
+        "type": "object"
+      },
+      "ProposedCandidate": {
+        "properties": {
+          "span": {
+            "$ref": "#/components/schemas/Span"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "value",
+          "span"
+        ],
+        "title": "ProposedCandidate",
+        "type": "object"
+      },
+      "ProposedField": {
+        "description": "F-04.3: a value is proposed only with its span in the message.",
+        "properties": {
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/ProposedCandidate"
+            },
+            "title": "Candidates",
+            "type": "array"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "span": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Span"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "found",
+              "unclear",
+              "not_found",
+              "invalid"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "value",
+          "status"
+        ],
+        "title": "ProposedField",
+        "type": "object"
+      },
       "QueryItem": {
         "description": "One line of the pre-login query list (F-14).",
         "properties": {
@@ -1706,6 +1909,56 @@
           "items"
         ],
         "title": "Readiness",
+        "type": "object"
+      },
+      "ReviewDecisionRequest": {
+        "properties": {
+          "decision": {
+            "enum": [
+              "confirm",
+              "correct",
+              "waive",
+              "assign"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "decision"
+        ],
+        "title": "ReviewDecisionRequest",
         "type": "object"
       },
       "ReviewItem": {
@@ -1911,6 +2164,55 @@
           }
         },
         "title": "SignalSet",
+        "type": "object"
+      },
+      "Span": {
+        "description": "Character offsets into the pasted message: [start, end).",
+        "properties": {
+          "end": {
+            "minimum": 0.0,
+            "title": "End",
+            "type": "integer"
+          },
+          "start": {
+            "minimum": 0.0,
+            "title": "Start",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ],
+        "title": "Span",
+        "type": "object"
+      },
+      "UploadResult": {
+        "description": "F-05.5: every file ends in a visible state; archives list their members.",
+        "properties": {
+          "files": {
+            "items": {
+              "$ref": "#/components/schemas/FileRecord"
+            },
+            "title": "Files",
+            "type": "array"
+          },
+          "job_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Id"
+          }
+        },
+        "required": [
+          "files"
+        ],
+        "title": "UploadResult",
         "type": "object"
       },
       "ValidationError": {
@@ -2221,6 +2523,63 @@
         "summary": "Create Case"
       }
     },
+    "/api/cases/proposals": {
+      "post": {
+        "description": "F-04: parse a pasted message into a proposed case. Stores nothing.",
+        "operationId": "propose_case_api_cases_proposals_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProposalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseProposal"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Propose Case"
+      }
+    },
     "/api/cases/{case_id}": {
       "get": {
         "operationId": "get_case_api_cases__case_id__get",
@@ -2390,6 +2749,73 @@
         "summary": "Case Documents"
       }
     },
+    "/api/cases/{case_id}/documents/{document_id}/pages/{page}": {
+      "get": {
+        "description": "F-05.6, F-16: the rendered page image (PNG) of a document's source\nfile; `page` is the absolute page in the file, as in Evidence.",
+        "operationId": "document_page_api_cases__case_id__documents__document_id__pages__page__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "page",
+            "required": true,
+            "schema": {
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Document Page"
+      }
+    },
     "/api/cases/{case_id}/fields": {
       "get": {
         "operationId": "case_fields_api_cases__case_id__fields_get",
@@ -2522,6 +2948,60 @@
           }
         },
         "summary": "Case Files"
+      },
+      "post": {
+        "description": "F-05: multipart upload, field name \"files\" (repeatable): single files,\nseveral files or ZIP archives. Registers every file and queues processing.",
+        "operationId": "upload_files_api_cases__case_id__files_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Files"
       }
     },
     "/api/cases/{case_id}/findings": {
@@ -2581,6 +3061,66 @@
           }
         },
         "summary": "Case Findings"
+      }
+    },
+    "/api/cases/{case_id}/parties": {
+      "get": {
+        "description": "F-10.2: the case's party set with sources and attributed KYC.",
+        "operationId": "case_parties_api_cases__case_id__parties_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Party"
+                  },
+                  "title": "Response Case Parties Api Cases  Case Id  Parties Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Parties"
       }
     },
     "/api/cases/{case_id}/queries": {
@@ -2968,6 +3508,72 @@
           }
         },
         "summary": "Review Queue"
+      }
+    },
+    "/api/review/{item_id}/decision": {
+      "post": {
+        "description": "F-17.5: confirm, correct, waive or assign, with a reason. Recorded as\nan overlay; never changes configuration.",
+        "operationId": "decide_review_api_review__item_id__decision_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "title": "Item Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewDecisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewItem"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Decide Review"
       }
     }
   }

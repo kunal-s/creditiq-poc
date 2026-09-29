@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import sqlite3
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from . import auth, cases, reads
@@ -20,7 +20,12 @@ from .configstore.schema import ChecklistTaxonomySection, DocumentTypesSection, 
 from .contracts import (
     CaseCreate,
     CaseDetail,
+    CaseProposal,
     CaseSummary,
+    Party,
+    ProposalRequest,
+    ReviewDecisionRequest,
+    UploadResult,
     FieldValue,
     FileRecord,
     Finding,
@@ -204,6 +209,47 @@ def review_queue(
     conn: sqlite3.Connection = Depends(get_conn),
 ):
     return reads.review_items(conn, case_id=case_id, open_only=not include_decided)
+
+
+# --- Wave 1 contract: declared here so screens and engine build against one
+# OpenAPI; each returns 501 until its feature lands (stream B). ---
+
+
+def _not_yet(feature: str):
+    raise HTTPException(status_code=501, detail=f"{feature} is not implemented yet")
+
+
+@app.post("/api/cases/proposals", response_model=CaseProposal)
+def propose_case(body: ProposalRequest, _: dict = Depends(require("case.create"))):
+    """F-04: parse a pasted message into a proposed case. Stores nothing."""
+    _not_yet("F-04 case proposal")
+
+
+@app.post("/api/cases/{case_id}/files", response_model=UploadResult, status_code=202)
+def upload_files(case_id: str, _: dict = Depends(require("document.upload"))):
+    """F-05: multipart upload, field name "files" (repeatable): single files,
+    several files or ZIP archives. Registers every file and queues processing."""
+    _not_yet("F-05 upload")
+
+
+@app.get("/api/cases/{case_id}/documents/{document_id}/pages/{page}", response_class=Response)
+def document_page(case_id: str, document_id: str, page: int, _: dict = Depends(require("case.read"))):
+    """F-05.6, F-16: the rendered page image (PNG) of a document's source
+    file; `page` is the absolute page in the file, as in Evidence."""
+    _not_yet("F-16 page images")
+
+
+@app.get("/api/cases/{case_id}/parties", response_model=list[Party])
+def case_parties(case_id: str, _: dict = Depends(require("case.read"))):
+    """F-10.2: the case's party set with sources and attributed KYC."""
+    _not_yet("F-10 parties")
+
+
+@app.post("/api/review/{item_id}/decision", response_model=ReviewItem)
+def decide_review(item_id: str, body: ReviewDecisionRequest, _: dict = Depends(require("review.decide"))):
+    """F-17.5: confirm, correct, waive or assign, with a reason. Recorded as
+    an overlay; never changes configuration."""
+    _not_yet("F-17 review decisions")
 
 
 # --- Published configuration (F-00) ---

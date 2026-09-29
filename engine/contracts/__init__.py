@@ -29,11 +29,18 @@ from .documents import (
     PageInfo,
 )
 from .ingest import IngestDocument, IngestFileOutcome, IngestRequest, IngestResult
+from .intake import CaseProposal, Party, ProposalRequest, ProposedField, Span, UploadResult
 from .session import LoginRequest, LoginResponse, Meta, Option, SessionUser
 
 __all__ = [
     "Candidate",
+    "CaseProposal",
     "CaseCreate",
+    "Party",
+    "ProposalRequest",
+    "ProposedField",
+    "Span",
+    "UploadResult",
     "CaseDetail",
     "CaseSummary",
     "ChecklistItemState",

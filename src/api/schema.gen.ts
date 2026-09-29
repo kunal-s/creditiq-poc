@@ -73,6 +73,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/cases/proposals": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Propose Case
+     * @description F-04: parse a pasted message into a proposed case. Stores nothing.
+     */
+    post: operations["propose_case_api_cases_proposals_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/cases/{case_id}": {
     parameters: {
       query?: never;
@@ -124,6 +144,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/cases/{case_id}/documents/{document_id}/pages/{page}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Document Page
+     * @description F-05.6, F-16: the rendered page image (PNG) of a document's source
+     *     file; `page` is the absolute page in the file, as in Evidence.
+     */
+    get: operations["document_page_api_cases__case_id__documents__document_id__pages__page__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/cases/{case_id}/fields": {
     parameters: {
       query?: never;
@@ -151,7 +192,12 @@ export interface paths {
     /** Case Files */
     get: operations["case_files_api_cases__case_id__files_get"];
     put?: never;
-    post?: never;
+    /**
+     * Upload Files
+     * @description F-05: multipart upload, field name "files" (repeatable): single files,
+     *     several files or ZIP archives. Registers every file and queues processing.
+     */
+    post: operations["upload_files_api_cases__case_id__files_post"];
     delete?: never;
     options?: never;
     head?: never;
@@ -167,6 +213,26 @@ export interface paths {
     };
     /** Case Findings */
     get: operations["case_findings_api_cases__case_id__findings_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/cases/{case_id}/parties": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Case Parties
+     * @description F-10.2: the case's party set with sources and attributed KYC.
+     */
+    get: operations["case_parties_api_cases__case_id__parties_get"];
     put?: never;
     post?: never;
     delete?: never;
@@ -311,6 +377,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/review/{item_id}/decision": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Decide Review
+     * @description F-17.5: confirm, correct, waive or assign, with a reason. Recorded as
+     *     an overlay; never changes configuration.
+     */
+    post: operations["decide_review_api_review__item_id__decision_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -406,6 +493,23 @@ export interface components {
       stage: "Intake" | "Readiness" | "Appraisal" | "Outputs" | "Completed";
       /** Udyam */
       udyam: string | null;
+    };
+    /**
+     * CaseProposal
+     * @description What the pasted message proposes (F-04). Nothing is stored until the
+     *     RM confirms and posts a CaseCreate (F-04.7).
+     */
+    CaseProposal: {
+      /** Duplicates */
+      duplicates?: components["schemas"]["CaseSummary"][];
+      /** Fields */
+      fields: {
+        [key: string]: components["schemas"]["ProposedField"];
+      };
+      /** Missing Minimum */
+      missing_minimum?: string[];
+      /** Text Sha256 */
+      text_sha256: string;
     };
     /**
      * CaseSummary
@@ -847,6 +951,32 @@ export interface components {
        */
       route: "text" | "ocr" | "sheet";
     };
+    /**
+     * Party
+     * @description A person or entity on the case: director, partner, proprietor,
+     *     guarantor or the borrower itself (F-10.2).
+     */
+    Party: {
+      /** Case Id */
+      case_id: string;
+      /** Din */
+      din?: string | null;
+      /** Id */
+      id: string;
+      /** Kyc Document Ids */
+      kyc_document_ids?: string[];
+      /** Name */
+      name: string;
+      /** Pan */
+      pan?: string | null;
+      /**
+       * Role
+       * @enum {string}
+       */
+      role: "borrower" | "director" | "partner" | "proprietor" | "guarantor" | "promoter";
+      /** Source */
+      source: string;
+    };
     /** PolicyRatio */
     PolicyRatio: {
       /** Acceptable */
@@ -897,6 +1027,37 @@ export interface components {
       ratios: components["schemas"]["PolicyRatio"][];
       working_capital: components["schemas"]["WorkingCapitalPolicy"];
     };
+    /** ProposalRequest */
+    ProposalRequest: {
+      /** Channel */
+      channel: string;
+      /** Text */
+      text: string;
+    };
+    /** ProposedCandidate */
+    ProposedCandidate: {
+      span: components["schemas"]["Span"];
+      /** Value */
+      value: string;
+    };
+    /**
+     * ProposedField
+     * @description F-04.3: a value is proposed only with its span in the message.
+     */
+    ProposedField: {
+      /** Candidates */
+      candidates?: components["schemas"]["ProposedCandidate"][];
+      /** Note */
+      note?: string | null;
+      span?: components["schemas"]["Span"] | null;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "found" | "unclear" | "not_found" | "invalid";
+      /** Value */
+      value: string | null;
+    };
     /**
      * QueryItem
      * @description One line of the pre-login query list (F-14).
@@ -945,6 +1106,18 @@ export interface components {
       provisional: boolean;
       /** Score Pct */
       score_pct: number;
+    };
+    /** ReviewDecisionRequest */
+    ReviewDecisionRequest: {
+      /**
+       * Decision
+       * @enum {string}
+       */
+      decision: "confirm" | "correct" | "waive" | "assign";
+      /** Reason */
+      reason?: string | null;
+      /** Value */
+      value?: string | number | boolean | null;
     };
     /**
      * ReviewItem
@@ -1015,6 +1188,26 @@ export interface components {
       required?: string[];
       /** Supporting */
       supporting?: string[];
+    };
+    /**
+     * Span
+     * @description Character offsets into the pasted message: [start, end).
+     */
+    Span: {
+      /** End */
+      end: number;
+      /** Start */
+      start: number;
+    };
+    /**
+     * UploadResult
+     * @description F-05.5: every file ends in a visible state; archives list their members.
+     */
+    UploadResult: {
+      /** Files */
+      files: components["schemas"]["FileRecord"][];
+      /** Job Id */
+      job_id?: string | null;
     };
     /** ValidationError */
     ValidationError: {
@@ -1212,6 +1405,41 @@ export interface operations {
       };
     };
   };
+  propose_case_api_cases_proposals_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ProposalRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CaseProposal"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   get_case_api_cases__case_id__get: {
     parameters: {
       query?: never;
@@ -1311,6 +1539,39 @@ export interface operations {
       };
     };
   };
+  document_page_api_cases__case_id__documents__document_id__pages__page__get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+        document_id: string;
+        page: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   case_fields_api_cases__case_id__fields_get: {
     parameters: {
       query?: {
@@ -1379,6 +1640,39 @@ export interface operations {
       };
     };
   };
+  upload_files_api_cases__case_id__files_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["UploadResult"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   case_findings_api_cases__case_id__findings_get: {
     parameters: {
       query?: never;
@@ -1399,6 +1693,39 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Finding"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  case_parties_api_cases__case_id__parties_get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Party"][];
         };
       };
       /** @description Validation Error */
@@ -1645,6 +1972,43 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ReviewItem"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  decide_review_api_review__item_id__decision_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        item_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReviewDecisionRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReviewItem"];
         };
       };
       /** @description Validation Error */

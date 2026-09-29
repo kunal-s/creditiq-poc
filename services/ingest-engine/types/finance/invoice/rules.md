@@ -1,3 +1,0 @@
-- Amounts as plain numbers without currency symbols or thousands separators (Indian lakh/crore grouping such as 14,40,000 is 1440000).
-- Taxes by the name printed (CGST, SGST, IGST, VAT); the grand total is the amount payable after tax.
-- The supplier is the party issuing the invoice (letterhead / "from"); the customer is the "bill to" party.

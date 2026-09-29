@@ -1,0 +1,105 @@
+{
+  "tc": "TC-19",
+  "title": "GSTR-3B turnover by period and filing dates (digital and scanned)",
+  "requests": [
+    {
+      "name": "gst returns",
+      "files": [
+        {
+          "file": "gstr3b_2025-04.pdf",
+          "original_name": "gstr3b_apr.pdf",
+          "content_type": "application/pdf"
+        },
+        {
+          "file": "gstr3b_2025-05_scan.pdf",
+          "original_name": "gstr3b_may.pdf",
+          "content_type": "application/pdf"
+        }
+      ],
+      "documents": [
+        {
+          "file": "gstr3b_2025-04.pdf",
+          "page_from": 1,
+          "page_to": 1,
+          "types": [
+            "gstr_3b"
+          ],
+          "instance_key": "2025-04",
+          "scanned": false,
+          "fields": [
+            {
+              "field": "gstin",
+              "value": "27AAGCE4821K1ZI",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "legal_name",
+              "value": "EXAMPLE TOOLS PRIVATE LIMITED",
+              "page": 1
+            },
+            {
+              "field": "period",
+              "value": "2025-04",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "outward_taxable_supplies",
+              "value": 4215300,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "filing_date",
+              "value": "2025-05-20",
+              "page": 1,
+              "key": true
+            }
+          ]
+        },
+        {
+          "file": "gstr3b_2025-05_scan.pdf",
+          "page_from": 1,
+          "page_to": 1,
+          "types": [
+            "gstr_3b"
+          ],
+          "instance_key": "2025-05",
+          "scanned": true,
+          "fields": [
+            {
+              "field": "gstin",
+              "value": "27AAGCE4821K1ZI",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "legal_name",
+              "value": "EXAMPLE TOOLS PRIVATE LIMITED",
+              "page": 1
+            },
+            {
+              "field": "period",
+              "value": "2025-05",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "outward_taxable_supplies",
+              "value": 3968400,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "filing_date",
+              "value": "2025-06-20",
+              "page": 1,
+              "key": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

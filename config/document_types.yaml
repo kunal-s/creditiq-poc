@@ -107,7 +107,7 @@ types:
     signals:
       required: ['permanent\s+account\s+number|income\s+tax\s+department']
       supporting: ['\b[A-Z]{3}[CFTHABGJL][A-Z]\d{4}[A-Z]\b', 'date\s+of\s+(incorporation|formation)']
-      contrary: ['\b[A-Z]{3}P[A-Z]\d{4}[A-Z]\b', 'father', 'date\s+of\s+birth', 'acknowledg']
+      contrary: ['\b[A-Z]{3}P[A-Z]\d{4}[A-Z]\b', 'father', 'date\s+of\s+birth', 'acknowledg', 'certificate\s+of\s+incorporation', 'registration\s+certificate']
 
   - id: gst_registration_certificate
     name: GST registration certificate
@@ -116,7 +116,7 @@ types:
     satisfies: [gst_registration]
     dictionary: gst_registration_certificate
     signals:
-      required: ['reg-?06|registration\s+certificate']
+      required: ['reg-?06|registration\s+certificate', 'goods\s+and\s+services\s+tax|\bgst(in)?\b']
       supporting: ['goods\s+and\s+services\s+tax', '\b\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]\b', 'legal\s+name', 'constitution\s+of\s+business', 'date\s+of\s+liability']
       contrary: ['gstr-?3b', 'gstr-?1\b', 'return\s+for\s+the\s+period']
 
@@ -339,9 +339,9 @@ types:
     instance_key: account
     dictionary: sanction_letter
     signals:
-      required: ['sanction']
+      required: ['sanction', 'term\s+loan|cash\s+credit|overdraft|working\s+capital|credit\s+facilit|loan\s+facilit|\bfacility\b']
       supporting: ['pleased\s+to\s+(sanction|inform)', 'terms\s+and\s+conditions', 'rate\s+of\s+interest', 'tenor|repayment', 'limit']
-      contrary: ['application\s+form']
+      contrary: ['application\s+form', 'credit\s+(information\s+)?report|bureau']
 
   - id: existing_facilities_declaration
     name: Declaration of existing facilities
@@ -364,7 +364,7 @@ types:
     signals:
       required: ['stock', 'book\s+debts?|debtors|receivables']
       supporting: ['statement', 'as\s+(at|on)', 'raw\s+material', 'finished\s+goods', 'drawing\s+power']
-      contrary: ['ageing|aging']
+      contrary: ['\bageing\b|\baging\b']
 
   - id: debtors_creditors_ageing
     name: Debtors and creditors ageing
@@ -373,7 +373,7 @@ types:
     satisfies: [ageing]
     dictionary: ageing
     signals:
-      required: ['ageing|aging']
+      required: ['\bageing\b|\baging\b']
       supporting: ['debtors|receivables', 'creditors|payables', '0\s*-\s*30|30\s*-\s*60|>\s*90|above\s+90']
       contrary: []
 

@@ -1,0 +1,26 @@
+{
+  "tc": "TC-09",
+  "title": "A document outside the checklist is unclassified, with suggested types, and never assigned",
+  "requests": [
+    {
+      "name": "utility bill",
+      "files": [
+        {
+          "file": "utility_bill.pdf",
+          "original_name": "bank_statement_june.pdf",
+          "label_hint": "bank statement",
+          "content_type": "application/pdf"
+        }
+      ],
+      "documents": [
+        {
+          "file": "utility_bill.pdf",
+          "page_from": 1,
+          "page_to": 1,
+          "types": [],
+          "candidates_min": 3
+        }
+      ]
+    }
+  ]
+}

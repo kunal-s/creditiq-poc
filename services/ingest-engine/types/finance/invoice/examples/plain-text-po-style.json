@@ -1,5 +1,0 @@
-{
-  "snippet": "Invoice INV-2026-88\nSupplier: Delta Networks Pvt Ltd\nInvoice date: 05 Sep 2026\nTotal: 84,500",
-  "output": { "supplier": "Delta Networks Pvt Ltd", "supplierTaxId": null, "customer": null, "invoiceNumber": "INV-2026-88", "invoiceDate": "2026-09-05", "dueDate": null, "currency": null, "lineItems": [], "subtotal": null, "taxes": [], "total": 84500, "paymentTerms": null },
-  "note": "A minimal invoice: no line items printed, so lineItems stays empty; 84,500 becomes 84500."
-}

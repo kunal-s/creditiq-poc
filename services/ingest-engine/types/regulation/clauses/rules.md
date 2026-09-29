@@ -1,3 +1,0 @@
-- The numbered paragraph, section, rule or regulation is the unit; chapter headings, tables of contents, annex titles and page furniture are not.
-- Compiled documents carry the principal instrument first and amendments after: read each duty once, as amended, under the principal reference.
-- Scanned pages arrive through OCR: never let an OCR artefact become a figure — leave it empty and say so.

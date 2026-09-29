@@ -1,0 +1,67 @@
+{
+  "key": "707a7c0f27e6b68ce6a8022aca01b69b0277d6d47f4a4fefb6e7871aae198012",
+  "provider": "stub",
+  "model": "stub",
+  "task": "extract",
+  "request": {
+    "task": "extract",
+    "system": "You locate fields in one business document, reading only the page text given.\nFor each requested field, return the text exactly as it is printed on the page (raw) and the page number it is printed on.\nFor an amount or a number, return the caption or row label exactly as printed (row_label) and leave raw null; the caller reads the number from that row.\nReturn null for a field that is not printed. Never compute, convert, complete or infer a value, and never use knowledge from outside the document.",
+    "user": "Document type: PAN card of an individual\nFields:\n- id_number_last4 (text): Document number, last four characters. Never store a full Aadhaar number\n- address (text): Address\n\nPages:\n=== Page 1 ===\nINCOME TAX DEPARTMENT\nPermanent Account Number Card\n- 0\nPermanent Account Number\nBCQPD2284M\nName\nKAVITA MENON DESAI\nFather's Name\nRAMESH MENON DESAI\nDate of Birth\n03/02/1982",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string",
+                "enum": [
+                  "id_number_last4",
+                  "address"
+                ]
+              },
+              "raw": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "row_label": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "page": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "response": {
+    "answer": {
+      "fields": [
+        {
+          "field": "id_number_last4",
+          "raw": null,
+          "row_label": null,
+          "page": null
+        },
+        {
+          "field": "address",
+          "raw": null,
+          "row_label": null,
+          "page": null
+        }
+      ]
+    }
+  }
+}

@@ -1,5 +1,0 @@
-{
-  "snippet": "Statement of Account\nAccount No: XXXXXX4521   Currency: INR\nPeriod: 01-Aug-2026 to 31-Aug-2026\nOpening balance: 1,25,430.50\nDate        Description                         Debit      Credit     Balance\n02-Aug-2026 NEFT/AXIS/RENT AUG                  45,000.00             80,430.50\n05-Aug-2026 SALARY CREDIT ACME LTD                        1,80,000.00 2,60,430.50\nClosing balance: 2,60,430.50",
-  "output": { "bank": null, "accountHolder": null, "accountNumber": "XXXXXX4521", "currency": "INR", "periodStart": "2026-08-01", "periodEnd": "2026-08-31", "openingBalance": 125430.5, "closingBalance": 260430.5, "transactions": [ { "date": "2026-08-02", "narration": "NEFT/AXIS/RENT AUG", "debit": 45000, "credit": null, "balance": 80430.5 }, { "date": "2026-08-05", "narration": "SALARY CREDIT ACME LTD", "debit": null, "credit": 180000, "balance": 260430.5 } ] },
-  "note": "Masked account numbers stay masked; the bank is null when the letterhead is not in the text."
-}

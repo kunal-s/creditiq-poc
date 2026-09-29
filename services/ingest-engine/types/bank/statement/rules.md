@@ -1,4 +1,0 @@
-- One transaction per printed line; keep the narration verbatim, including reference numbers embedded in it.
-- Amounts are plain numbers; a line has either a debit or a credit, rarely both — leave the other null.
-- The running balance, when printed, belongs to the line it is printed on; do not compute balances.
-- Multi-page statements repeat headers and may split a narration across lines — join a continuation onto the transaction above it.

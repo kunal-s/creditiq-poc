@@ -1,0 +1,60 @@
+{
+  "key": "56b4560480a3dd5e9b57bfefa66ae194d42129bcc337f08cca114c286630196d",
+  "provider": "stub",
+  "model": "stub",
+  "task": "extract",
+  "request": {
+    "task": "extract",
+    "system": "You locate fields in one business document, reading only the page text given.\nFor each requested field, return the text exactly as it is printed on the page (raw) and the page number it is printed on.\nFor an amount or a number, return the caption or row label exactly as printed (row_label) and leave raw null; the caller reads the number from that row.\nReturn null for a field that is not printed. Never compute, convert, complete or infer a value, and never use knowledge from outside the document.",
+    "user": "Document type: GSTR-3B return\nFields:\n- tax_payable (money_inr): Tax payable\n\nPages:\n=== Page 4 ===\nForm GSTR-3B\n[See rule 61(5)]\nYear   2025-26\nPeriod   April\n1. GSTIN   27AAGCE4821K1ZI\n2(a). Legal name of the registered person   EXAMPLE TOOLS PRIVATE LIMITED\n2(b). Trade name, if any   EXAMPLE TOOLS\n2(c). ARN   AA2704253131676\n2(d). Date of ARN   20/05/2025\n3.1 Details of Outward supplies and inward supplies liable to reverse charge\nNature of Supplies   Total Taxable value   Integrated Tax   Central Tax   State/UT Tax   Cess\n(a) Outward taxable supplies (other than zero rated, nil rated and exempted)   42,15,300.00   0.00   3,79,377.00   3,79,377.00   0.00\n(b) Outward taxable supplies (zero rated)   0.00   0.00   0.00   0.00   0.00\n(c) Other outward supplies (nil rated, exempted)   0.00   0.00   0.00   0.00   0.00\n(d) Inward supplies (liable to reverse charge)   0.00   0.00   0.00   0.00   0.00\n4. Eligible ITC\nDetails   Integrated Tax   Central Tax   State/UT Tax   Cess\n(C) Net ITC Available (A) - (B)   0.00   2,95,914.06   2,95,914.06   0.00",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string",
+                "enum": [
+                  "tax_payable"
+                ]
+              },
+              "raw": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "row_label": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "page": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "response": {
+    "answer": {
+      "fields": [
+        {
+          "field": "tax_payable",
+          "raw": null,
+          "row_label": null,
+          "page": null
+        }
+      ]
+    }
+  }
+}

@@ -1,78 +1,187 @@
-// `type: "auto"` — decide which catalogue type a document is. Order of authority: the packs'
-// signatures (sender, subject, file name, text patterns — deterministic and free), then one cheap
-// model call over the document's head and the catalogue's descriptions with a few confirmed
-// example snippets per type. Below the confidence threshold nothing is chosen: the caller gets
-// `generic` output plus the candidates and `needsReview`, and a person decides (POST /v1/feedback
-// then teaches the classifier for next time).
-import { env } from './env.js'
-import { chatJson } from './llm.js'
-import { cacheGet, cacheSet, sha256 } from './cache.js'
-import type { Document } from './inputs.js'
-import type { Pack } from './catalogue.js'
+// Classification by content (FRD F-09). Chooses only from the published
+// closed list of document types, or none (unclassified). The file name and
+// label hint are never inputs: nothing here can see them.
+//
+//   tier 1 "signals": the type's required signals all match, none of its
+//          contrary signals match, its score reaches classify_threshold and
+//          leads the runner-up by tier1_margin (F-09.3). Evaluated per page
+//          (page anchors drive splitting) and over the whole document.
+//   tier 2 "layout": the type's dictionary table columns appear as a table
+//          header on the page (for example date / debit / credit / balance).
+//   tier 3 "model":  the model chooses from the closed list or none_of_these;
+//          the choice counts only when the page content gives it support.
+import type { CompiledType, LoadedConfig } from './config.js'
+import type { Candidate, Classification } from './contract.js'
+import { aliasesFor } from './extract/aliases.js'
+import { findHeaders } from './extract/tables.js'
+import { ModelError, type ModelClient } from './llm/index.js'
+import type { PageRead } from './read/types.js'
 
-export interface Classification {
-  type: string | null
-  confidence: number
-  /** 'signature' (deterministic), 'model', or 'none' (below threshold / no candidates). */
-  by: 'signature' | 'model' | 'none'
-  reason: string
-  candidates: { type: string; confidence: number; reason?: string }[]
+export interface TypeScore {
+  type: CompiledType
+  score: number
+  qualified: boolean
+  required: string[]
+  supporting: string[]
+  contrary: string[]
 }
 
-const HEAD = 4_000
-const rx = (s?: string) => (s ? new RegExp(s, 'im') : null) // multiline: ^ and $ match line starts and ends
+const round3 = (x: number) => Math.round(x * 1000) / 1000
 
-/** Deterministic pass: every pack whose signatures all hold. */
-export function bySignature(doc: Document, packs: Pack[]): Classification | null {
-  const head = doc.text.text.slice(0, HEAD)
-  const hits: { type: string; confidence: number; reason: string }[] = []
-  for (const p of packs) {
-    const s = p.signatures
-    if (!s || p.builtIn) continue
-    const checks: [string, boolean][] = []
-    if (s.sender) checks.push([`sender ~ /${s.sender}/`, Boolean(doc.mail?.from && rx(s.sender)!.test(doc.mail.from))])
-    if (s.subject) checks.push([`subject ~ /${s.subject}/`, Boolean(doc.mail?.subject && rx(s.subject)!.test(doc.mail.subject))])
-    if (s.filename) checks.push([`file ~ /${s.filename}/`, rx(s.filename)!.test(doc.name)])
-    for (const t of s.textAll ?? []) checks.push([`text ~ /${t}/`, rx(t)!.test(head)])
-    if (s.textAny?.length) checks.push([`text ~ any of ${s.textAny.length}`, s.textAny.some((t) => rx(t)!.test(head))])
-    if (checks.length && checks.every(([, ok]) => ok)) hits.push({ type: p.id, confidence: s.confidence ?? 0.9, reason: checks.map(([c]) => c).join(', ') })
-  }
-  if (!hits.length) return null
-  // A more specific type (one that extends another hit) wins over its parent.
-  const specific = hits.filter((h) => !hits.some((o) => o !== h && packs.find((p) => p.id === o.type)?.extends === h.type))
-  const best = specific.sort((a, b) => b.confidence - a.confidence)[0]
-  if (specific.length > 1 && specific[0].confidence === specific[1].confidence) return { type: null, confidence: 0, by: 'none', reason: `signatures of ${specific.map((h) => h.type).join(' and ')} all match — ambiguous`, candidates: specific }
-  return { type: best.type, confidence: best.confidence, by: 'signature', reason: best.reason, candidates: hits }
-}
-
-const SNIPPET = 260
-export async function classify(doc: Document, packs: Pack[], noCache = false): Promise<Classification> {
-  const candidates = packs.filter((p) => !p.builtIn)
-  if (!candidates.length) return { type: null, confidence: 0, by: 'none', reason: 'the catalogue has no types', candidates: [] }
-  const sig = bySignature(doc, candidates)
-  if (sig?.type) return sig
-  const head = doc.text.text.slice(0, HEAD)
-  const catalogueHash = sha256(candidates.map((p) => `${p.id}@${p.version}:${p.profile.description}:${p.examples.length}`).join('|'))
-  const key = `classify-${sha256(`${doc.sha256}|${catalogueHash}|${env.ai.triageModel}`)}`
-  if (!noCache) { const hit = await cacheGet<Classification>(key); if (hit) return hit }
-  const list = candidates.map((p) => {
-    const ex = p.examples.slice(0, 2).map((e) => `    e.g. "${e.snippet.replace(/\s+/g, ' ').slice(0, SNIPPET)}"`).join('\n')
-    return `- ${p.id}: ${p.profile.description}${ex ? `\n${ex}` : ''}`
-  }).join('\n')
-  const schema = { type: 'object', additionalProperties: false, required: ['genre', 'type', 'fits', 'confidence', 'reason', 'alternatives'], properties: { genre: { type: 'string', description: 'what kind of document this is, in your own words (e.g. "delivery challan", "tax invoice", "board minutes")' }, type: { type: 'string', description: 'the closest listed type id, or "none"' }, fits: { type: 'boolean', description: 'true only if the document IS an instance of that type — not merely related to it (an order is not an invoice; a delivery note is not an order; a reminder about a filing is not the acknowledgement)' }, confidence: { type: 'number', description: '0–1, how certain the match is' }, reason: { type: 'string' }, alternatives: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['type', 'confidence'], properties: { type: { type: 'string' }, confidence: { type: 'number' } } } } } }
-  const r = await chatJson<{ genre: string; type: string; fits: boolean; confidence: number; reason: string; alternatives: { type: string; confidence: number }[] }>({
-    system: `You classify a document into exactly one of the document types below, by what the document IS (its genre and issuer), not by what it mentions or relates to. First name its genre in your own words; then pick the closest listed type and say whether the document truly is an instance of it (fits) — a related-but-different genre does not fit, however similar the fields look. Answer "none" with fits=false when no type is the document's own genre; never force a match. Confidence 0–1 reflects how certain the match is; use specific values (0.83, 0.41), not round ones.\n\nTYPES\n${list}`,
-    user: `${doc.mail ? `E-mail — From: ${doc.mail.from} · Subject: ${doc.mail.subject}${doc.part === 'attachment' ? ` · attachment ${doc.name}` : ''}\n` : `File: ${doc.name}\n`}\nDOCUMENT (first ${HEAD} characters)\n${head}`,
-    jsonSchema: { name: 'classification', strict: true, schema }, temperature: 0, model: env.ai.triageModel,
+export function scoreText(text: string, cfg: LoadedConfig): TypeScore[] {
+  const scores = cfg.types.map((t): TypeScore => {
+    const req = t.compiled.required.filter((s) => s.re.test(text)).map((s) => s.pattern)
+    const sup = t.compiled.supporting.filter((s) => s.re.test(text)).map((s) => s.pattern)
+    const con = t.compiled.contrary.filter((s) => s.re.test(text)).map((s) => s.pattern)
+    const reqN = t.compiled.required.length
+    const supN = t.compiled.supporting.length
+    const supFrac = supN ? sup.length / supN : 0
+    let score = reqN ? 0.6 * (req.length / reqN) + 0.4 * supFrac : 0.5 * supFrac
+    if (con.length) score *= 0.5
+    return { type: t, score: round3(score), qualified: reqN > 0 && req.length === reqN && con.length === 0, required: req, supporting: sup, contrary: con }
   })
-  const known = new Set(candidates.map((p) => p.id))
-  const alts = (r.data.alternatives ?? []).filter((a) => known.has(a.type)).sort((a, b) => b.confidence - a.confidence)
-  const chosen = known.has(r.data.type) ? r.data.type : null
-  const conf = Math.max(0, Math.min(1, Number(r.data.confidence) || 0))
-  const reason = `${r.data.genre ? `${r.data.genre}: ` : ''}${r.data.reason}`
-  const out: Classification = chosen && r.data.fits && conf >= env.autoThreshold
-    ? { type: chosen, confidence: conf, by: 'model', reason, candidates: [{ type: chosen, confidence: conf, reason: r.data.reason }, ...alts.filter((a) => a.type !== chosen)] }
-    : { type: null, confidence: conf, by: 'none', reason: chosen && !r.data.fits ? `closest is ${chosen}, but the document is a different kind — ${reason}` : chosen ? `${chosen} at ${conf.toFixed(2)} is below the ${env.autoThreshold} threshold — ${reason}` : reason, candidates: [...(chosen ? [{ type: chosen, confidence: conf, reason: r.data.reason }] : []), ...alts.filter((a) => a.type !== chosen)] }
-  await cacheSet(key, out)
+  return scores.sort((a, b) => b.score - a.score || a.type.id.localeCompare(b.type.id))
+}
+
+/** A tier-1 exit on this text, or null. */
+export function tier1(scores: TypeScore[], cfg: LoadedConfig): TypeScore | null {
+  const [top, second] = scores
+  if (!top?.qualified) return null
+  if (top.score < cfg.documentTypes.classify_threshold) return null
+  if (second && top.score - second.score < cfg.documentTypes.tier1_margin) return null
+  return top
+}
+
+export interface PageClass { anchor: TypeScore | null; scores: TypeScore[] }
+
+export function classifyPage(page: PageRead, cfg: LoadedConfig): PageClass {
+  const scores = scoreText(page.text, cfg)
+  return { anchor: tier1(scores, cfg), scores }
+}
+
+function signalList(s: TypeScore): string[] {
+  return [
+    ...s.required.map((p) => `${s.type.id} required: ${p}`),
+    ...s.supporting.map((p) => `${s.type.id} supporting: ${p}`),
+    ...s.contrary.map((p) => `${s.type.id} contrary: ${p}`),
+  ]
+}
+
+/** Share of a type's dictionary table columns that appear as one table header. */
+function layoutCoverage(t: CompiledType, pages: PageRead[], cfg: LoadedConfig): { coverage: number; columns: string[] } {
+  const dict = t.dictionary ? cfg.dictionaries.get(t.dictionary) : undefined
+  let best = { coverage: 0, columns: [] as string[] }
+  for (const f of dict?.fields ?? []) {
+    if (f.type !== 'table' || f.columns.length < 3) continue
+    const cols = f.columns.map((c) => ({ name: c.name, aliases: aliasesFor(dict!.id, `${f.name}.${c.name}`, c.label, c.name) }))
+    for (const p of pages.slice(0, 3)) {
+      for (const h of findHeaders(p, cols, 2)) {
+        const cov = h.bands.length / cols.length
+        if (cov > best.coverage) best = { coverage: cov, columns: h.bands.map((b) => b.name) }
+      }
+    }
+  }
+  return best
+}
+
+function candidates(scores: TypeScore[], first: string[] = [], override = new Map<string, number>()): Candidate[] {
+  const out: Candidate[] = []
+  const seen = new Set<string>()
+  const add = (id: string, c: number) => { if (!seen.has(id) && out.length < 3) { seen.add(id); out.push({ type_id: id, confidence: round3(c) }) } }
+  const byId = new Map(scores.map((s) => [s.type.id, s]))
+  for (const id of first) add(id, override.get(id) ?? byId.get(id)?.score ?? 0)
+  for (const s of [...scores].sort((a, b) => (override.get(b.type.id) ?? b.score) - (override.get(a.type.id) ?? a.score))) add(s.type.id, override.get(s.type.id) ?? s.score)
   return out
+}
+
+const SYSTEM = [
+  "You classify one document from a business borrower's credit file.",
+  'Choose only from the listed type ids, or none_of_these when the document is none of them.',
+  'A document can have several types only when it plainly contains each of them (for example an acknowledgement together with a computation).',
+  'Judge by the content of the pages only.',
+  'Also rank up to three type ids that the document most resembles, best first.',
+].join('\n')
+
+export interface ClassifyOutcome { classification: Classification; modelMiss: boolean; modelError: boolean }
+
+export async function classifyDocument(pages: PageRead[], pageClasses: PageClass[], cfg: LoadedConfig, model: ModelClient | null): Promise<ClassifyOutcome> {
+  const threshold = cfg.documentTypes.classify_threshold
+  const margin = cfg.documentTypes.tier1_margin
+  const text = pages.map((p) => p.text).join('\n')
+  const scores = scoreText(text, cfg)
+
+  // Tier 1 from page anchors (several types when pages anchor different types).
+  const anchors = pageClasses.map((c) => c.anchor).filter((a): a is TypeScore => Boolean(a))
+  if (anchors.length) {
+    const best = new Map<string, TypeScore>()
+    for (const a of anchors) if (!best.has(a.type.id) || best.get(a.type.id)!.score < a.score) best.set(a.type.id, a)
+    const types = [...best.keys()]
+    const confidence = Math.min(...[...best.values()].map((a) => a.score))
+    const override = new Map([...best.entries()].map(([k, v]) => [k, v.score]))
+    return { classification: { types, confidence: round3(confidence), exit_tier: 'signals', signals: [...best.values()].flatMap(signalList), candidates: candidates(scores, types, override) }, modelMiss: false, modelError: false }
+  }
+  // Tier 1 over the whole document (signals spread across pages).
+  const whole = tier1(scores, cfg)
+  if (whole) return { classification: { types: [whole.type.id], confidence: whole.score, exit_tier: 'signals', signals: signalList(whole), candidates: candidates(scores, [whole.type.id]) }, modelMiss: false, modelError: false }
+
+  // Tier 2: table layout matching a type's dictionary, with no contrary signal.
+  const layout = new Map<string, { coverage: number; columns: string[] }>()
+  for (const t of cfg.types) {
+    const l = layoutCoverage(t, pages, cfg)
+    if (l.coverage > 0) layout.set(t.id, l)
+  }
+  const combined = new Map<string, number>()
+  for (const s of scores) {
+    const l = layout.get(s.type.id)
+    combined.set(s.type.id, round3(l && l.coverage >= 0.6 && !s.contrary.length ? 0.5 * s.score + 0.5 * l.coverage : s.score))
+  }
+  const ranked = [...combined.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+  const [top, second] = ranked
+  const layoutSignals = (id: string) => (layout.get(id) ? [`${id} layout: table columns ${layout.get(id)!.columns.join(', ')}`] : [])
+  if (top && layout.get(top[0]) && layout.get(top[0])!.coverage >= 0.6 && top[1] >= threshold && (!second || top[1] - second[1] >= margin)) {
+    const s = scores.find((x) => x.type.id === top[0])!
+    return { classification: { types: [top[0]], confidence: top[1], exit_tier: 'layout', signals: [...signalList(s), ...layoutSignals(top[0])], candidates: candidates(scores, [top[0]], combined) }, modelMiss: false, modelError: false }
+  }
+
+  // Tier 3: the model, from the closed list.
+  const topSignals = ranked.slice(0, 3).flatMap(([id]) => [...signalList(scores.find((x) => x.type.id === id)!), ...layoutSignals(id)])
+  // Nothing legible to read: no model call.
+  const legible = pages.reduce((n, p) => n + p.words.length, 0) >= 5
+  if (model && legible) {
+    const ids = cfg.types.map((t) => t.id)
+    const user = [
+      'Document types:',
+      ...cfg.types.map((t) => `- ${t.id}: ${t.name}. ${t.description}`),
+      '- none_of_these: the document is none of the types above.',
+      '',
+      'Document pages:',
+      ...pages.slice(0, 6).map((p) => `=== Page ${p.n} ===\n${p.text.slice(0, 4000)}`),
+    ].join('\n')
+    const schema = {
+      type: 'object',
+      properties: {
+        types: { type: 'array', items: { type: 'string', enum: [...ids, 'none_of_these'] } },
+        ranked: { type: 'array', items: { type: 'string', enum: ids } },
+      },
+    }
+    try {
+      const a = (await model.call({ task: 'classify', system: SYSTEM, user, schema })) as { types?: string[]; ranked?: string[] }
+      const chosen = (a.types ?? []).filter((t) => ids.includes(t))
+      const rankedIds = (a.ranked ?? []).filter((t) => ids.includes(t))
+      // The model's choice counts only as far as the page content supports it.
+      const support = (id: string) => combined.get(id) ?? 0
+      const confOf = (id: string) => round3(0.5 + 0.5 * support(id))
+      const accepted = (a.types ?? []).includes('none_of_these') ? [] : chosen.filter((id) => confOf(id) >= threshold)
+      const signals = [...topSignals, ...(a.types ?? []).map((t) => `model: ${t}`)]
+      if (accepted.length) {
+        const override = new Map(accepted.map((id) => [id, confOf(id)]))
+        return { classification: { types: accepted, confidence: Math.min(...accepted.map(confOf)), exit_tier: 'model', signals, candidates: candidates(scores, [...accepted, ...rankedIds], new Map([...combined, ...override])) }, modelMiss: false, modelError: false }
+      }
+      return { classification: { types: [], confidence: round3(top?.[1] ?? 0), exit_tier: 'none', signals, candidates: candidates(scores, rankedIds, combined) }, modelMiss: false, modelError: false }
+    } catch (e) {
+      const miss = e instanceof ModelError && e.code === 'replay_miss'
+      return { classification: { types: [], confidence: round3(top?.[1] ?? 0), exit_tier: 'none', signals: [...topSignals, miss ? 'model: unavailable (no recording)' : 'model: error'], candidates: candidates(scores, [], combined) }, modelMiss: miss, modelError: !miss }
+    }
+  }
+  return { classification: { types: [], confidence: round3(top?.[1] ?? 0), exit_tier: 'none', signals: topSignals, candidates: candidates(scores, [], combined) }, modelMiss: false, modelError: false }
 }

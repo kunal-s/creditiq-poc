@@ -1,0 +1,221 @@
+{
+  "tc": "TC-05",
+  "title": "Quality grade per page with reason codes (blurred, skewed, shadowed, low-resolution, blank, corrupt, encrypted)",
+  "requests": [
+    {
+      "name": "scan_clean.jpg",
+      "files": [
+        {
+          "file": "scan_clean.jpg",
+          "original_name": "scan_clean.jpg",
+          "content_type": "image/jpeg"
+        }
+      ],
+      "documents": [
+        {
+          "file": "scan_clean.jpg",
+          "page_from": 1,
+          "page_to": 1,
+          "types": [
+            "udyam_certificate"
+          ],
+          "grades": [
+            "A"
+          ],
+          "reasons_any": [],
+          "scanned": true
+        }
+      ]
+    },
+    {
+      "name": "scan_blur.jpg",
+      "files": [
+        {
+          "file": "scan_blur.jpg",
+          "original_name": "scan_blur.jpg",
+          "content_type": "image/jpeg"
+        }
+      ],
+      "documents": [
+        {
+          "file": "scan_blur.jpg",
+          "page_from": 1,
+          "page_to": 1,
+          "grades": [
+            "C",
+            "U"
+          ],
+          "reasons_any": [
+            "blur"
+          ],
+          "scanned": true
+        }
+      ]
+    },
+    {
+      "name": "scan_lowres.png",
+      "files": [
+        {
+          "file": "scan_lowres.png",
+          "original_name": "scan_lowres.png",
+          "content_type": "image/png"
+        }
+      ],
+      "documents": [
+        {
+          "file": "scan_lowres.png",
+          "page_from": 1,
+          "page_to": 1,
+          "grades": [
+            "B",
+            "C",
+            "U"
+          ],
+          "reasons_any": [
+            "resolution"
+          ],
+          "scanned": true
+        }
+      ]
+    },
+    {
+      "name": "scan_skew.jpg",
+      "files": [
+        {
+          "file": "scan_skew.jpg",
+          "original_name": "scan_skew.jpg",
+          "content_type": "image/jpeg"
+        }
+      ],
+      "documents": [
+        {
+          "file": "scan_skew.jpg",
+          "page_from": 1,
+          "page_to": 1,
+          "types": [
+            "udyam_certificate"
+          ],
+          "grades": [
+            "A",
+            "B",
+            "C"
+          ],
+          "reasons_any": [
+            "skew"
+          ],
+          "scanned": true
+        }
+      ]
+    },
+    {
+      "name": "scan_shadow.jpg",
+      "files": [
+        {
+          "file": "scan_shadow.jpg",
+          "original_name": "scan_shadow.jpg",
+          "content_type": "image/jpeg"
+        }
+      ],
+      "documents": [
+        {
+          "file": "scan_shadow.jpg",
+          "page_from": 1,
+          "page_to": 1,
+          "grades": [
+            "A",
+            "B",
+            "C"
+          ],
+          "reasons_any": [
+            "shadow"
+          ],
+          "scanned": true
+        }
+      ]
+    },
+    {
+      "name": "blank.pdf",
+      "files": [
+        {
+          "file": "blank.pdf",
+          "original_name": "blank.pdf",
+          "content_type": "application/pdf"
+        }
+      ],
+      "documents": [
+        {
+          "file": "blank.pdf",
+          "page_from": 1,
+          "page_to": 1,
+          "types": [],
+          "grades": [
+            "U"
+          ],
+          "reasons_any": [
+            "blank"
+          ],
+          "scanned": true
+        }
+      ],
+      "file_status": {
+        "blank.pdf": "exception"
+      }
+    },
+    {
+      "name": "corrupt.pdf",
+      "files": [
+        {
+          "file": "corrupt.pdf",
+          "original_name": "corrupt.pdf",
+          "content_type": "application/pdf"
+        }
+      ],
+      "documents": [
+        {
+          "file": "corrupt.pdf",
+          "page_from": 1,
+          "page_to": 1,
+          "types": [],
+          "grades": [
+            "U"
+          ],
+          "reasons_any": [
+            "corrupt"
+          ],
+          "scanned": true
+        }
+      ],
+      "file_status": {
+        "corrupt.pdf": "exception"
+      }
+    },
+    {
+      "name": "encrypted.pdf",
+      "files": [
+        {
+          "file": "encrypted.pdf",
+          "original_name": "encrypted.pdf",
+          "content_type": "application/pdf"
+        }
+      ],
+      "documents": [
+        {
+          "file": "encrypted.pdf",
+          "page_from": 1,
+          "page_to": 1,
+          "types": [],
+          "grades": [
+            "U"
+          ],
+          "reasons_any": [
+            "encrypted"
+          ],
+          "scanned": true
+        }
+      ],
+      "file_status": {
+        "encrypted.pdf": "exception"
+      }
+    }
+  ]
+}

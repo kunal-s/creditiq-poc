@@ -1,0 +1,123 @@
+{
+  "key": "c9f708b471deebca3601addf3fb11e05a1f416ce0f6d63170fece52c6db09a47",
+  "provider": "stub",
+  "model": "stub",
+  "task": "classify",
+  "request": {
+    "task": "classify",
+    "system": "You classify one document from a business borrower's credit file.\nChoose only from the listed type ids, or none_of_these when the document is none of them.\nA document can have several types only when it plainly contains each of them (for example an acknowledgement together with a computation).\nJudge by the content of the pages only.\nAlso rank up to three type ids that the document most resembles, best first.",
+    "user": "Document types:\n- application_message: Sourcing message. The RM's sourcing email, WhatsApp message or notes, pasted when the application was created.\n- application_form: Loan application form. The borrower's signed application for credit facilities.\n- certificate_of_incorporation: Certificate of incorporation. Registrar of Companies certificate that a company is incorporated, with its CIN.\n- moa_aoa: Memorandum and articles of association. The company's memorandum and articles of association, including its borrowing powers.\n- board_resolution: Board resolution to borrow. Certified extract of a board resolution authorising the borrowing and the signatories.\n- partnership_deed: Partnership deed. The deed constituting a partnership firm, with partners, shares and borrowing authority.\n- partner_authority_letter: Partners' authority letter. Letter signed by all partners authorising the borrowing and the signatories.\n- proprietorship_proof: Proprietorship declaration or proof. Sole proprietor's declaration of ownership of the business, with supporting registration.\n- pan_entity: PAN of the entity. Permanent Account Number card or letter issued to the business entity.\n- gst_registration_certificate: GST registration certificate. Form GST REG-06 registration certificate with the GSTIN, legal name and constitution.\n- udyam_certificate: Udyam registration certificate. Udyam registration certificate with the Udyam number and MSME classification.\n- kyc_pan_individual: PAN card of an individual. PAN card of a promoter, director, partner, proprietor or guarantor.\n- kyc_aadhaar: Aadhaar. Aadhaar card or e-Aadhaar of an individual (only the last four digits are kept).\n- kyc_passport: Passport. Indian passport of an individual.\n- kyc_voter_id: Voter ID. Election commission elector's photo identity card.\n- kyc_driving_licence: Driving licence. Driving licence of an individual.\n- audited_financial_statements: Audited financial statements. Audited balance sheet and profit and loss account for one financial year, with the auditor's report.\n- provisional_financial_statements: Provisional financial statements. Unaudited (provisional) balance sheet and profit and loss for the current or part year.\n- projected_financial_statements: Projected financial statements. Projected balance sheet and profit and loss for future years.\n- cma_data: CMA data. Credit Monitoring Arrangement data with assessment of working-capital requirement (MPBF).\n- itr_acknowledgement: ITR acknowledgement. Income-tax return filing acknowledgement (ITR-V) for one assessment year.\n- itr_computation: Computation of income. Computation of total income accompanying an income-tax return, for one assessment year.\n- gstr_3b: GSTR-3B return. Monthly or quarterly GSTR-3B summary return for one tax period.\n- gstr_1: GSTR-1 return. GSTR-1 statement of outward supplies for one tax period.\n- partner_gst_report: GST analysis report (partner). GST analysis report from RBL's GST partner, summarising returns and turnover across periods.\n- bank_statement: Bank statement. Statement of one bank account for a period, with every transaction and running balance.\n- partner_bank_analysis: Bank statement analysis report (partner). Bank statement analysis report from RBL's partner, summarising accounts month by month.\n- sanction_letter_other_lender: Sanction letter from another lender. Sanction letter of an existing facility with another bank or NBFC.\n- existing_facilities_declaration: Declaration of existing facilities. Borrower's declaration of all existing borrowings, or a nil declaration.\n- stock_statement: Stock and book-debt statement. Statement of stock and receivables as at a date, for drawing-power computation.\n- debtors_creditors_ageing: Debtors and creditors ageing. Ageing of receivables and payables by party and age bucket.\n- title_document: Title document. Registered sale deed, conveyance or title search report for the property offered as security.\n- encumbrance_certificate: Encumbrance certificate. Certificate listing registered encumbrances on a property over a period.\n- valuation_report: Valuation report. Valuer's report on the market and realisable value of the property offered as security.\n- bureau_commercial: Commercial bureau report. Commercial credit bureau report on the borrowing entity.\n- bureau_consumer: Consumer bureau report. Consumer credit bureau report on a promoter, director, partner, proprietor or guarantor.\n- covering_letter: Covering letter. A letter forwarding documents, often listing them; not a document on the checklist.\n- index_page: Index page. An index or contents page of a document bundle.\n- email_printout: Email printout. A printed email; any attachments are separate documents.\n- none_of_these: the document is none of the types above.\n\nDocument pages:\n=== Page 1 ===\nCity Power Utility\nElectricity Bill\nConsumer Name   EXAMPLE TOOLS PRIVATE LIMITED\nConsumer No.   170023456781\nBill Month   June 2025\nTariff Category   LT-V Industrial\nSanctioned Load   85 kW\nUnits Consumed   14,210\nCurrent Charges   1,38,450.00\nPrevious Balance   0.00\nAmount Payable   1,38,450.00\nDue Date   18/07/2025\nPlease pay by the due date to avoid a delayed payment charge.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "types": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "application_message",
+              "application_form",
+              "certificate_of_incorporation",
+              "moa_aoa",
+              "board_resolution",
+              "partnership_deed",
+              "partner_authority_letter",
+              "proprietorship_proof",
+              "pan_entity",
+              "gst_registration_certificate",
+              "udyam_certificate",
+              "kyc_pan_individual",
+              "kyc_aadhaar",
+              "kyc_passport",
+              "kyc_voter_id",
+              "kyc_driving_licence",
+              "audited_financial_statements",
+              "provisional_financial_statements",
+              "projected_financial_statements",
+              "cma_data",
+              "itr_acknowledgement",
+              "itr_computation",
+              "gstr_3b",
+              "gstr_1",
+              "partner_gst_report",
+              "bank_statement",
+              "partner_bank_analysis",
+              "sanction_letter_other_lender",
+              "existing_facilities_declaration",
+              "stock_statement",
+              "debtors_creditors_ageing",
+              "title_document",
+              "encumbrance_certificate",
+              "valuation_report",
+              "bureau_commercial",
+              "bureau_consumer",
+              "covering_letter",
+              "index_page",
+              "email_printout",
+              "none_of_these"
+            ]
+          }
+        },
+        "ranked": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "application_message",
+              "application_form",
+              "certificate_of_incorporation",
+              "moa_aoa",
+              "board_resolution",
+              "partnership_deed",
+              "partner_authority_letter",
+              "proprietorship_proof",
+              "pan_entity",
+              "gst_registration_certificate",
+              "udyam_certificate",
+              "kyc_pan_individual",
+              "kyc_aadhaar",
+              "kyc_passport",
+              "kyc_voter_id",
+              "kyc_driving_licence",
+              "audited_financial_statements",
+              "provisional_financial_statements",
+              "projected_financial_statements",
+              "cma_data",
+              "itr_acknowledgement",
+              "itr_computation",
+              "gstr_3b",
+              "gstr_1",
+              "partner_gst_report",
+              "bank_statement",
+              "partner_bank_analysis",
+              "sanction_letter_other_lender",
+              "existing_facilities_declaration",
+              "stock_statement",
+              "debtors_creditors_ageing",
+              "title_document",
+              "encumbrance_certificate",
+              "valuation_report",
+              "bureau_commercial",
+              "bureau_consumer",
+              "covering_letter",
+              "index_page",
+              "email_printout"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "response": {
+    "answer": {
+      "types": [
+        "none_of_these"
+      ],
+      "ranked": [
+        "existing_facilities_declaration",
+        "sanction_letter_other_lender",
+        "partner_bank_analysis"
+      ]
+    }
+  }
+}

@@ -1,0 +1,337 @@
+{
+  "tc": "TC-17",
+  "title": "Identity fields (identifiers, names, dates, the promoter set) extracted with page evidence",
+  "requests": [
+    {
+      "name": "identity documents",
+      "files": [
+        {
+          "file": "pan_entity.pdf",
+          "original_name": "pan_entity.pdf",
+          "content_type": "application/pdf"
+        },
+        {
+          "file": "pan_director_1.pdf",
+          "original_name": "pan_director_1.pdf",
+          "content_type": "application/pdf"
+        },
+        {
+          "file": "pan_director_2_photo.jpg",
+          "original_name": "pan_director_2_photo.jpg",
+          "content_type": "image/jpeg"
+        },
+        {
+          "file": "coi.pdf",
+          "original_name": "coi.pdf",
+          "content_type": "application/pdf"
+        },
+        {
+          "file": "gst_reg.pdf",
+          "original_name": "gst_reg.pdf",
+          "content_type": "application/pdf"
+        },
+        {
+          "file": "gst_reg_scan.pdf",
+          "original_name": "gst_reg_scan.pdf",
+          "content_type": "application/pdf"
+        },
+        {
+          "file": "udyam.pdf",
+          "original_name": "udyam.pdf",
+          "content_type": "application/pdf"
+        }
+      ],
+      "documents": [
+        {
+          "file": "pan_entity.pdf",
+          "page_from": 1,
+          "page_to": 1,
+          "types": [
+            "pan_entity"
+          ],
+          "scanned": false,
+          "fields": [
+            {
+              "field": "pan",
+              "value": "AAGCE4821K",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "name",
+              "value": "EXAMPLE TOOLS PRIVATE LIMITED",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "date_of_incorporation",
+              "value": "2016-03-14",
+              "page": 1
+            }
+          ]
+        },
+        {
+          "file": "pan_director_1.pdf",
+          "page_from": 1,
+          "page_to": 1,
+          "types": [
+            "kyc_pan_individual"
+          ],
+          "instance_key": "ABKPV7310R",
+          "scanned": false,
+          "fields": [
+            {
+              "field": "pan",
+              "value": "ABKPV7310R",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "name",
+              "value": "ANAND VARMA RAO",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "father_name",
+              "value": "SURESH VARMA RAO",
+              "page": 1
+            },
+            {
+              "field": "date_of_birth",
+              "value": "1978-08-12",
+              "page": 1
+            }
+          ]
+        },
+        {
+          "file": "pan_director_2_photo.jpg",
+          "page_from": 1,
+          "page_to": 1,
+          "types": [
+            "kyc_pan_individual"
+          ],
+          "instance_key": "BCQPD2284M",
+          "scanned": true,
+          "fields": [
+            {
+              "field": "pan",
+              "value": "BCQPD2284M",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "name",
+              "value": "KAVITA MENON DESAI",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "father_name",
+              "value": "RAMESH MENON DESAI",
+              "page": 1
+            },
+            {
+              "field": "date_of_birth",
+              "value": "1982-02-03",
+              "page": 1
+            }
+          ]
+        },
+        {
+          "file": "coi.pdf",
+          "page_from": 1,
+          "page_to": 1,
+          "types": [
+            "certificate_of_incorporation"
+          ],
+          "scanned": false,
+          "fields": [
+            {
+              "field": "company_name",
+              "value": "EXAMPLE TOOLS PRIVATE LIMITED",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "cin",
+              "value": "U28990MH2016PTC281734",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "incorporation_date",
+              "value": "2016-03-14",
+              "page": 1
+            },
+            {
+              "field": "registrar",
+              "value": "Registrar of Companies, Mumbai",
+              "page": 1
+            }
+          ]
+        },
+        {
+          "file": "gst_reg.pdf",
+          "page_from": 1,
+          "page_to": 1,
+          "types": [
+            "gst_registration_certificate"
+          ],
+          "scanned": false,
+          "fields": [
+            {
+              "field": "gstin",
+              "value": "27AAGCE4821K1ZI",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "legal_name",
+              "value": "EXAMPLE TOOLS PRIVATE LIMITED",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "trade_name",
+              "value": "EXAMPLE TOOLS",
+              "page": 1
+            },
+            {
+              "field": "constitution",
+              "value": "Private Limited Company",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "registration_date",
+              "value": "2017-07-01",
+              "page": 1
+            },
+            {
+              "field": "persons[0].name",
+              "value": "ANAND VARMA RAO",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "persons[0].designation",
+              "value": "Director",
+              "page": 1
+            },
+            {
+              "field": "persons[1].name",
+              "value": "KAVITA MENON DESAI",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "persons[1].designation",
+              "value": "Director",
+              "page": 1
+            }
+          ]
+        },
+        {
+          "file": "gst_reg_scan.pdf",
+          "page_from": 1,
+          "page_to": 1,
+          "types": [
+            "gst_registration_certificate"
+          ],
+          "scanned": true,
+          "fields": [
+            {
+              "field": "gstin",
+              "value": "27AAGCE4821K1ZI",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "legal_name",
+              "value": "EXAMPLE TOOLS PRIVATE LIMITED",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "trade_name",
+              "value": "EXAMPLE TOOLS",
+              "page": 1
+            },
+            {
+              "field": "constitution",
+              "value": "Private Limited Company",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "registration_date",
+              "value": "2017-07-01",
+              "page": 1
+            },
+            {
+              "field": "persons[0].name",
+              "value": "ANAND VARMA RAO",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "persons[0].designation",
+              "value": "Director",
+              "page": 1
+            },
+            {
+              "field": "persons[1].name",
+              "value": "KAVITA MENON DESAI",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "persons[1].designation",
+              "value": "Director",
+              "page": 1
+            }
+          ]
+        },
+        {
+          "file": "udyam.pdf",
+          "page_from": 1,
+          "page_to": 1,
+          "types": [
+            "udyam_certificate"
+          ],
+          "scanned": false,
+          "fields": [
+            {
+              "field": "udyam_number",
+              "value": "UDYAM-MH-26-0048213",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "enterprise_name",
+              "value": "EXAMPLE TOOLS PRIVATE LIMITED",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "classification",
+              "value": "Small",
+              "page": 1
+            },
+            {
+              "field": "activity",
+              "value": "Manufacturing",
+              "page": 1
+            },
+            {
+              "field": "registration_date",
+              "value": "2020-09-18",
+              "page": 1
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,526 @@
+{
+  "tc": "TC-10",
+  "title": "Partner GST report (spreadsheet), bank-statement analysis and bureau report recognised and extracted",
+  "requests": [
+    {
+      "name": "partner outputs",
+      "files": [
+        {
+          "file": "gst_report.xlsx",
+          "original_name": "gst_report.xlsx",
+          "content_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        },
+        {
+          "file": "bank_analysis.pdf",
+          "original_name": "analysis.pdf",
+          "content_type": "application/pdf"
+        },
+        {
+          "file": "bureau_commercial.pdf",
+          "original_name": "bureau.pdf",
+          "content_type": "application/pdf"
+        }
+      ],
+      "documents": [
+        {
+          "file": "gst_report.xlsx",
+          "page_from": 1,
+          "page_to": 1,
+          "types": [
+            "partner_gst_report"
+          ],
+          "fields": [
+            {
+              "field": "gstin",
+              "value": "27AAGCE4821K1ZI",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "legal_name",
+              "value": "EXAMPLE TOOLS PRIVATE LIMITED",
+              "page": 1
+            },
+            {
+              "field": "periods_missing",
+              "value": "Aug-2025",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "periods[0].period",
+              "value": "2025-04",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "periods[0].turnover",
+              "value": 4215300,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "periods[0].filing_date",
+              "value": "2025-05-20",
+              "page": 1
+            },
+            {
+              "field": "periods[0].filed",
+              "value": true,
+              "page": 1
+            },
+            {
+              "field": "periods[1].period",
+              "value": "2025-05",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "periods[1].turnover",
+              "value": 3968400,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "periods[1].filing_date",
+              "value": "2025-06-20",
+              "page": 1
+            },
+            {
+              "field": "periods[1].filed",
+              "value": true,
+              "page": 1
+            },
+            {
+              "field": "periods[2].period",
+              "value": "2025-06",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "periods[2].turnover",
+              "value": 4402750,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "periods[2].filing_date",
+              "value": "2025-07-19",
+              "page": 1
+            },
+            {
+              "field": "periods[2].filed",
+              "value": true,
+              "page": 1
+            },
+            {
+              "field": "periods[3].period",
+              "value": "2025-07",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "periods[3].turnover",
+              "value": 4120900,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "periods[3].filing_date",
+              "value": "2025-08-20",
+              "page": 1
+            },
+            {
+              "field": "periods[3].filed",
+              "value": true,
+              "page": 1
+            },
+            {
+              "field": "periods[4].period",
+              "value": "2025-08",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "periods[4].turnover",
+              "value": 3877600,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "periods[4].filed",
+              "value": false,
+              "page": 1
+            },
+            {
+              "field": "periods[5].period",
+              "value": "2025-09",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "periods[5].turnover",
+              "value": 4310050,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "periods[5].filing_date",
+              "value": "2025-10-20",
+              "page": 1
+            },
+            {
+              "field": "periods[5].filed",
+              "value": true,
+              "page": 1
+            }
+          ]
+        },
+        {
+          "file": "bank_analysis.pdf",
+          "page_from": 1,
+          "page_to": 1,
+          "types": [
+            "partner_bank_analysis"
+          ],
+          "scanned": false,
+          "fields": [
+            {
+              "field": "accounts[0].bank",
+              "value": "Bank Y",
+              "page": 1,
+              "key": false
+            },
+            {
+              "field": "accounts[0].account_number_masked",
+              "value": "XXXX4521",
+              "page": 1,
+              "key": false
+            },
+            {
+              "field": "accounts[0].month",
+              "value": "2025-04",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "accounts[0].credits",
+              "value": 662750,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "accounts[0].debits",
+              "value": 819800,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "accounts[0].average_balance",
+              "value": 691240.35,
+              "page": 1,
+              "key": false
+            },
+            {
+              "field": "accounts[0].emi",
+              "value": 145000,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "accounts[0].cheque_returns",
+              "value": 1,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "accounts[0].cash_deposits",
+              "value": 85000,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "accounts[1].bank",
+              "value": "Bank Y",
+              "page": 1,
+              "key": false
+            },
+            {
+              "field": "accounts[1].account_number_masked",
+              "value": "XXXX4521",
+              "page": 1,
+              "key": false
+            },
+            {
+              "field": "accounts[1].month",
+              "value": "2025-05",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "accounts[1].credits",
+              "value": 530200,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "accounts[1].debits",
+              "value": 802700,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "accounts[1].average_balance",
+              "value": 612870.1,
+              "page": 1,
+              "key": false
+            },
+            {
+              "field": "accounts[1].emi",
+              "value": 145000,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "accounts[1].cheque_returns",
+              "value": 0,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "accounts[1].cash_deposits",
+              "value": 120000,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "accounts[2].bank",
+              "value": "Bank Y",
+              "page": 1,
+              "key": false
+            },
+            {
+              "field": "accounts[2].account_number_masked",
+              "value": "XXXX4521",
+              "page": 1,
+              "key": false
+            },
+            {
+              "field": "accounts[2].month",
+              "value": "2025-06",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "accounts[2].credits",
+              "value": 815700,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "accounts[2].debits",
+              "value": 736950,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "accounts[2].average_balance",
+              "value": 523115.8,
+              "page": 1,
+              "key": false
+            },
+            {
+              "field": "accounts[2].emi",
+              "value": 183500,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "accounts[2].cheque_returns",
+              "value": 0,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "accounts[2].cash_deposits",
+              "value": 95000,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "lenders_paid",
+              "value": "Lender X, Lender Z Finance",
+              "page": 1,
+              "key": true
+            }
+          ]
+        },
+        {
+          "file": "bureau_commercial.pdf",
+          "page_from": 1,
+          "page_to": 1,
+          "types": [
+            "bureau_commercial"
+          ],
+          "scanned": false,
+          "fields": [
+            {
+              "field": "subject_name",
+              "value": "EXAMPLE TOOLS PRIVATE LIMITED",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "pan",
+              "value": "AAGCE4821K",
+              "page": 1
+            },
+            {
+              "field": "report_date",
+              "value": "2025-07-15",
+              "page": 1
+            },
+            {
+              "field": "score",
+              "value": "CMR-4",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "facilities[0].lender",
+              "value": "Lender X",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "facilities[0].facility_type",
+              "value": "Term Loan",
+              "page": 1,
+              "key": false
+            },
+            {
+              "field": "facilities[0].sanctioned",
+              "value": 5000000,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "facilities[0].outstanding",
+              "value": 3240000,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "facilities[0].emi",
+              "value": 145000,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "facilities[0].overdue",
+              "value": 0,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "facilities[0].status",
+              "value": "Standard",
+              "page": 1,
+              "key": false
+            },
+            {
+              "field": "facilities[1].lender",
+              "value": "Lender Z Finance",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "facilities[1].facility_type",
+              "value": "Equipment Loan",
+              "page": 1,
+              "key": false
+            },
+            {
+              "field": "facilities[1].sanctioned",
+              "value": 1500000,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "facilities[1].outstanding",
+              "value": 612000,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "facilities[1].emi",
+              "value": 38500,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "facilities[1].overdue",
+              "value": 0,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "facilities[1].status",
+              "value": "Standard",
+              "page": 1,
+              "key": false
+            },
+            {
+              "field": "facilities[2].lender",
+              "value": "Bank Y",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "facilities[2].facility_type",
+              "value": "Cash Credit",
+              "page": 1,
+              "key": false
+            },
+            {
+              "field": "facilities[2].sanctioned",
+              "value": 15000000,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "facilities[2].outstanding",
+              "value": 13820000,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "facilities[2].emi",
+              "value": 0,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "facilities[2].overdue",
+              "value": 0,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "facilities[2].status",
+              "value": "Standard",
+              "page": 1,
+              "key": false
+            },
+            {
+              "field": "observations",
+              "value": "No overdue in the last 12 months",
+              "page": 1,
+              "key": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

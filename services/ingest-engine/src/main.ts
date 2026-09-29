@@ -1,15 +1,24 @@
-// Standalone entrypoint: the ingestion engine on its own port, authenticated by INGEST_API_KEY.
-//   npm run dev · npm start          (INGEST_PORT, default 3002)
-// It shares nothing with any calling application: the caller sends the profile (or its id) and
-// its own rules text with every request. Configuration is env.ts — model provider, port, key,
-// profile directory, cache and OCR directories.
+// Standalone entrypoint: npm start (INGEST_PORT, default 3102).
 import { serve } from '@hono/node-server'
-import { env } from './env.js'
-import { prewarmOcr } from './ocr.js'
-import { apiKeyAuth, createIngestApp } from './app.js'
+import { createApp } from './app.js'
+import { ConfigStore } from './config.js'
+import { readEnv } from './env.js'
+import { createModelClient } from './llm/index.js'
+import { configureOcr } from './read/ocr.js'
+import { ENGINE_VERSION } from './version.js'
 
-prewarmOcr()
-const app = createIngestApp({ auth: apiKeyAuth })
-serve({ fetch: app.fetch, port: env.port }, (info) => {
-  console.log(`[ingest] engine on :${info.port} · ${env.apiKey ? 'API key required' : 'OPEN — set INGEST_API_KEY'} · types from ${env.typesDir} · feedback to ${env.feedbackDir} · auto threshold ${env.autoThreshold}`)
+const env = readEnv()
+const loopback = env.host === '127.0.0.1' || env.host === '::1' || env.host === 'localhost'
+if (!env.apiKey && !loopback) {
+  console.error('[ingest] refusing to start: INGEST_HOST is not loopback and INGEST_API_KEY is not set')
+  process.exit(1)
+}
+if (!env.dataRoot) {
+  console.error('[ingest] refusing to start: CREDITIQ_DATA_ROOT is not set')
+  process.exit(1)
+}
+configureOcr(env.ocrWorkers)
+const app = createApp({ env, configs: new ConfigStore(env.dataRoot), model: createModelClient(env) })
+serve({ fetch: app.fetch, port: env.port, hostname: env.host }, (info) => {
+  console.log(`[ingest] ${ENGINE_VERSION} on ${env.host}:${info.port} · ${env.apiKey ? 'API key required' : 'loopback only'} · model ${env.provider} (${env.mode})`)
 })

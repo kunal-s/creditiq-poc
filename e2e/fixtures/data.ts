@@ -155,7 +155,21 @@ export const TAXONOMY: ChecklistTaxonomy = {
   },
   review_gate_threshold: 85,
   disbursement_gate_threshold: 100,
-  items: [],
+  items: [
+    {
+      id: "gst_returns",
+      name: "GST returns (12 months)",
+      category: "Banking and operations",
+      constitutions: ["private_limited", "partnership", "proprietorship"],
+      why: "GST returns (12 months) is required for this constitution and facility.",
+      basis: "Published credit policy.",
+      source: "published_policy",
+      blocking: false,
+      weight: 4,
+      coverage: { kind: "monthly_periods", months: 12, count: 0, offset: 0 },
+      request: "GSTR-3B returns for the last 12 months.",
+    },
+  ],
 };
 
 function item(
@@ -187,6 +201,7 @@ export const KESTREL_CHECKLIST: Readiness = {
   ready_for_credit: false,
   blocking_open: 2,
   provisional: false,
+  ready_for_credit: false,
   items: [
     // Deliberately out of section order: the screen orders by the taxonomy.
     item("valuation", "Valuation report", "Collateral and security", "missing", {
@@ -231,6 +246,7 @@ export const SAFFRON_CHECKLIST: Readiness = {
   ready_for_credit: true,
   blocking_open: 0,
   provisional: false,
+  ready_for_credit: true,
   items: KESTREL_CHECKLIST.items.map((i) => ({ ...i, status: "satisfied", deficiency: null })),
 };
 
@@ -241,6 +257,7 @@ export const ORIEL_CHECKLIST: Readiness = {
   ready_for_credit: false,
   blocking_open: 1,
   provisional: true,
+  ready_for_credit: false,
   items: [
     item("kyc_proprietor", "KYC of the proprietor", "Constitution and KYC", "missing", {
       blocking: true,
@@ -530,7 +547,7 @@ export const REVIEW: ReviewItem[] = [
     id: "r-type",
     case_id: KESTREL,
     kind: "type",
-    ref: "doc-unc",
+    ref: "document:doc-unc",
     summary: "merged_docs.pdf p10: no type fits (utility bill 0.41)",
     status: "open",
     created_at: "2026-09-21T09:05:00Z",
@@ -539,7 +556,7 @@ export const REVIEW: ReviewItem[] = [
     id: "r-field",
     case_id: KESTREL,
     kind: "field",
-    ref: "fv-credits-jun",
+    ref: "field:fv-credits-jun",
     summary: "Bank statement ·1234 Jun 25: credits (0.62)",
     status: "open",
     created_at: "2026-09-21T09:06:00Z",
@@ -548,7 +565,7 @@ export const REVIEW: ReviewItem[] = [
     id: "r-corrected",
     case_id: KESTREL,
     kind: "field",
-    ref: "fv-credits-may",
+    ref: "field:fv-credits-may",
     summary: "Bank statement ·1234 May 25: credits (0.58)",
     status: "decided",
     decision: "correct",
@@ -582,6 +599,7 @@ export function proposal(duplicates: CaseSummary[] = []): CaseProposal {
   return {
     text_sha256: "c0ffee",
     duplicates,
+    stripped: [{ kind: "header", span: { start: 0, end: MESSAGE.indexOf("\n\n") } }],
     missing_minimum: [],
     fields: {
       borrower: {

@@ -26,16 +26,24 @@ export function useDecideReview() {
   });
 }
 
-/** The decisions each kind of review item admits (F-17.5, F-09.5). */
+/** The decisions each kind of review item admits, as the engine accepts
+ * them (F-17.5, F-09.5, F-07.5, F-10.5). Findings are decided on their own
+ * screen, not here. For a quality exception, "correct" is manual entry. */
 export const DECISIONS_BY_KIND: Record<ReviewKind, ReviewDecision[]> = {
   type: ["assign", "waive"],
-  field: ["confirm", "correct", "waive"],
-  quality: ["confirm", "waive"],
-  party: ["confirm", "correct", "waive"],
-  split: ["confirm", "correct", "waive"],
-  manual_entry: ["confirm", "waive"],
-  finding: ["confirm", "waive"],
+  field: ["confirm", "correct"],
+  quality: ["confirm", "correct", "waive"],
+  party: ["confirm", "correct"],
+  split: ["confirm"],
+  manual_entry: ["confirm"],
+  finding: [],
 };
+
+/** What a review item points at: "field:<id>", "document:<id>" or "file:<id>". */
+export function reviewTarget(ref: string): { kind: string; id: string } {
+  const at = ref.indexOf(":");
+  return at < 0 ? { kind: "", id: ref } : { kind: ref.slice(0, at), id: ref.slice(at + 1) };
+}
 
 /** Correct and waive need a reason (F-17.5). */
 export function needsReason(decision: ReviewDecision): boolean {

@@ -92,6 +92,7 @@ export function toCaseCreate(
   draft: Draft,
   channel: string,
   duplicateReason: string | null,
+  messageText: string,
 ): CaseCreate {
   const v = (key: string) => {
     const value = (draft.values[key] ?? "").trim();
@@ -120,19 +121,25 @@ export function toCaseCreate(
     udyam: v("udyam"),
     collateral_present: false,
     header,
+    // Stored unchanged as the case's first document (F-04.1, F-04.8).
+    message_text: messageText,
   };
   if (duplicateReason) body.duplicate_override_reason = duplicateReason;
   return body;
 }
 
-export type Mark = { start: number; end: number; level: "found" | "candidate" | "selected" };
+export type Mark = {
+  start: number;
+  end: number;
+  level: "stripped" | "found" | "candidate" | "selected";
+};
 
 /** Split the message into runs, each with the strongest mark covering it. */
 export function markRuns(
   text: string,
   marks: Mark[],
 ): { text: string; start: number; level: Mark["level"] | null }[] {
-  const rank = { found: 1, candidate: 2, selected: 3 } as const;
+  const rank = { stripped: 0, found: 1, candidate: 2, selected: 3 } as const;
   const bounds = new Set<number>([0, text.length]);
   for (const m of marks) {
     bounds.add(Math.max(0, Math.min(text.length, m.start)));

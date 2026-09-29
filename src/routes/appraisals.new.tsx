@@ -10,8 +10,8 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import type { CaseProposal, Meta } from "@/api/types";
-import { api } from "@/api/client";
+import type { CaseProposal, CaseSummary, Meta } from "@/api/types";
+import { api, ApiError } from "@/api/client";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { Panel, Chip } from "@/components/common/Panel";
 import { ErrorState } from "@/components/common/States";
@@ -91,7 +91,7 @@ function NewApplication() {
     setCreating(true);
     try {
       const created = await create.mutateAsync(
-        toCaseCreate(proposal, draft, channelId, override ? overrideReason.trim() : null),
+        toCaseCreate(proposal, draft, channelId, override ? overrideReason.trim() : null, text),
       );
       toast.success(t("newApplication.created", { id: created.id }));
       if (attachments.length > 0) {
@@ -106,8 +106,18 @@ function NewApplication() {
       } else {
         void navigate({ to: "/docready/$caseId/checklist", params: { caseId: created.id } });
       }
-    } catch {
-      // Shown inline from the mutation's error state.
+    } catch (error) {
+      // A duplicate found at creation (409) shows as the duplicate warning;
+      // anything else is shown inline from the mutation's error state.
+      const found = duplicatesIn(error);
+      if (found) {
+        const known = new Set((proposal.duplicates ?? []).map((d) => d.id));
+        setProposal({
+          ...proposal,
+          duplicates: [...(proposal.duplicates ?? []), ...found.filter((d) => !known.has(d.id))],
+        });
+        setOverride(false);
+      }
     } finally {
       setCreating(false);
     }
@@ -291,7 +301,7 @@ function NewApplication() {
                 (proposal.duplicates ?? []).length > 0 && (!override || !overrideReason.trim())
               }
               creating={creating}
-              error={create.error}
+              error={duplicatesIn(create.error) ? null : create.error}
               onDiscard={discard}
               onCreate={() => void submit()}
             />
@@ -309,6 +319,13 @@ function NewApplication() {
   }
 }
 
+/** The duplicates a 409 from case creation carries (F-04.5), if any. */
+function duplicatesIn(error: unknown): CaseSummary[] | null {
+  if (!(error instanceof ApiError) || error.status !== 409) return null;
+  const detail = error.detail as { duplicates?: unknown } | null;
+  return Array.isArray(detail?.duplicates) ? (detail.duplicates as CaseSummary[]) : null;
+}
+
 function MessagePanel({
   text,
   proposal,
@@ -324,7 +341,7 @@ function MessagePanel({
 }) {
   const selectedRef = useRef<HTMLElement | null>(null);
   const marks = useMemo(() => {
-    const out: Mark[] = [];
+    const out: Mark[] = (proposal.stripped ?? []).map((s) => ({ ...s.span, level: "stripped" }));
     for (const [key, span] of Object.entries(draft.spans)) {
       if (!span) continue;
       out.push({ ...span, level: key === selected ? "selected" : "found" });
@@ -335,7 +352,7 @@ function MessagePanel({
       }
     }
     return out;
-  }, [draft.spans, proposal.fields, selected]);
+  }, [draft.spans, proposal.fields, proposal.stripped, selected]);
   const runs = markRuns(text, marks);
 
   useEffect(() => {
@@ -372,11 +389,13 @@ function MessagePanel({
                   : undefined
               }
               data-mark={run.level}
+              title={run.level === "stripped" ? t("newApplication.strippedHelp") : undefined}
               className={cn(
                 "rounded-[2px] text-foreground",
                 run.level === "selected" && "bg-primary/25 ring-1 ring-primary",
                 run.level === "candidate" && "bg-flag/35 ring-1 ring-flag",
                 run.level === "found" && "bg-accent",
+                run.level === "stripped" && "bg-transparent text-muted-foreground/60",
               )}
             >
               {run.text}
@@ -462,28 +481,29 @@ function ProposedCase({
                 </p>
               )}
               {f.note && <p className="mt-1 text-[11.5px] text-flag-foreground">{f.note}</p>}
-              {(f.candidates ?? []).length > 0 && (
-                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                  <span className="text-[11px] text-muted-foreground">
-                    {t("newApplication.candidates")}
-                  </span>
-                  {(f.candidates ?? []).map((c) => (
-                    <button
-                      key={`${c.span.start}-${c.value}`}
-                      type="button"
-                      data-testid="candidate"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSelect(key);
-                        set(key, normalise(key, c.value, meta), c.span);
-                      }}
-                      className="rounded border border-flag/40 bg-surface px-1.5 py-0.5 text-[11.5px] font-medium text-foreground hover:bg-flag-soft"
-                    >
-                      {c.value}
-                    </button>
-                  ))}
-                </div>
-              )}
+              {(f.status === "unclear" || f.status === "invalid") &&
+                (f.candidates ?? []).length > 0 && (
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                    <span className="text-[11px] text-muted-foreground">
+                      {t("newApplication.candidates")}
+                    </span>
+                    {(f.candidates ?? []).map((c) => (
+                      <button
+                        key={`${c.span.start}-${c.value}`}
+                        type="button"
+                        data-testid="candidate"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelect(key);
+                          set(key, normalise(key, c.value, meta), c.span);
+                        }}
+                        className="rounded border border-flag/40 bg-surface px-1.5 py-0.5 text-[11.5px] font-medium text-foreground hover:bg-flag-soft"
+                      >
+                        {candidateLabel(key, c.value, meta)}
+                      </button>
+                    ))}
+                  </div>
+                )}
               {needs && (
                 <button
                   type="button"
@@ -512,6 +532,13 @@ function ProposedCase({
       )}
     </Panel>
   );
+}
+
+/** A candidate as the RM reads it: a configured id shows its label. */
+function candidateLabel(field: string, value: string, meta: Meta): string {
+  const list =
+    field === "constitution" ? meta.constitutions : field === "facilities" ? meta.facilities : [];
+  return list.find((o) => o.id === value)?.label ?? value.replace(/_/g, " ");
 }
 
 function FieldEditor({

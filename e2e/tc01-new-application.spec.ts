@@ -5,6 +5,7 @@ import { expect, test } from "@playwright/test";
 import type { CaseCreate } from "../src/api/types";
 import { CASES, EXISTING, MESSAGE, proposal, spanOf } from "./fixtures/data";
 import { MockApi, signedIn } from "./support/api";
+import type { CaseSummary } from "../src/api/types";
 
 test("TC-01: paste, verify every field, confirm, create", async ({ page }) => {
   const api = new MockApi();
@@ -25,6 +26,9 @@ test("TC-01: paste, verify every field, confirm, create", async ({ page }) => {
     "Kestrel Polymers Pvt Ltd",
   );
   await expect(page.getByTestId("field-amount_inr").getByRole("textbox")).toHaveValue("5000000");
+
+  // Headers set aside before reading are shown greyed, never proposed from.
+  await expect(page.locator('mark[data-mark="stripped"]').first()).toContainText("From: RM desk");
 
   // Clicking a field highlights its span in the message.
   await page.getByTestId("field-pan").click();
@@ -62,6 +66,7 @@ test("TC-01: paste, verify every field, confirm, create", async ({ page }) => {
   expect(body.amount_inr).toBe(5_500_000);
   expect(body.channel).toBe("email");
   expect(body.pan).toBe("AAACK1234K");
+  expect(body.message_text).toBe(MESSAGE);
   const amount = spanOf("50L");
   expect(body.header?.["amount_inr"]).toEqual({
     value: "5500000",
@@ -115,4 +120,35 @@ test("TC-01: a duplicate is offered, and creating anyway needs a reason", async 
   await expect(page).toHaveURL(/\/docready\/BBG-2026-000031\/checklist$/);
   const body = api.called("POST", "/api/cases")[0]!.body as CaseCreate;
   expect(body.duplicate_override_reason).toBe("Separate unit with its own GST registration");
+});
+
+test("TC-01: a duplicate found at creation (409) is offered the same way", async ({ page }) => {
+  const api = new MockApi();
+  const existing: CaseSummary = { ...CASES[0]!, id: EXISTING };
+  api.on("POST", /^\/api\/cases$/, (req) => {
+    const body = req.postDataJSON() as CaseCreate;
+    if (!body.duplicate_override_reason) {
+      return {
+        status: 409,
+        json: { detail: { message: "a case matches", duplicates: [existing] } },
+      };
+    }
+    return { status: 201, json: { ...existing, id: "BBG-2026-000031" } };
+  });
+  await signedIn(page, api);
+  await page.goto("/appraisals/new");
+  await page.getByTestId("message-input").fill(MESSAGE);
+  await page.getByRole("button", { name: "Read the message" }).click();
+  await page.getByTestId("confirm-constitution").click();
+  await page.getByTestId("confirm-declared_turnover_inr").click();
+  await page.getByTestId("create-application").click();
+
+  const warning = page.getByTestId("duplicate-warning");
+  await expect(warning).toContainText(EXISTING);
+  await expect(page.getByTestId("create-application")).toBeDisabled();
+  await warning.getByRole("button", { name: "Create anyway" }).click();
+  await page.getByTestId("override-reason").fill("Group company, separate borrower");
+  await page.getByTestId("create-application").click();
+  await expect(page).toHaveURL(/\/docready\/BBG-2026-000031\/checklist$/);
+  expect(api.called("POST", "/api/cases")).toHaveLength(2);
 });

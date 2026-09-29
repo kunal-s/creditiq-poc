@@ -1,7 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { ChevronDown, ChevronRight, FileText, Info } from "lucide-react";
-import type { ChecklistItemState, LogicalDocument } from "@/api/types";
+import type {
+  ChecklistItemDef,
+  ChecklistItemState,
+  CoverageRule,
+  LogicalDocument,
+} from "@/api/types";
 import { Chip, Panel } from "@/components/common/Panel";
 import { QueryView } from "@/components/common/States";
 import { ChecklistStatusChip } from "@/components/documents/chips";
@@ -122,6 +127,7 @@ function Checklist({
                       caseId={caseId}
                       item={item}
                       documents={documents.data ?? []}
+                      def={taxonomy.data?.items.find((d) => d.id === item.item_id)}
                       expanded={open === item.item_id}
                       onToggle={() => setOpen(open === item.item_id ? null : item.item_id)}
                     />
@@ -176,16 +182,27 @@ function Checklist({
   );
 }
 
+/** What complete means for an item, in words (F-13.2), from configuration. */
+function coverageText(c: CoverageRule): string {
+  return t(`coverage.${c.kind}`, {
+    count: c.count ?? 0,
+    months: c.months ?? 0,
+    statements: (c.statements ?? []).map((s) => s.replace(/_/g, " ")).join(", "),
+  });
+}
+
 function Item({
   caseId,
   item,
   documents,
+  def,
   expanded,
   onToggle,
 }: {
   caseId: string;
   item: ChecklistItemState;
   documents: LogicalDocument[];
+  def: ChecklistItemDef | undefined;
   expanded: boolean;
   onToggle: () => void;
 }) {
@@ -245,6 +262,22 @@ function Item({
             <p className="field-label">{t("checklist.basis")}</p>
             <p className="mt-0.5 text-[12.5px] text-foreground">{item.basis}</p>
           </div>
+          {def?.coverage && (
+            <div>
+              <p className="field-label">{t("checklist.coverage")}</p>
+              <p className="mt-0.5 text-[12.5px] text-foreground" data-testid="coverage">
+                {coverageText(def.coverage)}
+              </p>
+            </div>
+          )}
+          {def?.request && item.status !== "satisfied" && item.status !== "waived" && (
+            <div>
+              <p className="field-label">{t("checklist.request")}</p>
+              <p className="mt-0.5 text-[12.5px] text-foreground" data-testid="request">
+                {def.request}
+              </p>
+            </div>
+          )}
           {item.deficiency && (
             <p className="rounded border border-destructive/30 bg-destructive/10 px-3 py-2 text-[12px] leading-relaxed text-destructive">
               {t(`docStatus.${item.status}`)} — {item.deficiency}

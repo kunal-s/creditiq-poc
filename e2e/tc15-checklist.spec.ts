@@ -43,3 +43,13 @@ test("TC-15: provisional while the constitution is unknown", async ({ page }) =>
   await expect(page.getByTestId("provisional")).toBeVisible();
   await expect(page.getByTestId("docready-header")).toContainText("Not yet confirmed");
 });
+
+test("TC-15: an item states what complete means and what to ask for", async ({ page }) => {
+  const api = new MockApi();
+  await signedIn(page, api);
+  await page.goto(`/docready/${KESTREL}/checklist`);
+  const gst = page.locator('[data-item="gst_returns"]');
+  await gst.getByRole("button").first().click();
+  await expect(gst.getByTestId("coverage")).toHaveText("Monthly periods: 12");
+  await expect(gst.getByTestId("request")).toHaveText("GSTR-3B returns for the last 12 months.");
+});

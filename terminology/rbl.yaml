@@ -233,6 +233,21 @@ identifier:
   udyam: Udyam
   din: DIN
 
+# Deleting an application and everything it holds (FRD F-01.5).
+caseDelete:
+  action: Delete application
+  title: "Delete {id}?"
+  description: "This removes {borrower} and every file, document, extracted value, checklist state, query and review item it holds. It cannot be undone. A record that it was deleted is kept."
+  reason: Reason
+  reasonPlaceholder: For example, restarting the test run
+  confirm: "Type {id} to confirm"
+  cancel: Keep it
+  submit: Delete permanently
+  deleting: Deleting…
+  done: "{id} deleted"
+  busy: This application is being processed. Try again when processing finishes.
+  failed: The application could not be deleted. Try again.
+
 cases:
   col:
     proposal: Facilities and amount

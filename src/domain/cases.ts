@@ -35,6 +35,19 @@ export function useCreateCase() {
   });
 }
 
+/** F-01.5: delete a case and everything it owns (a log record remains). */
+export function useDeleteCase() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) => api.deleteCase(id, reason),
+    onSuccess: (_data, { id }) => {
+      client.removeQueries({ queryKey: ["cases", id] });
+      void client.invalidateQueries({ queryKey: ["cases"] });
+      void client.invalidateQueries({ queryKey: ["review"] });
+    },
+  });
+}
+
 /** Labels for configured ids (constitutions, facilities, channels) from /api/meta. */
 export function useLabels() {
   const { data: meta } = useMeta();

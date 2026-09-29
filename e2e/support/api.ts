@@ -110,6 +110,17 @@ export class MockApi {
         },
       ],
       [
+        "DELETE",
+        new RegExp(`^/api/cases/${id}$`),
+        (_req, m) => {
+          const caseId = decodeURIComponent(m[1]!);
+          if (!this.details.has(caseId)) return { status: 404, json: { detail: "no case" } };
+          this.details.delete(caseId);
+          this.cases = this.cases.filter((c) => c.id !== caseId);
+          return { status: 204 };
+        },
+      ],
+      [
         "GET",
         new RegExp(`^/api/cases/${id}/checklist$`),
         one(this.checklists, {

@@ -2,6 +2,7 @@ import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-r
 import { AlertTriangle, ArrowRight, ShieldCheck } from "lucide-react";
 import type { CaseDetail } from "@/api/types";
 import { CaseScreen } from "@/components/shell/CaseScreen";
+import { DeleteCaseButton } from "@/components/cases/DeleteCaseButton";
 import { DOCREADY_TABS } from "@/components/shell/nav";
 import { ScoreBar } from "@/components/common/Panel";
 import { t } from "@/config/terminology";
@@ -141,6 +142,7 @@ function Layout({ c }: { c: CaseDetail }) {
                   {t("cases.reviewOpen", { n: c.open_review_items })}
                 </Link>
               )}
+              <DeleteCaseButton caseId={c.id} borrower={c.borrower} />
             </div>
           </div>
         </div>

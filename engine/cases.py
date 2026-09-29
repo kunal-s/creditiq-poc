@@ -11,6 +11,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
@@ -218,6 +219,58 @@ def create_case(
     detail = get_case(conn, case_id)
     assert detail is not None
     return detail
+
+
+class CaseBusy(CaseError):
+    """The case is being processed; deleting it now would race the worker."""
+
+
+def _case_tables(conn: sqlite3.Connection) -> list[str]:
+    """Every table holding per-case rows, found from the schema so tables added
+    by later features are covered. The decision log is append-only and keeps
+    its history; the case table itself is deleted last."""
+    tables = [r["name"] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")]
+    return [
+        t
+        for t in tables
+        if t not in ("cases", "decision_log")
+        and any(col["name"] == "case_id" for col in conn.execute(f'PRAGMA table_info("{t}")'))
+    ]
+
+
+def delete_case(conn: sqlite3.Connection, case_id: str, *, actor: str, reason: str, root: Path | None = None) -> dict:
+    """F-01.5: delete a case and everything it owns: rows in every case table
+    and its files and page images on disk. The decision log keeps a
+    `case.deleted` entry (counts only, no borrower details). Case IDs are
+    never reused. Refused while the case's processing job is running."""
+    root = Path(root or data_root())
+    now = _now().isoformat(timespec="seconds")
+    with transaction(conn):
+        if conn.execute("SELECT 1 FROM cases WHERE id = ?", (case_id,)).fetchone() is None:
+            raise CaseError(f"no case {case_id!r}")
+        if conn.execute(
+            "SELECT 1 FROM jobs WHERE case_id = ? AND status = 'running'", (case_id,)
+        ).fetchone():
+            raise CaseBusy(f"case {case_id} is being processed; try again when processing finishes")
+        # Children before parents (foreign keys are enforced).
+        order = ["field_values", "documents"]
+        tables = order + [t for t in _case_tables(conn) if t not in order]
+        counts = {}
+        for table in tables:
+            counts[table] = conn.execute(f'DELETE FROM "{table}" WHERE case_id = ?', (case_id,)).rowcount
+        conn.execute("DELETE FROM cases WHERE id = ?", (case_id,))
+        log_decision(
+            conn,
+            at=now,
+            actor=actor,
+            case_id=case_id,
+            action="case.deleted",
+            detail=json.dumps({"reason": reason, "rows": {k: v for k, v in counts.items() if v}}),
+        )
+    case_dir = case_files_dir(case_id, root).parent
+    if case_dir.exists():
+        shutil.rmtree(case_dir)
+    return counts
 
 
 def _open_reviews(conn: sqlite3.Connection, case_id: str) -> int:

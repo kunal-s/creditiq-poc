@@ -100,6 +100,11 @@ export const api = {
     }),
   createCase: (body: CaseCreate) =>
     request<CaseDetail>("/api/cases", { method: "POST", body: JSON.stringify(body) }),
+  deleteCase: (id: string, reason: string) =>
+    request<undefined>(`/api/cases/${q(id)}`, {
+      method: "DELETE",
+      body: JSON.stringify({ reason }),
+    }),
 
   caseFiles: (id: string) => request<FileRecord[]>(`/api/cases/${q(id)}/files`),
   uploadFiles: (id: string, files: File[]) => {

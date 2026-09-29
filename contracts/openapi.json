@@ -137,6 +137,21 @@
         "title": "CaseCreate",
         "type": "object"
       },
+      "CaseDeleteRequest": {
+        "description": "F-01.5: why the case is being deleted; kept in the decision log.",
+        "properties": {
+          "reason": {
+            "minLength": 3,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "CaseDeleteRequest",
+        "type": "object"
+      },
       "CaseDetail": {
         "properties": {
           "amount_inr": {
@@ -2724,6 +2739,63 @@
       }
     },
     "/api/cases/{case_id}": {
+      "delete": {
+        "description": "F-01.5: delete a case and everything it owns, so testing can start\nagain. An RM may delete only their own cases. The decision log keeps a\nrecord of the deletion; the case ID is not reused.",
+        "operationId": "delete_case_api_cases__case_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaseDeleteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Case"
+      },
       "get": {
         "operationId": "get_case_api_cases__case_id__get",
         "parameters": [

@@ -104,7 +104,13 @@ export interface paths {
     get: operations["get_case_api_cases__case_id__get"];
     put?: never;
     post?: never;
-    delete?: never;
+    /**
+     * Delete Case
+     * @description F-01.5: delete a case and everything it owns, so testing can start
+     *     again. An RM may delete only their own cases. The decision log keeps a
+     *     record of the deletion; the case ID is not reused.
+     */
+    delete: operations["delete_case_api_cases__case_id__delete"];
     options?: never;
     head?: never;
     patch?: never;
@@ -451,6 +457,14 @@ export interface components {
       pan?: string | null;
       /** Udyam */
       udyam?: string | null;
+    };
+    /**
+     * CaseDeleteRequest
+     * @description F-01.5: why the case is being deleted; kept in the decision log.
+     */
+    CaseDeleteRequest: {
+      /** Reason */
+      reason: string;
     };
     /** CaseDetail */
     CaseDetail: {
@@ -1527,6 +1541,41 @@ export interface operations {
         content: {
           "application/json": components["schemas"]["CaseDetail"];
         };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_case_api_cases__case_id__delete: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CaseDeleteRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Validation Error */
       422: {

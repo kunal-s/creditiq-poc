@@ -36,6 +36,7 @@ export const ANALYST: SessionUser = {
     "case.create",
     "case.read",
     "case.read.all",
+    "case.delete",
     "document.upload",
     "checklist.read",
     "query.read",
@@ -57,7 +58,14 @@ export const RM: SessionUser = {
   roleLabel: "Relationship Manager",
   branch: "Mumbai hub",
   navGroups: ["workbench", "docready", "appraisal"],
-  permissions: ["case.create", "case.read", "document.upload", "checklist.read", "query.read"],
+  permissions: [
+    "case.create",
+    "case.read",
+    "case.delete",
+    "document.upload",
+    "checklist.read",
+    "query.read",
+  ],
 };
 
 export const META: Meta = {

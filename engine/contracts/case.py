@@ -41,6 +41,12 @@ class CaseCreate(BaseModel):
     "message:<start>-<end>" point into it."""
 
 
+class CaseDeleteRequest(BaseModel):
+    """F-01.5: why the case is being deleted; kept in the decision log."""
+
+    reason: str = Field(min_length=3)
+
+
 class CaseSummary(BaseModel):
     """Workbench row (F-01.4)."""
 

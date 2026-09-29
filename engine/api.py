@@ -23,6 +23,7 @@ from .configstore import reader as configstore_reader
 from .configstore.schema import ChecklistTaxonomySection, DocumentTypesSection, PolicySection
 from .contracts import (
     CaseCreate,
+    CaseDeleteRequest,
     CaseDetail,
     CaseProposal,
     CaseSummary,
@@ -176,6 +177,25 @@ def create_case(
 @app.get("/api/cases/{case_id}", response_model=CaseDetail)
 def get_case(case_id: str, user: dict = Depends(require("case.read")), conn: sqlite3.Connection = Depends(get_conn)):
     return _case_for(conn, case_id, user)
+
+
+@app.delete("/api/cases/{case_id}", status_code=204)
+def delete_case(
+    case_id: str,
+    body: CaseDeleteRequest,
+    user: dict = Depends(require("case.delete")),
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> None:
+    """F-01.5: delete a case and everything it owns, so testing can start
+    again. An RM may delete only their own cases. The decision log keeps a
+    record of the deletion; the case ID is not reused."""
+    _case_for(conn, case_id, user)
+    try:
+        cases.delete_case(conn, case_id, actor=user["id"], reason=body.reason.strip(), root=data_root())
+    except cases.CaseBusy as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    except cases.CaseError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
 
 
 # --- Documents and data (F-05, F-07 to F-09, F-15) ---

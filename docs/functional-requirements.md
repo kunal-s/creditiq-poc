@@ -34,8 +34,9 @@
   - C.1 Test traceability
   - C.2 Criteria traceability
   - C.3 Inputs required from RBL
-  - C.4 Open decisions
+  - C.4 Decisions
   - C.5 The base this build starts from
+  - C.6 Architecture decisions
 
 ---
 
@@ -176,41 +177,75 @@ Two properties hold throughout:
 
 ## 6. Screen map
 
+The screens follow the structure, layout and routes of the CreditIQ prototype that RBL has already seen (decision AD-1, C.6). A case has two workspaces sharing one case ID:
+
+- **DocReady:** readiness before credit.
+- **Appraisal:** credit's working screens.
+
+Prototype screens with no PoC feature are not built. Three screens are new: Policy, Comparison and Scorecard.
+
 ```mermaid
 flowchart TB
-  SI["Sign in"] --> WB["Workbench<br/>case list"]
+  SI["Sign in"] --> WB["Workbench"]
+  WB --> AP["My appraisals"]
   WB --> NA["New application"]
-  WB --> CW["Case workspace"]
-  WB --> RQ["Review queue<br/>all cases"]
-  WB --> SC["Scorecard<br/>case set"]
-  CW --> T1["Documents"]
-  CW --> T2["Checklist and queries"]
-  CW --> T3["Extracted data"]
-  CW --> T4["Cross-checks"]
-  CW --> T5["Policy"]
-  CW --> T6["Outputs:<br/>spread, CAM, PD note"]
-  CW --> T7["Comparison"]
-  T3 --> EV["Evidence viewer<br/>(opens on any value)"]
-  T4 --> EV
-  T6 --> EV
+  WB --> RC["Readiness console<br/>all cases"]
+  WB --> EQ["Exception queue<br/>(review queue)"]
+  WB --> SC["Scorecard"]
+  RC --> DR["DocReady case"]
+  DR --> D1["Checklist"]
+  DR --> D2["Validation"]
+  DR --> D3["Readiness"]
+  DR --> D4["Queries"]
+  AP --> AW["Appraisal case"]
+  AW --> A1["Identity"]
+  AW --> A2["Documents"]
+  AW --> A3["Data"]
+  AW --> A4["Spread"]
+  AW --> A5["Cross-verification"]
+  AW --> A6["Policy"]
+  AW --> A7["Draft: CAM and PD note"]
+  AW --> A8["Comparison"]
+  A3 --> EV["Evidence viewer<br/>(opens on any value)"]
+  A4 --> EV
+  A5 --> EV
+  A7 --> EV
 ```
 
-| Screen | Route | Feature | Roles | Phone |
-|---|---|---|---|---|
-| Sign in | `/sign-in` | F-03 | All | Yes |
-| Workbench | `/` | F-01 | All | Yes |
-| New application | `/applications/new` | F-04 | RM, Analyst | Yes |
-| Documents | `/appraisals/$id/documents` | F-05, F-07 to F-11 | All | Yes |
-| Checklist and queries | `/appraisals/$id/checklist` | F-12 to F-14 | All | Yes |
-| Extracted data | `/appraisals/$id/data` | F-15, F-16 | Analyst, Manager | No |
-| Cross-checks | `/appraisals/$id/cross-checks` | F-19 | Analyst, Manager | No |
-| Policy | `/appraisals/$id/policy` | F-20, F-21 | Analyst, Manager | No |
-| Outputs | `/appraisals/$id/outputs` | F-22 to F-24 | Analyst, Manager | No |
-| Comparison | `/appraisals/$id/comparison` | F-25 | Manager | No |
-| Review queue | `/review` | F-17 | Analyst, Manager | No |
-| Scorecard | `/scorecard` | F-26 | Manager | No |
+| Screen | Route | From the prototype | Feature | Roles | Phone |
+|---|---|---|---|---|---|
+| Sign in | `/sign-in` | Sign in | F-03 | All | Yes |
+| Workbench | `/` | Credit Workbench | F-01 | All | Yes |
+| My appraisals | `/appraisals` | My Appraisals | F-01 | All | Yes |
+| New application | `/appraisals/new` | New application | F-04, F-05 | RM, Analyst | Yes |
+| Readiness console | `/docready` | Readiness Console | F-13 | All | Yes |
+| DocReady: Checklist | `/docready/$caseId/checklist` | Checklist tab | F-12, F-13 | All | Yes |
+| DocReady: Validation | `/docready/$caseId/validation` | Validation tab | F-07, F-09, F-10, F-13 | All | Yes |
+| DocReady: Readiness | `/docready/$caseId/readiness` | Readiness tab | F-13.4 | All | Yes |
+| DocReady: Queries | `/docready/$caseId/collection` | Collection tab, repurposed | F-14 | All | Yes |
+| Appraisal: Identity | `/appraisals/$id/identity` | Entity resolution | F-10, F-15 | Analyst, Manager | No |
+| Appraisal: Documents | `/appraisals/$id/upload` | Manual upload, extended | F-05, F-08 | All | Yes |
+| Appraisal: Data | `/appraisals/$id/data` | Data acquisition console, repurposed | F-11, F-15, F-16 | Analyst, Manager | No |
+| Appraisal: Spread | `/appraisals/$id/spread` | Financial spread | F-22 | Analyst, Manager | No |
+| Appraisal: Cross-verification | `/appraisals/$id/cross-verification` | Cross-verification | F-18, F-19 | Analyst, Manager | No |
+| Appraisal: Policy | `/appraisals/$id/policy` | New (replaces Rating and Submission) | F-20, F-21 | Analyst, Manager | No |
+| Appraisal: Draft | `/appraisals/$id/draft` | CAM draft | F-23, F-24 | Analyst, Manager | No |
+| Appraisal: Comparison | `/appraisals/$id/comparison` | New | F-25 | Manager | No |
+| Exception queue | `/exceptions` | Exception queue, repurposed as the review queue | F-17 | Analyst, Manager | No |
+| Scorecard | `/scorecard` | New | F-26 | Manager | No |
 
-The case workspace shows a persistent case header on every tab:
+**Not built:**
+- Copilot rail
+- Memo library
+- Audit walk-through
+- Admin screens
+- Borrower, entity and person dossiers
+- Consent journey
+- Rating
+- Submission
+- Customer portal
+
+The case workspace shows a persistent case header (the prototype's context strip) on every tab:
 - borrower
 - constitution
 - product and amount
@@ -578,7 +613,7 @@ flowchart TD
 
 ## Phase 2: Document intelligence (priority 1)
 
-The processing layer for Phases 2 and 4 may be the parallel AI layer or the vendored ingest engine (C.4, decision 1). The requirements below apply either way. Whichever implements them returns results in the shape of section 7.
+F-07 to F-09, F-11 and F-15 are implemented in the vendored ingest engine sidecar (`services/ingest-engine`, decision AD-2). It returns results in the contract shape `contracts/ingest-result.schema.json` (AD-4). The CreditIQ engine owns everything case-level: the register, checklist mapping, party attribution, review and cross-checks.
 
 ### F-07. Page reading and quality grade
 
@@ -1413,14 +1448,14 @@ flowchart TD
 | The case set (seven to eight cases): source documents **and** credit record | F-25 to F-27; all testing | Development uses controlled variants as they become available |
 | Final key-field list and tolerances (open points 2 and 3) | F-15, F-19 | Section 5.3 list |
 
-## C.4 Open decisions
+## C.4 Decisions
 
-| # | Decision | Needed before | Recommendation |
+| # | Decision | Needed before | Status |
 |---|---|---|---|
-| 1 | Who implements F-07 to F-09 and F-15: the parallel AI-layer developer, or the vendored ingest engine as a sidecar service | Phase 2 | Settle one owner. If the ingest engine is used, the additions it needs are: page numbers on every value, splitting, quality grades, a closed list with `none_of_these`, record and replay, and turning off its feedback learning |
-| 2 | Constitutions: the checklist covers private limited, partnership and proprietorship. Add LLP and public limited? | F-12 | Add them if the case set includes either |
-| 3 | Development data before RBL's cases arrive | Phase 2 | Use a small set of controlled test documents under `tests/fixtures/`, each with its expected result. The earlier synthetic case generator has been removed from the base (C.5) |
-| 4 | Where the model runs for RBL data, and which provider | Phase 2 | Decide with RBL's data-handling approval |
+| 1 | Who implements F-07 to F-11 and F-15 | Phase 2 | **Decided 29 Sep 2026:** the vendored ingest engine, as a Node sidecar (AD-2) |
+| 2 | Constitutions: the checklist covers private limited, partnership and proprietorship. Add LLP and public limited? | F-12 | Open. Add them if the case set includes either |
+| 3 | Development data before RBL's cases arrive | Phase 2 | **Decided 29 Sep 2026:** controlled test documents under `tests/fixtures/TC-xx/`, each with its expected result (AD-6) |
+| 4 | Where the model runs for RBL data, and which provider | Phase 2 | Open for RBL data. For development, no model key yet: a stub provider plus recorded responses (AD-5) |
 | 5 | CAM export format (Word, PDF, or both) | F-23 | Match RBL's template's native format |
 | 6 | Evidence region: page is mandatory (C7). Should the region on the page be shown too? | F-16 | Page for every value; region where cheaply available |
 
@@ -1489,3 +1524,29 @@ flowchart TD
   - Python: `reportlab`, `pypdf` and `jsonschema` (lockfile recompiled);
   - npm: 21 packages used only by the removed primitives, charts and the viewer.
 - **Leftover references:** code comments that cited the superseded plans and stages, and fixed identifier tables used only for generating fictional cases.
+
+## C.6 Architecture decisions
+
+Decided 29 September 2026. A change to any of these is recorded here with its date and reason.
+
+| # | Decision | Reason |
+|---|---|---|
+| AD-1 | **Screens are the prototype's screens, re-fed with real data.** Each in-scope screen is restored from the prototype source (git `6014167`), keeping its layout and interaction. Its seeded data module is replaced by typed hooks over the engine API. Seeded values never return; every screen has designed loading, empty and error states. | RBL has seen this design. The test plan measures behaviour, so reusing the layout costs nothing and keeps the demo continuity. |
+| AD-2 | **Document processing (F-07 to F-09, F-11, F-15) is the vendored ingest engine** (`services/ingest-engine`, a Node/TypeScript sidecar), extended per its `VENDORED.md`. The CreditIQ engine calls it over HTTP through one client module and never parses documents itself. The sidecar reads the published CreditIQ configuration (document types, dictionaries, thresholds) and echoes the version it used. | The user chose to vendor rather than port. One client module keeps the boundary narrow and testable. |
+| AD-3 | **SQLite (Python standard library) under the data root** holds cases, the document register, jobs, evidence, findings, queries, review decisions and the decision log. Files are stored by SHA-256 under `cases/<id>/files/`. | Simple and inspectable; survives restarts; no server to run. |
+| AD-4 | **The API contract is defined first and generated.** Pydantic models in `engine/contracts/` are the single source. The sidecar's result schema is `contracts/ingest-result.schema.json`, generated from the same models. TypeScript types are generated from the engine's OpenAPI into `src/api/schema.gen.ts` (`npm run gen:api`). Hand-written mirrors are removed. | Parallel streams build against one fixed interface and cannot drift. |
+| AD-5 | **Model layer:** one provider interface with Anthropic (default) and Gemini, both native. Every call is recorded, and replayed by the hash of its canonical request. No sampling parameters are sent. Until a key is supplied, a stub provider serves recorded responses, and a miss is an explicit error, never a guess. | Deterministic re-runs (principle 6) and a reproducible scorecard. |
+| AD-6 | **Every feature ships with fixtures and tests tagged by test case.** Fixtures live in `tests/fixtures/TC-xx/`, each with an expected result. There are pytest suites for the engine, `node:test` for the sidecar, and Playwright (including 375 px) for screens. The scorecard (F-26) runs from the first extraction. `npm run check` gates every merge. | Keeps every wave measured against C1 to C9. |
+
+**Build organisation.**
+
+- **Wave 0, foundation (sequential):** F-00 to F-03, the contract (AD-4) and the prototype shell.
+- **Wave 1, three parallel streams**, each on its own branch and git worktree, merged after review:
+  - document processing in the sidecar: F-07 to F-09, F-11 and F-15;
+  - intake and completeness in the engine: F-04, F-05, F-10, F-12 to F-14 and F-17;
+  - screens: restoring and rewiring the prototype screens, F-06 and F-16.
+- **Wave 2, triangulation and policy:** F-18 to F-21.
+- **Wave 3, outputs:** F-22 to F-24.
+- **Wave 4, evaluation:** F-25 to F-27.
+
+Each wave ends with a sign-off.

@@ -1,0 +1,169 @@
+{
+  "tc": "TC-06",
+  "title": "Every document classified by content; misleading file names and label hints make no difference",
+  "requests": [
+    {
+      "name": "misleading names",
+      "files": [
+        {
+          "file": "pan_entity.pdf",
+          "original_name": "bank_statement.pdf",
+          "label_hint": "bank statement",
+          "content_type": "application/pdf"
+        },
+        {
+          "file": "pan_director.pdf",
+          "original_name": "gst_certificate.pdf",
+          "label_hint": "gst",
+          "content_type": "application/pdf"
+        },
+        {
+          "file": "coi.pdf",
+          "original_name": "itr_2025.pdf",
+          "label_hint": "itr",
+          "content_type": "application/pdf"
+        },
+        {
+          "file": "gst_reg.pdf",
+          "original_name": "pan_card.pdf",
+          "label_hint": "pan",
+          "content_type": "application/pdf"
+        },
+        {
+          "file": "udyam.pdf",
+          "original_name": "balance_sheet.pdf",
+          "label_hint": "balance sheet",
+          "content_type": "application/pdf"
+        },
+        {
+          "file": "gstr3b_apr.pdf",
+          "original_name": "balance_sheet_fy25.pdf",
+          "label_hint": "balance sheet",
+          "content_type": "application/pdf"
+        },
+        {
+          "file": "bank.pdf",
+          "original_name": "kyc_director_1.pdf",
+          "label_hint": "kyc",
+          "content_type": "application/pdf"
+        },
+        {
+          "file": "fs.pdf",
+          "original_name": "bank_statement_april.pdf",
+          "label_hint": "bank statement",
+          "content_type": "application/pdf"
+        },
+        {
+          "file": "itr.pdf",
+          "original_name": "udyam.pdf",
+          "label_hint": "udyam",
+          "content_type": "application/pdf"
+        },
+        {
+          "file": "bureau.pdf",
+          "original_name": "sanction_letter.pdf",
+          "label_hint": "sanction letter",
+          "content_type": "application/pdf"
+        }
+      ],
+      "documents": [
+        {
+          "file": "pan_entity.pdf",
+          "page_from": 1,
+          "page_to": 1,
+          "types": [
+            "pan_entity"
+          ],
+          "scanned": false
+        },
+        {
+          "file": "pan_director.pdf",
+          "page_from": 1,
+          "page_to": 1,
+          "types": [
+            "kyc_pan_individual"
+          ],
+          "instance_key": "ABKPV7310R",
+          "scanned": false
+        },
+        {
+          "file": "coi.pdf",
+          "page_from": 1,
+          "page_to": 1,
+          "types": [
+            "certificate_of_incorporation"
+          ],
+          "scanned": false
+        },
+        {
+          "file": "gst_reg.pdf",
+          "page_from": 1,
+          "page_to": 1,
+          "types": [
+            "gst_registration_certificate"
+          ],
+          "scanned": false
+        },
+        {
+          "file": "udyam.pdf",
+          "page_from": 1,
+          "page_to": 1,
+          "types": [
+            "udyam_certificate"
+          ],
+          "scanned": false
+        },
+        {
+          "file": "gstr3b_apr.pdf",
+          "page_from": 1,
+          "page_to": 1,
+          "types": [
+            "gstr_3b"
+          ],
+          "instance_key": "2025-04",
+          "scanned": false
+        },
+        {
+          "file": "bank.pdf",
+          "page_from": 1,
+          "page_to": 2,
+          "types": [
+            "bank_statement"
+          ],
+          "instance_key": "acct-4521",
+          "scanned": false
+        },
+        {
+          "file": "fs.pdf",
+          "page_from": 1,
+          "page_to": 3,
+          "types": [
+            "audited_financial_statements"
+          ],
+          "instance_key": "FY-end 2025-03-31",
+          "scanned": false
+        },
+        {
+          "file": "itr.pdf",
+          "page_from": 1,
+          "page_to": 2,
+          "types": [
+            "itr_acknowledgement",
+            "itr_computation"
+          ],
+          "instance_key": "AY2025-26",
+          "scanned": false
+        },
+        {
+          "file": "bureau.pdf",
+          "page_from": 1,
+          "page_to": 1,
+          "types": [
+            "bureau_commercial"
+          ],
+          "scanned": false
+        }
+      ]
+    }
+  ]
+}

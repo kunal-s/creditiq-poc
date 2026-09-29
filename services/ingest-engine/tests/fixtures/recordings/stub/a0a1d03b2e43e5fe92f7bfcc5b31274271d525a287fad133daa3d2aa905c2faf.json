@@ -1,0 +1,67 @@
+{
+  "key": "a0a1d03b2e43e5fe92f7bfcc5b31274271d525a287fad133daa3d2aa905c2faf",
+  "provider": "stub",
+  "model": "stub",
+  "task": "extract",
+  "request": {
+    "task": "extract",
+    "system": "You locate fields in one business document, reading only the page text given.\nFor each requested field, return the text exactly as it is printed on the page (raw) and the page number it is printed on.\nFor an amount or a number, return the caption or row label exactly as printed (row_label) and leave raw null; the caller reads the number from that row.\nReturn null for a field that is not printed. Never compute, convert, complete or infer a value, and never use knowledge from outside the document.",
+    "user": "Document type: Udyam registration certificate\nFields:\n- udyam_number (identifier): Udyam number\n- registration_date (date): Date of registration\n\nPages:\n=== Page 1 ===\nUdyam Registration Certificate\nMisty of io, Smal an wedium Erverpises\nUdyam Registration Numer   UDYAM-AIH.26-0048213\nType of Enterprise   Small\nMajor Activity   Manufacturing\nName of Enterprise   EXAMPLE TOOLS PRIVATE LIMITED\nDate of Incorporation   140312016\nDate of Udyam Registration   180912020\nOfficial adress of enterprise:   Plot 14, MIDC Industial Avea, Bhosari, Pune:",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string",
+                "enum": [
+                  "udyam_number",
+                  "registration_date"
+                ]
+              },
+              "raw": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "row_label": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "page": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "response": {
+    "answer": {
+      "fields": [
+        {
+          "field": "udyam_number",
+          "raw": null,
+          "row_label": null,
+          "page": null
+        },
+        {
+          "field": "registration_date",
+          "raw": null,
+          "row_label": null,
+          "page": null
+        }
+      ]
+    }
+  }
+}

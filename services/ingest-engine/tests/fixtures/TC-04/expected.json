@@ -1,0 +1,768 @@
+{
+  "tc": "TC-04",
+  "title": "Merged PDFs split into logical documents with page ranges, each classified",
+  "requests": [
+    {
+      "name": "three different documents",
+      "files": [
+        {
+          "file": "merged_bundle.pdf",
+          "original_name": "documents.pdf",
+          "content_type": "application/pdf"
+        }
+      ],
+      "documents": [
+        {
+          "file": "merged_bundle.pdf",
+          "page_from": 1,
+          "page_to": 1,
+          "types": [
+            "certificate_of_incorporation"
+          ],
+          "scanned": false,
+          "fields": [
+            {
+              "field": "company_name",
+              "value": "EXAMPLE TOOLS PRIVATE LIMITED",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "cin",
+              "value": "U28990MH2016PTC281734",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "incorporation_date",
+              "value": "2016-03-14",
+              "page": 1
+            },
+            {
+              "field": "registrar",
+              "value": "Registrar of Companies, Mumbai",
+              "page": 1
+            }
+          ]
+        },
+        {
+          "file": "merged_bundle.pdf",
+          "page_from": 2,
+          "page_to": 3,
+          "types": [
+            "bank_statement"
+          ],
+          "instance_key": "acct-4521",
+          "scanned": false,
+          "fields": [
+            {
+              "field": "bank",
+              "value": "Bank Y Limited",
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "account_holder",
+              "value": "EXAMPLE TOOLS PRIVATE LIMITED",
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "account_number_masked",
+              "value": "XXXXXXXX4521",
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "ifsc",
+              "value": "BKYL0004521",
+              "page": 2
+            },
+            {
+              "field": "period_from",
+              "value": "2025-04-01",
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "period_to",
+              "value": "2025-06-30",
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "opening_balance",
+              "value": 542180.5,
+              "page": 2
+            },
+            {
+              "field": "transactions[0].date",
+              "value": "2025-04-02",
+              "page": 2
+            },
+            {
+              "field": "transactions[0].narration",
+              "value": "NEFT CR CUSTOMER A INV 1021",
+              "page": 2
+            },
+            {
+              "field": "transactions[0].credit",
+              "value": 325000,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "transactions[0].balance",
+              "value": 867180.5,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "transactions[1].date",
+              "value": "2025-04-04",
+              "page": 2
+            },
+            {
+              "field": "transactions[1].narration",
+              "value": "NACH DR LENDER X EMI",
+              "page": 2
+            },
+            {
+              "field": "transactions[1].debit",
+              "value": 145000,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "transactions[1].balance",
+              "value": 722180.5,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "transactions[2].date",
+              "value": "2025-04-07",
+              "page": 2
+            },
+            {
+              "field": "transactions[2].narration",
+              "value": "CASH DEPOSIT PUNE BRANCH",
+              "page": 2
+            },
+            {
+              "field": "transactions[2].credit",
+              "value": 85000,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "transactions[2].balance",
+              "value": 807180.5,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "transactions[3].date",
+              "value": "2025-04-10",
+              "page": 2
+            },
+            {
+              "field": "transactions[3].narration",
+              "value": "RTGS DR SUPPLIER C",
+              "page": 2
+            },
+            {
+              "field": "transactions[3].debit",
+              "value": 210500,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "transactions[3].balance",
+              "value": 596680.5,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "transactions[4].date",
+              "value": "2025-04-15",
+              "page": 2
+            },
+            {
+              "field": "transactions[4].narration",
+              "value": "GST PAYMENT",
+              "page": 2
+            },
+            {
+              "field": "transactions[4].debit",
+              "value": 64300,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "transactions[4].balance",
+              "value": 532380.5,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "transactions[5].date",
+              "value": "2025-04-18",
+              "page": 2
+            },
+            {
+              "field": "transactions[5].narration",
+              "value": "NEFT CR CUSTOMER B",
+              "page": 2
+            },
+            {
+              "field": "transactions[5].credit",
+              "value": 192750,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "transactions[5].balance",
+              "value": 725130.5,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "transactions[6].date",
+              "value": "2025-04-22",
+              "page": 2
+            },
+            {
+              "field": "transactions[6].narration",
+              "value": "CHQ DEP 004512 HARBOUR TRADERS",
+              "page": 2
+            },
+            {
+              "field": "transactions[6].credit",
+              "value": 60000,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "transactions[6].balance",
+              "value": 785130.5,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "transactions[7].date",
+              "value": "2025-04-23",
+              "page": 2
+            },
+            {
+              "field": "transactions[7].narration",
+              "value": "CHQ RETURN 004512 INSUFFICIENT FUNDS",
+              "page": 2
+            },
+            {
+              "field": "transactions[7].debit",
+              "value": 60000,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "transactions[7].balance",
+              "value": 725130.5,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "transactions[8].date",
+              "value": "2025-04-28",
+              "page": 2
+            },
+            {
+              "field": "transactions[8].narration",
+              "value": "SALARY APR 2025",
+              "page": 2
+            },
+            {
+              "field": "transactions[8].debit",
+              "value": 340000,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "transactions[8].balance",
+              "value": 385130.5,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "transactions[9].date",
+              "value": "2025-05-02",
+              "page": 2
+            },
+            {
+              "field": "transactions[9].narration",
+              "value": "NEFT CR CUSTOMER A INV 1044",
+              "page": 2
+            },
+            {
+              "field": "transactions[9].credit",
+              "value": 410200,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "transactions[9].balance",
+              "value": 795330.5,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "transactions[10].date",
+              "value": "2025-05-05",
+              "page": 2
+            },
+            {
+              "field": "transactions[10].narration",
+              "value": "NACH DR LENDER X EMI",
+              "page": 2
+            },
+            {
+              "field": "transactions[10].debit",
+              "value": 145000,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "transactions[10].balance",
+              "value": 650330.5,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "transactions[11].date",
+              "value": "2025-05-09",
+              "page": 2
+            },
+            {
+              "field": "transactions[11].narration",
+              "value": "CASH DEPOSIT PUNE BRANCH",
+              "page": 2
+            },
+            {
+              "field": "transactions[11].credit",
+              "value": 120000,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "transactions[11].balance",
+              "value": 770330.5,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "transactions[12].date",
+              "value": "2025-05-14",
+              "page": 2
+            },
+            {
+              "field": "transactions[12].narration",
+              "value": "RTGS DR SUPPLIER C",
+              "page": 2
+            },
+            {
+              "field": "transactions[12].debit",
+              "value": 245800,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "transactions[12].balance",
+              "value": 524530.5,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "transactions[13].date",
+              "value": "2025-05-20",
+              "page": 2
+            },
+            {
+              "field": "transactions[13].narration",
+              "value": "GST PAYMENT",
+              "page": 2
+            },
+            {
+              "field": "transactions[13].debit",
+              "value": 71900,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "transactions[13].balance",
+              "value": 452630.5,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "transactions[14].date",
+              "value": "2025-05-27",
+              "page": 3
+            },
+            {
+              "field": "transactions[14].narration",
+              "value": "SALARY MAY 2025",
+              "page": 3
+            },
+            {
+              "field": "transactions[14].debit",
+              "value": 340000,
+              "page": 3,
+              "key": true
+            },
+            {
+              "field": "transactions[14].balance",
+              "value": 112630.5,
+              "page": 3,
+              "key": true
+            },
+            {
+              "field": "transactions[15].date",
+              "value": "2025-06-03",
+              "page": 3
+            },
+            {
+              "field": "transactions[15].narration",
+              "value": "NEFT CR NORTHLINE COMPONENTS",
+              "page": 3
+            },
+            {
+              "field": "transactions[15].credit",
+              "value": 502400,
+              "page": 3,
+              "key": true
+            },
+            {
+              "field": "transactions[15].balance",
+              "value": 615030.5,
+              "page": 3,
+              "key": true
+            },
+            {
+              "field": "transactions[16].date",
+              "value": "2025-06-05",
+              "page": 3
+            },
+            {
+              "field": "transactions[16].narration",
+              "value": "NACH DR LENDER X EMI",
+              "page": 3
+            },
+            {
+              "field": "transactions[16].debit",
+              "value": 145000,
+              "page": 3,
+              "key": true
+            },
+            {
+              "field": "transactions[16].balance",
+              "value": 470030.5,
+              "page": 3,
+              "key": true
+            },
+            {
+              "field": "transactions[17].date",
+              "value": "2025-06-06",
+              "page": 3
+            },
+            {
+              "field": "transactions[17].narration",
+              "value": "NACH DR LENDER Z FINANCE EMI",
+              "page": 3
+            },
+            {
+              "field": "transactions[17].debit",
+              "value": 38500,
+              "page": 3,
+              "key": true
+            },
+            {
+              "field": "transactions[17].balance",
+              "value": 431530.5,
+              "page": 3,
+              "key": true
+            },
+            {
+              "field": "transactions[18].date",
+              "value": "2025-06-12",
+              "page": 3
+            },
+            {
+              "field": "transactions[18].narration",
+              "value": "CASH DEPOSIT PUNE BRANCH",
+              "page": 3
+            },
+            {
+              "field": "transactions[18].credit",
+              "value": 95000,
+              "page": 3,
+              "key": true
+            },
+            {
+              "field": "transactions[18].balance",
+              "value": 526530.5,
+              "page": 3,
+              "key": true
+            },
+            {
+              "field": "transactions[19].date",
+              "value": "2025-06-19",
+              "page": 3
+            },
+            {
+              "field": "transactions[19].narration",
+              "value": "NEFT CR DELTA CASTINGS",
+              "page": 3
+            },
+            {
+              "field": "transactions[19].credit",
+              "value": 218300,
+              "page": 3,
+              "key": true
+            },
+            {
+              "field": "transactions[19].balance",
+              "value": 744830.5,
+              "page": 3,
+              "key": true
+            },
+            {
+              "field": "transactions[20].date",
+              "value": "2025-06-20",
+              "page": 3
+            },
+            {
+              "field": "transactions[20].narration",
+              "value": "GST PAYMENT",
+              "page": 3
+            },
+            {
+              "field": "transactions[20].debit",
+              "value": 68450,
+              "page": 3,
+              "key": true
+            },
+            {
+              "field": "transactions[20].balance",
+              "value": 676380.5,
+              "page": 3,
+              "key": true
+            },
+            {
+              "field": "transactions[21].date",
+              "value": "2025-06-27",
+              "page": 3
+            },
+            {
+              "field": "transactions[21].narration",
+              "value": "SALARY JUN 2025",
+              "page": 3
+            },
+            {
+              "field": "transactions[21].debit",
+              "value": 340000,
+              "page": 3,
+              "key": true
+            },
+            {
+              "field": "transactions[21].balance",
+              "value": 336380.5,
+              "page": 3,
+              "key": true
+            },
+            {
+              "field": "closing_balance",
+              "value": 336380.5,
+              "page": 3
+            }
+          ]
+        },
+        {
+          "file": "merged_bundle.pdf",
+          "page_from": 4,
+          "page_to": 4,
+          "types": [
+            "gstr_3b"
+          ],
+          "instance_key": "2025-04",
+          "scanned": false,
+          "fields": [
+            {
+              "field": "gstin",
+              "value": "27AAGCE4821K1ZI",
+              "page": 4,
+              "key": true
+            },
+            {
+              "field": "legal_name",
+              "value": "EXAMPLE TOOLS PRIVATE LIMITED",
+              "page": 4
+            },
+            {
+              "field": "period",
+              "value": "2025-04",
+              "page": 4,
+              "key": true
+            },
+            {
+              "field": "outward_taxable_supplies",
+              "value": 4215300,
+              "page": 4,
+              "key": true
+            },
+            {
+              "field": "filing_date",
+              "value": "2025-05-20",
+              "page": 4,
+              "key": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "three instances of one type",
+      "files": [
+        {
+          "file": "merged_gstr3b.pdf",
+          "original_name": "gst_returns_q1.pdf",
+          "content_type": "application/pdf"
+        }
+      ],
+      "documents": [
+        {
+          "file": "merged_gstr3b.pdf",
+          "page_from": 1,
+          "page_to": 1,
+          "types": [
+            "gstr_3b"
+          ],
+          "instance_key": "2025-04",
+          "scanned": false,
+          "fields": [
+            {
+              "field": "gstin",
+              "value": "27AAGCE4821K1ZI",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "legal_name",
+              "value": "EXAMPLE TOOLS PRIVATE LIMITED",
+              "page": 1
+            },
+            {
+              "field": "period",
+              "value": "2025-04",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "outward_taxable_supplies",
+              "value": 4215300,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "filing_date",
+              "value": "2025-05-20",
+              "page": 1,
+              "key": true
+            }
+          ]
+        },
+        {
+          "file": "merged_gstr3b.pdf",
+          "page_from": 2,
+          "page_to": 2,
+          "types": [
+            "gstr_3b"
+          ],
+          "instance_key": "2025-05",
+          "scanned": false,
+          "fields": [
+            {
+              "field": "gstin",
+              "value": "27AAGCE4821K1ZI",
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "legal_name",
+              "value": "EXAMPLE TOOLS PRIVATE LIMITED",
+              "page": 2
+            },
+            {
+              "field": "period",
+              "value": "2025-05",
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "outward_taxable_supplies",
+              "value": 3968400,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "filing_date",
+              "value": "2025-06-20",
+              "page": 2,
+              "key": true
+            }
+          ]
+        },
+        {
+          "file": "merged_gstr3b.pdf",
+          "page_from": 3,
+          "page_to": 3,
+          "types": [
+            "gstr_3b"
+          ],
+          "instance_key": "2025-06",
+          "scanned": false,
+          "fields": [
+            {
+              "field": "gstin",
+              "value": "27AAGCE4821K1ZI",
+              "page": 3,
+              "key": true
+            },
+            {
+              "field": "legal_name",
+              "value": "EXAMPLE TOOLS PRIVATE LIMITED",
+              "page": 3
+            },
+            {
+              "field": "period",
+              "value": "2025-06",
+              "page": 3,
+              "key": true
+            },
+            {
+              "field": "outward_taxable_supplies",
+              "value": 4402750,
+              "page": 3,
+              "key": true
+            },
+            {
+              "field": "filing_date",
+              "value": "2025-07-19",
+              "page": 3,
+              "key": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

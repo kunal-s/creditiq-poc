@@ -1,0 +1,360 @@
+{
+  "tc": "TC-18",
+  "title": "Balance-sheet and P&L items extracted per year (digital and scanned); a combined ITR acknowledgement and computation carries both types",
+  "requests": [
+    {
+      "name": "financials",
+      "files": [
+        {
+          "file": "fs_fy2024-25.pdf",
+          "original_name": "fs.pdf",
+          "content_type": "application/pdf"
+        },
+        {
+          "file": "fs_fy2024-25_scan.pdf",
+          "original_name": "fs_scan.pdf",
+          "content_type": "application/pdf"
+        },
+        {
+          "file": "itr_ay2025-26.pdf",
+          "original_name": "itr.pdf",
+          "content_type": "application/pdf"
+        }
+      ],
+      "documents": [
+        {
+          "file": "fs_fy2024-25.pdf",
+          "page_from": 1,
+          "page_to": 3,
+          "types": [
+            "audited_financial_statements"
+          ],
+          "instance_key": "FY-end 2025-03-31",
+          "scanned": false,
+          "fields": [
+            {
+              "field": "period_end",
+              "value": "2025-03-31",
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "audited",
+              "value": true,
+              "page": 1
+            },
+            {
+              "field": "auditor",
+              "value": "Gokhale Nair & Co.",
+              "page": 1
+            },
+            {
+              "field": "udin",
+              "value": "25123456AABBCC1234",
+              "page": 1
+            },
+            {
+              "field": "revenue_from_operations",
+              "value": 184625400,
+              "page": 3,
+              "key": true
+            },
+            {
+              "field": "other_income",
+              "value": 1240600,
+              "page": 3
+            },
+            {
+              "field": "ebitda",
+              "value": null,
+              "page": null,
+              "key": true
+            },
+            {
+              "field": "depreciation",
+              "value": 2418300,
+              "page": 3
+            },
+            {
+              "field": "finance_costs",
+              "value": 3862100,
+              "page": 3
+            },
+            {
+              "field": "profit_before_tax",
+              "value": 8420700,
+              "page": 3
+            },
+            {
+              "field": "profit_after_tax",
+              "value": 6315500,
+              "page": 3,
+              "key": true
+            },
+            {
+              "field": "share_capital",
+              "value": 10000000,
+              "page": 2
+            },
+            {
+              "field": "reserves_and_surplus",
+              "value": 28456300,
+              "page": 2
+            },
+            {
+              "field": "net_worth",
+              "value": 38456300,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "long_term_borrowings",
+              "value": 11240000,
+              "page": 2
+            },
+            {
+              "field": "short_term_borrowings",
+              "value": 18520000,
+              "page": 2
+            },
+            {
+              "field": "total_borrowings",
+              "value": null,
+              "page": null,
+              "key": true
+            },
+            {
+              "field": "inventories",
+              "value": 16430500,
+              "page": 2
+            },
+            {
+              "field": "trade_receivables",
+              "value": 22175900,
+              "page": 2
+            },
+            {
+              "field": "trade_payables",
+              "value": 9645200,
+              "page": 2
+            },
+            {
+              "field": "current_assets",
+              "value": 40449100,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "current_liabilities",
+              "value": 30383600,
+              "page": 2,
+              "key": true
+            }
+          ]
+        },
+        {
+          "file": "fs_fy2024-25_scan.pdf",
+          "page_from": 1,
+          "page_to": 3,
+          "types": [
+            "audited_financial_statements"
+          ],
+          "instance_key": "FY-end 2025-03-31",
+          "scanned": true,
+          "fields": [
+            {
+              "field": "period_end",
+              "value": "2025-03-31",
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "audited",
+              "value": true,
+              "page": 1
+            },
+            {
+              "field": "auditor",
+              "value": "Gokhale Nair & Co.",
+              "page": 1
+            },
+            {
+              "field": "udin",
+              "value": "25123456AABBCC1234",
+              "page": 1
+            },
+            {
+              "field": "revenue_from_operations",
+              "value": 184625400,
+              "page": 3,
+              "key": true
+            },
+            {
+              "field": "other_income",
+              "value": 1240600,
+              "page": 3
+            },
+            {
+              "field": "ebitda",
+              "value": null,
+              "page": null,
+              "key": true
+            },
+            {
+              "field": "depreciation",
+              "value": 2418300,
+              "page": 3
+            },
+            {
+              "field": "finance_costs",
+              "value": 3862100,
+              "page": 3
+            },
+            {
+              "field": "profit_before_tax",
+              "value": 8420700,
+              "page": 3
+            },
+            {
+              "field": "profit_after_tax",
+              "value": 6315500,
+              "page": 3,
+              "key": true
+            },
+            {
+              "field": "share_capital",
+              "value": 10000000,
+              "page": 2
+            },
+            {
+              "field": "reserves_and_surplus",
+              "value": 28456300,
+              "page": 2
+            },
+            {
+              "field": "net_worth",
+              "value": 38456300,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "long_term_borrowings",
+              "value": 11240000,
+              "page": 2
+            },
+            {
+              "field": "short_term_borrowings",
+              "value": 18520000,
+              "page": 2
+            },
+            {
+              "field": "total_borrowings",
+              "value": null,
+              "page": null,
+              "key": true
+            },
+            {
+              "field": "inventories",
+              "value": 16430500,
+              "page": 2
+            },
+            {
+              "field": "trade_receivables",
+              "value": 22175900,
+              "page": 2
+            },
+            {
+              "field": "trade_payables",
+              "value": 9645200,
+              "page": 2
+            },
+            {
+              "field": "current_assets",
+              "value": 40449100,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "current_liabilities",
+              "value": 30383600,
+              "page": 2,
+              "key": true
+            }
+          ]
+        },
+        {
+          "file": "itr_ay2025-26.pdf",
+          "page_from": 1,
+          "page_to": 2,
+          "types": [
+            "itr_acknowledgement",
+            "itr_computation"
+          ],
+          "instance_key": "AY2025-26",
+          "scanned": false,
+          "fields": [
+            {
+              "field": "assessment_year",
+              "value": "2025-26",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "pan",
+              "value": "AAGCE4821K",
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "name",
+              "value": "EXAMPLE TOOLS PRIVATE LIMITED",
+              "page": 1
+            },
+            {
+              "field": "acknowledgement_number",
+              "value": "482716305140725",
+              "page": 1
+            },
+            {
+              "field": "filing_date",
+              "value": "2025-10-28",
+              "page": 1
+            },
+            {
+              "field": "gross_total_income",
+              "value": 10245600,
+              "page": 1
+            },
+            {
+              "field": "total_income",
+              "value": 9840200,
+              "page": 1,
+              "key": true
+            },
+            {
+              "field": "tax_paid",
+              "value": 2532100,
+              "page": 1
+            },
+            {
+              "field": "business_income",
+              "value": 9610400,
+              "page": 2
+            },
+            {
+              "field": "turnover",
+              "value": 184625400,
+              "page": 2,
+              "key": true
+            },
+            {
+              "field": "tax_payable",
+              "value": 2532100,
+              "page": 2
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

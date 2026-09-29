@@ -1,0 +1,118 @@
+{
+ "case_ref": "fixture",
+ "config_version": "fixture",
+ "documents": [
+  {
+   "classification": {
+    "candidates": [],
+    "confidence": 0.95,
+    "exit_tier": "signals",
+    "signals": [],
+    "types": [
+     "kyc_pan_individual"
+    ]
+   },
+   "defects": [],
+   "doc_key": "tc08-stranger",
+   "duplicate_of_key": null,
+   "fields": [
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "name",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 1,
+     "raw": "Sunil Karve",
+     "value": "Sunil Karve"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "pan",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 1,
+     "raw": "ABCPK9012L",
+     "value": "ABCPK9012L"
+    }
+   ],
+   "file_id": "fixture",
+   "identity": {
+    "name": "Sunil Karve",
+    "pan": "ABCPK9012L"
+   },
+   "instance_key": "ABCPK9012L",
+   "page_from": 1,
+   "page_to": 1,
+   "pages": [
+    {
+     "grade": "A",
+     "n": 1,
+     "ocr_confidence": null,
+     "reasons": [],
+     "route": "text"
+    }
+   ],
+   "split_uncertain": false
+  }
+ ],
+ "engine_version": "fixture",
+ "files": [
+  {
+   "file_id": "fixture",
+   "reason": null,
+   "status": "processed"
+  }
+ ],
+ "model_provider": "stub",
+ "timings": [
+  {
+   "file_id": "fixture",
+   "ms": 40,
+   "stage": "read"
+  },
+  {
+   "file_id": "fixture",
+   "ms": 12,
+   "stage": "grade"
+  },
+  {
+   "file_id": "fixture",
+   "ms": 8,
+   "stage": "split"
+  },
+  {
+   "file_id": "fixture",
+   "ms": 20,
+   "stage": "classify"
+  },
+  {
+   "file_id": "fixture",
+   "ms": 55,
+   "stage": "extract"
+  }
+ ]
+}

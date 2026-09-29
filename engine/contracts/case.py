@@ -35,6 +35,10 @@ class CaseCreate(BaseModel):
     header: dict[str, HeaderField] = Field(default_factory=dict)
     duplicate_override_reason: str | None = None
     """Required when the duplicate-case check matched and the RM creates anyway (F-04.5)."""
+    message_text: str | None = None
+    """The pasted message, unchanged, when the case comes from a proposal
+    (F-04.8): stored as the case's first document; header sources
+    "message:<start>-<end>" point into it."""
 
 
 class CaseSummary(BaseModel):

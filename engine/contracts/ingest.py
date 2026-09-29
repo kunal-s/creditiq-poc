@@ -27,12 +27,25 @@ class IngestFile(BaseModel):
     """Never used to classify (F-09.1); echoed for the label check (F-10.1)."""
 
 
+class TypeAssignment(BaseModel):
+    """A person's type assignment for one logical document (F-09.5, F-17.5):
+    the sidecar skips classification for this page range, uses `type_id`
+    (exit tier "person") and extracts with that type's dictionary."""
+
+    file_id: str
+    page_from: int = Field(ge=1)
+    page_to: int = Field(ge=1)
+    type_id: str
+
+
 class IngestRequest(BaseModel):
     case_ref: str
     config_version: str
     """The published CreditIQ configuration version to use; the sidecar
     refuses an unknown version and echoes the one it used (F-00.3)."""
     files: list[IngestFile]
+    assignments: list[TypeAssignment] = Field(default_factory=list)
+    """Type assignments made by a person; empty on a first run."""
 
 
 class ExtractedField(BaseModel):

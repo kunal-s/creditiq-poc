@@ -1,0 +1,159 @@
+{
+ "case_ref": "fixture",
+ "config_version": "fixture",
+ "documents": [
+  {
+   "classification": {
+    "candidates": [],
+    "confidence": 0.95,
+    "exit_tier": "signals",
+    "signals": [],
+    "types": [
+     "gstr_3b"
+    ]
+   },
+   "defects": [],
+   "doc_key": "f17-3b",
+   "duplicate_of_key": null,
+   "fields": [
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "gstin",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 1,
+     "raw": "27AAACH5678Q1ZS",
+     "value": "27AAACH5678Q1ZS"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "period",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 1,
+     "raw": "2025-09",
+     "value": "2025-09"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 0.0,
+      "classification": 0.9,
+      "page_grade": 0.5,
+      "reading_trust": 0.4,
+      "validation": 1.0
+     },
+     "field": "outward_taxable_supplies",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 1,
+     "raw": "91,00,000",
+     "value": 9100000
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "filing_date",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 1,
+     "raw": "2025-10-20",
+     "value": "2025-10-20"
+    }
+   ],
+   "file_id": "fixture",
+   "identity": {},
+   "instance_key": "2025-09",
+   "page_from": 1,
+   "page_to": 1,
+   "pages": [
+    {
+     "grade": "C",
+     "n": 1,
+     "ocr_confidence": null,
+     "reasons": [
+      "blur"
+     ],
+     "route": "text"
+    }
+   ],
+   "split_uncertain": false
+  }
+ ],
+ "engine_version": "fixture",
+ "files": [
+  {
+   "file_id": "fixture",
+   "reason": null,
+   "status": "processed"
+  }
+ ],
+ "model_provider": "stub",
+ "timings": [
+  {
+   "file_id": "fixture",
+   "ms": 40,
+   "stage": "read"
+  },
+  {
+   "file_id": "fixture",
+   "ms": 12,
+   "stage": "grade"
+  },
+  {
+   "file_id": "fixture",
+   "ms": 8,
+   "stage": "split"
+  },
+  {
+   "file_id": "fixture",
+   "ms": 20,
+   "stage": "classify"
+  },
+  {
+   "file_id": "fixture",
+   "ms": 55,
+   "stage": "extract"
+  }
+ ]
+}

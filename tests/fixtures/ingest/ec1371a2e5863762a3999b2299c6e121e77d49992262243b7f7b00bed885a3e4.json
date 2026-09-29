@@ -1,0 +1,2065 @@
+{
+ "case_ref": "fixture",
+ "config_version": "fixture",
+ "documents": [
+  {
+   "classification": {
+    "candidates": [],
+    "confidence": 0.95,
+    "exit_tier": "signals",
+    "signals": [],
+    "types": [
+     "certificate_of_incorporation"
+    ]
+   },
+   "defects": [],
+   "doc_key": "h-coi",
+   "duplicate_of_key": null,
+   "fields": [
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "company_name",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 1,
+     "raw": "Heronbay Polymers Private Limited",
+     "value": "Heronbay Polymers Private Limited"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "cin",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 1,
+     "raw": "U25209MH2012PTC654321",
+     "value": "U25209MH2012PTC654321"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "incorporation_date",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 1,
+     "raw": "2015-06-12",
+     "value": "2015-06-12"
+    }
+   ],
+   "file_id": "fixture",
+   "identity": {},
+   "instance_key": null,
+   "page_from": 1,
+   "page_to": 1,
+   "pages": [
+    {
+     "grade": "A",
+     "n": 1,
+     "ocr_confidence": null,
+     "reasons": [],
+     "route": "text"
+    }
+   ],
+   "split_uncertain": false
+  },
+  {
+   "classification": {
+    "candidates": [],
+    "confidence": 0.95,
+    "exit_tier": "signals",
+    "signals": [],
+    "types": [
+     "board_resolution"
+    ]
+   },
+   "defects": [
+    {
+     "code": "unsigned",
+     "detail": "",
+     "pages": []
+    }
+   ],
+   "doc_key": "h-br",
+   "duplicate_of_key": null,
+   "fields": [
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "company_name",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 2,
+     "raw": "Heronbay Polymers Private Limited",
+     "value": "Heronbay Polymers Private Limited"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "resolution_date",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 2,
+     "raw": "2026-09-01",
+     "value": "2026-09-01"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "signed",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 2,
+     "raw": "False",
+     "value": false
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "directors[0].name",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 2,
+     "raw": "Tarun Velankar",
+     "value": "Tarun Velankar"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "directors[0].din",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 2,
+     "raw": "01234567",
+     "value": "01234567"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "directors[1].name",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 2,
+     "raw": "Ishita Barve",
+     "value": "Ishita Barve"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "directors[1].din",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 2,
+     "raw": "07654321",
+     "value": "07654321"
+    }
+   ],
+   "file_id": "fixture",
+   "identity": {},
+   "instance_key": null,
+   "page_from": 2,
+   "page_to": 2,
+   "pages": [
+    {
+     "grade": "A",
+     "n": 2,
+     "ocr_confidence": null,
+     "reasons": [],
+     "route": "text"
+    }
+   ],
+   "split_uncertain": false
+  },
+  {
+   "classification": {
+    "candidates": [],
+    "confidence": 0.95,
+    "exit_tier": "signals",
+    "signals": [],
+    "types": [
+     "provisional_financial_statements"
+    ]
+   },
+   "defects": [
+    {
+     "code": "pages_absent",
+     "detail": "balance sheet pages absent",
+     "pages": []
+    }
+   ],
+   "doc_key": "h-prov",
+   "duplicate_of_key": null,
+   "fields": [
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "period_end",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 3,
+     "raw": "2026-08-31",
+     "value": "2026-08-31"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "audited",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 3,
+     "raw": "False",
+     "value": false
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "revenue_from_operations",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 3,
+     "raw": "36000000",
+     "value": 36000000
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "pages_present",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 3,
+     "raw": "profit and loss",
+     "value": "profit and loss"
+    }
+   ],
+   "file_id": "fixture",
+   "identity": {},
+   "instance_key": "FY2026-27",
+   "page_from": 3,
+   "page_to": 3,
+   "pages": [
+    {
+     "grade": "A",
+     "n": 3,
+     "ocr_confidence": null,
+     "reasons": [],
+     "route": "text"
+    }
+   ],
+   "split_uncertain": false
+  },
+  {
+   "classification": {
+    "candidates": [],
+    "confidence": 0.95,
+    "exit_tier": "signals",
+    "signals": [],
+    "types": [
+     "gstr_3b"
+    ]
+   },
+   "defects": [],
+   "doc_key": "h-3b-2026-01",
+   "duplicate_of_key": null,
+   "fields": [
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "gstin",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 4,
+     "raw": "27AAACH5678Q1ZS",
+     "value": "27AAACH5678Q1ZS"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "period",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 4,
+     "raw": "2026-01",
+     "value": "2026-01"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "outward_taxable_supplies",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 4,
+     "raw": "9800000",
+     "value": 9800000
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "filing_date",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 4,
+     "raw": "2026-01-20",
+     "value": "2026-01-20"
+    }
+   ],
+   "file_id": "fixture",
+   "identity": {},
+   "instance_key": "2026-01",
+   "page_from": 4,
+   "page_to": 4,
+   "pages": [
+    {
+     "grade": "A",
+     "n": 4,
+     "ocr_confidence": null,
+     "reasons": [],
+     "route": "text"
+    }
+   ],
+   "split_uncertain": false
+  },
+  {
+   "classification": {
+    "candidates": [],
+    "confidence": 0.95,
+    "exit_tier": "signals",
+    "signals": [],
+    "types": [
+     "gstr_3b"
+    ]
+   },
+   "defects": [],
+   "doc_key": "h-3b-2026-02",
+   "duplicate_of_key": null,
+   "fields": [
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "gstin",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 5,
+     "raw": "27AAACH5678Q1ZS",
+     "value": "27AAACH5678Q1ZS"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "period",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 5,
+     "raw": "2026-02",
+     "value": "2026-02"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "outward_taxable_supplies",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 5,
+     "raw": "9800000",
+     "value": 9800000
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "filing_date",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 5,
+     "raw": "2026-02-20",
+     "value": "2026-02-20"
+    }
+   ],
+   "file_id": "fixture",
+   "identity": {},
+   "instance_key": "2026-02",
+   "page_from": 5,
+   "page_to": 5,
+   "pages": [
+    {
+     "grade": "A",
+     "n": 5,
+     "ocr_confidence": null,
+     "reasons": [],
+     "route": "text"
+    }
+   ],
+   "split_uncertain": false
+  },
+  {
+   "classification": {
+    "candidates": [],
+    "confidence": 0.95,
+    "exit_tier": "signals",
+    "signals": [],
+    "types": [
+     "gstr_3b"
+    ]
+   },
+   "defects": [],
+   "doc_key": "h-3b-2026-03",
+   "duplicate_of_key": null,
+   "fields": [
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "gstin",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 6,
+     "raw": "27AAACH5678Q1ZS",
+     "value": "27AAACH5678Q1ZS"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "period",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 6,
+     "raw": "2026-03",
+     "value": "2026-03"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "outward_taxable_supplies",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 6,
+     "raw": "9800000",
+     "value": 9800000
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "filing_date",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 6,
+     "raw": "2026-03-20",
+     "value": "2026-03-20"
+    }
+   ],
+   "file_id": "fixture",
+   "identity": {},
+   "instance_key": "2026-03",
+   "page_from": 6,
+   "page_to": 6,
+   "pages": [
+    {
+     "grade": "A",
+     "n": 6,
+     "ocr_confidence": null,
+     "reasons": [],
+     "route": "text"
+    }
+   ],
+   "split_uncertain": false
+  },
+  {
+   "classification": {
+    "candidates": [],
+    "confidence": 0.95,
+    "exit_tier": "signals",
+    "signals": [],
+    "types": [
+     "gstr_3b"
+    ]
+   },
+   "defects": [],
+   "doc_key": "h-3b-2026-04",
+   "duplicate_of_key": null,
+   "fields": [
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "gstin",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 7,
+     "raw": "27AAACH5678Q1ZS",
+     "value": "27AAACH5678Q1ZS"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "period",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 7,
+     "raw": "2026-04",
+     "value": "2026-04"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "outward_taxable_supplies",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 7,
+     "raw": "9800000",
+     "value": 9800000
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "filing_date",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 7,
+     "raw": "2026-04-20",
+     "value": "2026-04-20"
+    }
+   ],
+   "file_id": "fixture",
+   "identity": {},
+   "instance_key": "2026-04",
+   "page_from": 7,
+   "page_to": 7,
+   "pages": [
+    {
+     "grade": "A",
+     "n": 7,
+     "ocr_confidence": null,
+     "reasons": [],
+     "route": "text"
+    }
+   ],
+   "split_uncertain": true
+  },
+  {
+   "classification": {
+    "candidates": [],
+    "confidence": 0.95,
+    "exit_tier": "signals",
+    "signals": [],
+    "types": [
+     "gstr_3b"
+    ]
+   },
+   "defects": [],
+   "doc_key": "h-3b-2026-05",
+   "duplicate_of_key": null,
+   "fields": [
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "gstin",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 8,
+     "raw": "27AAACH5678Q1ZS",
+     "value": "27AAACH5678Q1ZS"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "period",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 8,
+     "raw": "2026-05",
+     "value": "2026-05"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "outward_taxable_supplies",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 8,
+     "raw": "9800000",
+     "value": 9800000
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "filing_date",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 8,
+     "raw": "2026-05-20",
+     "value": "2026-05-20"
+    }
+   ],
+   "file_id": "fixture",
+   "identity": {},
+   "instance_key": "2026-05",
+   "page_from": 8,
+   "page_to": 8,
+   "pages": [
+    {
+     "grade": "A",
+     "n": 8,
+     "ocr_confidence": null,
+     "reasons": [],
+     "route": "text"
+    }
+   ],
+   "split_uncertain": false
+  },
+  {
+   "classification": {
+    "candidates": [],
+    "confidence": 0.95,
+    "exit_tier": "signals",
+    "signals": [],
+    "types": [
+     "gstr_3b"
+    ]
+   },
+   "defects": [],
+   "doc_key": "h-3b-2026-06",
+   "duplicate_of_key": null,
+   "fields": [
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "gstin",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 9,
+     "raw": "27AAACH5678Q1ZS",
+     "value": "27AAACH5678Q1ZS"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "period",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 9,
+     "raw": "2026-06",
+     "value": "2026-06"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "outward_taxable_supplies",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 9,
+     "raw": "9800000",
+     "value": 9800000
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "filing_date",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 9,
+     "raw": "2026-06-20",
+     "value": "2026-06-20"
+    }
+   ],
+   "file_id": "fixture",
+   "identity": {},
+   "instance_key": "2026-06",
+   "page_from": 9,
+   "page_to": 9,
+   "pages": [
+    {
+     "grade": "A",
+     "n": 9,
+     "ocr_confidence": null,
+     "reasons": [],
+     "route": "text"
+    }
+   ],
+   "split_uncertain": false
+  },
+  {
+   "classification": {
+    "candidates": [],
+    "confidence": 0.95,
+    "exit_tier": "signals",
+    "signals": [],
+    "types": [
+     "gstr_3b"
+    ]
+   },
+   "defects": [],
+   "doc_key": "h-3b-2026-07",
+   "duplicate_of_key": null,
+   "fields": [
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "gstin",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 10,
+     "raw": "27AAACH5678Q1ZS",
+     "value": "27AAACH5678Q1ZS"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "period",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 10,
+     "raw": "2026-07",
+     "value": "2026-07"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "outward_taxable_supplies",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 10,
+     "raw": "9800000",
+     "value": 9800000
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "filing_date",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 10,
+     "raw": "2026-07-20",
+     "value": "2026-07-20"
+    }
+   ],
+   "file_id": "fixture",
+   "identity": {},
+   "instance_key": "2026-07",
+   "page_from": 10,
+   "page_to": 10,
+   "pages": [
+    {
+     "grade": "A",
+     "n": 10,
+     "ocr_confidence": null,
+     "reasons": [],
+     "route": "text"
+    }
+   ],
+   "split_uncertain": false
+  },
+  {
+   "classification": {
+    "candidates": [],
+    "confidence": 0.95,
+    "exit_tier": "signals",
+    "signals": [],
+    "types": [
+     "gstr_3b"
+    ]
+   },
+   "defects": [],
+   "doc_key": "h-3b-2026-08",
+   "duplicate_of_key": null,
+   "fields": [
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "gstin",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 11,
+     "raw": "27AAACH5678Q1ZS",
+     "value": "27AAACH5678Q1ZS"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "period",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 11,
+     "raw": "2026-08",
+     "value": "2026-08"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "outward_taxable_supplies",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 11,
+     "raw": "9800000",
+     "value": 9800000
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "filing_date",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 11,
+     "raw": "2026-08-20",
+     "value": "2026-08-20"
+    }
+   ],
+   "file_id": "fixture",
+   "identity": {},
+   "instance_key": "2026-08",
+   "page_from": 11,
+   "page_to": 11,
+   "pages": [
+    {
+     "grade": "A",
+     "n": 11,
+     "ocr_confidence": null,
+     "reasons": [],
+     "route": "text"
+    }
+   ],
+   "split_uncertain": false
+  },
+  {
+   "classification": {
+    "candidates": [],
+    "confidence": 0.95,
+    "exit_tier": "signals",
+    "signals": [],
+    "types": [
+     "stock_statement"
+    ]
+   },
+   "defects": [],
+   "doc_key": "h-stock",
+   "duplicate_of_key": null,
+   "fields": [
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "as_at_date",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 12,
+     "raw": "2026-06-30",
+     "value": "2026-06-30"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "total_stock",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 12,
+     "raw": "9000000",
+     "value": 9000000
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "book_debts",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 12,
+     "raw": "7000000",
+     "value": 7000000
+    }
+   ],
+   "file_id": "fixture",
+   "identity": {},
+   "instance_key": null,
+   "page_from": 12,
+   "page_to": 12,
+   "pages": [
+    {
+     "grade": "A",
+     "n": 12,
+     "ocr_confidence": null,
+     "reasons": [],
+     "route": "text"
+    }
+   ],
+   "split_uncertain": false
+  },
+  {
+   "classification": {
+    "candidates": [],
+    "confidence": 0.95,
+    "exit_tier": "signals",
+    "signals": [],
+    "types": [
+     "bank_statement"
+    ]
+   },
+   "defects": [],
+   "doc_key": "h-bank-1234",
+   "duplicate_of_key": null,
+   "fields": [
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "bank",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 13,
+     "raw": "Lotuscrest Bank",
+     "value": "Lotuscrest Bank"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "account_holder",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 13,
+     "raw": "account holder",
+     "value": "account holder"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "account_number_masked",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 13,
+     "raw": "XXXXXX1234",
+     "value": "XXXXXX1234"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "period_from",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 13,
+     "raw": "2025-09-01",
+     "value": "2025-09-01"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "period_to",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 13,
+     "raw": "2026-08-31",
+     "value": "2026-08-31"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "transactions[0].amount",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 13,
+     "raw": "125000",
+     "value": 125000
+    }
+   ],
+   "file_id": "fixture",
+   "identity": {},
+   "instance_key": "1234",
+   "page_from": 13,
+   "page_to": 13,
+   "pages": [
+    {
+     "grade": "A",
+     "n": 13,
+     "ocr_confidence": null,
+     "reasons": [],
+     "route": "text"
+    }
+   ],
+   "split_uncertain": false
+  },
+  {
+   "classification": {
+    "candidates": [],
+    "confidence": 0.95,
+    "exit_tier": "signals",
+    "signals": [],
+    "types": [
+     "existing_facilities_declaration"
+    ]
+   },
+   "defects": [],
+   "doc_key": "h-decl",
+   "duplicate_of_key": null,
+   "fields": [
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "declaration_date",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 14,
+     "raw": "2026-09-10",
+     "value": "2026-09-10"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "nil_declared",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 14,
+     "raw": "False",
+     "value": false
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "facilities[0].lender",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 14,
+     "raw": "Tidewater Bank",
+     "value": "Tidewater Bank"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "facilities[0].facility",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 14,
+     "raw": "Cash credit",
+     "value": "Cash credit"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "facilities[0].limit",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 14,
+     "raw": "3000000",
+     "value": 3000000
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "accounts[0].bank",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 14,
+     "raw": "Lotuscrest Bank",
+     "value": "Lotuscrest Bank"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "accounts[0].account_number_masked",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 14,
+     "raw": "XXXXXX1234",
+     "value": "XXXXXX1234"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "accounts[1].bank",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 14,
+     "raw": "Tidewater Bank",
+     "value": "Tidewater Bank"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "accounts[1].account_number_masked",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 14,
+     "raw": "XXXXXX5678",
+     "value": "XXXXXX5678"
+    }
+   ],
+   "file_id": "fixture",
+   "identity": {},
+   "instance_key": null,
+   "page_from": 14,
+   "page_to": 14,
+   "pages": [
+    {
+     "grade": "A",
+     "n": 14,
+     "ocr_confidence": null,
+     "reasons": [],
+     "route": "text"
+    }
+   ],
+   "split_uncertain": false
+  },
+  {
+   "classification": {
+    "candidates": [],
+    "confidence": 0.95,
+    "exit_tier": "signals",
+    "signals": [],
+    "types": [
+     "kyc_pan_individual"
+    ]
+   },
+   "defects": [],
+   "doc_key": "h-kyc-tarun",
+   "duplicate_of_key": null,
+   "fields": [
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "name",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 15,
+     "raw": "Tarun Velankar",
+     "value": "Tarun Velankar"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "pan",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 15,
+     "raw": "ABCPV1234K",
+     "value": "ABCPV1234K"
+    }
+   ],
+   "file_id": "fixture",
+   "identity": {
+    "name": "Tarun Velankar",
+    "pan": "ABCPV1234K"
+   },
+   "instance_key": "ABCPV1234K",
+   "page_from": 15,
+   "page_to": 15,
+   "pages": [
+    {
+     "grade": "A",
+     "n": 15,
+     "ocr_confidence": null,
+     "reasons": [],
+     "route": "text"
+    }
+   ],
+   "split_uncertain": false
+  },
+  {
+   "classification": {
+    "candidates": [],
+    "confidence": 0.95,
+    "exit_tier": "signals",
+    "signals": [],
+    "types": [
+     "audited_financial_statements"
+    ]
+   },
+   "defects": [],
+   "doc_key": "h-fs26",
+   "duplicate_of_key": null,
+   "fields": [
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "period_end",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 16,
+     "raw": "2026-03-31",
+     "value": "2026-03-31"
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "audited",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 16,
+     "raw": "True",
+     "value": true
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "revenue_from_operations",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 16,
+     "raw": "118000000",
+     "value": 118000000
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "profit_after_tax",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 16,
+     "raw": "6400000",
+     "value": 6400000
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "net_worth",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 16,
+     "raw": "42000000",
+     "value": 42000000
+    },
+    {
+     "bbox": [
+      0.1,
+      0.1,
+      0.5,
+      0.15
+     ],
+     "confidence_components": {
+      "agreement": 1.0,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "field": "pages_present",
+     "method": "deterministic",
+     "missing_reason": null,
+     "page": 16,
+     "raw": "balance sheet, profit and loss, notes",
+     "value": "balance sheet, profit and loss, notes"
+    }
+   ],
+   "file_id": "fixture",
+   "identity": {},
+   "instance_key": "FY2025-26",
+   "page_from": 16,
+   "page_to": 16,
+   "pages": [
+    {
+     "grade": "A",
+     "n": 16,
+     "ocr_confidence": null,
+     "reasons": [],
+     "route": "text"
+    }
+   ],
+   "split_uncertain": false
+  }
+ ],
+ "engine_version": "fixture",
+ "files": [
+  {
+   "file_id": "fixture",
+   "reason": null,
+   "status": "processed"
+  }
+ ],
+ "model_provider": "stub",
+ "timings": [
+  {
+   "file_id": "fixture",
+   "ms": 40,
+   "stage": "read"
+  },
+  {
+   "file_id": "fixture",
+   "ms": 12,
+   "stage": "grade"
+  },
+  {
+   "file_id": "fixture",
+   "ms": 8,
+   "stage": "split"
+  },
+  {
+   "file_id": "fixture",
+   "ms": 20,
+   "stage": "classify"
+  },
+  {
+   "file_id": "fixture",
+   "ms": 55,
+   "stage": "extract"
+  }
+ ]
+}

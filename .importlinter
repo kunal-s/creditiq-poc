@@ -15,14 +15,28 @@ source_modules =
     engine.auth
     engine.cases
     engine.checklist
+    engine.completeness
+    engine.confidence
     engine.config
     engine.contracts
     engine.db
     engine.deps
+    engine.filetypes
     engine.identifiers
     engine.ingest_client
+    engine.jobs
+    engine.names
+    engine.pages
+    engine.parties
+    engine.pipeline
+    engine.proposal
+    engine.queries
     engine.reads
+    engine.review
+    engine.review_items
     engine.store
+    engine.uploads
+    engine.util
     engine.configstore.reader
 forbidden_modules =
     engine.configstore.writer

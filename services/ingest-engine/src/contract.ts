@@ -18,10 +18,19 @@ export interface IngestFile {
   label_hint?: string | null
 }
 
+/** A person's type for one page range (F-09.5): classification is skipped there. */
+export interface TypeAssignment {
+  file_id: string
+  page_from: number
+  page_to: number
+  type_id: string
+}
+
 export interface IngestRequest {
   case_ref: string
   config_version: string
   files: IngestFile[]
+  assignments: TypeAssignment[]
 }
 
 export interface PageInfo {

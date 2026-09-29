@@ -13,6 +13,7 @@ stores what comes back. Two implementations share one interface:
 from __future__ import annotations
 
 import json
+import os
 import urllib.request
 import uuid
 from pathlib import Path
@@ -70,21 +71,47 @@ class HttpIngestClient:
 
 
 class StubIngestClient:
-    """Canned results by file hash. Every file in a request must have a fixture."""
+    """Canned results by file hash. Every file in a request must have a fixture.
 
-    def __init__(self, fixtures: Path = FIXTURES) -> None:
-        self.fixtures = fixtures
+    A type assignment (IngestRequest.assignments) is honoured the way the
+    sidecar honours it: the document for that page range takes the assigned
+    type at exit tier "person". Its fields come from `<sha256>@<type_id>.json`
+    when that fixture exists; otherwise the canned fields are kept.
+    """
+
+    def __init__(self, fixtures: Path | None = None) -> None:
+        self.fixtures = fixtures or Path(os.environ.get("CREDITIQ_INGEST_FIXTURES", str(FIXTURES)))
+
+    def _load(self, name: str) -> IngestResult | None:
+        path = self.fixtures / name
+        if not path.is_file():
+            return None
+        return IngestResult.model_validate(json.loads(path.read_text(encoding="utf-8")))
 
     def process(self, request: IngestRequest, payloads: dict[str, bytes]) -> IngestResult:
-        documents, outcomes = [], []
+        documents, outcomes, timings = [], [], []
         for f in request.files:
-            path = self.fixtures / f"{f.sha256}.json"
-            if not path.is_file():
+            canned = self._load(f"{f.sha256}.json")
+            if canned is None:
                 raise IngestError(f"no stub fixture for {f.original_name} ({f.sha256}) in {self.fixtures}")
-            canned = IngestResult.model_validate(json.loads(path.read_text(encoding="utf-8")))
+            assigned = {
+                (a.page_from, a.page_to): a.type_id for a in request.assignments if a.file_id == f.file_id
+            }
             for doc in canned.documents:
+                type_id = assigned.get((doc.page_from, doc.page_to))
+                if type_id is not None:
+                    override = self._load(f"{f.sha256}@{type_id}.json")
+                    source = next(
+                        (d for d in (override.documents if override else []) if d.page_from == doc.page_from),
+                        doc,
+                    )
+                    classification = doc.classification.model_copy(
+                        update={"types": [type_id], "exit_tier": "person", "confidence": 1.0}
+                    )
+                    doc = source.model_copy(update={"classification": classification, "doc_key": doc.doc_key})
                 documents.append(doc.model_copy(update={"file_id": f.file_id}))
             outcomes.extend(o.model_copy(update={"file_id": f.file_id}) for o in canned.files)
+            timings.extend(t.model_copy(update={"file_id": f.file_id}) for t in canned.timings)
         return IngestResult(
             case_ref=request.case_ref,
             config_version=request.config_version,
@@ -92,4 +119,18 @@ class StubIngestClient:
             model_provider="stub",
             files=outcomes,
             documents=documents,
+            timings=timings,
         )
+
+
+def get_client() -> IngestClient:
+    """CREDITIQ_INGEST selects the client: "http" (the sidecar at
+    services.ingest_url, the default) or "stub" (canned fixtures; tests)."""
+    kind = os.environ.get("CREDITIQ_INGEST", "http").strip().lower()
+    if kind == "stub":
+        return StubIngestClient()
+    if kind == "http":
+        from .config import load_app_config
+
+        return HttpIngestClient(os.environ.get("CREDITIQ_INGEST_URL") or load_app_config()["services"]["ingest_url"])
+    raise IngestError(f"CREDITIQ_INGEST must be 'stub' or 'http', not {kind!r}")

@@ -18,22 +18,82 @@ from .configstore import reader, writer
 DEFAULT_DATA_ROOT = str(store.data_root())
 
 
-def _cmd_case_list(_args: argparse.Namespace) -> int:
-    cases = store.list_cases()
-    if not cases:
+def _cmd_case_list(args: argparse.Namespace) -> int:
+    from . import cases, db
+
+    conn = db.connect(Path(args.data_root))
+    try:
+        rows = cases.list_cases(conn)
+    finally:
+        conn.close()
+    if not rows:
         print("no cases in the store yet")
         return 0
-    for case in cases:
-        print(f"{case['id']}\t{case['borrower']}\t{case['stage']}")
+    for case in rows:
+        print(f"{case.id}\t{case.borrower}\t{case.stage}")
     return 0
 
 
 def _cmd_case_show(args: argparse.Namespace) -> int:
-    case = store.get_case(args.case_id)
+    from . import cases, db
+
+    conn = db.connect(Path(args.data_root))
+    try:
+        case = cases.get_case(conn, args.case_id)
+    finally:
+        conn.close()
     if case is None:
         print(f"no case {args.case_id!r}", file=sys.stderr)
         return 1
-    print(json.dumps(case, indent=2))
+    print(case.model_dump_json(indent=2))
+    return 0
+
+
+def _cmd_case_timings(args: argparse.Namespace) -> int:
+    """F-02.4 / C9: stage timings of a case as CSV."""
+    import csv
+
+    from . import db
+
+    conn = db.connect(Path(args.data_root))
+    try:
+        rows = conn.execute(
+            "SELECT case_id, subject, stage, started_at, ms FROM stage_timings WHERE case_id = ? ORDER BY rowid",
+            (args.case_id,),
+        ).fetchall()
+    finally:
+        conn.close()
+    writer_ = csv.writer(sys.stdout)
+    writer_.writerow(["case_id", "subject", "stage", "started_at", "ms"])
+    for row in rows:
+        writer_.writerow(list(row))
+    return 0
+
+
+def _cmd_jobs_run(args: argparse.Namespace) -> int:
+    """Run queued jobs until none is left (--once), or keep polling."""
+    import time
+
+    from . import jobs
+
+    root = Path(args.data_root)
+    while True:
+        ran = jobs.run_pending(root)
+        print(f"ran {ran} job(s)")
+        if args.once:
+            return 0
+        time.sleep(args.poll)
+
+
+def _cmd_jobs_list(args: argparse.Namespace) -> int:
+    from . import db
+
+    conn = db.connect(Path(args.data_root))
+    try:
+        for row in conn.execute("SELECT * FROM jobs ORDER BY created_at DESC LIMIT ?", (args.limit,)):
+            print(f"{row['id']}\t{row['case_id']}\t{row['kind']}\t{row['status']}\t{row['attempts']}\t{row['error'] or ''}")
+    finally:
+        conn.close()
     return 0
 
 
@@ -106,10 +166,29 @@ def build_parser() -> argparse.ArgumentParser:
 
     case = sub.add_parser("case", help="inspect the case store")
     case_sub = case.add_subparsers(dest="case_command", required=True)
-    case_sub.add_parser("list", help="list cases in the store").set_defaults(func=_cmd_case_list)
+    case_list = case_sub.add_parser("list", help="list cases in the store")
+    case_list.add_argument("--data-root", default=DEFAULT_DATA_ROOT)
+    case_list.set_defaults(func=_cmd_case_list)
     case_show = case_sub.add_parser("show", help="print one case as JSON")
     case_show.add_argument("case_id")
+    case_show.add_argument("--data-root", default=DEFAULT_DATA_ROOT)
     case_show.set_defaults(func=_cmd_case_show)
+    case_timings = case_sub.add_parser("timings", help="export a case's stage timings as CSV (F-02.4)")
+    case_timings.add_argument("case_id")
+    case_timings.add_argument("--data-root", default=DEFAULT_DATA_ROOT)
+    case_timings.set_defaults(func=_cmd_case_timings)
+
+    job = sub.add_parser("jobs", help="the processing job queue (F-02.3)")
+    job_sub = job.add_subparsers(dest="jobs_command", required=True)
+    job_run = job_sub.add_parser("run", help="run queued processing jobs")
+    job_run.add_argument("--once", action="store_true", help="run until the queue is empty, then exit")
+    job_run.add_argument("--poll", type=float, default=2.0)
+    job_run.add_argument("--data-root", default=DEFAULT_DATA_ROOT)
+    job_run.set_defaults(func=_cmd_jobs_run)
+    job_list = job_sub.add_parser("list", help="list recent jobs")
+    job_list.add_argument("--limit", type=int, default=20)
+    job_list.add_argument("--data-root", default=DEFAULT_DATA_ROOT)
+    job_list.set_defaults(func=_cmd_jobs_list)
 
     config = sub.add_parser("config", help="the config store (policy, checklist taxonomy)")
     config_sub = config.add_subparsers(dest="config_command", required=True)

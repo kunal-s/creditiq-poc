@@ -28,18 +28,42 @@ from .documents import (
     LogicalDocument,
     PageInfo,
 )
-from .ingest import IngestDocument, IngestFileOutcome, IngestRequest, IngestResult
-from .intake import CaseProposal, Party, ProposalRequest, ProposedField, Span, UploadResult
+from .ingest import (
+    DocumentDefect,
+    ExtractedField,
+    IngestDocument,
+    IngestFile,
+    IngestFileOutcome,
+    IngestRequest,
+    IngestResult,
+    TypeAssignment,
+)
+from .intake import (
+    CaseProposal,
+    Party,
+    ProposalRequest,
+    ProposedCandidate,
+    ProposedField,
+    Span,
+    StrippedSpan,
+    UploadResult,
+)
 from .session import LoginRequest, LoginResponse, Meta, Option, SessionUser
 
 __all__ = [
     "Candidate",
     "CaseProposal",
     "CaseCreate",
+    "DocumentDefect",
+    "ExtractedField",
+    "IngestFile",
     "Party",
     "ProposalRequest",
+    "ProposedCandidate",
     "ProposedField",
     "Span",
+    "StrippedSpan",
+    "TypeAssignment",
     "UploadResult",
     "CaseDetail",
     "CaseSummary",

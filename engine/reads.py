@@ -11,12 +11,9 @@ import json
 import sqlite3
 from pathlib import Path
 
-from .checklist import CaseAttributes, applies
-from .config import load_app_config
-from .configstore.reader import load_checklist_taxonomy, load_policy
+from . import completeness
 from .contracts import (
     CaseDetail,
-    ChecklistItemState,
     Classification,
     Evidence,
     FieldValue,
@@ -30,9 +27,6 @@ from .contracts import (
     ReviewItem,
 )
 
-ALL_CONSTITUTIONS = ("private_limited", "proprietorship", "partnership")
-
-
 def _json(text: str | None):
     return None if text is None else json.loads(text)
 
@@ -43,12 +37,22 @@ def files(conn: sqlite3.Connection, case_id: str) -> list[FileRecord]:
 
 
 def documents(conn: sqlite3.Connection, case_id: str) -> list[LogicalDocument]:
+    """A person's type assignment (F-09.5) is shown as the classification at
+    exit tier "person"; the machine's signals and candidates are kept."""
     rows = conn.execute("SELECT * FROM documents WHERE case_id = ? ORDER BY file_id, page_from", (case_id,))
     out = []
     for row in rows:
         d = dict(row)
         d["pages"] = [PageInfo(**p) for p in json.loads(d["pages"])]
-        d["classification"] = Classification(**json.loads(d["classification"])) if d["classification"] else None
+        classification = json.loads(d["classification"]) if d["classification"] else None
+        if d.get("assigned_types"):
+            classification = {
+                **(classification or {"signals": [], "candidates": []}),
+                "types": json.loads(d["assigned_types"]),
+                "exit_tier": "person",
+                "confidence": 1.0,
+            }
+        d["classification"] = Classification(**classification) if classification else None
         d["label_mismatch"] = bool(d["label_mismatch"])
         out.append(LogicalDocument(**d))
     return out
@@ -84,7 +88,12 @@ def findings(conn: sqlite3.Connection, case_id: str) -> list[Finding]:
 
 
 def query_items(conn: sqlite3.Connection, case_id: str) -> list[QueryItem]:
-    rows = conn.execute("SELECT * FROM query_items WHERE case_id = ? ORDER BY grp, id", (case_id,))
+    rows = conn.execute(
+        """SELECT * FROM query_items WHERE case_id = ?
+           ORDER BY CASE grp WHEN 'documents_needed' THEN 0 WHEN 'documents_to_redo' THEN 1 ELSE 2 END,
+                    resolved, rowid""",
+        (case_id,),
+    )
     out = []
     for row in rows:
         d = dict(row)
@@ -108,53 +117,10 @@ def review_items(conn: sqlite3.Connection, *, case_id: str | None = None, open_o
 
 
 def readiness(conn: sqlite3.Connection, data_root: Path, case: CaseDetail) -> Readiness:
-    """F-12 and F-13.4. Item status comes from the checklist state the
-    completeness feature (F-13) writes; until it has run, every item is
-    missing. While the constitution is unknown the checklist is provisional
-    and holds only the items every constitution needs (F-12.3)."""
-    taxonomy = load_checklist_taxonomy(data_root)
-    policy = load_policy(data_root)
-    facility_sets = {f["id"]: f.get("sets") for f in load_app_config()["facilities"]}
-    attrs = CaseAttributes.from_case(
-        facilities=case.facilities,
-        amount_inr=case.amount_inr,
-        collateral_present=case.collateral_present,
-        facility_sets=facility_sets,
-        mpbf_above_limit_inr=policy.working_capital.mpbf_above_limit_inr,
-    )
-    provisional = case.constitution not in ALL_CONSTITUTIONS
-    if provisional:
-        items = [
-            item
-            for item in taxonomy.items
-            if set(ALL_CONSTITUTIONS) <= set(item.constitutions) and all(attrs.has(a) for a in item.requires_attributes)
-        ]
-    else:
-        items = [item for item in taxonomy.items if applies(item, case.constitution, attrs)]
-
-    states = [
-        ChecklistItemState(
-            item_id=item.id,
-            name=item.name,
-            section=item.category,
-            blocking=item.blocking,
-            weight=item.weight,
-            status="missing",
-            deficiency="Not yet received",
-            why=item.why,
-            basis=item.basis,
-        )
-        for item in items
-    ]
-    total = sum(s.weight for s in states) or 1
-    satisfied = sum(s.weight for s in states if s.status in ("satisfied", "waived"))
-    blocking_open = sum(1 for s in states if s.blocking and s.status not in ("satisfied", "waived"))
-    score = round(100 * satisfied / total, 1)
-    return Readiness(
-        score_pct=score,
-        gate_pct=taxonomy.review_gate_threshold,
-        gate_met=score >= taxonomy.review_gate_threshold and blocking_open == 0,
-        blocking_open=blocking_open,
-        provisional=provisional,
-        items=states,
-    )
+    """F-12 and F-13: the checklist for the case's constitution and
+    attributes, each item with its status and specific deficiency, and the
+    weighted readiness against the configured gate (engine/completeness.py).
+    While the constitution is unknown the checklist is provisional and holds
+    only the items every constitution needs (F-12.3)."""
+    result, _ = completeness.evaluate(conn, data_root, case)
+    return result

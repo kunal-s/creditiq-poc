@@ -18,6 +18,10 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_DATA_ROOT = REPO_ROOT / "workflow" / "data"
 
 
+# The stored name of the pasted application message (F-04.8), the case's first document.
+MESSAGE_FILE_NAME = "application-message.txt"
+
+
 def data_root() -> Path:
     return Path(os.environ.get("CREDITIQ_DATA_ROOT", str(DEFAULT_DATA_ROOT)))
 

@@ -11,6 +11,12 @@ pydantic
 pyyaml
 python-multipart
 
+# Page images for uploads and the evidence viewer (F-05.6, F-16).
+# pypdfium2: Apache-2.0 or BSD-3-Clause (PDFium itself is BSD-3-Clause).
+# Pillow: MIT-CMU (HPND). Both permissive (CLAUDE.md rule 10).
+pypdfium2
+pillow
+
 # Tooling: import contract and tests (httpx drives FastAPI's TestClient).
 import-linter
 pytest

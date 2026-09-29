@@ -35,6 +35,8 @@ class Readiness(BaseModel):
     provisional: bool
     """True while constitution or product is unconfirmed (F-12.3)."""
     items: list[ChecklistItemState]
+    ready_for_credit: bool = False
+    """F-13.5: every item satisfied or waived, on a confirmed checklist."""
 
 
 class QueryItem(BaseModel):
@@ -104,4 +106,9 @@ class ReviewDecisionRequest(BaseModel):
     decision: ReviewDecision
     reason: str | None = None
     value: str | float | int | bool | None = None
-    """The corrected value, or the assigned type id."""
+    """The corrected value, the assigned type id, or (party items) the
+    party id the document belongs to."""
+    values: dict[str, str | float | int | bool | None] | None = None
+    """Manual entry (F-07.5): the maker's values for an unreadable
+    document, by dictionary field, posted as "correct" on its quality item.
+    A different person with the checker permission confirms them."""

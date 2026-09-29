@@ -7,13 +7,20 @@ check (F-04.5) sit in front of `create_case`.
 
 from __future__ import annotations
 
+import hashlib
 import json
+import os
+import re
 import sqlite3
 from datetime import datetime, timezone
+from pathlib import Path
 
 from .config import find_user_by_id, load_app_config, option_ids
 from .contracts import CaseCreate, CaseDetail, CaseSummary, HeaderField
 from .db import log_decision, transaction
+from .names import normalise_name, similarity
+from .store import MESSAGE_FILE_NAME, case_files_dir, data_root
+from .util import stable_id
 
 
 class CaseError(ValueError):
@@ -44,10 +51,122 @@ def _validate(data: CaseCreate) -> None:
         raise CaseError(f"unknown facilities {sorted(unknown)}")
 
 
+class DuplicateCase(CaseError):
+    """F-04.5: the duplicate-case check matched and no override reason was given."""
+
+    def __init__(self, duplicates: list[CaseSummary]) -> None:
+        self.duplicates = duplicates
+        ids = ", ".join(d.id for d in duplicates)
+        super().__init__(f"a case for this borrower exists ({ids}); give duplicate_override_reason to create anyway")
+
+
+def find_duplicates(
+    conn: sqlite3.Connection,
+    *,
+    pan: str | None,
+    gstin: str | None,
+    borrower: str | None,
+    name_threshold: float,
+) -> list[CaseSummary]:
+    """F-04.5: existing cases matching on PAN, GSTIN or normalised name."""
+    pan = (pan or "").strip().upper() or None
+    gstin = (gstin or "").strip().upper() or None
+    target = normalise_name(borrower)
+    out = []
+    for row in conn.execute("SELECT * FROM cases ORDER BY created_at"):
+        same = (pan and (row["pan"] or "").upper() == pan) or (gstin and (row["gstin"] or "").upper() == gstin)
+        if not same and target:
+            same = normalise_name(row["borrower"]) == target or similarity(row["borrower"], borrower) >= name_threshold
+        if same:
+            out.append(CaseSummary(**_summary_fields(conn, row)))
+    return out
+
+
+def _check_message_sources(data: CaseCreate) -> None:
+    for name, h in data.header.items():
+        m = re.fullmatch(r"message:(\d+)-(\d+)", h.source or "")
+        if not m:
+            continue
+        start, end = int(m[1]), int(m[2])
+        if data.message_text is None or not (0 <= start < end <= len(data.message_text)):
+            raise CaseError(f"header field {name!r}: source {h.source!r} does not point into the message")
+
+
+def _store_message(conn: sqlite3.Connection, root: Path, case_id: str, data: CaseCreate, created_by: str, at: str,
+                   config_version: str | None) -> None:
+    """F-04.8: the pasted message, unchanged, as the case's first document."""
+    raw = data.message_text.encode("utf-8")
+    sha = hashlib.sha256(raw).hexdigest()
+    files_dir = case_files_dir(case_id, root)
+    for d in (files_dir.parent.parent, files_dir.parent, files_dir):
+        d.mkdir(parents=True, exist_ok=True, mode=0o700)
+        os.chmod(d, 0o700)
+    target = files_dir / sha
+    if not target.exists():
+        fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "wb") as fh:
+            fh.write(raw)
+    file_id = stable_id("F", case_id, "message")
+    conn.execute(
+        """INSERT INTO files (id, case_id, sha256, original_name, archive_path, content_type, size_bytes, channel,
+               uploaded_by, uploaded_at, status, stored_name, processed_at)
+           VALUES (?, ?, ?, ?, NULL, 'text/plain', ?, ?, ?, ?, 'registered', ?, ?)""",
+        (file_id, case_id, sha, MESSAGE_FILE_NAME, len(raw), data.channel, created_by, at, sha, at),
+    )
+    classification = {"types": ["application_message"], "confidence": 1.0, "exit_tier": "person", "signals": [],
+                      "candidates": []}
+    conn.execute(
+        """INSERT INTO documents (id, case_id, file_id, page_from, page_to, pages, grade, classification, status,
+               config_version, doc_key, created_at)
+           VALUES (?, ?, ?, 1, 1, ?, 'A', ?, 'accepted', ?, 'message', ?)""",
+        (
+            stable_id("DOC", case_id, file_id, "message"),
+            case_id,
+            file_id,
+            json.dumps([{"n": 1, "route": "text", "grade": "A", "reasons": [], "ocr_confidence": None}]),
+            json.dumps(classification),
+            config_version,
+            at,
+        ),
+    )
+
+
+# Header fields that are the RM's declaration, kept for triangulation (F-04.8, F-19).
+DECLARED_FIELDS = ("declared_turnover_inr", "amount_inr", "existing_banking")
+
+
+def _store_declared(conn: sqlite3.Connection, case_id: str, data: CaseCreate) -> None:
+    for name in DECLARED_FIELDS:
+        h = data.header.get(name)
+        value = h.value if h else None
+        if name == "amount_inr" and value is None:
+            value = str(data.amount_inr)
+        if value is None:
+            continue
+        conn.execute(
+            """INSERT INTO declared_figures (case_id, field, value, proposed, source, basis)
+               VALUES (?, ?, ?, ?, ?, 'RM declaration, unverified')""",
+            (case_id, name, value, h.proposed if h else None, (h.source if h else None) or "person"),
+        )
+
+
 def create_case(
-    conn: sqlite3.Connection, data: CaseCreate, *, created_by: str, config_version: str | None
+    conn: sqlite3.Connection,
+    data: CaseCreate,
+    *,
+    created_by: str,
+    config_version: str | None,
+    root: Path | None = None,
+    name_threshold: float = 0.85,
 ) -> CaseDetail:
     _validate(data)
+    _check_message_sources(data)
+    duplicates = find_duplicates(
+        conn, pan=data.pan, gstin=data.gstin, borrower=data.borrower, name_threshold=name_threshold
+    )
+    if duplicates and not (data.duplicate_override_reason or "").strip():
+        raise DuplicateCase(duplicates)
+    root = Path(root or data_root())
     now = _now()
     with transaction(conn):
         case_id = _next_case_id(conn, now.year)
@@ -85,9 +204,17 @@ def create_case(
                     "channel": data.channel,
                     "config_version": config_version,
                     "duplicate_override_reason": data.duplicate_override_reason,
+                    "duplicates": [d.id for d in duplicates],
+                    "message_sha256": hashlib.sha256(data.message_text.encode("utf-8")).hexdigest()
+                    if data.message_text is not None
+                    else None,
                 }
             ),
         )
+        at = now.isoformat(timespec="seconds")
+        if data.message_text is not None:
+            _store_message(conn, root, case_id, data, created_by, at, config_version)
+        _store_declared(conn, case_id, data)
     detail = get_case(conn, case_id)
     assert detail is not None
     return detail

@@ -196,6 +196,8 @@ export interface paths {
      * Upload Files
      * @description F-05: multipart upload, field name "files" (repeatable): single files,
      *     several files or ZIP archives. Registers every file and queues processing.
+     *     The body is parsed as it streams, so size limits apply before a file is
+     *     held in full.
      */
     post: operations["upload_files_api_cases__case_id__files_post"];
     delete?: never;
@@ -443,6 +445,8 @@ export interface components {
       header?: {
         [key: string]: components["schemas"]["HeaderField"];
       };
+      /** Message Text */
+      message_text?: string | null;
       /** Pan */
       pan?: string | null;
       /** Udyam */
@@ -508,6 +512,8 @@ export interface components {
       };
       /** Missing Minimum */
       missing_minimum?: string[];
+      /** Stripped */
+      stripped?: components["schemas"]["StrippedSpan"][];
       /** Text Sha256 */
       text_sha256: string;
     };
@@ -548,10 +554,13 @@ export interface components {
       category: string;
       /** Constitutions */
       constitutions: ("private_limited" | "proprietorship" | "partnership")[];
+      coverage?: components["schemas"]["CoverageRule"] | null;
       /** Id */
       id: string;
       /** Name */
       name: string;
+      /** Request */
+      request?: string | null;
       /** Requires Attributes */
       requires_attributes?: string[];
       /**
@@ -626,6 +635,41 @@ export interface components {
       signals?: string[];
       /** Types */
       types: string[];
+    };
+    /**
+     * CoverageRule
+     * @description What "complete" means for an item beyond presence (F-13.2), always
+     *     measured from the case's fixed as_of date (principle 8).
+     */
+    CoverageRule: {
+      /**
+       * Count
+       * @default 0
+       */
+      count: number;
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind:
+        | "financial_year"
+        | "assessment_years"
+        | "monthly_periods"
+        | "account_months"
+        | "parties"
+        | "statements";
+      /**
+       * Months
+       * @default 0
+       */
+      months: number;
+      /**
+       * Offset
+       * @default 0
+       */
+      offset: number;
+      /** Statements */
+      statements?: string[];
     };
     /** DocumentTypeDef */
     DocumentTypeDef: {
@@ -1104,6 +1148,11 @@ export interface components {
       items: components["schemas"]["ChecklistItemState"][];
       /** Provisional */
       provisional: boolean;
+      /**
+       * Ready For Credit
+       * @default false
+       */
+      ready_for_credit: boolean;
       /** Score Pct */
       score_pct: number;
     };
@@ -1118,6 +1167,10 @@ export interface components {
       reason?: string | null;
       /** Value */
       value?: string | number | boolean | null;
+      /** Values */
+      values?: {
+        [key: string]: string | number | boolean | null;
+      } | null;
     };
     /**
      * ReviewItem
@@ -1198,6 +1251,19 @@ export interface components {
       end: number;
       /** Start */
       start: number;
+    };
+    /**
+     * StrippedSpan
+     * @description Part of the message set aside before extraction but kept as
+     *     provenance (F-04, normalisation): nothing is proposed from it.
+     */
+    StrippedSpan: {
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: "timestamp" | "sender" | "header" | "quoted" | "signature";
+      span: components["schemas"]["Span"];
     };
     /**
      * UploadResult
@@ -1651,7 +1717,14 @@ export interface operations {
       };
       cookie?: never;
     };
-    requestBody?: never;
+    requestBody: {
+      content: {
+        "multipart/form-data": {
+          channel?: string;
+          files: string[];
+        };
+      };
+    };
     responses: {
       /** @description Successful Response */
       202: {

@@ -7,7 +7,7 @@ import assert from 'node:assert/strict'
 import { readdirSync, readFileSync } from 'node:fs'
 import { rm } from 'node:fs/promises'
 import { join } from 'node:path'
-import Ajv2020 from 'ajv/dist/2020.js'
+import { Ajv2020 } from 'ajv/dist/2020.js'
 import { createApp } from '../src/app.js'
 import { ConfigStore } from '../src/config.js'
 import type { IngestDocument, IngestResult } from '../src/contract.js'
@@ -23,7 +23,7 @@ interface RequestSpec { name: string; files: FileSpec[]; documents: DocExpect[];
 interface TcSpec { tc: string; title: string; requests: RequestSpec[] }
 
 const schema = JSON.parse(readFileSync(join(REPO, 'contracts', 'ingest-result.schema.json'), 'utf8'))
-const ajv = new (Ajv2020 as unknown as typeof Ajv2020.default)({ allErrors: true, strict: false })
+const ajv = new Ajv2020({ allErrors: true, strict: false })
 const validate = ajv.compile(schema)
 
 interface Tally { docs: number; typed: number; fields: Record<'digital' | 'scanned', { n: number; ok: number; keyN: number; keyOk: number }> }
@@ -70,8 +70,12 @@ after(async () => {
   console.log(lines.join('\n'))
 })
 
+const validateRequest = ajv.compile(JSON.parse(readFileSync(join(REPO, 'contracts', 'ingest-request.schema.json'), 'utf8')))
+
 async function post(tcDir: string, files: FileSpec[], caseRef = 'BBG-2025-000001'): Promise<{ status: number; body: IngestResult }> {
-  const res = await app.request('/v1/process', { method: 'POST', body: await formFor(tcDir, caseRef, version, files) })
+  const form = await formFor(tcDir, caseRef, version, files)
+  assert.ok(validateRequest(JSON.parse(String(form.get('request')))), `request schema: ${ajv.errorsText(validateRequest.errors)}`)
+  const res = await app.request('/v1/process', { method: 'POST', body: form })
   return { status: res.status, body: (await res.json()) as IngestResult }
 }
 

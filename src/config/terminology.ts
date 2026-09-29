@@ -16,6 +16,13 @@ function resolve(path: string): unknown {
   }, TERMINOLOGY);
 }
 
+/** Like t(), for open-ended codes from the engine (reason codes): the
+ * configured label when there is one, else the code in plain words. */
+export function tOr(path: string, fallback: string): string {
+  const value = resolve(path);
+  return value === undefined ? fallback.replace(/_/g, " ") : String(value);
+}
+
 /**
  * Look up a dot-path terminology key, e.g. `t("tenant.bank.name")`.
  * `params` fills `{placeholder}` tokens in the resolved string.

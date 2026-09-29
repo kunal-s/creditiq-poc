@@ -1,17 +1,24 @@
 import type {
   CaseCreate,
   CaseDetail,
+  CaseProposal,
   CaseSummary,
+  ChecklistTaxonomy,
+  DocumentTypes,
   FieldValue,
   FileRecord,
   Finding,
   LoginResponse,
   LogicalDocument,
   Meta,
+  Party,
+  ProposalRequest,
   QueryItem,
   Readiness,
+  ReviewDecisionRequest,
   ReviewItem,
   SessionUser,
+  UploadResult,
 } from "./types";
 
 const BASE_URL = import.meta.env["VITE_API_BASE_URL"] ?? "http://localhost:8000";
@@ -36,12 +43,15 @@ export function configureAuth(getToken: () => string | null, unauthorised: () =>
   onUnauthorised = unauthorised;
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+async function send(path: string, init?: RequestInit): Promise<Response> {
   const token = tokenProvider();
+  // JSON bodies are strings; multipart bodies (FormData) set their own
+  // Content-Type with the boundary, so it must not be overridden.
+  const json = typeof init?.body === "string";
   const response = await fetch(`${BASE_URL}${path}`, {
     ...init,
     headers: {
-      "Content-Type": "application/json",
+      ...(json ? { "Content-Type": "application/json" } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...init?.headers,
     },
@@ -52,6 +62,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const detail = typeof body.detail === "string" ? body.detail : response.statusText;
     throw new ApiError(response.status, detail);
   }
+  return response;
+}
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await send(path, init);
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
 }
@@ -70,11 +85,27 @@ export const api = {
 
   listCases: () => request<CaseSummary[]>("/api/cases"),
   getCase: (id: string) => request<CaseDetail>(`/api/cases/${q(id)}`),
+  proposeCase: (body: ProposalRequest) =>
+    request<CaseProposal>("/api/cases/proposals", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
   createCase: (body: CaseCreate) =>
     request<CaseDetail>("/api/cases", { method: "POST", body: JSON.stringify(body) }),
 
   caseFiles: (id: string) => request<FileRecord[]>(`/api/cases/${q(id)}/files`),
+  uploadFiles: (id: string, files: File[]) => {
+    const form = new FormData();
+    for (const file of files) form.append("files", file, file.name);
+    return request<UploadResult>(`/api/cases/${q(id)}/files`, { method: "POST", body: form });
+  },
   caseDocuments: (id: string) => request<LogicalDocument[]>(`/api/cases/${q(id)}/documents`),
+  /** The rendered page image (PNG); `page` is the absolute page in the source file. */
+  pageImage: async (id: string, documentId: string, page: number) => {
+    const response = await send(`/api/cases/${q(id)}/documents/${q(documentId)}/pages/${page}`);
+    return response.blob();
+  },
+  caseParties: (id: string) => request<Party[]>(`/api/cases/${q(id)}/parties`),
   caseFields: (id: string, documentId?: string) =>
     request<FieldValue[]>(
       `/api/cases/${q(id)}/fields${documentId ? `?document_id=${q(documentId)}` : ""}`,
@@ -82,6 +113,19 @@ export const api = {
   caseChecklist: (id: string) => request<Readiness>(`/api/cases/${q(id)}/checklist`),
   caseQueries: (id: string) => request<QueryItem[]>(`/api/cases/${q(id)}/queries`),
   caseFindings: (id: string) => request<Finding[]>(`/api/cases/${q(id)}/findings`),
-  reviewQueue: (caseId?: string) =>
-    request<ReviewItem[]>(`/api/review${caseId ? `?case_id=${q(caseId)}` : ""}`),
+  reviewQueue: (options: { caseId?: string; includeDecided?: boolean } = {}) => {
+    const params = new URLSearchParams();
+    if (options.caseId) params.set("case_id", options.caseId);
+    if (options.includeDecided) params.set("include_decided", "true");
+    const qs = params.toString();
+    return request<ReviewItem[]>(`/api/review${qs ? `?${qs}` : ""}`);
+  },
+  decideReview: (itemId: string, body: ReviewDecisionRequest) =>
+    request<ReviewItem>(`/api/review/${q(itemId)}/decision`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  documentTypes: () => request<DocumentTypes>("/api/config/document-types"),
+  checklistTaxonomy: () => request<ChecklistTaxonomy>("/api/config/checklist-taxonomy"),
 };

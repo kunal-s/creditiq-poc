@@ -1,15 +1,13 @@
+import { t } from "@/config/terminology";
 import { EmptyState } from "./EmptyState";
 
-/** Body of a screen whose feature has not landed yet. Wave 1 replaces every
- * use with the prototype screen fed by real data (FRD AD-1); a check before
- * the live session fails while any use remains. */
+/** Body of a screen whose feature lands in a later wave (spread,
+ * cross-verification, policy, draft, comparison and scorecard). The feature
+ * reference is kept for tracing only, never shown. */
 export function ScreenPending({ feature }: { feature: string }) {
   return (
-    <div className="px-6 py-5">
-      <EmptyState
-        title="Nothing to show yet"
-        description={`This screen fills in once ${feature} is delivered.`}
-      />
+    <div className="px-4 py-5 sm:px-6" data-feature={feature}>
+      <EmptyState title={t("state.pending.title")} description={t("state.pending.description")} />
     </div>
   );
 }

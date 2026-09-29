@@ -2,7 +2,9 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import type { CaseDetail } from "@/api/types";
 import { useCase } from "@/domain/cases";
+import { errorKind } from "@/domain/errors";
 import { t } from "@/config/terminology";
+import { ErrorState, LoadingBlock } from "@/components/common/States";
 import { EmptyState } from "./EmptyState";
 
 /** Loads the case for a case route; renders a designed not-found state
@@ -14,14 +16,27 @@ export function CaseScreen({
   caseId: string;
   children: (c: CaseDetail) => ReactNode;
 }) {
-  const { data, isLoading, isError } = useCase(caseId);
-  if (isLoading) return null;
-  if (isError || !data) {
+  const { data, isLoading, isError, error, refetch } = useCase(caseId);
+  if (isLoading) {
     return (
-      <div className="px-6 py-5">
+      <div className="px-4 py-5 sm:px-6">
+        <LoadingBlock rows={3} />
+      </div>
+    );
+  }
+  if (isError && errorKind(error) !== "notFound") {
+    return (
+      <div className="px-4 py-5 sm:px-6">
+        <ErrorState error={error} onRetry={() => void refetch()} />
+      </div>
+    );
+  }
+  if (!data) {
+    return (
+      <div className="px-4 py-5 sm:px-6">
         <EmptyState
-          title={`No ${t("term.application.singular")} ${caseId}`}
-          description="It does not exist, or it is not assigned to you."
+          title={t("state.caseNotFound.title", { id: caseId })}
+          description={t("state.caseNotFound.description")}
           action={
             <Link
               to="/appraisals"

@@ -1,0 +1,479 @@
+{
+  "$defs": {
+    "Candidate": {
+      "properties": {
+        "confidence": {
+          "title": "Confidence",
+          "type": "number"
+        },
+        "type_id": {
+          "title": "Type Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type_id",
+        "confidence"
+      ],
+      "title": "Candidate",
+      "type": "object"
+    },
+    "Classification": {
+      "description": "F-09.4: what was found, how it exited, and the runners-up.",
+      "properties": {
+        "candidates": {
+          "items": {
+            "$ref": "#/$defs/Candidate"
+          },
+          "maxItems": 3,
+          "title": "Candidates",
+          "type": "array"
+        },
+        "confidence": {
+          "title": "Confidence",
+          "type": "number"
+        },
+        "exit_tier": {
+          "enum": [
+            "signals",
+            "layout",
+            "model",
+            "person",
+            "none"
+          ],
+          "title": "Exit Tier",
+          "type": "string"
+        },
+        "signals": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Signals",
+          "type": "array"
+        },
+        "types": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Types",
+          "type": "array"
+        }
+      },
+      "required": [
+        "types",
+        "confidence",
+        "exit_tier"
+      ],
+      "title": "Classification",
+      "type": "object"
+    },
+    "DocumentDefect": {
+      "description": "A defect of the document, not of the extraction (F-13.3).",
+      "properties": {
+        "code": {
+          "enum": [
+            "pages_absent",
+            "period_gap",
+            "unsigned",
+            "unstamped",
+            "plain_paper",
+            "pagination_break"
+          ],
+          "title": "Code",
+          "type": "string"
+        },
+        "detail": {
+          "title": "Detail",
+          "type": "string"
+        },
+        "pages": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Pages",
+          "type": "array"
+        }
+      },
+      "required": [
+        "code",
+        "detail"
+      ],
+      "title": "DocumentDefect",
+      "type": "object"
+    },
+    "ExtractedField": {
+      "properties": {
+        "bbox": {
+          "anyOf": [
+            {
+              "maxItems": 4,
+              "minItems": 4,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bbox"
+        },
+        "confidence_components": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Confidence Components",
+          "type": "object"
+        },
+        "field": {
+          "title": "Field",
+          "type": "string"
+        },
+        "method": {
+          "enum": [
+            "deterministic",
+            "model"
+          ],
+          "title": "Method",
+          "type": "string"
+        },
+        "missing_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Missing Reason"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page"
+        },
+        "raw": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Raw"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        }
+      },
+      "required": [
+        "field",
+        "value",
+        "raw",
+        "method"
+      ],
+      "title": "ExtractedField",
+      "type": "object"
+    },
+    "IngestDocument": {
+      "properties": {
+        "classification": {
+          "$ref": "#/$defs/Classification"
+        },
+        "defects": {
+          "items": {
+            "$ref": "#/$defs/DocumentDefect"
+          },
+          "title": "Defects",
+          "type": "array"
+        },
+        "doc_key": {
+          "title": "Doc Key",
+          "type": "string"
+        },
+        "duplicate_of_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Duplicate Of Key"
+        },
+        "fields": {
+          "items": {
+            "$ref": "#/$defs/ExtractedField"
+          },
+          "title": "Fields",
+          "type": "array"
+        },
+        "file_id": {
+          "title": "File Id",
+          "type": "string"
+        },
+        "identity": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Identity",
+          "type": "object"
+        },
+        "instance_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Instance Key"
+        },
+        "page_from": {
+          "title": "Page From",
+          "type": "integer"
+        },
+        "page_to": {
+          "title": "Page To",
+          "type": "integer"
+        },
+        "pages": {
+          "items": {
+            "$ref": "#/$defs/PageInfo"
+          },
+          "title": "Pages",
+          "type": "array"
+        },
+        "split_uncertain": {
+          "default": false,
+          "title": "Split Uncertain",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "doc_key",
+        "file_id",
+        "page_from",
+        "page_to",
+        "pages",
+        "classification"
+      ],
+      "title": "IngestDocument",
+      "type": "object"
+    },
+    "IngestFileOutcome": {
+      "properties": {
+        "file_id": {
+          "title": "File Id",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "status": {
+          "enum": [
+            "processed",
+            "exception",
+            "rejected"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "file_id",
+        "status"
+      ],
+      "title": "IngestFileOutcome",
+      "type": "object"
+    },
+    "PageInfo": {
+      "properties": {
+        "grade": {
+          "enum": [
+            "A",
+            "B",
+            "C",
+            "U"
+          ],
+          "title": "Grade",
+          "type": "string"
+        },
+        "n": {
+          "minimum": 1,
+          "title": "N",
+          "type": "integer"
+        },
+        "ocr_confidence": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ocr Confidence"
+        },
+        "reasons": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reasons",
+          "type": "array"
+        },
+        "route": {
+          "enum": [
+            "text",
+            "ocr",
+            "sheet"
+          ],
+          "title": "Route",
+          "type": "string"
+        }
+      },
+      "required": [
+        "n",
+        "route",
+        "grade"
+      ],
+      "title": "PageInfo",
+      "type": "object"
+    },
+    "StageTiming": {
+      "properties": {
+        "file_id": {
+          "title": "File Id",
+          "type": "string"
+        },
+        "ms": {
+          "title": "Ms",
+          "type": "integer"
+        },
+        "stage": {
+          "enum": [
+            "read",
+            "grade",
+            "split",
+            "classify",
+            "extract",
+            "validate"
+          ],
+          "title": "Stage",
+          "type": "string"
+        }
+      },
+      "required": [
+        "stage",
+        "file_id",
+        "ms"
+      ],
+      "title": "StageTiming",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "case_ref": {
+      "title": "Case Ref",
+      "type": "string"
+    },
+    "config_version": {
+      "title": "Config Version",
+      "type": "string"
+    },
+    "documents": {
+      "items": {
+        "$ref": "#/$defs/IngestDocument"
+      },
+      "title": "Documents",
+      "type": "array"
+    },
+    "engine_version": {
+      "title": "Engine Version",
+      "type": "string"
+    },
+    "files": {
+      "items": {
+        "$ref": "#/$defs/IngestFileOutcome"
+      },
+      "title": "Files",
+      "type": "array"
+    },
+    "model_provider": {
+      "title": "Model Provider",
+      "type": "string"
+    },
+    "timings": {
+      "items": {
+        "$ref": "#/$defs/StageTiming"
+      },
+      "title": "Timings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "case_ref",
+    "config_version",
+    "engine_version",
+    "model_provider",
+    "files",
+    "documents"
+  ],
+  "title": "IngestResult",
+  "type": "object"
+}

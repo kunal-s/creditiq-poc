@@ -4,12 +4,14 @@
 # (CLAUDE.md rule 10). Add dependencies with the feature that needs them
 # (docs/functional-requirements.md) and recompile requirements.txt.
 
-# Service: sign-in, cases, published configuration.
+# Service: sign-in, cases, published configuration, uploads (F-05).
 fastapi
 uvicorn[standard]
 pydantic
 pyyaml
+python-multipart
 
-# Tooling: import contract and tests.
+# Tooling: import contract and tests (httpx drives FastAPI's TestClient).
 import-linter
 pytest
+httpx

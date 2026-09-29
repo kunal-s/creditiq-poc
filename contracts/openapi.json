@@ -1,0 +1,2974 @@
+{
+  "components": {
+    "schemas": {
+      "Candidate": {
+        "properties": {
+          "confidence": {
+            "title": "Confidence",
+            "type": "number"
+          },
+          "type_id": {
+            "title": "Type Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type_id",
+          "confidence"
+        ],
+        "title": "Candidate",
+        "type": "object"
+      },
+      "CaseCreate": {
+        "description": "Create a case after the RM confirms (F-04.7). The proposal flow\n(F-04) fills `header` with sources; a direct create leaves it empty.",
+        "properties": {
+          "amount_inr": {
+            "exclusiveMinimum": 0.0,
+            "title": "Amount Inr",
+            "type": "integer"
+          },
+          "borrower": {
+            "minLength": 1,
+            "title": "Borrower",
+            "type": "string"
+          },
+          "channel": {
+            "title": "Channel",
+            "type": "string"
+          },
+          "cin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cin"
+          },
+          "collateral_present": {
+            "default": false,
+            "title": "Collateral Present",
+            "type": "boolean"
+          },
+          "constitution": {
+            "default": "unknown",
+            "title": "Constitution",
+            "type": "string"
+          },
+          "duplicate_override_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duplicate Override Reason"
+          },
+          "facilities": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Facilities",
+            "type": "array"
+          },
+          "gstin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gstin"
+          },
+          "header": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/HeaderField"
+            },
+            "title": "Header",
+            "type": "object"
+          },
+          "pan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pan"
+          },
+          "udyam": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Udyam"
+          }
+        },
+        "required": [
+          "borrower",
+          "facilities",
+          "amount_inr",
+          "channel"
+        ],
+        "title": "CaseCreate",
+        "type": "object"
+      },
+      "CaseDetail": {
+        "properties": {
+          "amount_inr": {
+            "title": "Amount Inr",
+            "type": "integer"
+          },
+          "as_of": {
+            "title": "As Of",
+            "type": "string"
+          },
+          "borrower": {
+            "title": "Borrower",
+            "type": "string"
+          },
+          "channel": {
+            "title": "Channel",
+            "type": "string"
+          },
+          "cin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cin"
+          },
+          "collateral_present": {
+            "title": "Collateral Present",
+            "type": "boolean"
+          },
+          "config_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config Version"
+          },
+          "constitution": {
+            "title": "Constitution",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "title": "Created By",
+            "type": "string"
+          },
+          "facilities": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Facilities",
+            "type": "array"
+          },
+          "gstin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gstin"
+          },
+          "header": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/HeaderField"
+            },
+            "title": "Header",
+            "type": "object"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "open_review_items": {
+            "title": "Open Review Items",
+            "type": "integer"
+          },
+          "pan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pan"
+          },
+          "rm": {
+            "title": "Rm",
+            "type": "string"
+          },
+          "stage": {
+            "enum": [
+              "Intake",
+              "Readiness",
+              "Appraisal",
+              "Outputs",
+              "Completed"
+            ],
+            "title": "Stage",
+            "type": "string"
+          },
+          "udyam": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Udyam"
+          }
+        },
+        "required": [
+          "id",
+          "borrower",
+          "constitution",
+          "facilities",
+          "amount_inr",
+          "stage",
+          "rm",
+          "created_at",
+          "open_review_items",
+          "pan",
+          "gstin",
+          "cin",
+          "udyam",
+          "collateral_present",
+          "channel",
+          "as_of",
+          "created_by",
+          "config_version",
+          "header"
+        ],
+        "title": "CaseDetail",
+        "type": "object"
+      },
+      "CaseSummary": {
+        "description": "Workbench row (F-01.4).",
+        "properties": {
+          "amount_inr": {
+            "title": "Amount Inr",
+            "type": "integer"
+          },
+          "borrower": {
+            "title": "Borrower",
+            "type": "string"
+          },
+          "constitution": {
+            "title": "Constitution",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "facilities": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Facilities",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "open_review_items": {
+            "title": "Open Review Items",
+            "type": "integer"
+          },
+          "rm": {
+            "title": "Rm",
+            "type": "string"
+          },
+          "stage": {
+            "enum": [
+              "Intake",
+              "Readiness",
+              "Appraisal",
+              "Outputs",
+              "Completed"
+            ],
+            "title": "Stage",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "borrower",
+          "constitution",
+          "facilities",
+          "amount_inr",
+          "stage",
+          "rm",
+          "created_at",
+          "open_review_items"
+        ],
+        "title": "CaseSummary",
+        "type": "object"
+      },
+      "ChecklistItemDef": {
+        "properties": {
+          "basis": {
+            "title": "Basis",
+            "type": "string"
+          },
+          "blocking": {
+            "title": "Blocking",
+            "type": "boolean"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "constitutions": {
+            "items": {
+              "enum": [
+                "private_limited",
+                "proprietorship",
+                "partnership"
+              ],
+              "type": "string"
+            },
+            "title": "Constitutions",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "requires_attributes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Requires Attributes",
+            "type": "array"
+          },
+          "source": {
+            "enum": [
+              "published_policy",
+              "regulatory",
+              "industry_standard",
+              "provisional"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "integer"
+          },
+          "why": {
+            "title": "Why",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "category",
+          "constitutions",
+          "why",
+          "basis",
+          "source",
+          "blocking",
+          "weight"
+        ],
+        "title": "ChecklistItemDef",
+        "type": "object"
+      },
+      "ChecklistItemState": {
+        "properties": {
+          "basis": {
+            "title": "Basis",
+            "type": "string"
+          },
+          "blocking": {
+            "title": "Blocking",
+            "type": "boolean"
+          },
+          "deficiency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deficiency"
+          },
+          "document_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Document Ids",
+            "type": "array"
+          },
+          "item_id": {
+            "title": "Item Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "section": {
+            "title": "Section",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "satisfied",
+              "insufficient",
+              "missing",
+              "in_review",
+              "waived"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "integer"
+          },
+          "why": {
+            "title": "Why",
+            "type": "string"
+          }
+        },
+        "required": [
+          "item_id",
+          "name",
+          "section",
+          "blocking",
+          "weight",
+          "status",
+          "why",
+          "basis"
+        ],
+        "title": "ChecklistItemState",
+        "type": "object"
+      },
+      "ChecklistTaxonomySection": {
+        "description": "config/checklist_taxonomy.yaml",
+        "properties": {
+          "disbursement_gate_threshold": {
+            "title": "Disbursement Gate Threshold",
+            "type": "integer"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ChecklistItemDef"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "review_gate_threshold": {
+            "title": "Review Gate Threshold",
+            "type": "integer"
+          },
+          "section_weight": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Section Weight",
+            "type": "object"
+          },
+          "sections": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sections",
+            "type": "array"
+          }
+        },
+        "required": [
+          "sections",
+          "section_weight",
+          "review_gate_threshold",
+          "disbursement_gate_threshold",
+          "items"
+        ],
+        "title": "ChecklistTaxonomySection",
+        "type": "object"
+      },
+      "Classification": {
+        "description": "F-09.4: what was found, how it exited, and the runners-up.",
+        "properties": {
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/Candidate"
+            },
+            "maxItems": 3,
+            "title": "Candidates",
+            "type": "array"
+          },
+          "confidence": {
+            "title": "Confidence",
+            "type": "number"
+          },
+          "exit_tier": {
+            "enum": [
+              "signals",
+              "layout",
+              "model",
+              "person",
+              "none"
+            ],
+            "title": "Exit Tier",
+            "type": "string"
+          },
+          "signals": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Signals",
+            "type": "array"
+          },
+          "types": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Types",
+            "type": "array"
+          }
+        },
+        "required": [
+          "types",
+          "confidence",
+          "exit_tier"
+        ],
+        "title": "Classification",
+        "type": "object"
+      },
+      "DocumentTypeDef": {
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "dictionary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dictionary"
+          },
+          "group": {
+            "enum": [
+              "origination",
+              "constitution",
+              "registration",
+              "kyc",
+              "financials",
+              "tax",
+              "banking",
+              "working_capital",
+              "collateral",
+              "bureau",
+              "other_known"
+            ],
+            "title": "Group",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "instance_key": {
+            "default": "none",
+            "enum": [
+              "none",
+              "period",
+              "year",
+              "account",
+              "person",
+              "property"
+            ],
+            "title": "Instance Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "partner_output": {
+            "default": false,
+            "title": "Partner Output",
+            "type": "boolean"
+          },
+          "personal": {
+            "default": false,
+            "title": "Personal",
+            "type": "boolean"
+          },
+          "satisfies": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Satisfies",
+            "type": "array"
+          },
+          "signals": {
+            "$ref": "#/components/schemas/SignalSet"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "group",
+          "description"
+        ],
+        "title": "DocumentTypeDef",
+        "type": "object"
+      },
+      "DocumentTypesSection": {
+        "description": "config/document_types.yaml (F-00.4).",
+        "properties": {
+          "classify_threshold": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 1.0,
+            "title": "Classify Threshold",
+            "type": "number"
+          },
+          "tier1_margin": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 1.0,
+            "title": "Tier1 Margin",
+            "type": "number"
+          },
+          "types": {
+            "items": {
+              "$ref": "#/components/schemas/DocumentTypeDef"
+            },
+            "title": "Types",
+            "type": "array"
+          }
+        },
+        "required": [
+          "tier1_margin",
+          "classify_threshold",
+          "types"
+        ],
+        "title": "DocumentTypesSection",
+        "type": "object"
+      },
+      "Evidence": {
+        "description": "Where a value came from (FRD \u00a77, F-16). Page is mandatory (C7); the\nregion is optional, as normalised page coordinates (0 to 1, top-left\norigin): [x0, y0, x1, y1].",
+        "properties": {
+          "bbox": {
+            "anyOf": [
+              {
+                "maxItems": 4,
+                "minItems": 4,
+                "prefixItems": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bbox"
+          },
+          "document_id": {
+            "title": "Document Id",
+            "type": "string"
+          },
+          "page": {
+            "minimum": 1.0,
+            "title": "Page",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "document_id",
+          "page"
+        ],
+        "title": "Evidence",
+        "type": "object"
+      },
+      "FieldValue": {
+        "description": "One extracted value with its evidence and confidence (F-15, F-17).",
+        "properties": {
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "confidence_components": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Confidence Components",
+            "type": "object"
+          },
+          "corrected_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corrected Value"
+          },
+          "document_id": {
+            "title": "Document Id",
+            "type": "string"
+          },
+          "evidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Evidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field": {
+            "title": "Field",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "method": {
+            "enum": [
+              "deterministic",
+              "model",
+              "manual",
+              "person"
+            ],
+            "title": "Method",
+            "type": "string"
+          },
+          "missing_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Missing Reason"
+          },
+          "raw": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw"
+          },
+          "status": {
+            "enum": [
+              "accepted",
+              "in_review",
+              "corrected",
+              "missing",
+              "rejected"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "id",
+          "case_id",
+          "document_id",
+          "field",
+          "value",
+          "method",
+          "status"
+        ],
+        "title": "FieldValue",
+        "type": "object"
+      },
+      "FileRecord": {
+        "description": "Bytes as received (F-05). Every file ends in a visible state (F-05.5).",
+        "properties": {
+          "archive_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archive Path"
+          },
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "channel": {
+            "title": "Channel",
+            "type": "string"
+          },
+          "content_type": {
+            "title": "Content Type",
+            "type": "string"
+          },
+          "duplicate_of": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duplicate Of"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label_hint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label Hint"
+          },
+          "original_name": {
+            "title": "Original Name",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "sha256": {
+            "title": "Sha256",
+            "type": "string"
+          },
+          "size_bytes": {
+            "title": "Size Bytes",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "registered",
+              "duplicate",
+              "ignored",
+              "rejected",
+              "exception"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "uploaded_at": {
+            "title": "Uploaded At",
+            "type": "string"
+          },
+          "uploaded_by": {
+            "title": "Uploaded By",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "case_id",
+          "sha256",
+          "original_name",
+          "content_type",
+          "size_bytes",
+          "channel",
+          "uploaded_by",
+          "uploaded_at",
+          "status"
+        ],
+        "title": "FileRecord",
+        "type": "object"
+      },
+      "Finding": {
+        "description": "A cross-check or policy outcome (F-19, F-20).",
+        "properties": {
+          "blocking": {
+            "title": "Blocking",
+            "type": "boolean"
+          },
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "config_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config Version"
+          },
+          "explanation": {
+            "title": "Explanation",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "pass",
+              "fail",
+              "incomplete",
+              "not_applicable"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "rule_id": {
+            "title": "Rule Id",
+            "type": "string"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "severity": {
+            "enum": [
+              "serious",
+              "moderate",
+              "mild"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "sides": {
+            "items": {
+              "$ref": "#/components/schemas/FindingSide"
+            },
+            "title": "Sides",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "tolerance": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tolerance"
+          }
+        },
+        "required": [
+          "id",
+          "case_id",
+          "rule_id",
+          "title",
+          "outcome",
+          "severity",
+          "blocking",
+          "explanation",
+          "sides"
+        ],
+        "title": "Finding",
+        "type": "object"
+      },
+      "FindingSide": {
+        "properties": {
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "relies_on_manual": {
+            "default": false,
+            "title": "Relies On Manual",
+            "type": "boolean"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "label",
+          "value"
+        ],
+        "title": "FindingSide",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HeaderField": {
+        "description": "One case-header field with both values kept (F-01.2): what the system\nproposed and where from, and what a person confirmed.",
+        "properties": {
+          "proposed": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proposed"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "title": "HeaderField",
+        "type": "object"
+      },
+      "LogicalDocument": {
+        "description": "One logical document: a file and a page range (F-08).",
+        "properties": {
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "classification": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Classification"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "config_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config Version"
+          },
+          "duplicate_of": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duplicate Of"
+          },
+          "file_id": {
+            "title": "File Id",
+            "type": "string"
+          },
+          "grade": {
+            "enum": [
+              "A",
+              "B",
+              "C",
+              "U"
+            ],
+            "title": "Grade",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "instance_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instance Key"
+          },
+          "label_mismatch": {
+            "default": false,
+            "title": "Label Mismatch",
+            "type": "boolean"
+          },
+          "page_from": {
+            "title": "Page From",
+            "type": "integer"
+          },
+          "page_to": {
+            "title": "Page To",
+            "type": "integer"
+          },
+          "pages": {
+            "items": {
+              "$ref": "#/components/schemas/PageInfo"
+            },
+            "title": "Pages",
+            "type": "array"
+          },
+          "party_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Party Id"
+          },
+          "status": {
+            "enum": [
+              "received",
+              "graded",
+              "split",
+              "classified",
+              "unclassified",
+              "extracted",
+              "accepted",
+              "in_review",
+              "in_exception",
+              "superseded",
+              "duplicate"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "version_of": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Of"
+          }
+        },
+        "required": [
+          "id",
+          "case_id",
+          "file_id",
+          "page_from",
+          "page_to",
+          "pages",
+          "grade",
+          "classification",
+          "status"
+        ],
+        "title": "LogicalDocument",
+        "type": "object"
+      },
+      "LoginRequest": {
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "password": {
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "LoginRequest",
+        "type": "object"
+      },
+      "LoginResponse": {
+        "properties": {
+          "token": {
+            "title": "Token",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/SessionUser"
+          }
+        },
+        "required": [
+          "token",
+          "user"
+        ],
+        "title": "LoginResponse",
+        "type": "object"
+      },
+      "Meta": {
+        "description": "Choice lists the screens need, from config/app.yaml.",
+        "properties": {
+          "case_create_minimum": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Case Create Minimum",
+            "type": "array"
+          },
+          "channels": {
+            "items": {
+              "$ref": "#/components/schemas/Option"
+            },
+            "title": "Channels",
+            "type": "array"
+          },
+          "constitutions": {
+            "items": {
+              "$ref": "#/components/schemas/Option"
+            },
+            "title": "Constitutions",
+            "type": "array"
+          },
+          "facilities": {
+            "items": {
+              "$ref": "#/components/schemas/Option"
+            },
+            "title": "Facilities",
+            "type": "array"
+          }
+        },
+        "required": [
+          "channels",
+          "constitutions",
+          "facilities",
+          "case_create_minimum"
+        ],
+        "title": "Meta",
+        "type": "object"
+      },
+      "Option": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label"
+        ],
+        "title": "Option",
+        "type": "object"
+      },
+      "PageInfo": {
+        "properties": {
+          "grade": {
+            "enum": [
+              "A",
+              "B",
+              "C",
+              "U"
+            ],
+            "title": "Grade",
+            "type": "string"
+          },
+          "n": {
+            "minimum": 1.0,
+            "title": "N",
+            "type": "integer"
+          },
+          "ocr_confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ocr Confidence"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "route": {
+            "enum": [
+              "text",
+              "ocr",
+              "sheet"
+            ],
+            "title": "Route",
+            "type": "string"
+          }
+        },
+        "required": [
+          "n",
+          "route",
+          "grade"
+        ],
+        "title": "PageInfo",
+        "type": "object"
+      },
+      "PolicyRatio": {
+        "properties": {
+          "acceptable": {
+            "title": "Acceptable",
+            "type": "number"
+          },
+          "applies": {
+            "title": "Applies",
+            "type": "string"
+          },
+          "formula": {
+            "title": "Formula",
+            "type": "string"
+          },
+          "hard_floor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hard Floor"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "min",
+              "max"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "marginal": {
+            "title": "Marginal",
+            "type": "number"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "source": {
+            "enum": [
+              "published_policy",
+              "regulatory",
+              "industry_standard",
+              "provisional"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "provisional"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "unit": {
+            "enum": [
+              "x",
+              "%",
+              "days"
+            ],
+            "title": "Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "unit",
+          "kind",
+          "acceptable",
+          "marginal",
+          "formula",
+          "applies",
+          "source",
+          "status",
+          "note"
+        ],
+        "title": "PolicyRatio",
+        "type": "object"
+      },
+      "PolicySection": {
+        "description": "config/policy.yaml",
+        "properties": {
+          "available_ratios": {
+            "items": {
+              "$ref": "#/components/schemas/PolicyRatio"
+            },
+            "title": "Available Ratios",
+            "type": "array"
+          },
+          "ratios": {
+            "items": {
+              "$ref": "#/components/schemas/PolicyRatio"
+            },
+            "title": "Ratios",
+            "type": "array"
+          },
+          "working_capital": {
+            "$ref": "#/components/schemas/WorkingCapitalPolicy"
+          }
+        },
+        "required": [
+          "working_capital",
+          "ratios"
+        ],
+        "title": "PolicySection",
+        "type": "object"
+      },
+      "QueryItem": {
+        "description": "One line of the pre-login query list (F-14).",
+        "properties": {
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "group": {
+            "enum": [
+              "documents_needed",
+              "documents_to_redo",
+              "clarifications"
+            ],
+            "title": "Group",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "resolved": {
+            "default": false,
+            "title": "Resolved",
+            "type": "boolean"
+          },
+          "source_kind": {
+            "enum": [
+              "checklist",
+              "quality",
+              "label",
+              "party",
+              "finding"
+            ],
+            "title": "Source Kind",
+            "type": "string"
+          },
+          "source_ref": {
+            "title": "Source Ref",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "case_id",
+          "group",
+          "text",
+          "source_kind",
+          "source_ref"
+        ],
+        "title": "QueryItem",
+        "type": "object"
+      },
+      "Readiness": {
+        "description": "F-13.4: weighted proportion satisfied, against the configured gate.",
+        "properties": {
+          "blocking_open": {
+            "title": "Blocking Open",
+            "type": "integer"
+          },
+          "gate_met": {
+            "title": "Gate Met",
+            "type": "boolean"
+          },
+          "gate_pct": {
+            "title": "Gate Pct",
+            "type": "integer"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ChecklistItemState"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "provisional": {
+            "title": "Provisional",
+            "type": "boolean"
+          },
+          "score_pct": {
+            "title": "Score Pct",
+            "type": "number"
+          }
+        },
+        "required": [
+          "score_pct",
+          "gate_pct",
+          "gate_met",
+          "blocking_open",
+          "provisional",
+          "items"
+        ],
+        "title": "Readiness",
+        "type": "object"
+      },
+      "ReviewItem": {
+        "description": "Something waiting for a person (F-17.4).",
+        "properties": {
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "decided_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided At"
+          },
+          "decided_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided By"
+          },
+          "decision": {
+            "anyOf": [
+              {
+                "enum": [
+                  "confirm",
+                  "correct",
+                  "waive",
+                  "assign"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "type",
+              "field",
+              "quality",
+              "party",
+              "split",
+              "manual_entry",
+              "finding"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "maker": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maker"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "ref": {
+            "title": "Ref",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "open",
+              "decided"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "case_id",
+          "kind",
+          "ref",
+          "summary",
+          "created_at",
+          "status"
+        ],
+        "title": "ReviewItem",
+        "type": "object"
+      },
+      "SessionUser": {
+        "properties": {
+          "branch": {
+            "title": "Branch",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "initials": {
+            "title": "Initials",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "navGroups": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Navgroups",
+            "type": "array"
+          },
+          "permissions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Permissions",
+            "type": "array"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "roleLabel": {
+            "title": "Rolelabel",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "role",
+          "roleLabel",
+          "email",
+          "branch",
+          "initials",
+          "navGroups",
+          "permissions"
+        ],
+        "title": "SessionUser",
+        "type": "object"
+      },
+      "SignalSet": {
+        "description": "Deterministic classification signals (F-09.3). Each entry is a regular\nexpression matched case-insensitively against a document's page text.",
+        "properties": {
+          "contrary": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Contrary",
+            "type": "array"
+          },
+          "required": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Required",
+            "type": "array"
+          },
+          "supporting": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Supporting",
+            "type": "array"
+          }
+        },
+        "title": "SignalSet",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "WorkingCapitalPolicy": {
+        "properties": {
+          "mpbf_above_limit_inr": {
+            "title": "Mpbf Above Limit Inr",
+            "type": "integer"
+          },
+          "source": {
+            "enum": [
+              "published_policy",
+              "regulatory",
+              "industry_standard",
+              "provisional"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "provisional"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "mpbf_above_limit_inr",
+          "source",
+          "status"
+        ],
+        "title": "WorkingCapitalPolicy",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "CreditIQ engine (RBL Bank instance)",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/auth/login": {
+      "post": {
+        "operationId": "login_api_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Login"
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "operationId": "logout_api_auth_logout_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Logout"
+      }
+    },
+    "/api/auth/session": {
+      "get": {
+        "operationId": "session_api_auth_session_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionUser"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Session"
+      }
+    },
+    "/api/cases": {
+      "get": {
+        "operationId": "list_cases_api_cases_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CaseSummary"
+                  },
+                  "title": "Response List Cases Api Cases Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Cases"
+      },
+      "post": {
+        "operationId": "create_case_api_cases_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaseCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Case"
+      }
+    },
+    "/api/cases/{case_id}": {
+      "get": {
+        "operationId": "get_case_api_cases__case_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Case"
+      }
+    },
+    "/api/cases/{case_id}/checklist": {
+      "get": {
+        "operationId": "case_checklist_api_cases__case_id__checklist_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Readiness"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Checklist"
+      }
+    },
+    "/api/cases/{case_id}/documents": {
+      "get": {
+        "operationId": "case_documents_api_cases__case_id__documents_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LogicalDocument"
+                  },
+                  "title": "Response Case Documents Api Cases  Case Id  Documents Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Documents"
+      }
+    },
+    "/api/cases/{case_id}/fields": {
+      "get": {
+        "operationId": "case_fields_api_cases__case_id__fields_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "document_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Document Id"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FieldValue"
+                  },
+                  "title": "Response Case Fields Api Cases  Case Id  Fields Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Fields"
+      }
+    },
+    "/api/cases/{case_id}/files": {
+      "get": {
+        "operationId": "case_files_api_cases__case_id__files_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FileRecord"
+                  },
+                  "title": "Response Case Files Api Cases  Case Id  Files Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Files"
+      }
+    },
+    "/api/cases/{case_id}/findings": {
+      "get": {
+        "operationId": "case_findings_api_cases__case_id__findings_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Finding"
+                  },
+                  "title": "Response Case Findings Api Cases  Case Id  Findings Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Findings"
+      }
+    },
+    "/api/cases/{case_id}/queries": {
+      "get": {
+        "operationId": "case_queries_api_cases__case_id__queries_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/QueryItem"
+                  },
+                  "title": "Response Case Queries Api Cases  Case Id  Queries Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Queries"
+      }
+    },
+    "/api/config/checklist-taxonomy": {
+      "get": {
+        "operationId": "config_checklist_taxonomy_api_config_checklist_taxonomy_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChecklistTaxonomySection"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Config Checklist Taxonomy"
+      }
+    },
+    "/api/config/document-types": {
+      "get": {
+        "operationId": "config_document_types_api_config_document_types_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentTypesSection"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Config Document Types"
+      }
+    },
+    "/api/config/policy": {
+      "get": {
+        "operationId": "config_policy_api_config_policy_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolicySection"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Config Policy"
+      }
+    },
+    "/api/config/version": {
+      "get": {
+        "operationId": "config_version_api_config_version_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Config Version Api Config Version Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Config Version"
+      }
+    },
+    "/api/health": {
+      "get": {
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Health Api Health Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health"
+      }
+    },
+    "/api/meta": {
+      "get": {
+        "operationId": "meta_api_meta_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Meta"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Meta"
+      }
+    },
+    "/api/review": {
+      "get": {
+        "operationId": "review_queue_api_review_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "case_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Case Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_decided",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Decided",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ReviewItem"
+                  },
+                  "title": "Response Review Queue Api Review Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Review Queue"
+      }
+    }
+  }
+}

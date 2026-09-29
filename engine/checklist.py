@@ -34,12 +34,37 @@ class CaseAttributes:
         facility_types: list[str],
         collateral_present: bool,
         mpbf_applicable: bool,
+        existing_facilities_declared: bool = False,
     ) -> "CaseAttributes":
         return cls(
             term_loan_requested="term_loan" in facility_types,
             cash_credit_requested="cash_credit" in facility_types,
             collateral_present=collateral_present,
             mpbf_applicable=mpbf_applicable,
+            existing_facilities_declared=existing_facilities_declared,
+        )
+
+    @classmethod
+    def from_case(
+        cls,
+        *,
+        facilities: list[str],
+        amount_inr: int,
+        collateral_present: bool,
+        facility_sets: dict[str, str | None],
+        mpbf_above_limit_inr: int,
+        existing_facilities_declared: bool = False,
+    ) -> "CaseAttributes":
+        """F-12.2: attributes from the case header. `facility_sets` maps each
+        facility id to the attribute it sets (config/app.yaml); MPBF applies
+        to working-capital requests above the policy limit."""
+        flags = {name: True for fac in facilities if (name := facility_sets.get(fac))}
+        working_capital = flags.get("cash_credit_requested", False)
+        return cls(
+            **flags,
+            collateral_present=collateral_present,
+            mpbf_applicable=working_capital and amount_inr > mpbf_above_limit_inr,
+            existing_facilities_declared=existing_facilities_declared,
         )
 
 

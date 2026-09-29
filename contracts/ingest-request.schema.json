@@ -1,0 +1,68 @@
+{
+  "$defs": {
+    "IngestFile": {
+      "properties": {
+        "content_type": {
+          "title": "Content Type",
+          "type": "string"
+        },
+        "file_id": {
+          "title": "File Id",
+          "type": "string"
+        },
+        "label_hint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label Hint"
+        },
+        "original_name": {
+          "title": "Original Name",
+          "type": "string"
+        },
+        "sha256": {
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "file_id",
+        "sha256",
+        "original_name",
+        "content_type"
+      ],
+      "title": "IngestFile",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "case_ref": {
+      "title": "Case Ref",
+      "type": "string"
+    },
+    "config_version": {
+      "title": "Config Version",
+      "type": "string"
+    },
+    "files": {
+      "items": {
+        "$ref": "#/$defs/IngestFile"
+      },
+      "title": "Files",
+      "type": "array"
+    }
+  },
+  "required": [
+    "case_ref",
+    "config_version",
+    "files"
+  ],
+  "title": "IngestRequest",
+  "type": "object"
+}

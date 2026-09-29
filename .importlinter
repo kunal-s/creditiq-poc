@@ -13,10 +13,16 @@ type = forbidden
 source_modules =
     engine.api
     engine.auth
-    engine.config
-    engine.store
+    engine.cases
     engine.checklist
+    engine.config
+    engine.contracts
+    engine.db
+    engine.deps
     engine.identifiers
+    engine.ingest_client
+    engine.reads
+    engine.store
     engine.configstore.reader
 forbidden_modules =
     engine.configstore.writer

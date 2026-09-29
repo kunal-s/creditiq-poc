@@ -8,13 +8,17 @@ import the configuration writer (CLAUDE.md rule 4; enforced by .importlinter).
 
 from __future__ import annotations
 
+import os
 import sqlite3
+from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, HTTPException, Response
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
+from python_multipart.exceptions import MultipartParseError
 
-from . import auth, cases, reads
-from .config import load_app_config
+from . import auth, cases, db, jobs, pages, parties, pipeline, proposal, queries, reads, review, uploads
+from .config import load_app_config, option_ids
 from .configstore import reader as configstore_reader
 from .configstore.schema import ChecklistTaxonomySection, DocumentTypesSection, PolicySection
 from .contracts import (
@@ -41,7 +45,22 @@ from .contracts import (
 from .deps import bearer_token, current_user, get_conn, require
 from .store import data_root
 
-app = FastAPI(title="CreditIQ engine (RBL Bank instance)", version="0.1.0")
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    """The processing worker runs beside the API (F-02.3); CREDITIQ_WORKER=0
+    leaves jobs to `creditiq jobs run`."""
+    worker = None
+    if os.environ.get("CREDITIQ_WORKER", "1") != "0":
+        worker = jobs.Worker(data_root)
+        worker.start()
+    try:
+        yield
+    finally:
+        if worker is not None:
+            worker.stop()
+
+
+app = FastAPI(title="CreditIQ engine (RBL Bank instance)", version="0.1.0", lifespan=lifespan)
 
 # The frontend dev server and this API run as separate local processes.
 # Browsers treat localhost and 127.0.0.1 as distinct origins, so both are
@@ -129,10 +148,29 @@ def list_cases(user: dict = Depends(require("case.read")), conn: sqlite3.Connect
 def create_case(
     body: CaseCreate, user: dict = Depends(require("case.create")), conn: sqlite3.Connection = Depends(get_conn)
 ):
+    root = data_root()
     try:
-        return cases.create_case(conn, body, created_by=user["id"], config_version=_published_version())
+        created = cases.create_case(
+            conn,
+            body,
+            created_by=user["id"],
+            config_version=_published_version(),
+            root=root,
+            name_threshold=parties.name_tolerance(root),
+        )
+    except cases.DuplicateCase as e:
+        # F-04.5: offer "Open it" or "Create anyway" (with a reason).
+        raise HTTPException(
+            status_code=409,
+            detail={"message": str(e), "duplicates": [d.model_dump() for d in e.duplicates]},
+        ) from e
     except cases.CaseError as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
+    try:
+        pipeline.refresh_case(conn, root, created.id)
+    except configstore_reader.NoPublishedConfig:
+        pass  # derived state is built once configuration is published
+    return created
 
 
 @app.get("/api/cases/{case_id}", response_model=CaseDetail)
@@ -187,6 +225,10 @@ def case_queries(
     case_id: str, user: dict = Depends(require("query.read")), conn: sqlite3.Connection = Depends(get_conn)
 ):
     _case_for(conn, case_id, user)
+    try:
+        queries.refresh(conn, data_root(), case_id)
+    except configstore_reader.NoPublishedConfig as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
     return reads.query_items(conn, case_id)
 
 
@@ -215,41 +257,130 @@ def review_queue(
 # OpenAPI; each returns 501 until its feature lands (stream B). ---
 
 
-def _not_yet(feature: str):
-    raise HTTPException(status_code=501, detail=f"{feature} is not implemented yet")
-
-
 @app.post("/api/cases/proposals", response_model=CaseProposal)
-def propose_case(body: ProposalRequest, _: dict = Depends(require("case.create"))):
+def propose_case(
+    body: ProposalRequest, _: dict = Depends(require("case.create")), conn: sqlite3.Connection = Depends(get_conn)
+):
     """F-04: parse a pasted message into a proposed case. Stores nothing."""
-    _not_yet("F-04 case proposal")
+    if body.channel not in option_ids("channels"):
+        raise HTTPException(status_code=422, detail=f"unknown channel {body.channel!r}")
+    try:
+        return proposal.propose(conn, data_root(), body.text)
+    except configstore_reader.NoPublishedConfig as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
 
 
-@app.post("/api/cases/{case_id}/files", response_model=UploadResult, status_code=202)
-def upload_files(case_id: str, _: dict = Depends(require("document.upload"))):
+_UPLOAD_BODY = {
+    "requestBody": {
+        "required": True,
+        "content": {
+            "multipart/form-data": {
+                "schema": {
+                    "type": "object",
+                    "required": ["files"],
+                    "properties": {
+                        "files": {"type": "array", "items": {"type": "string", "format": "binary"}},
+                        "channel": {"type": "string"},
+                    },
+                }
+            }
+        },
+    }
+}
+
+
+@app.post(
+    "/api/cases/{case_id}/files", response_model=UploadResult, status_code=202, openapi_extra=_UPLOAD_BODY
+)
+async def upload_files(case_id: str, request: Request, user: dict = Depends(require("document.upload"))):
     """F-05: multipart upload, field name "files" (repeatable): single files,
-    several files or ZIP archives. Registers every file and queues processing."""
-    _not_yet("F-05 upload")
+    several files or ZIP archives. Registers every file and queues processing.
+    The body is parsed as it streams, so size limits apply before a file is
+    held in full."""
+    root = data_root()
+
+    def check_case() -> None:
+        conn = db.connect(root)
+        try:
+            _case_for(conn, case_id, user)
+        finally:
+            conn.close()
+
+    await run_in_threadpool(check_case)
+    try:
+        receiver = uploads.MultipartReceiver(
+            request.headers.get("content-type", ""), uploads.spool_dir(root, case_id), uploads.limits()
+        )
+        async for chunk in request.stream():
+            await run_in_threadpool(receiver.write, chunk)
+        receiver.finish()
+    except (uploads.UploadError, MultipartParseError) as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    if not receiver.parts:
+        raise HTTPException(status_code=422, detail="no files in the upload (multipart field 'files')")
+    channel = (receiver.fields.get("channel") or "upload").strip()[:40] or "upload"
+
+    def register() -> UploadResult:
+        conn = db.connect(root)
+        try:
+            result = uploads.register_parts(
+                conn, root, case_id=case_id, user_id=user["id"], channel=channel, parts=receiver.parts
+            )
+            pipeline.refresh_case(conn, root, case_id)
+            return result
+        finally:
+            conn.close()
+
+    return await run_in_threadpool(register)
 
 
 @app.get("/api/cases/{case_id}/documents/{document_id}/pages/{page}", response_class=Response)
-def document_page(case_id: str, document_id: str, page: int, _: dict = Depends(require("case.read"))):
+def document_page(
+    case_id: str,
+    document_id: str,
+    page: int,
+    user: dict = Depends(require("case.read")),
+    conn: sqlite3.Connection = Depends(get_conn),
+):
     """F-05.6, F-16: the rendered page image (PNG) of a document's source
     file; `page` is the absolute page in the file, as in Evidence."""
-    _not_yet("F-16 page images")
+    _case_for(conn, case_id, user)
+    try:
+        data, media_type = pages.page_image(conn, data_root(), case_id, document_id, page)
+    except pages.PageError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    return Response(content=data, media_type=media_type, headers={"Cache-Control": "private, max-age=3600"})
 
 
 @app.get("/api/cases/{case_id}/parties", response_model=list[Party])
-def case_parties(case_id: str, _: dict = Depends(require("case.read"))):
+def case_parties(case_id: str, user: dict = Depends(require("case.read")), conn: sqlite3.Connection = Depends(get_conn)):
     """F-10.2: the case's party set with sources and attributed KYC."""
-    _not_yet("F-10 parties")
+    _case_for(conn, case_id, user)
+    if not conn.execute("SELECT 1 FROM parties WHERE case_id = ? LIMIT 1", (case_id,)).fetchone():
+        try:
+            parties.refresh(conn, data_root(), case_id)
+        except configstore_reader.NoPublishedConfig as e:
+            raise HTTPException(status_code=503, detail=str(e)) from e
+    return parties.list_parties(conn, case_id)
 
 
 @app.post("/api/review/{item_id}/decision", response_model=ReviewItem)
-def decide_review(item_id: str, body: ReviewDecisionRequest, _: dict = Depends(require("review.decide"))):
+def decide_review(
+    item_id: str,
+    body: ReviewDecisionRequest,
+    user: dict = Depends(require("review.decide")),
+    conn: sqlite3.Connection = Depends(get_conn),
+):
     """F-17.5: confirm, correct, waive or assign, with a reason. Recorded as
     an overlay; never changes configuration."""
-    _not_yet("F-17 review decisions")
+    row = conn.execute("SELECT case_id FROM review_items WHERE id = ?", (item_id,)).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"no review item {item_id!r}")
+    _case_for(conn, row["case_id"], user)
+    try:
+        return review.decide(conn, data_root(), item_id, body, user)
+    except review.ReviewError as e:
+        raise HTTPException(status_code=e.status, detail=str(e)) from e
 
 
 # --- Published configuration (F-00) ---

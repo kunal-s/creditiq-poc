@@ -23,25 +23,134 @@ constitutions:
   - {id: unknown, label: Not yet confirmed}
 
 # Facilities an application can request (F-04.2), and the checklist
-# attribute each one sets (F-12.1).
+# attribute each one sets (F-12.1). `aliases` are the words a sourcing
+# message uses for the facility (F-04): an alias written in capitals only
+# (CC, OD, TL) matches as a whole word in capitals; any other alias matches
+# regardless of case.
 facilities:
-  - {id: cash_credit, label: Cash credit, sets: cash_credit_requested}
-  - {id: overdraft, label: Overdraft, sets: cash_credit_requested}
-  - {id: wcdl, label: Working capital demand loan, sets: cash_credit_requested}
-  - {id: term_loan, label: Term loan, sets: term_loan_requested}
-  - {id: packing_credit, label: Export packing credit, sets: cash_credit_requested}
-  - {id: post_shipment, label: Post-shipment finance, sets: cash_credit_requested}
-  - {id: bank_guarantee, label: Bank guarantee, sets: null}
-  - {id: letter_of_credit, label: Letter of credit, sets: null}
+  - id: cash_credit
+    label: Cash credit
+    sets: cash_credit_requested
+    aliases: [CC, C.C., cash credit, cash-credit]
+  - id: overdraft
+    label: Overdraft
+    sets: cash_credit_requested
+    aliases: [OD, overdraft, over draft]
+  - id: wcdl
+    label: Working capital demand loan
+    sets: cash_credit_requested
+    aliases: [WCDL, working capital demand loan, demand loan]
+  - id: term_loan
+    label: Term loan
+    sets: term_loan_requested
+    aliases: [TL, T.L., term loan, term-loan]
+  - id: packing_credit
+    label: Export packing credit
+    sets: cash_credit_requested
+    aliases: [EPC, PCFC, packing credit, pre-shipment credit, pre shipment credit]
+  - id: post_shipment
+    label: Post-shipment finance
+    sets: cash_credit_requested
+    aliases: [PSC, PSCFC, post-shipment, post shipment, export bill discounting]
+  - id: bank_guarantee
+    label: Bank guarantee
+    sets: null
+    aliases: [BG, PBG, FBG, bank guarantee, performance guarantee]
+  - id: letter_of_credit
+    label: Letter of credit
+    sets: null
+    aliases: [LC, L/C, ILC, FLC, letter of credit]
 
 # Fields a case must have before it can be created (F-04.6).
 case_create_minimum: [borrower, facilities, amount_inr]
 
-# Upload limits (F-05.1, F-05.2).
+# Upload limits (F-05.1, F-05.2). An archive is refused as a decompression
+# bomb when it expands beyond max_archive_mb, or when any member expands
+# more than max_compression_ratio times (members larger than 1 MB).
 uploads:
   max_file_mb: 50
   max_archive_mb: 500
   archive_depth: 3
+  max_compression_ratio: 100
+  max_archive_entries: 5000
+  # System files listed as ignored (F-05.2). Matched against each path
+  # component: exact names, name prefixes, and folder names.
+  junk:
+    names: [.DS_Store, Thumbs.db, desktop.ini, .localized]
+    prefixes: ["~$", "._"]
+    folders: [__MACOSX, .git, .svn]
+
+# The rule-based message parser (F-04.9). Vocabulary only; the rules are in
+# engine/proposal.py. Every word here is matched as a whole word.
+proposal:
+  company_suffixes: ["private limited", "pvt. ltd.", "pvt ltd", "pvt. ltd", "pvt.ltd.", "pvt.ltd", "(p) ltd", "(p) ltd.", "llp", "limited", "ltd", "ltd."]
+  firm_suffixes: [traders, trading co, enterprises, industries, exports, impex, agencies, associates, "& co", "and co", "& sons", "and sons", brothers, textiles, foods, fabricators, castings, polymers, weaves, mills, works]
+  name_stopwords: [the, a, an, of, for, from, to, and, is, are, our, with, by, in, "on", at, as, re, fwd, fw, subject, client, customer, borrower, company, firm, party, name, new, existing, group, sister, concern, unit, dear, sir, madam, hi, hello, please, pls, kindly, find, details, regarding, loan, limit, request, application, proposal, wants, want, needs, need, requires, require, hai, ka, ki, ke, ko, se, aur, bhi, wala, wali, this, that, these, its, it, his, her, their, account, a/c, promoter, promoters, director, directors, partner, partners, proprietor, md, mr, mrs, ms, shri, smt, dr, m/s, ms., via, about, approx, around, also, only, all, any, some, one, two, three]
+  honorifics: [mr, mrs, ms, shri, smt, dr, sri, kumari]
+  turnover_words: ["T/O", "turnover", "topline", "top line", "sales", "revenue"]
+  turnover_capitals: ["TO"]
+  request_words: [limit, loan, requirement, required, require, requires, requested, request, ask, need, needs, needed, chahiye, funding, proposal, proposed, sanction, enhancement, enhance, increase, wants, want, looking for]
+  existing_words: [existing, currently, presently, already, enjoying, availing, running, banking with, account with, a/c with, "has a", "have a"]
+  approximate_words: [approx, approx., approximately, appx, around, about, nearly, roughly, lagbhag, "~"]
+  role_words:
+    director: [director, directors, md, managing director, whole-time director]
+    partner: [partner, partners]
+    proprietor: [proprietor, owner, prop]
+    promoter: [promoter, promoters, owners]
+    guarantor: [guarantor, guarantors]
+
+# Label hints (F-10.1): words in a file name or archive path that name a
+# document type. A hint is never used to classify; it is compared with the
+# classified type and a disagreement is reported. Regular expressions,
+# matched case-insensitively against the hint.
+label_keywords:
+  bank_statement: ['bank\s*st(ate)?m(en)?t', 'statement\s+of\s+account', '\bsoa\b', '\bpassbook\b']
+  partner_bank_analysis: ['bank\s*analysis', '\bbsa\b']
+  audited_financial_statements: ['balance\s*sheet', 'audited', '\bfinancials?\b', '\bafs\b', '\bp\s*&?\s*l\b', 'profit\s*(and|&)?\s*loss']
+  provisional_financial_statements: ['provisional', 'prov\s*fs']
+  projected_financial_statements: ['projected', 'projections?']
+  cma_data: ['\bcma\b']
+  itr_acknowledgement: ['\bitr\b', 'itr\s*-?\s*v', 'income\s*tax\s*return']
+  itr_computation: ['computation', '\bcoi\s*income']
+  gstr_3b: ['gstr\s*-?\s*3b', '\b3b\b']
+  gstr_1: ['gstr\s*-?\s*1\b']
+  partner_gst_report: ['gst\s*(analysis|report)']
+  gst_registration_certificate: ['gst\s*(reg|registration|certificate|cert)', '\breg\s*-?\s*06\b']
+  pan_entity: ['\bpan\b']
+  kyc_pan_individual: ['\bpan\b']
+  kyc_aadhaar: ['aadhaa?r', '\buid\b']
+  kyc_passport: ['passport']
+  kyc_voter_id: ['voter', '\bepic\b']
+  kyc_driving_licence: ['driving', '\bdl\b', 'licen[cs]e']
+  certificate_of_incorporation: ['incorporation', '\bcoi\b']
+  moa_aoa: ['\bmoa\b', '\baoa\b', 'memorandum', 'articles']
+  board_resolution: ['resolution', '\bbr\b']
+  partnership_deed: ['partnership\s*deed', '\bdeed\b']
+  partner_authority_letter: ['authority\s*letter', 'authori[sz]ation']
+  proprietorship_proof: ['proprietor', 'proprietorship']
+  udyam_certificate: ['udyam', '\bmsme\b', '\budyog\b']
+  stock_statement: ['stock', '\bdp\s*statement']
+  debtors_creditors_ageing: ['ageing', 'aging', 'debtors', 'creditors']
+  sanction_letter_other_lender: ['sanction']
+  existing_facilities_declaration: ['declaration', 'existing\s*facilit']
+  title_document: ['title', 'sale\s*deed', 'conveyance']
+  encumbrance_certificate: ['encumbrance', '\bec\b']
+  valuation_report: ['valuation', 'valuer']
+  bureau_commercial: ['cibil', 'bureau', '\bcmr\b', 'crif', 'experian', 'equifax']
+  bureau_consumer: ['cibil', 'bureau', 'crif', 'experian', 'equifax']
+  application_form: ['application', '\baf\b']
+
+# Plain-language phrasing of the pre-login query list (F-14.2). Placeholders
+# are filled by engine/queries.py.
+query_phrasing:
+  missing: "{request}."
+  gap: "{request}."
+  redo: "{name}: {deficiency}. Please provide a corrected copy."
+  outdated: "{name} dated within the last {max_age_days} days (the copy received is dated {date})."
+  quality: "{document}: {request}"
+  label: "The file \"{file}\" is named as {label} but contains {content}. Please confirm it was sent as intended."
+  party_refiled: "The file \"{file}\" is named for {label_party} but carries the details of {party}. Please confirm whose document it is."
+  party_unmatched: "The file \"{file}\" ({content}) does not match anyone on this application. Please confirm whose document it is and how they are connected to the borrower."
 
 # Sessions (F-03.3).
 sessions:

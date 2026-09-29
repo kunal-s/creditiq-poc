@@ -41,6 +41,14 @@ class ProposalRequest(BaseModel):
     text: str = Field(min_length=1)
 
 
+class StrippedSpan(BaseModel):
+    """Part of the message set aside before extraction but kept as
+    provenance (F-04, normalisation): nothing is proposed from it."""
+
+    kind: Literal["timestamp", "sender", "header", "quoted", "signature"]
+    span: Span
+
+
 class CaseProposal(BaseModel):
     """What the pasted message proposes (F-04). Nothing is stored until the
     RM confirms and posts a CaseCreate (F-04.7)."""
@@ -48,7 +56,12 @@ class CaseProposal(BaseModel):
     text_sha256: str
     fields: dict[str, ProposedField]
     """borrower, constitution, facilities, amount_inr, pan, gstin, cin,
-    udyam, promoters, declared_turnover_inr, existing_banking, contact."""
+    udyam, promoters, declared_turnover_inr, existing_banking, contact.
+    Multi-valued fields (facilities, promoters) list every value with its
+    span in `candidates`; `value` joins them (facility ids with ",",
+    names with "; ")."""
+    stripped: list[StrippedSpan] = Field(default_factory=list)
+    """Timestamps, senders, email headers, quoted replies and signatures."""
     duplicates: list[CaseSummary] = Field(default_factory=list)
     """Existing cases matching on PAN, GSTIN or normalised name (F-04.5)."""
     missing_minimum: list[str] = Field(default_factory=list)

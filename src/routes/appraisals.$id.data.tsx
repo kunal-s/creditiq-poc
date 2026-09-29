@@ -1,8 +1,19 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
+import { ArrowRight, FileText } from "lucide-react";
+import type { FieldStatus, FieldValue, LogicalDocument } from "@/api/types";
 import { CaseScreen } from "@/components/shell/CaseScreen";
 import { PageHeader } from "@/components/shell/PageHeader";
-import { ScreenPending } from "@/components/shell/ScreenPending";
+import { Panel } from "@/components/common/Panel";
+import { ErrorState, LoadingBlock } from "@/components/common/States";
+import { FieldValueButton } from "@/components/common/FieldValueButton";
+import { ConfidenceChip } from "@/components/common/ConfidenceChip";
+import { FieldStatusChip, GradeChip } from "@/components/documents/chips";
+import { useDocViewer } from "@/components/docviewer/DocViewer";
 import { t } from "@/config/terminology";
+import { pageRange, useCaseDocuments, useCaseFiles, useDocumentTypes } from "@/domain/documents";
+import { fieldLabel, useFields } from "@/domain/extraction";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/appraisals/$id/data")({
   head: () => ({
@@ -11,20 +22,219 @@ export const Route = createFileRoute("/appraisals/$id/data")({
   component: DataStep,
 });
 
+const FILTERS = ["all", "in_review", "missing", "corrected"] as const;
+type Filter = (typeof FILTERS)[number];
+
 function DataStep() {
   const { id } = Route.useParams();
   return (
     <CaseScreen caseId={id}>
       {(c) => (
-        <div>
+        <div className="pb-10">
           <PageHeader
             eyebrow={`${t("nav.group.appraisal")} · ${c.id}`}
             title={t("page.data.title")}
             purpose={t("page.data.purpose")}
+            actions={
+              <Link
+                to="/appraisals/$id/upload"
+                params={{ id: c.id }}
+                className="flex h-9 items-center gap-1.5 rounded border border-border bg-surface px-3 text-[12.5px] font-medium text-foreground hover:bg-muted"
+              >
+                {t("step.documents")} <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            }
           />
-          <ScreenPending feature="F-15 and F-16" />
+          <DataConsole caseId={c.id} />
         </div>
       )}
     </CaseScreen>
+  );
+}
+
+function DataConsole({ caseId }: { caseId: string }) {
+  const fields = useFields(caseId);
+  const documents = useCaseDocuments(caseId);
+  const [filter, setFilter] = useState<Filter>("all");
+
+  if (fields.isError || documents.isError) {
+    return (
+      <div className="px-4 py-5 sm:px-6">
+        <ErrorState error={fields.error ?? documents.error} onRetry={() => void fields.refetch()} />
+      </div>
+    );
+  }
+  if (!fields.data || !documents.data) {
+    return (
+      <div className="px-4 py-5 sm:px-6">
+        <LoadingBlock />
+      </div>
+    );
+  }
+  const all = fields.data;
+  const shown = all.filter((f) => filter === "all" || f.status === filter);
+  const groups = documents.data
+    .map((doc) => ({ doc, fields: shown.filter((f) => f.document_id === doc.id) }))
+    .filter((g) => g.fields.length > 0);
+  const count = (s: FieldStatus) => all.filter((f) => f.status === s).length;
+
+  return (
+    <div className="grid gap-4 px-4 py-5 sm:px-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="min-w-0 space-y-4">
+        <div className="flex flex-wrap gap-1" role="group" aria-label={t("data.filter")}>
+          {FILTERS.map((f) => (
+            <button
+              key={f}
+              type="button"
+              onClick={() => setFilter(f)}
+              className={cn(
+                "rounded border px-2 py-1 text-[11.5px] transition-colors",
+                filter === f
+                  ? "border-primary/50 bg-primary/10 font-medium text-primary"
+                  : "border-border text-muted-foreground hover:bg-muted",
+              )}
+            >
+              {f === "all" ? t("data.filterAll") : t(`fieldStatus.${f}`)}
+            </button>
+          ))}
+        </div>
+        {all.length === 0 ? (
+          <Panel title={t("page.data.title")}>
+            <p className="px-4 py-8 text-center text-[12.5px] text-muted-foreground">
+              {t("data.none")}
+            </p>
+          </Panel>
+        ) : groups.length === 0 ? (
+          <Panel title={t("page.data.title")}>
+            <p className="px-4 py-8 text-center text-[12.5px] text-muted-foreground">
+              {t("data.noneMatch")}
+            </p>
+          </Panel>
+        ) : (
+          groups.map((g) => (
+            <DocumentFields key={g.doc.id} caseId={caseId} doc={g.doc} fields={g.fields} />
+          ))
+        )}
+      </div>
+
+      <div className="min-w-0 space-y-3">
+        <Panel title={t("data.summary")} testId="data-summary">
+          <div className="grid grid-cols-2 divide-x divide-border border-b border-border">
+            <div className="px-4 py-3">
+              <p className="text-[22px] font-semibold tabular-nums text-foreground">{all.length}</p>
+              <p className="text-[11.5px] text-muted-foreground">{t("data.fields")}</p>
+            </div>
+            <div className="px-4 py-3">
+              <p className="text-[22px] font-semibold tabular-nums text-flag-foreground">
+                {count("in_review")}
+              </p>
+              <p className="text-[11.5px] text-muted-foreground">{t("fieldStatus.in_review")}</p>
+            </div>
+          </div>
+          <dl className="divide-y divide-border text-[12.5px]">
+            {(["accepted", "corrected", "missing", "rejected"] as const).map((s) => (
+              <div key={s} className="flex justify-between gap-3 px-4 py-2">
+                <dt className="text-muted-foreground">{t(`fieldStatus.${s}`)}</dt>
+                <dd className="tabular-nums">{count(s)}</dd>
+              </div>
+            ))}
+          </dl>
+          {count("in_review") > 0 && (
+            <div className="border-t border-border px-4 py-3">
+              <Link
+                to="/exceptions"
+                className="flex h-8 items-center justify-center gap-1.5 rounded border border-border bg-surface text-[12.5px] font-medium text-foreground hover:bg-muted"
+              >
+                {t("nav.exceptionQueue")} <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          )}
+        </Panel>
+      </div>
+    </div>
+  );
+}
+
+function DocumentFields({
+  caseId,
+  doc,
+  fields,
+}: {
+  caseId: string;
+  doc: LogicalDocument;
+  fields: FieldValue[];
+}) {
+  const types = useDocumentTypes();
+  const files = useCaseFiles(caseId);
+  const viewer = useDocViewer();
+  const file = files.data?.find((f) => f.id === doc.file_id);
+  const title = doc.classification?.types.length
+    ? doc.classification.types.map(types.name).join(" + ")
+    : t("document.unclassified");
+
+  return (
+    <Panel
+      title={title}
+      testId="field-group"
+      subtitle={
+        <span className="inline-flex flex-wrap items-center gap-1.5">
+          <span className="break-all">{file?.original_name}</span>
+          <span>· {pageRange(doc)}</span>
+          {doc.instance_key && <span>· {doc.instance_key}</span>}
+        </span>
+      }
+      action={
+        <span className="flex items-center gap-2">
+          <GradeChip grade={doc.grade} />
+          <button
+            type="button"
+            onClick={() => viewer.open({ caseId, documentId: doc.id, page: doc.page_from })}
+            className="inline-flex items-center gap-1 rounded border border-border px-2 py-0.5 text-[11.5px] font-medium text-primary hover:bg-muted"
+          >
+            <FileText className="h-3 w-3" /> {t("validation.openDocument")}
+          </button>
+        </span>
+      }
+    >
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[560px] text-[12.5px]">
+          <thead>
+            <tr className="border-b border-border text-left text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">
+              <th className="px-4 py-2 font-medium">{t("data.col.field")}</th>
+              <th className="px-3 py-2 font-medium">{t("data.col.value")}</th>
+              <th className="px-3 py-2 font-medium">{t("data.col.confidence")}</th>
+              <th className="px-3 py-2 font-medium">{t("data.col.method")}</th>
+              <th className="px-4 py-2 font-medium">{t("data.col.status")}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {fields.map((f) => (
+              <tr key={f.id} className="align-top" data-testid="field-row">
+                <td className="px-4 py-2 text-muted-foreground">{fieldLabel(f.field)}</td>
+                <td className="px-3 py-2">
+                  <FieldValueButton caseId={caseId} field={f} />
+                  {f.raw && f.status !== "missing" && (
+                    <div className="mt-0.5 text-[11px] text-muted-foreground">
+                      {t("data.raw", { raw: f.raw })}
+                    </div>
+                  )}
+                </td>
+                <td className="px-3 py-2">
+                  <ConfidenceChip
+                    confidence={f.confidence}
+                    components={f.confidence_components}
+                    flagged={f.status === "in_review"}
+                  />
+                </td>
+                <td className="px-3 py-2 text-muted-foreground">{t(`fieldMethod.${f.method}`)}</td>
+                <td className="px-4 py-2">
+                  <FieldStatusChip status={f.status} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Panel>
   );
 }

@@ -29,6 +29,16 @@ nav:
   exceptionQueue: Exception Queue
   scorecard: Scorecard
 
+action:
+  retry: Try again
+  viewAll: View all
+  signOut: Sign out
+  openMenu: Open menu
+  menu: Menu
+  remove: Remove
+  cancel: Cancel
+  goHome: Go to the workbench
+
 # Appraisal steps (FRD §6), in the prototype's order.
 step:
   identity: Identity
@@ -51,6 +61,17 @@ page:
   home:
     title: Credit Workbench
     purpose: Every application in progress, with its stage and the items waiting for review.
+    greeting: "Welcome, {name}"
+    counter:
+      inProgress: Applications in progress
+      inProgressSub: "Borrowers: {n}"
+      review: Open review items
+      reviewSub: waiting for a decision
+    inFlight: Applications in progress
+    inFlightSub: Every open application, with its stage and review items
+    attention: Needs attention
+    attentionCount: "{n} open"
+    attentionEmpty: Nothing is waiting for a decision.
   appraisals:
     eyebrow: Workbench
     title: My Appraisals
@@ -58,7 +79,7 @@ page:
   newApplication:
     eyebrow: Appraisal
     title: New application
-    purpose: Start from whatever the RM has, a message or a pile of documents. Nothing is created until you confirm.
+    purpose: Paste the sourcing email or notes. CreditIQ proposes the application; nothing is created until you confirm it.
   readinessConsole:
     eyebrow: DocReady
     title: Readiness Console
@@ -106,9 +127,57 @@ page:
   scorecard:
     eyebrow: Governance
     title: Scorecard
-    purpose: The PoC success criteria, per case and across the case set.
+    purpose: The success criteria, per case and across the case set.
   signIn:
     title: Sign in
+
+signIn:
+  email: Email
+  password: Password
+  submitting: Signing in…
+  failed: Sign-in failed
+  failedHelp: Check the email and password and try again.
+  help: Use your bank email address and the password issued to you.
+
+# Designed states shared by every screen.
+state:
+  loading: Loading
+  notAvailable:
+    title: Not available yet
+    description: This part of the service is being switched on. Nothing has been lost; it appears here as soon as it is live.
+  forbidden:
+    title: Not part of your role
+    description: Your role does not include this view. Ask a credit analyst or credit manager if you need it.
+  notFound:
+    title: Not found
+    description: It does not exist, or it is not assigned to you.
+  noConfig:
+    title: Configuration not published
+    description: The checklist and document configuration has not been published yet. An administrator publishes it from the command line.
+  invalid:
+    title: Not accepted
+    description: The service did not accept this request. Check the values and try again.
+  unreachable:
+    title: The service is not reachable
+    description: CreditIQ cannot reach the case service right now. Check the connection, then try again.
+  failed:
+    title: Something went wrong
+    description: The service could not complete this request. Try again in a moment.
+  caseNotFound:
+    title: "No application {id}"
+    description: It does not exist, or it is not assigned to you.
+  noCases:
+    title: No applications yet
+    description: Applications appear here once they are created.
+  pageNotFound:
+    title: Page not found
+    description: This page does not exist or has moved.
+  pageFailed:
+    title: This page did not load
+    description: Something went wrong while opening it. Try again, or go back to the workbench.
+  pending:
+    title: Nothing to show yet
+    description: This view fills in once the case has been processed this far.
 
 # Case stages (FRD §7).
 stage:
@@ -150,13 +219,183 @@ term:
   stage: Stage
   rm: Relationship manager
   reviewItemsOpen: open review items
+  notConfirmed: Not yet confirmed
+  "yes": "Yes"
+  "no": "No"
 
-# Checklist item status (FRD F-13).
+identifier:
+  pan: PAN
+  gstin: GSTIN
+  cin: CIN
+  udyam: Udyam
+  din: DIN
+
+cases:
+  col:
+    proposal: Facilities and amount
+    rm: RM
+    created: Created
+    review: Review items
+    amount: Amount
+  reviewOpen: "{n} open"
+  clear: Clear
+
+# New application from a pasted message (FRD F-04).
+newApplication:
+  channel: Channel
+  message: Message
+  messageHelp: The sourcing email, WhatsApp message or call notes, as received.
+  messagePlaceholder: Paste the email, message or notes here…
+  messageClickHelp: Click a proposed field to see where it came from.
+  editMessage: Edit message
+  read: Read the message
+  reading: Reading…
+  nothingStored: Nothing is stored until you create the application.
+  proposed: Proposed application
+  proposedEmpty: The proposed application appears here once the message has been read.
+  candidates: "Could be:"
+  confirmValue: Confirm this value
+  confirmedByYou: Confirmed by you
+  needConfirmation: "To confirm before creating: {n}"
+  duplicate: "An application for this borrower already exists: {id} · {borrower}"
+  openIt: Open it
+  createAnyway: Create anyway
+  overrideReason: Reason for creating another application (required)
+  attachments: Attachments
+  attachmentsHelp: Optional. Files added here are uploaded to the application's documents once it is created.
+  attachmentsLater: The application was created; add the attachments from its Documents screen.
+  stillNeeded: "Still needed: {fields}"
+  discard: Discard
+  create: Create application
+  creating: Creating…
+  created: "Application {id} created"
+
+# Fields a pasted message can propose (FRD F-04.2).
+proposalField:
+  borrower: Borrower
+  constitution: Constitution
+  facilities: Facilities
+  amount_inr: Amount requested (INR)
+  pan: PAN
+  gstin: GSTIN
+  cin: CIN
+  udyam: Udyam
+  promoters: Promoters
+  declared_turnover_inr: Declared turnover (INR)
+  existing_banking: Existing banking
+  contact: Contact
+
+proposedStatus:
+  found: Found
+  unclear: Unclear
+  not_found: Not found
+  invalid: Invalid
+
+# Documents (FRD F-05, F-08).
+upload:
+  drop: Drop files or a ZIP here
+  busy: Uploading…
+  formats: PDF, JPG, PNG, TIFF, XLSX, CSV, DOCX or ZIP archives
+  browse: Choose files
+  camera: Take a photo
+
+documents:
+  add: Add documents
+  addHelp: Single files, several files or a ZIP archive. Each file is registered and read.
+  received: Files received
+  receivedHelp: Every file with its status; archives shown as folders.
+  processing: Reading documents…
+  none: No files have been received for this application yet.
+  fileCount: "({n})"
+  duplicateOf: "Duplicate of {name}"
+  reading: Reading
+  labelMismatch: "label says: {label}"
+  labelMismatchHelp: The file name suggests a different document from its content. The content decides.
+  toReviewQueue: Review queue
+  uploaded: "Files received: {n}"
+  summary: Summary
+  logical: Documents identified
+  labelMismatches: Label mismatches
+
+document:
+  unclassified: Unclassified
+
+fileStatus:
+  registered: Registered
+  duplicate: Duplicate
+  ignored: Ignored
+  rejected: Rejected
+  exception: Exception
+
+documentStatus:
+  received: Received
+  graded: Graded
+  split: Split
+  classified: Classified
+  unclassified: Unclassified
+  extracted: Extracted
+  accepted: Accepted
+  in_review: In review
+  in_exception: Exception
+  superseded: Superseded
+  duplicate: Duplicate
+
+pageRoute:
+  text: Text layer
+  ocr: OCR
+  sheet: Spreadsheet
+
+gradeReason:
+  resolution: Low resolution
+  blur: Blur
+  skew: Skew
+  shadow: Shadow
+  ocr_floor: OCR below floor
+  corrupt: Corrupt
+  encrypted: Password protected
+  blank: Blank
+  missing_page: Missing page
+
+exitTier:
+  signals: Signals
+  layout: Layout
+  model: Page reading
+  person: Assigned by a person
+  none: Not classified
+
+# DocReady case workspace (FRD F-12 to F-14).
+docready:
+  eyebrow: DocReady case
+  readiness: Readiness
+  readinessUnavailable: Readiness not available
+  outstandingGate: "{n} outstanding · {gate}% review gate"
+  ask: Ask
+  blockingGaps: "{n} blocking"
+  tabs: Case tabs
+
+checklist:
+  derivedFrom: "{n} requirements derived from the {constitution} constitution and the {facilities} ask. Blocking items stop credit review; the rest do not."
+  provisional: provisional
+  provisionalHelp: The constitution or facilities are not confirmed yet, so this checklist is provisional. It is derived again once they are.
+  queryListLink: "Pre-login query list ({n})"
+  weight: "weight {n}%"
+  blocking: Blocking
+  documentsLinked: "linked documents: {n}"
+  why: Why it is required
+  basis: Basis
+  seeChecks: See machine checks
+  gate: "{gate}% review gate"
+  xOfY: "{x} of {y}"
+  blockingOpen: Blocking open
+  openReadiness: Open readiness
+  emptyTitle: No checklist yet
+  emptyDescription: The checklist is derived once the application's constitution and facilities are known.
+
 docStatus:
   satisfied: Satisfied
   insufficient: Insufficient
   missing: Missing
-  inReview: In review
+  in_review: In review
   waived: Waived
 
 docDefect:
@@ -173,6 +412,203 @@ checklistSections:
 
 readinessGates:
   readyForCredit: Ready for credit
+
+validation:
+  kpi:
+    checked: Documents checked
+    checkedNote: read and graded on receipt
+    failing: Failing a check
+    failingNote: on the query list
+    caveat: Passing with a caveat
+    caveatNote: usable, flagged for a person
+    unclassified: Unclassified
+    unclassifiedNote: waiting for a type in the review queue
+  subtitle: A rejection names the defect. Every document shows its page grades, how it was identified and each check.
+  none: No documents have been read for this case yet.
+  outcome:
+    pass: All checks passed
+    warn: Caveat
+    fail: Check failed
+  pages: Pages
+  page: Page
+  route: Read by
+  grade: Grade
+  reasons: Reasons
+  ocr: "OCR {pct}%"
+  classification: Classification
+  types: Type
+  exitTier: Decided by
+  confidence: Confidence
+  signals: Signals found
+  candidates: Top candidates
+  notClassifiedYet: Not classified yet.
+  labelMismatchDetail: "The file is labelled {label}; its content reads as {type}. The content decides; the mismatch is reported."
+  unclassifiedDetail: No type from the published list fits this document with enough confidence. It is not counted against any checklist item until a person assigns a type.
+  defects: Deficiencies
+  openDocument: Open document
+
+readiness:
+  reviewGate: Review gate
+  disbursementGate: Disbursement gate
+  met: Met
+  notMet: Not met
+  threshold: "threshold {threshold}% · now {score}%"
+  notReady: "Not ready for credit review: {score}% against a {gate}% gate"
+  withBlocking: "(blocking open: {n})"
+  notReadyHelp: The gate is met only when the weighted score reaches the threshold and every blocking item is satisfied or waived with a reason.
+  readyHelp: "The {gate}% gate is met and nothing blocking remains."
+  score: Readiness score
+  scoreHelp: Weighted by section and by document importance, not a plain count of files.
+  counts: "{satisfied} satisfied · {insufficient} insufficient · {missing} missing, of {total} requirements"
+  blocking: Blocking gaps
+  blockingHelp: Each of these stops the case reaching credit review.
+  nonBlocking: Non-blocking gaps
+  nonBlockingHelp: Recorded and asked for, but not allowed to hold the case up.
+  noBlocking: No blocking gap remains on this case.
+  noNonBlocking: Nothing outstanding outside the blocking set.
+  openEvidence: "Open evidence · page {page}"
+  next: Next
+  nextReady: Every applicable requirement is met. The case can move to credit appraisal.
+  nextNotReady: Send the pre-login query list to the customer, and add documents as they arrive.
+  satisfied: Satisfied
+  noneSatisfied: No item is satisfied yet.
+
+queryGroup:
+  documents_needed: Documents needed
+  documents_to_redo: Documents to redo
+  clarifications: Clarifications
+
+queries:
+  subtitle: "{open} open · {resolved} resolved"
+  copyEmail: Copy as email
+  copyText: Copy
+  copiedEmail: Copied as an email. Paste it into your mail.
+  copiedText: Copied.
+  copyFailed: Copying is blocked in this browser. Select the text and copy it.
+  resolved: Resolved
+  evidence: Evidence
+  openAsk: Open items
+  nothingSent: Nothing is sent from CreditIQ; copy the list and send it yourself.
+  emptyTitle: No queries
+  emptyDescription: Nothing is needed from the customer right now.
+  email:
+    subject: "Subject: Documents and clarifications for {borrower} ({id})"
+    opening: Dear Sir or Madam,
+    intro: "To take the application of {borrower} forward, please share the following:"
+    closing: "Thank you. Please reply with the documents, or call me with any questions."
+
+# Readiness console (FRD F-13).
+console:
+  kpi:
+    open: Open cases
+    openNote: in collection now
+    blocking: Blocking gaps
+    blockingNote: cannot reach credit review yet
+    readyNote: gate met, nothing blocking
+    outstanding: Requirements outstanding
+    outstandingNote: insufficient or missing
+    inReviewNote: waiting for a person
+  cases: Cases in collection
+  casesHelp: Readiness is weighted by document importance, not a plain count.
+  search: Search borrower or case
+  filter:
+    all: All cases
+    blocking: Blocking gaps
+    ready: Ready for credit
+  outstanding: Outstanding
+  satisfiedOf: "{x} of {y} satisfied"
+  gateMet: gate met
+  belowGate: "below the {gate}% gate"
+  insufficientMissing: "{insufficient} insufficient · {missing} missing"
+  blocking: "{n} blocking"
+  nothingBlocking: Nothing blocking
+  noMatch: No case matches this filter.
+
+# Identity (FRD F-10, F-15).
+identity:
+  identifiers: Borrower identifiers
+  identifiersHelp: Each value with where it came from. Where a person changed a proposed value, both are kept.
+  notOnRecord: Not on record
+  proposed: "(proposed: {value})"
+  parties: Parties
+  partiesHelp: Directors, partners, proprietor and guarantors, each with its source and the KYC attributed to them.
+  partyCount: "Parties: {n}"
+  noParties: No parties yet
+  noPartiesHelp: Parties appear as constitution, KYC and bureau documents are read.
+  kyc: "KYC:"
+  noKyc: none received
+  fields: Identity fields from documents
+  fieldsHelp: Read from constitution, registration and KYC documents; click a value to see its page.
+  noFields: No identity fields have been read yet.
+  summary: KYC coverage
+  withKyc: With KYC
+  withoutKyc: Without KYC
+
+partyRole:
+  borrower: Borrower
+  director: Director
+  partner: Partner
+  proprietor: Proprietor
+  guarantor: Guarantor
+  promoter: Promoter
+
+source:
+  message: From the message
+  person: Entered by a person
+  bureau: Bureau report
+  document: "Document · page {page}"
+
+# Extracted data and evidence (FRD F-15 to F-17).
+data:
+  filter: Filter by status
+  filterAll: All fields
+  none: No fields have been extracted for this case yet.
+  noneMatch: No field has this status.
+  summary: Extraction summary
+  fields: Fields
+  col:
+    field: Field
+    value: Value
+    confidence: Confidence
+    method: Method
+    status: Status
+  raw: "As printed: {raw}"
+  openEvidence: Open the source page
+  composition: Confidence composition
+
+fieldStatus:
+  accepted: Accepted
+  in_review: In review
+  corrected: Corrected
+  missing: Missing
+  rejected: Rejected
+
+fieldMethod:
+  deterministic: Rule
+  model: Model reading
+  manual: Manual entry
+  person: Person
+
+confidenceComponent:
+  classification: Classification
+  page_grade: Page grade
+  ocr_trust: Text or OCR trust
+  validation: Validation
+  agreement: Agreement of two reads
+
+viewer:
+  title: Evidence
+  close: Close the evidence viewer
+  confidence: Confidence
+  method: Method
+  pageOf: "Page {page} · pages {first}–{last}"
+  pageOne: "Page {page}"
+  previousPage: Previous page
+  nextPage: Next page
+  regionHighlighted: Region highlighted
+  backToEvidence: "Back to page {page}"
+  rendering: Rendering page
+  pageAlt: "Page {page}"
 
 # Page quality grade (FRD F-07).
 qualityGrade:
@@ -198,11 +634,58 @@ ratioBand:
   marginal: Marginal
   adverse: Adverse
 
-# Review decisions (FRD F-17).
+# Review queue (FRD F-17).
+reviewKind:
+  type: Type assignment
+  field: Field review
+  quality: Quality exception
+  party: Party or label flag
+  split: Uncertain split
+  manual_entry: Manual entry
+  finding: Finding
+
 reviewDecision:
   confirm: Confirm
   correct: Correct
   waive: Waive
+  assign: Assign type
+
+review:
+  decision: Decision
+  systemValue: "System value:"
+  assignType: Document type
+  chooseType: Choose from the published list…
+  correctValue: Corrected value
+  reasonRequired: Reason (required)
+  reasonOptional: Reason (optional)
+  overlayNote: The decision is recorded with your name and reason. The system value is kept beside it.
+  record: Record decision
+  recorded: Decision recorded
+  bothValues: "System {system} · corrected {decided}"
+
+exceptions:
+  kpi:
+    open: Open items
+    openNote: "Applications: {n}"
+    typeNote: documents waiting for a type
+    fieldNote: values below threshold
+    oldest: Oldest open
+    oldestNote: raised on
+  kindFilter: Filter by kind
+  allKinds: All kinds
+  caseFilter: Filter by case
+  allCases: All cases
+  showDecided: Show decided
+  col:
+    kind: Kind
+    item: Item
+    raised: Raised
+    decision: Decision
+    action: Action
+  open: Open
+  decide: Decide
+  view: View
+  none: Nothing is waiting here. Every item has a decision.
 
 # Comparison with RBL's record (FRD F-25).
 comparisonStatus:

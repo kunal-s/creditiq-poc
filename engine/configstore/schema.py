@@ -50,6 +50,22 @@ class PolicySection(BaseModel):
     available_ratios: list[PolicyRatio] = Field(default_factory=list)
 
 
+class CoverageRule(BaseModel):
+    """What "complete" means for an item beyond presence (F-13.2), always
+    measured from the case's fixed as_of date (principle 8)."""
+
+    kind: Literal["financial_year", "assessment_years", "monthly_periods", "account_months", "parties", "statements"]
+    offset: int = 0
+    """financial_year: 1 is the latest financial year ended before as_of, 2 the one before."""
+    count: int = 0
+    """assessment_years: how many, counting back from the latest."""
+    months: int = 0
+    """monthly_periods / account_months: complete calendar months before the as_of month."""
+    statements: list[str] = Field(default_factory=list)
+    """statements (and financial_year): sections that must be present, e.g.
+    balance_sheet, profit_and_loss."""
+
+
 class ChecklistItemDef(BaseModel):
     id: str
     name: str
@@ -64,6 +80,10 @@ class ChecklistItemDef(BaseModel):
     """Only applies when the case sets all of these attributes true
     (e.g. `collateral_present`). Empty means it always applies to its listed
     constitutions."""
+    coverage: CoverageRule | None = None
+    """Completeness rule; None means one valid document suffices."""
+    request: str | None = None
+    """How to ask for it when missing, in plain language (F-14.2)."""
 
 
 class ChecklistTaxonomySection(BaseModel):

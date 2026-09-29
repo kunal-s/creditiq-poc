@@ -181,6 +181,61 @@ MIGRATIONS: list[str] = [
     CREATE TRIGGER decision_log_no_delete BEFORE DELETE ON decision_log
         BEGIN SELECT RAISE(ABORT, 'decision_log is append-only'); END;
     """,
+    # 2: Wave 1 intake and completeness (F-02, F-04, F-05, F-10, F-13, F-17).
+    """
+    ALTER TABLE files ADD COLUMN stored_name TEXT;      -- generated name under cases/<id>/files/
+    ALTER TABLE files ADD COLUMN processed_at TEXT;     -- set once the sidecar result is stored
+    ALTER TABLE files ADD COLUMN reason_code TEXT;      -- quality reason code for exceptions
+
+    ALTER TABLE documents ADD COLUMN doc_key TEXT;      -- the sidecar's content-derived key
+    ALTER TABLE documents ADD COLUMN identity TEXT NOT NULL DEFAULT '{}';
+    ALTER TABLE documents ADD COLUMN defects TEXT NOT NULL DEFAULT '[]';
+    ALTER TABLE documents ADD COLUMN split_uncertain INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE documents ADD COLUMN assigned_types TEXT;   -- JSON list: a person's type assignment (overlay)
+    ALTER TABLE documents ADD COLUMN party_flag TEXT;       -- refiled | no_party
+    ALTER TABLE documents ADD COLUMN party_override TEXT;   -- a person's attribution (party id, or 'none')
+    ALTER TABLE documents ADD COLUMN created_at TEXT;
+    CREATE UNIQUE INDEX documents_key ON documents(case_id, file_id, doc_key);
+
+    ALTER TABLE jobs ADD COLUMN lease_until TEXT;
+
+    ALTER TABLE review_items ADD COLUMN detail TEXT NOT NULL DEFAULT '{}';
+    CREATE UNIQUE INDEX review_items_ref ON review_items(case_id, kind, ref);
+
+    CREATE TABLE parties (
+        id TEXT PRIMARY KEY,
+        case_id TEXT NOT NULL REFERENCES cases(id),
+        name TEXT NOT NULL,
+        role TEXT NOT NULL,
+        pan TEXT,
+        din TEXT,
+        source TEXT NOT NULL,
+        ord INTEGER NOT NULL
+    );
+    CREATE INDEX parties_case ON parties(case_id);
+
+    -- F-04.8: figures the RM declared, kept for triangulation (F-19).
+    CREATE TABLE declared_figures (
+        case_id TEXT NOT NULL REFERENCES cases(id),
+        field TEXT NOT NULL,
+        value TEXT,
+        proposed TEXT,
+        source TEXT,
+        basis TEXT NOT NULL,
+        PRIMARY KEY (case_id, field)
+    );
+
+    -- F-13.1 / F-17.5: waived checklist items (non-mandatory only), with a reason.
+    CREATE TABLE checklist_waivers (
+        case_id TEXT NOT NULL REFERENCES cases(id),
+        item_id TEXT NOT NULL,
+        reason TEXT NOT NULL,
+        decided_by TEXT NOT NULL,
+        decided_at TEXT NOT NULL,
+        review_item_id TEXT,
+        PRIMARY KEY (case_id, item_id)
+    );
+    """,
 ]
 
 
@@ -189,9 +244,23 @@ def db_path(root: Path | None = None) -> Path:
 
 
 def migrate(conn: sqlite3.Connection) -> None:
-    current = conn.execute("PRAGMA user_version").fetchone()[0]
-    for index, script in enumerate(MIGRATIONS[current:], start=current + 1):
-        conn.executescript(f"BEGIN; {script}; PRAGMA user_version = {index}; COMMIT;")
+    """Run the migrations not yet applied. Safe when several connections
+    (the API and its job worker) open a new store at once: each migration
+    takes the write lock, and one that another connection has just applied
+    is skipped."""
+    while True:
+        current = conn.execute("PRAGMA user_version").fetchone()[0]
+        if current >= len(MIGRATIONS):
+            return
+        index = current + 1
+        try:
+            conn.executescript(f"BEGIN IMMEDIATE; {MIGRATIONS[current]}; PRAGMA user_version = {index}; COMMIT;")
+        except sqlite3.OperationalError:
+            if conn.in_transaction:
+                conn.execute("ROLLBACK")
+            if conn.execute("PRAGMA user_version").fetchone()[0] >= index:
+                continue
+            raise
 
 
 def connect(root: Path | None = None) -> sqlite3.Connection:

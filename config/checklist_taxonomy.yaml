@@ -1,6 +1,10 @@
 # Document checklist taxonomy: what's required, by constitution and by case
 # attribute. Consumed by engine/checklist.py's deriver, never read directly
 # by the checklist screens — those go through the published config store.
+#
+# coverage: what "complete" means beyond presence (F-13.2), measured from
+# the case's as_of date. request: how to ask for the item when it is
+# missing, in plain language for the pre-login query list (F-14.2).
 
 sections:
   - "Constitution and KYC"
@@ -28,6 +32,7 @@ items:
     source: published_policy
     blocking: true
     weight: 5
+    request: Certificate of incorporation of the company
 
   - id: moa_aoa
     name: Memorandum and Articles of Association
@@ -38,6 +43,7 @@ items:
     source: published_policy
     blocking: true
     weight: 4
+    request: Memorandum and Articles of Association of the company
 
   - id: board_resolution
     name: Board resolution authorising the facility
@@ -48,6 +54,7 @@ items:
     source: published_policy
     blocking: true
     weight: 4
+    request: Certified copy of the board resolution authorising the borrowing, signed
 
   - id: proprietor_declaration
     name: Proprietor's declaration of constitution
@@ -58,6 +65,7 @@ items:
     source: published_policy
     blocking: true
     weight: 5
+    request: Proprietor's declaration of sole proprietorship, signed
 
   - id: partnership_deed
     name: Partnership deed
@@ -68,6 +76,7 @@ items:
     source: published_policy
     blocking: true
     weight: 5
+    request: Partnership deed, with all amendments
 
   - id: partner_authority_letter
     name: Authority letter signed by all partners
@@ -78,6 +87,7 @@ items:
     source: published_policy
     blocking: true
     weight: 4
+    request: Authority letter for the borrowing, signed by all partners
 
   - id: pan_entity
     name: Entity PAN
@@ -88,6 +98,7 @@ items:
     source: published_policy
     blocking: true
     weight: 3
+    request: PAN card of the borrowing entity
 
   - id: gst_registration
     name: GST registration certificate
@@ -98,6 +109,7 @@ items:
     source: published_policy
     blocking: true
     weight: 3
+    request: GST registration certificate (Form GST REG-06)
 
   - id: udyam
     name: Udyam registration
@@ -108,6 +120,7 @@ items:
     source: regulatory
     blocking: false
     weight: 2
+    request: Udyam registration certificate
 
   - id: kyc_promoters
     name: KYC of directors, partners or proprietor
@@ -118,6 +131,8 @@ items:
     source: published_policy
     blocking: true
     weight: 4
+    coverage: {kind: parties}
+    request: KYC (PAN and address proof) of every director, partner or proprietor
 
   # --- Financials ---
   - id: fs_fy_minus2
@@ -129,6 +144,8 @@ items:
     source: published_policy
     blocking: true
     weight: 5
+    coverage: {kind: financial_year, offset: 2, statements: [balance_sheet, profit_and_loss]}
+    request: Audited financial statements
 
   - id: fs_fy_minus1
     name: Audited financial statements, latest year
@@ -139,6 +156,8 @@ items:
     source: published_policy
     blocking: true
     weight: 6
+    coverage: {kind: financial_year, offset: 1, statements: [balance_sheet, profit_and_loss]}
+    request: Audited financial statements
 
   - id: fs_provisional
     name: Provisional financial statements, current year
@@ -149,6 +168,8 @@ items:
     source: published_policy
     blocking: true
     weight: 5
+    coverage: {kind: statements, statements: [balance_sheet, profit_and_loss]}
+    request: Provisional financial statements for the current year (balance sheet and profit and loss)
 
   - id: fs_projected
     name: Projected financials, next year
@@ -160,6 +181,7 @@ items:
     blocking: true
     weight: 4
     requires_attributes: [term_loan_requested]
+    request: Projected financial statements for the next year, with assumptions
 
   - id: itr
     name: Income Tax Return with computation, latest assessment year
@@ -170,6 +192,8 @@ items:
     source: published_policy
     blocking: true
     weight: 4
+    coverage: {kind: assessment_years, count: 2}
+    request: Income-tax return acknowledgement with computation of income
 
   - id: cma_data
     name: CMA data
@@ -181,6 +205,7 @@ items:
     blocking: true
     weight: 6
     requires_attributes: [mpbf_applicable]
+    request: CMA data with the assessment of the working-capital requirement
 
   # --- Banking and operations ---
   - id: bank_statements
@@ -192,6 +217,8 @@ items:
     source: published_policy
     blocking: true
     weight: 8
+    coverage: {kind: account_months, months: 12}
+    request: Bank statements
 
   - id: gst_returns
     name: GSTR-3B, twelve months
@@ -202,6 +229,8 @@ items:
     source: published_policy
     blocking: true
     weight: 8
+    coverage: {kind: monthly_periods, months: 12}
+    request: GST returns (GSTR-3B)
 
   - id: stock_statement
     name: Stock and book-debt statement
@@ -213,6 +242,7 @@ items:
     blocking: true
     weight: 8
     requires_attributes: [cash_credit_requested]
+    request: Latest stock and book-debt statement
 
   - id: ageing
     name: Debtor and creditor ageing
@@ -224,6 +254,7 @@ items:
     blocking: false
     weight: 6
     requires_attributes: [cash_credit_requested]
+    request: Ageing of debtors and creditors
 
   - id: bureau_report
     name: Bureau reports, entity and promoters
@@ -234,6 +265,7 @@ items:
     source: provisional
     blocking: true
     weight: 6
+    request: Bureau reports of the entity and the promoters
 
   - id: facilities_declaration
     name: Declaration of existing facilities
@@ -244,6 +276,7 @@ items:
     source: provisional
     blocking: true
     weight: 4
+    request: Declaration of all existing borrowings and bank accounts (a nil declaration if none), signed
 
   - id: sanction_letters
     name: Sanction letters of existing facilities
@@ -255,6 +288,7 @@ items:
     blocking: false
     weight: 4
     requires_attributes: [existing_facilities_declared]
+    request: Sanction letters of every existing facility declared
 
   # --- Collateral and security ---
   - id: title_document
@@ -267,6 +301,7 @@ items:
     blocking: true
     weight: 10
     requires_attributes: [collateral_present]
+    request: Title document of the property offered as security
 
   - id: valuation_report
     name: Valuation report
@@ -278,3 +313,4 @@ items:
     blocking: true
     weight: 10
     requires_attributes: [collateral_present]
+    request: Valuation report for the property offered as collateral

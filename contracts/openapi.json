@@ -94,6 +94,17 @@
             "title": "Header",
             "type": "object"
           },
+          "message_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message Text"
+          },
           "pan": {
             "anyOf": [
               {
@@ -301,6 +312,13 @@
             "title": "Missing Minimum",
             "type": "array"
           },
+          "stripped": {
+            "items": {
+              "$ref": "#/components/schemas/StrippedSpan"
+            },
+            "title": "Stripped",
+            "type": "array"
+          },
           "text_sha256": {
             "title": "Text Sha256",
             "type": "string"
@@ -403,6 +421,16 @@
             "title": "Constitutions",
             "type": "array"
           },
+          "coverage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CoverageRule"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -410,6 +438,17 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "request": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request"
           },
           "requires_attributes": {
             "items": {
@@ -614,6 +653,50 @@
           "exit_tier"
         ],
         "title": "Classification",
+        "type": "object"
+      },
+      "CoverageRule": {
+        "description": "What \"complete\" means for an item beyond presence (F-13.2), always\nmeasured from the case's fixed as_of date (principle 8).",
+        "properties": {
+          "count": {
+            "default": 0,
+            "title": "Count",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "financial_year",
+              "assessment_years",
+              "monthly_periods",
+              "account_months",
+              "parties",
+              "statements"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "months": {
+            "default": 0,
+            "title": "Months",
+            "type": "integer"
+          },
+          "offset": {
+            "default": 0,
+            "title": "Offset",
+            "type": "integer"
+          },
+          "statements": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Statements",
+            "type": "array"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "CoverageRule",
         "type": "object"
       },
       "DocumentTypeDef": {
@@ -1895,6 +1978,11 @@
             "title": "Provisional",
             "type": "boolean"
           },
+          "ready_for_credit": {
+            "default": false,
+            "title": "Ready For Credit",
+            "type": "boolean"
+          },
           "score_pct": {
             "title": "Score Pct",
             "type": "number"
@@ -1953,6 +2041,36 @@
               }
             ],
             "title": "Value"
+          },
+          "values": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Values"
           }
         },
         "required": [
@@ -2185,6 +2303,31 @@
           "end"
         ],
         "title": "Span",
+        "type": "object"
+      },
+      "StrippedSpan": {
+        "description": "Part of the message set aside before extraction but kept as\nprovenance (F-04, normalisation): nothing is proposed from it.",
+        "properties": {
+          "kind": {
+            "enum": [
+              "timestamp",
+              "sender",
+              "header",
+              "quoted",
+              "signature"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "span": {
+            "$ref": "#/components/schemas/Span"
+          }
+        },
+        "required": [
+          "kind",
+          "span"
+        ],
+        "title": "StrippedSpan",
         "type": "object"
       },
       "UploadResult": {
@@ -2950,7 +3093,7 @@
         "summary": "Case Files"
       },
       "post": {
-        "description": "F-05: multipart upload, field name \"files\" (repeatable): single files,\nseveral files or ZIP archives. Registers every file and queues processing.",
+        "description": "F-05: multipart upload, field name \"files\" (repeatable): single files,\nseveral files or ZIP archives. Registers every file and queues processing.\nThe body is parsed as it streams, so size limits apply before a file is\nheld in full.",
         "operationId": "upload_files_api_cases__case_id__files_post",
         "parameters": [
           {
@@ -2979,6 +3122,31 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "channel": {
+                    "type": "string"
+                  },
+                  "files": {
+                    "items": {
+                      "format": "binary",
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "files"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "202": {
             "content": {

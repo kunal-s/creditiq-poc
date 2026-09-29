@@ -266,7 +266,11 @@ def migrate(conn: sqlite3.Connection) -> None:
 def connect(root: Path | None = None) -> sqlite3.Connection:
     path = db_path(root)
     path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(path, isolation_level=None, timeout=10)
+    # FastAPI may open a request's connection in one threadpool thread and use
+    # it in another. Each connection still belongs to exactly one request (or
+    # one worker loop), never shared concurrently, so the same-thread check
+    # only produces false errors.
+    conn = sqlite3.connect(path, isolation_level=None, timeout=10, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode = WAL")
     conn.execute("PRAGMA foreign_keys = ON")

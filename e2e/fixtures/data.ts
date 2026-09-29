@@ -184,6 +184,7 @@ export const KESTREL_CHECKLIST: Readiness = {
   score_pct: 58,
   gate_pct: 85,
   gate_met: false,
+  ready_for_credit: false,
   blocking_open: 2,
   provisional: false,
   items: [
@@ -227,6 +228,7 @@ export const SAFFRON_CHECKLIST: Readiness = {
   score_pct: 100,
   gate_pct: 85,
   gate_met: true,
+  ready_for_credit: true,
   blocking_open: 0,
   provisional: false,
   items: KESTREL_CHECKLIST.items.map((i) => ({ ...i, status: "satisfied", deficiency: null })),
@@ -236,6 +238,7 @@ export const ORIEL_CHECKLIST: Readiness = {
   score_pct: 0,
   gate_pct: 85,
   gate_met: false,
+  ready_for_credit: false,
   blocking_open: 1,
   provisional: true,
   items: [

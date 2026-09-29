@@ -116,6 +116,7 @@ export class MockApi {
           score_pct: 0,
           gate_pct: 85,
           gate_met: false,
+          ready_for_credit: false,
           blocking_open: 0,
           provisional: true,
           items: [],

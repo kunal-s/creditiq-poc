@@ -118,6 +118,7 @@ export class MockApi {
           gate_met: false,
           blocking_open: 0,
           provisional: true,
+          ready_for_credit: false,
           items: [],
         } satisfies Readiness),
       ],

@@ -157,6 +157,9 @@ state:
   invalid:
     title: Not accepted
     description: The service did not accept this request. Check the values and try again.
+  conflict:
+    title: Not done
+    description: This conflicts with the current state of the case.
   unreachable:
     title: The service is not reachable
     description: CreditIQ cannot reach the case service right now. Check the connection, then try again.
@@ -248,6 +251,7 @@ newApplication:
   messagePlaceholder: Paste the email, message or notes here…
   messageClickHelp: Click a proposed field to see where it came from.
   editMessage: Edit message
+  strippedHelp: Set aside before reading (headers, quoted text, signatures). Kept with the message; nothing is proposed from it.
   read: Read the message
   reading: Reading…
   nothingStored: Nothing is stored until you create the application.
@@ -384,12 +388,23 @@ checklist:
   why: Why it is required
   basis: Basis
   seeChecks: See machine checks
+  coverage: What complete means
+  request: What to ask the customer for
   gate: "{gate}% review gate"
   xOfY: "{x} of {y}"
   blockingOpen: Blocking open
   openReadiness: Open readiness
   emptyTitle: No checklist yet
   emptyDescription: The checklist is derived once the application's constitution and facilities are known.
+
+# Coverage rules of a checklist item (F-13.2), from configuration.
+coverage:
+  financial_year: "Financial years: {count}"
+  assessment_years: "Assessment years: {count}"
+  monthly_periods: "Monthly periods: {months}"
+  account_months: "Months for every account: {months}"
+  parties: Every party that needs KYC
+  statements: "Statements: {statements}"
 
 docStatus:
   satisfied: Satisfied
@@ -660,6 +675,15 @@ review:
   reasonOptional: Reason (optional)
   overlayNote: The decision is recorded with your name and reason. The system value is kept beside it.
   record: Record decision
+  manualEntry: Enter manually
+  manualEntryHelp: Enter the document's values by field, as printed. A checker who is not you confirms them before they are used.
+  fieldName: Field
+  fieldValue: Value
+  addField: Add a field
+  manualType: Document type (if it was not classified)
+  party: The person this document belongs to
+  chooseParty: Choose a party…
+  noParty: None of these parties
   recorded: Decision recorded
   bothValues: "System {system} · corrected {decided}"
 

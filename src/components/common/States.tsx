@@ -1,6 +1,7 @@
 import type { UseQueryResult } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { Clock, Lock, SearchX, ServerCrash, Settings2, TriangleAlert, WifiOff } from "lucide-react";
+import { ApiError } from "@/api/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/shell/EmptyState";
 import { t } from "@/config/terminology";
@@ -30,6 +31,7 @@ const ICON: Record<ErrorKind, typeof Clock> = {
   notFound: SearchX,
   noConfig: Settings2,
   invalid: TriangleAlert,
+  conflict: TriangleAlert,
   unreachable: WifiOff,
   failed: ServerCrash,
 };
@@ -65,6 +67,13 @@ export function ErrorState({
       <p className="max-w-md text-[12.5px] text-muted-foreground">
         {t(`state.${kind}.description`)}
       </p>
+      {(kind === "invalid" || kind === "conflict") &&
+        error instanceof ApiError &&
+        error.message && (
+          <p className="max-w-md text-[12.5px] text-foreground" data-testid="error-detail">
+            {error.message}
+          </p>
+        )}
       {onRetry && kind !== "forbidden" && kind !== "notFound" && (
         <button
           type="button"

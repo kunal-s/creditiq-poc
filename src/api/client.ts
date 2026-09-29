@@ -27,6 +27,8 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    /** The response's `detail` when it is structured (e.g. a 409 with duplicates). */
+    public detail: unknown = null,
   ) {
     super(message);
     this.name = "ApiError";
@@ -59,8 +61,14 @@ async function send(path: string, init?: RequestInit): Promise<Response> {
   if (response.status === 401 && token) onUnauthorised();
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
-    const detail = typeof body.detail === "string" ? body.detail : response.statusText;
-    throw new ApiError(response.status, detail);
+    const detail: unknown = body.detail;
+    const message =
+      typeof detail === "string"
+        ? detail
+        : detail && typeof detail === "object" && "message" in detail
+          ? String((detail as { message: unknown }).message)
+          : response.statusText;
+    throw new ApiError(response.status, message, detail);
   }
   return response;
 }

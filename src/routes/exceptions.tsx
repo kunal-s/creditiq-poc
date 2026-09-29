@@ -10,7 +10,7 @@ import { reviewItemPath } from "@/components/review/reviewLinks";
 import { t } from "@/config/terminology";
 import { formatDate, useCases } from "@/domain/cases";
 import { formatValue, useFields } from "@/domain/extraction";
-import { REVIEW_KINDS, useReviewQueue } from "@/domain/review";
+import { DECISIONS_BY_KIND, REVIEW_KINDS, reviewTarget, useReviewQueue } from "@/domain/review";
 import { useSession } from "@/domain/session";
 import { cn } from "@/lib/utils";
 
@@ -199,7 +199,9 @@ function ExceptionQueue() {
                           )}
                         </td>
                         <td className="px-3 py-2.5 text-right">
-                          {item.status === "open" && canDecide ? (
+                          {item.status === "open" &&
+                          canDecide &&
+                          DECISIONS_BY_KIND[item.kind].length > 0 ? (
                             <button
                               type="button"
                               onClick={() => setDeciding(item)}
@@ -257,7 +259,8 @@ function DecisionFor({
   onClose: () => void;
 }) {
   const fields = useFields(item.case_id);
-  const field = item.kind === "field" ? fields.data?.find((f) => f.id === item.ref) : undefined;
+  const target = reviewTarget(item.ref);
+  const field = target.kind === "field" ? fields.data?.find((f) => f.id === target.id) : undefined;
   return <DecisionDialog item={item} borrower={borrower} field={field} onClose={onClose} />;
 }
 
@@ -266,7 +269,7 @@ function Decided({ item }: { item: ReviewItem }) {
   const fields = useFields(item.case_id);
   const field =
     item.kind === "field" && item.decision === "correct"
-      ? fields.data?.find((f) => f.id === item.ref)
+      ? fields.data?.find((f) => f.id === reviewTarget(item.ref).id)
       : undefined;
   return (
     <div className="space-y-0.5 text-[11.5px]" data-testid="decided">

@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { Plus, X } from "lucide-react";
 import { toast } from "sonner";
-import type { FieldValue, ReviewDecision, ReviewItem } from "@/api/types";
+import type { FieldValue, ReviewDecision, ReviewDecisionRequest, ReviewItem } from "@/api/types";
 import {
   Dialog,
   DialogContent,
@@ -12,14 +13,28 @@ import {
 import { ErrorState } from "@/components/common/States";
 import { t } from "@/config/terminology";
 import { useDocumentTypes } from "@/domain/documents";
-import { formatValue } from "@/domain/extraction";
+import { formatValue, useParties } from "@/domain/extraction";
 import { DECISIONS_BY_KIND, needsReason, useDecideReview } from "@/domain/review";
 import { cn } from "@/lib/utils";
 
 const inputClass =
-  "mt-1 h-9 w-full rounded border border-border bg-surface px-2.5 text-[13px] text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-ring";
+  "mt-1 h-9 w-full min-w-0 rounded border border-border bg-surface px-2.5 text-[13px] text-foreground outline-none focus:border-primary/60 focus:ring-1 focus:ring-ring";
 
-/** Confirm, correct, waive or assign a type, with a reason where required (F-17.5, F-09.5). */
+type Scalar = string | number | boolean | null;
+
+/** A typed value keeps a number a number (the engine stores it as given). */
+function asScalar(raw: string, like?: Scalar): Scalar {
+  const s = raw.trim();
+  if (typeof like === "number" || (like === undefined && /^-?\d+(\.\d+)?$/.test(s))) {
+    const n = Number(s.replace(/,/g, ""));
+    if (!Number.isNaN(n)) return n;
+  }
+  return s;
+}
+
+/** Confirm, correct, waive or assign, with a reason where required (F-17.5).
+ * "Correct" means: a new value (field), another party (party), or manual
+ * entry of the document's values by a maker (quality, F-07.5). */
 export function DecisionDialog({
   item,
   borrower,
@@ -33,26 +48,33 @@ export function DecisionDialog({
   onClose: () => void;
 }) {
   const options = DECISIONS_BY_KIND[item.kind];
-  const [decision, setDecision] = useState<ReviewDecision>(options[0]!);
+  const [decision, setDecision] = useState<ReviewDecision>(options[0] ?? "confirm");
   const [value, setValue] = useState("");
+  const [rows, setRows] = useState<{ name: string; value: string }[]>([{ name: "", value: "" }]);
   const [reason, setReason] = useState("");
   const decide = useDecideReview();
   const types = useDocumentTypes();
+  const manual = item.kind === "quality" && decision === "correct";
+  const partyCorrect = item.kind === "party" && decision === "correct";
+  const parties = useParties(item.case_id);
 
-  const valueNeeded = decision === "correct" || decision === "assign";
+  const entries = rows.filter((r) => r.name.trim() !== "");
+  const valueNeeded = decision === "assign" || (decision === "correct" && !manual);
   const reasonNeeded = needsReason(decision);
-  const ready = (!valueNeeded || value.trim() !== "") && (!reasonNeeded || reason.trim() !== "");
+  const ready =
+    (!valueNeeded || value.trim() !== "") &&
+    (!manual || entries.length > 0) &&
+    (!reasonNeeded || reason.trim() !== "");
 
   const submit = () => {
+    const body: ReviewDecisionRequest = { decision, reason: reason.trim() || null, value: null };
+    if (valueNeeded) body.value = item.kind === "field" ? asScalar(value, field?.value) : value;
+    if (manual) {
+      body.values = Object.fromEntries(entries.map((r) => [r.name.trim(), asScalar(r.value)]));
+      if (value) body.value = value;
+    }
     decide.mutate(
-      {
-        id: item.id,
-        body: {
-          decision,
-          reason: reason.trim() || null,
-          value: valueNeeded ? value.trim() : null,
-        },
-      },
+      { id: item.id, body },
       {
         onSuccess: () => {
           toast.success(t("review.recorded"));
@@ -62,9 +84,32 @@ export function DecisionDialog({
     );
   };
 
+  const typeSelect = (label: string) => (
+    <label className="block">
+      <span className="field-label">{label}</span>
+      <select
+        className={inputClass}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        data-testid="assign-type"
+      >
+        <option value="">{t("review.chooseType")}</option>
+        {(types.data?.types ?? []).map((d) => (
+          <option key={d.id} value={d.id}>
+            {d.name}
+          </option>
+        ))}
+      </select>
+      {types.isError && <ErrorState error={types.error} compact />}
+    </label>
+  );
+
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-lg" data-testid="decision-dialog">
+      <DialogContent
+        className="max-h-[90vh] max-w-lg overflow-y-auto"
+        data-testid="decision-dialog"
+      >
         <DialogHeader>
           <DialogTitle>{t(`reviewKind.${item.kind}`)}</DialogTitle>
           <DialogDescription>
@@ -103,32 +148,17 @@ export function DecisionDialog({
                   }}
                   className="sr-only"
                 />
-                {t(`reviewDecision.${d}`)}
+                {item.kind === "quality" && d === "correct"
+                  ? t("review.manualEntry")
+                  : t(`reviewDecision.${d}`)}
               </label>
             ))}
           </div>
         </fieldset>
 
-        {decision === "assign" && (
-          <label className="block">
-            <span className="field-label">{t("review.assignType")}</span>
-            <select
-              className={inputClass}
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              data-testid="assign-type"
-            >
-              <option value="">{t("review.chooseType")}</option>
-              {(types.data?.types ?? []).map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.name}
-                </option>
-              ))}
-            </select>
-            {types.isError && <ErrorState error={types.error} compact />}
-          </label>
-        )}
-        {decision === "correct" && (
+        {decision === "assign" && typeSelect(t("review.assignType"))}
+
+        {decision === "correct" && item.kind === "field" && (
           <label className="block">
             <span className="field-label">{t("review.correctValue")}</span>
             <input
@@ -139,6 +169,76 @@ export function DecisionDialog({
             />
           </label>
         )}
+
+        {partyCorrect && (
+          <label className="block">
+            <span className="field-label">{t("review.party")}</span>
+            <select
+              className={inputClass}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              data-testid="correct-party"
+            >
+              <option value="">{t("review.chooseParty")}</option>
+              {(parties.data ?? [])
+                .filter((p) => p.role !== "borrower")
+                .map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} · {t(`partyRole.${p.role}`)}
+                  </option>
+                ))}
+              <option value="none">{t("review.noParty")}</option>
+            </select>
+            {parties.isError && <ErrorState error={parties.error} compact />}
+          </label>
+        )}
+
+        {manual && (
+          <div className="space-y-2" data-testid="manual-entry">
+            <p className="text-[12px] text-muted-foreground">{t("review.manualEntryHelp")}</p>
+            {rows.map((r, i) => (
+              <div key={i} className="flex items-end gap-2">
+                <label className="block min-w-0 flex-1">
+                  <span className="field-label">{t("review.fieldName")}</span>
+                  <input
+                    className={inputClass}
+                    value={r.name}
+                    onChange={(e) =>
+                      setRows(rows.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))
+                    }
+                  />
+                </label>
+                <label className="block min-w-0 flex-1">
+                  <span className="field-label">{t("review.fieldValue")}</span>
+                  <input
+                    className={inputClass}
+                    value={r.value}
+                    onChange={(e) =>
+                      setRows(rows.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)))
+                    }
+                  />
+                </label>
+                <button
+                  type="button"
+                  aria-label={t("action.remove")}
+                  onClick={() => setRows(rows.filter((_, j) => j !== i))}
+                  className="mb-1 rounded p-1.5 text-muted-foreground hover:bg-muted"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => setRows([...rows, { name: "", value: "" }])}
+              className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 text-[12px] font-medium hover:bg-muted"
+            >
+              <Plus className="h-3 w-3" /> {t("review.addField")}
+            </button>
+            {typeSelect(t("review.manualType"))}
+          </div>
+        )}
+
         <label className="block">
           <span className="field-label">
             {reasonNeeded ? t("review.reasonRequired") : t("review.reasonOptional")}

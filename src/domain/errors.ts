@@ -7,6 +7,7 @@ export type ErrorKind =
   | "notFound" // 404
   | "noConfig" // 503: no published configuration
   | "invalid" // 422
+  | "conflict" // 409
   | "unreachable" // network failure
   | "failed"; // anything else
 
@@ -17,6 +18,7 @@ export function errorKind(error: unknown): ErrorKind {
     if (error.status === 404) return "notFound";
     if (error.status === 503) return "noConfig";
     if (error.status === 422) return "invalid";
+    if (error.status === 409) return "conflict";
     return "failed";
   }
   if (error instanceof TypeError) return "unreachable";

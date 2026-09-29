@@ -60,8 +60,9 @@ export function isOpen(item: ChecklistItemState): boolean {
   return item.status !== "satisfied" && item.status !== "waived";
 }
 
+/** Ready for credit as the engine decides it (F-13.5). */
 export function readyForCredit(r: Readiness): boolean {
-  return r.gate_met && r.blocking_open === 0;
+  return r.ready_for_credit;
 }
 
 /** Items grouped by section, in the published section order where known. */

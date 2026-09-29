@@ -159,4 +159,4 @@ sessions:
 
 # The document-processing sidecar (AD-2).
 services:
-  ingest_url: "http://127.0.0.1:3002"
+  ingest_url: "http://127.0.0.1:3102"

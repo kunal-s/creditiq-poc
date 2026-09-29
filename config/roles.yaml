@@ -17,9 +17,19 @@ roles:
 # Nav groups each role may see (src/components/shell/nav.ts). Anything not
 # listed here is not rendered for that role.
 navByRole:
-  rm: [workbench]
-  analyst: [workbench]
-  credit-manager: [workbench]
+  rm: [workbench, docready, appraisal]
+  analyst: [workbench, docready, appraisal, governance]
+  credit-manager: [workbench, docready, appraisal, governance]
+
+# What each role may do (F-03.1). The server denies anything not listed.
+# case.read.all: see every case (an RM sees only cases they created).
+permissions:
+  rm: [case.create, case.read, document.upload, checklist.read, query.read]
+  analyst: [case.create, case.read, case.read.all, document.upload, checklist.read, query.read,
+            data.read, review.read, review.decide, finding.read, output.read, manual.make]
+  credit-manager: [case.read, case.read.all, checklist.read, query.read, data.read, review.read,
+                   review.decide, finding.read, output.read, manual.check, comparison.adjudicate,
+                   scorecard.read]
 
 # Every user signs in with this shared password until F-03 introduces named
 # credentials. Hash format: pbkdf2_sha256$<iterations>$<base64 salt>$<base64 digest>.

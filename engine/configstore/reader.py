@@ -13,7 +13,16 @@ import json
 from functools import lru_cache
 from pathlib import Path
 
-from .schema import ChecklistTaxonomySection, PolicySection
+from .schema import (
+    ChecklistTaxonomySection,
+    ConfidenceSection,
+    DictionarySection,
+    DocumentAgesSection,
+    DocumentTypesSection,
+    PolicySection,
+    QualitySection,
+    TolerancesSection,
+)
 
 
 class NoPublishedConfig(RuntimeError):
@@ -52,3 +61,34 @@ def load_policy(data_root: Path) -> PolicySection:
 
 def load_checklist_taxonomy(data_root: Path) -> ChecklistTaxonomySection:
     return ChecklistTaxonomySection.model_validate(_load_section(data_root, "checklist_taxonomy"))
+
+
+def load_document_types(data_root: Path) -> DocumentTypesSection:
+    return DocumentTypesSection.model_validate(_load_section(data_root, "document_types"))
+
+
+def load_dictionary(data_root: Path, dictionary_id: str) -> DictionarySection:
+    return DictionarySection.model_validate(_load_section(data_root, f"dictionary.{dictionary_id}"))
+
+
+def load_quality(data_root: Path) -> QualitySection:
+    return QualitySection.model_validate(_load_section(data_root, "quality"))
+
+
+def load_document_ages(data_root: Path) -> DocumentAgesSection:
+    return DocumentAgesSection.model_validate(_load_section(data_root, "document_ages"))
+
+
+def load_tolerances(data_root: Path) -> TolerancesSection:
+    return TolerancesSection.model_validate(_load_section(data_root, "tolerances"))
+
+
+def load_confidence(data_root: Path) -> ConfidenceSection:
+    return ConfidenceSection.model_validate(_load_section(data_root, "confidence"))
+
+
+def section_path(data_root: Path, section: str) -> Path:
+    """The published JSON file of a section, for services that read the
+    published configuration directly (the ingest sidecar, AD-2)."""
+    version = published_version(data_root)["version"]
+    return _store_dir(data_root) / "versions" / version / f"{section}.json"

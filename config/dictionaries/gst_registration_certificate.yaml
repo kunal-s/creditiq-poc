@@ -1,0 +1,37 @@
+# Field dictionary: gst_registration_certificate (docs/functional-requirements.md F-15).
+# key_field: counts towards C3 and is reviewed below threshold (F-17.2).
+id: gst_registration_certificate
+fields:
+- name: gstin
+  label: GSTIN
+  type: identifier
+  key_field: true
+  identifier: gstin
+- name: legal_name
+  label: Legal name
+  type: text
+  key_field: true
+- name: trade_name
+  label: Trade name
+  type: text
+- name: constitution
+  label: Constitution of business
+  type: text
+  key_field: true
+- name: registration_date
+  label: Date of liability or registration
+  type: date
+- name: address
+  label: Principal place of business
+  type: text
+- name: persons
+  label: Proprietor, partners or directors
+  type: table
+  key_field: true
+  columns:
+  - name: name
+    label: Name
+    type: text
+  - name: designation
+    label: Designation
+    type: text

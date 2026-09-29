@@ -1,0 +1,9 @@
+# Cross-check tolerances (docs/functional-requirements.md F-19). Interim
+# proposals until RBL supplies its working tolerances (test plan open point 3).
+
+tolerances:
+  - {key: turnover_variance, label: Turnover variance between sources, value: 10, unit: "%", source: provisional}
+  - {key: declared_turnover_variance, label: RM-declared against evidenced turnover, value: 20, unit: "%", source: provisional}
+  - {key: name_match, label: Minimum name similarity to treat two names as one, value: 0.85, unit: ratio, source: provisional}
+  - {key: emi_amount_match, label: EMI amount match between sources, value: 5, unit: "%", source: provisional}
+  - {key: emi_min_occurrences, label: Monthly debits needed to infer a recurring obligation, value: 3, unit: ratio, source: provisional}

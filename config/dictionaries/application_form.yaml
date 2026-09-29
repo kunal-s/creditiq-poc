@@ -1,0 +1,29 @@
+# Field dictionary: application_form (docs/functional-requirements.md F-15).
+# key_field: counts towards C3 and is reviewed below threshold (F-17.2).
+id: application_form
+fields:
+- name: borrower
+  label: Borrower
+  type: text
+  key_field: true
+- name: constitution
+  label: Constitution
+  type: text
+  key_field: true
+- name: facilities
+  label: Facilities requested
+  type: text
+  key_field: true
+- name: amount_requested
+  label: Amount requested
+  type: money_inr
+  key_field: true
+- name: purpose
+  label: Purpose
+  type: text
+- name: existing_banking
+  label: Existing banking
+  type: text
+- name: signed
+  label: Signed
+  type: boolean

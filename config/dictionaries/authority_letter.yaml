@@ -1,0 +1,16 @@
+# Field dictionary: authority_letter (docs/functional-requirements.md F-15).
+# key_field: counts towards C3 and is reviewed below threshold (F-17.2).
+id: authority_letter
+fields:
+- name: entity_name
+  label: Entity name
+  type: text
+- name: letter_date
+  label: Date
+  type: date
+- name: authorised_persons
+  label: Authorised persons
+  type: text
+- name: signed
+  label: Signed
+  type: boolean

@@ -1,0 +1,21 @@
+# Field dictionary: gstr_1 (docs/functional-requirements.md F-15).
+# key_field: counts towards C3 and is reviewed below threshold (F-17.2).
+id: gstr_1
+fields:
+- name: gstin
+  label: GSTIN
+  type: identifier
+  key_field: true
+  identifier: gstin
+- name: period
+  label: Tax period
+  type: period
+  key_field: true
+- name: total_taxable_value
+  label: Total taxable value
+  type: money_inr
+  key_field: true
+- name: filing_date
+  label: Date of filing
+  type: date
+  key_field: true

@@ -8,6 +8,7 @@ config/roles.yaml, which is deployment bootstrap config read directly.
 
 from __future__ import annotations
 
+import re
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -33,9 +34,18 @@ class PolicyRatio(BaseModel):
     hard_floor: str | None = None
 
 
+class WorkingCapitalPolicy(BaseModel):
+    mpbf_above_limit_inr: int
+    """Fund-based working-capital limits above this use the MPBF method and
+    need CMA data; at or below it, the turnover method (F-12.2)."""
+    source: Source
+    status: Status
+
+
 class PolicySection(BaseModel):
     """config/policy.yaml"""
 
+    working_capital: WorkingCapitalPolicy
     ratios: list[PolicyRatio]
     available_ratios: list[PolicyRatio] = Field(default_factory=list)
 
@@ -66,7 +76,177 @@ class ChecklistTaxonomySection(BaseModel):
     items: list[ChecklistItemDef]
 
 
+class SignalSet(BaseModel):
+    """Deterministic classification signals (F-09.3). Each entry is a regular
+    expression matched case-insensitively against a document's page text."""
+
+    required: list[str] = Field(default_factory=list)
+    """All must match for a tier-1 exit."""
+    supporting: list[str] = Field(default_factory=list)
+    """Each match adds to the score."""
+    contrary: list[str] = Field(default_factory=list)
+    """Any match blocks a tier-1 exit for this type."""
+
+
+DocumentGroup = Literal[
+    "origination",
+    "constitution",
+    "registration",
+    "kyc",
+    "financials",
+    "tax",
+    "banking",
+    "working_capital",
+    "collateral",
+    "bureau",
+    "other_known",
+]
+
+InstanceKey = Literal["none", "period", "year", "account", "person", "property"]
+
+
+class DocumentTypeDef(BaseModel):
+    id: str
+    name: str
+    group: DocumentGroup
+    description: str
+    """What the document is, in one sentence; also the model's description."""
+    satisfies: list[str] = Field(default_factory=list)
+    """Checklist item ids this type can satisfy (F-09.6). Empty for types
+    that satisfy nothing (origination and other known types)."""
+    instance_key: InstanceKey = "none"
+    personal: bool = False
+    """Belongs to a person and is attributed to a party (F-10)."""
+    partner_output: bool = False
+    """A report from RBL's GST, bank-statement analysis or bureau partner (F-11)."""
+    dictionary: str | None = None
+    """Id of the field dictionary used to extract this type (F-15)."""
+    signals: SignalSet = Field(default_factory=SignalSet)
+
+
+class DocumentTypesSection(BaseModel):
+    """config/document_types.yaml (F-00.4)."""
+
+    tier1_margin: float = Field(gt=0, le=1)
+    """Minimum score margin over the runner-up for a tier-1 exit (F-09.3)."""
+    classify_threshold: float = Field(gt=0, le=1)
+    """Below this, a document is unclassified (F-09.5)."""
+    types: list[DocumentTypeDef]
+
+
+FieldType = Literal["text", "date", "money_inr", "number", "percent", "identifier", "boolean", "period", "table"]
+IdentifierKind = Literal["pan", "gstin", "cin", "udyam", "din", "ifsc", "tan", "udin", "itr_ack"]
+
+
+class FieldDef(BaseModel):
+    name: str
+    label: str
+    type: FieldType
+    key_field: bool = False
+    """Counts towards C3 and is routed to review below threshold (F-17.2)."""
+    identifier: IdentifierKind | None = None
+    """For type "identifier": the format or checksum to validate against."""
+    description: str = ""
+    columns: list["FieldDef"] = Field(default_factory=list)
+    """For type "table": the columns of each row."""
+
+
+class DictionarySection(BaseModel):
+    """config/dictionaries/<id>.yaml (F-15)."""
+
+    id: str
+    fields: list[FieldDef]
+
+
+class QualitySection(BaseModel):
+    """config/quality.yaml (F-07.2)."""
+
+    min_dpi: int
+    ocr_confidence_floor: float
+    """Below this mean OCR confidence on a page carrying fields: grade C."""
+    ocr_confidence_degraded: float
+    """Below this (and at or above the floor): grade B."""
+    min_chars_text_layer: int
+    """A text layer with fewer characters than this is not trusted."""
+    reason_codes: dict[str, str]
+    """Code to plain-language re-scan request (F-07.4)."""
+
+
+class DocumentAge(BaseModel):
+    type_id: str
+    max_age_days: int
+    measured_from: Literal["document_date", "period_end", "as_at_date", "valuation_date"]
+    source: Source
+
+
+class DocumentAgesSection(BaseModel):
+    """config/document_ages.yaml (F-13.2)."""
+
+    ages: list[DocumentAge]
+
+
+class Tolerance(BaseModel):
+    key: str
+    label: str
+    value: float
+    unit: Literal["%", "inr", "days", "ratio"]
+    source: Source
+
+
+class TolerancesSection(BaseModel):
+    """config/tolerances.yaml (F-19)."""
+
+    tolerances: list[Tolerance]
+
+
+class ConfidenceSection(BaseModel):
+    """config/confidence.yaml (F-17.1)."""
+
+    weights: dict[str, float]
+    caps: dict[str, float]
+    key_field_review_threshold: float
+    manual_entry_cap: float
+
+
 SECTION_MODELS: dict[str, type[BaseModel]] = {
     "policy": PolicySection,
     "checklist_taxonomy": ChecklistTaxonomySection,
+    "document_types": DocumentTypesSection,
+    "quality": QualitySection,
+    "document_ages": DocumentAgesSection,
+    "tolerances": TolerancesSection,
+    "confidence": ConfidenceSection,
 }
+
+
+def cross_check(sections: dict[str, BaseModel]) -> list[str]:
+    """References between sections that must resolve. Returns problems."""
+    problems: list[str] = []
+    checklist = sections["checklist_taxonomy"]
+    types = sections["document_types"]
+    assert isinstance(checklist, ChecklistTaxonomySection) and isinstance(types, DocumentTypesSection)
+    item_ids = {item.id for item in checklist.items}
+    type_ids = [t.id for t in types.types]
+    if len(type_ids) != len(set(type_ids)):
+        problems.append("document_types: duplicate type ids")
+    for t in types.types:
+        for item in t.satisfies:
+            if item not in item_ids:
+                problems.append(f"document_types.{t.id}: satisfies unknown checklist item {item!r}")
+        if t.dictionary and f"dictionary.{t.dictionary}" not in sections:
+            problems.append(f"document_types.{t.id}: no dictionary {t.dictionary!r}")
+        for kind in ("required", "supporting", "contrary"):
+            for pattern in getattr(t.signals, kind):
+                try:
+                    re.compile(pattern, re.IGNORECASE | re.MULTILINE)
+                except re.error as e:
+                    problems.append(f"document_types.{t.id}.signals.{kind}: {pattern!r} does not compile ({e})")
+    covered = {item for t in types.types for item in t.satisfies}
+    for item in sorted(item_ids - covered):
+        problems.append(f"checklist item {item!r} is satisfied by no document type")
+    ages = sections["document_ages"]
+    assert isinstance(ages, DocumentAgesSection)
+    for age in ages.ages:
+        if age.type_id not in type_ids:
+            problems.append(f"document_ages: unknown type {age.type_id!r}")
+    return problems

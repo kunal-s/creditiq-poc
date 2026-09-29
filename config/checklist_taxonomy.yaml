@@ -225,13 +225,44 @@ items:
     weight: 6
     requires_attributes: [cash_credit_requested]
 
+  - id: bureau_report
+    name: Bureau reports, entity and promoters
+    category: "Banking and operations"
+    constitutions: [private_limited, proprietorship, partnership]
+    why: Existing obligations, repayment conduct and the score used at screening.
+    basis: RBL credit policy.
+    source: provisional
+    blocking: true
+    weight: 6
+
+  - id: facilities_declaration
+    name: Declaration of existing facilities
+    category: "Banking and operations"
+    constitutions: [private_limited, proprietorship, partnership]
+    why: The borrower's own statement of every existing borrowing, including a nil declaration.
+    basis: RBL credit policy.
+    source: provisional
+    blocking: true
+    weight: 4
+
+  - id: sanction_letters
+    name: Sanction letters of existing facilities
+    category: "Banking and operations"
+    constitutions: [private_limited, proprietorship, partnership]
+    why: Terms and limits of each declared facility with other lenders.
+    basis: RBL credit policy.
+    source: provisional
+    blocking: false
+    weight: 4
+    requires_attributes: [existing_facilities_declared]
+
   # --- Collateral and security ---
   - id: title_document
     name: Title document
     category: "Collateral and security"
     constitutions: [private_limited, proprietorship, partnership]
     why: Evidences ownership and any subsisting charge on the offered security.
-    basis: "RBL security documentation policy. Taxonomy family: sale deed, encumbrance certificate, or title search report — any member satisfies this requirement."
+    basis: RBL security documentation policy.
     source: published_policy
     blocking: true
     weight: 10

@@ -1,0 +1,29 @@
+# Field dictionary: partnership_deed (docs/functional-requirements.md F-15).
+# key_field: counts towards C3 and is reviewed below threshold (F-17.2).
+id: partnership_deed
+fields:
+- name: firm_name
+  label: Firm name
+  type: text
+  key_field: true
+- name: deed_date
+  label: Date of deed
+  type: date
+- name: borrowing_authority
+  label: Borrowing authority clause
+  type: text
+- name: partners
+  label: Partners
+  type: table
+  key_field: true
+  columns:
+  - name: name
+    label: Name
+    type: text
+  - name: share_pct
+    label: Profit share
+    type: percent
+  - name: pan
+    label: PAN
+    type: identifier
+    identifier: pan

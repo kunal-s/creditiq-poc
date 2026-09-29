@@ -1,0 +1,27 @@
+# Field dictionary: itr_computation (docs/functional-requirements.md F-15).
+# key_field: counts towards C3 and is reviewed below threshold (F-17.2).
+id: itr_computation
+fields:
+- name: assessment_year
+  label: Assessment year
+  type: period
+  key_field: true
+- name: pan
+  label: PAN
+  type: identifier
+  key_field: true
+  identifier: pan
+- name: business_income
+  label: Income from business or profession
+  type: money_inr
+- name: total_income
+  label: Total income
+  type: money_inr
+  key_field: true
+- name: turnover
+  label: Turnover as per computation
+  type: money_inr
+  key_field: true
+- name: tax_payable
+  label: Tax payable
+  type: money_inr

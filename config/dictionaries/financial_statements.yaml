@@ -1,0 +1,87 @@
+# Field dictionary: financial_statements (docs/functional-requirements.md F-15).
+# key_field: counts towards C3 and is reviewed below threshold (F-17.2).
+id: financial_statements
+fields:
+- name: period_end
+  label: Period end
+  type: date
+  key_field: true
+  description: Balance-sheet date, e.g. 31 March 2025
+- name: audited
+  label: Audited
+  type: boolean
+  description: True for audited statements
+- name: auditor
+  label: Auditor
+  type: text
+  description: Audit firm name and registration number as printed
+- name: udin
+  label: UDIN
+  type: identifier
+  identifier: udin
+- name: revenue_from_operations
+  label: Turnover (revenue from operations)
+  type: money_inr
+  key_field: true
+- name: other_income
+  label: Other income
+  type: money_inr
+- name: ebitda
+  label: EBITDA
+  type: money_inr
+  key_field: true
+  description: As printed, or profit before tax + finance costs + depreciation
+- name: depreciation
+  label: Depreciation and amortisation
+  type: money_inr
+- name: finance_costs
+  label: Finance costs
+  type: money_inr
+- name: profit_before_tax
+  label: Profit before tax
+  type: money_inr
+- name: profit_after_tax
+  label: Profit after tax
+  type: money_inr
+  key_field: true
+- name: share_capital
+  label: Share or partners' capital
+  type: money_inr
+- name: reserves_and_surplus
+  label: Reserves and surplus
+  type: money_inr
+- name: net_worth
+  label: Net worth
+  type: money_inr
+  key_field: true
+- name: long_term_borrowings
+  label: Long-term borrowings
+  type: money_inr
+- name: short_term_borrowings
+  label: Short-term borrowings
+  type: money_inr
+- name: total_borrowings
+  label: Total borrowings
+  type: money_inr
+  key_field: true
+- name: inventories
+  label: Inventories
+  type: money_inr
+- name: trade_receivables
+  label: Trade receivables
+  type: money_inr
+- name: trade_payables
+  label: Trade payables
+  type: money_inr
+- name: current_assets
+  label: Current assets
+  type: money_inr
+  key_field: true
+- name: current_liabilities
+  label: Current liabilities
+  type: money_inr
+  key_field: true
+- name: pages_present
+  label: Statements present
+  type: text
+  description: 'Which statements are included: balance sheet, P&L, cash flow, notes'

@@ -1,0 +1,30 @@
+# Field dictionary: gstr_3b (docs/functional-requirements.md F-15).
+# key_field: counts towards C3 and is reviewed below threshold (F-17.2).
+id: gstr_3b
+fields:
+- name: gstin
+  label: GSTIN
+  type: identifier
+  key_field: true
+  identifier: gstin
+- name: legal_name
+  label: Legal name
+  type: text
+- name: period
+  label: Tax period
+  type: period
+  key_field: true
+- name: outward_taxable_supplies
+  label: Outward taxable supplies (3.1a)
+  type: money_inr
+  key_field: true
+- name: tax_payable
+  label: Tax payable
+  type: money_inr
+- name: itc_availed
+  label: Eligible ITC
+  type: money_inr
+- name: filing_date
+  label: Date of filing
+  type: date
+  key_field: true

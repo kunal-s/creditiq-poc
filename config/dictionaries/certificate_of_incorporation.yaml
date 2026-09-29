@@ -1,0 +1,19 @@
+# Field dictionary: certificate_of_incorporation (docs/functional-requirements.md F-15).
+# key_field: counts towards C3 and is reviewed below threshold (F-17.2).
+id: certificate_of_incorporation
+fields:
+- name: company_name
+  label: Company name
+  type: text
+  key_field: true
+- name: cin
+  label: CIN
+  type: identifier
+  key_field: true
+  identifier: cin
+- name: incorporation_date
+  label: Date of incorporation
+  type: date
+- name: registrar
+  label: Registrar of Companies
+  type: text

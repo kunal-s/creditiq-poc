@@ -1,0 +1,40 @@
+# Field dictionary: partner_bank_analysis (docs/functional-requirements.md F-15).
+# key_field: counts towards C3 and is reviewed below threshold (F-17.2).
+id: partner_bank_analysis
+fields:
+- name: accounts
+  label: Accounts
+  type: table
+  key_field: true
+  columns:
+  - name: bank
+    label: Bank
+    type: text
+  - name: account_number_masked
+    label: Account
+    type: text
+  - name: month
+    label: Month
+    type: period
+  - name: credits
+    label: Credits
+    type: money_inr
+  - name: debits
+    label: Debits
+    type: money_inr
+  - name: average_balance
+    label: Average balance
+    type: money_inr
+  - name: emi
+    label: EMIs
+    type: money_inr
+  - name: cheque_returns
+    label: Cheque returns
+    type: number
+  - name: cash_deposits
+    label: Cash deposits
+    type: money_inr
+- name: lenders_paid
+  label: Lenders paid by EMI
+  type: text
+  key_field: true

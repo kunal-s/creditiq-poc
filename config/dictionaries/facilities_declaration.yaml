@@ -1,0 +1,46 @@
+# Field dictionary: facilities_declaration (docs/functional-requirements.md F-15).
+# key_field: counts towards C3 and is reviewed below threshold (F-17.2).
+id: facilities_declaration
+fields:
+- name: declarant
+  label: Declarant
+  type: text
+- name: declaration_date
+  label: Date
+  type: date
+  key_field: true
+- name: nil_declared
+  label: Nil declaration
+  type: boolean
+  key_field: true
+- name: facilities
+  label: Facilities declared
+  type: table
+  key_field: true
+  columns:
+  - name: lender
+    label: Lender
+    type: text
+  - name: facility
+    label: Facility
+    type: text
+  - name: limit
+    label: Limit
+    type: money_inr
+  - name: outstanding
+    label: Outstanding
+    type: money_inr
+  - name: emi
+    label: EMI
+    type: money_inr
+- name: accounts
+  label: Bank accounts declared
+  type: table
+  key_field: true
+  columns:
+  - name: bank
+    label: Bank
+    type: text
+  - name: account_number_masked
+    label: Account
+    type: text

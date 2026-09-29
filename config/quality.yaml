@@ -1,0 +1,19 @@
+# Page quality thresholds (docs/functional-requirements.md F-07). Interim;
+# tuned on RBL's documents. Grade per page: A clean, B degraded, C poor, U unreadable.
+
+min_dpi: 150
+ocr_confidence_floor: 60
+ocr_confidence_degraded: 80
+min_chars_text_layer: 40
+
+# Reason code -> plain-language re-scan request (F-07.4), used on the query list.
+reason_codes:
+  resolution: "The scan resolution is too low to read reliably. Please re-scan at 300 dpi or higher."
+  blur: "The image is blurred. Please re-scan or photograph it again, holding the camera steady."
+  skew: "The page is photographed at an angle. Please re-scan it flat."
+  shadow: "Part of the page is in shadow. Please re-scan in even light."
+  ocr_floor: "The text on this page cannot be read reliably. Please provide a clearer copy."
+  corrupt: "The file is damaged and cannot be opened. Please send it again."
+  encrypted: "The file is password-protected. Please send the password or an unprotected copy."
+  blank: "The page is blank. Please check the document and send the full copy."
+  missing_page: "A page appears to be missing from this document. Please send the complete document."

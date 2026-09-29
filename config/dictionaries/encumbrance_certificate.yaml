@@ -1,0 +1,27 @@
+# Field dictionary: encumbrance_certificate (docs/functional-requirements.md F-15).
+# key_field: counts towards C3 and is reviewed below threshold (F-17.2).
+id: encumbrance_certificate
+fields:
+- name: property
+  label: Property description
+  type: text
+- name: period_from
+  label: Period from
+  type: date
+- name: period_to
+  label: Period to
+  type: date
+- name: encumbrances
+  label: Encumbrances
+  type: table
+  key_field: true
+  columns:
+  - name: beneficiary
+    label: In favour of
+    type: text
+  - name: date
+    label: Date
+    type: date
+  - name: amount
+    label: Amount
+    type: money_inr

@@ -1,0 +1,53 @@
+# Deployment bootstrap configuration (read directly, like roles.yaml; not a
+# published policy section). Operational settings the engine and the
+# screens need; changing one needs no code change
+# (docs/functional-requirements.md F-01, F-03, F-04, F-05).
+
+# Case IDs (F-01.1). {year} is the creation year; {seq} a per-year sequence.
+case_id:
+  format: "BBG-{year}-{seq:06d}"
+
+# How a case arrived (F-04.1). Recorded as provenance, never integrated.
+channels:
+  - {id: email, label: Email}
+  - {id: whatsapp, label: WhatsApp}
+  - {id: phone_note, label: Phone note}
+  - {id: walk_in, label: RM walk-in}
+  - {id: other, label: Other}
+
+# Constitutions a case can carry. "unknown" keeps the checklist provisional (F-12.3).
+constitutions:
+  - {id: private_limited, label: Private limited}
+  - {id: partnership, label: Partnership}
+  - {id: proprietorship, label: Proprietorship}
+  - {id: unknown, label: Not yet confirmed}
+
+# Facilities an application can request (F-04.2), and the checklist
+# attribute each one sets (F-12.1).
+facilities:
+  - {id: cash_credit, label: Cash credit, sets: cash_credit_requested}
+  - {id: overdraft, label: Overdraft, sets: cash_credit_requested}
+  - {id: wcdl, label: Working capital demand loan, sets: cash_credit_requested}
+  - {id: term_loan, label: Term loan, sets: term_loan_requested}
+  - {id: packing_credit, label: Export packing credit, sets: cash_credit_requested}
+  - {id: post_shipment, label: Post-shipment finance, sets: cash_credit_requested}
+  - {id: bank_guarantee, label: Bank guarantee, sets: null}
+  - {id: letter_of_credit, label: Letter of credit, sets: null}
+
+# Fields a case must have before it can be created (F-04.6).
+case_create_minimum: [borrower, facilities, amount_inr]
+
+# Upload limits (F-05.1, F-05.2).
+uploads:
+  max_file_mb: 50
+  max_archive_mb: 500
+  archive_depth: 3
+
+# Sessions (F-03.3).
+sessions:
+  idle_minutes: 480
+  absolute_hours: 12
+
+# The document-processing sidecar (AD-2).
+services:
+  ingest_url: "http://127.0.0.1:3002"

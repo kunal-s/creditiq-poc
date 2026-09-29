@@ -7,6 +7,13 @@
 # until RBL's own policy norms replace it. Eligibility, security cover,
 # documentation norms and deviation categories are added with F-20.
 
+# Working-capital assessment method (F-12.2): turnover method up to the
+# limit, MPBF (with CMA data) above it.
+working_capital:
+  mpbf_above_limit_inr: 50000000
+  source: regulatory
+  status: provisional
+
 ratios:
   - key: current-ratio
     label: Current ratio

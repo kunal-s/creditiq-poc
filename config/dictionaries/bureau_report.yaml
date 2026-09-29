@@ -1,0 +1,49 @@
+# Field dictionary: bureau_report (docs/functional-requirements.md F-15).
+# key_field: counts towards C3 and is reviewed below threshold (F-17.2).
+id: bureau_report
+fields:
+- name: subject_name
+  label: Subject
+  type: text
+  key_field: true
+- name: pan
+  label: PAN
+  type: identifier
+  identifier: pan
+- name: report_date
+  label: Report date
+  type: date
+- name: score
+  label: Score or rank
+  type: text
+  key_field: true
+- name: facilities
+  label: Credit facilities
+  type: table
+  key_field: true
+  columns:
+  - name: lender
+    label: Lender
+    type: text
+  - name: facility_type
+    label: Type
+    type: text
+  - name: sanctioned
+    label: Sanctioned
+    type: money_inr
+  - name: outstanding
+    label: Outstanding
+    type: money_inr
+  - name: emi
+    label: EMI
+    type: money_inr
+  - name: overdue
+    label: Overdue
+    type: money_inr
+  - name: status
+    label: Status
+    type: text
+- name: observations
+  label: Key observations
+  type: text
+  key_field: true

@@ -1,0 +1,16 @@
+# Field dictionary: pan_entity (docs/functional-requirements.md F-15).
+# key_field: counts towards C3 and is reviewed below threshold (F-17.2).
+id: pan_entity
+fields:
+- name: name
+  label: Name
+  type: text
+  key_field: true
+- name: pan
+  label: PAN
+  type: identifier
+  key_field: true
+  identifier: pan
+- name: date_of_incorporation
+  label: Date of incorporation or formation
+  type: date

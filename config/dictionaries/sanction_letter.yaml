@@ -1,0 +1,29 @@
+# Field dictionary: sanction_letter (docs/functional-requirements.md F-15).
+# key_field: counts towards C3 and is reviewed below threshold (F-17.2).
+id: sanction_letter
+fields:
+- name: lender
+  label: Lender
+  type: text
+  key_field: true
+- name: borrower
+  label: Borrower
+  type: text
+- name: facility
+  label: Facility
+  type: text
+  key_field: true
+- name: sanctioned_amount
+  label: Sanctioned amount
+  type: money_inr
+  key_field: true
+- name: sanction_date
+  label: Sanction date
+  type: date
+- name: emi
+  label: Instalment (EMI)
+  type: money_inr
+  key_field: true
+- name: tenor_months
+  label: Tenor (months)
+  type: number

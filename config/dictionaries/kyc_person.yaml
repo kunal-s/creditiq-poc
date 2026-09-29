@@ -1,0 +1,26 @@
+# Field dictionary: kyc_person (docs/functional-requirements.md F-15).
+# key_field: counts towards C3 and is reviewed below threshold (F-17.2).
+id: kyc_person
+fields:
+- name: name
+  label: Name
+  type: text
+  key_field: true
+- name: pan
+  label: PAN
+  type: identifier
+  key_field: true
+  identifier: pan
+- name: date_of_birth
+  label: Date of birth
+  type: date
+- name: father_name
+  label: Father's name
+  type: text
+- name: id_number_last4
+  label: Document number, last four characters
+  type: text
+  description: Never store a full Aadhaar number
+- name: address
+  label: Address
+  type: text

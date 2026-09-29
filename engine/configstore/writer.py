@@ -18,7 +18,7 @@ from pathlib import Path
 import yaml
 from pydantic import BaseModel
 
-from .schema import SECTION_MODELS
+from .schema import SECTION_MODELS, DictionarySection, cross_check
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_DIR = REPO_ROOT / "config"
@@ -52,6 +52,16 @@ def load_authored_sections() -> dict[str, BaseModel]:
             raise FileNotFoundError(f"missing authored config section: {path}")
         sections[name] = model.model_validate(_load_yaml(path))
 
+    # Field dictionaries, one per document type (F-15): config/dictionaries/<id>.yaml
+    for path in sorted((CONFIG_DIR / "dictionaries").glob("*.yaml")):
+        dictionary = DictionarySection.model_validate(_load_yaml(path))
+        if dictionary.id != path.stem:
+            raise ValueError(f"{path.name}: id {dictionary.id!r} does not match the file name")
+        sections[f"dictionary.{dictionary.id}"] = dictionary
+
+    problems = cross_check(sections)
+    if problems:
+        raise ValueError("config cross-check failed:\n  " + "\n  ".join(problems))
     return sections
 
 

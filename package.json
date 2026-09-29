@@ -18,7 +18,8 @@
     "config:publish": ".venv/bin/python -m engine.cli config publish --author",
     "gen:api": ".venv/bin/python scripts/gen_contracts.py && openapi-typescript contracts/openapi.json -o src/api/schema.gen.ts && prettier --write src/api/schema.gen.ts",
     "check:contracts": "npm run gen:api && git diff --exit-code -- contracts src/api/schema.gen.ts",
-    "check": "npm run check:contracts && npm run typecheck && npm run lint && npm run test:py && npm run lint:imports && npm run check:terms && npm run build"
+    "test:e2e": "playwright test",
+    "check": "npm run check:contracts && npm run typecheck && npm run lint && npm run test:py && npm run lint:imports && npm run check:terms && npm run build && npm run test:e2e"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.15",

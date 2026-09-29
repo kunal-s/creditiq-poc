@@ -3,7 +3,8 @@ import { useMemo, useState, type ReactNode } from "react";
 import { ChevronRight, LogOut, Menu } from "lucide-react";
 import { APPRAISAL_STEPS, buildNav, type NavGroup } from "./nav";
 import { useSession, signOut } from "@/domain/session";
-import { formatInr, useCase } from "@/domain/cases";
+import { formatInr, stageLabel, useCase, useLabels } from "@/domain/cases";
+import { DocViewerProvider } from "@/components/docviewer/DocViewer";
 import { t } from "@/config/terminology";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -58,7 +59,7 @@ function TopBar({ menu }: { menu: ReactNode }) {
           </span>
           <button
             type="button"
-            aria-label="Sign out"
+            aria-label={t("action.signOut")}
             onClick={() => void signOut()}
             className="grid h-8 w-8 place-items-center rounded text-sidebar-foreground/80 hover:bg-sidebar-accent"
           >
@@ -96,7 +97,10 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
                 item.to === "/"
                   ? pathname === "/"
                   : pathname === to ||
-                    (!item.step && pathname.startsWith(to + "/") && to !== "/appraisals");
+                    (!item.step &&
+                      pathname.startsWith(to + "/") &&
+                      to !== "/appraisals" &&
+                      to !== "/docready");
               return (
                 <li key={`${group.id}-${item.to}`}>
                   <Link
@@ -145,7 +149,7 @@ function MobileMenu() {
       <SheetTrigger asChild>
         <button
           type="button"
-          aria-label="Open menu"
+          aria-label={t("action.openMenu")}
           className="grid h-8 w-8 place-items-center rounded text-sidebar-foreground/80 hover:bg-sidebar-accent md:hidden"
         >
           <Menu className="h-4 w-4" />
@@ -155,7 +159,7 @@ function MobileMenu() {
         side="left"
         className="w-64 border-sidebar-border bg-sidebar p-0 py-3 text-sidebar-foreground"
       >
-        <SheetTitle className="sr-only">Menu</SheetTitle>
+        <SheetTitle className="sr-only">{t("action.menu")}</SheetTitle>
         <NavLinks onNavigate={() => setOpen(false)} />
       </SheetContent>
     </Sheet>
@@ -165,25 +169,38 @@ function MobileMenu() {
 function ContextStrip() {
   const { pathname, caseId } = useActiveCaseId();
   const { data: c } = useCase(caseId);
-  if (!caseId || !c) return null;
+  const labels = useLabels();
+  // The DocReady workspace carries its own case header (its layout route).
   const onAppraisal = pathname.startsWith("/appraisals/");
+  if (!caseId || !c || !onAppraisal) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-border bg-surface px-5 py-2.5">
+    <div
+      className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-border bg-surface px-4 py-2.5 sm:px-5"
+      data-testid="context-strip"
+    >
       <div className="min-w-0">
         <span className="truncate text-[14px] font-semibold text-foreground">{c.borrower}</span>
         <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] text-muted-foreground tabular">
           <span>{c.id}</span>
+          <span className="text-border">|</span>
+          <span>{labels.constitution(c.constitution)}</span>
+          <span className="text-border">|</span>
+          <span>{labels.facilities(c.facilities)}</span>
           {c.pan && (
             <>
               <span className="text-border">|</span>
-              <span>PAN {c.pan}</span>
+              <span>
+                {t("identifier.pan")} {c.pan}
+              </span>
             </>
           )}
           {c.gstin && (
             <>
               <span className="text-border">|</span>
-              <span>GSTIN {c.gstin}</span>
+              <span>
+                {t("identifier.gstin")} {c.gstin}
+              </span>
             </>
           )}
           <span className="text-border">|</span>
@@ -191,32 +208,30 @@ function ContextStrip() {
         </div>
       </div>
 
-      {onAppraisal && (
-        <div className="flex flex-wrap items-center gap-1">
-          {APPRAISAL_STEPS.map((step) => {
-            const to = `/appraisals/${encodeURIComponent(c.id)}/${step.to}`;
-            return (
-              <Link
-                key={step.to}
-                to={to}
-                className={cn(
-                  "rounded px-2 py-1 text-[11px] font-medium transition-colors",
-                  pathname === to
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted",
-                )}
-              >
-                {t(`step.${step.key}`)}
-              </Link>
-            );
-          })}
-        </div>
-      )}
+      <div className="hidden flex-wrap items-center gap-1 md:flex">
+        {APPRAISAL_STEPS.map((step) => {
+          const to = `/appraisals/${encodeURIComponent(c.id)}/${step.to}`;
+          return (
+            <Link
+              key={step.to}
+              to={to}
+              className={cn(
+                "rounded px-2 py-1 text-[11px] font-medium transition-colors",
+                pathname === to
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted",
+              )}
+            >
+              {t(`step.${step.key}`)}
+            </Link>
+          );
+        })}
+      </div>
 
-      <div className="ml-auto flex items-center gap-5 text-[11px]">
+      <div className="flex items-center gap-5 text-[11px] md:ml-auto">
         <div>
           <span className="field-label block">{t("term.stage")}</span>
-          <span className="text-[12px] text-foreground">{c.stage}</span>
+          <span className="text-[12px] text-foreground">{stageLabel(c.stage)}</span>
         </div>
         <div>
           <span className="field-label block">{t("term.rm")}</span>
@@ -243,8 +258,10 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="flex min-h-0 flex-1">
         <SideNav />
         <div className="flex min-w-0 flex-1 flex-col">
-          <ContextStrip />
-          <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
+          <DocViewerProvider>
+            <ContextStrip />
+            <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
+          </DocViewerProvider>
         </div>
       </div>
     </div>

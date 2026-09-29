@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,9 @@ function SignInPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  // Until the page is interactive the form must not submit natively.
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -25,7 +28,7 @@ function SignInPage() {
       await signIn(email, password);
       navigate({ to: "/" });
     } catch {
-      toast.error("Sign-in failed", { description: "Check the email and password and try again." });
+      toast.error(t("signIn.failed"), { description: t("signIn.failedHelp") });
     } finally {
       setSubmitting(false);
     }
@@ -50,7 +53,7 @@ function SignInPage() {
           className="space-y-4 rounded-lg border border-border bg-surface p-6"
         >
           <div className="space-y-1.5">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t("signIn.email")}</Label>
             <Input
               id="email"
               type="email"
@@ -62,7 +65,7 @@ function SignInPage() {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t("signIn.password")}</Label>
             <Input
               id="password"
               type="password"
@@ -72,13 +75,11 @@ function SignInPage() {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
-          <Button type="submit" className="w-full" disabled={submitting}>
-            {submitting ? "Signing in…" : "Sign in"}
+          <Button type="submit" className="w-full" disabled={!ready || submitting}>
+            {submitting ? t("signIn.submitting") : t("page.signIn.title")}
           </Button>
         </form>
-        <p className="mt-4 text-center text-xs text-muted-foreground">
-          POC sign-in — any user in the directory, shared password given to the reviewing team.
-        </p>
+        <p className="mt-4 text-center text-xs text-muted-foreground">{t("signIn.help")}</p>
       </div>
     </div>
   );

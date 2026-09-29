@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Source | `github.com/ashok-j2w/onegrc`, `packages/ingest-engine` |
+| Source | The OneGRC monorepo, `packages/ingest-engine` (repository URL in the private handoff note) |
 | Commit | see `.vendored-from` (vendored 29 September 2026 from `main`) |
 | Runs as | A sidecar service the CreditIQ engine calls over HTTP (FRD AD-2) |
 | Owns | FRD F-07 to F-09, F-11 and F-15: page reading, quality grade, splitting, classification, field extraction (including partner reports). Case-level work (register, party attribution F-10, checklist, review) stays in the CreditIQ engine |

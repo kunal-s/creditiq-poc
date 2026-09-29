@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { api } from "@/api/client";
+import { api, configureAuth } from "@/api/client";
 import type { SessionUser } from "@/api/types";
 
 const STORAGE_KEY = "creditiq.session";
@@ -8,21 +8,11 @@ type SessionState = { token: string; user: SessionUser } | null;
 
 let state: SessionState = null;
 let hydrated = false;
+let revalidated = false;
 const listeners = new Set<() => void>();
 
 function notify() {
   for (const listener of listeners) listener();
-}
-
-function hydrate() {
-  if (hydrated || typeof window === "undefined") return;
-  hydrated = true;
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (raw) state = JSON.parse(raw) as SessionState;
-  } catch {
-    state = null;
-  }
 }
 
 function persist() {
@@ -35,23 +25,52 @@ function persist() {
   }
 }
 
-export async function signIn(email: string, password: string) {
-  const { token, user } = await api.login(email, password);
-  state = { token, user };
-  persist();
-  notify();
-}
-
-export async function signOut() {
-  if (state) await api.logout(state.token).catch(() => undefined);
+function clear() {
+  if (!state) return;
   state = null;
   persist();
   notify();
 }
 
-export function getToken(): string | null {
-  hydrate();
-  return state?.token ?? null;
+configureAuth(() => state?.token ?? null, clear);
+
+function hydrate() {
+  if (hydrated || typeof window === "undefined") return;
+  hydrated = true;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (raw) state = JSON.parse(raw) as SessionState;
+  } catch {
+    state = null;
+  }
+  // A stored token may have expired or been signed out elsewhere: confirm it
+  // once with the server and refresh the user (roles and permissions).
+  if (state && !revalidated) {
+    revalidated = true;
+    api
+      .session()
+      .then((user) => {
+        if (state) {
+          state = { token: state.token, user };
+          persist();
+          notify();
+        }
+      })
+      .catch(clear);
+  }
+}
+
+export async function signIn(email: string, password: string) {
+  const { token, user } = await api.login(email, password);
+  state = { token, user };
+  revalidated = true;
+  persist();
+  notify();
+}
+
+export async function signOut() {
+  if (state) await api.logout().catch(() => undefined);
+  clear();
 }
 
 export function useSession() {
@@ -66,4 +85,8 @@ export function useSession() {
     },
     () => null, // SSR: no session on the server render; the client hydrates and re-renders.
   );
+}
+
+export function can(permission: string): boolean {
+  return state?.user.permissions.includes(permission) ?? false;
 }

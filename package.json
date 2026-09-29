@@ -16,7 +16,9 @@
     "lint:imports": ".venv/bin/lint-imports",
     "check:terms": ".venv/bin/python -m engine.cli check excluded-terms --names workflow/private/stakeholder-names.txt --root .",
     "config:publish": ".venv/bin/python -m engine.cli config publish --author",
-    "check": "npm run typecheck && npm run lint && npm run test:py && npm run lint:imports && npm run check:terms && npm run build"
+    "gen:api": ".venv/bin/python scripts/gen_contracts.py && openapi-typescript contracts/openapi.json -o src/api/schema.gen.ts && prettier --write src/api/schema.gen.ts",
+    "check:contracts": "npm run gen:api && git diff --exit-code -- contracts src/api/schema.gen.ts",
+    "check": "npm run check:contracts && npm run typecheck && npm run lint && npm run test:py && npm run lint:imports && npm run check:terms && npm run build"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -67,6 +69,7 @@
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^15.15.0",
     "nitro": "3.0.260603-beta",
+    "openapi-typescript": "^7.13.0",
     "prettier": "^3.7.3",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.56.1",

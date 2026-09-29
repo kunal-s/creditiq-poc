@@ -19,12 +19,94 @@ tenant:
 nav:
   group:
     workbench: Workbench
+    docready: DocReady
+    appraisal: Appraisal
+    governance: Governance
   home: Home
+  myAppraisals: My Appraisals
+  readinessConsole: Readiness Console
+  newApplication: New Application
+  exceptionQueue: Exception Queue
+  scorecard: Scorecard
+
+# Appraisal steps (FRD §6), in the prototype's order.
+step:
+  identity: Identity
+  documents: Documents
+  data: Data
+  spread: Spread
+  crossVerification: Cross-Verification
+  policy: Policy
+  draft: Draft and PD Note
+  comparison: Comparison
+
+# DocReady case tabs (FRD §6).
+docreadyTab:
+  checklist: Checklist
+  validation: Validation
+  readiness: Readiness
+  queries: Queries
 
 page:
   home:
     title: Credit Workbench
     purpose: Every application in progress, with its stage and the items waiting for review.
+  appraisals:
+    eyebrow: Workbench
+    title: My Appraisals
+    purpose: Every application you can see, with its stage and open review items.
+  newApplication:
+    eyebrow: Appraisal
+    title: New application
+    purpose: Start from whatever the RM has, a message or a pile of documents. Nothing is created until you confirm.
+  readinessConsole:
+    eyebrow: DocReady
+    title: Readiness Console
+    purpose: Every case in collection, weighted by document importance, until the file is complete enough to underwrite.
+  checklist:
+    title: Required document set
+    purpose: The checklist derived from the case's constitution and facilities, with each item satisfied, insufficient or missing.
+  validation:
+    title: Machine checks by document
+    purpose: Every document received, its quality, what it was identified as, and each check it passed or failed.
+  readiness:
+    title: Readiness
+    purpose: How complete the file is against the review gate, and what is still blocking.
+  queries:
+    title: Pre-login query list
+    purpose: Everything needed from the customer, in one list the RM can send in one go.
+  identity:
+    title: Entity and parties
+    purpose: The borrower's identifiers and the promoters, directors or partners, each with the document it came from.
+  documents:
+    title: Documents
+    purpose: Every file received for this case, how it was split, and the status of each document.
+  data:
+    title: Extracted data
+    purpose: Key fields by source, each with its confidence and a link to the page it came from.
+  spread:
+    title: Financial spread
+    purpose: The financial statements normalised into RBL's spread, every figure traceable to its page.
+  crossVerification:
+    title: Cross-verification and discrepancy
+    purpose: Every source lined up against every other, with the evidence on both sides of each finding.
+  policy:
+    title: Policy norms and deviations
+    purpose: RBL's norms evaluated for this case, deviations with the norm, the actual value and its source, and the approving authority.
+  draft:
+    title: CAM draft and PD note
+    purpose: The draft Credit Approval Memo in RBL's template, and the questions for the personal discussion.
+  comparison:
+    title: Comparison with RBL's record
+    purpose: This case's output beside the assessment RBL credit made at the time, for adjudication.
+  exceptions:
+    eyebrow: Governance
+    title: Exception queue
+    purpose: Everything waiting for a person across cases, with the decision each one needs.
+  scorecard:
+    eyebrow: Governance
+    title: Scorecard
+    purpose: The PoC success criteria, per case and across the case set.
   signIn:
     title: Sign in
 
@@ -65,6 +147,9 @@ term:
   waiver: waiver
   sanction: sanction
   login: Login
+  stage: Stage
+  rm: Relationship manager
+  reviewItemsOpen: open review items
 
 # Checklist item status (FRD F-13).
 docStatus:

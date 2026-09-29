@@ -5,25 +5,21 @@ import { PageHeader } from "@/components/shell/PageHeader";
 import { EmptyState } from "@/components/shell/EmptyState";
 import { CasesTable } from "@/components/cases/CasesTable";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/appraisals/")({
   head: () => ({
-    meta: [
-      { title: t("tenant.product.documentTitleTemplate") },
-      { name: "description", content: t("tenant.product.metaDescription") },
-    ],
+    meta: [{ title: `${t("page.appraisals.title")} — ${t("tenant.product.name")}` }],
   }),
-  component: Workbench,
+  component: MyAppraisals,
 });
 
-function Workbench() {
+function MyAppraisals() {
   const { data: cases = [], isLoading, isError } = useCases();
-
   return (
     <div>
       <PageHeader
-        eyebrow={t("tenant.bank.unit")}
-        title={t("page.home.title")}
-        purpose={t("page.home.purpose")}
+        eyebrow={t("page.appraisals.eyebrow")}
+        title={t("page.appraisals.title")}
+        purpose={t("page.appraisals.purpose")}
       />
       <div className="px-6 py-5">
         {isError ? (

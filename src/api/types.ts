@@ -1,39 +1,26 @@
-import { z } from "zod";
+// Types for the engine API, generated from its OpenAPI schema
+// (docs/functional-requirements.md AD-4). Run `npm run gen:api` after
+// changing engine/contracts; never edit schema.gen.ts by hand.
+import type { components } from "./schema.gen";
 
-// Mirrors engine/schemas.py by hand until the client is generated from the
-// service's OpenAPI schema.
+type S = components["schemas"];
 
-// Case stages (docs/functional-requirements.md §7).
-export const StageSchema = z.enum(["Intake", "Readiness", "Appraisal", "Outputs", "Completed"]);
-export type Stage = z.infer<typeof StageSchema>;
-
-export const CaseSchema = z.object({
-  id: z.string(),
-  borrower: z.string(),
-  constitution: z.string(),
-  product: z.string(),
-  amount: z.string(),
-  stage: StageSchema,
-  rm: z.string(),
-  created: z.string(),
-  openReviewItems: z.number(),
-});
-export type Case = z.infer<typeof CaseSchema>;
-
-export const SessionUserSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  role: z.string(),
-  roleLabel: z.string(),
-  email: z.string(),
-  branch: z.string(),
-  initials: z.string(),
-  navGroups: z.array(z.string()),
-});
-export type SessionUser = z.infer<typeof SessionUserSchema>;
-
-export const LoginResponseSchema = z.object({
-  token: z.string(),
-  user: SessionUserSchema,
-});
-export type LoginResponse = z.infer<typeof LoginResponseSchema>;
+export type CaseSummary = S["CaseSummary"];
+export type CaseDetail = S["CaseDetail"];
+export type CaseCreate = S["CaseCreate"];
+export type HeaderField = S["HeaderField"];
+export type Stage = CaseSummary["stage"];
+export type FileRecord = S["FileRecord"];
+export type LogicalDocument = S["LogicalDocument"];
+export type PageInfo = S["PageInfo"];
+export type Classification = S["Classification"];
+export type FieldValue = S["FieldValue"];
+export type Evidence = S["Evidence"];
+export type Readiness = S["Readiness"];
+export type ChecklistItemState = S["ChecklistItemState"];
+export type QueryItem = S["QueryItem"];
+export type Finding = S["Finding"];
+export type ReviewItem = S["ReviewItem"];
+export type SessionUser = S["SessionUser"];
+export type LoginResponse = S["LoginResponse"];
+export type Meta = S["Meta"];

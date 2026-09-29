@@ -1,4 +1,4 @@
-"""Excluded-terms check (plan.md C11/C12; CLAUDE.md rule 3).
+"""Excluded-terms check (CLAUDE.md rules 3 and 9; FRD principle 11).
 
 The stakeholder-name list is private material that stays out of this
 repository. This module never prints its contents: `check` reports only

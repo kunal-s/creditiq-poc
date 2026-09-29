@@ -1,57 +1,28 @@
-"""API schemas. Mirrored by hand in src/api/types.ts (zod), kept in step
-manually until Stage C generates the TS client from this service's OpenAPI
-schema (plan.md section 3: "types generated from the service's OpenAPI")."""
+"""API schemas. Mirrored by hand in src/api/types.ts (zod) until the TS
+client is generated from this service's OpenAPI schema."""
 
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel
 
-Stage = Literal[
-    "Identity",
-    "Data",
-    "Spread",
-    "Cross-Verification",
-    "Draft",
-    "Submission",
-    "Completed",
-]
+# Case stages (docs/functional-requirements.md §7).
+Stage = Literal["Intake", "Readiness", "Appraisal", "Outputs", "Completed"]
 
 
 class Case(BaseModel):
+    """Workbench view of a case (FRD F-01.4)."""
+
     id: str
     borrower: str
-    sector: str
-    pan: str
-    gstin: str
-    proposal: str
-    facilities: str
-    exposure: str
+    constitution: str
+    product: str
+    amount: str
     stage: Stage
-    analyst: str
     rm: str
-    started: str
-    completed: Optional[str] = None
-    rating: str
-    ratingLabel: str
-    discrepancies: int
-    reviewDue: Optional[str] = None
-    branch: str
-
-
-class Role(BaseModel):
-    id: str
-    label: str
-
-
-class DirectoryUser(BaseModel):
-    id: str
-    name: str
-    role: str
-    roleLabel: str
-    email: str
-    branch: str
+    created: str
+    openReviewItems: int
 
 
 class SessionUser(BaseModel):

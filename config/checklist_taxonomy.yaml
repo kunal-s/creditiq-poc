@@ -103,7 +103,7 @@ items:
     name: Udyam registration
     category: "Constitution and KYC"
     constitutions: [private_limited, proprietorship, partnership]
-    why: Confirms MSME classification, which drives the assessment method (FR-3).
+    why: Confirms MSME classification, which drives the assessment method.
     basis: MSMED Act registration.
     source: regulatory
     blocking: false
@@ -176,7 +176,7 @@ items:
     category: Financials
     constitutions: [private_limited, proprietorship, partnership]
     why: Required to compute the Maximum Permissible Bank Finance (MPBF).
-    basis: RBL credit policy, MPBF method (FR-3).
+    basis: RBL credit policy, MPBF method.
     source: published_policy
     blocking: true
     weight: 6

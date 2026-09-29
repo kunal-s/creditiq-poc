@@ -1,6 +1,6 @@
 """Checklist derivation: which documents a case needs, from its constitution
-and attributes (plan.md section 7 Stage B: "tested for every constitution
-and attribute combination").
+and attributes (docs/functional-requirements.md F-12; tested for every
+constitution and attribute combination).
 
 Reads only the published config store — never `config/checklist_taxonomy.yaml`
 directly (see .importlinter) — so a policy publish is the only way this

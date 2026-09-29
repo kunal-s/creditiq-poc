@@ -1,13 +1,9 @@
 import {
   CaseSchema,
-  DirectoryUserSchema,
   LoginResponseSchema,
-  RoleSchema,
   SessionUserSchema,
   type Case,
-  type DirectoryUser,
   type LoginResponse,
-  type Role,
   type SessionUser,
 } from "./types";
 
@@ -43,9 +39,6 @@ async function request<T>(
 export const api = {
   listCases: () => request<Case[]>("/api/cases", { parse: (v) => CaseSchema.array().parse(v) }),
   getCase: (id: string) => request<Case>(`/api/cases/${encodeURIComponent(id)}`, CaseSchema),
-  listRoles: () => request<Role[]>("/api/roles", { parse: (v) => RoleSchema.array().parse(v) }),
-  listUsers: () =>
-    request<DirectoryUser[]>("/api/users", { parse: (v) => DirectoryUserSchema.array().parse(v) }),
   login: (email: string, password: string) =>
     request<LoginResponse>("/api/auth/login", LoginResponseSchema, {
       method: "POST",

@@ -1,6 +1,6 @@
-"""Config loading for the engine (roles + terminology).
+"""Config loading for the engine (roles and the sign-in directory).
 
-Authored YAML, read-only here. The configuration *writer* (drafts, publish,
+Authored YAML, read-only here. The configuration *writer* (publish and
 versioning under the data root) is a separate package this module must
 never import (CLAUDE.md rule 4).
 """
@@ -18,12 +18,6 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 @lru_cache
 def load_roles_config() -> dict:
     path = REPO_ROOT / "config" / "roles.yaml"
-    return yaml.safe_load(path.read_text(encoding="utf-8"))
-
-
-@lru_cache
-def load_terminology() -> dict:
-    path = REPO_ROOT / "terminology" / "rbl.yaml"
     return yaml.safe_load(path.read_text(encoding="utf-8"))
 
 

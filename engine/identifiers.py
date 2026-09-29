@@ -2,9 +2,8 @@
 
 Only GSTIN has a public checksum (implemented and enforced here). PAN, CIN,
 Udyam, DIN, IFSC, TAN and UDIN have no public check algorithm — format and
-internal-consistency checks are as far as code can go. Non-existence against
-the real registries is the human verification step (plan.md section 4 "Name
-verification", C11): CAPTCHA-gated portals this module cannot reach.
+internal-consistency checks are as far as code can go. Invalid identifiers
+are flagged, never corrected (docs/functional-requirements.md F-04.4, F-15).
 """
 
 from __future__ import annotations
@@ -12,15 +11,6 @@ from __future__ import annotations
 import re
 
 _GSTIN_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
-_STATE_CODES = {
-    "TN": "33",
-    "MH": "27",
-    "PB": "03",
-    "GJ": "24",
-    "KA": "29",
-    "DL": "07",
-}
 
 # PAN 4th character by constitution/holder type.
 PAN_FOURTH_CHAR = {
@@ -35,15 +25,6 @@ PAN_FOURTH_CHAR = {
     "local_authority": "L",
     "artificial_juridical_person": "J",
     "government": "G",
-}
-
-# Unverified against the Udyam portal at generation time — hold for the
-# human check (plan.md C11) before treating a case as release-ready.
-UDYAM_DISTRICT_CODES = {
-    "TN": "03",  # Coimbatore
-    "MH": "26",  # Pune
-    "PB": "12",  # Ludhiana
-    "GJ": "22",  # Surat
 }
 
 _PAN_RE = re.compile(r"^[A-Z]{3}[ABCFGHJLPT][A-Z][0-9]{4}[A-Z]$")

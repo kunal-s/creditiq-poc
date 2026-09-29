@@ -1,6 +1,6 @@
-"""Sign-in for the POC: one shared password (config/roles.yaml), hashed and
-verified server-side, real bearer-token sessions (no runtime state persists
-across process restarts — Stage A has no session store yet)."""
+"""Sign-in for the PoC: one shared password (config/roles.yaml), hashed and
+verified server-side, bearer-token sessions held in memory (a restart signs
+everyone out). Named credentials and persistent sessions are FRD F-03."""
 
 from __future__ import annotations
 

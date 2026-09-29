@@ -1,82 +1,74 @@
-# CreditIQ — RBL Bank (Business Banking Group) instance
+# CreditIQ — RBL Bank (Business Banking Group) PoC
 
-CreditIQ is an identifier-to-CAM (Credit Appraisal Memorandum) automation
-workbench for a bank's credit team. This repository is the RBL Bank instance:
-RBL's terminology, policy and process as versioned configuration, in front of
-a real document-processing pipeline, proven first on fictional sample cases
-with known correct answers before any real case file is loaded.
+CreditIQ prepares a Business Banking credit file: it creates the case from
+the RM's sourcing message, reads and classifies every document, checks the
+file against RBL's checklist, extracts key fields with page-level evidence,
+cross-checks the sources, and drafts the spread, CAM and PD note for credit.
+
+**What to build, and in what order:
+[docs/functional-requirements.md](docs/functional-requirements.md).** Every
+feature there traces to the PoC test plan (TC-01 to TC-31, criteria C1 to
+C9). Working rules for this repository are in [CLAUDE.md](CLAUDE.md).
+
+## Current state
+
+The repository is a clean base (FRD §C.5): the application shell, sign-in,
+the workbench case list, the configuration store (validate, publish,
+version, diff), the checklist deriver, identifier validators and the
+excluded-terms sweep. Everything else is built feature by feature from the
+FRD.
 
 ## Running the app
 
-The app is two processes: the React frontend and the Python engine service
-behind it (sign-in, cases). Both must be running — the frontend calls the
-engine over HTTP and shows nothing useful without it.
+Two processes: the Python engine service (port 8000) and the React frontend.
 
-After the one-time setup below, `./scripts/start.sh` starts both in one
-terminal (engine in the background, frontend in the foreground; Ctrl+C stops
-both). The steps below are the equivalent two-terminal version, useful when
-you want the engine's logs on their own.
-
-**1. One-time setup**
+**One-time setup** (inside WSL, as the repository owner)
 
 ```sh
+# Node 22 from nvm (the system Node is too old)
+source ~/.nvm/nvm.sh && nvm use 22
 npm install
 
 python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+.venv/bin/pip install pip-tools
+.venv/bin/pip-sync requirements.txt
+
+# Publish the authored configuration into the data root (once, and after
+# every change under config/)
+npm run config:publish -- "<your name>"
 ```
 
-**2. Start the engine service** (terminal 1)
+**Start both**
 
 ```sh
-npm run dev:api
+./scripts/start.sh        # engine in the background, frontend on :4173
 ```
 
-Serves on `http://localhost:8000`. Reads `CREDITIQ_DATA_ROOT`, which defaults
-to `workflow/data` inside this repository (a git-ignored local folder);
-override it if your case store lives elsewhere:
+or in two terminals: `npm run dev:api` and `npm run dev`.
+
+**Sign in** with any user in `config/roles.yaml` (one per role: RM, Credit
+Analyst, Credit Manager) and the shared password in that file.
+
+## Checks
 
 ```sh
-CREDITIQ_DATA_ROOT=/path/to/data npm run dev:api
+npm run check     # typecheck, eslint, pytest, import contract, excluded terms, build
 ```
 
-**3. Start the frontend** (terminal 2)
-
-```sh
-npm run dev
-```
-
-Vite prints the local URL (defaults to `http://localhost:5173`; port 4173 is
-also pre-approved for the engine's CORS if you pin it with `--port 4173`).
-The frontend expects the engine at `http://localhost:8000` by default; point
-it elsewhere with `VITE_API_BASE_URL` if needed.
-
-**4. Sign in**
-
-Use any account from `config/roles.yaml`'s `users` list (e.g.
-`ananya.krishnan@rblbank.com`) with the shared password in that file's
-`auth.demoPassword` — also shown on the sign-in screen itself. No case data
-exists until Stage B's sample generator has run, so most screens will show
-their empty state; that's expected.
-
-**Building for production**
-
-```sh
-npm run build
-npm run preview
-```
+Individually: `npm run typecheck`, `npm run lint`, `npm run test:py`,
+`npm run lint:imports`, `npm run check:terms`, `npm run build`.
 
 ## Structure
 
-- `src/` — the React frontend (TanStack Start/Router, Tailwind, shadcn/ui).
-- `terminology/rbl.yaml` — RBL's vocabulary for the frontend, read through
-  `src/config/terminology.ts`'s `t()` / `useTerms()`.
-- `engine/` — the Python service, CLI and processing pipeline.
-- `config/` — policy, checklist, rules and other versioned configuration
-  authored here and published as immutable versions to the data root.
-- `scripts/docgen/` — the sample-document generator.
-- `workflow/` — local only, never committed: `docs/` (plan, handoff, reference
-  reports, architecture, reviews), `private/`, `captures/`, and `data/` (the
-  default data root: sample and real cases, config store, audit ledger).
-  Never run `git clean -x` or `-X`: git would delete it.
+| Path | What it holds |
+|---|---|
+| `docs/` | The functional requirements (committed) |
+| `src/` | React frontend (TanStack Start and Router, Tailwind, shadcn/ui) |
+| `terminology/rbl.yaml` | Every on-screen label, read through `t()` |
+| `engine/` | Python service (FastAPI), CLI, config store, checklist, identifiers |
+| `config/` | Authored configuration, published as immutable versions to the data root |
+| `tests/` | Python tests |
+| `workflow/` | Local only, never committed: private notes, keys and the data root (`workflow/data`: `cases/` at mode 700, `config_store/`, `audit/`). Never run `git clean -x` or `-X` |
+
+`CREDITIQ_DATA_ROOT` overrides the data root; `VITE_API_BASE_URL` points the
+frontend at a different engine address.

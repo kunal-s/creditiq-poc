@@ -2,7 +2,7 @@ from engine import identifiers as ids
 
 
 def test_gstin_check_digit_known_answers():
-    # Independently verified valid GSTINs (plan.md finding 2 / reference/05 section G).
+    # Independently verified valid GSTINs.
     assert ids.gstin_check_digit("27AAPFU0939F1Z") == "V"
     assert ids.gstin_check_digit("29AAGCB7383J1Z") == "4"
     assert ids.gstin_check_digit("33AAHCS6612M1Z") == "5"

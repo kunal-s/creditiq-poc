@@ -31,12 +31,3 @@ export function t(path: string, params?: Record<string, string | number>): strin
     token in params ? String(params[token]) : match,
   );
 }
-
-/** Raw structured lookup for maps and lists (e.g. `raw("branches")`). */
-export function raw_(path: string): unknown {
-  return resolve(path);
-}
-
-export function useTerms() {
-  return { t, raw: raw_ };
-}

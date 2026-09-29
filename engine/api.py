@@ -1,8 +1,9 @@
-"""Minimal service behind the frontend seam (plan.md section 7, Stage A).
+"""The engine service behind the frontend.
 
-Only cases and auth exist here. The processing pipeline (intake through
-assemble), the config-store writer and the rule engine are later stages —
-this app must never import them (CLAUDE.md rule 4).
+Today it serves sign-in, the case list and the published configuration. The
+features in docs/functional-requirements.md add their endpoints here. This
+app must never import the configuration writer (CLAUDE.md rule 4; enforced
+by .importlinter).
 """
 
 from __future__ import annotations
@@ -11,10 +12,9 @@ from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from . import auth, store
-from .config import load_roles_config, role_label
 from .configstore import reader as configstore_reader
-from .configstore.schema import ChecklistTaxonomySection, DictionarySection, PolicySection
-from .schemas import Case, DirectoryUser, LoginRequest, LoginResponse, Role, SessionUser
+from .configstore.schema import ChecklistTaxonomySection, PolicySection
+from .schemas import Case, LoginRequest, LoginResponse, SessionUser
 
 app = FastAPI(title="CreditIQ engine (RBL Bank instance)")
 
@@ -38,18 +38,6 @@ app.add_middleware(
 @app.get("/api/health")
 def health() -> dict:
     return {"status": "ok"}
-
-
-@app.get("/api/roles", response_model=list[Role])
-def list_roles() -> list[dict]:
-    return load_roles_config()["roles"]
-
-
-@app.get("/api/users", response_model=list[DirectoryUser])
-def list_users() -> list[dict]:
-    return [
-        {**user, "roleLabel": role_label(user["role"])} for user in load_roles_config()["users"]
-    ]
 
 
 @app.get("/api/cases", response_model=list[Case])
@@ -85,14 +73,6 @@ def config_policy() -> PolicySection:
 def config_checklist_taxonomy() -> ChecklistTaxonomySection:
     try:
         return configstore_reader.load_checklist_taxonomy(store.data_root())
-    except configstore_reader.NoPublishedConfig as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
-
-
-@app.get("/api/config/dictionaries/{case_id}", response_model=DictionarySection)
-def config_dictionary(case_id: str) -> DictionarySection:
-    try:
-        return configstore_reader.load_dictionary(store.data_root(), case_id)
     except configstore_reader.NoPublishedConfig as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
 

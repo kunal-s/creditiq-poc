@@ -1,13 +1,11 @@
-# RBL Bank credit policy — ratio thresholds and the internal rating grid.
-# Authored here, published as an immutable version by the config writer
-# (plan.md section 3, C1). Runtime code reads only the published copy
-# through engine/configstore/reader.py, never this file directly.
+# Credit policy norms: ratio thresholds (docs/functional-requirements.md F-00, F-20).
+# Authored here, published as an immutable version by the config writer.
+# Runtime code reads only the published copy through
+# engine/configstore/reader.py, never this file directly.
 #
-# source/status (plan.md C14): a neutral provenance tag rather than a
-# narrated rationale. "provisional" values are marked as such rather than
-# presented as settled policy.
-
-grade_prefix: CR
+# Every value below is an interim proposal (source/status "provisional")
+# until RBL's own policy norms replace it. Eligibility, security cover,
+# documentation norms and deviation categories are added with F-20.
 
 ratios:
   - key: current-ratio
@@ -18,10 +16,9 @@ ratios:
     marginal: 1.1
     formula: "Current assets ÷ Current liabilities"
     applies: All working-capital exposures
-    source: published_policy
-    status: active
-    note: "Board floor is 1.10x for manufacturing; anything below is an adverse classification and needs Chief Credit Officer sign-off."
-    hard_floor: "Board floor 1.10x — cannot be set lower"
+    source: provisional
+    status: provisional
+    note: "Interim threshold awaiting RBL's policy norms."
 
   - key: tol-tnw
     label: TOL / TNW
@@ -30,10 +27,10 @@ ratios:
     acceptable: 3.0
     marginal: 3.75
     formula: "Total outside liabilities ÷ Tangible net worth"
-    applies: All fund-based exposures above INR 5 cr
-    source: published_policy
-    status: active
-    note: "Ceiling set by the Credit Risk Policy for the current sector review cycle."
+    applies: All fund-based exposures
+    source: provisional
+    status: provisional
+    note: "Interim threshold awaiting RBL's policy norms."
 
   - key: dscr
     label: DSCR
@@ -43,10 +40,9 @@ ratios:
     marginal: 1.25
     formula: "(PAT + depreciation + interest on term debt) ÷ (interest + principal repayments)"
     applies: Term exposures and any borrower with instalment obligations
-    source: published_policy
-    status: active
-    note: "The 1.25x marginal line is the hard floor below which the proposal cannot be recommended at branch level."
-    hard_floor: "Hard floor 1.25x — sanction blocked below this"
+    source: provisional
+    status: provisional
+    note: "Interim threshold awaiting RBL's policy norms."
 
   - key: interest-coverage
     label: Interest coverage
@@ -56,9 +52,9 @@ ratios:
     marginal: 1.75
     formula: "EBIT ÷ Interest and finance charges"
     applies: All exposures
-    source: published_policy
-    status: active
-    note: "Read alongside DSCR; a coverage above 2.50x with a DSCR below 1.50x usually points to a bunched repayment profile."
+    source: provisional
+    status: provisional
+    note: "Interim threshold awaiting RBL's policy norms."
 
   - key: buyer-concentration
     label: Buyer concentration
@@ -68,9 +64,9 @@ ratios:
     marginal: 45
     formula: "Largest customer's share of gross sales"
     applies: Manufacturing and trading exposures
-    source: published_policy
-    status: active
-    note: "A soft cap. A breach does not block sanction but must be narrated with the mitigant in the memo."
+    source: provisional
+    status: provisional
+    note: "Interim threshold awaiting RBL's policy norms."
 
   - key: debt-equity
     label: Debt / equity
@@ -80,9 +76,9 @@ ratios:
     marginal: 2.5
     formula: "Total debt ÷ Tangible net worth"
     applies: All fund-based exposures
-    source: published_policy
-    status: active
-    note: "Indicative rather than binding; the TOL/TNW ceiling is the operative leverage test."
+    source: provisional
+    status: provisional
+    note: "Interim threshold awaiting RBL's policy norms."
 
   - key: wc-cycle
     label: Working-capital cycle
@@ -92,53 +88,6 @@ ratios:
     marginal: 95
     formula: "Inventory days + receivable days − payable days"
     applies: Manufacturing and trading exposures
-    source: industry_standard
-    status: active
-    note: "Sector benchmark. Drawing power is sized on the assessed cycle, not the declared one."
-
-available_ratios:
-  - key: quick-ratio
-    label: Quick ratio
-    unit: x
-    kind: min
-    acceptable: 0.9
-    marginal: 0.75
-    formula: "(Current assets − inventory) ÷ Current liabilities"
-    applies: Inventory-heavy exposures
-    source: industry_standard
+    source: provisional
     status: provisional
-    note: "Not currently underwritten. Useful where inventory build is masking a liquidity strain in the current ratio."
-
-  - key: ebitda-margin
-    label: EBITDA margin
-    unit: "%"
-    kind: min
-    acceptable: 9
-    marginal: 6
-    formula: "EBITDA ÷ Revenue from operations"
-    applies: Manufacturing exposures
-    source: industry_standard
-    status: provisional
-    note: "Not currently underwritten."
-
-  - key: promoter-stake
-    label: Promoter shareholding
-    unit: "%"
-    kind: min
-    acceptable: 51
-    marginal: 40
-    formula: "Promoter and promoter-group holding in paid-up capital"
-    applies: All exposures to closely held companies
-    source: industry_standard
-    status: provisional
-    note: "Not currently underwritten as a ratio; captured qualitatively in the memo today."
-
-grid:
-  - {grade: CR-1, label: Highest safety, band: Prime, score_from: 90, score_to: 100, watch: false, guidance: "Delegated to Credit Manager up to INR 25 cr."}
-  - {grade: CR-2, label: High safety, band: Prime, score_from: 80, score_to: 89, watch: false, guidance: "Delegated to Credit Manager up to INR 15 cr."}
-  - {grade: CR-3, label: Adequate safety, band: Standard, score_from: 70, score_to: 79, watch: false, guidance: "Regional committee for exposures above INR 10 cr."}
-  - {grade: CR-4, label: Watch, band: Standard, score_from: 60, score_to: 69, watch: true, guidance: "Regional committee mandatory; quarterly review; covenant monitoring."}
-  - {grade: CR-5, label: Moderate risk, band: Watch, score_from: 50, score_to: 59, watch: true, guidance: "Regional committee mandatory; no enhancement without Chief Credit Officer concurrence."}
-  - {grade: CR-6, label: High risk, band: Watch, score_from: 40, score_to: 49, watch: false, guidance: "Head office committee; exit or restructure plan required."}
-  - {grade: CR-7, label: Substantial risk, band: Sub-standard, score_from: 25, score_to: 39, watch: false, guidance: "Head office committee; account moved to the stressed-assets desk."}
-  - {grade: CR-8, label: Default or imminent default, band: Sub-standard, score_from: 0, score_to: 24, watch: false, guidance: "Recovery. No fresh exposure."}
+    note: "Interim threshold awaiting RBL's policy norms."

@@ -1,7 +1,7 @@
-"""C1 (plan.md): an administrative publish is not a runtime event. These
-tests are the "store-hash-unchanged after a full run" half of that contract
-— the other half (after reviews) has nothing to exercise yet, since reviews
-don't exist before Stage E."""
+"""An administrative publish is not a runtime event (CLAUDE.md rule 4; FRD
+principle 3). These tests cover the "store unchanged after a full run of
+reads" half of that contract; the other half (review decisions never change
+configuration) is added with FRD F-17."""
 
 from pathlib import Path
 

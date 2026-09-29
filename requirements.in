@@ -1,17 +1,15 @@
 # Python dependencies for the engine.
 # No AGPL/GPL/LGPL runtime deps: PyMuPDF, Ghostscript, OCRmyPDF, img2pdf,
-# docxtpl and python-Levenshtein are excluded on licence grounds (see plan
-# section 4 and CLAUDE.md rule 10).
+# docxtpl and python-Levenshtein are excluded on licence grounds
+# (CLAUDE.md rule 10). Add dependencies with the feature that needs them
+# (docs/functional-requirements.md) and recompile requirements.txt.
 
-# Stage A: minimal service (cases, auth) behind the frontend seam.
+# Service: sign-in, cases, published configuration.
 fastapi
 uvicorn[standard]
 pydantic
 pyyaml
 
-# Stage B: config store, checklist/dictionary tooling, sample-case generator.
-jsonschema
-reportlab
-pypdf
+# Tooling: import contract and tests.
 import-linter
 pytest

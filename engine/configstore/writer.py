@@ -1,9 +1,9 @@
-"""The configuration writer — an administrative publish (plan.md C1).
+"""The configuration writer — an administrative publish.
 
 This is the ONLY code path that creates a new config version. It is a
-separate package on purpose: pipeline, review, copilot and harness code must
-not be able to import it (CLAUDE.md rule 4), enforced by the import-linter
-contract in `importlinter.cfg`. A publish is not a runtime event; it is
+separate package on purpose: pipeline, review and harness code must not be
+able to import it (CLAUDE.md rule 4), enforced by the import-linter
+contract in `.importlinter`. A publish is not a runtime event; it is
 something an Administrator does, ledgered with author and diff, and it never
 edits a prior version in place.
 """
@@ -18,7 +18,7 @@ from pathlib import Path
 import yaml
 from pydantic import BaseModel
 
-from .schema import SECTION_MODELS, DictionarySection
+from .schema import SECTION_MODELS
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_DIR = REPO_ROOT / "config"
@@ -51,12 +51,6 @@ def load_authored_sections() -> dict[str, BaseModel]:
         if not path.is_file():
             raise FileNotFoundError(f"missing authored config section: {path}")
         sections[name] = model.model_validate(_load_yaml(path))
-
-    dict_dir = CONFIG_DIR / "dictionaries"
-    if dict_dir.is_dir():
-        for path in sorted(dict_dir.glob("*.yaml")):
-            data = DictionarySection.model_validate(_load_yaml(path))
-            sections[f"dictionary.{data.case_id}"] = data
 
     return sections
 

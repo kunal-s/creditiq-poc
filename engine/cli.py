@@ -1,8 +1,7 @@
-"""creditiq CLI. Stage A implements only what Stage A needs: case
-inspection against the (still empty) store, and the excluded-terms check.
-The rest of plan.md section 4's entry-point table (run, samples, config,
-baseline, score, compare-runs, check links/rehearsal) lands with the
-stages that give it something real to do.
+"""creditiq CLI: case inspection, the configuration store (validate,
+publish, version, diff) and the excluded-terms check. Processing, baseline
+and scorecard commands land with their features in
+docs/functional-requirements.md.
 """
 
 from __future__ import annotations
@@ -112,7 +111,7 @@ def build_parser() -> argparse.ArgumentParser:
     case_show.add_argument("case_id")
     case_show.set_defaults(func=_cmd_case_show)
 
-    config = sub.add_parser("config", help="the config store (policy, checklist taxonomy, dictionaries)")
+    config = sub.add_parser("config", help="the config store (policy, checklist taxonomy)")
     config_sub = config.add_subparsers(dest="config_command", required=True)
     config_sub.add_parser("validate", help="validate every authored config/*.yaml section").set_defaults(
         func=_cmd_config_validate

@@ -4,16 +4,19 @@ root_packages =
 
 # Rule 4 (CLAUDE.md): configuration governs behaviour; nothing learns at
 # runtime. The config writer performs an administrative publish and must be
-# unreachable from anything that runs on a case (the API today; the
-# pipeline, rule engine, review and copilot as they land in later stages).
+# unreachable from anything that runs on a case: the API, the config reader,
+# and the pipeline, review and harness modules as their features land (add
+# each new runtime package here). Only engine.cli may import the writer.
 [importlinter:contract:1]
 name = Runtime code must not import the config writer
 type = forbidden
 source_modules =
     engine.api
     engine.auth
+    engine.config
     engine.store
     engine.checklist
-    engine.samplegen
+    engine.identifiers
+    engine.configstore.reader
 forbidden_modules =
     engine.configstore.writer

@@ -1,0 +1,3 @@
+- Copy every reference exactly as printed — ARN, SRN, acknowledgement and ticket numbers are case-sensitive keys in the caller's records.
+- The period is whatever the portal printed (08/2026, Q1 FY2026-27, August 2026); do not normalise it.
+- A "status" is the portal's own word (FILED, RECEIVED, ACCEPTED, PROCESSED); never infer one.

@@ -1,0 +1,4 @@
+{
+  "snippet": "RBI CIMS acknowledgement\nRef: CIMS/SLR/2026/004821\nReturn: Form VIII (SLR), August 2026\nEntity: State Bank of India\nSubmitted on: 12-Sep-2026 14:02 IST\nStatus: RECEIVED",
+  "output": { "portal": "RBI CIMS", "returnType": "Form VIII (SLR)", "period": "August 2026", "referenceNumber": "CIMS/SLR/2026/004821", "filedOn": "2026-09-12", "entityName": "State Bank of India", "registrationId": null, "status": "RECEIVED", "amounts": [] }
+}

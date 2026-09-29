@@ -1,0 +1,146 @@
+{
+  "version": 1,
+  "description": "A supplier invoice or bill → who billed whom, for what, the amounts, taxes and due date.",
+  "strategy": "fields",
+  "instructions": "The document is an invoice, bill or credit note. Extract the supplier and the customer as printed (with GSTIN / tax ids when shown), the invoice number and date, the due date, the currency, each line item with quantity and amount, subtotal, taxes by name (CGST, SGST, IGST, VAT…) and the grand total. Amounts as plain numbers without symbols.",
+  "fields": [
+    {
+      "name": "supplier",
+      "type": "string",
+      "description": "Supplier / vendor name",
+      "required": true
+    },
+    {
+      "name": "supplierTaxId",
+      "type": "string",
+      "description": "Supplier GSTIN / VAT / tax id",
+      "required": false
+    },
+    {
+      "name": "customer",
+      "type": "string",
+      "description": "Billed-to party",
+      "required": false
+    },
+    {
+      "name": "invoiceNumber",
+      "type": "string",
+      "description": "Invoice number",
+      "required": true
+    },
+    {
+      "name": "invoiceDate",
+      "type": "date",
+      "description": "Invoice date",
+      "required": false
+    },
+    {
+      "name": "dueDate",
+      "type": "date",
+      "description": "Payment due date",
+      "required": false
+    },
+    {
+      "name": "currency",
+      "type": "string",
+      "description": "Currency code",
+      "required": false
+    },
+    {
+      "name": "lineItems",
+      "type": "object[]",
+      "description": "Each line",
+      "required": false,
+      "items": [
+        {
+          "name": "description",
+          "type": "string",
+          "description": "Item",
+          "required": true
+        },
+        {
+          "name": "quantity",
+          "type": "number",
+          "description": "Quantity",
+          "required": false
+        },
+        {
+          "name": "amount",
+          "type": "number",
+          "description": "Line amount",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "subtotal",
+      "type": "number",
+      "description": "Before tax",
+      "required": false
+    },
+    {
+      "name": "taxes",
+      "type": "object[]",
+      "description": "Each tax line",
+      "required": false,
+      "items": [
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Tax name",
+          "required": true
+        },
+        {
+          "name": "rate",
+          "type": "number",
+          "description": "Rate %",
+          "required": false
+        },
+        {
+          "name": "amount",
+          "type": "number",
+          "description": "Tax amount",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "total",
+      "type": "number",
+      "description": "Grand total",
+      "required": true
+    },
+    {
+      "name": "paymentTerms",
+      "type": "string",
+      "description": "Payment terms as printed",
+      "required": false
+    }
+  ],
+  "signatures": {
+    "textAny": [
+      "\\b(tax )?invoice\\b",
+      "\\binvoice (no|number|#)",
+      "\\bbill to\\b"
+    ],
+    "textAll": [
+      "\\b(total|amount)\\b"
+    ],
+    "confidence": 0.85
+  },
+  "validators": [
+    {
+      "field": "invoiceNumber",
+      "required": true
+    },
+    {
+      "field": "total",
+      "min": 0
+    },
+    {
+      "field": "supplierTaxId",
+      "pattern": "^$|^[0-9]{2}[A-Z0-9]{10}[0-9A-Z]{3}$|^[A-Z]{2}[A-Z0-9]{2,12}$",
+      "message": "supplierTaxId is not a GSTIN or VAT id as printed"
+    }
+  ]
+}

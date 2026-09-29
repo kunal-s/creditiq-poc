@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "description": "A circular, notification or press release announcing a change → what changed, who it applies to, by when, and what a regulated entity must do.",
+  "strategy": "fields",
+  "instructions": "The document announces or amends a regulatory requirement. Identify the issuing regulator and its reference number exactly as printed. Summarise the change in plain language for a compliance manager. List the concrete actions a regulated entity must take and every date the document sets (issue, effective, compliance deadline, reporting). Do not invent dates; use ISO format where a full date is given.",
+  "fields": [
+    {
+      "name": "title",
+      "type": "string",
+      "description": "Title as printed",
+      "required": true
+    },
+    {
+      "name": "regulator",
+      "type": "string",
+      "description": "Issuing regulator or authority",
+      "required": true
+    },
+    {
+      "name": "referenceNumber",
+      "type": "string",
+      "description": "Circular / notification number as printed",
+      "required": false
+    },
+    {
+      "name": "dateOfIssue",
+      "type": "date",
+      "description": "Date of issue",
+      "required": false
+    },
+    {
+      "name": "effectiveDate",
+      "type": "date",
+      "description": "Date from which it applies",
+      "required": false
+    },
+    {
+      "name": "summary",
+      "type": "string",
+      "description": "What changed, in two or three sentences",
+      "required": true
+    },
+    {
+      "name": "applicability",
+      "type": "string",
+      "description": "Who it applies to",
+      "required": false
+    },
+    {
+      "name": "affectedAreas",
+      "type": "string[]",
+      "description": "Functions or topics affected (e.g. outsourcing, KYC, cyber incident reporting)",
+      "required": false
+    },
+    {
+      "name": "actionsRequired",
+      "type": "string[]",
+      "description": "Concrete actions the entity must take",
+      "required": false
+    },
+    {
+      "name": "deadlines",
+      "type": "object[]",
+      "description": "Every deadline the document sets",
+      "required": false,
+      "items": [
+        {
+          "name": "what",
+          "type": "string",
+          "description": "What is due",
+          "required": true
+        },
+        {
+          "name": "when",
+          "type": "date",
+          "description": "The date",
+          "required": true
+        }
+      ]
+    }
+  ],
+  "signatures": {
+    "subject": "\\b(circular|notification|master direction|amendment|advisory)\\b",
+    "textAny": [
+      "\\b(hereby|with immediate effect|come into force|shall be applicable)\\b"
+    ],
+    "confidence": 0.75
+  },
+  "validators": [
+    {
+      "field": "regulator",
+      "required": true,
+      "message": "regulator not found — check the letterhead"
+    }
+  ]
+}

@@ -14,6 +14,7 @@ export default tseslint.config(
       ".tanstack",
       ".venv",
       "workflow",
+      "services",
       "src/routeTree.gen.ts",
     ],
   },

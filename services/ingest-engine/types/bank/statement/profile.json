@@ -1,0 +1,116 @@
+{
+  "version": 1,
+  "description": "A bank or card statement → account, period, opening/closing balances and every transaction line.",
+  "strategy": "fields",
+  "instructions": "The document is an account statement. Extract the bank, the account holder, the masked account number as printed (never expand it), the statement period, opening and closing balances, and every transaction with its date, narration as printed, debit or credit amount and running balance where shown. Keep narrations verbatim; do not categorise.",
+  "fields": [
+    {
+      "name": "bank",
+      "type": "string",
+      "description": "Bank name",
+      "required": true
+    },
+    {
+      "name": "accountHolder",
+      "type": "string",
+      "description": "Account holder",
+      "required": false
+    },
+    {
+      "name": "accountNumber",
+      "type": "string",
+      "description": "Account number as printed (masked)",
+      "required": false
+    },
+    {
+      "name": "currency",
+      "type": "string",
+      "description": "Currency",
+      "required": false
+    },
+    {
+      "name": "periodStart",
+      "type": "date",
+      "description": "Statement period start",
+      "required": false
+    },
+    {
+      "name": "periodEnd",
+      "type": "date",
+      "description": "Statement period end",
+      "required": false
+    },
+    {
+      "name": "openingBalance",
+      "type": "number",
+      "description": "Opening balance",
+      "required": false
+    },
+    {
+      "name": "closingBalance",
+      "type": "number",
+      "description": "Closing balance",
+      "required": false
+    },
+    {
+      "name": "transactions",
+      "type": "object[]",
+      "description": "Every transaction line",
+      "required": true,
+      "items": [
+        {
+          "name": "date",
+          "type": "date",
+          "description": "Transaction date",
+          "required": true
+        },
+        {
+          "name": "narration",
+          "type": "string",
+          "description": "Narration verbatim",
+          "required": true
+        },
+        {
+          "name": "debit",
+          "type": "number",
+          "description": "Debit amount",
+          "required": false
+        },
+        {
+          "name": "credit",
+          "type": "number",
+          "description": "Credit amount",
+          "required": false
+        },
+        {
+          "name": "balance",
+          "type": "number",
+          "description": "Running balance",
+          "required": false
+        }
+      ]
+    }
+  ],
+  "signatures": {
+    "textAny": [
+      "\\bstatement of account",
+      "\\baccount statement",
+      "\\bopening balance",
+      "\\bclosing balance"
+    ],
+    "textAll": [
+      "\\b(debit|credit|withdrawal|deposit)\\b"
+    ],
+    "confidence": 0.88
+  },
+  "validators": [
+    {
+      "field": "accountNumber",
+      "required": true
+    },
+    {
+      "field": "transactions",
+      "required": true
+    }
+  ]
+}

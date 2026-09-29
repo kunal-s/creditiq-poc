@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "extends": "bank/statement",
+  "description": "A State Bank of India account statement (SBI layout: Txn Date · Value Date · Description · Ref No./Cheque No. · Debit · Credit · Balance).",
+  "instructions": "SBI statements print two dates per line — Txn Date and Value Date; use Txn Date. The Ref No./Cheque No. column is part of the narration; keep it verbatim. Balances are printed with a trailing CR/DR marker: CR is positive.",
+  "fields": [
+    {
+      "name": "branch",
+      "type": "string",
+      "description": "Branch name and code as printed"
+    },
+    {
+      "name": "ifsc",
+      "type": "string",
+      "description": "IFSC as printed"
+    }
+  ],
+  "signatures": {
+    "textAny": [
+      "\\bState Bank of India\\b",
+      "\\bSBIN0"
+    ],
+    "confidence": 0.95
+  },
+  "validators": [
+    {
+      "field": "ifsc",
+      "pattern": "^$|^SBIN0[0-9]{6}$",
+      "message": "IFSC is not an SBI code"
+    }
+  ]
+}

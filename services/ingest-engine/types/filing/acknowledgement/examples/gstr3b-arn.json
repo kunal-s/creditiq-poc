@@ -1,0 +1,6 @@
+{
+  "snippet": "GSTN acknowledgement\nARN: AA270826123456Z\nReturn: GSTR-3B, period 08/2026\nGSTIN: 27AAACS8577K1ZO\nEntity: State Bank of India\nDate of filing: 18/09/2026\nStatus: FILED\nTax paid: Rs 4,12,880",
+  "mail": { "from": "GSTN <noreply@gst.gov.in>", "subject": "Acknowledgement: GSTR-3B for August 2026 - ARN AA270826123456Z" },
+  "output": { "portal": "GSTN", "returnType": "GSTR-3B", "period": "08/2026", "referenceNumber": "AA270826123456Z", "filedOn": "2026-09-18", "entityName": "State Bank of India", "registrationId": "27AAACS8577K1ZO", "status": "FILED", "amounts": [ { "label": "Tax paid", "value": 412880 } ] },
+  "note": "The period is kept as printed (08/2026); the date of filing is converted to ISO."
+}

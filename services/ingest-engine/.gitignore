@@ -1,0 +1,16 @@
+# secrets — .env.example is the template
+.env
+.env.*
+!.env.example
+# dependencies and build output
+node_modules/
+dist/
+*.tsbuildinfo
+# runtime state: download/parse/extraction cache, OCR language data, what the engine learns from feedback
+.cache/
+.tessdata/
+feedback/
+# logs, temp, editor
+*.log
+*.bak
+.DS_Store

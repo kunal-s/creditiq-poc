@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "description": "An incident report, vendor breach notice or alert e-mail → what happened, when, what was affected, and whether personal data was involved.",
+  "strategy": "fields",
+  "instructions": "The document reports a security or operational incident. State what happened in one or two sentences, when it was detected, the systems, services or data affected, whether personal data is involved (true only if the text says or clearly implies so), the severity if the text grades it, and who reported it.",
+  "fields": [
+    {
+      "name": "title",
+      "type": "string",
+      "description": "One-line description",
+      "required": true
+    },
+    {
+      "name": "detectedAt",
+      "type": "date",
+      "description": "When detected",
+      "required": false
+    },
+    {
+      "name": "severity",
+      "type": "string",
+      "description": "Severity as graded in the text, if any",
+      "required": false
+    },
+    {
+      "name": "systemsAffected",
+      "type": "string[]",
+      "description": "Systems, services or assets affected",
+      "required": false
+    },
+    {
+      "name": "personalDataInvolved",
+      "type": "boolean",
+      "description": "Whether personal data is involved",
+      "required": true
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "description": "What happened, in plain language",
+      "required": true
+    },
+    {
+      "name": "reportedBy",
+      "type": "string",
+      "description": "Reporter (person / organisation)",
+      "required": false
+    }
+  ],
+  "signatures": {
+    "textAny": [
+      "\\bincident\\b",
+      "\\bbreach\\b",
+      "\\bransomware\\b",
+      "\\bunauthori[sz]ed access\\b",
+      "\\bdetected (on|at)\\b"
+    ],
+    "textAll": [
+      "\\b(affected|impact)"
+    ],
+    "confidence": 0.75
+  }
+}

@@ -1,6 +1,107 @@
 {
   "components": {
     "schemas": {
+      "AccountCredits": {
+        "description": "One account's credits, before and after cleansing (F-18.2).",
+        "properties": {
+          "account": {
+            "title": "Account",
+            "type": "string"
+          },
+          "excluded": {
+            "title": "Excluded",
+            "type": "number"
+          },
+          "exclusions": {
+            "items": {
+              "$ref": "#/components/schemas/Exclusion"
+            },
+            "title": "Exclusions",
+            "type": "array"
+          },
+          "gross": {
+            "title": "Gross",
+            "type": "number"
+          },
+          "months": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Months",
+            "type": "array"
+          },
+          "net": {
+            "title": "Net",
+            "type": "number"
+          }
+        },
+        "required": [
+          "account",
+          "gross",
+          "excluded",
+          "net",
+          "months",
+          "exclusions"
+        ],
+        "title": "AccountCredits",
+        "type": "object"
+      },
+      "AccountFact": {
+        "description": "One bank account and where it is evidenced (F-18.5).",
+        "properties": {
+          "bank": {
+            "title": "Bank",
+            "type": "string"
+          },
+          "declared": {
+            "title": "Declared",
+            "type": "boolean"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "has_statement": {
+            "title": "Has Statement",
+            "type": "boolean"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "last4": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last4"
+          },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources",
+            "type": "array"
+          }
+        },
+        "required": [
+          "bank",
+          "last4",
+          "label",
+          "sources",
+          "declared",
+          "has_statement"
+        ],
+        "title": "AccountFact",
+        "type": "object"
+      },
       "Candidate": {
         "properties": {
           "confidence": {
@@ -304,6 +405,76 @@
           "header"
         ],
         "title": "CaseDetail",
+        "type": "object"
+      },
+      "CaseFacts": {
+        "properties": {
+          "accounts": {
+            "items": {
+              "$ref": "#/components/schemas/AccountFact"
+            },
+            "title": "Accounts",
+            "type": "array"
+          },
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "credits": {
+            "items": {
+              "$ref": "#/components/schemas/AccountCredits"
+            },
+            "title": "Credits",
+            "type": "array"
+          },
+          "declaration_received": {
+            "title": "Declaration Received",
+            "type": "boolean"
+          },
+          "facilities": {
+            "items": {
+              "$ref": "#/components/schemas/FacilityFact"
+            },
+            "title": "Facilities",
+            "type": "array"
+          },
+          "identities": {
+            "$ref": "#/components/schemas/IdentityFacts"
+          },
+          "obligations": {
+            "items": {
+              "$ref": "#/components/schemas/Obligation"
+            },
+            "title": "Obligations",
+            "type": "array"
+          },
+          "persons": {
+            "items": {
+              "$ref": "#/components/schemas/PersonSet"
+            },
+            "title": "Persons",
+            "type": "array"
+          },
+          "turnover": {
+            "items": {
+              "$ref": "#/components/schemas/TurnoverYear"
+            },
+            "title": "Turnover",
+            "type": "array"
+          }
+        },
+        "required": [
+          "case_id",
+          "identities",
+          "persons",
+          "turnover",
+          "credits",
+          "obligations",
+          "accounts",
+          "facilities",
+          "declaration_received"
+        ],
+        "title": "CaseFacts",
         "type": "object"
       },
       "CaseProgress": {
@@ -919,6 +1090,181 @@
         "title": "Evidence",
         "type": "object"
       },
+      "Exclusion": {
+        "description": "A credit removed before counting business inflow (F-18.2).",
+        "properties": {
+          "account": {
+            "title": "Account",
+            "type": "string"
+          },
+          "amount": {
+            "title": "Amount",
+            "type": "number"
+          },
+          "date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "narration": {
+            "title": "Narration",
+            "type": "string"
+          },
+          "rule": {
+            "title": "Rule",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rule",
+          "label",
+          "account",
+          "date",
+          "narration",
+          "amount"
+        ],
+        "title": "Exclusion",
+        "type": "object"
+      },
+      "FacilityFact": {
+        "description": "An existing facility as one source records it (F-19 OB-01).",
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "emi": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Emi"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "facility": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Facility"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "lender": {
+            "title": "Lender",
+            "type": "string"
+          },
+          "relies_on_manual": {
+            "default": false,
+            "title": "Relies On Manual",
+            "type": "boolean"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "label",
+          "lender"
+        ],
+        "title": "FacilityFact",
+        "type": "object"
+      },
+      "FactValue": {
+        "description": "One source's value for a fact, with where it came from (F-18.6).",
+        "properties": {
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "field_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Field Ids",
+            "type": "array"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "relies_on_manual": {
+            "default": false,
+            "title": "Relies On Manual",
+            "type": "boolean"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "source",
+          "label",
+          "value"
+        ],
+        "title": "FactValue",
+        "type": "object"
+      },
       "FieldValue": {
         "description": "One extracted value with its evidence and confidence (F-15, F-17).",
         "properties": {
@@ -1369,6 +1715,33 @@
         "title": "HeaderField",
         "type": "object"
       },
+      "IdentityFacts": {
+        "properties": {
+          "entity_pan": {
+            "items": {
+              "$ref": "#/components/schemas/FactValue"
+            },
+            "title": "Entity Pan",
+            "type": "array"
+          },
+          "gstin": {
+            "items": {
+              "$ref": "#/components/schemas/FactValue"
+            },
+            "title": "Gstin",
+            "type": "array"
+          },
+          "legal_name": {
+            "items": {
+              "$ref": "#/components/schemas/FactValue"
+            },
+            "title": "Legal Name",
+            "type": "array"
+          }
+        },
+        "title": "IdentityFacts",
+        "type": "object"
+      },
       "LogicalDocument": {
         "description": "One logical document: a file and a page range (F-08).",
         "properties": {
@@ -1587,6 +1960,58 @@
         "title": "Meta",
         "type": "object"
       },
+      "Obligation": {
+        "description": "A recurring debit that looks like a loan instalment (F-18.4).",
+        "properties": {
+          "account": {
+            "title": "Account",
+            "type": "string"
+          },
+          "debits": {
+            "title": "Debits",
+            "type": "integer"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "lender": {
+            "title": "Lender",
+            "type": "string"
+          },
+          "months": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Months",
+            "type": "array"
+          },
+          "typical_amount": {
+            "title": "Typical Amount",
+            "type": "number"
+          },
+          "variants": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Variants",
+            "type": "array"
+          }
+        },
+        "required": [
+          "lender",
+          "variants",
+          "account",
+          "months",
+          "typical_amount",
+          "debits"
+        ],
+        "title": "Obligation",
+        "type": "object"
+      },
       "Option": {
         "properties": {
           "id": {
@@ -1727,6 +2152,45 @@
           "source"
         ],
         "title": "Party",
+        "type": "object"
+      },
+      "PersonSet": {
+        "description": "The promoters one source names (F-18.3: variants resolved later).",
+        "properties": {
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "names": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Names",
+            "type": "array"
+          },
+          "relies_on_manual": {
+            "default": false,
+            "title": "Relies On Manual",
+            "type": "boolean"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "label",
+          "names"
+        ],
+        "title": "PersonSet",
         "type": "object"
       },
       "PolicyRatio": {
@@ -2435,6 +2899,106 @@
         "title": "StrippedSpan",
         "type": "object"
       },
+      "TurnoverFigure": {
+        "description": "One source's turnover for one financial year (F-18.1).",
+        "properties": {
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "field_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Field Ids",
+            "type": "array"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "months_covered": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Months Covered"
+          },
+          "months_missing": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Months Missing",
+            "type": "array"
+          },
+          "relies_on_manual": {
+            "default": false,
+            "title": "Relies On Manual",
+            "type": "boolean"
+          },
+          "source": {
+            "enum": [
+              "financials",
+              "gst",
+              "bank",
+              "declared"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "source",
+          "label",
+          "value"
+        ],
+        "title": "TurnoverFigure",
+        "type": "object"
+      },
+      "TurnoverYear": {
+        "properties": {
+          "figures": {
+            "items": {
+              "$ref": "#/components/schemas/TurnoverFigure"
+            },
+            "title": "Figures",
+            "type": "array"
+          },
+          "fy": {
+            "title": "Fy",
+            "type": "string"
+          },
+          "fy_end": {
+            "title": "Fy End",
+            "type": "string"
+          }
+        },
+        "required": [
+          "fy",
+          "fy_end",
+          "figures"
+        ],
+        "title": "TurnoverYear",
+        "type": "object"
+      },
       "UploadResult": {
         "description": "F-05.5: every file ends in a visible state; archives list their members.",
         "properties": {
@@ -3119,6 +3683,62 @@
           }
         },
         "summary": "Document Page"
+      }
+    },
+    "/api/cases/{case_id}/facts": {
+      "get": {
+        "description": "F-18: the aligned facts the cross-checks compare, each with its evidence.",
+        "operationId": "case_facts_api_cases__case_id__facts_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseFacts"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Facts"
       }
     },
     "/api/cases/{case_id}/fields": {

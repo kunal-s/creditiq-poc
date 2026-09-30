@@ -171,6 +171,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/cases/{case_id}/facts": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Case Facts
+     * @description F-18: the aligned facts the cross-checks compare, each with its evidence.
+     */
+    get: operations["case_facts_api_cases__case_id__facts_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/cases/{case_id}/fields": {
     parameters: {
       query?: never;
@@ -431,6 +451,44 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /**
+     * AccountCredits
+     * @description One account's credits, before and after cleansing (F-18.2).
+     */
+    AccountCredits: {
+      /** Account */
+      account: string;
+      /** Excluded */
+      excluded: number;
+      /** Exclusions */
+      exclusions: components["schemas"]["Exclusion"][];
+      /** Gross */
+      gross: number;
+      /** Months */
+      months: string[];
+      /** Net */
+      net: number;
+    };
+    /**
+     * AccountFact
+     * @description One bank account and where it is evidenced (F-18.5).
+     */
+    AccountFact: {
+      /** Bank */
+      bank: string;
+      /** Declared */
+      declared: boolean;
+      /** Evidence */
+      evidence?: components["schemas"]["Evidence"][];
+      /** Has Statement */
+      has_statement: boolean;
+      /** Label */
+      label: string;
+      /** Last4 */
+      last4: string | null;
+      /** Sources */
+      sources: string[];
+    };
     /** Candidate */
     Candidate: {
       /** Confidence */
@@ -540,6 +598,26 @@ export interface components {
         | "Completed";
       /** Udyam */
       udyam: string | null;
+    };
+    /** CaseFacts */
+    CaseFacts: {
+      /** Accounts */
+      accounts: components["schemas"]["AccountFact"][];
+      /** Case Id */
+      case_id: string;
+      /** Credits */
+      credits: components["schemas"]["AccountCredits"][];
+      /** Declaration Received */
+      declaration_received: boolean;
+      /** Facilities */
+      facilities: components["schemas"]["FacilityFact"][];
+      identities: components["schemas"]["IdentityFacts"];
+      /** Obligations */
+      obligations: components["schemas"]["Obligation"][];
+      /** Persons */
+      persons: components["schemas"]["PersonSet"][];
+      /** Turnover */
+      turnover: components["schemas"]["TurnoverYear"][];
     };
     /** CaseProgress */
     CaseProgress: {
@@ -815,6 +893,72 @@ export interface components {
       page: number;
     };
     /**
+     * Exclusion
+     * @description A credit removed before counting business inflow (F-18.2).
+     */
+    Exclusion: {
+      /** Account */
+      account: string;
+      /** Amount */
+      amount: number;
+      /** Date */
+      date: string | null;
+      /** Evidence */
+      evidence?: components["schemas"]["Evidence"][];
+      /** Label */
+      label: string;
+      /** Narration */
+      narration: string;
+      /** Rule */
+      rule: string;
+    };
+    /**
+     * FacilityFact
+     * @description An existing facility as one source records it (F-19 OB-01).
+     */
+    FacilityFact: {
+      /** Amount */
+      amount?: number | null;
+      /** Emi */
+      emi?: number | null;
+      /** Evidence */
+      evidence?: components["schemas"]["Evidence"][];
+      /** Facility */
+      facility?: string | null;
+      /** Label */
+      label: string;
+      /** Lender */
+      lender: string;
+      /**
+       * Relies On Manual
+       * @default false
+       */
+      relies_on_manual: boolean;
+      /** Source */
+      source: string;
+    };
+    /**
+     * FactValue
+     * @description One source's value for a fact, with where it came from (F-18.6).
+     */
+    FactValue: {
+      /** Evidence */
+      evidence?: components["schemas"]["Evidence"][];
+      /** Field Ids */
+      field_ids?: string[];
+      /** Label */
+      label: string;
+      /**
+       * Relies On Manual
+       * @default false
+       */
+      relies_on_manual: boolean;
+      /** Source */
+      source: string;
+      /** Value */
+      value: string | number | null;
+    };
+    /**
      * FieldValue
      * @description One extracted value with its evidence and confidence (F-15, F-17).
      */
@@ -958,6 +1102,15 @@ export interface components {
       /** Value */
       value: string | null;
     };
+    /** IdentityFacts */
+    IdentityFacts: {
+      /** Entity Pan */
+      entity_pan?: components["schemas"]["FactValue"][];
+      /** Gstin */
+      gstin?: components["schemas"]["FactValue"][];
+      /** Legal Name */
+      legal_name?: components["schemas"]["FactValue"][];
+    };
     /**
      * LogicalDocument
      * @description One logical document: a file and a page range (F-08).
@@ -1040,6 +1193,26 @@ export interface components {
       /** Facilities */
       facilities: components["schemas"]["Option"][];
     };
+    /**
+     * Obligation
+     * @description A recurring debit that looks like a loan instalment (F-18.4).
+     */
+    Obligation: {
+      /** Account */
+      account: string;
+      /** Debits */
+      debits: number;
+      /** Evidence */
+      evidence?: components["schemas"]["Evidence"][];
+      /** Lender */
+      lender: string;
+      /** Months */
+      months: string[];
+      /** Typical Amount */
+      typical_amount: number;
+      /** Variants */
+      variants: string[];
+    };
     /** Option */
     Option: {
       /** Id */
@@ -1089,6 +1262,25 @@ export interface components {
        * @enum {string}
        */
       role: "borrower" | "director" | "partner" | "proprietor" | "guarantor" | "promoter";
+      /** Source */
+      source: string;
+    };
+    /**
+     * PersonSet
+     * @description The promoters one source names (F-18.3: variants resolved later).
+     */
+    PersonSet: {
+      /** Evidence */
+      evidence?: components["schemas"]["Evidence"][];
+      /** Label */
+      label: string;
+      /** Names */
+      names: string[];
+      /**
+       * Relies On Manual
+       * @default false
+       */
+      relies_on_manual: boolean;
       /** Source */
       source: string;
     };
@@ -1368,6 +1560,43 @@ export interface components {
        */
       kind: "timestamp" | "sender" | "header" | "quoted" | "signature";
       span: components["schemas"]["Span"];
+    };
+    /**
+     * TurnoverFigure
+     * @description One source's turnover for one financial year (F-18.1).
+     */
+    TurnoverFigure: {
+      /** Evidence */
+      evidence?: components["schemas"]["Evidence"][];
+      /** Field Ids */
+      field_ids?: string[];
+      /** Label */
+      label: string;
+      /** Months Covered */
+      months_covered?: number | null;
+      /** Months Missing */
+      months_missing?: string[];
+      /**
+       * Relies On Manual
+       * @default false
+       */
+      relies_on_manual: boolean;
+      /**
+       * Source
+       * @enum {string}
+       */
+      source: "financials" | "gst" | "bank" | "declared";
+      /** Value */
+      value: number | null;
+    };
+    /** TurnoverYear */
+    TurnoverYear: {
+      /** Figures */
+      figures: components["schemas"]["TurnoverFigure"][];
+      /** Fy */
+      fy: string;
+      /** Fy End */
+      fy_end: string;
     };
     /**
      * UploadResult
@@ -1765,6 +1994,39 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  case_facts_api_cases__case_id__facts_get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CaseFacts"];
+        };
       };
       /** @description Validation Error */
       422: {

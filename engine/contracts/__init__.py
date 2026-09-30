@@ -30,6 +30,19 @@ from .case import (
     StageStatus,
 )
 from .common import Evidence, Grade, Stage
+from .facts import (
+    AccountCredits,
+    AccountFact,
+    CaseFacts,
+    Exclusion,
+    FacilityFact,
+    FactValue,
+    IdentityFacts,
+    Obligation,
+    PersonSet,
+    TurnoverFigure,
+    TurnoverYear,
+)
 from .documents import (
     Candidate,
     Classification,
@@ -61,6 +74,17 @@ from .intake import (
 from .session import LoginRequest, LoginResponse, Meta, Option, SessionUser
 
 __all__ = [
+    "AccountCredits",
+    "AccountFact",
+    "CaseFacts",
+    "Exclusion",
+    "FacilityFact",
+    "FactValue",
+    "IdentityFacts",
+    "Obligation",
+    "PersonSet",
+    "TurnoverFigure",
+    "TurnoverYear",
     "Candidate",
     "CaseProposal",
     "CaseCreate",

@@ -21,6 +21,7 @@ source_modules =
     engine.contracts
     engine.db
     engine.deps
+    engine.facts
     engine.filetypes
     engine.identifiers
     engine.ingest_client

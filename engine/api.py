@@ -17,7 +17,7 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from python_multipart.exceptions import MultipartParseError
 
-from . import auth, cases, db, jobs, pages, parties, pipeline, progress, proposal, queries, reads, review, uploads
+from . import auth, cases, db, facts, jobs, pages, parties, pipeline, progress, proposal, queries, reads, review, uploads
 from .config import load_app_config, option_ids
 from .configstore import reader as configstore_reader
 from .configstore.schema import ChecklistTaxonomySection, DocumentTypesSection, PolicySection
@@ -25,6 +25,7 @@ from .contracts import (
     CaseCreate,
     CaseDeleteRequest,
     CaseDetail,
+    CaseFacts,
     CaseProgress,
     CaseProposal,
     CaseSummary,
@@ -267,6 +268,18 @@ def case_queries(
 
 
 # --- Cross-checks (F-19) and review (F-17) ---
+
+
+@app.get("/api/cases/{case_id}/facts", response_model=CaseFacts)
+def case_facts(
+    case_id: str, user: dict = Depends(require("data.read")), conn: sqlite3.Connection = Depends(get_conn)
+):
+    """F-18: the aligned facts the cross-checks compare, each with its evidence."""
+    case = _case_for(conn, case_id, user)
+    try:
+        return facts.compute(conn, data_root(), case)
+    except configstore_reader.NoPublishedConfig as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
 
 
 @app.get("/api/cases/{case_id}/findings", response_model=list[Finding])

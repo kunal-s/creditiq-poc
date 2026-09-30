@@ -219,6 +219,62 @@ class TolerancesSection(BaseModel):
     tolerances: list[Tolerance]
 
 
+class CreditExclusion(BaseModel):
+    """One bank-credit exclusion rule (F-18.2)."""
+
+    id: str
+    label: str
+    narration_any: list[str] = Field(default_factory=list)
+    own_account: bool = False
+    """Also match a narration naming another account in the account set."""
+
+
+class AlignmentSection(BaseModel):
+    """config/alignment.yaml (F-18)."""
+
+    financial_year_start_month: int = Field(ge=1, le=12)
+    bank_credit_exclusions: list[CreditExclusion]
+    obligation_narration_any: list[str]
+    name_noise_words: list[str]
+
+
+CrossCheckVariable = Literal[
+    "entity_pan",
+    "gstin",
+    "legal_name",
+    "promoter_set",
+    "turnover_audited_vs_gst",
+    "turnover_gst_vs_bank",
+    "turnover_audited_vs_bank",
+    "turnover_declared_vs_evidenced",
+    "declared_accounts_with_statements",
+    "evidenced_accounts_declared",
+    "facilities_reconcile",
+    "emis_to_declared_lenders",
+]
+
+
+class CrossCheckRule(BaseModel):
+    """One cross-check (F-19.1)."""
+
+    id: str
+    title: str
+    variable: CrossCheckVariable
+    sources: list[str]
+    comparison: Literal["exact", "tolerance", "set_equal", "set_contains", "presence"]
+    tolerance: str | None = None
+    severity: Literal["serious", "moderate", "mild"]
+    blocking: bool
+    explanation: str
+    query: str | None = None
+
+
+class CrossChecksSection(BaseModel):
+    """config/crosschecks.yaml (F-19)."""
+
+    rules: list[CrossCheckRule]
+
+
 class ConfidenceSection(BaseModel):
     """config/confidence.yaml (F-17.1)."""
 
@@ -236,6 +292,8 @@ SECTION_MODELS: dict[str, type[BaseModel]] = {
     "document_ages": DocumentAgesSection,
     "tolerances": TolerancesSection,
     "confidence": ConfidenceSection,
+    "alignment": AlignmentSection,
+    "crosschecks": CrossChecksSection,
 }
 
 
@@ -269,4 +327,20 @@ def cross_check(sections: dict[str, BaseModel]) -> list[str]:
     for age in ages.ages:
         if age.type_id not in type_ids:
             problems.append(f"document_ages: unknown type {age.type_id!r}")
+    tolerances = sections["tolerances"]
+    checks = sections["crosschecks"]
+    assert isinstance(tolerances, TolerancesSection) and isinstance(checks, CrossChecksSection)
+    tolerance_keys = {tol.key for tol in tolerances.tolerances}
+    rule_ids = [rule.id for rule in checks.rules]
+    if len(rule_ids) != len(set(rule_ids)):
+        problems.append("crosschecks: duplicate rule ids")
+    for rule in checks.rules:
+        if rule.tolerance and rule.tolerance not in tolerance_keys:
+            problems.append(f"crosschecks.{rule.id}: unknown tolerance {rule.tolerance!r}")
+        if rule.comparison == "tolerance" and not rule.tolerance:
+            problems.append(f"crosschecks.{rule.id}: a tolerance comparison needs a tolerance")
+        # The application message is not a document type but a source (F-04).
+        for source in rule.sources:
+            if source not in type_ids:
+                problems.append(f"crosschecks.{rule.id}: unknown source {source!r}")
     return problems

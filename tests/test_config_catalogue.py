@@ -48,3 +48,30 @@ def test_key_fields_cover_the_test_plan_list(published_data_root: Path):
         "transactions", "score", "facilities", "amount_requested",
     }
     assert expected <= key, expected - key
+
+
+def test_alignment_and_crosschecks_are_published(published_data_root: Path):
+    alignment = reader.load_alignment(published_data_root)
+    assert alignment.financial_year_start_month == 4
+    assert {e.id for e in alignment.bank_credit_exclusions} >= {
+        "own_account_transfer",
+        "loan_disbursal",
+        "reversal",
+        "returned_cheque",
+    }
+    rules = reader.load_crosschecks(published_data_root).rules
+    # The F-19.2 minimum rule set.
+    assert {r.id for r in rules} >= {
+        "ID-01", "ID-02", "ID-03", "ID-04", "TO-01", "TO-02", "TO-03", "TO-04",
+        "BA-01", "BA-02", "OB-01", "OB-02",
+    }
+
+
+def test_cross_check_reports_an_unknown_tolerance_and_source():
+    sections = writer.load_authored_sections()
+    broken = sections["crosschecks"].model_copy(deep=True)
+    broken.rules[0].tolerance = "no_such_tolerance"
+    broken.rules[1].sources = ["no_such_type"]
+    problems = cross_check({**sections, "crosschecks": broken})
+    assert any("no_such_tolerance" in p for p in problems)
+    assert any("no_such_type" in p for p in problems)

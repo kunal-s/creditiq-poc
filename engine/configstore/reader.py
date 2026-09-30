@@ -14,8 +14,10 @@ from functools import lru_cache
 from pathlib import Path
 
 from .schema import (
+    AlignmentSection,
     ChecklistTaxonomySection,
     ConfidenceSection,
+    CrossChecksSection,
     DictionarySection,
     DocumentAgesSection,
     DocumentTypesSection,
@@ -81,6 +83,14 @@ def load_document_ages(data_root: Path) -> DocumentAgesSection:
 
 def load_tolerances(data_root: Path) -> TolerancesSection:
     return TolerancesSection.model_validate(_load_section(data_root, "tolerances"))
+
+
+def load_alignment(data_root: Path) -> AlignmentSection:
+    return AlignmentSection.model_validate(_load_section(data_root, "alignment"))
+
+
+def load_crosschecks(data_root: Path) -> CrossChecksSection:
+    return CrossChecksSection.model_validate(_load_section(data_root, "crosschecks"))
 
 
 def load_confidence(data_root: Path) -> ConfidenceSection:

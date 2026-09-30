@@ -1,0 +1,147 @@
+# Cross-check rules (docs/functional-requirements.md F-19). Each rule names
+# the fact it compares (`variable`, computed by engine/facts.py), the document
+# types that supply it, how the sources are compared, the tolerance it uses
+# (config/tolerances.yaml), its severity and whether it blocks credit review.
+#
+# Comparisons (F-19.1):
+#   exact         every source gives the same value
+#   tolerance     every pair of sources within the tolerance, as a percentage
+#   set_equal     every source gives the same set
+#   set_contains  every member of the first side appears in the second
+#   presence      the fact exists at all
+#
+# Templates may use {left}, {right}, {left_label}, {right_label}, {period},
+# {variance}, {tolerance}, {items} and {missing}. `query` is the plain
+# request added to the pre-login query list when the rule fails (F-19.5).
+
+rules:
+  # --- Identity (TC-22) ---
+  - id: ID-01
+    title: Entity PAN consistent across documents
+    variable: entity_pan
+    sources: [pan_entity, gst_registration_certificate, itr_acknowledgement, itr_computation, audited_financial_statements, bureau_commercial, application_form]
+    comparison: exact
+    severity: serious
+    blocking: true
+    explanation: "The entity PAN differs between documents: {items}."
+    query: "Please confirm the entity's PAN; the documents show {items}."
+
+  - id: ID-02
+    title: GSTIN consistent across documents
+    variable: gstin
+    sources: [gst_registration_certificate, gstr_3b, gstr_1, partner_gst_report]
+    comparison: exact
+    severity: serious
+    blocking: true
+    explanation: "The GSTIN differs between documents: {items}."
+    query: "Please confirm the GSTIN; the documents show {items}."
+
+  - id: ID-03
+    title: Legal name consistent across documents
+    variable: legal_name
+    sources: [certificate_of_incorporation, pan_entity, gst_registration_certificate, gstr_3b, udyam_certificate, audited_financial_statements, bureau_commercial]
+    comparison: exact
+    tolerance: name_match
+    severity: moderate
+    blocking: false
+    explanation: "The legal name reads differently across documents: {items}."
+
+  - id: ID-04
+    title: Promoter set consistent across sources
+    variable: promoter_set
+    sources: [board_resolution, moa_aoa, partnership_deed, gst_registration_certificate, kyc_pan_individual, application_message, bureau_commercial]
+    comparison: set_equal
+    tolerance: name_match
+    severity: serious
+    blocking: true
+    explanation: "The promoters named differ between sources: {items}."
+    query: "Please confirm the full list of directors, partners or the proprietor; {items}."
+
+  # --- Turnover (TC-23), per financial year ---
+  - id: TO-01
+    title: Audited turnover against GST outward supplies
+    variable: turnover_audited_vs_gst
+    sources: [audited_financial_statements, gstr_3b, partner_gst_report]
+    comparison: tolerance
+    tolerance: turnover_variance
+    severity: moderate
+    blocking: false
+    explanation: "{period}: {left_label} {left} against {right_label} {right}, a variance of {variance} (tolerance {tolerance})."
+    query: "Please explain the difference between audited turnover ({left}) and GST outward supplies ({right}) for {period}."
+
+  - id: TO-02
+    title: GST outward supplies against cleansed bank credits
+    variable: turnover_gst_vs_bank
+    sources: [gstr_3b, partner_gst_report, bank_statement]
+    comparison: tolerance
+    tolerance: turnover_variance
+    severity: moderate
+    blocking: false
+    explanation: "{period}: {left_label} {left} against {right_label} {right}, a variance of {variance} (tolerance {tolerance})."
+    query: "Please explain the difference between GST outward supplies ({left}) and business credits in the bank statements ({right}) for {period}."
+
+  - id: TO-03
+    title: Audited turnover against cleansed bank credits
+    variable: turnover_audited_vs_bank
+    sources: [audited_financial_statements, bank_statement]
+    comparison: tolerance
+    tolerance: turnover_variance
+    severity: moderate
+    blocking: false
+    explanation: "{period}: {left_label} {left} against {right_label} {right}, a variance of {variance} (tolerance {tolerance})."
+
+  - id: TO-04
+    title: RM-declared turnover against evidenced turnover
+    variable: turnover_declared_vs_evidenced
+    sources: [application_message, audited_financial_statements]
+    comparison: tolerance
+    tolerance: declared_turnover_variance
+    severity: mild
+    blocking: false
+    explanation: "{left_label} {left} against {right_label} {right} for {period}, a variance of {variance} (tolerance {tolerance})."
+
+  # --- Bank accounts (TC-24) ---
+  - id: BA-01
+    title: Every declared account has statements
+    variable: declared_accounts_with_statements
+    sources: [existing_facilities_declaration, application_form, bank_statement]
+    comparison: set_contains
+    tolerance: name_match
+    severity: moderate
+    blocking: true
+    explanation: "No statement received for declared account(s): {missing}."
+    query: "Please provide statements for account(s) {missing}."
+
+  - id: BA-02
+    title: Accounts evidenced elsewhere are declared
+    variable: evidenced_accounts_declared
+    sources: [bank_statement, sanction_letter_other_lender, bureau_commercial, audited_financial_statements, existing_facilities_declaration]
+    comparison: set_contains
+    tolerance: name_match
+    severity: serious
+    blocking: false
+    explanation: "Account(s) evidenced in the documents but not declared: {missing}."
+    query: "Please explain account(s) {missing}, which are not in the declaration of existing banking."
+
+  # --- Obligations (TC-25) ---
+  - id: OB-01
+    title: Declared facilities reconcile with sanction letters and bureau
+    variable: facilities_reconcile
+    sources: [existing_facilities_declaration, sanction_letter_other_lender, bureau_commercial]
+    comparison: set_equal
+    tolerance: name_match
+    severity: serious
+    blocking: true
+    explanation: "The existing facilities differ between sources: {items}."
+    query: "Please confirm all existing facilities; {items}."
+
+  - id: OB-02
+    title: Instalments in bank statements go to declared lenders
+    variable: emis_to_declared_lenders
+    sources: [bank_statement, existing_facilities_declaration]
+    comparison: set_contains
+    tolerance: emi_amount_match
+    severity: serious
+    blocking: true
+    explanation: "Regular debits to lender(s) not declared: {missing}."
+    query: "Please explain the regular debits to {missing}, which are not in the declaration of existing facilities."

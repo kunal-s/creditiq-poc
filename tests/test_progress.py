@@ -135,3 +135,25 @@ def test_an_unreadable_upload_is_not_mistaken_for_no_upload(client: TestClient, 
     progress = _progress(client, rm, case_id)
     assert progress["stage"] == "Documents"
     assert progress["stages"][0]["status"] != "not_started"
+
+
+def test_the_outputs_stage_needs_financial_statements(client: TestClient, published_data_root: Path):
+    from tests.test_policy import FINANCIALS
+    from tests.triangulation import add_doc
+
+    analyst = sign_in(client, ANALYST)
+    case_id = make_case(client, analyst, published_data_root)
+    add_doc(published_data_root, case_id, "pan_entity", {"pan": "AAACK1234F"})
+    add_doc(published_data_root, case_id, "bureau_commercial", {"pan": "AAACK1234F", "score": "Rank 3"})
+    conn = db.connect(published_data_root)
+    try:
+        from engine import pipeline
+
+        pipeline.refresh_case(conn, published_data_root, case_id)
+    finally:
+        conn.close()
+    outputs = _progress(client, analyst, case_id)["stages"][5]
+    assert outputs["status"] == "needs_attention" and outputs["done"] == 2
+    add_doc(published_data_root, case_id, "audited_financial_statements", FINANCIALS)
+    outputs = _progress(client, analyst, case_id)["stages"][5]
+    assert outputs["status"] == "done" and outputs["done"] == 3

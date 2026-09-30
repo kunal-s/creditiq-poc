@@ -153,15 +153,34 @@ def compute(conn: sqlite3.Connection, root: Path, case: CaseDetail, *, running_j
             else:
                 policy_stage.status = "needs_attention" if policy_stage.attention else "done"
 
+    # 6. Outputs (F-22 to F-24): the CAM and PD note are always drafted; the
+    # spread needs financial statements to lay out.
+    outputs = StageProgress(key="outputs", status="not_started", total=3)
+    if policy_stage.status != "not_started":
+        try:
+            from . import spread as spread_module
+
+            columns = len(spread_module.build(conn, root, case).columns)
+        except reader.NoPublishedConfig:
+            columns = 0
+        outputs.done = 3 if columns else 2
+        outputs.attention = 0 if columns else 1
+        if "in_progress" in (docs.status, extraction.status):
+            outputs.status = "in_progress"
+        else:
+            outputs.status = "done" if columns else "needs_attention"
+
     stages = [
         docs,
         extraction,
         complete,
         cross,
         policy_stage,
-        StageProgress(key="outputs", status="not_started"),
+        outputs,
     ]
     stage: Stage = "Intake"
     if submitted:
-        stage = next((_STAGE_OF[s.key] for s in stages if s.status != "done"), "Completed")
+        # Completed needs the comparison with RBL's record (F-25, §7), which is
+        # not built: a case with every stage done stays at Outputs.
+        stage = next((_STAGE_OF[s.key] for s in stages if s.status != "done"), "Outputs")
     return CaseProgress(case_id=case_id, stage=stage, stages=stages)

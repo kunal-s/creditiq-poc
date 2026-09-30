@@ -259,8 +259,11 @@
           "stage": {
             "enum": [
               "Intake",
-              "Readiness",
-              "Appraisal",
+              "Documents",
+              "Extraction",
+              "Completeness",
+              "CrossVerification",
+              "Policy",
               "Outputs",
               "Completed"
             ],
@@ -301,6 +304,42 @@
           "header"
         ],
         "title": "CaseDetail",
+        "type": "object"
+      },
+      "CaseProgress": {
+        "properties": {
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "stage": {
+            "enum": [
+              "Intake",
+              "Documents",
+              "Extraction",
+              "Completeness",
+              "CrossVerification",
+              "Policy",
+              "Outputs",
+              "Completed"
+            ],
+            "title": "Stage",
+            "type": "string"
+          },
+          "stages": {
+            "items": {
+              "$ref": "#/components/schemas/StageProgress"
+            },
+            "title": "Stages",
+            "type": "array"
+          }
+        },
+        "required": [
+          "case_id",
+          "stage",
+          "stages"
+        ],
+        "title": "CaseProgress",
         "type": "object"
       },
       "CaseProposal": {
@@ -387,8 +426,11 @@
           "stage": {
             "enum": [
               "Intake",
-              "Readiness",
-              "Appraisal",
+              "Documents",
+              "Extraction",
+              "Completeness",
+              "CrossVerification",
+              "Policy",
               "Outputs",
               "Completed"
             ],
@@ -2320,6 +2362,54 @@
         "title": "Span",
         "type": "object"
       },
+      "StageProgress": {
+        "description": "One processing stage of FRD \u00a75, as the case workspace shows it (\u00a76).\nCounts only, never extracted values, so every role may read it.",
+        "properties": {
+          "attention": {
+            "default": 0,
+            "title": "Attention",
+            "type": "integer"
+          },
+          "done": {
+            "default": 0,
+            "title": "Done",
+            "type": "integer"
+          },
+          "key": {
+            "enum": [
+              "documents",
+              "extraction",
+              "completeness",
+              "cross_verification",
+              "policy",
+              "outputs"
+            ],
+            "title": "Key",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "not_started",
+              "in_progress",
+              "needs_attention",
+              "done"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "total": {
+            "default": 0,
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "key",
+          "status"
+        ],
+        "title": "StageProgress",
+        "type": "object"
+      },
       "StrippedSpan": {
         "description": "Part of the message set aside before extraction but kept as\nprovenance (F-04, normalisation): nothing is proposed from it.",
         "properties": {
@@ -3361,6 +3451,62 @@
           }
         },
         "summary": "Case Parties"
+      }
+    },
+    "/api/cases/{case_id}/progress": {
+      "get": {
+        "description": "FRD \u00a76: each processing stage's status and counts, for the stage\nprogress in the case workspace. Counts only, so every role may read it.",
+        "operationId": "case_progress_api_cases__case_id__progress_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseProgress"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Progress"
       }
     },
     "/api/cases/{case_id}/queries": {

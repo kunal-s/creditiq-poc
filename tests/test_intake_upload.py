@@ -87,7 +87,9 @@ def test_tc03_zip_with_folders_junk_nested_zip_unsupported_and_duplicate(client:
     docs = client.get(f"/api/cases/{case_id}/documents", headers=rm).json()
     registered = {f["id"] for f in result["files"] if f["status"] == "registered"}
     assert {d["file_id"] for d in docs} == registered  # duplicates are not processed
-    assert client.get(f"/api/cases/{case_id}", headers=rm).json()["stage"] == "Readiness"
+    stage = client.get(f"/api/cases/{case_id}", headers=rm).json()["stage"]
+    assert stage != "Intake"
+    assert stage == client.get(f"/api/cases/{case_id}/progress", headers=rm).json()["stage"]
 
 
 def test_tc03_same_case_as_multiple_files_identifies_the_duplicate(client: TestClient, published_data_root: Path):

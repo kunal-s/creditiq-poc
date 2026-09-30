@@ -236,6 +236,12 @@ MIGRATIONS: list[str] = [
         PRIMARY KEY (case_id, item_id)
     );
     """,
+    # 3: case stages follow the processing stages (FRD 3.1 §7). The next
+    # refresh of each case recomputes its stage exactly.
+    """
+    UPDATE cases SET stage = 'Documents' WHERE stage = 'Readiness';
+    UPDATE cases SET stage = 'CrossVerification' WHERE stage = 'Appraisal';
+    """,
 ]
 
 

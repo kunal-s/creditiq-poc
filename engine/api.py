@@ -17,7 +17,7 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from python_multipart.exceptions import MultipartParseError
 
-from . import auth, cases, db, jobs, pages, parties, pipeline, proposal, queries, reads, review, uploads
+from . import auth, cases, db, jobs, pages, parties, pipeline, progress, proposal, queries, reads, review, uploads
 from .config import load_app_config, option_ids
 from .configstore import reader as configstore_reader
 from .configstore.schema import ChecklistTaxonomySection, DocumentTypesSection, PolicySection
@@ -25,6 +25,7 @@ from .contracts import (
     CaseCreate,
     CaseDeleteRequest,
     CaseDetail,
+    CaseProgress,
     CaseProposal,
     CaseSummary,
     Party,
@@ -177,6 +178,19 @@ def create_case(
 @app.get("/api/cases/{case_id}", response_model=CaseDetail)
 def get_case(case_id: str, user: dict = Depends(require("case.read")), conn: sqlite3.Connection = Depends(get_conn)):
     return _case_for(conn, case_id, user)
+
+
+@app.get("/api/cases/{case_id}/progress", response_model=CaseProgress)
+def case_progress(
+    case_id: str, user: dict = Depends(require("case.read")), conn: sqlite3.Connection = Depends(get_conn)
+):
+    """FRD §6: each processing stage's status and counts, for the stage
+    progress in the case workspace. Counts only, so every role may read it."""
+    case = _case_for(conn, case_id, user)
+    try:
+        return progress.compute(conn, data_root(), case)
+    except configstore_reader.NoPublishedConfig as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
 
 
 @app.delete("/api/cases/{case_id}", status_code=204)

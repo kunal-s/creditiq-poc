@@ -185,8 +185,11 @@ state:
 # Case stages (FRD §7).
 stage:
   intake: Intake
-  readiness: Readiness
-  appraisal: Appraisal
+  documents: Documents
+  extraction: Extraction
+  completeness: Completeness
+  crossverification: Cross-verification
+  policy: Policy
   outputs: Outputs
   completed: Completed
 

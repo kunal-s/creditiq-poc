@@ -9,7 +9,7 @@ so a job killed part-way resumes with only the files not yet stored, and a
 re-run stores nothing twice (document and review ids are deterministic).
 
 After storing, the derived state is refreshed: parties and attribution
-(F-10), the query list (F-14), and the case stage (Intake -> Readiness).
+(F-10), the query list (F-14), and the case stage (FRD §7, engine/progress.py).
 """
 
 from __future__ import annotations
@@ -27,16 +27,13 @@ from .contracts import IngestDocument, IngestFile, IngestRequest, IngestResult, 
 from .db import log_decision, transaction
 from .ingest_client import IngestError
 from .review_items import close_item, raise_item
-from .store import MESSAGE_FILE_NAME, case_files_dir
+from .store import case_files_dir
 from .util import dumps, now_iso, stable_id
 
 GRADE_ORDER = {"A": 0, "B": 1, "C": 2, "U": 3}
 
 # Document statuses where no automatic step is pending (FRD section 7): the
 # case leaves Intake once every document is in one of these.
-FINAL_STATUSES = {"accepted", "in_review", "unclassified", "in_exception", "superseded", "duplicate"}
-
-
 @dataclass
 class Context:
     root: Path
@@ -477,32 +474,23 @@ def refresh_case(conn: sqlite3.Connection, root: Path, case_id: str, *, running_
 
     parties.refresh(conn, root, case_id)
     queries.refresh(conn, root, case_id)
-    _advance_stage(conn, case_id, running_job)
+    _update_stage(conn, root, case_id, running_job)
 
 
-def _advance_stage(conn: sqlite3.Connection, case_id: str, running_job: str | None) -> None:
-    """Intake -> Readiness once every submitted document is in a final state
-    and nothing is waiting to be processed (FRD section 7)."""
-    case = conn.execute("SELECT stage FROM cases WHERE id = ?", (case_id,)).fetchone()
-    if case is None or case["stage"] != "Intake":
+def _update_stage(conn: sqlite3.Connection, root: Path, case_id: str, running_job: str | None) -> None:
+    """The case's stage is the first processing stage not yet done (FRD §7);
+    a late document can move it back. Each change is logged."""
+    from . import cases, progress
+
+    case = cases.get_case(conn, case_id)
+    if case is None:
         return
-    pending_files = conn.execute(
-        "SELECT COUNT(*) FROM files WHERE case_id = ? AND status = 'registered' AND processed_at IS NULL", (case_id,)
-    ).fetchone()[0]
-    pending_jobs = conn.execute(
-        "SELECT COUNT(*) FROM jobs WHERE case_id = ? AND status IN ('queued', 'running') AND id <> ?",
-        (case_id, running_job or ""),
-    ).fetchone()[0]
-    statuses = [r["status"] for r in conn.execute("SELECT status FROM documents WHERE case_id = ?", (case_id,))]
-    submitted = conn.execute(
-        "SELECT COUNT(*) FROM files WHERE case_id = ? AND processed_at IS NOT NULL AND original_name <> ?",
-        (case_id, MESSAGE_FILE_NAME),
-    ).fetchone()[0]
-    if pending_files or pending_jobs or not submitted or any(s not in FINAL_STATUSES for s in statuses):
+    stage = progress.compute(conn, root, case, running_job=running_job).stage
+    if stage == case.stage:
         return
     with transaction(conn):
-        conn.execute("UPDATE cases SET stage = 'Readiness' WHERE id = ? AND stage = 'Intake'", (case_id,))
+        conn.execute("UPDATE cases SET stage = ? WHERE id = ?", (stage, case_id))
         log_decision(
             conn, at=now_iso(), actor="system", case_id=case_id, action="case.stage",
-            detail=dumps({"from": "Intake", "to": "Readiness"}),
+            detail=dumps({"from": case.stage, "to": stage}),
         )

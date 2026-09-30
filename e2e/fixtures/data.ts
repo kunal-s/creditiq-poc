@@ -117,8 +117,8 @@ function summary(
 }
 
 export const CASES: CaseSummary[] = [
-  summary(KESTREL, "Kestrel Polymers Pvt Ltd", "Readiness", 3),
-  summary(SAFFRON, "Saffron Loom Textiles Pvt Ltd", "Appraisal", 0, {
+  summary(KESTREL, "Kestrel Polymers Pvt Ltd", "Completeness", 3),
+  summary(SAFFRON, "Saffron Loom Textiles Pvt Ltd", "CrossVerification", 0, {
     facilities: ["cash_credit"],
     amount_inr: 25_000_000,
   }),

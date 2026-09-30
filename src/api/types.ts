@@ -53,3 +53,7 @@ export type PartyRole = Party["role"];
 export type DocumentTypeDef = S["DocumentTypeDef"];
 export type DocumentTypeGroup = DocumentTypeDef["group"];
 export type DocumentTypes = S["DocumentTypesSection"];
+export type CaseProgress = S["CaseProgress"];
+export type StageProgress = S["StageProgress"];
+export type StageKey = StageProgress["key"];
+export type StageStatus = StageProgress["status"];

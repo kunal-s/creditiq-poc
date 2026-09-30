@@ -18,7 +18,17 @@ from .appraisal import (
     ReviewDecisionRequest,
     ReviewItem,
 )
-from .case import CaseCreate, CaseDeleteRequest, CaseDetail, CaseSummary, HeaderField
+from .case import (
+    CaseCreate,
+    CaseDeleteRequest,
+    CaseDetail,
+    CaseProgress,
+    CaseSummary,
+    HeaderField,
+    StageKey,
+    StageProgress,
+    StageStatus,
+)
 from .common import Evidence, Grade, Stage
 from .documents import (
     Candidate,
@@ -89,6 +99,10 @@ __all__ = [
     "PageInfo",
     "QueryItem",
     "Readiness",
+    "CaseProgress",
+    "StageKey",
+    "StageProgress",
+    "StageStatus",
     "ReviewDecisionRequest",
     "ReviewItem",
     "SessionUser",

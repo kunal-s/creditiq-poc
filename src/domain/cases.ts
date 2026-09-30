@@ -69,8 +69,8 @@ export function stageLabel(stage: Stage): string {
 
 /** Where a case's stage is worked on. */
 export function stageRoute(stage: Stage): { to: string; docready: boolean } {
-  if (stage === "Intake") return { to: "upload", docready: false };
-  if (stage === "Readiness") return { to: "checklist", docready: true };
+  if (stage === "Intake" || stage === "Documents") return { to: "upload", docready: false };
+  if (stage === "Completeness") return { to: "checklist", docready: true };
   return { to: "data", docready: false };
 }
 

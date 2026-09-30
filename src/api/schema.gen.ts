@@ -249,6 +249,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/cases/{case_id}/progress": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Case Progress
+     * @description FRD §6: each processing stage's status and counts, for the stage
+     *     progress in the case workspace. Counts only, so every role may read it.
+     */
+    get: operations["case_progress_api_cases__case_id__progress_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/cases/{case_id}/queries": {
     parameters: {
       query?: never;
@@ -508,9 +529,37 @@ export interface components {
        * Stage
        * @enum {string}
        */
-      stage: "Intake" | "Readiness" | "Appraisal" | "Outputs" | "Completed";
+      stage:
+        | "Intake"
+        | "Documents"
+        | "Extraction"
+        | "Completeness"
+        | "CrossVerification"
+        | "Policy"
+        | "Outputs"
+        | "Completed";
       /** Udyam */
       udyam: string | null;
+    };
+    /** CaseProgress */
+    CaseProgress: {
+      /** Case Id */
+      case_id: string;
+      /**
+       * Stage
+       * @enum {string}
+       */
+      stage:
+        | "Intake"
+        | "Documents"
+        | "Extraction"
+        | "Completeness"
+        | "CrossVerification"
+        | "Policy"
+        | "Outputs"
+        | "Completed";
+      /** Stages */
+      stages: components["schemas"]["StageProgress"][];
     };
     /**
      * CaseProposal
@@ -556,7 +605,15 @@ export interface components {
        * Stage
        * @enum {string}
        */
-      stage: "Intake" | "Readiness" | "Appraisal" | "Outputs" | "Completed";
+      stage:
+        | "Intake"
+        | "Documents"
+        | "Extraction"
+        | "Completeness"
+        | "CrossVerification"
+        | "Policy"
+        | "Outputs"
+        | "Completed";
     };
     /** ChecklistItemDef */
     ChecklistItemDef: {
@@ -1267,6 +1324,39 @@ export interface components {
       start: number;
     };
     /**
+     * StageProgress
+     * @description One processing stage of FRD §5, as the case workspace shows it (§6).
+     *     Counts only, never extracted values, so every role may read it.
+     */
+    StageProgress: {
+      /**
+       * Attention
+       * @default 0
+       */
+      attention: number;
+      /**
+       * Done
+       * @default 0
+       */
+      done: number;
+      /**
+       * Key
+       * @enum {string}
+       */
+      key:
+        "documents" | "extraction" | "completeness" | "cross_verification" | "policy" | "outputs";
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "not_started" | "in_progress" | "needs_attention" | "done";
+      /**
+       * Total
+       * @default 0
+       */
+      total: number;
+    };
+    /**
      * StrippedSpan
      * @description Part of the message set aside before extraction but kept as
      *     provenance (F-04, normalisation): nothing is proposed from it.
@@ -1848,6 +1938,39 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Party"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  case_progress_api_cases__case_id__progress_get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CaseProgress"];
         };
       };
       /** @description Validation Error */

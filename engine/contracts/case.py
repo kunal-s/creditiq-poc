@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 from .common import Stage
@@ -73,3 +75,26 @@ class CaseDetail(CaseSummary):
     created_by: str
     config_version: str | None
     header: dict[str, HeaderField]
+
+
+StageKey = Literal["documents", "extraction", "completeness", "cross_verification", "policy", "outputs"]
+StageStatus = Literal["not_started", "in_progress", "needs_attention", "done"]
+
+
+class StageProgress(BaseModel):
+    """One processing stage of FRD §5, as the case workspace shows it (§6).
+    Counts only, never extracted values, so every role may read it."""
+
+    key: StageKey
+    status: StageStatus
+    done: int = 0
+    """Units finished: documents classified, documents extracted, checklist items satisfied."""
+    total: int = 0
+    attention: int = 0
+    """Units waiting for a person or blocking the stage."""
+
+
+class CaseProgress(BaseModel):
+    case_id: str
+    stage: Stage
+    stages: list[StageProgress]

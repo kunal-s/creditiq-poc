@@ -6,8 +6,10 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-# Case stages (FRD §7).
-Stage = Literal["Intake", "Readiness", "Appraisal", "Outputs", "Completed"]
+# Case stages (FRD §7): Intake, then the six processing stages of §5 in order.
+Stage = Literal[
+    "Intake", "Documents", "Extraction", "Completeness", "CrossVerification", "Policy", "Outputs", "Completed"
+]
 
 # Page quality grade (FRD F-07.2).
 Grade = Literal["A", "B", "C", "U"]

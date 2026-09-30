@@ -8,8 +8,11 @@ import { cn } from "@/lib/utils";
 
 const stageTone: Record<Stage, string> = {
   Intake: "bg-muted text-muted-foreground",
-  Readiness: "bg-info-soft text-info",
-  Appraisal: "bg-accent text-accent-foreground",
+  Documents: "bg-info-soft text-info",
+  Extraction: "bg-info-soft text-info",
+  Completeness: "bg-info-soft text-info",
+  CrossVerification: "bg-accent text-accent-foreground",
+  Policy: "bg-accent text-accent-foreground",
   Outputs: "bg-accent text-accent-foreground",
   Completed: "bg-positive-soft text-positive",
 };

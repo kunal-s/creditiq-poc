@@ -29,6 +29,7 @@ source_modules =
     engine.pages
     engine.parties
     engine.pipeline
+    engine.progress
     engine.proposal
     engine.queries
     engine.reads

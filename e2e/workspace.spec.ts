@@ -2,7 +2,7 @@
 // and what waits for a decision; Completeness filters its checklist; links
 // to a part of a tab land on it.
 import { expect, test } from "@playwright/test";
-import { KESTREL } from "./fixtures/data";
+import { FINDING_ITEM, KESTREL } from "./fixtures/data";
 import { MockApi, signedIn } from "./support/api";
 
 test("Overview lists what is still needed and what waits for a decision", async ({ page }) => {
@@ -99,4 +99,56 @@ test("when processing finishes, the rest of the appraisal refreshes", async ({ p
   await expect
     .poll(() => api.called("GET", `/api/cases/${KESTREL}/checklist`).length)
     .toBeGreaterThan(before);
+});
+
+test("Cross-verification shows each finding with both sides and its evidence", async ({ page }) => {
+  const api = new MockApi();
+  api.review.push(structuredClone(FINDING_ITEM));
+  await signedIn(page, api);
+  await page.goto(`/appraisals/${KESTREL}/cross-verification`);
+  const findings = page.getByTestId("findings");
+  await expect(findings).toContainText("1 finding(s) · 1 incomplete · 1 passed");
+  const ob2 = page.locator('[data-testid="finding"][data-rule="OB-02"]');
+  await expect(ob2).toContainText("ASHWOOD FINSERV");
+  await expect(ob2.getByTestId("finding-side")).toHaveCount(2);
+  await ob2.getByTestId("finding-evidence").first().click();
+  await expect(page.getByTestId("evidence-viewer").getByTestId("viewer-page")).toContainText("7");
+  await page.keyboard.press("Escape");
+
+  await page.getByTestId("findings-filter-incomplete").click();
+  await expect(page.locator('[data-testid="finding"][data-rule="TO-01"]')).toContainText(
+    "8 of 12 months",
+  );
+  await expect(page.getByTestId("facts-credits")).toContainText("Loan disbursal");
+  await expect(page.getByTestId("facts-obligations")).toContainText("ASHWOOD FINSERV");
+});
+
+test("a finding is accepted as valid, or found not valid with a reason", async ({ page }) => {
+  const api = new MockApi();
+  api.review.push(structuredClone(FINDING_ITEM));
+  await signedIn(page, api);
+  await page.goto(`/appraisals/${KESTREL}/cross-verification`);
+  const ob2 = page.locator('[data-testid="finding"][data-rule="OB-02"]');
+  await ob2.getByTestId("finding-not-valid").click();
+  await expect(ob2.getByTestId("finding-waive")).toBeDisabled();
+  await ob2.getByTestId("finding-reason").fill("Instalments are for an equipment lease");
+  await ob2.getByTestId("finding-waive").click();
+  await expect(page.getByText("Decision recorded")).toBeVisible();
+  const [call] = api.called("POST", "/api/review/r-finding/decision");
+  expect(call?.body).toEqual({
+    decision: "waive",
+    value: null,
+    reason: "Instalments are for an equipment lease",
+  });
+});
+
+test("a blocking cross-check finding shows on the Completeness summary", async ({ page }) => {
+  const api = new MockApi();
+  await signedIn(page, api);
+  await page.goto(`/appraisals/${KESTREL}/completeness`);
+  await expect(page.getByTestId("blocking-findings")).toHaveText(
+    "1 blocking cross-check finding(s) to decide →",
+  );
+  await page.getByTestId("blocking-findings").click();
+  await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}/cross-verification$`));
 });

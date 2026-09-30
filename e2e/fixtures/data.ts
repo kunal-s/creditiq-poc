@@ -4,6 +4,8 @@
 // against the excluded-terms list.
 import type {
   CaseDetail,
+  CaseFacts,
+  Finding,
   CaseProposal,
   CaseSummary,
   ChecklistItemState,
@@ -652,3 +654,146 @@ export const PAGE_PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==",
   "base64",
 );
+
+// --- Cross-checks and aligned facts (F-18, F-19) ---
+
+export const FINDINGS: Finding[] = [
+  {
+    id: "fnd-ob2",
+    case_id: KESTREL,
+    rule_id: "OB-02",
+    title: "Instalments in bank statements go to declared lenders",
+    outcome: "fail",
+    severity: "serious",
+    blocking: true,
+    explanation:
+      "Regular debits to lender(s) not declared: ASHWOOD FINSERV (₹1,45,000 a month in 6 months, Lotuscrest Bank ·1234).",
+    sides: [
+      {
+        label: "Instalments in bank statements",
+        value: "ASHWOOD FINSERV (₹1,45,000 × 6)",
+        evidence: [{ document_id: "doc-bank", page: 7 }],
+        relies_on_manual: false,
+      },
+      {
+        label: "Declared facilities",
+        value: "none",
+        evidence: [{ document_id: "doc-bs", page: 4 }],
+        relies_on_manual: false,
+      },
+    ],
+    tolerance: "5%",
+    config_version: "v1",
+    run_id: null,
+    query: "Please explain the regular debits to ASHWOOD FINSERV.",
+  },
+  {
+    id: "fnd-to1",
+    case_id: KESTREL,
+    rule_id: "TO-01",
+    title: "Audited turnover against GST outward supplies · FY 2025-26",
+    outcome: "incomplete",
+    severity: "moderate",
+    blocking: false,
+    explanation:
+      "GST outward supplies covers 8 of 12 months (Apr 2025, May 2025, Jun 2025… absent).",
+    sides: [],
+    tolerance: "10%",
+    config_version: "v1",
+    run_id: null,
+    query: null,
+  },
+  {
+    id: "fnd-id1",
+    case_id: KESTREL,
+    rule_id: "ID-01",
+    title: "Entity PAN consistent across documents",
+    outcome: "pass",
+    severity: "serious",
+    blocking: true,
+    explanation: "Consistent across 4 sources.",
+    sides: [],
+    tolerance: null,
+    config_version: "v1",
+    run_id: null,
+    query: null,
+  },
+];
+
+export const FINDING_ITEM: ReviewItem = {
+  id: "r-finding",
+  case_id: KESTREL,
+  kind: "finding",
+  ref: "finding:fnd-ob2",
+  summary: "OB-02 Instalments in bank statements go to declared lenders",
+  status: "open",
+  created_at: "2026-09-21T09:07:00Z",
+};
+
+export const FACTS: CaseFacts = {
+  case_id: KESTREL,
+  identities: { entity_pan: [], gstin: [], legal_name: [] },
+  persons: [],
+  turnover: [
+    {
+      fy: "FY 2025-26",
+      fy_end: "2026-03-31",
+      figures: [
+        {
+          source: "gst",
+          label: "GST outward supplies",
+          value: 80_000_000,
+          months_covered: 8,
+          months_missing: ["Apr 2025", "May 2025", "Jun 2025", "Jul 2025"],
+          evidence: [{ document_id: "doc-gst", page: 1 }],
+          field_ids: [],
+          relies_on_manual: false,
+        },
+      ],
+    },
+  ],
+  credits: [
+    {
+      account: "Lotuscrest Bank ·1234",
+      gross: 3_276_500,
+      excluded: 2_876_500,
+      net: 400_000,
+      months: ["Apr 2025"],
+      exclusions: [
+        {
+          rule: "loan_disbursal",
+          label: "Loan disbursal",
+          account: "Lotuscrest Bank ·1234",
+          date: "2025-04-06",
+          narration: "LOAN DISBURSAL TL 7781",
+          amount: 2_500_000,
+          evidence: [{ document_id: "doc-bank", page: 7 }],
+        },
+      ],
+    },
+  ],
+  obligations: [
+    {
+      lender: "ASHWOOD FINSERV",
+      variants: ["ASHWOOD FINSERV"],
+      account: "Lotuscrest Bank ·1234",
+      months: ["Apr 2025", "May 2025", "Jun 2025"],
+      typical_amount: 145_000,
+      debits: 3,
+      evidence: [{ document_id: "doc-bank", page: 7 }],
+    },
+  ],
+  accounts: [
+    {
+      bank: "Lotuscrest Bank",
+      last4: "1234",
+      label: "Lotuscrest Bank ·1234",
+      sources: ["Bank statement"],
+      declared: true,
+      has_statement: true,
+      evidence: [{ document_id: "doc-bank", page: 7 }],
+    },
+  ],
+  facilities: [],
+  declaration_received: true,
+};

@@ -35,8 +35,9 @@ export function useDecideReview() {
 }
 
 /** The decisions each kind of review item admits, as the engine accepts
- * them (F-17.5, F-09.5, F-07.5, F-10.5). Findings are decided on their own
- * screen, not here. For a quality exception, "correct" is manual entry. */
+ * them (F-17.5, F-09.5, F-07.5, F-10.5). A finding is confirmed as valid or
+ * waived with a reason (F-17.4). For a quality exception, "correct" is
+ * manual entry. */
 export const DECISIONS_BY_KIND: Record<ReviewKind, ReviewDecision[]> = {
   type: ["assign", "waive"],
   field: ["confirm", "correct"],
@@ -44,7 +45,7 @@ export const DECISIONS_BY_KIND: Record<ReviewKind, ReviewDecision[]> = {
   party: ["confirm", "correct"],
   split: ["confirm"],
   manual_entry: ["confirm"],
-  finding: [],
+  finding: ["confirm", "waive"],
 };
 
 /** What a review item points at: "field:<id>", "document:<id>" or "file:<id>". */

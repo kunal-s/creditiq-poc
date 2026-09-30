@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { AlertTriangle, ShieldCheck } from "lucide-react";
 import type { Readiness } from "@/api/types";
 import { ScoreBar } from "@/components/common/Panel";
@@ -7,7 +8,16 @@ import { cn } from "@/lib/utils";
 
 /** Readiness against the gates, in one summary (F-13.4, F-13.5): the verdict,
  * the weighted score, the counts by status and each gate. */
-export function ReadinessSummary({ r }: { r: Readiness }) {
+export function ReadinessSummary({
+  r,
+  caseId,
+  blockingFindings = 0,
+}: {
+  r: Readiness;
+  caseId: string;
+  /** Failed blocking cross-checks (F-19.5): shown here, decided on their tab. */
+  blockingFindings?: number;
+}) {
   const taxonomy = useTaxonomy();
   const counts = countItems(r.items);
   const ready = readyForCredit(r);
@@ -70,6 +80,16 @@ export function ReadinessSummary({ r }: { r: Readiness }) {
                 ? t("readiness.blockingOpen", { n: r.blocking_open })
                 : t("readiness.noBlocking")}
             </p>
+            {blockingFindings > 0 && (
+              <Link
+                to="/appraisals/$caseId/cross-verification"
+                params={{ caseId }}
+                className="mt-1 inline-flex items-center gap-1 text-[12px] font-medium text-destructive hover:underline"
+                data-testid="blocking-findings"
+              >
+                {t("readiness.blockingFindings", { n: blockingFindings })} →
+              </Link>
+            )}
           </div>
         </div>
 

@@ -6,6 +6,8 @@ import type { Page, Request, Route } from "@playwright/test";
 import type {
   CaseCreate,
   CaseDetail,
+  CaseFacts,
+  Finding,
   CaseProgress,
   CaseProposal,
   CaseSummary,
@@ -26,6 +28,8 @@ import {
   API,
   CASES,
   DOCUMENTS,
+  FACTS,
+  FINDINGS,
   DOCUMENT_TYPES,
   FIELDS,
   KESTREL,
@@ -66,6 +70,8 @@ export class MockApi {
   fields = new Map<string, FieldValue[]>([[KESTREL, FIELDS]]);
   parties = new Map<string, Party[]>([[KESTREL, PARTIES]]);
   review: ReviewItem[] = structuredClone(REVIEW);
+  findings = new Map<string, Finding[]>([[KESTREL, FINDINGS]]);
+  facts = new Map<string, CaseFacts>([[KESTREL, FACTS]]);
   /** Document reads still to answer as "received" before the final state. */
   pendingReads = new Map<string, number>();
   proposal: CaseProposal = proposal();
@@ -230,7 +236,24 @@ export class MockApi {
       ],
       ["GET", new RegExp(`^/api/cases/${id}/fields$`), one(this.fields, [])],
       ["GET", new RegExp(`^/api/cases/${id}/parties$`), one(this.parties, [])],
-      ["GET", new RegExp(`^/api/cases/${id}/findings$`), () => ({ json: [] })],
+      ["GET", new RegExp(`^/api/cases/${id}/findings$`), one(this.findings, [])],
+      [
+        "GET",
+        new RegExp(`^/api/cases/${id}/facts$`),
+        (_req, m) => {
+          const caseId = decodeURIComponent(m[1]!);
+          return {
+            json: this.facts.get(caseId) ?? {
+              ...FACTS,
+              case_id: caseId,
+              turnover: [],
+              credits: [],
+              obligations: [],
+              accounts: [],
+            },
+          };
+        },
+      ],
       [
         "GET",
         /^\/api\/review$/,

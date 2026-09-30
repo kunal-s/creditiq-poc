@@ -53,6 +53,55 @@ outputs:
     cam: Draft CAM
     pd: PD note
 
+# How serious a cross-check finding is (F-19.1).
+severity:
+  serious: Serious
+  moderate: Moderate
+  mild: Mild
+
+# Cross-checks (F-19) and the facts behind them (F-18).
+crossCheck:
+  title: Cross-checks
+  summary: "{rules} rules · {fail} finding(s) · {incomplete} incomplete · {pass} passed"
+  filter:
+    fail: "Findings ({n})"
+    incomplete: "Incomplete ({n})"
+    pass: "Passed ({n})"
+    not_applicable: "Not applicable ({n})"
+  noneHere: Nothing in this group.
+  emptyTitle: No checks yet
+  emptyDescription: The cross-checks run once documents have been read and their values extracted.
+  morePages: "+{n} more"
+  manual: Relies on a person's entry
+  tolerance: "Tolerance {tolerance}"
+  valid: Valid
+  notValid: Not valid…
+  reason: Why the flag is not valid
+  saveNotValid: Record as not valid
+  decidedValid: "Accepted as valid by {who}."
+  decidedNotValid: "Found not valid by {who}: {reason}"
+
+facts:
+  title: Aligned facts
+  purpose: What the checks compared, each with the pages it came from.
+  turnover: Turnover by financial year
+  turnoverHelp: Audited statements, GST returns, business credits in the bank and the declared figure.
+  months: "{n} of 12 months"
+  credits: Bank credits
+  creditsHelp: Credits less transfers between own accounts, loan disbursals, reversals and returned cheques.
+  creditsLine: "Credits {gross} · excluded {excluded} · business inflow {net}"
+  obligations: Obligations
+  obligationsHelp: Regular instalments seen in the bank statements, and existing facilities as each source records them.
+  emiLine: "{amount} a month · {n} months"
+  accounts: Bank accounts
+  accountsHelp: Every account seen in any document, whether it is declared and whether statements were received.
+  declared: Declared
+  notDeclared: Not declared
+  statement: Statements received
+  noStatement: No statements
+  none: Nothing on file yet.
+  noTransactions: No bank transactions have been read yet.
+
 # Extracted data by kind of document (FRD §6).
 fieldSection:
   identity: Entity and identity
@@ -586,6 +635,7 @@ readiness:
   nonBlockingHelp: Recorded and asked for, but not allowed to hold the case up.
   noBlocking: No blocking gap remains on this case.
   blockingOpen: "{n} blocking item(s) still open. Each one stops the case reaching credit review."
+  blockingFindings: "{n} blocking cross-check finding(s) to decide"
   noNonBlocking: Nothing outstanding outside the blocking set.
   openEvidence: "Open evidence · page {page}"
   next: Next

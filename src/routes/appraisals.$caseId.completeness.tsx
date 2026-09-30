@@ -7,6 +7,8 @@ import { QueryView } from "@/components/common/States";
 import { t } from "@/config/terminology";
 import { useAnchor } from "@/domain/anchor";
 import { useChecklist } from "@/domain/checklist";
+import { useFindings } from "@/domain/findings";
+import { useCan } from "@/domain/session";
 
 // Stage 3, validation and completeness (FRD §5, §6): readiness against the
 // gates, then the checklist beside the query list the RM sends.
@@ -43,6 +45,11 @@ function Anchor({
 function CompletenessTab() {
   const { caseId } = Route.useParams();
   const checklist = useChecklist(caseId);
+  const canReadFindings = useCan("finding.read");
+  const findings = useFindings(caseId, canReadFindings);
+  const blockingFindings = canReadFindings
+    ? (findings.data ?? []).filter((f) => f.outcome === "fail" && f.blocking).length
+    : 0;
   return (
     <div className="space-y-4 px-4 py-5 pb-10 sm:px-6">
       <QueryView
@@ -53,7 +60,7 @@ function CompletenessTab() {
         {(r) => (
           <>
             <Anchor id="readiness">
-              <ReadinessSummary r={r} />
+              <ReadinessSummary r={r} caseId={caseId} blockingFindings={blockingFindings} />
             </Anchor>
             <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
               <Anchor id="checklist" className="min-w-0">

@@ -1,6 +1,7 @@
 import type {
   CaseCreate,
   CaseDetail,
+  CaseFacts,
   CaseProgress,
   CaseProposal,
   CaseSummary,
@@ -128,6 +129,7 @@ export const api = {
   caseChecklist: (id: string) => request<Readiness>(`/api/cases/${q(id)}/checklist`),
   caseQueries: (id: string) => request<QueryItem[]>(`/api/cases/${q(id)}/queries`),
   caseFindings: (id: string) => request<Finding[]>(`/api/cases/${q(id)}/findings`),
+  caseFacts: (id: string) => request<CaseFacts>(`/api/cases/${q(id)}/facts`),
   reviewQueue: (options: { caseId?: string; includeDecided?: boolean } = {}) => {
     const params = new URLSearchParams();
     if (options.caseId) params.set("case_id", options.caseId);

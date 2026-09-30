@@ -11,26 +11,23 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ExceptionsRouteImport } from './routes/exceptions'
+import { Route as ReviewRouteImport } from './routes/review'
 import { Route as ScorecardRouteImport } from './routes/scorecard'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as AppraisalsIndexRouteImport } from './routes/appraisals.index'
-import { Route as AppraisalsNewRouteImport } from './routes/appraisals.new'
+import { Route as AppraisalsSplatRouteImport } from './routes/appraisals.$'
+import { Route as CasesCaseIdRouteImport } from './routes/cases.$caseId'
+import { Route as CasesNewRouteImport } from './routes/cases.new'
 import { Route as DocreadyIndexRouteImport } from './routes/docready.index'
-import { Route as DocreadyCaseIdRouteImport } from './routes/docready.$caseId'
-import { Route as AppraisalsIdIndexRouteImport } from './routes/appraisals.$id.index'
-import { Route as AppraisalsIdComparisonRouteImport } from './routes/appraisals.$id.comparison'
-import { Route as AppraisalsIdCrossVerificationRouteImport } from './routes/appraisals.$id.cross-verification'
-import { Route as AppraisalsIdDataRouteImport } from './routes/appraisals.$id.data'
-import { Route as AppraisalsIdDraftRouteImport } from './routes/appraisals.$id.draft'
-import { Route as AppraisalsIdIdentityRouteImport } from './routes/appraisals.$id.identity'
-import { Route as AppraisalsIdPolicyRouteImport } from './routes/appraisals.$id.policy'
-import { Route as AppraisalsIdSpreadRouteImport } from './routes/appraisals.$id.spread'
-import { Route as AppraisalsIdUploadRouteImport } from './routes/appraisals.$id.upload'
-import { Route as DocreadyCaseIdIndexRouteImport } from './routes/docready.$caseId.index'
-import { Route as DocreadyCaseIdChecklistRouteImport } from './routes/docready.$caseId.checklist'
-import { Route as DocreadyCaseIdCollectionRouteImport } from './routes/docready.$caseId.collection'
-import { Route as DocreadyCaseIdReadinessRouteImport } from './routes/docready.$caseId.readiness'
-import { Route as DocreadyCaseIdValidationRouteImport } from './routes/docready.$caseId.validation'
+import { Route as DocreadySplatRouteImport } from './routes/docready.$'
+import { Route as CasesCaseIdIndexRouteImport } from './routes/cases.$caseId.index'
+import { Route as CasesCaseIdComparisonRouteImport } from './routes/cases.$caseId.comparison'
+import { Route as CasesCaseIdCompletenessRouteImport } from './routes/cases.$caseId.completeness'
+import { Route as CasesCaseIdCrossVerificationRouteImport } from './routes/cases.$caseId.cross-verification'
+import { Route as CasesCaseIdDocumentsRouteImport } from './routes/cases.$caseId.documents'
+import { Route as CasesCaseIdExtractionRouteImport } from './routes/cases.$caseId.extraction'
+import { Route as CasesCaseIdOutputsRouteImport } from './routes/cases.$caseId.outputs'
+import { Route as CasesCaseIdPolicyRouteImport } from './routes/cases.$caseId.policy'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -40,6 +37,11 @@ const IndexRoute = IndexRouteImport.update({
 const ExceptionsRoute = ExceptionsRouteImport.update({
   id: '/exceptions',
   path: '/exceptions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReviewRoute = ReviewRouteImport.update({
+  id: '/review',
+  path: '/review',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ScorecardRoute = ScorecardRouteImport.update({
@@ -57,9 +59,19 @@ const AppraisalsIndexRoute = AppraisalsIndexRouteImport.update({
   path: '/appraisals/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppraisalsNewRoute = AppraisalsNewRouteImport.update({
-  id: '/appraisals/new',
-  path: '/appraisals/new',
+const AppraisalsSplatRoute = AppraisalsSplatRouteImport.update({
+  id: '/appraisals/$',
+  path: '/appraisals/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CasesCaseIdRoute = CasesCaseIdRouteImport.update({
+  id: '/cases/$caseId',
+  path: '/cases/$caseId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CasesNewRoute = CasesNewRouteImport.update({
+  id: '/cases/new',
+  path: '/cases/new',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DocreadyIndexRoute = DocreadyIndexRouteImport.update({
@@ -67,249 +79,193 @@ const DocreadyIndexRoute = DocreadyIndexRouteImport.update({
   path: '/docready/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DocreadyCaseIdRoute = DocreadyCaseIdRouteImport.update({
-  id: '/docready/$caseId',
-  path: '/docready/$caseId',
+const DocreadySplatRoute = DocreadySplatRouteImport.update({
+  id: '/docready/$',
+  path: '/docready/$',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppraisalsIdIndexRoute = AppraisalsIdIndexRouteImport.update({
-  id: '/appraisals/$id/',
-  path: '/appraisals/$id/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AppraisalsIdComparisonRoute = AppraisalsIdComparisonRouteImport.update({
-  id: '/appraisals/$id/comparison',
-  path: '/appraisals/$id/comparison',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AppraisalsIdCrossVerificationRoute =
-  AppraisalsIdCrossVerificationRouteImport.update({
-    id: '/appraisals/$id/cross-verification',
-    path: '/appraisals/$id/cross-verification',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const AppraisalsIdDataRoute = AppraisalsIdDataRouteImport.update({
-  id: '/appraisals/$id/data',
-  path: '/appraisals/$id/data',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AppraisalsIdDraftRoute = AppraisalsIdDraftRouteImport.update({
-  id: '/appraisals/$id/draft',
-  path: '/appraisals/$id/draft',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AppraisalsIdIdentityRoute = AppraisalsIdIdentityRouteImport.update({
-  id: '/appraisals/$id/identity',
-  path: '/appraisals/$id/identity',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AppraisalsIdPolicyRoute = AppraisalsIdPolicyRouteImport.update({
-  id: '/appraisals/$id/policy',
-  path: '/appraisals/$id/policy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AppraisalsIdSpreadRoute = AppraisalsIdSpreadRouteImport.update({
-  id: '/appraisals/$id/spread',
-  path: '/appraisals/$id/spread',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AppraisalsIdUploadRoute = AppraisalsIdUploadRouteImport.update({
-  id: '/appraisals/$id/upload',
-  path: '/appraisals/$id/upload',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DocreadyCaseIdIndexRoute = DocreadyCaseIdIndexRouteImport.update({
+const CasesCaseIdIndexRoute = CasesCaseIdIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => DocreadyCaseIdRoute,
+  getParentRoute: () => CasesCaseIdRoute,
 } as any)
-const DocreadyCaseIdChecklistRoute = DocreadyCaseIdChecklistRouteImport.update({
-  id: '/checklist',
-  path: '/checklist',
-  getParentRoute: () => DocreadyCaseIdRoute,
+const CasesCaseIdComparisonRoute = CasesCaseIdComparisonRouteImport.update({
+  id: '/comparison',
+  path: '/comparison',
+  getParentRoute: () => CasesCaseIdRoute,
 } as any)
-const DocreadyCaseIdCollectionRoute =
-  DocreadyCaseIdCollectionRouteImport.update({
-    id: '/collection',
-    path: '/collection',
-    getParentRoute: () => DocreadyCaseIdRoute,
+const CasesCaseIdCompletenessRoute = CasesCaseIdCompletenessRouteImport.update({
+  id: '/completeness',
+  path: '/completeness',
+  getParentRoute: () => CasesCaseIdRoute,
+} as any)
+const CasesCaseIdCrossVerificationRoute =
+  CasesCaseIdCrossVerificationRouteImport.update({
+    id: '/cross-verification',
+    path: '/cross-verification',
+    getParentRoute: () => CasesCaseIdRoute,
   } as any)
-const DocreadyCaseIdReadinessRoute = DocreadyCaseIdReadinessRouteImport.update({
-  id: '/readiness',
-  path: '/readiness',
-  getParentRoute: () => DocreadyCaseIdRoute,
+const CasesCaseIdDocumentsRoute = CasesCaseIdDocumentsRouteImport.update({
+  id: '/documents',
+  path: '/documents',
+  getParentRoute: () => CasesCaseIdRoute,
 } as any)
-const DocreadyCaseIdValidationRoute =
-  DocreadyCaseIdValidationRouteImport.update({
-    id: '/validation',
-    path: '/validation',
-    getParentRoute: () => DocreadyCaseIdRoute,
-  } as any)
+const CasesCaseIdExtractionRoute = CasesCaseIdExtractionRouteImport.update({
+  id: '/extraction',
+  path: '/extraction',
+  getParentRoute: () => CasesCaseIdRoute,
+} as any)
+const CasesCaseIdOutputsRoute = CasesCaseIdOutputsRouteImport.update({
+  id: '/outputs',
+  path: '/outputs',
+  getParentRoute: () => CasesCaseIdRoute,
+} as any)
+const CasesCaseIdPolicyRoute = CasesCaseIdPolicyRouteImport.update({
+  id: '/policy',
+  path: '/policy',
+  getParentRoute: () => CasesCaseIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/exceptions': typeof ExceptionsRoute
+  '/review': typeof ReviewRoute
   '/scorecard': typeof ScorecardRoute
   '/sign-in': typeof SignInRoute
-  '/appraisals/new': typeof AppraisalsNewRoute
-  '/docready/$caseId': typeof DocreadyCaseIdRouteWithChildren
+  '/appraisals/$': typeof AppraisalsSplatRoute
+  '/cases/$caseId': typeof CasesCaseIdRouteWithChildren
+  '/cases/new': typeof CasesNewRoute
+  '/docready/$': typeof DocreadySplatRoute
   '/appraisals/': typeof AppraisalsIndexRoute
   '/docready/': typeof DocreadyIndexRoute
-  '/appraisals/$id/comparison': typeof AppraisalsIdComparisonRoute
-  '/appraisals/$id/cross-verification': typeof AppraisalsIdCrossVerificationRoute
-  '/appraisals/$id/data': typeof AppraisalsIdDataRoute
-  '/appraisals/$id/draft': typeof AppraisalsIdDraftRoute
-  '/appraisals/$id/identity': typeof AppraisalsIdIdentityRoute
-  '/appraisals/$id/policy': typeof AppraisalsIdPolicyRoute
-  '/appraisals/$id/spread': typeof AppraisalsIdSpreadRoute
-  '/appraisals/$id/upload': typeof AppraisalsIdUploadRoute
-  '/docready/$caseId/checklist': typeof DocreadyCaseIdChecklistRoute
-  '/docready/$caseId/collection': typeof DocreadyCaseIdCollectionRoute
-  '/docready/$caseId/readiness': typeof DocreadyCaseIdReadinessRoute
-  '/docready/$caseId/validation': typeof DocreadyCaseIdValidationRoute
-  '/appraisals/$id/': typeof AppraisalsIdIndexRoute
-  '/docready/$caseId/': typeof DocreadyCaseIdIndexRoute
+  '/cases/$caseId/comparison': typeof CasesCaseIdComparisonRoute
+  '/cases/$caseId/completeness': typeof CasesCaseIdCompletenessRoute
+  '/cases/$caseId/cross-verification': typeof CasesCaseIdCrossVerificationRoute
+  '/cases/$caseId/documents': typeof CasesCaseIdDocumentsRoute
+  '/cases/$caseId/extraction': typeof CasesCaseIdExtractionRoute
+  '/cases/$caseId/outputs': typeof CasesCaseIdOutputsRoute
+  '/cases/$caseId/policy': typeof CasesCaseIdPolicyRoute
+  '/cases/$caseId/': typeof CasesCaseIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/exceptions': typeof ExceptionsRoute
+  '/review': typeof ReviewRoute
   '/scorecard': typeof ScorecardRoute
   '/sign-in': typeof SignInRoute
-  '/appraisals/new': typeof AppraisalsNewRoute
+  '/appraisals/$': typeof AppraisalsSplatRoute
+  '/cases/new': typeof CasesNewRoute
+  '/docready/$': typeof DocreadySplatRoute
   '/appraisals': typeof AppraisalsIndexRoute
   '/docready': typeof DocreadyIndexRoute
-  '/appraisals/$id/comparison': typeof AppraisalsIdComparisonRoute
-  '/appraisals/$id/cross-verification': typeof AppraisalsIdCrossVerificationRoute
-  '/appraisals/$id/data': typeof AppraisalsIdDataRoute
-  '/appraisals/$id/draft': typeof AppraisalsIdDraftRoute
-  '/appraisals/$id/identity': typeof AppraisalsIdIdentityRoute
-  '/appraisals/$id/policy': typeof AppraisalsIdPolicyRoute
-  '/appraisals/$id/spread': typeof AppraisalsIdSpreadRoute
-  '/appraisals/$id/upload': typeof AppraisalsIdUploadRoute
-  '/docready/$caseId/checklist': typeof DocreadyCaseIdChecklistRoute
-  '/docready/$caseId/collection': typeof DocreadyCaseIdCollectionRoute
-  '/docready/$caseId/readiness': typeof DocreadyCaseIdReadinessRoute
-  '/docready/$caseId/validation': typeof DocreadyCaseIdValidationRoute
-  '/appraisals/$id': typeof AppraisalsIdIndexRoute
-  '/docready/$caseId': typeof DocreadyCaseIdIndexRoute
+  '/cases/$caseId/comparison': typeof CasesCaseIdComparisonRoute
+  '/cases/$caseId/completeness': typeof CasesCaseIdCompletenessRoute
+  '/cases/$caseId/cross-verification': typeof CasesCaseIdCrossVerificationRoute
+  '/cases/$caseId/documents': typeof CasesCaseIdDocumentsRoute
+  '/cases/$caseId/extraction': typeof CasesCaseIdExtractionRoute
+  '/cases/$caseId/outputs': typeof CasesCaseIdOutputsRoute
+  '/cases/$caseId/policy': typeof CasesCaseIdPolicyRoute
+  '/cases/$caseId': typeof CasesCaseIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/exceptions': typeof ExceptionsRoute
+  '/review': typeof ReviewRoute
   '/scorecard': typeof ScorecardRoute
   '/sign-in': typeof SignInRoute
-  '/appraisals/new': typeof AppraisalsNewRoute
-  '/docready/$caseId': typeof DocreadyCaseIdRouteWithChildren
+  '/appraisals/$': typeof AppraisalsSplatRoute
+  '/cases/$caseId': typeof CasesCaseIdRouteWithChildren
+  '/cases/new': typeof CasesNewRoute
+  '/docready/$': typeof DocreadySplatRoute
   '/appraisals/': typeof AppraisalsIndexRoute
   '/docready/': typeof DocreadyIndexRoute
-  '/appraisals/$id/comparison': typeof AppraisalsIdComparisonRoute
-  '/appraisals/$id/cross-verification': typeof AppraisalsIdCrossVerificationRoute
-  '/appraisals/$id/data': typeof AppraisalsIdDataRoute
-  '/appraisals/$id/draft': typeof AppraisalsIdDraftRoute
-  '/appraisals/$id/identity': typeof AppraisalsIdIdentityRoute
-  '/appraisals/$id/policy': typeof AppraisalsIdPolicyRoute
-  '/appraisals/$id/spread': typeof AppraisalsIdSpreadRoute
-  '/appraisals/$id/upload': typeof AppraisalsIdUploadRoute
-  '/docready/$caseId/checklist': typeof DocreadyCaseIdChecklistRoute
-  '/docready/$caseId/collection': typeof DocreadyCaseIdCollectionRoute
-  '/docready/$caseId/readiness': typeof DocreadyCaseIdReadinessRoute
-  '/docready/$caseId/validation': typeof DocreadyCaseIdValidationRoute
-  '/appraisals/$id/': typeof AppraisalsIdIndexRoute
-  '/docready/$caseId/': typeof DocreadyCaseIdIndexRoute
+  '/cases/$caseId/comparison': typeof CasesCaseIdComparisonRoute
+  '/cases/$caseId/completeness': typeof CasesCaseIdCompletenessRoute
+  '/cases/$caseId/cross-verification': typeof CasesCaseIdCrossVerificationRoute
+  '/cases/$caseId/documents': typeof CasesCaseIdDocumentsRoute
+  '/cases/$caseId/extraction': typeof CasesCaseIdExtractionRoute
+  '/cases/$caseId/outputs': typeof CasesCaseIdOutputsRoute
+  '/cases/$caseId/policy': typeof CasesCaseIdPolicyRoute
+  '/cases/$caseId/': typeof CasesCaseIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/exceptions'
+    | '/review'
     | '/scorecard'
     | '/sign-in'
-    | '/appraisals/new'
-    | '/docready/$caseId'
+    | '/appraisals/$'
+    | '/cases/$caseId'
+    | '/cases/new'
+    | '/docready/$'
     | '/appraisals/'
     | '/docready/'
-    | '/appraisals/$id/comparison'
-    | '/appraisals/$id/cross-verification'
-    | '/appraisals/$id/data'
-    | '/appraisals/$id/draft'
-    | '/appraisals/$id/identity'
-    | '/appraisals/$id/policy'
-    | '/appraisals/$id/spread'
-    | '/appraisals/$id/upload'
-    | '/docready/$caseId/checklist'
-    | '/docready/$caseId/collection'
-    | '/docready/$caseId/readiness'
-    | '/docready/$caseId/validation'
-    | '/appraisals/$id/'
-    | '/docready/$caseId/'
+    | '/cases/$caseId/comparison'
+    | '/cases/$caseId/completeness'
+    | '/cases/$caseId/cross-verification'
+    | '/cases/$caseId/documents'
+    | '/cases/$caseId/extraction'
+    | '/cases/$caseId/outputs'
+    | '/cases/$caseId/policy'
+    | '/cases/$caseId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/exceptions'
+    | '/review'
     | '/scorecard'
     | '/sign-in'
-    | '/appraisals/new'
+    | '/appraisals/$'
+    | '/cases/new'
+    | '/docready/$'
     | '/appraisals'
     | '/docready'
-    | '/appraisals/$id/comparison'
-    | '/appraisals/$id/cross-verification'
-    | '/appraisals/$id/data'
-    | '/appraisals/$id/draft'
-    | '/appraisals/$id/identity'
-    | '/appraisals/$id/policy'
-    | '/appraisals/$id/spread'
-    | '/appraisals/$id/upload'
-    | '/docready/$caseId/checklist'
-    | '/docready/$caseId/collection'
-    | '/docready/$caseId/readiness'
-    | '/docready/$caseId/validation'
-    | '/appraisals/$id'
-    | '/docready/$caseId'
+    | '/cases/$caseId/comparison'
+    | '/cases/$caseId/completeness'
+    | '/cases/$caseId/cross-verification'
+    | '/cases/$caseId/documents'
+    | '/cases/$caseId/extraction'
+    | '/cases/$caseId/outputs'
+    | '/cases/$caseId/policy'
+    | '/cases/$caseId'
   id:
     | '__root__'
     | '/'
     | '/exceptions'
+    | '/review'
     | '/scorecard'
     | '/sign-in'
-    | '/appraisals/new'
-    | '/docready/$caseId'
+    | '/appraisals/$'
+    | '/cases/$caseId'
+    | '/cases/new'
+    | '/docready/$'
     | '/appraisals/'
     | '/docready/'
-    | '/appraisals/$id/comparison'
-    | '/appraisals/$id/cross-verification'
-    | '/appraisals/$id/data'
-    | '/appraisals/$id/draft'
-    | '/appraisals/$id/identity'
-    | '/appraisals/$id/policy'
-    | '/appraisals/$id/spread'
-    | '/appraisals/$id/upload'
-    | '/docready/$caseId/checklist'
-    | '/docready/$caseId/collection'
-    | '/docready/$caseId/readiness'
-    | '/docready/$caseId/validation'
-    | '/appraisals/$id/'
-    | '/docready/$caseId/'
+    | '/cases/$caseId/comparison'
+    | '/cases/$caseId/completeness'
+    | '/cases/$caseId/cross-verification'
+    | '/cases/$caseId/documents'
+    | '/cases/$caseId/extraction'
+    | '/cases/$caseId/outputs'
+    | '/cases/$caseId/policy'
+    | '/cases/$caseId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ExceptionsRoute: typeof ExceptionsRoute
+  ReviewRoute: typeof ReviewRoute
   ScorecardRoute: typeof ScorecardRoute
   SignInRoute: typeof SignInRoute
-  AppraisalsNewRoute: typeof AppraisalsNewRoute
-  DocreadyCaseIdRoute: typeof DocreadyCaseIdRouteWithChildren
+  AppraisalsSplatRoute: typeof AppraisalsSplatRoute
+  CasesCaseIdRoute: typeof CasesCaseIdRouteWithChildren
+  CasesNewRoute: typeof CasesNewRoute
+  DocreadySplatRoute: typeof DocreadySplatRoute
   AppraisalsIndexRoute: typeof AppraisalsIndexRoute
   DocreadyIndexRoute: typeof DocreadyIndexRoute
-  AppraisalsIdComparisonRoute: typeof AppraisalsIdComparisonRoute
-  AppraisalsIdCrossVerificationRoute: typeof AppraisalsIdCrossVerificationRoute
-  AppraisalsIdDataRoute: typeof AppraisalsIdDataRoute
-  AppraisalsIdDraftRoute: typeof AppraisalsIdDraftRoute
-  AppraisalsIdIdentityRoute: typeof AppraisalsIdIdentityRoute
-  AppraisalsIdPolicyRoute: typeof AppraisalsIdPolicyRoute
-  AppraisalsIdSpreadRoute: typeof AppraisalsIdSpreadRoute
-  AppraisalsIdUploadRoute: typeof AppraisalsIdUploadRoute
-  AppraisalsIdIndexRoute: typeof AppraisalsIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -326,6 +282,13 @@ declare module '@tanstack/react-router' {
       path: '/exceptions'
       fullPath: '/exceptions'
       preLoaderRoute: typeof ExceptionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/review': {
+      id: '/review'
+      path: '/review'
+      fullPath: '/review'
+      preLoaderRoute: typeof ReviewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/scorecard': {
@@ -349,11 +312,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppraisalsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/appraisals/new': {
-      id: '/appraisals/new'
-      path: '/appraisals/new'
-      fullPath: '/appraisals/new'
-      preLoaderRoute: typeof AppraisalsNewRouteImport
+    '/appraisals/$': {
+      id: '/appraisals/$'
+      path: '/appraisals/$'
+      fullPath: '/appraisals/$'
+      preLoaderRoute: typeof AppraisalsSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cases/$caseId': {
+      id: '/cases/$caseId'
+      path: '/cases/$caseId'
+      fullPath: '/cases/$caseId'
+      preLoaderRoute: typeof CasesCaseIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cases/new': {
+      id: '/cases/new'
+      path: '/cases/new'
+      fullPath: '/cases/new'
+      preLoaderRoute: typeof CasesNewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/docready/': {
@@ -363,152 +340,110 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocreadyIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/docready/$caseId': {
-      id: '/docready/$caseId'
-      path: '/docready/$caseId'
-      fullPath: '/docready/$caseId'
-      preLoaderRoute: typeof DocreadyCaseIdRouteImport
+    '/docready/$': {
+      id: '/docready/$'
+      path: '/docready/$'
+      fullPath: '/docready/$'
+      preLoaderRoute: typeof DocreadySplatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/appraisals/$id/': {
-      id: '/appraisals/$id/'
-      path: '/appraisals/$id'
-      fullPath: '/appraisals/$id/'
-      preLoaderRoute: typeof AppraisalsIdIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/appraisals/$id/comparison': {
-      id: '/appraisals/$id/comparison'
-      path: '/appraisals/$id/comparison'
-      fullPath: '/appraisals/$id/comparison'
-      preLoaderRoute: typeof AppraisalsIdComparisonRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/appraisals/$id/cross-verification': {
-      id: '/appraisals/$id/cross-verification'
-      path: '/appraisals/$id/cross-verification'
-      fullPath: '/appraisals/$id/cross-verification'
-      preLoaderRoute: typeof AppraisalsIdCrossVerificationRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/appraisals/$id/data': {
-      id: '/appraisals/$id/data'
-      path: '/appraisals/$id/data'
-      fullPath: '/appraisals/$id/data'
-      preLoaderRoute: typeof AppraisalsIdDataRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/appraisals/$id/draft': {
-      id: '/appraisals/$id/draft'
-      path: '/appraisals/$id/draft'
-      fullPath: '/appraisals/$id/draft'
-      preLoaderRoute: typeof AppraisalsIdDraftRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/appraisals/$id/identity': {
-      id: '/appraisals/$id/identity'
-      path: '/appraisals/$id/identity'
-      fullPath: '/appraisals/$id/identity'
-      preLoaderRoute: typeof AppraisalsIdIdentityRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/appraisals/$id/policy': {
-      id: '/appraisals/$id/policy'
-      path: '/appraisals/$id/policy'
-      fullPath: '/appraisals/$id/policy'
-      preLoaderRoute: typeof AppraisalsIdPolicyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/appraisals/$id/spread': {
-      id: '/appraisals/$id/spread'
-      path: '/appraisals/$id/spread'
-      fullPath: '/appraisals/$id/spread'
-      preLoaderRoute: typeof AppraisalsIdSpreadRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/appraisals/$id/upload': {
-      id: '/appraisals/$id/upload'
-      path: '/appraisals/$id/upload'
-      fullPath: '/appraisals/$id/upload'
-      preLoaderRoute: typeof AppraisalsIdUploadRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/docready/$caseId/': {
-      id: '/docready/$caseId/'
+    '/cases/$caseId/': {
+      id: '/cases/$caseId/'
       path: '/'
-      fullPath: '/docready/$caseId/'
-      preLoaderRoute: typeof DocreadyCaseIdIndexRouteImport
-      parentRoute: typeof DocreadyCaseIdRoute
+      fullPath: '/cases/$caseId/'
+      preLoaderRoute: typeof CasesCaseIdIndexRouteImport
+      parentRoute: typeof CasesCaseIdRoute
     }
-    '/docready/$caseId/checklist': {
-      id: '/docready/$caseId/checklist'
-      path: '/checklist'
-      fullPath: '/docready/$caseId/checklist'
-      preLoaderRoute: typeof DocreadyCaseIdChecklistRouteImport
-      parentRoute: typeof DocreadyCaseIdRoute
+    '/cases/$caseId/comparison': {
+      id: '/cases/$caseId/comparison'
+      path: '/comparison'
+      fullPath: '/cases/$caseId/comparison'
+      preLoaderRoute: typeof CasesCaseIdComparisonRouteImport
+      parentRoute: typeof CasesCaseIdRoute
     }
-    '/docready/$caseId/collection': {
-      id: '/docready/$caseId/collection'
-      path: '/collection'
-      fullPath: '/docready/$caseId/collection'
-      preLoaderRoute: typeof DocreadyCaseIdCollectionRouteImport
-      parentRoute: typeof DocreadyCaseIdRoute
+    '/cases/$caseId/completeness': {
+      id: '/cases/$caseId/completeness'
+      path: '/completeness'
+      fullPath: '/cases/$caseId/completeness'
+      preLoaderRoute: typeof CasesCaseIdCompletenessRouteImport
+      parentRoute: typeof CasesCaseIdRoute
     }
-    '/docready/$caseId/readiness': {
-      id: '/docready/$caseId/readiness'
-      path: '/readiness'
-      fullPath: '/docready/$caseId/readiness'
-      preLoaderRoute: typeof DocreadyCaseIdReadinessRouteImport
-      parentRoute: typeof DocreadyCaseIdRoute
+    '/cases/$caseId/cross-verification': {
+      id: '/cases/$caseId/cross-verification'
+      path: '/cross-verification'
+      fullPath: '/cases/$caseId/cross-verification'
+      preLoaderRoute: typeof CasesCaseIdCrossVerificationRouteImport
+      parentRoute: typeof CasesCaseIdRoute
     }
-    '/docready/$caseId/validation': {
-      id: '/docready/$caseId/validation'
-      path: '/validation'
-      fullPath: '/docready/$caseId/validation'
-      preLoaderRoute: typeof DocreadyCaseIdValidationRouteImport
-      parentRoute: typeof DocreadyCaseIdRoute
+    '/cases/$caseId/documents': {
+      id: '/cases/$caseId/documents'
+      path: '/documents'
+      fullPath: '/cases/$caseId/documents'
+      preLoaderRoute: typeof CasesCaseIdDocumentsRouteImport
+      parentRoute: typeof CasesCaseIdRoute
+    }
+    '/cases/$caseId/extraction': {
+      id: '/cases/$caseId/extraction'
+      path: '/extraction'
+      fullPath: '/cases/$caseId/extraction'
+      preLoaderRoute: typeof CasesCaseIdExtractionRouteImport
+      parentRoute: typeof CasesCaseIdRoute
+    }
+    '/cases/$caseId/outputs': {
+      id: '/cases/$caseId/outputs'
+      path: '/outputs'
+      fullPath: '/cases/$caseId/outputs'
+      preLoaderRoute: typeof CasesCaseIdOutputsRouteImport
+      parentRoute: typeof CasesCaseIdRoute
+    }
+    '/cases/$caseId/policy': {
+      id: '/cases/$caseId/policy'
+      path: '/policy'
+      fullPath: '/cases/$caseId/policy'
+      preLoaderRoute: typeof CasesCaseIdPolicyRouteImport
+      parentRoute: typeof CasesCaseIdRoute
     }
   }
 }
 
-interface DocreadyCaseIdRouteChildren {
-  DocreadyCaseIdChecklistRoute: typeof DocreadyCaseIdChecklistRoute
-  DocreadyCaseIdCollectionRoute: typeof DocreadyCaseIdCollectionRoute
-  DocreadyCaseIdReadinessRoute: typeof DocreadyCaseIdReadinessRoute
-  DocreadyCaseIdValidationRoute: typeof DocreadyCaseIdValidationRoute
-  DocreadyCaseIdIndexRoute: typeof DocreadyCaseIdIndexRoute
+interface CasesCaseIdRouteChildren {
+  CasesCaseIdComparisonRoute: typeof CasesCaseIdComparisonRoute
+  CasesCaseIdCompletenessRoute: typeof CasesCaseIdCompletenessRoute
+  CasesCaseIdCrossVerificationRoute: typeof CasesCaseIdCrossVerificationRoute
+  CasesCaseIdDocumentsRoute: typeof CasesCaseIdDocumentsRoute
+  CasesCaseIdExtractionRoute: typeof CasesCaseIdExtractionRoute
+  CasesCaseIdOutputsRoute: typeof CasesCaseIdOutputsRoute
+  CasesCaseIdPolicyRoute: typeof CasesCaseIdPolicyRoute
+  CasesCaseIdIndexRoute: typeof CasesCaseIdIndexRoute
 }
 
-const DocreadyCaseIdRouteChildren: DocreadyCaseIdRouteChildren = {
-  DocreadyCaseIdChecklistRoute: DocreadyCaseIdChecklistRoute,
-  DocreadyCaseIdCollectionRoute: DocreadyCaseIdCollectionRoute,
-  DocreadyCaseIdReadinessRoute: DocreadyCaseIdReadinessRoute,
-  DocreadyCaseIdValidationRoute: DocreadyCaseIdValidationRoute,
-  DocreadyCaseIdIndexRoute: DocreadyCaseIdIndexRoute,
+const CasesCaseIdRouteChildren: CasesCaseIdRouteChildren = {
+  CasesCaseIdComparisonRoute: CasesCaseIdComparisonRoute,
+  CasesCaseIdCompletenessRoute: CasesCaseIdCompletenessRoute,
+  CasesCaseIdCrossVerificationRoute: CasesCaseIdCrossVerificationRoute,
+  CasesCaseIdDocumentsRoute: CasesCaseIdDocumentsRoute,
+  CasesCaseIdExtractionRoute: CasesCaseIdExtractionRoute,
+  CasesCaseIdOutputsRoute: CasesCaseIdOutputsRoute,
+  CasesCaseIdPolicyRoute: CasesCaseIdPolicyRoute,
+  CasesCaseIdIndexRoute: CasesCaseIdIndexRoute,
 }
 
-const DocreadyCaseIdRouteWithChildren = DocreadyCaseIdRoute._addFileChildren(
-  DocreadyCaseIdRouteChildren,
+const CasesCaseIdRouteWithChildren = CasesCaseIdRoute._addFileChildren(
+  CasesCaseIdRouteChildren,
 )
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ExceptionsRoute: ExceptionsRoute,
+  ReviewRoute: ReviewRoute,
   ScorecardRoute: ScorecardRoute,
   SignInRoute: SignInRoute,
-  AppraisalsNewRoute: AppraisalsNewRoute,
-  DocreadyCaseIdRoute: DocreadyCaseIdRouteWithChildren,
+  AppraisalsSplatRoute: AppraisalsSplatRoute,
+  CasesCaseIdRoute: CasesCaseIdRouteWithChildren,
+  CasesNewRoute: CasesNewRoute,
+  DocreadySplatRoute: DocreadySplatRoute,
   AppraisalsIndexRoute: AppraisalsIndexRoute,
   DocreadyIndexRoute: DocreadyIndexRoute,
-  AppraisalsIdComparisonRoute: AppraisalsIdComparisonRoute,
-  AppraisalsIdCrossVerificationRoute: AppraisalsIdCrossVerificationRoute,
-  AppraisalsIdDataRoute: AppraisalsIdDataRoute,
-  AppraisalsIdDraftRoute: AppraisalsIdDraftRoute,
-  AppraisalsIdIdentityRoute: AppraisalsIdIdentityRoute,
-  AppraisalsIdPolicyRoute: AppraisalsIdPolicyRoute,
-  AppraisalsIdSpreadRoute: AppraisalsIdSpreadRoute,
-  AppraisalsIdUploadRoute: AppraisalsIdUploadRoute,
-  AppraisalsIdIndexRoute: AppraisalsIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

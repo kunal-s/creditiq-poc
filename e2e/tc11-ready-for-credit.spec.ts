@@ -8,7 +8,7 @@ test("TC-11: complete file is ready for credit", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api);
 
-  await page.goto(`/docready/${SAFFRON}/checklist`);
+  await page.goto(`/cases/${SAFFRON}/completeness`);
   await expect(page.getByTestId("checklist-status")).toHaveCount(9);
   const statuses = await page.getByTestId("checklist-status").allTextContents();
   expect(statuses.length).toBe(9);
@@ -16,14 +16,11 @@ test("TC-11: complete file is ready for credit", async ({ page }) => {
   await expect(page.getByTestId("header-ready")).toHaveText("Ready for credit");
   await expect(page.getByTestId("header-readiness")).toContainText("100%");
 
-  await page
-    .getByRole("navigation", { name: "Case tabs" })
-    .getByRole("link", { name: "Readiness" })
-    .click();
+  // Readiness is on the same tab, above the checklist.
   await expect(page.getByTestId("gate-banner")).toHaveAttribute("data-ready", "true");
   await expect(page.getByTestId("blocking-gaps")).toContainText("No blocking gap remains");
   await expect(page.getByTestId("gate").first()).toContainText("Met");
 
-  await page.goto("/docready");
-  await expect(page.getByTestId("kpi-ready")).toContainText("1");
+  await page.goto("/");
+  await expect(page.getByTestId("counter-ready-value")).toHaveText("1");
 });

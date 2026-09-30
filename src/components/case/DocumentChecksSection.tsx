@@ -11,13 +11,6 @@ import { useChecklist } from "@/domain/checklist";
 import { pageRange, useCaseRegister, useDocumentTypes } from "@/domain/documents";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/docready/$caseId/validation")({
-  head: () => ({
-    meta: [{ title: `${t("page.validation.title")} — ${t("tenant.product.name")}` }],
-  }),
-  component: ValidationTab,
-});
-
 type Outcome = "pass" | "warn" | "fail";
 
 function outcome(doc: LogicalDocument, defects: ChecklistItemState[]): Outcome {
@@ -36,8 +29,8 @@ function outcome(doc: LogicalDocument, defects: ChecklistItemState[]): Outcome {
 const ICON = { pass: CheckCircle2, warn: AlertTriangle, fail: XCircle } as const;
 const TONE = { pass: "text-positive", warn: "text-flag", fail: "text-destructive" } as const;
 
-function ValidationTab() {
-  const { caseId } = Route.useParams();
+/** Machine checks by document: quality, type and defects (F-07 to F-10, F-13). */
+export function DocumentChecksSection({ caseId }: { caseId: string }) {
   const { files, documents } = useCaseRegister(caseId);
   const checklist = useChecklist(caseId);
   const [open, setOpen] = useState<string | null>(null);
@@ -103,11 +96,11 @@ function ValidationTab() {
           <p className="px-4 py-8 text-center text-[12.5px] text-muted-foreground">
             {t("validation.none")}{" "}
             <Link
-              to="/appraisals/$id/upload"
-              params={{ id: caseId }}
+              to="/cases/$caseId/documents"
+              params={{ caseId: caseId }}
               className="font-medium text-primary hover:underline"
             >
-              {t("step.documents")}
+              {t("caseTab.documents")}
             </Link>
           </p>
         ) : (
@@ -305,8 +298,8 @@ function DocumentChecks({
               {!classified && (
                 <p className="rounded border border-flag/35 bg-flag-soft px-3 py-2 text-flag-foreground">
                   {t("validation.unclassifiedDetail")}{" "}
-                  <Link to="/exceptions" className="font-medium underline">
-                    {t("nav.exceptionQueue")}
+                  <Link to="/review" className="font-medium underline">
+                    {t("nav.reviewQueue")}
                   </Link>
                 </p>
               )}

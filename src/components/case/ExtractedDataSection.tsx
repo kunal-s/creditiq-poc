@@ -15,44 +15,11 @@ import { pageRange, useCaseDocuments, useCaseFiles, useDocumentTypes } from "@/d
 import { fieldLabel, useFields } from "@/domain/extraction";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/appraisals/$id/data")({
-  head: () => ({
-    meta: [{ title: `${t("page.data.title")} — ${t("tenant.product.name")}` }],
-  }),
-  component: DataStep,
-});
-
 const FILTERS = ["all", "in_review", "missing", "corrected"] as const;
 type Filter = (typeof FILTERS)[number];
 
-function DataStep() {
-  const { id } = Route.useParams();
-  return (
-    <CaseScreen caseId={id}>
-      {(c) => (
-        <div className="pb-10">
-          <PageHeader
-            eyebrow={`${t("nav.group.appraisal")} · ${c.id}`}
-            title={t("page.data.title")}
-            purpose={t("page.data.purpose")}
-            actions={
-              <Link
-                to="/appraisals/$id/upload"
-                params={{ id: c.id }}
-                className="flex h-9 items-center gap-1.5 rounded border border-border bg-surface px-3 text-[12.5px] font-medium text-foreground hover:bg-muted"
-              >
-                {t("step.documents")} <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            }
-          />
-          <DataConsole caseId={c.id} />
-        </div>
-      )}
-    </CaseScreen>
-  );
-}
-
-function DataConsole({ caseId }: { caseId: string }) {
+/** Extracted fields by document, with confidence and page (F-15, F-16). */
+export function ExtractedDataSection({ caseId }: { caseId: string }) {
   const fields = useFields(caseId);
   const documents = useCaseDocuments(caseId);
   const [filter, setFilter] = useState<Filter>("all");
@@ -142,10 +109,10 @@ function DataConsole({ caseId }: { caseId: string }) {
           {count("in_review") > 0 && (
             <div className="border-t border-border px-4 py-3">
               <Link
-                to="/exceptions"
+                to="/review"
                 className="flex h-8 items-center justify-center gap-1.5 rounded border border-border bg-surface text-[12.5px] font-medium text-foreground hover:bg-muted"
               >
-                {t("nav.exceptionQueue")} <ArrowRight className="h-3.5 w-3.5" />
+                {t("nav.reviewQueue")} <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </div>
           )}

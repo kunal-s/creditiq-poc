@@ -1,7 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AlertTriangle, ArrowUpRight, FileSearch, Plus } from "lucide-react";
-import type { CaseSummary, ReviewItem } from "@/api/types";
-import { useCases } from "@/domain/cases";
+import { useState } from "react";
+import type { CaseSummary, ReviewItem, Stage } from "@/api/types";
+import { stageLabel, useCases } from "@/domain/cases";
+import { readyForCredit, useChecklists } from "@/domain/checklist";
 import { useReviewQueue } from "@/domain/review";
 import { useSession } from "@/domain/session";
 import { t } from "@/config/terminology";
@@ -72,6 +74,16 @@ function Workbench() {
     ? review.data?.length
     : cases.data?.reduce((n, c) => n + c.open_review_items, 0);
   const firstName = session?.user.name.split(" ")[0] ?? "";
+  const [filter, setFilter] = useState<Filter>(ALL);
+  const checklists = useChecklists(inProgress.map((c) => c.id));
+  const ready = checklists.filter((q) => q.data && readyForCredit(q.data)).length;
+  const stages = [...new Set(list.map((c) => c.stage))];
+  const shown = list.filter(
+    (c) =>
+      (filter.stage === "" ? c.stage !== "Completed" : c.stage === filter.stage) &&
+      (!filter.mine || c.rm === session?.user.name) &&
+      (!filter.review || c.open_review_items > 0),
+  );
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-5 px-4 py-5 sm:px-6">
@@ -91,23 +103,30 @@ function Workbench() {
             value={cases.data ? inProgress.length : "…"}
             label={t("page.home.counter.inProgress")}
             sub={t("page.home.counter.inProgressSub", { n: borrowers })}
-            to="/appraisals"
+            to="/"
           />
           <Counter
             testId="counter-review"
             value={openItems ?? "…"}
             label={t("page.home.counter.review")}
             sub={t("page.home.counter.reviewSub")}
-            to={canReview ? "/exceptions" : "/appraisals"}
+            to={canReview ? "/review" : "/"}
             tone={openItems ? "flag" : undefined}
+          />
+          <Counter
+            testId="counter-ready"
+            value={cases.data ? ready : "…"}
+            label={t("readinessGates.readyForCredit")}
+            sub={t("console.kpi.readyNote")}
+            to="/"
           />
         </div>
         {canCreate && (
           <Link
-            to="/appraisals/new"
+            to="/cases/new"
             className="flex h-9 items-center gap-1.5 rounded bg-primary px-3.5 text-[13px] font-medium text-primary-foreground hover:bg-primary/90"
           >
-            <Plus className="h-4 w-4" /> {t("nav.newApplication")}
+            <Plus className="h-4 w-4" /> {t("nav.newCase")}
           </Link>
         )}
       </section>
@@ -119,32 +138,32 @@ function Workbench() {
               <h2 className="text-[14px] font-semibold">{t("page.home.inFlight")}</h2>
               <p className="text-[11.5px] text-muted-foreground">{t("page.home.inFlightSub")}</p>
             </div>
-            <Link
-              to="/appraisals"
-              className="shrink-0 text-[12px] font-medium text-primary hover:underline"
-            >
-              {t("action.viewAll")}
-            </Link>
+            <CaseFilters
+              value={filter}
+              onChange={setFilter}
+              stages={stages}
+              showOwner={session?.user.permissions.includes("case.read.all") ?? false}
+            />
           </header>
-          <div className={cn(cases.data && inProgress.length > 0 ? "" : "p-4")}>
+          <div className={cn(cases.data && shown.length > 0 ? "" : "p-4")}>
             <QueryView
               query={cases}
               loading={<LoadingBlock rows={4} className="border-0 p-0" />}
-              isEmpty={() => inProgress.length === 0}
+              isEmpty={() => shown.length === 0}
               empty={{
                 title: t("state.noCases.title"),
                 description: t("state.noCases.description"),
                 action: canCreate ? (
                   <Link
-                    to="/appraisals/new"
+                    to="/cases/new"
                     className="text-[12.5px] font-medium text-primary hover:underline"
                   >
-                    {t("nav.newApplication")}
+                    {t("nav.newCase")}
                   </Link>
                 ) : undefined,
               }}
             >
-              {() => <CasesTable cases={inProgress} />}
+              {() => <CasesTable cases={shown} />}
             </QueryView>
           </div>
         </section>
@@ -158,6 +177,61 @@ function Workbench() {
           onRetry={() => void review.refetch()}
         />
       </div>
+    </div>
+  );
+}
+
+type Filter = { stage: Stage | ""; mine: boolean; review: boolean };
+const ALL: Filter = { stage: "", mine: false, review: false };
+
+/** Stage, owner and open-review filters over the case list. */
+function CaseFilters({
+  value,
+  onChange,
+  stages,
+  showOwner,
+}: {
+  value: Filter;
+  onChange: (f: Filter) => void;
+  stages: Stage[];
+  showOwner: boolean;
+}) {
+  const toggle = "rounded border px-2 py-1 text-[11.5px] font-medium transition-colors";
+  const on = "border-primary bg-primary text-primary-foreground";
+  const off = "border-border bg-surface text-muted-foreground hover:bg-muted";
+  return (
+    <div className="flex flex-wrap items-center gap-1.5" data-testid="case-filters">
+      <select
+        aria-label={t("term.stage")}
+        value={value.stage}
+        onChange={(e) => onChange({ ...value, stage: e.target.value as Stage | "" })}
+        className="h-7 rounded border border-border bg-surface px-1.5 text-[11.5px]"
+      >
+        <option value="">{t("page.home.filter.open")}</option>
+        {stages.map((s) => (
+          <option key={s} value={s}>
+            {stageLabel(s)}
+          </option>
+        ))}
+      </select>
+      {showOwner && (
+        <button
+          type="button"
+          aria-pressed={value.mine}
+          onClick={() => onChange({ ...value, mine: !value.mine })}
+          className={cn(toggle, value.mine ? on : off)}
+        >
+          {t("page.home.filter.mine")}
+        </button>
+      )}
+      <button
+        type="button"
+        aria-pressed={value.review}
+        onClick={() => onChange({ ...value, review: !value.review })}
+        className={cn(toggle, value.review ? on : off)}
+      >
+        {t("page.home.filter.review")}
+      </button>
     </div>
   );
 }
@@ -195,8 +269,8 @@ function NeedsAttention({
             {t("page.home.attentionCount", { n: count })}
           </span>
           {canReview && (
-            <Link to="/exceptions" className="text-[12px] font-medium text-primary hover:underline">
-              {t("nav.exceptionQueue")}
+            <Link to="/review" className="text-[12px] font-medium text-primary hover:underline">
+              {t("nav.reviewQueue")}
             </Link>
           )}
         </div>
@@ -255,7 +329,8 @@ function NeedsAttention({
           {flagged.slice(0, MAX_ATTENTION).map((c) => (
             <li key={c.id}>
               <Link
-                to="/docready/$caseId/checklist"
+                to="/cases/$caseId/completeness"
+                hash="checklist"
                 params={{ caseId: c.id }}
                 className="flex gap-3 px-4 py-3 transition-colors hover:bg-surface-muted"
               >

@@ -6,6 +6,7 @@ import type { Page, Request, Route } from "@playwright/test";
 import type {
   CaseCreate,
   CaseDetail,
+  CaseProgress,
   CaseProposal,
   CaseSummary,
   FieldValue,
@@ -17,6 +18,7 @@ import type {
   ReviewDecisionRequest,
   ReviewItem,
   SessionUser,
+  StageProgress,
   UploadResult,
 } from "../../src/api/types";
 import {
@@ -81,6 +83,72 @@ export class MockApi {
     return this.calls.filter((c) => c.key === `${method} ${path}`);
   }
 
+  /** The stage progress, derived from the mock's documents and checklist as the engine does. */
+  progress(caseId: string): CaseProgress {
+    const docs = (this.documents.get(caseId) ?? []).filter(
+      (d) => d.status !== "duplicate" && d.status !== "superseded",
+    );
+    const classified = docs.filter((d) =>
+      ["classified", "extracted", "accepted", "in_review"].includes(d.status),
+    );
+    const blocked = docs.filter((d) => d.status === "unclassified" || d.status === "in_exception");
+    const busy = docs.some((d) => ["received", "graded", "split"].includes(d.status));
+    const items = this.checklists.get(caseId)?.items ?? [];
+    const status = (started: boolean, running: boolean, attention: number, done: boolean) =>
+      !started
+        ? ("not_started" as const)
+        : running
+          ? ("in_progress" as const)
+          : attention > 0 || !done
+            ? ("needs_attention" as const)
+            : ("done" as const);
+    const documents: StageProgress = {
+      key: "documents",
+      done: classified.length,
+      total: docs.length,
+      attention: blocked.length,
+      status: status(docs.length > 0, busy, blocked.length, true),
+    };
+    const inReview = classified.filter((d) => d.status === "in_review").length;
+    const extraction: StageProgress = {
+      key: "extraction",
+      done: classified.filter((d) => d.status === "accepted").length,
+      total: classified.length,
+      attention: inReview,
+      status: status(classified.length > 0, false, inReview, true),
+    };
+    const open = items.filter((i) => i.status === "missing" || i.status === "insufficient");
+    const completeness: StageProgress = {
+      key: "completeness",
+      done: items.filter((i) => i.status === "satisfied" || i.status === "waived").length,
+      total: items.length,
+      attention: open.length,
+      status: status(docs.length > 0, busy, 0, this.checklists.get(caseId)?.gate_met ?? false),
+    };
+    const later = (key: StageProgress["key"]): StageProgress => ({
+      key,
+      status: "not_started",
+      done: 0,
+      total: 0,
+      attention: 0,
+    });
+    const stages = [
+      documents,
+      extraction,
+      completeness,
+      later("cross_verification"),
+      later("policy"),
+      later("outputs"),
+    ];
+    const names = ["Documents", "Extraction", "Completeness", "CrossVerification"] as const;
+    const first = stages.findIndex((s) => s.status !== "done");
+    return {
+      case_id: caseId,
+      stage: docs.length === 0 ? "Intake" : names[Math.min(first, 3)]!,
+      stages,
+    };
+  }
+
   private routes(): [string, RegExp, Handler][] {
     const id = "([^/]+)";
     const one =
@@ -119,6 +187,11 @@ export class MockApi {
           this.cases = this.cases.filter((c) => c.id !== caseId);
           return { status: 204 };
         },
+      ],
+      [
+        "GET",
+        new RegExp(`^/api/cases/${id}/progress$`),
+        (_req, m) => ({ json: this.progress(decodeURIComponent(m[1]!)) }),
       ],
       [
         "GET",

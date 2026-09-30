@@ -11,13 +11,6 @@ import { useQueryList } from "@/domain/checklist";
 import { numbered, QUERY_GROUPS, queryListEmail, queryListText } from "@/domain/queries";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/docready/$caseId/collection")({
-  head: () => ({
-    meta: [{ title: `${t("page.queries.title")} — ${t("tenant.product.name")}` }],
-  }),
-  component: QueriesTab,
-});
-
 async function copy(text: string, done: string) {
   try {
     await navigator.clipboard.writeText(text);
@@ -27,8 +20,8 @@ async function copy(text: string, done: string) {
   }
 }
 
-function QueriesTab() {
-  const { caseId } = Route.useParams();
+/** The pre-login query list (F-14). */
+export function QueriesSection({ caseId }: { caseId: string }) {
   const { data: c } = useCase(caseId);
   const queries = useQueryList(caseId);
 

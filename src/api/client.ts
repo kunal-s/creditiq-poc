@@ -1,6 +1,7 @@
 import type {
   CaseCreate,
   CaseDetail,
+  CaseProgress,
   CaseProposal,
   CaseSummary,
   ChecklistTaxonomy,
@@ -93,6 +94,7 @@ export const api = {
 
   listCases: () => request<CaseSummary[]>("/api/cases"),
   getCase: (id: string) => request<CaseDetail>(`/api/cases/${q(id)}`),
+  caseProgress: (id: string) => request<CaseProgress>(`/api/cases/${q(id)}/progress`),
   proposeCase: (body: ProposalRequest) =>
     request<CaseProposal>("/api/cases/proposals", {
       method: "POST",

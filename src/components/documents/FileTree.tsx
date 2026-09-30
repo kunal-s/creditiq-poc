@@ -216,7 +216,7 @@ function DocumentRow({
         </Chip>
       )}
       {!classified && !isDocumentInProgress(doc) && canReview && (
-        <Link to="/exceptions" className="text-[11px] font-medium text-primary hover:underline">
+        <Link to="/review" className="text-[11px] font-medium text-primary hover:underline">
           {t("documents.toReviewQueue")}
         </Link>
       )}

@@ -8,7 +8,7 @@ import { MockApi, signedIn } from "./support/api";
 test("TC-21: a value opens its evidence page", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api);
-  await page.goto(`/appraisals/${KESTREL}/data`);
+  await page.goto(`/cases/${KESTREL}/extraction`);
 
   const value = page.locator('[data-testid="field-value"][data-field="monthly[2].credits"]');
   await expect(value).toHaveText("41,02,300");
@@ -42,13 +42,14 @@ test("TC-21: every field carries a confidence and a page link; corrections show 
 }) => {
   const api = new MockApi();
   await signedIn(page, api);
-  await page.goto(`/appraisals/${KESTREL}/data`);
+  await page.goto(`/cases/${KESTREL}/extraction`);
+  const fields = page.getByTestId("section-fields");
 
-  const rows = page.getByTestId("field-row");
+  const rows = fields.getByTestId("field-row");
   await expect(rows).toHaveCount(6);
   // Every extracted (non-missing) value is a link to its page with a confidence.
-  await expect(page.getByTestId("field-value")).toHaveCount(5);
-  await expect(page.getByTestId("confidence")).toHaveCount(5);
+  await expect(fields.getByTestId("field-value")).toHaveCount(5);
+  await expect(fields.getByTestId("confidence")).toHaveCount(5);
 
   const corrected = page.locator('[data-testid="field-value"][data-field="monthly[1].credits"]');
   await expect(corrected).toContainText("39,85,000");
@@ -61,7 +62,7 @@ test("TC-21: every field carries a confidence and a page link; corrections show 
   );
 
   // The same correction in the review queue, both values shown.
-  await page.goto("/exceptions");
+  await page.goto("/review");
   await page.getByLabel("Show decided").check();
   await expect(page.getByTestId("both-values")).toHaveText(
     "System 38,95,000 · corrected 39,85,000",
@@ -71,7 +72,7 @@ test("TC-21: every field carries a confidence and a page link; corrections show 
 test("TC-21: checklist evidence opens the document", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api);
-  await page.goto(`/docready/${KESTREL}/checklist`);
+  await page.goto(`/cases/${KESTREL}/completeness`);
   await page.locator('[data-item="gst_returns"]').getByRole("button").first().click();
   await page.getByTestId("linked-document").click();
   await expect(page.getByTestId("viewer-type")).toHaveText("GST registration");

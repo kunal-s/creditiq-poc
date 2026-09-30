@@ -7,7 +7,7 @@ import { MockApi, signedIn } from "./support/api";
 test("TC-13: insufficient items state their deficiency", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api);
-  await page.goto(`/docready/${KESTREL}/checklist`);
+  await page.goto(`/cases/${KESTREL}/completeness`);
 
   const insufficient = page.locator('[data-testid="checklist-item"][data-status="insufficient"]');
   await expect(insufficient).toHaveCount(4);
@@ -26,7 +26,7 @@ test("TC-13: insufficient items state their deficiency", async ({ page }) => {
   );
 
   // The document carrying a defect fails its check on Validation.
-  await page.goto(`/docready/${KESTREL}/validation`);
+  await page.goto(`/cases/${KESTREL}/documents`);
   const gst = page.locator('[data-testid="validation-document"][data-document-id="doc-gst"]');
   await expect(gst).toContainText("Check failed");
   await gst.getByRole("button").first().click();

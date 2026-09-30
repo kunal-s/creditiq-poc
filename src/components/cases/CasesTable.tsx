@@ -1,9 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { AlertTriangle } from "lucide-react";
 import type { CaseSummary, Stage } from "@/api/types";
-import { formatDate, formatInr, stageLabel, stageRoute, useLabels } from "@/domain/cases";
+import { formatDate, formatInr, stageKey, stageLabel, useLabels } from "@/domain/cases";
+import { CASE_TABS, caseTabPath, tabForStage } from "@/components/shell/nav";
 import { t } from "@/config/terminology";
-import { useCan } from "@/domain/session";
+import { useCan, useSession } from "@/domain/session";
 import { cn } from "@/lib/utils";
 
 const stageTone: Record<Stage, string> = {
@@ -18,8 +19,14 @@ const stageTone: Record<Stage, string> = {
 };
 
 export function StageLink({ c }: { c: CaseSummary }) {
-  const route = stageRoute(c.stage);
-  const to: string = `/${route.docready ? "docready" : "appraisals"}/${encodeURIComponent(c.id)}/${route.to}`;
+  const permissions = useSession()?.user.permissions ?? [];
+  const key = stageKey(c.stage);
+  const tab = key ? tabForStage(key) : undefined;
+  // A stage the role may not open links to the case Overview instead.
+  const to =
+    tab && permissions.includes(tab.permission)
+      ? caseTabPath(c.id, tab)
+      : caseTabPath(c.id, CASE_TABS[0]!);
   return (
     <Link
       to={to}
@@ -45,7 +52,7 @@ export function ReviewFlag({ count }: { count: number }) {
   );
   return count > 0 ? (
     canReview ? (
-      <Link to="/exceptions" className={className}>
+      <Link to="/review" className={className}>
         {body}
       </Link>
     ) : (
@@ -67,7 +74,7 @@ export function CasesTable({ cases }: { cases: CaseSummary[] }) {
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <Link
-                  to="/docready/$caseId/checklist"
+                  to="/cases/$caseId"
                   params={{ caseId: c.id }}
                   className="break-words text-[13px] font-medium text-foreground hover:text-primary hover:underline"
                 >
@@ -113,7 +120,7 @@ export function CasesTable({ cases }: { cases: CaseSummary[] }) {
               >
                 <td className="px-4 py-3">
                   <Link
-                    to="/docready/$caseId/checklist"
+                    to="/cases/$caseId"
                     params={{ caseId: c.id }}
                     className="font-medium text-foreground hover:text-primary hover:underline"
                   >

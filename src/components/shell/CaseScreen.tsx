@@ -38,11 +38,8 @@ export function CaseScreen({
           title={t("state.caseNotFound.title", { id: caseId })}
           description={t("state.caseNotFound.description")}
           action={
-            <Link
-              to="/appraisals"
-              className="text-[12.5px] font-medium text-primary hover:underline"
-            >
-              {t("nav.myAppraisals")}
+            <Link to="/" className="text-[12.5px] font-medium text-primary hover:underline">
+              {t("nav.cases")}
             </Link>
           }
         />

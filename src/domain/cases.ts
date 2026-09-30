@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { api } from "@/api/client";
-import type { CaseCreate, ProposalRequest, Stage } from "@/api/types";
+import type { CaseCreate, ProposalRequest, Stage, StageKey } from "@/api/types";
 import { t } from "@/config/terminology";
 
 export function useCases() {
@@ -67,11 +67,17 @@ export function stageLabel(stage: Stage): string {
   return t(`stage.${stage.toLowerCase()}`);
 }
 
-/** Where a case's stage is worked on. */
-export function stageRoute(stage: Stage): { to: string; docready: boolean } {
-  if (stage === "Intake" || stage === "Documents") return { to: "upload", docready: false };
-  if (stage === "Completeness") return { to: "checklist", docready: true };
-  return { to: "data", docready: false };
+/** The processing stage a case stage names; none for Intake and Completed. */
+export function stageKey(stage: Stage): StageKey | undefined {
+  const keys: Partial<Record<Stage, StageKey>> = {
+    Documents: "documents",
+    Extraction: "extraction",
+    Completeness: "completeness",
+    CrossVerification: "cross_verification",
+    Policy: "policy",
+    Outputs: "outputs",
+  };
+  return keys[stage];
 }
 
 /** INR amount in the Indian convention: crore above 1 crore, lakh above 1 lakh. */

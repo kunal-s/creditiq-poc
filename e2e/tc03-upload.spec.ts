@@ -9,7 +9,7 @@ import { MockApi, signedIn } from "./support/api";
 test("TC-03: upload a ZIP, then files including a duplicate", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api);
-  await page.goto(`/appraisals/${SAFFRON}/upload`);
+  await page.goto(`/cases/${SAFFRON}/documents`);
   await expect(page.getByText("No files have been received")).toBeVisible();
 
   await page.getByTestId("upload-input").setInputFiles({

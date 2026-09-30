@@ -34,7 +34,7 @@ import {
 import { formatBytes } from "@/domain/documents";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/appraisals/new")({
+export const Route = createFileRoute("/cases/new")({
   head: () => ({
     meta: [{ title: `${t("page.newApplication.title")} — ${t("tenant.product.name")}` }],
   }),
@@ -102,9 +102,10 @@ function NewApplication() {
             description: t(`state.${errorKind(error)}.description`),
           });
         }
-        void navigate({ to: "/appraisals/$id/upload", params: { id: created.id } });
+        // Processing has started: the Overview shows it.
+        void navigate({ to: "/cases/$caseId", params: { caseId: created.id } });
       } else {
-        void navigate({ to: "/docready/$caseId/checklist", params: { caseId: created.id } });
+        void navigate({ to: "/cases/$caseId/documents", params: { caseId: created.id } });
       }
     } catch (error) {
       // A duplicate found at creation (409) shows as the duplicate warning;
@@ -229,7 +230,7 @@ function NewApplication() {
                           {t("newApplication.duplicate", { id: d.id, borrower: d.borrower })}
                         </span>
                         <Link
-                          to="/docready/$caseId/checklist"
+                          to="/cases/$caseId"
                           params={{ caseId: d.id }}
                           className="rounded border border-border bg-surface px-2 py-0.5 text-[12px] font-medium text-foreground hover:bg-muted"
                         >

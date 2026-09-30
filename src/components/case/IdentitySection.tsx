@@ -15,40 +15,22 @@ import { useLabels } from "@/domain/cases";
 import { pageRange, useCaseDocuments, useDocumentTypes } from "@/domain/documents";
 import { fieldLabel, useFields, useParties } from "@/domain/extraction";
 
-export const Route = createFileRoute("/appraisals/$id/identity")({
-  head: () => ({
-    meta: [{ title: `${t("page.identity.title")} — ${t("tenant.product.name")}` }],
-  }),
-  component: IdentityStep,
-});
-
 /** Document-type groups whose fields describe identity (F-15.6, "Identity"). */
 const IDENTITY_GROUPS = new Set(["constitution", "registration", "kyc"]);
 
-function IdentityStep() {
-  const { id } = Route.useParams();
+/** Identifiers and parties, each with its source (F-10, F-15). */
+export function IdentitySection({ c }: { c: CaseDetail }) {
   return (
-    <CaseScreen caseId={id}>
-      {(c) => (
-        <div className="pb-10">
-          <PageHeader
-            eyebrow={`${t("nav.group.appraisal")} · ${c.id}`}
-            title={t("page.identity.title")}
-            purpose={t("page.identity.purpose")}
-          />
-          <div className="grid gap-4 px-4 py-5 sm:px-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="min-w-0 space-y-4">
-              <Identifiers c={c} />
-              <Parties caseId={c.id} />
-              <IdentityFields caseId={c.id} />
-            </div>
-            <div className="min-w-0 space-y-4">
-              <PartySummary caseId={c.id} />
-            </div>
-          </div>
-        </div>
-      )}
-    </CaseScreen>
+    <div className="grid gap-4 px-4 py-5 sm:px-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="min-w-0 space-y-4">
+        <Identifiers c={c} />
+        <Parties caseId={c.id} />
+        <IdentityFields caseId={c.id} />
+      </div>
+      <div className="min-w-0 space-y-4">
+        <PartySummary caseId={c.id} />
+      </div>
+    </div>
   );
 }
 

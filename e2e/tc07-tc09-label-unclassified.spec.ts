@@ -7,16 +7,15 @@ import { expect, test } from "@playwright/test";
 import { KESTREL } from "./fixtures/data";
 import { MockApi, signedIn } from "./support/api";
 
-test("TC-07: label mismatch visible on Documents and Validation", async ({ page }) => {
+test("TC-07: label mismatch visible in the register and the document checks", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api);
 
-  await page.goto(`/appraisals/${KESTREL}/upload`);
-  const bs = page.locator('[data-document-id="doc-bs"]');
+  await page.goto(`/cases/${KESTREL}/documents`);
+  const bs = page.getByTestId("section-files").locator('[data-document-id="doc-bs"]');
   await expect(bs.getByTestId("document-type")).toHaveText("Balance sheet");
   await expect(bs.getByTestId("label-mismatch")).toHaveText("label says: bank statement");
 
-  await page.goto(`/docready/${KESTREL}/validation`);
   const row = page.locator('[data-testid="validation-document"][data-document-id="doc-bs"]');
   await expect(row.getByTestId("label-mismatch")).toBeVisible();
   await row.getByRole("button").first().click();
@@ -29,15 +28,11 @@ test("TC-09: unclassified document with candidates, routed for review", async ({
   const api = new MockApi();
   await signedIn(page, api);
 
-  await page.goto(`/appraisals/${KESTREL}/upload`);
-  const unc = page.locator('[data-document-id="doc-unc"]');
+  await page.goto(`/cases/${KESTREL}/documents`);
+  const unc = page.getByTestId("section-files").locator('[data-document-id="doc-unc"]');
   await expect(unc.getByTestId("unclassified")).toHaveText("Unclassified");
-  await expect(unc.getByRole("link", { name: "Review queue" })).toHaveAttribute(
-    "href",
-    "/exceptions",
-  );
+  await expect(unc.getByRole("link", { name: "Review queue" })).toHaveAttribute("href", "/review");
 
-  await page.goto(`/docready/${KESTREL}/validation`);
   await expect(page.getByTestId("kpi-unclassified")).toContainText("1");
   const row = page.locator('[data-testid="validation-document"][data-document-id="doc-unc"]');
   await row.getByRole("button").first().click();
@@ -47,7 +42,7 @@ test("TC-09: unclassified document with candidates, routed for review", async ({
   await expect(row.getByTestId("exit-tier")).toHaveText("Not classified");
 
   // Not assigned to any checklist item.
-  await page.goto(`/docready/${KESTREL}/checklist`);
+  await page.goto(`/cases/${KESTREL}/completeness`);
   const items = page.getByTestId("checklist-item");
   await expect(items).toHaveCount(9);
   let linked = 0;
@@ -61,7 +56,7 @@ test("TC-09: unclassified document with candidates, routed for review", async ({
   expect(linked).toBeGreaterThan(0);
 
   // A person assigns a type from the closed list.
-  await page.goto("/exceptions");
+  await page.goto("/review");
   await page.getByTestId("kind-type").click();
   await expect(page.getByTestId("review-row")).toHaveCount(1);
   await page.getByTestId("decide").click();

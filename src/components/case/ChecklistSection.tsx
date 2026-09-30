@@ -16,15 +16,8 @@ import { useCase, useLabels } from "@/domain/cases";
 import { bySection, countItems, useChecklist, useQueryList, useTaxonomy } from "@/domain/checklist";
 import { pageRange, useCaseDocuments, useDocumentTypes } from "@/domain/documents";
 
-export const Route = createFileRoute("/docready/$caseId/checklist")({
-  head: () => ({
-    meta: [{ title: `${t("page.checklist.title")} — ${t("tenant.product.name")}` }],
-  }),
-  component: ChecklistTab,
-});
-
-function ChecklistTab() {
-  const { caseId } = Route.useParams();
+/** The checklist with each item's status (F-12, F-13). */
+export function ChecklistSection({ caseId }: { caseId: string }) {
   const checklist = useChecklist(caseId);
   return (
     <div className="px-4 py-5 sm:px-6">
@@ -100,7 +93,8 @@ function Checklist({
           }
           action={
             <Link
-              to="/docready/$caseId/collection"
+              to="/cases/$caseId/completeness"
+              hash="queries"
               params={{ caseId }}
               className="rounded border border-border px-2.5 py-1 text-[12px] font-medium hover:bg-muted"
             >
@@ -144,7 +138,7 @@ function Checklist({
           className="rounded border border-border bg-surface p-4"
           data-testid="checklist-summary"
         >
-          <p className="field-label">{t("docready.readiness")}</p>
+          <p className="field-label">{t("caseHeader.readiness")}</p>
           <p className="tabular mt-1 text-[26px] font-semibold leading-none text-foreground">
             {Math.round(score)}%
           </p>
@@ -170,7 +164,8 @@ function Checklist({
             ))}
           </div>
           <Link
-            to="/docready/$caseId/readiness"
+            to="/cases/$caseId/completeness"
+            hash="readiness"
             params={{ caseId }}
             className="mt-3 block rounded border border-border px-3 py-1.5 text-center text-[12.5px] font-medium hover:bg-muted"
           >
@@ -300,7 +295,8 @@ function Item({
                 </button>
               ))}
               <Link
-                to="/docready/$caseId/validation"
+                to="/cases/$caseId/documents"
+                hash="checks"
                 params={{ caseId }}
                 className="rounded border border-border px-2.5 py-1 text-[12px] font-medium text-primary hover:bg-muted"
               >

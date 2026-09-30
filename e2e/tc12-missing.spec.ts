@@ -7,7 +7,7 @@ import { MockApi, signedIn } from "./support/api";
 test("TC-12: missing items with a specific request", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api);
-  await page.goto(`/docready/${KESTREL}/checklist`);
+  await page.goto(`/cases/${KESTREL}/completeness`);
 
   const missing = page.locator('[data-testid="checklist-item"][data-status="missing"]');
   await expect(missing).toHaveCount(2);
@@ -19,10 +19,7 @@ test("TC-12: missing items with a specific request", async ({ page }) => {
   ).toHaveText("Missing: valuation report for the property offered as collateral.");
   await expect(page.getByTestId("checklist-summary")).toContainText("Missing2");
 
-  await page
-    .getByRole("navigation", { name: "Case tabs" })
-    .getByRole("link", { name: "Queries" })
-    .click();
+  // The query list is on the same tab, below the checklist.
   const needed = page.getByTestId("query-group-documents_needed");
   await expect(needed).toContainText("1.KYC of Leela Varghese: PAN and address proof.");
   await expect(needed).toContainText("2.Valuation report for the property offered as collateral.");

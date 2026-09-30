@@ -14,43 +14,10 @@ import { buildFileTree, useCaseRegister, useUpload } from "@/domain/documents";
 import { errorKind } from "@/domain/errors";
 import { useSession } from "@/domain/session";
 
-export const Route = createFileRoute("/appraisals/$id/upload")({
-  head: () => ({
-    meta: [{ title: `${t("page.documents.title")} — ${t("tenant.product.name")}` }],
-  }),
-  component: DocumentsStep,
-});
-
-function DocumentsStep() {
-  const { id } = Route.useParams();
-  return (
-    <CaseScreen caseId={id}>
-      {(c) => (
-        <div>
-          <PageHeader
-            eyebrow={`${t("nav.group.appraisal")} · ${c.id}`}
-            title={t("page.documents.title")}
-            purpose={t("page.documents.purpose")}
-            actions={
-              <Link
-                to="/docready/$caseId/checklist"
-                params={{ caseId: c.id }}
-                className="flex h-9 items-center gap-1.5 rounded border border-border bg-surface px-3 text-[12.5px] font-medium text-foreground hover:bg-muted"
-              >
-                {t("docreadyTab.checklist")} <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            }
-          />
-          <Documents caseId={c.id} />
-        </div>
-      )}
-    </CaseScreen>
-  );
-}
-
 const STATUS_ORDER: FileStatus[] = ["registered", "duplicate", "exception", "rejected", "ignored"];
 
-function Documents({ caseId }: { caseId: string }) {
+/** Upload and the file register (F-05). */
+export function DocumentsSection({ caseId }: { caseId: string }) {
   const session = useSession();
   const canUpload = session?.user.permissions.includes("document.upload") ?? false;
   const { files, documents, polling } = useCaseRegister(caseId);

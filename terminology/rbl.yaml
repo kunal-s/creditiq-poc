@@ -19,14 +19,10 @@ tenant:
 nav:
   group:
     workbench: Workbench
-    docready: DocReady
-    appraisal: Appraisal
     governance: Governance
-  home: Home
-  myAppraisals: My Appraisals
-  readinessConsole: Readiness Console
-  newApplication: New Application
-  exceptionQueue: Exception Queue
+  cases: Cases
+  newCase: New case
+  reviewQueue: Review queue
   scorecard: Scorecard
 
 action:
@@ -39,23 +35,48 @@ action:
   cancel: Cancel
   goHome: Go to the workbench
 
-# Appraisal steps (FRD §6), in the prototype's order.
-step:
-  identity: Identity
+# The case workspace's tabs, in processing order (FRD §6).
+caseTab:
+  overview: Overview
   documents: Documents
-  data: Data
-  spread: Spread
-  crossVerification: Cross-Verification
+  extraction: Extraction
+  completeness: Completeness
+  crossVerification: Cross-verification
   policy: Policy
-  draft: Draft and PD Note
+  outputs: Outputs
   comparison: Comparison
 
-# DocReady case tabs (FRD §6).
-docreadyTab:
-  checklist: Checklist
-  validation: Validation
-  readiness: Readiness
-  queries: Queries
+# Views within the Outputs tab.
+outputs:
+  view:
+    spread: Spread
+    cam: Draft CAM
+    pd: PD note
+
+# The six processing stages (FRD §5), as the stage progress shows them.
+progress:
+  label: Processing stages
+  stageOf: "Stage {n} of {total}"
+  stage:
+    documents: Quality and classification
+    extraction: Extraction
+    completeness: Validation and completeness
+    cross_verification: Cross-verification
+    policy: Policy checks
+    outputs: Outputs
+  status:
+    not_started: Not started
+    in_progress: In progress
+    needs_attention: Needs attention
+    done: Done
+  count:
+    documents: "{done} of {total} documents classified"
+    extraction: "{done} of {total} documents extracted"
+    completeness: "{done} of {total} items satisfied"
+  attention: "{n} need attention"
+  waiting:
+    documents: No documents yet
+    other: Waiting for the stages before it
 
 page:
   home:
@@ -67,23 +88,25 @@ page:
       inProgressSub: "Borrowers: {n}"
       review: Open review items
       reviewSub: waiting for a decision
-    inFlight: Applications in progress
-    inFlightSub: Every open application, with its stage and review items
+    inFlight: Cases
+    inFlightSub: Every case you can see, with its stage and review items
     attention: Needs attention
     attentionCount: "{n} open"
     attentionEmpty: Nothing is waiting for a decision.
-  appraisals:
-    eyebrow: Workbench
-    title: My Appraisals
-    purpose: Every application you can see, with its stage and open review items.
+    filter:
+      open: All open cases
+      mine: Mine
+      review: With review items
   newApplication:
-    eyebrow: Appraisal
-    title: New application
+    eyebrow: Cases
+    title: New case
     purpose: Paste the sourcing email or notes. CreditIQ proposes the application; nothing is created until you confirm it.
-  readinessConsole:
-    eyebrow: DocReady
-    title: Readiness Console
-    purpose: Every case in collection, weighted by document importance, until the file is complete enough to underwrite.
+  overview:
+    title: Overview
+    next: Next
+    nextNone: Nothing is waiting. Processing is up to date.
+    nextUpload: Upload the borrower's documents to start processing.
+    open: Open
   checklist:
     title: Required document set
     purpose: The checklist derived from the case's constitution and facilities, with each item satisfied, insufficient or missing.
@@ -122,7 +145,7 @@ page:
     purpose: This case's output beside the assessment RBL credit made at the time, for adjudication.
   exceptions:
     eyebrow: Governance
-    title: Exception queue
+    title: Review queue
     purpose: Everything waiting for a person across cases, with the decision each one needs.
   scorecard:
     eyebrow: Governance
@@ -199,9 +222,6 @@ term:
     plural: applications
     title: Application
     pluralTitle: Applications
-  appraisal:
-    singular: appraisal
-    title: Appraisal
   borrower:
     singular: borrower
     title: Borrower
@@ -385,15 +405,15 @@ exitTier:
   person: Assigned by a person
   none: Not classified
 
-# DocReady case workspace (FRD F-12 to F-14).
-docready:
-  eyebrow: DocReady case
+# The case header in the case workspace (FRD §6).
+caseHeader:
   readiness: Readiness
   readinessUnavailable: Readiness not available
   outstandingGate: "{n} outstanding · {gate}% review gate"
   ask: Ask
   blockingGaps: "{n} blocking"
   tabs: Case tabs
+  stage: Stage
 
 checklist:
   derivedFrom: "{n} requirements derived from the {constitution} constitution and the {facilities} ask. Blocking items stop credit review; the rest do not."

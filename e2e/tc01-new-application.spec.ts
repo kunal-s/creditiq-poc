@@ -10,7 +10,7 @@ import type { CaseSummary } from "../src/api/types";
 test("TC-01: paste, verify every field, confirm, create", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api);
-  await page.goto("/appraisals/new");
+  await page.goto("/cases/new");
 
   await page.getByTestId("channel").selectOption("email");
   await page.getByTestId("message-input").fill(MESSAGE);
@@ -57,7 +57,7 @@ test("TC-01: paste, verify every field, confirm, create", async ({ page }) => {
   expect(api.called("POST", "/api/cases")).toHaveLength(0);
   await page.getByTestId("create-application").click();
 
-  await expect(page).toHaveURL(/\/docready\/BBG-2026-000031\/checklist$/);
+  await expect(page).toHaveURL(/\/cases\/BBG-2026-000031\/documents$/);
   const [create] = api.called("POST", "/api/cases");
   const body = create!.body as CaseCreate;
   expect(body.borrower).toBe("Kestrel Polymers Pvt Ltd");
@@ -80,7 +80,7 @@ test("TC-01: paste, verify every field, confirm, create", async ({ page }) => {
 test("TC-01: nothing is created without confirmation", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api);
-  await page.goto("/appraisals/new");
+  await page.goto("/cases/new");
   await page.getByTestId("message-input").fill(MESSAGE);
   await page.getByRole("button", { name: "Read the message" }).click();
   await expect(page.getByTestId("create-application")).toBeDisabled();
@@ -98,7 +98,7 @@ test("TC-01: a duplicate is offered, and creating anyway needs a reason", async 
   const api = new MockApi();
   api.proposal = proposal([{ ...CASES[0]!, id: EXISTING }]);
   await signedIn(page, api);
-  await page.goto("/appraisals/new");
+  await page.goto("/cases/new");
   await page.getByTestId("message-input").fill(MESSAGE);
   await page.getByRole("button", { name: "Read the message" }).click();
   for (const key of ["constitution", "declared_turnover_inr"]) {
@@ -109,7 +109,7 @@ test("TC-01: a duplicate is offered, and creating anyway needs a reason", async 
   await expect(warning).toContainText(EXISTING);
   await expect(warning.getByRole("link", { name: "Open it" })).toHaveAttribute(
     "href",
-    `/docready/${EXISTING}/checklist`,
+    `/cases/${EXISTING}`,
   );
   await expect(page.getByTestId("create-application")).toBeDisabled();
   await warning.getByRole("button", { name: "Create anyway" }).click();
@@ -117,7 +117,7 @@ test("TC-01: a duplicate is offered, and creating anyway needs a reason", async 
   await page.getByTestId("override-reason").fill("Separate unit with its own GST registration");
   await page.getByTestId("create-application").click();
 
-  await expect(page).toHaveURL(/\/docready\/BBG-2026-000031\/checklist$/);
+  await expect(page).toHaveURL(/\/cases\/BBG-2026-000031\/documents$/);
   const body = api.called("POST", "/api/cases")[0]!.body as CaseCreate;
   expect(body.duplicate_override_reason).toBe("Separate unit with its own GST registration");
 });
@@ -136,7 +136,7 @@ test("TC-01: a duplicate found at creation (409) is offered the same way", async
     return { status: 201, json: { ...existing, id: "BBG-2026-000031" } };
   });
   await signedIn(page, api);
-  await page.goto("/appraisals/new");
+  await page.goto("/cases/new");
   await page.getByTestId("message-input").fill(MESSAGE);
   await page.getByRole("button", { name: "Read the message" }).click();
   await page.getByTestId("confirm-constitution").click();
@@ -149,6 +149,6 @@ test("TC-01: a duplicate found at creation (409) is offered the same way", async
   await warning.getByRole("button", { name: "Create anyway" }).click();
   await page.getByTestId("override-reason").fill("Group company, separate borrower");
   await page.getByTestId("create-application").click();
-  await expect(page).toHaveURL(/\/docready\/BBG-2026-000031\/checklist$/);
+  await expect(page).toHaveURL(/\/cases\/BBG-2026-000031\/documents$/);
   expect(api.called("POST", "/api/cases")).toHaveLength(2);
 });

@@ -14,7 +14,7 @@ import { DECISIONS_BY_KIND, REVIEW_KINDS, reviewTarget, useReviewQueue } from "@
 import { useSession } from "@/domain/session";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/exceptions")({
+export const Route = createFileRoute("/review")({
   head: () => ({
     meta: [{ title: `${t("page.exceptions.title")} — ${t("tenant.product.name")}` }],
   }),

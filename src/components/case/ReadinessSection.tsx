@@ -10,15 +10,8 @@ import { countItems, isOpen, readyForCredit, useChecklist, useTaxonomy } from "@
 import { useCaseDocuments } from "@/domain/documents";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/docready/$caseId/readiness")({
-  head: () => ({
-    meta: [{ title: `${t("page.readiness.title")} — ${t("tenant.product.name")}` }],
-  }),
-  component: ReadinessTab,
-});
-
-function ReadinessTab() {
-  const { caseId } = Route.useParams();
+/** Readiness against the gates, and what is blocking (F-13.4). */
+export function ReadinessSection({ caseId }: { caseId: string }) {
   const checklist = useChecklist(caseId);
   return (
     <div className="px-4 py-5 sm:px-6">
@@ -181,18 +174,19 @@ function ReadinessView({ caseId, r }: { caseId: string; r: Readiness }) {
           </p>
           <div className="mt-3 flex flex-col gap-2">
             <Link
-              to="/docready/$caseId/collection"
+              to="/cases/$caseId/completeness"
+              hash="queries"
               params={{ caseId }}
               className="flex items-center justify-center gap-1.5 rounded border border-border px-3 py-1.5 text-[12.5px] font-medium hover:bg-muted"
             >
               {t("term.queryList")} <ArrowRight className="h-3.5 w-3.5" />
             </Link>
             <Link
-              to="/appraisals/$id/upload"
-              params={{ id: caseId }}
+              to="/cases/$caseId/documents"
+              params={{ caseId: caseId }}
               className="flex items-center justify-center gap-1.5 rounded border border-border px-3 py-1.5 text-[12.5px] font-medium hover:bg-muted"
             >
-              {t("step.documents")} <ArrowRight className="h-3.5 w-3.5" />
+              {t("caseTab.documents")} <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
         </div>

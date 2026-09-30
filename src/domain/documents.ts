@@ -187,3 +187,61 @@ export function buildFileTree(files: FileRecord[], documents: LogicalDocument[])
 export function countFiles(nodes: TreeNode[]): number {
   return nodes.reduce((n, node) => n + (node.kind === "file" ? 1 : countFiles(node.children)), 0);
 }
+
+/** The steps a document passes through in stage 1 and 2 (FRD §5, §7). */
+export const DOC_STEPS = ["received", "quality", "split", "classified", "extracted"] as const;
+export type DocStep = (typeof DOC_STEPS)[number];
+export type StepState = "running" | "attention" | "done" | "off";
+
+/**
+ * Where a document is on its track: how many steps are complete, and the
+ * state of the step after them. A registered file with no documents yet is
+ * still being received (`doc` undefined).
+ */
+export function docTrack(doc: LogicalDocument | undefined): { done: number; state: StepState } {
+  if (!doc) return { done: 0, state: "running" };
+  switch (doc.status) {
+    case "received":
+      return { done: 1, state: "running" };
+    case "graded":
+      return { done: 2, state: "running" };
+    case "split":
+      return { done: 3, state: "running" };
+    case "classified":
+    case "extracted":
+      return { done: 4, state: "running" };
+    case "accepted":
+      return { done: 5, state: "done" };
+    case "in_review":
+      return { done: 4, state: "attention" };
+    case "unclassified":
+      return { done: 3, state: "attention" };
+    case "in_exception":
+      return { done: 1, state: "attention" };
+    case "superseded":
+    case "duplicate":
+      return { done: 0, state: "off" };
+  }
+}
+
+/** Filter a file tree to the documents that pass; files and folders left
+ * empty are dropped. Files without documents pass through `keepFile`. */
+export function filterTree(
+  nodes: TreeNode[],
+  keep: (doc: LogicalDocument) => boolean,
+  keepFile: (file: FileRecord) => boolean,
+): TreeNode[] {
+  const out: TreeNode[] = [];
+  for (const node of nodes) {
+    if (node.kind === "folder") {
+      const children = filterTree(node.children, keep, keepFile);
+      if (children.length > 0) out.push({ ...node, children });
+    } else if (node.documents.length === 0) {
+      if (keepFile(node.file)) out.push(node);
+    } else {
+      const documents = node.documents.filter(keep);
+      if (documents.length > 0) out.push({ ...node, documents });
+    }
+  }
+  return out;
+}

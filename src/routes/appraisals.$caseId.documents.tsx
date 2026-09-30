@@ -1,11 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { DocumentChecksSection } from "@/components/case/DocumentChecksSection";
 import { DocumentsSection } from "@/components/case/DocumentsSection";
 import { TabSection } from "@/components/case/TabSection";
 import { t } from "@/config/terminology";
 
-// Stage 1, quality and classification (FRD §5, §6): upload, the file
-// register, and each document's machine checks.
+// Stage 1, quality and classification (FRD §5, §6): upload, then one row per
+// document with its track, its flags and what to do about each.
 
 export const Route = createFileRoute("/appraisals/$caseId/documents")({
   head: () => ({
@@ -24,13 +23,6 @@ function DocumentsTab() {
         purpose={t("page.documents.purpose")}
       >
         <DocumentsSection caseId={caseId} />
-      </TabSection>
-      <TabSection
-        id="checks"
-        title={t("page.validation.title")}
-        purpose={t("page.validation.purpose")}
-      >
-        <DocumentChecksSection caseId={caseId} />
       </TabSection>
     </div>
   );

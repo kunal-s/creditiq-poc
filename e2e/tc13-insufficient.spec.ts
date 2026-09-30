@@ -25,11 +25,11 @@ test("TC-13: insufficient items state their deficiency", async ({ page }) => {
     "Insufficient — Unsigned: the copy provided is not signed.",
   );
 
-  // The document carrying a defect fails its check on Validation.
+  // The document carrying a defect is flagged on its Documents row.
   await page.goto(`/appraisals/${KESTREL}/documents`);
-  const gst = page.locator('[data-testid="validation-document"][data-document-id="doc-gst"]');
-  await expect(gst).toContainText("Check failed");
-  await gst.getByRole("button").first().click();
+  const gst = page.getByTestId("section-files").locator('[data-document-id="doc-gst"]');
+  await expect(gst.getByTestId("defect-count")).toHaveText("1 defect(s)");
+  await gst.getByTestId("document-toggle").click();
   await expect(gst.getByTestId("defect")).toHaveText(
     "GST returns (12 months) — Period gap: April to July 2025 absent.",
   );

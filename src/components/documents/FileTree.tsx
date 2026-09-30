@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { createContext, useContext, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
@@ -7,35 +7,54 @@ import {
   FileText,
   Folder,
   HelpCircle,
-  Loader2,
 } from "lucide-react";
-import type { FileRecord, LogicalDocument } from "@/api/types";
+import type { ChecklistItemState, FileRecord, LogicalDocument, ReviewItem } from "@/api/types";
 import { useDocViewer } from "@/components/docviewer/DocViewer";
 import { t } from "@/config/terminology";
 import { useCan } from "@/domain/session";
 import {
   countFiles,
   formatBytes,
-  isDocumentInProgress,
   pageRange,
   useDocumentTypes,
   type TreeFile,
   type TreeNode,
 } from "@/domain/documents";
 import { Chip } from "@/components/common/Panel";
-import { DocStatusChip, FileStatusChip, GradeChip } from "./chips";
+import { DocumentActions } from "./DocumentActions";
+import { DocumentDetail } from "./DocumentDetail";
+import { FileStatusChip, GradeChip } from "./chips";
+import { StageTrack } from "./StageTrack";
 
-/** The files of a case as a tree, each with its logical documents (FRD F-05 mock). */
+/** What every row of the register needs to know about the case. */
+export type RegisterContext = {
+  borrower: string;
+  /** Open review items for a document (type, quality, split, party). */
+  itemsFor: (documentId: string) => ReviewItem[];
+  /** Checklist defects that name a document. */
+  defectsFor: (documentId: string) => ChecklistItemState[];
+};
+
+const Register = createContext<RegisterContext>({
+  borrower: "",
+  itemsFor: () => [],
+  defectsFor: () => [],
+});
+
+/** The files of a case as a tree, each with its logical documents (FRD F-05
+ * mock), and each document with its track, flags and what to do next (§6). */
 export function FileTree({
   caseId,
   nodes,
   files,
+  context,
 }: {
   caseId: string;
   nodes: TreeNode[];
   files: FileRecord[];
+  context?: RegisterContext;
 }) {
-  return (
+  const inner = (
     <ul className="divide-y divide-border" data-testid="file-tree">
       {nodes.map((node) => (
         <Node
@@ -48,6 +67,7 @@ export function FileTree({
       ))}
     </ul>
   );
+  return context ? <Register.Provider value={context}>{inner}</Register.Provider> : inner;
 }
 
 function Node({
@@ -142,11 +162,7 @@ function FileRow({
             {file.reason && file.status !== "duplicate" && <> · {file.reason}</>}
           </p>
         </div>
-        {reading && (
-          <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-            <Loader2 className="h-3 w-3 animate-spin" /> {t("documents.reading")}
-          </span>
-        )}
+        {reading && <StageTrack doc={undefined} />}
         <FileStatusChip status={file.status} />
       </div>
       {documents.length > 0 && (
@@ -173,58 +189,102 @@ function DocumentRow({
 }) {
   const viewer = useDocViewer();
   const types = useDocumentTypes();
+  const { borrower, itemsFor, defectsFor } = useContext(Register);
+  const [open, setOpen] = useState(false);
+  const canReadData = useCan("data.read");
   const canReview = useCan("review.read");
   const classified = (doc.classification?.types.length ?? 0) > 0;
+  const items = itemsFor(doc.id);
+  const defects = defectsFor(doc.id);
 
   return (
     <li
-      className="ml-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-l border-border py-1.5 pl-3 pr-4"
+      className="border-l border-border"
       style={{ marginLeft: 30 + depth * 14 }}
       data-testid="tree-document"
       data-document-id={doc.id}
     >
-      <span className="tabular w-14 shrink-0 text-[11px] text-muted-foreground">
-        {pageRange(doc)}
-      </span>
-      <button
-        type="button"
-        onClick={() => viewer.open({ caseId, documentId: doc.id, page: doc.page_from })}
-        className="min-w-0 flex-1 text-left text-[12.5px] text-foreground hover:text-primary hover:underline"
-      >
-        {classified ? (
-          <span data-testid="document-type">
-            {doc.classification!.types.map(types.name).join(" + ")}
-            {doc.instance_key && (
-              <span className="text-muted-foreground"> · {doc.instance_key}</span>
-            )}
-          </span>
-        ) : (
-          <span
-            className="inline-flex items-center gap-1 text-flag-foreground"
-            data-testid="unclassified"
-          >
-            <HelpCircle className="h-3.5 w-3.5" /> {t("document.unclassified")}
-          </span>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 py-1.5 pl-3 pr-4">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          aria-label={t("documents.details")}
+          className="grid h-5 w-5 shrink-0 place-items-center rounded text-muted-foreground hover:bg-muted"
+          data-testid="document-toggle"
+        >
+          {open ? (
+            <ChevronDown className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronRight className="h-3.5 w-3.5" />
+          )}
+        </button>
+        <span className="tabular w-12 shrink-0 text-[11px] text-muted-foreground">
+          {pageRange(doc)}
+        </span>
+        <button
+          type="button"
+          onClick={() => viewer.open({ caseId, documentId: doc.id, page: doc.page_from })}
+          className="min-w-0 flex-1 text-left text-[12.5px] text-foreground hover:text-primary hover:underline"
+        >
+          {classified ? (
+            <span data-testid="document-type">
+              {doc.classification!.types.map(types.name).join(" + ")}
+              {doc.instance_key && (
+                <span className="text-muted-foreground"> · {doc.instance_key}</span>
+              )}
+            </span>
+          ) : (
+            <span
+              className="inline-flex items-center gap-1 text-flag-foreground"
+              data-testid="unclassified"
+            >
+              <HelpCircle className="h-3.5 w-3.5" /> {t("document.unclassified")}
+            </span>
+          )}
+        </button>
+        {doc.label_mismatch && (
+          <Chip tone="flag" title={t("documents.labelMismatchHelp")}>
+            <AlertTriangle className="h-3 w-3" />
+            <span data-testid="label-mismatch">
+              {t("documents.labelMismatch", { label: file.label_hint ?? file.original_name })}
+            </span>
+          </Chip>
         )}
-      </button>
-      {doc.label_mismatch && (
-        <Chip tone="flag" title={t("documents.labelMismatchHelp")}>
-          <AlertTriangle className="h-3 w-3" />
-          <span data-testid="label-mismatch">
-            {t("documents.labelMismatch", { label: file.label_hint ?? file.original_name })}
+        {defects.length > 0 && (
+          <Chip tone="critical">
+            <span data-testid="defect-count">{t("documents.defects", { n: defects.length })}</span>
+          </Chip>
+        )}
+        <StageTrack doc={doc} />
+        <GradeChip grade={doc.grade} />
+      </div>
+      {doc.status === "in_review" && canReadData && (
+        <div className="pb-2 pl-[5.25rem] pr-4">
+          <Link
+            to="/appraisals/$caseId/extraction"
+            params={{ caseId }}
+            hash="fields"
+            className="text-[11px] font-medium text-primary hover:underline"
+            data-testid="check-values"
+          >
+            {t("documents.checkValues")} →
+          </Link>
+        </div>
+      )}
+      {!canReview && (doc.status === "unclassified" || doc.status === "in_exception") && (
+        <div className="pb-2 pl-[5.25rem] pr-4">
+          <span className="text-[11px] text-muted-foreground" data-testid="waiting-review">
+            {t("documents.waitingReview")}
           </span>
-        </Chip>
+        </div>
       )}
-      {!classified && !isDocumentInProgress(doc) && canReview && (
-        <Link to="/review" className="text-[11px] font-medium text-primary hover:underline">
-          {t("documents.toReviewQueue")}
-        </Link>
+      {items.length > 0 && (
+        <div className="pb-2 pl-[5.25rem] pr-4">
+          <DocumentActions doc={doc} items={items} borrower={borrower} />
+        </div>
       )}
-      {isDocumentInProgress(doc) && (
-        <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-      )}
-      <GradeChip grade={doc.grade} />
-      <DocStatusChip status={doc.status} />
+      {open && <DocumentDetail caseId={caseId} doc={doc} file={file} defects={defects} />}
     </li>
   );
 }

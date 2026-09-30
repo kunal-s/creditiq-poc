@@ -1,18 +1,98 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import type { FileRecord, FileStatus, LogicalDocument } from "@/api/types";
-import { CaseScreen } from "@/components/shell/CaseScreen";
-import { PageHeader } from "@/components/shell/PageHeader";
+import type { FileRecord, FileStatus, LogicalDocument, ReviewItem } from "@/api/types";
 import { Panel } from "@/components/common/Panel";
 import { ErrorState, LoadingBlock } from "@/components/common/States";
-import { FileTree } from "@/components/documents/FileTree";
+import { FileTree, type RegisterContext } from "@/components/documents/FileTree";
 import { UploadZone } from "@/components/documents/UploadZone";
 import { FileStatusChip } from "@/components/documents/chips";
 import { t } from "@/config/terminology";
-import { buildFileTree, useCaseRegister, useUpload } from "@/domain/documents";
+import { useCase } from "@/domain/cases";
+import { useChecklist } from "@/domain/checklist";
+import {
+  buildFileTree,
+  filterTree,
+  isDocumentInProgress,
+  useCaseRegister,
+  useUpload,
+} from "@/domain/documents";
 import { errorKind } from "@/domain/errors";
-import { useSession } from "@/domain/session";
+import { reviewTarget, useReviewQueue } from "@/domain/review";
+import { useCan, useSession } from "@/domain/session";
+import { cn } from "@/lib/utils";
+
+type Filter = "all" | "attention" | "processing";
+const FILTERS: Filter[] = ["all", "attention", "processing"];
+
+/** Open review items and checklist defects by document, for the register rows. */
+function useRegisterContext(caseId: string): RegisterContext {
+  const canReview = useCan("review.read");
+  const review = useReviewQueue({ caseId });
+  const checklist = useChecklist(caseId);
+  const { data: c } = useCase(caseId);
+  return useMemo(() => {
+    const byDoc = new Map<string, ReviewItem[]>();
+    for (const item of canReview ? (review.data ?? []) : []) {
+      const { kind, id } = reviewTarget(item.ref);
+      if (item.status !== "open" || (kind !== "document" && kind !== "party")) continue;
+      byDoc.set(id, [...(byDoc.get(id) ?? []), item]);
+    }
+    const items = checklist.data?.items ?? [];
+    return {
+      borrower: c?.borrower ?? "",
+      itemsFor: (id) => byDoc.get(id) ?? [],
+      defectsFor: (id) => items.filter((i) => i.deficiency && (i.document_ids ?? []).includes(id)),
+    };
+  }, [canReview, review.data, checklist.data, c?.borrower]);
+}
+
+/** A document a person should look at: an open review item, a flag, or a defect. */
+function needsAttention(doc: LogicalDocument, context: RegisterContext): boolean {
+  return (
+    context.itemsFor(doc.id).length > 0 ||
+    context.defectsFor(doc.id).length > 0 ||
+    doc.label_mismatch === true ||
+    doc.status === "unclassified" ||
+    doc.status === "in_exception" ||
+    doc.status === "in_review"
+  );
+}
+
+function FilterChips({
+  value,
+  onChange,
+  counts,
+}: {
+  value: Filter;
+  onChange: (f: Filter) => void;
+  counts: Record<Filter, number>;
+}) {
+  return (
+    <div
+      className="flex flex-wrap gap-1.5 border-b border-border px-4 py-2"
+      data-testid="document-filters"
+    >
+      {FILTERS.map((f) => (
+        <button
+          key={f}
+          type="button"
+          aria-pressed={value === f}
+          onClick={() => onChange(f)}
+          data-testid={`filter-${f}`}
+          className={cn(
+            "rounded border px-2 py-0.5 text-[11.5px] font-medium transition-colors",
+            value === f
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-border bg-surface text-muted-foreground hover:bg-muted",
+          )}
+        >
+          {t(`documents.filter.${f}`, { n: counts[f] })}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 const STATUS_ORDER: FileStatus[] = ["registered", "duplicate", "exception", "rejected", "ignored"];
 
@@ -22,6 +102,8 @@ export function DocumentsSection({ caseId }: { caseId: string }) {
   const canUpload = session?.user.permissions.includes("document.upload") ?? false;
   const { files, documents, polling } = useCaseRegister(caseId);
   const upload = useUpload(caseId);
+  const context = useRegisterContext(caseId);
+  const [filter, setFilter] = useState<Filter>("all");
 
   const onFiles = (list: File[]) => {
     upload.mutate(list, {
@@ -77,11 +159,36 @@ export function DocumentsSection({ caseId }: { caseId: string }) {
               {t("documents.none")}
             </p>
           ) : (
-            <FileTree
-              caseId={caseId}
-              files={files.data}
-              nodes={buildFileTree(files.data, documents.data)}
-            />
+            <>
+              <FilterChips
+                value={filter}
+                onChange={setFilter}
+                counts={{
+                  all: documents.data.length,
+                  attention: documents.data.filter((d) => needsAttention(d, context)).length,
+                  processing: documents.data.filter(isDocumentInProgress).length,
+                }}
+              />
+              <FileTree
+                caseId={caseId}
+                files={files.data}
+                context={context}
+                nodes={
+                  filter === "all"
+                    ? buildFileTree(files.data, documents.data)
+                    : filterTree(
+                        buildFileTree(files.data, documents.data),
+                        filter === "attention"
+                          ? (d) => needsAttention(d, context)
+                          : isDocumentInProgress,
+                        (f) =>
+                          filter === "attention"
+                            ? f.status === "exception" || f.status === "rejected"
+                            : f.status === "registered",
+                      )
+                }
+              />
+            </>
           )}
         </Panel>
       </div>

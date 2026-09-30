@@ -4,7 +4,7 @@
 // assigned to a checklist item, and goes to the review queue, where a
 // person assigns a type from the published list (FRD F-09, F-10, F-17).
 import { expect, test } from "@playwright/test";
-import { KESTREL } from "./fixtures/data";
+import { KESTREL, RM } from "./fixtures/data";
 import { MockApi, signedIn } from "./support/api";
 
 test("TC-07: label mismatch visible in the register and the document checks", async ({ page }) => {
@@ -16,10 +16,9 @@ test("TC-07: label mismatch visible in the register and the document checks", as
   await expect(bs.getByTestId("document-type")).toHaveText("Balance sheet");
   await expect(bs.getByTestId("label-mismatch")).toHaveText("label says: bank statement");
 
-  const row = page.locator('[data-testid="validation-document"][data-document-id="doc-bs"]');
-  await expect(row.getByTestId("label-mismatch")).toBeVisible();
-  await row.getByRole("button").first().click();
-  await expect(row).toContainText(
+  // The row's checks say why.
+  await bs.getByTestId("document-toggle").click();
+  await expect(bs).toContainText(
     "The file is labelled bank statement; its content reads as Balance sheet.",
   );
 });
@@ -31,15 +30,21 @@ test("TC-09: unclassified document with candidates, routed for review", async ({
   await page.goto(`/appraisals/${KESTREL}/documents`);
   const unc = page.getByTestId("section-files").locator('[data-document-id="doc-unc"]');
   await expect(unc.getByTestId("unclassified")).toHaveText("Unclassified");
-  await expect(unc.getByRole("link", { name: "Review queue" })).toHaveAttribute("href", "/review");
+  await expect(unc.getByTestId("stage-track")).toHaveAttribute("data-state", "attention");
+  // Its top candidates are offered on the row, for a person to assign.
+  await expect(unc.getByTestId("assign-candidate")).toHaveText([
+    "Utility bill 41%",
+    "ITR acknowledgement 22%",
+    "Bank statement 10%",
+  ]);
+  await page.getByTestId("filter-attention").click();
+  await expect(unc).toBeVisible();
 
-  await expect(page.getByTestId("kpi-unclassified")).toContainText("1");
-  const row = page.locator('[data-testid="validation-document"][data-document-id="doc-unc"]');
-  await row.getByRole("button").first().click();
-  await expect(row.getByTestId("candidates")).toHaveText(
+  await unc.getByTestId("document-toggle").click();
+  await expect(unc.getByTestId("candidates")).toHaveText(
     "Utility bill 41% · ITR acknowledgement 22% · Bank statement 10%",
   );
-  await expect(row.getByTestId("exit-tier")).toHaveText("Not classified");
+  await expect(unc.getByTestId("exit-tier")).toHaveText("Not classified");
 
   // Not assigned to any checklist item.
   await page.goto(`/appraisals/${KESTREL}/completeness`);
@@ -79,4 +84,25 @@ test("TC-09: unclassified document with candidates, routed for review", async ({
   const [call] = api.called("POST", "/api/review/r-type/decision");
   expect(call!.body).toEqual({ decision: "assign", reason: null, value: "utility_bill" });
   await expect(page.getByTestId("review-row")).toHaveCount(0);
+});
+
+test("TC-09: a candidate type is assigned from the Documents row", async ({ page }) => {
+  const api = new MockApi();
+  await signedIn(page, api);
+  await page.goto(`/appraisals/${KESTREL}/documents`);
+  const unc = page.getByTestId("section-files").locator('[data-document-id="doc-unc"]');
+  await unc.getByTestId("assign-candidate").first().click();
+  await expect(page.getByText("Assigned as Utility bill")).toBeVisible();
+  const [call] = api.called("POST", "/api/review/r-type/decision");
+  expect(call?.body).toEqual({ decision: "assign", value: "utility_bill", reason: null });
+});
+
+test("TC-09: an RM sees the flag but not the decision", async ({ page }) => {
+  const api = new MockApi();
+  await signedIn(page, api, RM);
+  await page.goto(`/appraisals/${KESTREL}/documents`);
+  const unc = page.getByTestId("section-files").locator('[data-document-id="doc-unc"]');
+  await expect(unc.getByTestId("unclassified")).toBeVisible();
+  await expect(unc.getByTestId("assign-candidate")).toHaveCount(0);
+  await expect(unc.getByTestId("waiting-review")).toHaveText("Waiting for credit review");
 });

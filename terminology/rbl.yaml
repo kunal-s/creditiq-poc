@@ -124,7 +124,7 @@ page:
     purpose: The borrower's identifiers and the promoters, directors or partners, each with the document it came from.
   documents:
     title: Documents
-    purpose: Every file received for this case, how it was split, and the status of each document.
+    purpose: Every file received, how it was split, and where each document is. Anything that needs a person is flagged on its row, with what to do.
   data:
     title: Extracted data
     purpose: Key fields by source, each with its confidence and a link to the page it came from.
@@ -358,6 +358,35 @@ documents:
   summary: Summary
   logical: Documents identified
   labelMismatches: Label mismatches
+  details: Show the checks on this document
+  defects: "{n} defect(s)"
+  waitingReview: Waiting for credit review
+  checkValues: Check the extracted values
+  assignAs: "Assign as:"
+  otherType: Other type…
+  assigned: "Assigned as {type}"
+  resolve: "Resolve: {kind}"
+  filter:
+    all: "All ({n})"
+    attention: "Needs attention ({n})"
+    processing: "Processing ({n})"
+
+# A document's track through quality, classification and extraction.
+documentTrack:
+  running:
+    received: Reading…
+    quality: Checking quality…
+    split: Splitting…
+    classified: Classifying…
+    extracted: Extracting…
+  attention: "{step}: needs a person"
+  complete: Extracted
+  step:
+    received: Received
+    quality: Quality
+    split: Split
+    classified: Classified
+    extracted: Extracted
 
 document:
   unclassified: Unclassified

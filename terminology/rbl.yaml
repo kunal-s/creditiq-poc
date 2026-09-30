@@ -271,7 +271,7 @@ page:
     purpose: Key fields by source, each with its confidence and a link to the page it came from.
   spread:
     title: Financial spread
-    purpose: The financial statements normalised into RBL's spread, every figure traceable to its page.
+    purpose: The financial statements laid out by year, with ratios and the working-capital assessment, every figure traceable to its page.
   crossVerification:
     title: Cross-verification and discrepancy
     purpose: Every source lined up against every other, with the evidence on both sides of each finding.
@@ -280,7 +280,7 @@ page:
     purpose: RBL's norms evaluated for this case, and each deviation with the norm, the actual value and its source.
   draft:
     title: CAM draft and PD note
-    purpose: The draft Credit Approval Memo in RBL's template, and the questions for the personal discussion.
+    purpose: The draft Credit Approval Memo, and the questions for the personal discussion, every statement traceable to its page.
   comparison:
     title: Comparison with RBL's record
     purpose: This case's output beside the assessment RBL credit made at the time, for adjudication.

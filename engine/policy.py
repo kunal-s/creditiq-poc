@@ -75,7 +75,7 @@ class Inputs:
                                       evidence=evidence or [], relies_on_manual=manual)
 
 
-def _number(v: facts_module.Value | None) -> float | None:
+def number(v: facts_module.Value | None) -> float | None:
     if v is None or v.value in (None, ""):
         return None
     try:
@@ -107,10 +107,10 @@ def gather(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> Inputs:
         # from the first copy that has it.
         latest = [d for e, d in audited if e == end]
         for name in FINANCIAL_INPUTS:
-            found = next(((d, d.get(name)) for d in latest if _number(d.get(name)) is not None), None)
+            found = next(((d, d.get(name)) for d in latest if number(d.get(name)) is not None), None)
             if found:
                 d, v = found
-                inputs.put(name, _number(v), d.evidence(v), v.manual)
+                inputs.put(name, number(v), d.evidence(v), v.manual)
 
     # The case: the amount asked for.
     inputs.put("amount_requested", case.amount_inr)
@@ -136,7 +136,7 @@ def gather(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> Inputs:
     # Collateral values, summed over valuation reports.
     for name in ("market_value", "realisable_value"):
         values = [(d, d.get(name)) for d in by_type("valuation_report") if d.get(name)]
-        numbers = [(d, v, _number(v)) for d, v in values if _number(v) is not None]
+        numbers = [(d, v, number(v)) for d, v in values if number(v) is not None]
         if numbers:
             inputs.put(name, sum(n for _, _, n in numbers), [e for d, v, _ in numbers for e in d.evidence(v)[:1]],
                        any(v.manual for _, v, _ in numbers))
@@ -168,9 +168,9 @@ class _Missing(Exception):
     pass
 
 
-def _eval(node: ast.AST, values: dict[str, float], missing: list[str]) -> float:
+def evaluate_expression(node: ast.AST, values: dict[str, float], missing: list[str]) -> float:
     if isinstance(node, ast.Expression):
-        return _eval(node.body, values, missing)
+        return evaluate_expression(node.body, values, missing)
     if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
         return float(node.value)
     if isinstance(node, ast.Name):
@@ -179,9 +179,9 @@ def _eval(node: ast.AST, values: dict[str, float], missing: list[str]) -> float:
             return 0.0
         return values[node.id]
     if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):
-        return -_eval(node.operand, values, missing)
+        return -evaluate_expression(node.operand, values, missing)
     if isinstance(node, ast.BinOp):
-        left, right = _eval(node.left, values, missing), _eval(node.right, values, missing)
+        left, right = evaluate_expression(node.left, values, missing), evaluate_expression(node.right, values, missing)
         if isinstance(node.op, ast.Add):
             return left + right
         if isinstance(node.op, ast.Sub):
@@ -253,7 +253,7 @@ def evaluate(norm: PolicyNorm, ratio: PolicyRatio | None, case: CaseDetail, inpu
     result.inputs = [inputs.values[n] for n in dict.fromkeys(names) if n in inputs.values]
     missing: list[str] = []
     try:
-        actual = _eval(tree, {k: v.value for k, v in inputs.values.items() if v.value is not None}, missing)
+        actual = evaluate_expression(tree, {k: v.value for k, v in inputs.values.items() if v.value is not None}, missing)
     except ZeroDivisionError as zero:
         result.outcome = "cannot_evaluate"
         result.missing = [f"{words(str(zero))} is zero"]

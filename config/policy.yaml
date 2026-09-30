@@ -12,6 +12,12 @@ working_capital:
   mpbf_above_limit_inr: 50000000
   source: regulatory
   status: provisional
+  # Turnover method (F-22.2): the requirement is 25% of projected turnover,
+  # of which the borrower brings at least 5% and the bank finances up to 20%.
+  turnover_requirement_pct: 25
+  turnover_margin_pct: 5
+  # MPBF, second method: the borrower brings 25% of current assets.
+  mpbf_margin_pct: 25
 
 ratios:
   - key: current-ratio

@@ -327,6 +327,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/cases/{case_id}/spread": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Case Spread
+     * @description F-22: the spread (interim layout) with ratios and the working-capital assessment.
+     */
+    get: operations["case_spread_api_cases__case_id__spread_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/config/checklist-taxonomy": {
     parameters: {
       query?: never;
@@ -1657,6 +1677,76 @@ export interface components {
       /** Start */
       start: number;
     };
+    /** Spread */
+    Spread: {
+      /** Case Id */
+      case_id: string;
+      /** Columns */
+      columns: components["schemas"]["SpreadColumn"][];
+      /**
+       * Interim
+       * @default true
+       */
+      interim: boolean;
+      /** Rows */
+      rows: components["schemas"]["SpreadRow"][];
+      working_capital: components["schemas"]["WorkingCapitalAssessment"];
+    };
+    /** SpreadCell */
+    SpreadCell: {
+      /** Evidence */
+      evidence?: components["schemas"]["Evidence"][];
+      /**
+       * Relies On Manual
+       * @default false
+       */
+      relies_on_manual: boolean;
+      /** Value */
+      value?: number | null;
+    };
+    /**
+     * SpreadColumn
+     * @description One year of one kind of statement.
+     */
+    SpreadColumn: {
+      /**
+       * Basis
+       * @enum {string}
+       */
+      basis: "audited" | "provisional" | "projected";
+      /** Fy */
+      fy: string;
+      /** Key */
+      key: string;
+      /** Period End */
+      period_end: string;
+    };
+    /** SpreadRow */
+    SpreadRow: {
+      /** Cells */
+      cells: components["schemas"]["SpreadCell"][];
+      /** Formula */
+      formula?: string | null;
+      /** Key */
+      key: string;
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: "line" | "derived" | "ratio";
+      /** Label */
+      label: string;
+      /**
+       * Section
+       * @enum {string}
+       */
+      section: "profit_and_loss" | "balance_sheet" | "ratios";
+      /**
+       * Unit
+       * @enum {string}
+       */
+      unit: "inr" | "x" | "%" | "days";
+    };
     /**
      * StageProgress
      * @description One processing stage of FRD §5, as the case workspace shows it (§6).
@@ -1763,10 +1853,55 @@ export interface components {
       /** Error Type */
       type: string;
     };
+    /**
+     * Working
+     * @description One step of the working-capital assessment (F-22.2).
+     */
+    Working: {
+      /** Basis */
+      basis?: string | null;
+      /** Evidence */
+      evidence?: components["schemas"]["Evidence"][];
+      /** Label */
+      label: string;
+      /**
+       * Unit
+       * @default inr
+       * @enum {string}
+       */
+      unit: "inr" | "%";
+      /** Value */
+      value: number | null;
+    };
+    /** WorkingCapitalAssessment */
+    WorkingCapitalAssessment: {
+      /** Column */
+      column?: string | null;
+      /** Eligible */
+      eligible?: number | null;
+      /**
+       * Method
+       * @enum {string}
+       */
+      method: "turnover" | "mpbf" | "not_applicable";
+      /** Missing */
+      missing?: string[];
+      /** Reason */
+      reason: string;
+      /** Requested */
+      requested: number;
+      /** Steps */
+      steps?: components["schemas"]["Working"][];
+    };
     /** WorkingCapitalPolicy */
     WorkingCapitalPolicy: {
       /** Mpbf Above Limit Inr */
       mpbf_above_limit_inr: number;
+      /**
+       * Mpbf Margin Pct
+       * @default 25
+       */
+      mpbf_margin_pct: number;
       /**
        * Source
        * @enum {string}
@@ -1777,6 +1912,16 @@ export interface components {
        * @enum {string}
        */
       status: "active" | "provisional";
+      /**
+       * Turnover Margin Pct
+       * @default 5
+       */
+      turnover_margin_pct: number;
+      /**
+       * Turnover Requirement Pct
+       * @default 25
+       */
+      turnover_requirement_pct: number;
     };
   };
   responses: never;
@@ -2441,6 +2586,39 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["QueryItem"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  case_spread_api_cases__case_id__spread_get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Spread"];
         };
       };
       /** @description Validation Error */

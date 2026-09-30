@@ -38,6 +38,7 @@ source_modules =
     engine.reads
     engine.review
     engine.review_items
+    engine.spread
     engine.store
     engine.uploads
     engine.util

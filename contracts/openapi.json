@@ -3214,6 +3214,175 @@
         "title": "Span",
         "type": "object"
       },
+      "Spread": {
+        "properties": {
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "columns": {
+            "items": {
+              "$ref": "#/components/schemas/SpreadColumn"
+            },
+            "title": "Columns",
+            "type": "array"
+          },
+          "interim": {
+            "default": true,
+            "title": "Interim",
+            "type": "boolean"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/SpreadRow"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "working_capital": {
+            "$ref": "#/components/schemas/WorkingCapitalAssessment"
+          }
+        },
+        "required": [
+          "case_id",
+          "columns",
+          "rows",
+          "working_capital"
+        ],
+        "title": "Spread",
+        "type": "object"
+      },
+      "SpreadCell": {
+        "properties": {
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "relies_on_manual": {
+            "default": false,
+            "title": "Relies On Manual",
+            "type": "boolean"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "title": "SpreadCell",
+        "type": "object"
+      },
+      "SpreadColumn": {
+        "description": "One year of one kind of statement.",
+        "properties": {
+          "basis": {
+            "enum": [
+              "audited",
+              "provisional",
+              "projected"
+            ],
+            "title": "Basis",
+            "type": "string"
+          },
+          "fy": {
+            "title": "Fy",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "period_end": {
+            "title": "Period End",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "fy",
+          "period_end",
+          "basis"
+        ],
+        "title": "SpreadColumn",
+        "type": "object"
+      },
+      "SpreadRow": {
+        "properties": {
+          "cells": {
+            "items": {
+              "$ref": "#/components/schemas/SpreadCell"
+            },
+            "title": "Cells",
+            "type": "array"
+          },
+          "formula": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Formula"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "line",
+              "derived",
+              "ratio"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "section": {
+            "enum": [
+              "profit_and_loss",
+              "balance_sheet",
+              "ratios"
+            ],
+            "title": "Section",
+            "type": "string"
+          },
+          "unit": {
+            "enum": [
+              "inr",
+              "x",
+              "%",
+              "days"
+            ],
+            "title": "Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "section",
+          "kind",
+          "unit",
+          "cells"
+        ],
+        "title": "SpreadRow",
+        "type": "object"
+      },
       "StageProgress": {
         "description": "One processing stage of FRD \u00a75, as the case workspace shows it (\u00a76).\nCounts only, never extracted values, so every role may read it.",
         "properties": {
@@ -3455,11 +3624,133 @@
         "title": "ValidationError",
         "type": "object"
       },
+      "Working": {
+        "description": "One step of the working-capital assessment (F-22.2).",
+        "properties": {
+          "basis": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Basis"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "unit": {
+            "default": "inr",
+            "enum": [
+              "inr",
+              "%"
+            ],
+            "title": "Unit",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "label",
+          "value"
+        ],
+        "title": "Working",
+        "type": "object"
+      },
+      "WorkingCapitalAssessment": {
+        "properties": {
+          "column": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Column"
+          },
+          "eligible": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eligible"
+          },
+          "method": {
+            "enum": [
+              "turnover",
+              "mpbf",
+              "not_applicable"
+            ],
+            "title": "Method",
+            "type": "string"
+          },
+          "missing": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing",
+            "type": "array"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "requested": {
+            "title": "Requested",
+            "type": "number"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/Working"
+            },
+            "title": "Steps",
+            "type": "array"
+          }
+        },
+        "required": [
+          "method",
+          "reason",
+          "requested"
+        ],
+        "title": "WorkingCapitalAssessment",
+        "type": "object"
+      },
       "WorkingCapitalPolicy": {
         "properties": {
           "mpbf_above_limit_inr": {
             "title": "Mpbf Above Limit Inr",
             "type": "integer"
+          },
+          "mpbf_margin_pct": {
+            "default": 25,
+            "title": "Mpbf Margin Pct",
+            "type": "number"
           },
           "source": {
             "enum": [
@@ -3478,6 +3769,16 @@
             ],
             "title": "Status",
             "type": "string"
+          },
+          "turnover_margin_pct": {
+            "default": 5,
+            "title": "Turnover Margin Pct",
+            "type": "number"
+          },
+          "turnover_requirement_pct": {
+            "default": 25,
+            "title": "Turnover Requirement Pct",
+            "type": "number"
           }
         },
         "required": [
@@ -4630,6 +4931,62 @@
           }
         },
         "summary": "Case Queries"
+      }
+    },
+    "/api/cases/{case_id}/spread": {
+      "get": {
+        "description": "F-22: the spread (interim layout) with ratios and the working-capital assessment.",
+        "operationId": "case_spread_api_cases__case_id__spread_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Spread"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Spread"
       }
     },
     "/api/config/checklist-taxonomy": {

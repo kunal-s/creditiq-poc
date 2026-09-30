@@ -41,6 +41,12 @@ class WorkingCapitalPolicy(BaseModel):
     need CMA data; at or below it, the turnover method (F-12.2)."""
     source: Source
     status: Status
+    turnover_requirement_pct: float = 25
+    """Turnover method (F-22.2): working-capital requirement as a share of projected turnover."""
+    turnover_margin_pct: float = 5
+    """Turnover method: the borrower's minimum margin, as a share of projected turnover."""
+    mpbf_margin_pct: float = 25
+    """MPBF (second method): the borrower's margin, as a share of current assets."""
 
 
 # The inputs a norm's expression may use (F-20.1), computed by

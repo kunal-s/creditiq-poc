@@ -30,6 +30,14 @@ from .case import (
     StageStatus,
 )
 from .common import Evidence, Grade, Stage
+from .outputs import (
+    Spread,
+    SpreadCell,
+    SpreadColumn,
+    SpreadRow,
+    Working,
+    WorkingCapitalAssessment,
+)
 from .policy import NormInput, NormOutcome, NormResult, PolicyAssessment
 from .facts import (
     AccountCredits,
@@ -75,6 +83,12 @@ from .intake import (
 from .session import LoginRequest, LoginResponse, Meta, Option, SessionUser
 
 __all__ = [
+    "Spread",
+    "SpreadCell",
+    "SpreadColumn",
+    "SpreadRow",
+    "Working",
+    "WorkingCapitalAssessment",
     "NormInput",
     "NormOutcome",
     "NormResult",

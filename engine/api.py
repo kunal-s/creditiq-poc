@@ -32,6 +32,7 @@ from . import (
     queries,
     reads,
     review,
+    spread,
     uploads,
 )
 from .config import load_app_config, option_ids
@@ -45,6 +46,7 @@ from .contracts import (
     CaseProgress,
     CaseProposal,
     PolicyAssessment,
+    Spread,
     CaseSummary,
     Party,
     ProposalRequest,
@@ -307,6 +309,18 @@ def case_policy(
     case = _case_for(conn, case_id, user)
     try:
         return policy.assess(conn, data_root(), case)
+    except configstore_reader.NoPublishedConfig as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+
+
+@app.get("/api/cases/{case_id}/spread", response_model=Spread)
+def case_spread(
+    case_id: str, user: dict = Depends(require("output.read")), conn: sqlite3.Connection = Depends(get_conn)
+):
+    """F-22: the spread (interim layout) with ratios and the working-capital assessment."""
+    case = _case_for(conn, case_id, user)
+    try:
+        return spread.build(conn, data_root(), case)
     except configstore_reader.NoPublishedConfig as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
 

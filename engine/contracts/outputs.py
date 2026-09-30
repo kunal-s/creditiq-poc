@@ -66,3 +66,23 @@ class Spread(BaseModel):
     columns: list[SpreadColumn]
     rows: list[SpreadRow]
     working_capital: WorkingCapitalAssessment
+
+
+class PdQuestion(BaseModel):
+    """One question for the personal discussion (F-24)."""
+
+    id: str
+    text: str
+    severity: Literal["serious", "moderate", "mild"]
+    source: Literal["finding", "deviation", "gap"]
+    ref: str
+    """The finding id or norm id it comes from (F-24.2)."""
+    rule: str
+    """The rule or norm id, e.g. OB-02, FR-05."""
+    title: str
+    evidence: list[Evidence] = Field(default_factory=list)
+
+
+class PdNote(BaseModel):
+    case_id: str
+    questions: list[PdQuestion]

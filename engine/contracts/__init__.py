@@ -31,6 +31,8 @@ from .case import (
 )
 from .common import Evidence, Grade, Stage
 from .outputs import (
+    PdNote,
+    PdQuestion,
     Spread,
     SpreadCell,
     SpreadColumn,
@@ -83,6 +85,8 @@ from .intake import (
 from .session import LoginRequest, LoginResponse, Meta, Option, SessionUser
 
 __all__ = [
+    "PdNote",
+    "PdQuestion",
     "Spread",
     "SpreadCell",
     "SpreadColumn",

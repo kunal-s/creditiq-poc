@@ -269,6 +269,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/cases/{case_id}/pd-note": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Case Pd Note
+     * @description F-24: questions for the personal discussion, ranked, each tied to its source.
+     */
+    get: operations["case_pd_note_api_cases__case_id__pd_note_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/cases/{case_id}/policy": {
     parameters: {
       query?: never;
@@ -1373,6 +1393,41 @@ export interface components {
       /** Source */
       source: string;
     };
+    /** PdNote */
+    PdNote: {
+      /** Case Id */
+      case_id: string;
+      /** Questions */
+      questions: components["schemas"]["PdQuestion"][];
+    };
+    /**
+     * PdQuestion
+     * @description One question for the personal discussion (F-24).
+     */
+    PdQuestion: {
+      /** Evidence */
+      evidence?: components["schemas"]["Evidence"][];
+      /** Id */
+      id: string;
+      /** Ref */
+      ref: string;
+      /** Rule */
+      rule: string;
+      /**
+       * Severity
+       * @enum {string}
+       */
+      severity: "serious" | "moderate" | "mild";
+      /**
+       * Source
+       * @enum {string}
+       */
+      source: "finding" | "deviation" | "gap";
+      /** Text */
+      text: string;
+      /** Title */
+      title: string;
+    };
     /**
      * PersonSet
      * @description The promoters one source names (F-18.3: variants resolved later).
@@ -1431,6 +1486,8 @@ export interface components {
       label?: string | null;
       /** Note */
       note?: string | null;
+      /** Pd Question */
+      pd_question?: string | null;
       /** Ratio */
       ratio?: string | null;
       /** Source */
@@ -1492,6 +1549,10 @@ export interface components {
       deviation_categories?: components["schemas"]["DeviationCategory"][];
       /** Norms */
       norms?: components["schemas"]["PolicyNorm"][];
+      /** Pd Questions */
+      pd_questions?: {
+        [key: string]: string;
+      };
       /** Ratios */
       ratios: components["schemas"]["PolicyRatio"][];
       working_capital: components["schemas"]["WorkingCapitalPolicy"];
@@ -2487,6 +2548,39 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Party"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  case_pd_note_api_cases__case_id__pd_note_get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PdNote"];
         };
       };
       /** @description Validation Error */

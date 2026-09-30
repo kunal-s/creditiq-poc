@@ -86,6 +86,8 @@ class PolicyNorm(BaseModel):
     source: Source | None = None
     status: Status | None = None
     note: str | None = None
+    pd_question: str | None = None
+    """Overrides the family's personal-discussion question (F-24.1)."""
 
 
 class PolicySection(BaseModel):
@@ -96,6 +98,9 @@ class PolicySection(BaseModel):
     available_ratios: list[PolicyRatio] = Field(default_factory=list)
     deviation_categories: list[DeviationCategory] = Field(default_factory=list)
     norms: list[PolicyNorm] = Field(default_factory=list)
+    pd_questions: dict[str, str] = Field(default_factory=dict)
+    """Per norm family, what to ask the promoter about a deviation (F-24.1);
+    may use {label}, {actual}, {required} and {period}."""
 
 
 class CoverageRule(BaseModel):
@@ -315,12 +320,17 @@ class CrossCheckRule(BaseModel):
     blocking: bool
     explanation: str
     query: str | None = None
+    pd_question: str | None = None
+    """What to ask the promoter in the personal discussion when the rule
+    fails (F-24.1); may use {explanation}."""
 
 
 class CrossChecksSection(BaseModel):
     """config/crosschecks.yaml (F-19)."""
 
     rules: list[CrossCheckRule]
+    pd_incomplete: str = "{title}: {explanation}"
+    """The personal-discussion question for a check left incomplete (F-24.1)."""
 
 
 class ConfidenceSection(BaseModel):

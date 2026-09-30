@@ -12,7 +12,12 @@
 #
 # Templates may use {left}, {right}, {left_label}, {right_label}, {period},
 # {variance}, {tolerance}, {items} and {missing}. `query` is the plain
-# request added to the pre-login query list when the rule fails (F-19.5).
+# request added to the pre-login query list when the rule fails (F-19.5);
+# `pd_question` is what to ask the promoter in the personal discussion
+# (F-24.1) and may also use {explanation}.
+
+# The personal-discussion question for a check that could not be completed.
+pd_incomplete: "{title}: {explanation} Can the missing figures be provided before sanction?"
 
 rules:
   # --- Identity (TC-22) ---
@@ -25,6 +30,7 @@ rules:
     blocking: true
     explanation: "The entity PAN differs between documents: {items}."
     query: "Please confirm the entity's PAN; the documents show {items}."
+    pd_question: "{explanation} Which PAN is the entity's, and why does the other document show a different one?"
 
   - id: ID-02
     title: GSTIN consistent across documents
@@ -35,6 +41,7 @@ rules:
     blocking: true
     explanation: "The GSTIN differs between documents: {items}."
     query: "Please confirm the GSTIN; the documents show {items}."
+    pd_question: "{explanation} Which GSTIN is current, and are there other registrations?"
 
   - id: ID-03
     title: Legal name consistent across documents
@@ -45,6 +52,7 @@ rules:
     severity: moderate
     blocking: false
     explanation: "The legal name reads differently across documents: {items}."
+    pd_question: "{explanation} Has the entity changed its name, or is any document for another entity?"
 
   - id: ID-04
     title: Promoter set consistent across sources
@@ -56,6 +64,7 @@ rules:
     blocking: true
     explanation: "The promoters named differ between sources: {items}."
     query: "Please confirm the full list of directors, partners or the proprietor; {items}."
+    pd_question: "{explanation} Who are the directors, partners or proprietor today, and has anyone joined or left?"
 
   # --- Turnover (TC-23), per financial year ---
   - id: TO-01
@@ -68,6 +77,7 @@ rules:
     blocking: false
     explanation: "{period}: {left_label} {left} against {right_label} {right}, a variance of {variance} (tolerance {tolerance})."
     query: "Please explain the difference between audited turnover ({left}) and GST outward supplies ({right}) for {period}."
+    pd_question: "{explanation} What explains the difference between the audited turnover and GST returns?"
 
   - id: TO-02
     title: GST outward supplies against cleansed bank credits
@@ -79,6 +89,7 @@ rules:
     blocking: false
     explanation: "{period}: {left_label} {left} against {right_label} {right}, a variance of {variance} (tolerance {tolerance})."
     query: "Please explain the difference between GST outward supplies ({left}) and business credits in the bank statements ({right}) for {period}."
+    pd_question: "{explanation} Are sales received in accounts not shown to us, or in cash?"
 
   - id: TO-03
     title: Audited turnover against cleansed bank credits
@@ -89,6 +100,7 @@ rules:
     severity: moderate
     blocking: false
     explanation: "{period}: {left_label} {left} against {right_label} {right}, a variance of {variance} (tolerance {tolerance})."
+    pd_question: "{explanation} Where are the remaining sales receipts banked?"
 
   - id: TO-04
     title: RM-declared turnover against evidenced turnover
@@ -99,6 +111,7 @@ rules:
     severity: mild
     blocking: false
     explanation: "{left_label} {left} against {right_label} {right} for {period}, a variance of {variance} (tolerance {tolerance})."
+    pd_question: "{explanation} What turnover figure should be relied on, and why does it differ from the statements?"
 
   # --- Bank accounts (TC-24) ---
   - id: BA-01
@@ -111,6 +124,7 @@ rules:
     blocking: true
     explanation: "No statement received for declared account(s): {missing}."
     query: "Please provide statements for account(s) {missing}."
+    pd_question: "{explanation} Is the account still in use, and when can its statements be shared?"
 
   - id: BA-02
     title: Accounts evidenced elsewhere are declared
@@ -122,6 +136,7 @@ rules:
     blocking: false
     explanation: "Account(s) evidenced in the documents but not declared: {missing}."
     query: "Please explain account(s) {missing}, which are not in the declaration of existing banking."
+    pd_question: "{explanation} Whose account is this, and what is it used for?"
 
   # --- Obligations (TC-25) ---
   - id: OB-01
@@ -134,6 +149,7 @@ rules:
     blocking: true
     explanation: "The existing facilities differ between sources: {items}."
     query: "Please confirm all existing facilities; {items}."
+    pd_question: "{explanation} Which facilities are running today, with which lenders, and what is outstanding?"
 
   - id: OB-02
     title: Instalments in bank statements go to declared lenders
@@ -145,3 +161,4 @@ rules:
     blocking: true
     explanation: "Regular debits to lender(s) not declared: {missing}."
     query: "Please explain the regular debits to {missing}, which are not in the declaration of existing facilities."
+    pd_question: "{explanation} What are these payments for, and what is outstanding on them?"

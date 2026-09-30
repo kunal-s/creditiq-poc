@@ -112,6 +112,16 @@ deviation_categories:
   - {key: security, label: Security cover}
   - {key: documentation, label: Documentation}
 
+# What to ask the promoter about a deviation, by norm family (F-24.1). A
+# norm's own `pd_question` overrides its family's.
+pd_questions:
+  eligibility: "{label} is {actual} against a norm of {required}. What is the background, and what mitigates it?"
+  ratios: "{label} is {actual} in {period} against a norm of {required}. What explains it, and how is it expected to move?"
+  security_cover: "{label} is {actual} against a norm of {required}. What further security can be offered?"
+  documentation: "{label}: {actual} against a norm of {required}. When will the documents be available?"
+  # A norm that could not be evaluated: {missing} names the figures not on file.
+  cannot_evaluate: "{label} could not be assessed: {missing} not on file. Can the promoter provide it?"
+
 # Norms evaluated for every case (F-20). `expression` is arithmetic (+ - * /
 # and brackets) over the inputs listed in engine/configstore/schema.py
 # POLICY_INPUTS; financial inputs are from the latest audited statements.

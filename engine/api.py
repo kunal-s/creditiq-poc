@@ -25,6 +25,7 @@ from . import (
     jobs,
     pages,
     parties,
+    pd_note,
     pipeline,
     policy,
     progress,
@@ -45,6 +46,7 @@ from .contracts import (
     CaseFacts,
     CaseProgress,
     CaseProposal,
+    PdNote,
     PolicyAssessment,
     Spread,
     CaseSummary,
@@ -321,6 +323,18 @@ def case_spread(
     case = _case_for(conn, case_id, user)
     try:
         return spread.build(conn, data_root(), case)
+    except configstore_reader.NoPublishedConfig as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+
+
+@app.get("/api/cases/{case_id}/pd-note", response_model=PdNote)
+def case_pd_note(
+    case_id: str, user: dict = Depends(require("output.read")), conn: sqlite3.Connection = Depends(get_conn)
+):
+    """F-24: questions for the personal discussion, ranked, each tied to its source."""
+    case = _case_for(conn, case_id, user)
+    try:
+        return pd_note.build(conn, data_root(), case)
     except configstore_reader.NoPublishedConfig as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
 

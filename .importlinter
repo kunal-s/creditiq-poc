@@ -29,6 +29,7 @@ source_modules =
     engine.jobs
     engine.names
     engine.pages
+    engine.pd_note
     engine.parties
     engine.pipeline
     engine.policy

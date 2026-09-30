@@ -2338,6 +2338,88 @@
         "title": "Party",
         "type": "object"
       },
+      "PdNote": {
+        "properties": {
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/PdQuestion"
+            },
+            "title": "Questions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "case_id",
+          "questions"
+        ],
+        "title": "PdNote",
+        "type": "object"
+      },
+      "PdQuestion": {
+        "description": "One question for the personal discussion (F-24).",
+        "properties": {
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "ref": {
+            "title": "Ref",
+            "type": "string"
+          },
+          "rule": {
+            "title": "Rule",
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "serious",
+              "moderate",
+              "mild"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "source": {
+            "enum": [
+              "finding",
+              "deviation",
+              "gap"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "severity",
+          "source",
+          "ref",
+          "rule",
+          "title"
+        ],
+        "title": "PdQuestion",
+        "type": "object"
+      },
       "PersonSet": {
         "description": "The promoters one source names (F-18.3: variants resolved later).",
         "properties": {
@@ -2482,6 +2564,17 @@
               }
             ],
             "title": "Note"
+          },
+          "pd_question": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pd Question"
           },
           "ratio": {
             "anyOf": [
@@ -2683,6 +2776,13 @@
             },
             "title": "Norms",
             "type": "array"
+          },
+          "pd_questions": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Pd Questions",
+            "type": "object"
           },
           "ratios": {
             "items": {
@@ -4760,6 +4860,62 @@
           }
         },
         "summary": "Case Parties"
+      }
+    },
+    "/api/cases/{case_id}/pd-note": {
+      "get": {
+        "description": "F-24: questions for the personal discussion, ranked, each tied to its source.",
+        "operationId": "case_pd_note_api_cases__case_id__pd_note_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PdNote"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Pd Note"
       }
     },
     "/api/cases/{case_id}/policy": {

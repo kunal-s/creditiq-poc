@@ -204,7 +204,7 @@ def words(expression: str) -> str:
 # --- Norms ---
 
 
-def _unit_text(value: float, unit: str | None) -> str:
+def unit_text(value: float, unit: str | None) -> str:
     if unit == "x":
         return f"{value:.2f}x"
     if unit == "%":
@@ -237,7 +237,7 @@ def evaluate(norm: PolicyNorm, ratio: PolicyRatio | None, case: CaseDetail, inpu
     unit = norm.unit or (ratio.unit if ratio else None)
     kind = norm.kind or (ratio.kind if ratio else "min")
     threshold = norm.threshold if norm.threshold is not None else (ratio.acceptable if ratio else 0.0)
-    required = f"{'at least' if kind == 'min' else 'at most'} {_unit_text(threshold, unit)}"
+    required = f"{'at least' if kind == 'min' else 'at most'} {unit_text(threshold, unit)}"
     status = norm.status or (ratio.status if ratio else None)
     result = NormResult(
         id=norm.id, family=norm.family, label=label,

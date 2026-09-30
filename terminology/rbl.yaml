@@ -53,6 +53,30 @@ outputs:
     cam: Draft CAM
     pd: PD note
 
+# Extracted data by kind of document (FRD §6).
+fieldSection:
+  identity: Entity and identity
+  financials: Financials
+  tax: GST and tax
+  banking: Banking
+  other: Bureau, collateral and other
+
+# Why a field has no value (F-15), as the reader reports it.
+missingReason:
+  not_found: not found on the document
+  not_found_on_page: not found on the page it points to
+  model_unavailable: not read yet; automatic reading is unavailable for this field
+  model_error: could not be read
+
+# Confirming or correcting an extracted value (F-17.5).
+fieldDecision:
+  confirm: Confirm
+  correct: Correct…
+  prompt: "Waiting for review. The document reads: {value}"
+  value: Correct value
+  reason: Reason for the correction
+  save: Save correction
+
 # The six processing stages (FRD §5), as the stage progress shows them.
 progress:
   label: Processing stages
@@ -659,6 +683,7 @@ source:
 # Extracted data and evidence (FRD F-15 to F-17).
 data:
   filter: Filter by status
+  showInReview: "Show the {n} in review"
   filterAll: All fields
   none: No fields have been extracted for this case yet.
   noneMatch: No field has this status.

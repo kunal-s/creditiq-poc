@@ -1,14 +1,12 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { ArrowRight, FileText } from "lucide-react";
 import type { FieldStatus, FieldValue, LogicalDocument } from "@/api/types";
-import { CaseScreen } from "@/components/shell/CaseScreen";
-import { PageHeader } from "@/components/shell/PageHeader";
 import { Panel } from "@/components/common/Panel";
 import { ErrorState, LoadingBlock } from "@/components/common/States";
 import { FieldValueButton } from "@/components/common/FieldValueButton";
 import { ConfidenceChip } from "@/components/common/ConfidenceChip";
 import { FieldStatusChip, GradeChip } from "@/components/documents/chips";
+import { FieldRowDecision } from "@/components/review/FieldDecision";
 import { useDocViewer } from "@/components/docviewer/DocViewer";
 import { t } from "@/config/terminology";
 import { pageRange, useCaseDocuments, useCaseFiles, useDocumentTypes } from "@/domain/documents";
@@ -16,6 +14,27 @@ import { fieldLabel, useFields } from "@/domain/extraction";
 import { cn } from "@/lib/utils";
 
 const FILTERS = ["all", "in_review", "missing", "corrected"] as const;
+
+/** The FRD §6 grouping of extracted data, from each document type's group. */
+const FIELD_SECTIONS = ["identity", "financials", "tax", "banking", "other"] as const;
+type FieldSection = (typeof FIELD_SECTIONS)[number];
+const SECTION_OF_GROUP: Record<string, FieldSection> = {
+  constitution: "identity",
+  registration: "identity",
+  kyc: "identity",
+  financials: "financials",
+  working_capital: "financials",
+  tax: "tax",
+  banking: "banking",
+};
+
+function sectionOf(
+  doc: LogicalDocument,
+  byId: (id: string) => { group?: string } | undefined,
+): FieldSection {
+  const group = byId(doc.classification?.types[0] ?? "")?.group;
+  return (group && SECTION_OF_GROUP[group]) || "other";
+}
 type Filter = (typeof FILTERS)[number];
 
 /** Extracted fields by document, with confidence and page (F-15, F-16). */
@@ -23,6 +42,7 @@ export function ExtractedDataSection({ caseId }: { caseId: string }) {
   const fields = useFields(caseId);
   const documents = useCaseDocuments(caseId);
   const [filter, setFilter] = useState<Filter>("all");
+  const types = useDocumentTypes();
 
   if (fields.isError || documents.isError) {
     return (
@@ -78,9 +98,20 @@ export function ExtractedDataSection({ caseId }: { caseId: string }) {
             </p>
           </Panel>
         ) : (
-          groups.map((g) => (
-            <DocumentFields key={g.doc.id} caseId={caseId} doc={g.doc} fields={g.fields} />
-          ))
+          FIELD_SECTIONS.map((section) => {
+            const members = groups.filter((g) => sectionOf(g.doc, types.byId) === section);
+            if (members.length === 0) return null;
+            return (
+              <section key={section} className="space-y-3" data-testid={`field-section-${section}`}>
+                <h3 className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  {t(`fieldSection.${section}`)}
+                </h3>
+                {members.map((g) => (
+                  <DocumentFields key={g.doc.id} caseId={caseId} doc={g.doc} fields={g.fields} />
+                ))}
+              </section>
+            );
+          })
         )}
       </div>
 
@@ -106,14 +137,17 @@ export function ExtractedDataSection({ caseId }: { caseId: string }) {
               </div>
             ))}
           </dl>
-          {count("in_review") > 0 && (
+          {count("in_review") > 0 && filter !== "in_review" && (
             <div className="border-t border-border px-4 py-3">
-              <Link
-                to="/review"
-                className="flex h-8 items-center justify-center gap-1.5 rounded border border-border bg-surface text-[12.5px] font-medium text-foreground hover:bg-muted"
+              <button
+                type="button"
+                onClick={() => setFilter("in_review")}
+                className="flex h-8 w-full items-center justify-center gap-1.5 rounded border border-border bg-surface text-[12.5px] font-medium text-foreground hover:bg-muted"
+                data-testid="show-in-review"
               >
-                {t("nav.reviewQueue")} <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
+                {t("data.showInReview", { n: count("in_review") })}
+                <ArrowRight className="h-3.5 w-3.5" />
+              </button>
             </div>
           )}
         </Panel>
@@ -196,6 +230,7 @@ function DocumentFields({
                 <td className="px-3 py-2 text-muted-foreground">{t(`fieldMethod.${f.method}`)}</td>
                 <td className="px-4 py-2">
                   <FieldStatusChip status={f.status} />
+                  <FieldRowDecision field={f} />
                 </td>
               </tr>
             ))}

@@ -1,6 +1,6 @@
 import type { FieldValue } from "@/api/types";
 import { useDocViewer } from "@/components/docviewer/DocViewer";
-import { t } from "@/config/terminology";
+import { t, tOr } from "@/config/terminology";
 import { effectiveValue, formatValue } from "@/domain/extraction";
 import { cn } from "@/lib/utils";
 
@@ -13,7 +13,8 @@ export function FieldValueButton({ caseId, field }: { caseId: string; field: Fie
     return (
       <span className="text-[12px] text-muted-foreground">
         {t("fieldStatus.missing")}
-        {field.missing_reason && `: ${field.missing_reason}`}
+        {field.missing_reason &&
+          `: ${tOr(`missingReason.${field.missing_reason}`, field.missing_reason)}`}
       </span>
     );
   }

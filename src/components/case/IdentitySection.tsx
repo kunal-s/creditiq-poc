@@ -9,6 +9,7 @@ import { SourceChip } from "@/components/common/SourceChip";
 import { FieldValueButton } from "@/components/common/FieldValueButton";
 import { ConfidenceChip } from "@/components/common/ConfidenceChip";
 import { FieldStatusChip } from "@/components/documents/chips";
+import { FieldRowDecision } from "@/components/review/FieldDecision";
 import { useDocViewer } from "@/components/docviewer/DocViewer";
 import { t } from "@/config/terminology";
 import { useLabels } from "@/domain/cases";
@@ -238,6 +239,7 @@ function FieldList({ caseId, fields }: { caseId: string; fields: FieldValue[] })
             flagged={f.status === "in_review"}
           />
           <FieldStatusChip status={f.status} />
+          <FieldRowDecision field={f} />
         </li>
       ))}
     </ul>

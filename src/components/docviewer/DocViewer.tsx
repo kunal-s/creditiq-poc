@@ -24,6 +24,7 @@ import {
 import { confidencePct, effectiveValue, fieldLabel, formatValue } from "@/domain/extraction";
 import { GradeChip } from "@/components/documents/chips";
 import { cn } from "@/lib/utils";
+import { ViewerDecision } from "./ViewerDecision";
 
 // The evidence viewer (F-16): any value, figure or flag opens its source
 // page in one click, with the region highlighted where known. The layout is
@@ -39,6 +40,8 @@ export type ViewerRequest = {
   bbox?: [number, number, number, number] | null;
   /** The value being traced, for its confidence and method. */
   field?: FieldValue;
+  /** Open with the correction form showing (the row's Correct). */
+  correct?: boolean;
 };
 
 type Ctx = { open: (request: ViewerRequest) => void; close: () => void };
@@ -155,6 +158,7 @@ function ViewerPanel({ request, onClose }: { request: ViewerRequest; onClose: ()
               </span>
             </div>
           )}
+          {field && <ViewerDecision field={field} correct={request.correct ?? false} />}
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"

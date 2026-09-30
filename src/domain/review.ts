@@ -1,7 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
-import type { ReviewDecision, ReviewDecisionRequest, ReviewKind } from "@/api/types";
-import { useSession } from "./session";
+import { toast } from "sonner";
+import type {
+  FieldValue,
+  ReviewDecision,
+  ReviewDecisionRequest,
+  ReviewItem,
+  ReviewKind,
+} from "@/api/types";
+import { t } from "@/config/terminology";
+import { useCan, useSession } from "./session";
 
 export function useReviewQueue(options: { caseId?: string; includeDecided?: boolean } = {}) {
   const session = useSession();
@@ -59,3 +67,28 @@ export const REVIEW_KINDS: ReviewKind[] = [
   "manual_entry",
   "finding",
 ];
+
+/** The open field review item for this value, if the user may see it. */
+export function useFieldItem(field: FieldValue | undefined): ReviewItem | undefined {
+  const canReview = useCan("review.read");
+  const review = useReviewQueue({ caseId: field?.case_id ?? "" });
+  if (!field || !canReview) return undefined;
+  return review.data?.find(
+    (i) => i.status === "open" && i.kind === "field" && i.ref === `field:${field.id}`,
+  );
+}
+
+/** Confirm a field review item in one step (F-17.5; no reason needed). */
+export function useConfirmField(item: ReviewItem | undefined) {
+  const decide = useDecideReview();
+  const confirm = () =>
+    item &&
+    decide.mutate(
+      { id: item.id, body: { decision: "confirm", value: null, reason: null } },
+      {
+        onSuccess: () => toast.success(t("review.recorded")),
+        onError: (error) => toast.error(error instanceof Error ? error.message : String(error)),
+      },
+    );
+  return { confirm, pending: decide.isPending };
+}

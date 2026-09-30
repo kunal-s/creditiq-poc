@@ -242,7 +242,7 @@ page:
     purpose: Every source lined up against every other, with the evidence on both sides of each finding.
   policy:
     title: Policy norms and deviations
-    purpose: RBL's norms evaluated for this case, deviations with the norm, the actual value and its source, and the approving authority.
+    purpose: RBL's norms evaluated for this case, and each deviation with the norm, the actual value and its source.
   draft:
     title: CAM draft and PD note
     purpose: The draft Credit Approval Memo in RBL's template, and the questions for the personal discussion.

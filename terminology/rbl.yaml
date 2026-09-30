@@ -107,6 +107,12 @@ page:
     nextNone: Nothing is waiting. Processing is up to date.
     nextUpload: Upload the borrower's documents to start processing.
     open: Open
+    stillNeeded: Still needed
+    stillNeededCount: "{n} checklist item(s) missing or insufficient"
+    nothingNeeded: Every checklist item is satisfied or waived.
+    waiting: Waiting for a decision
+    waitingCount: "{n} open review item(s) on this appraisal"
+    more: "{n} more"
   checklist:
     title: Required document set
     purpose: The checklist derived from the case's constitution and facilities, with each item satisfied, insufficient or missing.
@@ -450,6 +456,12 @@ checklist:
   provisionalHelp: The constitution or facilities are not confirmed yet, so this checklist is provisional. It is derived again once they are.
   queryListLink: "Pre-login query list ({n})"
   weight: "weight {n}%"
+  filterEmpty: No item matches this filter.
+  filter:
+    all: "All ({n})"
+    open: "Open ({n})"
+    blocking: "Blocking ({n})"
+    satisfied: "Satisfied ({n})"
   blocking: Blocking
   documentsLinked: "linked documents: {n}"
   why: Why it is required
@@ -522,6 +534,8 @@ validation:
   exitTier: Decided by
   confidence: Confidence
   signals: Signals found
+  signalCount: "{type}: {required} required, {supporting} supporting"
+  signalContrary: "{n} contrary"
   candidates: Top candidates
   notClassifiedYet: Not classified yet.
   labelMismatchDetail: "The file is labelled {label}; its content reads as {type}. The content decides; the mismatch is reported."
@@ -547,6 +561,7 @@ readiness:
   nonBlocking: Non-blocking gaps
   nonBlockingHelp: Recorded and asked for, but not allowed to hold the case up.
   noBlocking: No blocking gap remains on this case.
+  blockingOpen: "{n} blocking item(s) still open. Each one stops the case reaching credit review."
   noNonBlocking: Nothing outstanding outside the blocking set.
   openEvidence: "Open evidence · page {page}"
   next: Next
@@ -562,6 +577,7 @@ queryGroup:
 
 queries:
   subtitle: "{open} open · {resolved} resolved"
+  resolvedGroup: Resolved
   copyEmail: Copy as email
   copyText: Copy
   copiedEmail: Copied as an email. Paste it into your mail.

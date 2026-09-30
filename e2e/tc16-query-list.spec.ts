@@ -19,12 +19,15 @@ test("TC-16: grouped list, resolved shown, copy as email and text", async ({ pag
   ).toHaveCount(3);
   await expect(
     page.getByTestId("query-group-documents_to_redo").getByTestId("query-item"),
-  ).toHaveCount(3);
+  ).toHaveCount(2);
   await expect(
     page.getByTestId("query-group-clarifications").getByTestId("query-item"),
   ).toHaveCount(1);
 
-  const resolved = page.locator('[data-testid="query-item"][data-resolved="true"]');
+  // Resolved items stay on the list, together at the end (F-14.4).
+  const resolved = page
+    .getByTestId("query-group-resolved")
+    .locator('[data-testid="query-item"][data-resolved="true"]');
   await expect(resolved).toHaveCount(1);
   await expect(resolved).toContainText("Resolved");
   await expect(resolved).toContainText("ITR acknowledgement FY25");

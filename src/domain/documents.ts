@@ -245,3 +245,31 @@ export function filterTree(
   }
   return out;
 }
+
+const SIGNAL = /^(\S+) (required|supporting|contrary): /;
+
+/**
+ * Classification signals in words: the sidecar reports each matched pattern
+ * as "<type> <required|supporting|contrary>: <pattern>". The patterns are
+ * configuration, not something a reader needs, so they are counted per type.
+ * Any other signal is shown as given.
+ */
+export function summariseSignals(
+  signals: string[],
+  typeName: (id: string) => string,
+): { type: string; required: number; supporting: number; contrary: number }[] | string[] {
+  const counts = new Map<string, { required: number; supporting: number; contrary: number }>();
+  const other: string[] = [];
+  for (const signal of signals) {
+    const m = SIGNAL.exec(signal);
+    if (!m) {
+      other.push(signal);
+      continue;
+    }
+    const entry = counts.get(m[1]!) ?? { required: 0, supporting: 0, contrary: 0 };
+    entry[m[2] as "required" | "supporting" | "contrary"] += 1;
+    counts.set(m[1]!, entry);
+  }
+  if (counts.size === 0) return other;
+  return [...counts].map(([id, c]) => ({ type: typeName(id), ...c }));
+}

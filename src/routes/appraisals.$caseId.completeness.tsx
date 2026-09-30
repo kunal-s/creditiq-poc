@@ -1,12 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ChecklistSection } from "@/components/case/ChecklistSection";
-import { QueriesSection } from "@/components/case/QueriesSection";
-import { ReadinessSection } from "@/components/case/ReadinessSection";
-import { TabSection } from "@/components/case/TabSection";
+import type { ReactNode } from "react";
+import { ChecklistPanel } from "@/components/case/ChecklistPanel";
+import { QueriesPanel } from "@/components/case/QueriesPanel";
+import { ReadinessSummary } from "@/components/case/ReadinessSummary";
+import { QueryView } from "@/components/common/States";
 import { t } from "@/config/terminology";
+import { useAnchor } from "@/domain/anchor";
+import { useChecklist } from "@/domain/checklist";
 
 // Stage 3, validation and completeness (FRD §5, §6): readiness against the
-// gates, the checklist, and the pre-login query list.
+// gates, then the checklist beside the query list the RM sends.
 
 export const Route = createFileRoute("/appraisals/$caseId/completeness")({
   head: () => ({
@@ -15,27 +18,54 @@ export const Route = createFileRoute("/appraisals/$caseId/completeness")({
   component: CompletenessTab,
 });
 
+function Anchor({
+  id,
+  className,
+  children,
+}: {
+  id: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  const ref = useAnchor<HTMLElement>(id);
+  return (
+    <section
+      ref={ref}
+      id={id}
+      className={`scroll-mt-4 ${className ?? ""}`}
+      data-testid={`section-${id}`}
+    >
+      {children}
+    </section>
+  );
+}
+
 function CompletenessTab() {
   const { caseId } = Route.useParams();
+  const checklist = useChecklist(caseId);
   return (
-    <div className="pb-10">
-      <TabSection
-        id="readiness"
-        title={t("page.readiness.title")}
-        purpose={t("page.readiness.purpose")}
+    <div className="space-y-4 px-4 py-5 pb-10 sm:px-6">
+      <QueryView
+        query={checklist}
+        isEmpty={(r) => r.items.length === 0}
+        empty={{ title: t("checklist.emptyTitle"), description: t("checklist.emptyDescription") }}
       >
-        <ReadinessSection caseId={caseId} />
-      </TabSection>
-      <TabSection
-        id="checklist"
-        title={t("page.checklist.title")}
-        purpose={t("page.checklist.purpose")}
-      >
-        <ChecklistSection caseId={caseId} />
-      </TabSection>
-      <TabSection id="queries" title={t("page.queries.title")} purpose={t("page.queries.purpose")}>
-        <QueriesSection caseId={caseId} />
-      </TabSection>
+        {(r) => (
+          <>
+            <Anchor id="readiness">
+              <ReadinessSummary r={r} />
+            </Anchor>
+            <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+              <Anchor id="checklist" className="min-w-0">
+                <ChecklistPanel caseId={caseId} r={r} />
+              </Anchor>
+              <Anchor id="queries" className="min-w-0 xl:sticky xl:top-4">
+                <QueriesPanel caseId={caseId} />
+              </Anchor>
+            </div>
+          </>
+        )}
+      </QueryView>
     </div>
   );
 }

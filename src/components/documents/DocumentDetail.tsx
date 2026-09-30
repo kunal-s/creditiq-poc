@@ -3,7 +3,7 @@ import { FileText } from "lucide-react";
 import type { ChecklistItemState, FileRecord, LogicalDocument } from "@/api/types";
 import { useDocViewer } from "@/components/docviewer/DocViewer";
 import { t, tOr } from "@/config/terminology";
-import { useDocumentTypes } from "@/domain/documents";
+import { summariseSignals, useDocumentTypes } from "@/domain/documents";
 import { GradeChip } from "./chips";
 
 /** What the machine found on one document: each page's route and grade,
@@ -91,7 +91,7 @@ export function DocumentDetail({
               <div className="flex gap-2">
                 <dt className="w-28 shrink-0 text-muted-foreground">{t("validation.signals")}</dt>
                 <dd className="min-w-0 break-words text-foreground">
-                  {(c.signals ?? []).length > 0 ? (c.signals ?? []).join(" · ") : "—"}
+                  {signalText(summariseSignals(c.signals ?? [], types.name))}
                 </dd>
               </div>
               <div className="flex gap-2">
@@ -157,4 +157,19 @@ export function DocumentDetail({
       </button>
     </div>
   );
+}
+
+function signalText(summary: ReturnType<typeof summariseSignals>): string {
+  if (summary.length === 0) return "—";
+  return summary
+    .map((s) =>
+      typeof s === "string"
+        ? s
+        : t("validation.signalCount", {
+            type: s.type,
+            required: s.required,
+            supporting: s.supporting,
+          }) + (s.contrary ? ` · ${t("validation.signalContrary", { n: s.contrary })}` : ""),
+    )
+    .join(" · ");
 }

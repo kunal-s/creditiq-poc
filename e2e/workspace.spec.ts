@@ -81,3 +81,22 @@ test("the extracted data is grouped by kind of document", async ({ page }) => {
   await expect(page.getByTestId("field-section-banking")).toContainText("Bank statement");
   await expect(page.getByTestId("field-section-financials")).toContainText("Balance sheet");
 });
+
+test("when processing finishes, the rest of the appraisal refreshes", async ({ page }) => {
+  const api = new MockApi();
+  let calls = 0;
+  api.on("GET", new RegExp(`^/api/cases/${KESTREL}/progress$`), () => {
+    const progress = api.progress(KESTREL);
+    calls += 1;
+    if (calls <= 2) progress.stages[0]!.status = "in_progress";
+    return { json: progress };
+  });
+  await signedIn(page, api);
+  await page.goto(`/appraisals/${KESTREL}`);
+  await expect(page.getByTestId("still-needed")).toBeVisible();
+  const before = api.called("GET", `/api/cases/${KESTREL}/checklist`).length;
+  await expect.poll(() => calls, { timeout: 15_000 }).toBeGreaterThan(2);
+  await expect
+    .poll(() => api.called("GET", `/api/cases/${KESTREL}/checklist`).length)
+    .toBeGreaterThan(before);
+});

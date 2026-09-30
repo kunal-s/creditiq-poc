@@ -20,7 +20,6 @@ from .store import MESSAGE_FILE_NAME
 
 _IN_FLIGHT = {"received", "graded", "split"}
 _CLASSIFIED = {"classified", "extracted", "accepted", "in_review"}
-_BLOCKED = {"unclassified", "in_exception"}
 _OUT_OF_SCOPE = {"superseded", "duplicate"}
 
 _STAGE_OF: dict[StageKey, Stage] = {
@@ -43,8 +42,11 @@ def _open_items(conn: sqlite3.Connection, case_id: str, kinds: tuple[str, ...]) 
 
 def compute(conn: sqlite3.Connection, root: Path, case: CaseDetail, *, running_job: str | None = None) -> CaseProgress:
     case_id = case.id
+    # A file that could not be read (exception) was still submitted: it holds
+    # the stage with its quality item rather than looking like no upload.
     submitted = conn.execute(
-        "SELECT COUNT(*) FROM files WHERE case_id = ? AND status = 'registered' AND original_name <> ?",
+        "SELECT COUNT(*) FROM files WHERE case_id = ? AND status IN ('registered', 'exception')"
+        " AND original_name <> ?",
         (case_id, MESSAGE_FILE_NAME),
     ).fetchone()[0]
     pending_files = conn.execute(
@@ -69,7 +71,10 @@ def compute(conn: sqlite3.Connection, root: Path, case: CaseDetail, *, running_j
         status="not_started",
         done=sum(1 for s in statuses if s in _CLASSIFIED),
         total=len(statuses),
-        attention=sum(1 for s in statuses if s in _BLOCKED) + _open_items(conn, case_id, ("split", "party")),
+        # One unit per open decision: an unclassified document (type), an
+        # unreadable or poor page or file (quality), a split or a party flag.
+        # A grade C document is accepted yet still waits on its quality item.
+        attention=_open_items(conn, case_id, ("type", "quality", "split", "party")),
     )
     if submitted:
         docs.status = "in_progress" if busy else "needs_attention" if docs.attention else "done"

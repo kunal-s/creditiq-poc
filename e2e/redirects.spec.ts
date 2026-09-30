@@ -14,7 +14,7 @@ const REDIRECTS: [string, string][] = [
   [`/appraisals/${KESTREL}`, C],
   [`/docready/${KESTREL}`, C],
   [`/appraisals/${KESTREL}/upload`, `${C}/documents`],
-  [`/docready/${KESTREL}/validation`, `${C}/documents#checks`],
+  [`/docready/${KESTREL}/validation`, `${C}/documents`],
   [`/appraisals/${KESTREL}/identity`, `${C}/extraction#identity`],
   [`/appraisals/${KESTREL}/data`, `${C}/extraction#fields`],
   [`/docready/${KESTREL}/checklist`, `${C}/completeness#checklist`],

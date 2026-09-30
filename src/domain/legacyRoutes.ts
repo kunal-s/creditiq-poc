@@ -19,7 +19,7 @@ const DOCREADY: Record<string, Target> = {
   checklist: { to: "completeness", hash: "checklist" },
   readiness: { to: "completeness", hash: "readiness" },
   collection: { to: "completeness", hash: "queries" },
-  validation: { to: "documents", hash: "checks" },
+  validation: { to: "documents" },
 };
 
 /** Where an earlier `/appraisals/<id>/<step>` or `/docready/<splat>` now lives. */

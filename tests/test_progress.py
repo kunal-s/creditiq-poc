@@ -102,3 +102,36 @@ def test_migration_maps_the_earlier_stages(tmp_path: Path):
     finally:
         conn.close()
     assert stages == {"C1": "Documents", "C2": "CrossVerification"}
+
+
+def test_an_open_quality_item_holds_the_documents_stage(client: TestClient, published_data_root: Path):
+    rm = sign_in(client, RM)
+    case_id = make_case(client, rm, published_data_root)
+    upload(client, rm, case_id, [("itr_clear.pdf", fixture_file("itr_clear.pdf"))])
+    run_jobs(published_data_root)
+    conn = db.connect(published_data_root)
+    try:
+        # A grade C page: the document is accepted, its quality item is open.
+        conn.execute(
+            "INSERT INTO review_items (id, case_id, kind, ref, summary, created_at, status)"
+            " VALUES ('RI-q', ?, 'quality', 'document:x', 'grade C', '2026-09-29', 'open')",
+            (case_id,),
+        )
+    finally:
+        conn.close()
+    progress = _progress(client, rm, case_id)
+    documents = progress["stages"][0]
+    assert documents["status"] == "needs_attention" and documents["attention"] >= 1
+    assert progress["stage"] == "Documents"
+
+
+def test_an_unreadable_upload_is_not_mistaken_for_no_upload(client: TestClient, published_data_root: Path):
+    rm = sign_in(client, RM)
+    case_id = make_case(client, rm, published_data_root)
+    upload(client, rm, case_id, [("broken.pdf", b"%PDF-1.7 this is not a readable PDF")])
+    run_jobs(published_data_root)
+    files = client.get(f"/api/cases/{case_id}/files", headers=rm).json()
+    assert [f["status"] for f in files if f["original_name"] == "broken.pdf"] == ["exception"]
+    progress = _progress(client, rm, case_id)
+    assert progress["stage"] == "Documents"
+    assert progress["stages"][0]["status"] != "not_started"

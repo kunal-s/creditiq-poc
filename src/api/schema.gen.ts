@@ -269,6 +269,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/cases/{case_id}/policy": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Case Policy
+     * @description F-20: every norm with its required and actual value, source figures and outcome.
+     */
+    get: operations["case_policy_api_cases__case_id__policy_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/cases/{case_id}/progress": {
     parameters: {
       query?: never;
@@ -820,6 +840,13 @@ export interface components {
       /** Statements */
       statements?: string[];
     };
+    /** DeviationCategory */
+    DeviationCategory: {
+      /** Key */
+      key: string;
+      /** Label */
+      label: string;
+    };
     /** DocumentTypeDef */
     DocumentTypeDef: {
       /** Description */
@@ -1196,6 +1223,65 @@ export interface components {
       facilities: components["schemas"]["Option"][];
     };
     /**
+     * NormInput
+     * @description One source figure a norm used, with where it came from (F-20.2).
+     */
+    NormInput: {
+      /** Evidence */
+      evidence?: components["schemas"]["Evidence"][];
+      /** Label */
+      label: string;
+      /** Name */
+      name: string;
+      /**
+       * Relies On Manual
+       * @default false
+       */
+      relies_on_manual: boolean;
+      /** Value */
+      value: number | null;
+    };
+    /** NormResult */
+    NormResult: {
+      /** Actual */
+      actual?: number | null;
+      /** Category */
+      category: string;
+      /** Category Label */
+      category_label: string;
+      /**
+       * Family
+       * @enum {string}
+       */
+      family: "eligibility" | "ratios" | "security_cover" | "documentation";
+      /** Formula */
+      formula: string;
+      /** Id */
+      id: string;
+      /** Inputs */
+      inputs?: components["schemas"]["NormInput"][];
+      /** Label */
+      label: string;
+      /** Missing */
+      missing?: string[];
+      /** Note */
+      note?: string | null;
+      /**
+       * Outcome
+       * @enum {string}
+       */
+      outcome: "pass" | "deviation" | "cannot_evaluate" | "not_applicable";
+      /**
+       * Provisional
+       * @default false
+       */
+      provisional: boolean;
+      /** Required */
+      required: string;
+      /** Unit */
+      unit?: string | null;
+    };
+    /**
      * Obligation
      * @description A recurring debit that looks like a loan instalment (F-18.4).
      */
@@ -1286,6 +1372,56 @@ export interface components {
       /** Source */
       source: string;
     };
+    /** PolicyAssessment */
+    PolicyAssessment: {
+      /** Case Id */
+      case_id: string;
+      /** Norms */
+      norms: components["schemas"]["NormResult"][];
+      /** Period */
+      period: string | null;
+    };
+    /**
+     * PolicyNorm
+     * @description One norm (F-20.1): an expression over POLICY_INPUTS, a threshold, the
+     *     deviation category a breach falls under, and its source. A ratio norm
+     *     takes its label, unit, direction and threshold from `ratios`.
+     */
+    PolicyNorm: {
+      /**
+       * Applies When
+       * @default always
+       * @enum {string}
+       */
+      applies_when: "always" | "working_capital" | "term_debt" | "collateral";
+      /** Category */
+      category: string;
+      /** Expression */
+      expression: string;
+      /**
+       * Family
+       * @enum {string}
+       */
+      family: "eligibility" | "ratios" | "security_cover" | "documentation";
+      /** Id */
+      id: string;
+      /** Kind */
+      kind?: ("min" | "max") | null;
+      /** Label */
+      label?: string | null;
+      /** Note */
+      note?: string | null;
+      /** Ratio */
+      ratio?: string | null;
+      /** Source */
+      source?: ("published_policy" | "regulatory" | "industry_standard" | "provisional") | null;
+      /** Status */
+      status?: ("active" | "provisional") | null;
+      /** Threshold */
+      threshold?: number | null;
+      /** Unit */
+      unit?: ("x" | "%" | "days" | "years" | "inr" | "count" | "rank") | null;
+    };
     /** PolicyRatio */
     PolicyRatio: {
       /** Acceptable */
@@ -1332,6 +1468,10 @@ export interface components {
     PolicySection: {
       /** Available Ratios */
       available_ratios?: components["schemas"]["PolicyRatio"][];
+      /** Deviation Categories */
+      deviation_categories?: components["schemas"]["DeviationCategory"][];
+      /** Norms */
+      norms?: components["schemas"]["PolicyNorm"][];
       /** Ratios */
       ratios: components["schemas"]["PolicyRatio"][];
       working_capital: components["schemas"]["WorkingCapitalPolicy"];
@@ -2202,6 +2342,39 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Party"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  case_policy_api_cases__case_id__policy_get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PolicyAssessment"];
         };
       };
       /** @description Validation Error */

@@ -4,8 +4,7 @@
 # engine/configstore/reader.py, never this file directly.
 #
 # Every value below is an interim proposal (source/status "provisional")
-# until RBL's own policy norms replace it. Eligibility, security cover,
-# documentation norms and deviation categories are added with F-20.
+# until RBL's own policy norms replace it.
 
 # Working-capital assessment method (F-12.2): turnover method up to the
 # limit, MPBF (with CMA data) above it.
@@ -98,3 +97,147 @@ ratios:
     source: provisional
     status: provisional
     note: "Interim threshold awaiting RBL's policy norms."
+
+# Deviation categories (F-20.1). A breached norm is listed under its
+# category; the approving authority (F-21) is looked up by category.
+deviation_categories:
+  - {key: eligibility, label: Eligibility}
+  - {key: financial, label: Financial norms}
+  - {key: security, label: Security cover}
+  - {key: documentation, label: Documentation}
+
+# Norms evaluated for every case (F-20). `expression` is arithmetic (+ - * /
+# and brackets) over the inputs listed in engine/configstore/schema.py
+# POLICY_INPUTS; financial inputs are from the latest audited statements.
+# A ratio norm takes its label, unit, direction and threshold (`acceptable`)
+# from `ratios` above. An input that is not on file makes the norm "cannot
+# evaluate", never a pass (F-20.3).
+norms:
+  # --- Eligibility ---
+  - id: EL-01
+    family: eligibility
+    label: Business vintage
+    expression: vintage_years
+    unit: years
+    kind: min
+    threshold: 3
+    category: eligibility
+    source: provisional
+    status: provisional
+    note: "Years since incorporation or registration, to the case's as-of date."
+  - id: EL-02
+    family: eligibility
+    label: Commercial bureau rank
+    expression: bureau_rank
+    unit: rank
+    kind: max
+    threshold: 6
+    category: eligibility
+    source: provisional
+    status: provisional
+    note: "Lower is better (rank 1 to 10)."
+  - id: EL-03
+    family: eligibility
+    label: Positive net worth
+    expression: net_worth
+    unit: inr
+    kind: min
+    threshold: 1
+    category: eligibility
+    source: provisional
+    status: provisional
+  - id: EL-04
+    family: eligibility
+    label: Profit in the latest year
+    expression: profit_after_tax
+    unit: inr
+    kind: min
+    threshold: 0
+    category: eligibility
+    source: provisional
+    status: provisional
+  - id: EL-05
+    family: eligibility
+    label: Working-capital request against turnover
+    expression: amount_requested / revenue_from_operations * 100
+    unit: "%"
+    kind: max
+    threshold: 20
+    category: eligibility
+    applies_when: working_capital
+    source: provisional
+    status: provisional
+    note: "Turnover method: the limit is up to 20% of annual turnover."
+
+  # --- Financial ratios ---
+  - id: FR-01
+    family: ratios
+    ratio: current-ratio
+    expression: current_assets / current_liabilities
+    category: financial
+    applies_when: working_capital
+  - id: FR-02
+    family: ratios
+    ratio: tol-tnw
+    expression: (long_term_borrowings + current_liabilities) / net_worth
+    category: financial
+  - id: FR-03
+    family: ratios
+    ratio: dscr
+    expression: (profit_after_tax + depreciation + finance_costs) / (finance_costs + annual_instalments)
+    category: financial
+    applies_when: term_debt
+    note: "Instalments are the existing and inferred monthly instalments, annualised."
+  - id: FR-04
+    family: ratios
+    ratio: interest-coverage
+    expression: (profit_before_tax + finance_costs) / finance_costs
+    category: financial
+  - id: FR-05
+    family: ratios
+    ratio: debt-equity
+    expression: total_borrowings / net_worth
+    category: financial
+  - id: FR-06
+    family: ratios
+    ratio: wc-cycle
+    expression: (inventories + trade_receivables - trade_payables) / revenue_from_operations * 365
+    category: financial
+    applies_when: working_capital
+    note: "Days on sales; RBL's own computation may use cost of sales for inventory and payables."
+
+  # --- Security cover ---
+  - id: SC-01
+    family: security_cover
+    label: Collateral cover
+    expression: market_value / amount_requested
+    unit: x
+    kind: min
+    threshold: 1.25
+    category: security
+    applies_when: collateral
+    source: provisional
+    status: provisional
+    note: "Market value in the valuation report against the amount requested."
+
+  # --- Documentation ---
+  - id: DOC-01
+    family: documentation
+    label: Blocking checklist items open
+    expression: blocking_items_open
+    unit: count
+    kind: max
+    threshold: 0
+    category: documentation
+    source: provisional
+    status: provisional
+  - id: DOC-02
+    family: documentation
+    label: Years of audited financial statements
+    expression: audited_years
+    unit: years
+    kind: min
+    threshold: 2
+    category: documentation
+    source: provisional
+    status: provisional

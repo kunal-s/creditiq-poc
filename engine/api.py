@@ -17,7 +17,23 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from python_multipart.exceptions import MultipartParseError
 
-from . import auth, cases, db, facts, jobs, pages, parties, pipeline, progress, proposal, queries, reads, review, uploads
+from . import (
+    auth,
+    cases,
+    db,
+    facts,
+    jobs,
+    pages,
+    parties,
+    pipeline,
+    policy,
+    progress,
+    proposal,
+    queries,
+    reads,
+    review,
+    uploads,
+)
 from .config import load_app_config, option_ids
 from .configstore import reader as configstore_reader
 from .configstore.schema import ChecklistTaxonomySection, DocumentTypesSection, PolicySection
@@ -28,6 +44,7 @@ from .contracts import (
     CaseFacts,
     CaseProgress,
     CaseProposal,
+    PolicyAssessment,
     CaseSummary,
     Party,
     ProposalRequest,
@@ -278,6 +295,18 @@ def case_facts(
     case = _case_for(conn, case_id, user)
     try:
         return facts.compute(conn, data_root(), case)
+    except configstore_reader.NoPublishedConfig as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+
+
+@app.get("/api/cases/{case_id}/policy", response_model=PolicyAssessment)
+def case_policy(
+    case_id: str, user: dict = Depends(require("finding.read")), conn: sqlite3.Connection = Depends(get_conn)
+):
+    """F-20: every norm with its required and actual value, source figures and outcome."""
+    case = _case_for(conn, case_id, user)
+    try:
+        return policy.assess(conn, data_root(), case)
     except configstore_reader.NoPublishedConfig as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
 

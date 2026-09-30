@@ -15,6 +15,7 @@ import sqlite3
 from pathlib import Path
 
 from . import completeness
+from .configstore import reader
 from .contracts import CaseDetail, CaseProgress, Stage, StageKey, StageProgress
 from .store import MESSAGE_FILE_NAME
 
@@ -133,12 +134,31 @@ def compute(conn: sqlite3.Connection, root: Path, case: CaseDetail, *, running_j
         else:
             cross.status = "needs_attention" if open_findings else "done"
 
+    # 5. Policy checks (F-20): needs attention while a norm cannot be
+    # evaluated for want of an input; deviations are listed, not blocking.
+    policy_stage = StageProgress(key="policy", status="not_started")
+    if cross.status != "not_started":
+        try:
+            from . import policy as policy_module
+
+            norms = [n for n in policy_module.assess(conn, root, case).norms if n.outcome != "not_applicable"]
+        except reader.NoPublishedConfig:
+            norms = []
+        if norms:
+            policy_stage.done = sum(1 for n in norms if n.outcome == "pass")
+            policy_stage.total = len(norms)
+            policy_stage.attention = sum(1 for n in norms if n.outcome == "cannot_evaluate")
+            if "in_progress" in (docs.status, extraction.status):
+                policy_stage.status = "in_progress"
+            else:
+                policy_stage.status = "needs_attention" if policy_stage.attention else "done"
+
     stages = [
         docs,
         extraction,
         complete,
         cross,
-        StageProgress(key="policy", status="not_started"),
+        policy_stage,
         StageProgress(key="outputs", status="not_started"),
     ]
     stage: Stage = "Intake"

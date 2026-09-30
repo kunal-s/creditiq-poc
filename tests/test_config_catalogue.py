@@ -75,3 +75,23 @@ def test_cross_check_reports_an_unknown_tolerance_and_source():
     problems = cross_check({**sections, "crosschecks": broken})
     assert any("no_such_tolerance" in p for p in problems)
     assert any("no_such_type" in p for p in problems)
+
+
+def test_policy_norms_are_published_with_their_categories(published_data_root: Path):
+    policy = reader.load_policy(published_data_root)
+    families = {n.family for n in policy.norms}
+    assert families == {"eligibility", "ratios", "security_cover", "documentation"}
+    categories = {c.key for c in policy.deviation_categories}
+    assert all(n.category in categories for n in policy.norms)
+
+
+def test_cross_check_reports_a_bad_norm():
+    sections = writer.load_authored_sections()
+    broken = sections["policy"].model_copy(deep=True)
+    broken.norms[0].expression = "no_such_input / net_worth"
+    broken.norms[1].category = "no_such_category"
+    broken.norms[2].expression = "net_worth /"
+    problems = cross_check({**sections, "policy": broken})
+    assert any("no_such_input" in p for p in problems)
+    assert any("no_such_category" in p for p in problems)
+    assert any("does not parse" in p for p in problems)

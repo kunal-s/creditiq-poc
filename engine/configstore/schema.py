@@ -8,6 +8,7 @@ config/roles.yaml, which is deployment bootstrap config read directly.
 
 from __future__ import annotations
 
+import ast
 import re
 from typing import Literal
 
@@ -42,12 +43,53 @@ class WorkingCapitalPolicy(BaseModel):
     status: Status
 
 
+# The inputs a norm's expression may use (F-20.1), computed by
+# engine/policy.py from the aligned facts and the case.
+POLICY_INPUTS = {
+    # Latest audited financial statements.
+    "revenue_from_operations", "other_income", "ebitda", "depreciation", "finance_costs", "profit_before_tax",
+    "profit_after_tax", "share_capital", "reserves_and_surplus", "net_worth", "long_term_borrowings",
+    "short_term_borrowings", "total_borrowings", "inventories", "trade_receivables", "trade_payables",
+    "current_assets", "current_liabilities",
+    # The case, the documents and the other stages.
+    "amount_requested", "vintage_years", "bureau_rank", "market_value", "realisable_value",
+    "annual_instalments", "blocking_items_open", "audited_years",
+}
+
+
+class DeviationCategory(BaseModel):
+    key: str
+    label: str
+
+
+class PolicyNorm(BaseModel):
+    """One norm (F-20.1): an expression over POLICY_INPUTS, a threshold, the
+    deviation category a breach falls under, and its source. A ratio norm
+    takes its label, unit, direction and threshold from `ratios`."""
+
+    id: str
+    family: Literal["eligibility", "ratios", "security_cover", "documentation"]
+    expression: str
+    ratio: str | None = None
+    label: str | None = None
+    unit: Literal["x", "%", "days", "years", "inr", "count", "rank"] | None = None
+    kind: Literal["min", "max"] | None = None
+    threshold: float | None = None
+    category: str
+    applies_when: Literal["always", "working_capital", "term_debt", "collateral"] = "always"
+    source: Source | None = None
+    status: Status | None = None
+    note: str | None = None
+
+
 class PolicySection(BaseModel):
     """config/policy.yaml"""
 
     working_capital: WorkingCapitalPolicy
     ratios: list[PolicyRatio]
     available_ratios: list[PolicyRatio] = Field(default_factory=list)
+    deviation_categories: list[DeviationCategory] = Field(default_factory=list)
+    norms: list[PolicyNorm] = Field(default_factory=list)
 
 
 class CoverageRule(BaseModel):
@@ -327,6 +369,28 @@ def cross_check(sections: dict[str, BaseModel]) -> list[str]:
     for age in ages.ages:
         if age.type_id not in type_ids:
             problems.append(f"document_ages: unknown type {age.type_id!r}")
+    policy = sections["policy"]
+    assert isinstance(policy, PolicySection)
+    ratio_keys = {r.key for r in policy.ratios}
+    categories = {c.key for c in policy.deviation_categories}
+    norm_ids = [n.id for n in policy.norms]
+    if len(norm_ids) != len(set(norm_ids)):
+        problems.append("policy: duplicate norm ids")
+    for norm in policy.norms:
+        where = f"policy.norms.{norm.id}"
+        if norm.ratio and norm.ratio not in ratio_keys:
+            problems.append(f"{where}: unknown ratio {norm.ratio!r}")
+        if not norm.ratio and (norm.label is None or norm.kind is None or norm.threshold is None):
+            problems.append(f"{where}: a norm without a ratio needs label, kind and threshold")
+        if norm.category not in categories:
+            problems.append(f"{where}: unknown deviation category {norm.category!r}")
+        try:
+            names = {n.id for n in ast.walk(ast.parse(norm.expression, mode="eval")) if isinstance(n, ast.Name)}
+        except SyntaxError as e:
+            problems.append(f"{where}: expression does not parse ({e.msg})")
+            continue
+        for name in sorted(names - POLICY_INPUTS):
+            problems.append(f"{where}: unknown input {name!r}")
     tolerances = sections["tolerances"]
     checks = sections["crosschecks"]
     assert isinstance(tolerances, TolerancesSection) and isinstance(checks, CrossChecksSection)

@@ -927,6 +927,24 @@
         "title": "CoverageRule",
         "type": "object"
       },
+      "DeviationCategory": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label"
+        ],
+        "title": "DeviationCategory",
+        "type": "object"
+      },
       "DocumentTypeDef": {
         "properties": {
           "description": {
@@ -1971,6 +1989,161 @@
         "title": "Meta",
         "type": "object"
       },
+      "NormInput": {
+        "description": "One source figure a norm used, with where it came from (F-20.2).",
+        "properties": {
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "relies_on_manual": {
+            "default": false,
+            "title": "Relies On Manual",
+            "type": "boolean"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "name",
+          "label",
+          "value"
+        ],
+        "title": "NormInput",
+        "type": "object"
+      },
+      "NormResult": {
+        "properties": {
+          "actual": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actual"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "category_label": {
+            "title": "Category Label",
+            "type": "string"
+          },
+          "family": {
+            "enum": [
+              "eligibility",
+              "ratios",
+              "security_cover",
+              "documentation"
+            ],
+            "title": "Family",
+            "type": "string"
+          },
+          "formula": {
+            "title": "Formula",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "inputs": {
+            "items": {
+              "$ref": "#/components/schemas/NormInput"
+            },
+            "title": "Inputs",
+            "type": "array"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "missing": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing",
+            "type": "array"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "outcome": {
+            "enum": [
+              "pass",
+              "deviation",
+              "cannot_evaluate",
+              "not_applicable"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "provisional": {
+            "default": false,
+            "title": "Provisional",
+            "type": "boolean"
+          },
+          "required": {
+            "title": "Required",
+            "type": "string"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          }
+        },
+        "required": [
+          "id",
+          "family",
+          "label",
+          "formula",
+          "required",
+          "outcome",
+          "category",
+          "category_label"
+        ],
+        "title": "NormResult",
+        "type": "object"
+      },
       "Obligation": {
         "description": "A recurring debit that looks like a loan instalment (F-18.4).",
         "properties": {
@@ -2204,6 +2377,196 @@
         "title": "PersonSet",
         "type": "object"
       },
+      "PolicyAssessment": {
+        "properties": {
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "norms": {
+            "items": {
+              "$ref": "#/components/schemas/NormResult"
+            },
+            "title": "Norms",
+            "type": "array"
+          },
+          "period": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period"
+          }
+        },
+        "required": [
+          "case_id",
+          "period",
+          "norms"
+        ],
+        "title": "PolicyAssessment",
+        "type": "object"
+      },
+      "PolicyNorm": {
+        "description": "One norm (F-20.1): an expression over POLICY_INPUTS, a threshold, the\ndeviation category a breach falls under, and its source. A ratio norm\ntakes its label, unit, direction and threshold from `ratios`.",
+        "properties": {
+          "applies_when": {
+            "default": "always",
+            "enum": [
+              "always",
+              "working_capital",
+              "term_debt",
+              "collateral"
+            ],
+            "title": "Applies When",
+            "type": "string"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "expression": {
+            "title": "Expression",
+            "type": "string"
+          },
+          "family": {
+            "enum": [
+              "eligibility",
+              "ratios",
+              "security_cover",
+              "documentation"
+            ],
+            "title": "Family",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "enum": [
+                  "min",
+                  "max"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "ratio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ratio"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "published_policy",
+                  "regulatory",
+                  "industry_standard",
+                  "provisional"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "active",
+                  "provisional"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "threshold": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Threshold"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "enum": [
+                  "x",
+                  "%",
+                  "days",
+                  "years",
+                  "inr",
+                  "count",
+                  "rank"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          }
+        },
+        "required": [
+          "id",
+          "family",
+          "expression",
+          "category"
+        ],
+        "title": "PolicyNorm",
+        "type": "object"
+      },
       "PolicyRatio": {
         "properties": {
           "acceptable": {
@@ -2305,6 +2668,20 @@
               "$ref": "#/components/schemas/PolicyRatio"
             },
             "title": "Available Ratios",
+            "type": "array"
+          },
+          "deviation_categories": {
+            "items": {
+              "$ref": "#/components/schemas/DeviationCategory"
+            },
+            "title": "Deviation Categories",
+            "type": "array"
+          },
+          "norms": {
+            "items": {
+              "$ref": "#/components/schemas/PolicyNorm"
+            },
+            "title": "Norms",
             "type": "array"
           },
           "ratios": {
@@ -4082,6 +4459,62 @@
           }
         },
         "summary": "Case Parties"
+      }
+    },
+    "/api/cases/{case_id}/policy": {
+      "get": {
+        "description": "F-20: every norm with its required and actual value, source figures and outcome.",
+        "operationId": "case_policy_api_cases__case_id__policy_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolicyAssessment"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Policy"
       }
     },
     "/api/cases/{case_id}/progress": {

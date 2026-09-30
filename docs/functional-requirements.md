@@ -2,8 +2,9 @@
 
 | | |
 |---|---|
-| Version | 3.0, draft for team review |
-| Date | 29 September 2026 |
+| Version | 3.1, draft for team review |
+| Date | 30 September 2026 |
+| Changed in 3.1 | The case screens follow the process order in one case workspace (§5, §6, §7 case stages, AD-1, decision C.4-7) |
 | Governs | Everything built in this repository for the PoC |
 | Supersedes | FRD v2.0 (19 September 2026) and the earlier build plans, for build purposes |
 | Measured by | The PoC Scope, Success Criteria and Test Plan: tests TC-01 to TC-31, criteria C1 to C9 |
@@ -123,24 +124,35 @@ These apply to every feature. A pull request that breaks one is not mergeable.
 
 | Role | In the PoC | Main screens |
 |---|---|---|
-| Relationship Manager (RM) | Creates the case, uploads documents, reads the checklist and the query list. Uses a phone as well as a desktop | Workbench, New application, Documents, Checklist |
-| Credit Analyst | Resolves review items; reads extracted data, cross-checks and policy; produces outputs | All case screens, Review queue |
-| Credit Manager | Checker for maker-checker items; adjudicates in the comparison (the RBL credit reviewer signs in with this role) | All case screens, Review queue, Comparison, Scorecard |
+| Relationship Manager (RM) | Creates the case, uploads documents, reads the checklist and the query list. Uses a phone as well as a desktop | Cases, New case; in a case: Overview, Documents, Completeness |
+| Credit Analyst | Resolves review items; reads extracted data, cross-checks and policy; produces outputs | Cases, New case, Review queue; every case tab except Comparison |
+| Credit Manager | Checker for maker-checker items; adjudicates in the comparison (the RBL credit reviewer signs in with this role) | Cases, Review queue, Scorecard; every case tab |
 | Administrator | Authors and publishes configuration from the command line. No screen | None |
 
 Role gating is enforced on the server, and a role sees only the screens listed for it.
 
 ## 5. The end-to-end flow
 
+A case moves through six stages, in this order. The case screens follow the same order (§6).
+
+1. **Quality and classification:** read and grade each page, split merged files, classify by content, check labels and parties (F-07 to F-11).
+2. **Extraction:** key fields with page evidence and confidence (F-15 to F-17).
+3. **Validation and completeness:** each document's required fields and format, then each checklist item's status and the query list (F-12 to F-14).
+4. **Cross-verification:** facts aligned across sources and cross-checked (F-18, F-19).
+5. **Policy checks:** norms, deviations and the approving authority (F-20, F-21).
+6. **Outputs:** the spread, the draft CAM and the PD note (F-22 to F-24), then the comparison and scorecard (F-25, F-26).
+
+The feature phases in Part B are the build order; this is the processing order.
+
 ```mermaid
 flowchart LR
-  subgraph P1["Phase 1: case and intake"]
+  subgraph S0["Case and intake"]
     A["RM pastes sourcing email<br/>or notes (F-04)"] --> B{"RM confirms<br/>proposed case?"}
     B -- no --> A
     B -- yes --> C["Case created<br/>checklist derived (F-12)"]
     C --> D["Upload files / ZIP (F-05)"]
   end
-  subgraph P2["Phase 2: document intelligence"]
+  subgraph S1["1. Quality and classification"]
     D --> E["Read pages,<br/>grade quality (F-07)"]
     E --> F["Split merged PDFs (F-08)"]
     F --> G["Classify by content (F-09)"]
@@ -149,26 +161,32 @@ flowchart LR
     R1 --> I
     H -- yes --> I["Label and party checks (F-10)"]
   end
-  subgraph P3["Phase 3: completeness"]
-    I --> J["Checklist status (F-13)"]
-    J --> K["Pre-login query list (F-14)"]
-  end
-  subgraph P4["Phases 4 to 5: extraction and triangulation"]
+  subgraph S2["2. Extraction"]
     I --> L["Extract key fields<br/>with page evidence (F-15)"]
     L --> M{"Key field<br/>confident?"}
     M -- no --> R2["Review queue:<br/>confirm or correct"]
-    R2 --> N
-    M -- yes --> N["Align facts (F-18)"]
+    R2 --> V
+    M -- yes --> V
+  end
+  subgraph S3["3. Validation and completeness"]
+    V["Document validation<br/>and checklist status (F-13)"] --> K["Pre-login query list (F-14)"]
+  end
+  subgraph S4["4. Cross-verification"]
+    V --> N["Align facts (F-18)"]
     N --> O["Cross-checks (F-19)"]
   end
-  subgraph P6["Phases 6 to 8: policy, outputs, evaluation"]
-    O --> Q["Policy norms and<br/>deviations (F-20, F-21)"]
+  subgraph S5["5. Policy checks"]
+    O --> Q["Norms and deviations,<br/>approving authority (F-20, F-21)"]
+  end
+  subgraph S6["6. Outputs"]
     Q --> S["Spread, draft CAM,<br/>PD note (F-22 to F-24)"]
     S --> T["Compare with RBL's<br/>record (F-25)"]
     T --> U["Scorecard C1 to C9 (F-26)"]
   end
   O --> K
 ```
+
+A checklist item with no document at all is marked missing as soon as classification finishes, so the RM can ask for it without waiting for extraction. Checks that need extracted values (dates, periods, pages, signatures) complete the item's status after extraction.
 
 Two properties hold throughout:
 
@@ -177,62 +195,62 @@ Two properties hold throughout:
 
 ## 6. Screen map
 
-The screens follow the structure, layout and routes of the CreditIQ prototype that RBL has already seen (decision AD-1, C.6). A case has two workspaces sharing one case ID:
+The screens keep the visual style of the CreditIQ prototype that RBL has already seen: design system, shell, case header, tables and panels (decision AD-1, C.6). The structure follows the processing order (§5): **one case workspace**, whose tabs are the six stages in order, preceded by an overview. The prototype's two case workspaces and their names are not used.
 
-- **DocReady:** readiness before credit.
-- **Appraisal:** credit's working screens.
-
-Prototype screens with no PoC feature are not built. Three screens are new: Policy, Comparison and Scorecard.
+Prototype screens with no PoC feature are not built.
 
 ```mermaid
 flowchart TB
-  SI["Sign in"] --> WB["Workbench"]
-  WB --> AP["My appraisals"]
-  WB --> NA["New application"]
-  WB --> RC["Readiness console<br/>all cases"]
-  WB --> EQ["Exception queue<br/>(review queue)"]
-  WB --> SC["Scorecard"]
-  RC --> DR["DocReady case"]
-  DR --> D1["Checklist"]
-  DR --> D2["Validation"]
-  DR --> D3["Readiness"]
-  DR --> D4["Queries"]
-  AP --> AW["Appraisal case"]
-  AW --> A1["Identity"]
-  AW --> A2["Documents"]
-  AW --> A3["Data"]
-  AW --> A4["Spread"]
-  AW --> A5["Cross-verification"]
-  AW --> A6["Policy"]
-  AW --> A7["Draft: CAM and PD note"]
-  AW --> A8["Comparison"]
-  A3 --> EV["Evidence viewer<br/>(opens on any value)"]
-  A4 --> EV
-  A5 --> EV
-  A7 --> EV
+  SI["Sign in"] --> CL["Cases"]
+  CL --> NC["New case"]
+  CL --> RQ["Review queue"]
+  CL --> SC["Scorecard"]
+  NC --> OV
+  CL --> CW["Case workspace"]
+  CW --> OV["Overview"]
+  CW --> T1["1. Documents<br/>quality and classification"]
+  CW --> T2["2. Extraction"]
+  CW --> T3["3. Completeness<br/>validation, checklist, queries"]
+  CW --> T4["4. Cross-verification"]
+  CW --> T5["5. Policy"]
+  CW --> T6["6. Outputs<br/>spread, CAM, PD note"]
+  CW --> CM["Comparison"]
+  T2 --> EV["Evidence viewer<br/>(opens on any value)"]
+  T3 --> EV
+  T4 --> EV
+  T5 --> EV
+  T6 --> EV
 ```
 
-| Screen | Route | From the prototype | Feature | Roles | Phone |
+| Screen | Route | What it holds | Feature | Roles | Phone |
 |---|---|---|---|---|---|
 | Sign in | `/sign-in` | Sign in | F-03 | All | Yes |
-| Workbench | `/` | Credit Workbench | F-01 | All | Yes |
-| My appraisals | `/appraisals` | My Appraisals | F-01 | All | Yes |
-| New application | `/appraisals/new` | New application | F-04, F-05 | RM, Analyst | Yes |
-| Readiness console | `/docready` | Readiness Console | F-13 | All | Yes |
-| DocReady: Checklist | `/docready/$caseId/checklist` | Checklist tab | F-12, F-13 | All | Yes |
-| DocReady: Validation | `/docready/$caseId/validation` | Validation tab | F-07, F-09, F-10, F-13 | All | Yes |
-| DocReady: Readiness | `/docready/$caseId/readiness` | Readiness tab | F-13.4 | All | Yes |
-| DocReady: Queries | `/docready/$caseId/collection` | Collection tab, repurposed | F-14 | All | Yes |
-| Appraisal: Identity | `/appraisals/$id/identity` | Entity resolution | F-10, F-15 | Analyst, Manager | No |
-| Appraisal: Documents | `/appraisals/$id/upload` | Manual upload, extended | F-05, F-08 | All | Yes |
-| Appraisal: Data | `/appraisals/$id/data` | Data acquisition console, repurposed | F-11, F-15, F-16 | Analyst, Manager | No |
-| Appraisal: Spread | `/appraisals/$id/spread` | Financial spread | F-22 | Analyst, Manager | No |
-| Appraisal: Cross-verification | `/appraisals/$id/cross-verification` | Cross-verification | F-18, F-19 | Analyst, Manager | No |
-| Appraisal: Policy | `/appraisals/$id/policy` | New (replaces Rating and Submission) | F-20, F-21 | Analyst, Manager | No |
-| Appraisal: Draft | `/appraisals/$id/draft` | CAM draft | F-23, F-24 | Analyst, Manager | No |
-| Appraisal: Comparison | `/appraisals/$id/comparison` | New | F-25 | Manager | No |
-| Exception queue | `/exceptions` | Exception queue, repurposed as the review queue | F-17 | Analyst, Manager | No |
-| Scorecard | `/scorecard` | New | F-26 | Manager | No |
+| Cases | `/` | Every case the user may see, with counts at the top; filter by stage, owner and open review items. Replaces the prototype's workbench, My Appraisals and Readiness Console | F-01 | All | Yes |
+| New case | `/cases/new` | Paste the message, confirm the proposed case, add documents; opens the new case's Overview | F-04, F-05 | RM, Analyst | Yes |
+| Overview | `/cases/$caseId` | The stage progress, what is blocking the case, the next action, live processing, and counts of open review items, missing documents and findings | F-01, F-02, F-13.4 | All | Yes |
+| 1. Documents | `/cases/$caseId/documents` | Upload (files, ZIP, camera). One row per document with its live status (received, graded, split, classified); quality grade, split, label mismatch, party attribution and unclassified documents shown on the row, with the type assignment there | F-05, F-07 to F-11 | All | Yes |
+| 2. Extraction | `/cases/$caseId/extraction` | Key fields grouped as entity and parties, financials, GST and banking; each with its confidence and page; confirm or correct in place | F-15, F-16, F-17 | Analyst, Manager | No |
+| 3. Completeness | `/cases/$caseId/completeness` | Each document's required fields and format; the checklist with each item's status and deficiency; readiness against the gates; the pre-login query list | F-12, F-13, F-14 | All | Yes |
+| 4. Cross-verification | `/cases/$caseId/cross-verification` | Identity, turnover, bank accounts and obligations, the sources side by side with each finding | F-18, F-19 | Analyst, Manager | No |
+| 5. Policy | `/cases/$caseId/policy` | Each norm with its limit, the actual value and source; deviations; the approving authority | F-20, F-21 | Analyst, Manager | No |
+| 6. Outputs | `/cases/$caseId/outputs` | The spread, the draft CAM and the PD note, each a view within the tab, with citations and export | F-22, F-23, F-24 | Analyst, Manager | No |
+| Comparison | `/cases/$caseId/comparison` | This case's outputs beside RBL's record, with adjudication | F-25 | Manager | No |
+| Review queue | `/review` | Everything waiting for a person, across cases | F-17 | Analyst, Manager | No |
+| Scorecard | `/scorecard` | The criteria per case and across the case set | F-26 | Manager | No |
+
+**The case workspace.** Every tab shows:
+- a persistent case header: borrower, constitution, product and amount, PAN and GSTIN, case ID, RM, open review items;
+- the stage progress: the six stages in order, each marked not started, in progress, needs attention or done. A stage the user's role may not open is shown with its status but is not a link;
+- a tab that has nothing to show yet says what it is waiting for (for example, documents still being classified), never an empty screen.
+
+**Across the workspace:**
+- Any value, finding or flag opens the evidence viewer in a side panel at the source page, without leaving the tab.
+- A review item is resolved where it arises (the document row, the field) as well as in the review queue.
+- Processing status updates without a page reload.
+
+**Side navigation:** Cases, New case, Review queue, Scorecard, per role. Case tabs appear only inside a case.
+
+**Earlier routes** (`/appraisals`, `/appraisals/new`, `/appraisals/$id/*`, `/docready`, `/docready/$caseId/*`, `/exceptions`) redirect to their new equivalents.
 
 **Not built:**
 - Copilot rail
@@ -244,15 +262,6 @@ flowchart TB
 - Rating
 - Submission
 - Customer portal
-
-The case workspace shows a persistent case header (the prototype's context strip) on every tab:
-- borrower
-- constitution
-- product and amount
-- PAN and GSTIN
-- case ID
-- stage
-- open review items
 
 ## 7. Core objects and statuses
 
@@ -286,13 +295,20 @@ erDiagram
 
 **Case stages:**
 
+The case's stage is the first of the §5 stages not yet done. The stage progress in the case workspace (§6) shows each stage's own status.
+
 | Stage | Entered when |
 |---|---|
 | Intake | The case is created |
-| Readiness | Every submitted document is in a final state |
-| Appraisal | The checklist's first gate is met, or credit starts appraisal anyway (recorded) |
-| Outputs | The spread, CAM and PD note have been generated |
-| Completed | The comparison has been adjudicated |
+| Documents | A document is uploaded |
+| Extraction | Every submitted document is classified (or assigned a type by a person) |
+| Completeness | Every classified document is extracted and its key fields accepted |
+| Cross-verification | The checklist's first gate is met, or credit proceeds anyway (recorded) |
+| Policy | The cross-checks have run |
+| Outputs | The policy norms have been evaluated |
+| Completed | The spread, CAM and PD note have been generated and the comparison adjudicated |
+
+A late document moves the case back to the earliest stage it re-opens (§5, late documents).
 
 **Document statuses:**
 
@@ -389,7 +405,7 @@ stateDiagram-v2
 - **F-01.1** Case store in SQLite (standard library) under the data root. Case IDs are issued from a configured format and a sequence that survives restarts.
 - **F-01.2** The case header keeps both values for every field: what the system proposed (with its source) and what a person confirmed or edited.
 - **F-01.3** `as_of` is fixed at creation and used by every age or window rule.
-- **F-01.4** The workbench lists cases with: borrower, case ID, product and amount, stage, RM, created date, and open review items. The RM sees their own cases; credit roles see all.
+- **F-01.4** The Cases screen lists cases with: borrower, case ID, product and amount, stage, RM, created date, and open review items. The RM sees their own cases; credit roles see all.
 - **F-01.5** A case can be reset to unprocessed, which clears derived outputs and keeps files and the audit record. A case can be purged, which deletes all its data and keeps a purge record.
 
 **Acceptance**
@@ -599,10 +615,11 @@ flowchart TD
 
 - **F-06.1** At phone width (375 px), these screens work without horizontal scrolling:
   - Sign in
-  - Workbench
-  - New application
+  - Cases
+  - New case
+  - Overview
   - Documents, including upload from the camera or files
-  - Checklist and queries
+  - Completeness, including the query list
 - **F-06.2** Navigation is a menu button at phone width. The side navigation is hidden.
 - **F-06.3** Other screens are desktop-first and must not break on a phone.
 
@@ -815,7 +832,7 @@ flowchart LR
 
 **Depends on.** F-09, F-10, F-12. Some checks need extracted fields from F-15.
 
-**Screen mock: Checklist tab**
+**Screen mock: Completeness tab, checklist**
 
 ```text
 ┌ Checklist · Pvt Ltd · CC + TL · collateral ── Readiness 72% · Gate 85% ────────────────┐
@@ -961,7 +978,7 @@ flowchart LR
 
 **Depends on.** F-05.6 (page images), F-15.
 
-**Screen mock: Extracted data with evidence**
+**Screen mock: Extraction tab, with evidence**
 
 ```text
 ┌ Extracted data · Banking ────────────────────────┐ ┌ Evidence ────────────────────┐
@@ -1089,7 +1106,7 @@ flowchart TD
   end
 ```
 
-**Screen mock: Cross-checks tab**
+**Screen mock: Cross-verification tab**
 
 ```text
 ┌ Cross-checks · 11 rules · 3 findings · 1 incomplete ──────────────────────┐
@@ -1458,6 +1475,7 @@ flowchart TD
 | 4 | Where the model runs for RBL data, and which provider | Phase 2 | Open for RBL data. For development, no model key yet: a stub provider plus recorded responses (AD-5) |
 | 5 | CAM export format (Word, PDF, or both) | F-23 | Match RBL's template's native format |
 | 6 | Evidence region: page is mandatory (C7). Should the region on the page be shown too? | F-16 | Page for every value; region where cheaply available |
+| 7 | Screen structure: the prototype's two case workspaces and 12 case screens, or one workspace in processing order | Screens | **Decided 30 Sep 2026:** one case workspace whose tabs follow §5; the prototype's visual style is kept; the DocReady and Appraisal names are dropped (§6) |
 
 ## C.5 The base this build starts from
 
@@ -1531,7 +1549,7 @@ Decided 29 September 2026. A change to any of these is recorded here with its da
 
 | # | Decision | Reason |
 |---|---|---|
-| AD-1 | **Screens are the prototype's screens, re-fed with real data.** Each in-scope screen is restored from the prototype source (git `6014167`), keeping its layout and interaction. Its seeded data module is replaced by typed hooks over the engine API. Seeded values never return; every screen has designed loading, empty and error states. | RBL has seen this design. The test plan measures behaviour, so reusing the layout costs nothing and keeps the demo continuity. |
+| AD-1 | **Screens keep the prototype's visual style, re-fed with real data; the structure follows §6** (amended 30 Sep 2026, decision C.4-7). Screen content is restored from the prototype source (git `6014167`) where it exists, keeping its components and look, and placed in the tab of the stage it belongs to. Its seeded data module is replaced by typed hooks over the engine API. Seeded values never return; every screen has designed loading, empty and error states. | RBL has seen this design. The test plan measures behaviour, so reusing the layout costs nothing and keeps the demo continuity. |
 | AD-2 | **Document processing (F-07 to F-09, F-11, F-15) is the vendored ingest engine** (`services/ingest-engine`, a Node/TypeScript sidecar), extended per its `VENDORED.md`. The CreditIQ engine calls it over HTTP through one client module and never parses documents itself. The sidecar reads the published CreditIQ configuration (document types, dictionaries, thresholds) and echoes the version it used. | The user chose to vendor rather than port. One client module keeps the boundary narrow and testable. |
 | AD-3 | **SQLite (Python standard library) under the data root** holds cases, the document register, jobs, evidence, findings, queries, review decisions and the decision log. Files are stored by SHA-256 under `cases/<id>/files/`. | Simple and inspectable; survives restarts; no server to run. |
 | AD-4 | **The API contract is defined first and generated.** Pydantic models in `engine/contracts/` are the single source. The sidecar's result schema is `contracts/ingest-result.schema.json`, generated from the same models. TypeScript types are generated from the engine's OpenAPI into `src/api/schema.gen.ts` (`npm run gen:api`). Hand-written mirrors are removed. | Parallel streams build against one fixed interface and cannot drift. |

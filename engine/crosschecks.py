@@ -71,7 +71,9 @@ def _finding(ctx: Context, rule: CrossCheckRule, outcome: str, sides: list[Findi
         blocking=rule.blocking,
         explanation=explanation,
         sides=sides,
-        tolerance=ctx.tol_text(rule.tolerance),
+        # Shown only where it is the comparison's allowance; a name-matching
+        # threshold is how sources are matched, not a finding's tolerance.
+        tolerance=ctx.tol_text(rule.tolerance) if rule.comparison == "tolerance" else None,
         config_version=ctx.version,
         query=rule.query.format_map(values) if outcome == "fail" and rule.query else None,
     )
@@ -161,6 +163,9 @@ def _turnover(ctx: Context, rule: CrossCheckRule) -> list[Finding]:
             gst = by.get("gst")
             right = gst if gst and gst.months_covered == 12 else None
         years.append((y, by.get(left_key), right))
+    if left_key == "declared" and not any(lf for _, lf, _ in years):
+        # Nothing was declared: there is nothing to hold the evidence against.
+        return [_finding(ctx, rule, "not_applicable", [], note="No turnover was declared in the sourcing message.")]
     both = [(y, lf, rf) for y, lf, rf in years if lf and rf]
     if not both:
         present = [(y, lf, rf) for y, lf, rf in years if lf or rf]

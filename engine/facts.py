@@ -680,4 +680,11 @@ def compute(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> CaseFacts
 
 
 def inr(value: float | None) -> str:
-    return "—" if value is None else f"₹{format_inr(value)}"
+    """An amount as the screens write it: INR 5.16 cr, INR 95.00 lakh, INR 12,000."""
+    if value is None:
+        return "—"
+    if abs(value) >= 1e7:
+        return f"INR {value / 1e7:.2f} cr"
+    if abs(value) >= 1e5:
+        return f"INR {value / 1e5:.2f} lakh"
+    return f"INR {format_inr(value)}"

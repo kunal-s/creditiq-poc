@@ -263,3 +263,12 @@ def test_the_cross_verification_stage_waits_for_decisions(client, analyst, publi
     progress = client.get(f"/api/cases/{case_id}/progress", headers=analyst).json()
     cross = next(s for s in progress["stages"] if s["key"] == "cross_verification")
     assert cross["status"] == "needs_attention" and cross["attention"] >= 1
+
+
+def test_declared_turnover_check_does_not_apply_without_a_declaration(client, analyst, published_data_root):
+    case_id = _case(client, analyst, published_data_root)
+    add_doc(published_data_root, case_id, "audited_financial_statements",
+            {"period_end": "2026-03-31", "revenue_from_operations": 50_000_000})
+    assert [f["outcome"] for f in _findings(client, analyst, published_data_root, case_id)["TO-04"]] == [
+        "not_applicable"
+    ]

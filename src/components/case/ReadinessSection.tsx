@@ -174,7 +174,7 @@ function ReadinessView({ caseId, r }: { caseId: string; r: Readiness }) {
           </p>
           <div className="mt-3 flex flex-col gap-2">
             <Link
-              to="/cases/$caseId/completeness"
+              to="/appraisals/$caseId/completeness"
               hash="queries"
               params={{ caseId }}
               className="flex items-center justify-center gap-1.5 rounded border border-border px-3 py-1.5 text-[12.5px] font-medium hover:bg-muted"
@@ -182,7 +182,7 @@ function ReadinessView({ caseId, r }: { caseId: string; r: Readiness }) {
               {t("term.queryList")} <ArrowRight className="h-3.5 w-3.5" />
             </Link>
             <Link
-              to="/cases/$caseId/documents"
+              to="/appraisals/$caseId/documents"
               params={{ caseId: caseId }}
               className="flex items-center justify-center gap-1.5 rounded border border-border px-3 py-1.5 text-[12.5px] font-medium hover:bg-muted"
             >

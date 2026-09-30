@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 // The case Overview (FRD §6): where the case is, what needs a person next,
 // and the counts behind each stage. It updates while processing runs.
 
-export const Route = createFileRoute("/cases/$caseId/")({
+export const Route = createFileRoute("/appraisals/$caseId/")({
   head: () => ({
     meta: [{ title: `${t("caseTab.overview")} — ${t("tenant.product.name")}` }],
   }),

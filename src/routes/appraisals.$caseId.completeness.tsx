@@ -8,7 +8,7 @@ import { t } from "@/config/terminology";
 // Stage 3, validation and completeness (FRD §5, §6): readiness against the
 // gates, the checklist, and the pre-login query list.
 
-export const Route = createFileRoute("/cases/$caseId/completeness")({
+export const Route = createFileRoute("/appraisals/$caseId/completeness")({
   head: () => ({
     meta: [{ title: `${t("caseTab.completeness")} — ${t("tenant.product.name")}` }],
   }),

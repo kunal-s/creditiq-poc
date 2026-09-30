@@ -123,7 +123,7 @@ function Workbench() {
         </div>
         {canCreate && (
           <Link
-            to="/cases/new"
+            to="/appraisals/new"
             className="flex h-9 items-center gap-1.5 rounded bg-primary px-3.5 text-[13px] font-medium text-primary-foreground hover:bg-primary/90"
           >
             <Plus className="h-4 w-4" /> {t("nav.newCase")}
@@ -155,7 +155,7 @@ function Workbench() {
                 description: t("state.noCases.description"),
                 action: canCreate ? (
                   <Link
-                    to="/cases/new"
+                    to="/appraisals/new"
                     className="text-[12.5px] font-medium text-primary hover:underline"
                   >
                     {t("nav.newCase")}
@@ -329,7 +329,7 @@ function NeedsAttention({
           {flagged.slice(0, MAX_ATTENTION).map((c) => (
             <li key={c.id}>
               <Link
-                to="/cases/$caseId/completeness"
+                to="/appraisals/$caseId/completeness"
                 hash="checklist"
                 params={{ caseId: c.id }}
                 className="flex gap-3 px-4 py-3 transition-colors hover:bg-surface-muted"

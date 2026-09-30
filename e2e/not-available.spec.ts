@@ -16,20 +16,20 @@ test("501 from the Wave 1 endpoints reads as not available yet", async ({ page }
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
 
-  await page.goto("/cases/new");
+  await page.goto("/appraisals/new");
   await page.getByTestId("message-input").fill(MESSAGE);
   await page.getByRole("button", { name: "Read the message" }).click();
   await expect(page.getByTestId("state-notAvailable")).toContainText("Not available yet");
 
-  await page.goto(`/cases/${KESTREL}/extraction`);
+  await page.goto(`/appraisals/${KESTREL}/extraction`);
   await expect(page.getByTestId("parties").getByTestId("state-notAvailable")).toBeVisible();
 
-  await page.goto(`/cases/${KESTREL}/extraction`);
+  await page.goto(`/appraisals/${KESTREL}/extraction`);
   await page.getByTestId("field-value").first().click();
   await expect(page.getByTestId("evidence-viewer").getByTestId("state-notAvailable")).toBeVisible();
   await page.keyboard.press("Escape");
 
-  await page.goto(`/cases/${KESTREL}/documents`);
+  await page.goto(`/appraisals/${KESTREL}/documents`);
   await page.getByTestId("upload-input").setInputFiles({
     name: "gst.pdf",
     mimeType: "application/pdf",
@@ -54,7 +54,7 @@ test("a role without the permission sees a designed state", async ({ page }) => 
     json: { detail: "forbidden" },
   }));
   await signedIn(page, api);
-  await page.goto(`/cases/${KESTREL}/extraction`);
+  await page.goto(`/appraisals/${KESTREL}/extraction`);
   await expect(page.getByTestId("section-fields").getByTestId("state-forbidden")).toContainText(
     "Not part of your role",
   );

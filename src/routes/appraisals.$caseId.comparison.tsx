@@ -3,9 +3,9 @@ import { TabSection } from "@/components/case/TabSection";
 import { ScreenPending } from "@/components/shell/ScreenPending";
 import { t } from "@/config/terminology";
 
-export const Route = createFileRoute("/cases/$caseId/policy")({
+export const Route = createFileRoute("/appraisals/$caseId/comparison")({
   head: () => ({
-    meta: [{ title: `${t("caseTab.policy")} — ${t("tenant.product.name")}` }],
+    meta: [{ title: `${t("caseTab.comparison")} — ${t("tenant.product.name")}` }],
   }),
   component: PendingTab,
 });
@@ -13,8 +13,12 @@ export const Route = createFileRoute("/cases/$caseId/policy")({
 function PendingTab() {
   return (
     <div className="pb-10">
-      <TabSection id="policy" title={t("page.policy.title")} purpose={t("page.policy.purpose")}>
-        <ScreenPending feature="F-20 and F-21" />
+      <TabSection
+        id="comparison"
+        title={t("page.comparison.title")}
+        purpose={t("page.comparison.purpose")}
+      >
+        <ScreenPending feature="F-25" />
       </TabSection>
     </div>
   );

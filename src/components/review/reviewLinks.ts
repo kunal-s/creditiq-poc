@@ -7,13 +7,13 @@ export function reviewItemPath(kind: ReviewKind, caseId: string): string {
     case "type":
     case "quality":
     case "split":
-      return `/cases/${id}/documents`;
+      return `/appraisals/${id}/documents`;
     case "party":
-      return `/cases/${id}/extraction`;
+      return `/appraisals/${id}/extraction`;
     case "field":
     case "manual_entry":
-      return `/cases/${id}/extraction`;
+      return `/appraisals/${id}/extraction`;
     case "finding":
-      return `/cases/${id}/cross-verification`;
+      return `/appraisals/${id}/cross-verification`;
   }
 }

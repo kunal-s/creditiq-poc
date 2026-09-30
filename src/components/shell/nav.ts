@@ -9,7 +9,7 @@ export type NavItem = { label: string; to: string; permission?: string };
 export type NavGroup = { id: string; group: string; items: NavItem[] };
 
 export type CaseTab = {
-  /** Path under /cases/$caseId; "" is the Overview. */
+  /** Path under /appraisals/$caseId; "" is the Overview. */
   to: string;
   key: string;
   /** The processing stage this tab shows (FRD §5), numbered 1 to 6. */
@@ -40,7 +40,7 @@ export function tabForStage(stage: StageKey): CaseTab {
 }
 
 export function caseTabPath(caseId: string, tab: CaseTab): string {
-  const base = `/cases/${encodeURIComponent(caseId)}`;
+  const base = `/appraisals/${encodeURIComponent(caseId)}`;
   return tab.to ? `${base}/${tab.to}` : base;
 }
 
@@ -51,7 +51,7 @@ export function buildNav(): NavGroup[] {
       group: t("nav.group.workbench"),
       items: [
         { label: t("nav.cases"), to: "/" },
-        { label: t("nav.newCase"), to: "/cases/new", permission: "case.create" },
+        { label: t("nav.newCase"), to: "/appraisals/new", permission: "case.create" },
       ],
     },
     {

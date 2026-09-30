@@ -25,7 +25,7 @@ test("TC-02: sign in at 375 px", async ({ page }) => {
 
   // Navigation is a menu button; the side navigation is hidden (F-06.2).
   await page.getByRole("button", { name: "Open menu" }).click();
-  await expect(page.getByRole("dialog").getByRole("link", { name: "Cases" })).toBeVisible();
+  await expect(page.getByRole("dialog").getByRole("link", { name: "Appraisals" })).toBeVisible();
   // An RM does not see the governance group.
   await expect(page.getByRole("dialog").getByRole("link", { name: "Review queue" })).toHaveCount(0);
 });
@@ -38,7 +38,7 @@ test("TC-02: create a case and upload documents at 375 px", async ({ page }) => 
   await expect(page.getByTestId("cases-cards")).toBeVisible();
   expect(await scrollsSideways(page)).toBe(false);
 
-  await page.goto("/cases/new");
+  await page.goto("/appraisals/new");
   await page.getByTestId("message-input").fill(MESSAGE);
   await page.getByRole("button", { name: "Read the message" }).click();
   await expect(page.getByTestId("proposed-case")).toBeVisible();
@@ -55,7 +55,7 @@ test("TC-02: create a case and upload documents at 375 px", async ({ page }) => 
   await expect(page.getByTestId("attachments").getByRole("listitem")).toHaveCount(2);
   await page.getByTestId("create-application").click();
 
-  await expect(page).toHaveURL(/\/cases\/BBG-2026-000031$/);
+  await expect(page).toHaveURL(/\/appraisals\/BBG-2026-000031$/);
   await expect(page.getByTestId("stage-progress")).toBeVisible();
   expect(await scrollsSideways(page)).toBe(false);
   await page.getByTestId("tab-documents").click();
@@ -71,16 +71,16 @@ test("TC-02: create a case and upload documents at 375 px", async ({ page }) => 
 test("TC-02: overview, completeness and documents at 375 px", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api, RM);
-  await page.goto(`/cases/${KESTREL}`);
+  await page.goto(`/appraisals/${KESTREL}`);
   await expect(page.getByTestId("next-action")).toBeVisible();
   // An RM sees only the tabs their role may open.
   await expect(page.getByTestId("tab-extraction")).toHaveCount(0);
   expect(await scrollsSideways(page)).toBe(false);
-  await page.goto(`/cases/${KESTREL}/completeness`);
+  await page.goto(`/appraisals/${KESTREL}/completeness`);
   await expect(page.getByTestId("checklist")).toBeVisible();
   await expect(page.getByTestId("query-list")).toBeVisible();
   expect(await scrollsSideways(page)).toBe(false);
-  await page.goto(`/cases/${KESTREL}/documents`);
+  await page.goto(`/appraisals/${KESTREL}/documents`);
   await expect(page.getByTestId("file-tree")).toBeVisible();
   expect(await scrollsSideways(page)).toBe(false);
 });

@@ -20,8 +20,8 @@ nav:
   group:
     workbench: Workbench
     governance: Governance
-  cases: Cases
-  newCase: New case
+  cases: Appraisals
+  newCase: New appraisal
   reviewQueue: Review queue
   scorecard: Scorecard
 
@@ -88,18 +88,18 @@ page:
       inProgressSub: "Borrowers: {n}"
       review: Open review items
       reviewSub: waiting for a decision
-    inFlight: Cases
-    inFlightSub: Every case you can see, with its stage and review items
+    inFlight: Appraisals
+    inFlightSub: Every appraisal you can see, with its stage and review items
     attention: Needs attention
     attentionCount: "{n} open"
     attentionEmpty: Nothing is waiting for a decision.
     filter:
-      open: All open cases
+      open: All open appraisals
       mine: Mine
       review: With review items
   newApplication:
-    eyebrow: Cases
-    title: New case
+    eyebrow: Appraisals
+    title: New appraisal
     purpose: Paste the sourcing email or notes. CreditIQ proposes the application; nothing is created until you confirm it.
   overview:
     title: Overview
@@ -412,7 +412,7 @@ caseHeader:
   outstandingGate: "{n} outstanding · {gate}% review gate"
   ask: Ask
   blockingGaps: "{n} blocking"
-  tabs: Case tabs
+  tabs: Appraisal tabs
   stage: Stage
 
 checklist:

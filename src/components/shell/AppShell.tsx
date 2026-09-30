@@ -74,7 +74,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   // Cases stays active inside a case; New case only on its own screen.
   const isActive = (to: string) =>
     to === "/"
-      ? pathname === "/" || (pathname.startsWith("/cases/") && pathname !== "/cases/new")
+      ? pathname === "/" || (pathname.startsWith("/appraisals/") && pathname !== "/appraisals/new")
       : pathname === to || pathname.startsWith(to + "/");
 
   return (

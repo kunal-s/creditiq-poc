@@ -11,7 +11,7 @@ test("TC-07: label mismatch visible in the register and the document checks", as
   const api = new MockApi();
   await signedIn(page, api);
 
-  await page.goto(`/cases/${KESTREL}/documents`);
+  await page.goto(`/appraisals/${KESTREL}/documents`);
   const bs = page.getByTestId("section-files").locator('[data-document-id="doc-bs"]');
   await expect(bs.getByTestId("document-type")).toHaveText("Balance sheet");
   await expect(bs.getByTestId("label-mismatch")).toHaveText("label says: bank statement");
@@ -28,7 +28,7 @@ test("TC-09: unclassified document with candidates, routed for review", async ({
   const api = new MockApi();
   await signedIn(page, api);
 
-  await page.goto(`/cases/${KESTREL}/documents`);
+  await page.goto(`/appraisals/${KESTREL}/documents`);
   const unc = page.getByTestId("section-files").locator('[data-document-id="doc-unc"]');
   await expect(unc.getByTestId("unclassified")).toHaveText("Unclassified");
   await expect(unc.getByRole("link", { name: "Review queue" })).toHaveAttribute("href", "/review");
@@ -42,7 +42,7 @@ test("TC-09: unclassified document with candidates, routed for review", async ({
   await expect(row.getByTestId("exit-tier")).toHaveText("Not classified");
 
   // Not assigned to any checklist item.
-  await page.goto(`/cases/${KESTREL}/completeness`);
+  await page.goto(`/appraisals/${KESTREL}/completeness`);
   const items = page.getByTestId("checklist-item");
   await expect(items).toHaveCount(9);
   let linked = 0;

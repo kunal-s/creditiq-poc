@@ -10,7 +10,7 @@ test.use({ permissions: ["clipboard-read", "clipboard-write"] });
 test("TC-16: grouped list, resolved shown, copy as email and text", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api);
-  await page.goto(`/cases/${KESTREL}/completeness`);
+  await page.goto(`/appraisals/${KESTREL}/completeness`);
 
   const list = page.getByTestId("query-list");
   await expect(list).toContainText("6 open · 1 resolved");

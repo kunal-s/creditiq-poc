@@ -7,7 +7,7 @@ import { t } from "@/config/terminology";
 // Stage 1, quality and classification (FRD §5, §6): upload, the file
 // register, and each document's machine checks.
 
-export const Route = createFileRoute("/cases/$caseId/documents")({
+export const Route = createFileRoute("/appraisals/$caseId/documents")({
   head: () => ({
     meta: [{ title: `${t("caseTab.documents")} — ${t("tenant.product.name")}` }],
   }),

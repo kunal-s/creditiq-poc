@@ -15,19 +15,19 @@ import { Route as ReviewRouteImport } from './routes/review'
 import { Route as ScorecardRouteImport } from './routes/scorecard'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as AppraisalsIndexRouteImport } from './routes/appraisals.index'
-import { Route as AppraisalsSplatRouteImport } from './routes/appraisals.$'
-import { Route as CasesCaseIdRouteImport } from './routes/cases.$caseId'
-import { Route as CasesNewRouteImport } from './routes/cases.new'
+import { Route as AppraisalsCaseIdRouteImport } from './routes/appraisals.$caseId'
+import { Route as AppraisalsNewRouteImport } from './routes/appraisals.new'
 import { Route as DocreadyIndexRouteImport } from './routes/docready.index'
 import { Route as DocreadySplatRouteImport } from './routes/docready.$'
-import { Route as CasesCaseIdIndexRouteImport } from './routes/cases.$caseId.index'
-import { Route as CasesCaseIdComparisonRouteImport } from './routes/cases.$caseId.comparison'
-import { Route as CasesCaseIdCompletenessRouteImport } from './routes/cases.$caseId.completeness'
-import { Route as CasesCaseIdCrossVerificationRouteImport } from './routes/cases.$caseId.cross-verification'
-import { Route as CasesCaseIdDocumentsRouteImport } from './routes/cases.$caseId.documents'
-import { Route as CasesCaseIdExtractionRouteImport } from './routes/cases.$caseId.extraction'
-import { Route as CasesCaseIdOutputsRouteImport } from './routes/cases.$caseId.outputs'
-import { Route as CasesCaseIdPolicyRouteImport } from './routes/cases.$caseId.policy'
+import { Route as AppraisalsCaseIdIndexRouteImport } from './routes/appraisals.$caseId.index'
+import { Route as AppraisalsCaseIdStepRouteImport } from './routes/appraisals.$caseId.$step'
+import { Route as AppraisalsCaseIdComparisonRouteImport } from './routes/appraisals.$caseId.comparison'
+import { Route as AppraisalsCaseIdCompletenessRouteImport } from './routes/appraisals.$caseId.completeness'
+import { Route as AppraisalsCaseIdCrossVerificationRouteImport } from './routes/appraisals.$caseId.cross-verification'
+import { Route as AppraisalsCaseIdDocumentsRouteImport } from './routes/appraisals.$caseId.documents'
+import { Route as AppraisalsCaseIdExtractionRouteImport } from './routes/appraisals.$caseId.extraction'
+import { Route as AppraisalsCaseIdOutputsRouteImport } from './routes/appraisals.$caseId.outputs'
+import { Route as AppraisalsCaseIdPolicyRouteImport } from './routes/appraisals.$caseId.policy'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -59,19 +59,14 @@ const AppraisalsIndexRoute = AppraisalsIndexRouteImport.update({
   path: '/appraisals/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppraisalsSplatRoute = AppraisalsSplatRouteImport.update({
-  id: '/appraisals/$',
-  path: '/appraisals/$',
+const AppraisalsCaseIdRoute = AppraisalsCaseIdRouteImport.update({
+  id: '/appraisals/$caseId',
+  path: '/appraisals/$caseId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CasesCaseIdRoute = CasesCaseIdRouteImport.update({
-  id: '/cases/$caseId',
-  path: '/cases/$caseId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CasesNewRoute = CasesNewRouteImport.update({
-  id: '/cases/new',
-  path: '/cases/new',
+const AppraisalsNewRoute = AppraisalsNewRouteImport.update({
+  id: '/appraisals/new',
+  path: '/appraisals/new',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DocreadyIndexRoute = DocreadyIndexRouteImport.update({
@@ -84,46 +79,55 @@ const DocreadySplatRoute = DocreadySplatRouteImport.update({
   path: '/docready/$',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CasesCaseIdIndexRoute = CasesCaseIdIndexRouteImport.update({
+const AppraisalsCaseIdIndexRoute = AppraisalsCaseIdIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => CasesCaseIdRoute,
+  getParentRoute: () => AppraisalsCaseIdRoute,
 } as any)
-const CasesCaseIdComparisonRoute = CasesCaseIdComparisonRouteImport.update({
-  id: '/comparison',
-  path: '/comparison',
-  getParentRoute: () => CasesCaseIdRoute,
+const AppraisalsCaseIdStepRoute = AppraisalsCaseIdStepRouteImport.update({
+  id: '/$step',
+  path: '/$step',
+  getParentRoute: () => AppraisalsCaseIdRoute,
 } as any)
-const CasesCaseIdCompletenessRoute = CasesCaseIdCompletenessRouteImport.update({
-  id: '/completeness',
-  path: '/completeness',
-  getParentRoute: () => CasesCaseIdRoute,
-} as any)
-const CasesCaseIdCrossVerificationRoute =
-  CasesCaseIdCrossVerificationRouteImport.update({
+const AppraisalsCaseIdComparisonRoute =
+  AppraisalsCaseIdComparisonRouteImport.update({
+    id: '/comparison',
+    path: '/comparison',
+    getParentRoute: () => AppraisalsCaseIdRoute,
+  } as any)
+const AppraisalsCaseIdCompletenessRoute =
+  AppraisalsCaseIdCompletenessRouteImport.update({
+    id: '/completeness',
+    path: '/completeness',
+    getParentRoute: () => AppraisalsCaseIdRoute,
+  } as any)
+const AppraisalsCaseIdCrossVerificationRoute =
+  AppraisalsCaseIdCrossVerificationRouteImport.update({
     id: '/cross-verification',
     path: '/cross-verification',
-    getParentRoute: () => CasesCaseIdRoute,
+    getParentRoute: () => AppraisalsCaseIdRoute,
   } as any)
-const CasesCaseIdDocumentsRoute = CasesCaseIdDocumentsRouteImport.update({
-  id: '/documents',
-  path: '/documents',
-  getParentRoute: () => CasesCaseIdRoute,
-} as any)
-const CasesCaseIdExtractionRoute = CasesCaseIdExtractionRouteImport.update({
-  id: '/extraction',
-  path: '/extraction',
-  getParentRoute: () => CasesCaseIdRoute,
-} as any)
-const CasesCaseIdOutputsRoute = CasesCaseIdOutputsRouteImport.update({
+const AppraisalsCaseIdDocumentsRoute =
+  AppraisalsCaseIdDocumentsRouteImport.update({
+    id: '/documents',
+    path: '/documents',
+    getParentRoute: () => AppraisalsCaseIdRoute,
+  } as any)
+const AppraisalsCaseIdExtractionRoute =
+  AppraisalsCaseIdExtractionRouteImport.update({
+    id: '/extraction',
+    path: '/extraction',
+    getParentRoute: () => AppraisalsCaseIdRoute,
+  } as any)
+const AppraisalsCaseIdOutputsRoute = AppraisalsCaseIdOutputsRouteImport.update({
   id: '/outputs',
   path: '/outputs',
-  getParentRoute: () => CasesCaseIdRoute,
+  getParentRoute: () => AppraisalsCaseIdRoute,
 } as any)
-const CasesCaseIdPolicyRoute = CasesCaseIdPolicyRouteImport.update({
+const AppraisalsCaseIdPolicyRoute = AppraisalsCaseIdPolicyRouteImport.update({
   id: '/policy',
   path: '/policy',
-  getParentRoute: () => CasesCaseIdRoute,
+  getParentRoute: () => AppraisalsCaseIdRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -132,20 +136,20 @@ export interface FileRoutesByFullPath {
   '/review': typeof ReviewRoute
   '/scorecard': typeof ScorecardRoute
   '/sign-in': typeof SignInRoute
-  '/appraisals/$': typeof AppraisalsSplatRoute
-  '/cases/$caseId': typeof CasesCaseIdRouteWithChildren
-  '/cases/new': typeof CasesNewRoute
+  '/appraisals/$caseId': typeof AppraisalsCaseIdRouteWithChildren
+  '/appraisals/new': typeof AppraisalsNewRoute
   '/docready/$': typeof DocreadySplatRoute
   '/appraisals/': typeof AppraisalsIndexRoute
   '/docready/': typeof DocreadyIndexRoute
-  '/cases/$caseId/comparison': typeof CasesCaseIdComparisonRoute
-  '/cases/$caseId/completeness': typeof CasesCaseIdCompletenessRoute
-  '/cases/$caseId/cross-verification': typeof CasesCaseIdCrossVerificationRoute
-  '/cases/$caseId/documents': typeof CasesCaseIdDocumentsRoute
-  '/cases/$caseId/extraction': typeof CasesCaseIdExtractionRoute
-  '/cases/$caseId/outputs': typeof CasesCaseIdOutputsRoute
-  '/cases/$caseId/policy': typeof CasesCaseIdPolicyRoute
-  '/cases/$caseId/': typeof CasesCaseIdIndexRoute
+  '/appraisals/$caseId/$step': typeof AppraisalsCaseIdStepRoute
+  '/appraisals/$caseId/comparison': typeof AppraisalsCaseIdComparisonRoute
+  '/appraisals/$caseId/completeness': typeof AppraisalsCaseIdCompletenessRoute
+  '/appraisals/$caseId/cross-verification': typeof AppraisalsCaseIdCrossVerificationRoute
+  '/appraisals/$caseId/documents': typeof AppraisalsCaseIdDocumentsRoute
+  '/appraisals/$caseId/extraction': typeof AppraisalsCaseIdExtractionRoute
+  '/appraisals/$caseId/outputs': typeof AppraisalsCaseIdOutputsRoute
+  '/appraisals/$caseId/policy': typeof AppraisalsCaseIdPolicyRoute
+  '/appraisals/$caseId/': typeof AppraisalsCaseIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -153,19 +157,19 @@ export interface FileRoutesByTo {
   '/review': typeof ReviewRoute
   '/scorecard': typeof ScorecardRoute
   '/sign-in': typeof SignInRoute
-  '/appraisals/$': typeof AppraisalsSplatRoute
-  '/cases/new': typeof CasesNewRoute
+  '/appraisals/new': typeof AppraisalsNewRoute
   '/docready/$': typeof DocreadySplatRoute
   '/appraisals': typeof AppraisalsIndexRoute
   '/docready': typeof DocreadyIndexRoute
-  '/cases/$caseId/comparison': typeof CasesCaseIdComparisonRoute
-  '/cases/$caseId/completeness': typeof CasesCaseIdCompletenessRoute
-  '/cases/$caseId/cross-verification': typeof CasesCaseIdCrossVerificationRoute
-  '/cases/$caseId/documents': typeof CasesCaseIdDocumentsRoute
-  '/cases/$caseId/extraction': typeof CasesCaseIdExtractionRoute
-  '/cases/$caseId/outputs': typeof CasesCaseIdOutputsRoute
-  '/cases/$caseId/policy': typeof CasesCaseIdPolicyRoute
-  '/cases/$caseId': typeof CasesCaseIdIndexRoute
+  '/appraisals/$caseId/$step': typeof AppraisalsCaseIdStepRoute
+  '/appraisals/$caseId/comparison': typeof AppraisalsCaseIdComparisonRoute
+  '/appraisals/$caseId/completeness': typeof AppraisalsCaseIdCompletenessRoute
+  '/appraisals/$caseId/cross-verification': typeof AppraisalsCaseIdCrossVerificationRoute
+  '/appraisals/$caseId/documents': typeof AppraisalsCaseIdDocumentsRoute
+  '/appraisals/$caseId/extraction': typeof AppraisalsCaseIdExtractionRoute
+  '/appraisals/$caseId/outputs': typeof AppraisalsCaseIdOutputsRoute
+  '/appraisals/$caseId/policy': typeof AppraisalsCaseIdPolicyRoute
+  '/appraisals/$caseId': typeof AppraisalsCaseIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -174,20 +178,20 @@ export interface FileRoutesById {
   '/review': typeof ReviewRoute
   '/scorecard': typeof ScorecardRoute
   '/sign-in': typeof SignInRoute
-  '/appraisals/$': typeof AppraisalsSplatRoute
-  '/cases/$caseId': typeof CasesCaseIdRouteWithChildren
-  '/cases/new': typeof CasesNewRoute
+  '/appraisals/$caseId': typeof AppraisalsCaseIdRouteWithChildren
+  '/appraisals/new': typeof AppraisalsNewRoute
   '/docready/$': typeof DocreadySplatRoute
   '/appraisals/': typeof AppraisalsIndexRoute
   '/docready/': typeof DocreadyIndexRoute
-  '/cases/$caseId/comparison': typeof CasesCaseIdComparisonRoute
-  '/cases/$caseId/completeness': typeof CasesCaseIdCompletenessRoute
-  '/cases/$caseId/cross-verification': typeof CasesCaseIdCrossVerificationRoute
-  '/cases/$caseId/documents': typeof CasesCaseIdDocumentsRoute
-  '/cases/$caseId/extraction': typeof CasesCaseIdExtractionRoute
-  '/cases/$caseId/outputs': typeof CasesCaseIdOutputsRoute
-  '/cases/$caseId/policy': typeof CasesCaseIdPolicyRoute
-  '/cases/$caseId/': typeof CasesCaseIdIndexRoute
+  '/appraisals/$caseId/$step': typeof AppraisalsCaseIdStepRoute
+  '/appraisals/$caseId/comparison': typeof AppraisalsCaseIdComparisonRoute
+  '/appraisals/$caseId/completeness': typeof AppraisalsCaseIdCompletenessRoute
+  '/appraisals/$caseId/cross-verification': typeof AppraisalsCaseIdCrossVerificationRoute
+  '/appraisals/$caseId/documents': typeof AppraisalsCaseIdDocumentsRoute
+  '/appraisals/$caseId/extraction': typeof AppraisalsCaseIdExtractionRoute
+  '/appraisals/$caseId/outputs': typeof AppraisalsCaseIdOutputsRoute
+  '/appraisals/$caseId/policy': typeof AppraisalsCaseIdPolicyRoute
+  '/appraisals/$caseId/': typeof AppraisalsCaseIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -197,20 +201,20 @@ export interface FileRouteTypes {
     | '/review'
     | '/scorecard'
     | '/sign-in'
-    | '/appraisals/$'
-    | '/cases/$caseId'
-    | '/cases/new'
+    | '/appraisals/$caseId'
+    | '/appraisals/new'
     | '/docready/$'
     | '/appraisals/'
     | '/docready/'
-    | '/cases/$caseId/comparison'
-    | '/cases/$caseId/completeness'
-    | '/cases/$caseId/cross-verification'
-    | '/cases/$caseId/documents'
-    | '/cases/$caseId/extraction'
-    | '/cases/$caseId/outputs'
-    | '/cases/$caseId/policy'
-    | '/cases/$caseId/'
+    | '/appraisals/$caseId/$step'
+    | '/appraisals/$caseId/comparison'
+    | '/appraisals/$caseId/completeness'
+    | '/appraisals/$caseId/cross-verification'
+    | '/appraisals/$caseId/documents'
+    | '/appraisals/$caseId/extraction'
+    | '/appraisals/$caseId/outputs'
+    | '/appraisals/$caseId/policy'
+    | '/appraisals/$caseId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -218,19 +222,19 @@ export interface FileRouteTypes {
     | '/review'
     | '/scorecard'
     | '/sign-in'
-    | '/appraisals/$'
-    | '/cases/new'
+    | '/appraisals/new'
     | '/docready/$'
     | '/appraisals'
     | '/docready'
-    | '/cases/$caseId/comparison'
-    | '/cases/$caseId/completeness'
-    | '/cases/$caseId/cross-verification'
-    | '/cases/$caseId/documents'
-    | '/cases/$caseId/extraction'
-    | '/cases/$caseId/outputs'
-    | '/cases/$caseId/policy'
-    | '/cases/$caseId'
+    | '/appraisals/$caseId/$step'
+    | '/appraisals/$caseId/comparison'
+    | '/appraisals/$caseId/completeness'
+    | '/appraisals/$caseId/cross-verification'
+    | '/appraisals/$caseId/documents'
+    | '/appraisals/$caseId/extraction'
+    | '/appraisals/$caseId/outputs'
+    | '/appraisals/$caseId/policy'
+    | '/appraisals/$caseId'
   id:
     | '__root__'
     | '/'
@@ -238,20 +242,20 @@ export interface FileRouteTypes {
     | '/review'
     | '/scorecard'
     | '/sign-in'
-    | '/appraisals/$'
-    | '/cases/$caseId'
-    | '/cases/new'
+    | '/appraisals/$caseId'
+    | '/appraisals/new'
     | '/docready/$'
     | '/appraisals/'
     | '/docready/'
-    | '/cases/$caseId/comparison'
-    | '/cases/$caseId/completeness'
-    | '/cases/$caseId/cross-verification'
-    | '/cases/$caseId/documents'
-    | '/cases/$caseId/extraction'
-    | '/cases/$caseId/outputs'
-    | '/cases/$caseId/policy'
-    | '/cases/$caseId/'
+    | '/appraisals/$caseId/$step'
+    | '/appraisals/$caseId/comparison'
+    | '/appraisals/$caseId/completeness'
+    | '/appraisals/$caseId/cross-verification'
+    | '/appraisals/$caseId/documents'
+    | '/appraisals/$caseId/extraction'
+    | '/appraisals/$caseId/outputs'
+    | '/appraisals/$caseId/policy'
+    | '/appraisals/$caseId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -260,9 +264,8 @@ export interface RootRouteChildren {
   ReviewRoute: typeof ReviewRoute
   ScorecardRoute: typeof ScorecardRoute
   SignInRoute: typeof SignInRoute
-  AppraisalsSplatRoute: typeof AppraisalsSplatRoute
-  CasesCaseIdRoute: typeof CasesCaseIdRouteWithChildren
-  CasesNewRoute: typeof CasesNewRoute
+  AppraisalsCaseIdRoute: typeof AppraisalsCaseIdRouteWithChildren
+  AppraisalsNewRoute: typeof AppraisalsNewRoute
   DocreadySplatRoute: typeof DocreadySplatRoute
   AppraisalsIndexRoute: typeof AppraisalsIndexRoute
   DocreadyIndexRoute: typeof DocreadyIndexRoute
@@ -312,25 +315,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppraisalsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/appraisals/$': {
-      id: '/appraisals/$'
-      path: '/appraisals/$'
-      fullPath: '/appraisals/$'
-      preLoaderRoute: typeof AppraisalsSplatRouteImport
+    '/appraisals/$caseId': {
+      id: '/appraisals/$caseId'
+      path: '/appraisals/$caseId'
+      fullPath: '/appraisals/$caseId'
+      preLoaderRoute: typeof AppraisalsCaseIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/cases/$caseId': {
-      id: '/cases/$caseId'
-      path: '/cases/$caseId'
-      fullPath: '/cases/$caseId'
-      preLoaderRoute: typeof CasesCaseIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/cases/new': {
-      id: '/cases/new'
-      path: '/cases/new'
-      fullPath: '/cases/new'
-      preLoaderRoute: typeof CasesNewRouteImport
+    '/appraisals/new': {
+      id: '/appraisals/new'
+      path: '/appraisals/new'
+      fullPath: '/appraisals/new'
+      preLoaderRoute: typeof AppraisalsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/docready/': {
@@ -347,90 +343,99 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocreadySplatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/cases/$caseId/': {
-      id: '/cases/$caseId/'
+    '/appraisals/$caseId/': {
+      id: '/appraisals/$caseId/'
       path: '/'
-      fullPath: '/cases/$caseId/'
-      preLoaderRoute: typeof CasesCaseIdIndexRouteImport
-      parentRoute: typeof CasesCaseIdRoute
+      fullPath: '/appraisals/$caseId/'
+      preLoaderRoute: typeof AppraisalsCaseIdIndexRouteImport
+      parentRoute: typeof AppraisalsCaseIdRoute
     }
-    '/cases/$caseId/comparison': {
-      id: '/cases/$caseId/comparison'
+    '/appraisals/$caseId/$step': {
+      id: '/appraisals/$caseId/$step'
+      path: '/$step'
+      fullPath: '/appraisals/$caseId/$step'
+      preLoaderRoute: typeof AppraisalsCaseIdStepRouteImport
+      parentRoute: typeof AppraisalsCaseIdRoute
+    }
+    '/appraisals/$caseId/comparison': {
+      id: '/appraisals/$caseId/comparison'
       path: '/comparison'
-      fullPath: '/cases/$caseId/comparison'
-      preLoaderRoute: typeof CasesCaseIdComparisonRouteImport
-      parentRoute: typeof CasesCaseIdRoute
+      fullPath: '/appraisals/$caseId/comparison'
+      preLoaderRoute: typeof AppraisalsCaseIdComparisonRouteImport
+      parentRoute: typeof AppraisalsCaseIdRoute
     }
-    '/cases/$caseId/completeness': {
-      id: '/cases/$caseId/completeness'
+    '/appraisals/$caseId/completeness': {
+      id: '/appraisals/$caseId/completeness'
       path: '/completeness'
-      fullPath: '/cases/$caseId/completeness'
-      preLoaderRoute: typeof CasesCaseIdCompletenessRouteImport
-      parentRoute: typeof CasesCaseIdRoute
+      fullPath: '/appraisals/$caseId/completeness'
+      preLoaderRoute: typeof AppraisalsCaseIdCompletenessRouteImport
+      parentRoute: typeof AppraisalsCaseIdRoute
     }
-    '/cases/$caseId/cross-verification': {
-      id: '/cases/$caseId/cross-verification'
+    '/appraisals/$caseId/cross-verification': {
+      id: '/appraisals/$caseId/cross-verification'
       path: '/cross-verification'
-      fullPath: '/cases/$caseId/cross-verification'
-      preLoaderRoute: typeof CasesCaseIdCrossVerificationRouteImport
-      parentRoute: typeof CasesCaseIdRoute
+      fullPath: '/appraisals/$caseId/cross-verification'
+      preLoaderRoute: typeof AppraisalsCaseIdCrossVerificationRouteImport
+      parentRoute: typeof AppraisalsCaseIdRoute
     }
-    '/cases/$caseId/documents': {
-      id: '/cases/$caseId/documents'
+    '/appraisals/$caseId/documents': {
+      id: '/appraisals/$caseId/documents'
       path: '/documents'
-      fullPath: '/cases/$caseId/documents'
-      preLoaderRoute: typeof CasesCaseIdDocumentsRouteImport
-      parentRoute: typeof CasesCaseIdRoute
+      fullPath: '/appraisals/$caseId/documents'
+      preLoaderRoute: typeof AppraisalsCaseIdDocumentsRouteImport
+      parentRoute: typeof AppraisalsCaseIdRoute
     }
-    '/cases/$caseId/extraction': {
-      id: '/cases/$caseId/extraction'
+    '/appraisals/$caseId/extraction': {
+      id: '/appraisals/$caseId/extraction'
       path: '/extraction'
-      fullPath: '/cases/$caseId/extraction'
-      preLoaderRoute: typeof CasesCaseIdExtractionRouteImport
-      parentRoute: typeof CasesCaseIdRoute
+      fullPath: '/appraisals/$caseId/extraction'
+      preLoaderRoute: typeof AppraisalsCaseIdExtractionRouteImport
+      parentRoute: typeof AppraisalsCaseIdRoute
     }
-    '/cases/$caseId/outputs': {
-      id: '/cases/$caseId/outputs'
+    '/appraisals/$caseId/outputs': {
+      id: '/appraisals/$caseId/outputs'
       path: '/outputs'
-      fullPath: '/cases/$caseId/outputs'
-      preLoaderRoute: typeof CasesCaseIdOutputsRouteImport
-      parentRoute: typeof CasesCaseIdRoute
+      fullPath: '/appraisals/$caseId/outputs'
+      preLoaderRoute: typeof AppraisalsCaseIdOutputsRouteImport
+      parentRoute: typeof AppraisalsCaseIdRoute
     }
-    '/cases/$caseId/policy': {
-      id: '/cases/$caseId/policy'
+    '/appraisals/$caseId/policy': {
+      id: '/appraisals/$caseId/policy'
       path: '/policy'
-      fullPath: '/cases/$caseId/policy'
-      preLoaderRoute: typeof CasesCaseIdPolicyRouteImport
-      parentRoute: typeof CasesCaseIdRoute
+      fullPath: '/appraisals/$caseId/policy'
+      preLoaderRoute: typeof AppraisalsCaseIdPolicyRouteImport
+      parentRoute: typeof AppraisalsCaseIdRoute
     }
   }
 }
 
-interface CasesCaseIdRouteChildren {
-  CasesCaseIdComparisonRoute: typeof CasesCaseIdComparisonRoute
-  CasesCaseIdCompletenessRoute: typeof CasesCaseIdCompletenessRoute
-  CasesCaseIdCrossVerificationRoute: typeof CasesCaseIdCrossVerificationRoute
-  CasesCaseIdDocumentsRoute: typeof CasesCaseIdDocumentsRoute
-  CasesCaseIdExtractionRoute: typeof CasesCaseIdExtractionRoute
-  CasesCaseIdOutputsRoute: typeof CasesCaseIdOutputsRoute
-  CasesCaseIdPolicyRoute: typeof CasesCaseIdPolicyRoute
-  CasesCaseIdIndexRoute: typeof CasesCaseIdIndexRoute
+interface AppraisalsCaseIdRouteChildren {
+  AppraisalsCaseIdStepRoute: typeof AppraisalsCaseIdStepRoute
+  AppraisalsCaseIdComparisonRoute: typeof AppraisalsCaseIdComparisonRoute
+  AppraisalsCaseIdCompletenessRoute: typeof AppraisalsCaseIdCompletenessRoute
+  AppraisalsCaseIdCrossVerificationRoute: typeof AppraisalsCaseIdCrossVerificationRoute
+  AppraisalsCaseIdDocumentsRoute: typeof AppraisalsCaseIdDocumentsRoute
+  AppraisalsCaseIdExtractionRoute: typeof AppraisalsCaseIdExtractionRoute
+  AppraisalsCaseIdOutputsRoute: typeof AppraisalsCaseIdOutputsRoute
+  AppraisalsCaseIdPolicyRoute: typeof AppraisalsCaseIdPolicyRoute
+  AppraisalsCaseIdIndexRoute: typeof AppraisalsCaseIdIndexRoute
 }
 
-const CasesCaseIdRouteChildren: CasesCaseIdRouteChildren = {
-  CasesCaseIdComparisonRoute: CasesCaseIdComparisonRoute,
-  CasesCaseIdCompletenessRoute: CasesCaseIdCompletenessRoute,
-  CasesCaseIdCrossVerificationRoute: CasesCaseIdCrossVerificationRoute,
-  CasesCaseIdDocumentsRoute: CasesCaseIdDocumentsRoute,
-  CasesCaseIdExtractionRoute: CasesCaseIdExtractionRoute,
-  CasesCaseIdOutputsRoute: CasesCaseIdOutputsRoute,
-  CasesCaseIdPolicyRoute: CasesCaseIdPolicyRoute,
-  CasesCaseIdIndexRoute: CasesCaseIdIndexRoute,
+const AppraisalsCaseIdRouteChildren: AppraisalsCaseIdRouteChildren = {
+  AppraisalsCaseIdStepRoute: AppraisalsCaseIdStepRoute,
+  AppraisalsCaseIdComparisonRoute: AppraisalsCaseIdComparisonRoute,
+  AppraisalsCaseIdCompletenessRoute: AppraisalsCaseIdCompletenessRoute,
+  AppraisalsCaseIdCrossVerificationRoute:
+    AppraisalsCaseIdCrossVerificationRoute,
+  AppraisalsCaseIdDocumentsRoute: AppraisalsCaseIdDocumentsRoute,
+  AppraisalsCaseIdExtractionRoute: AppraisalsCaseIdExtractionRoute,
+  AppraisalsCaseIdOutputsRoute: AppraisalsCaseIdOutputsRoute,
+  AppraisalsCaseIdPolicyRoute: AppraisalsCaseIdPolicyRoute,
+  AppraisalsCaseIdIndexRoute: AppraisalsCaseIdIndexRoute,
 }
 
-const CasesCaseIdRouteWithChildren = CasesCaseIdRoute._addFileChildren(
-  CasesCaseIdRouteChildren,
-)
+const AppraisalsCaseIdRouteWithChildren =
+  AppraisalsCaseIdRoute._addFileChildren(AppraisalsCaseIdRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -438,9 +443,8 @@ const rootRouteChildren: RootRouteChildren = {
   ReviewRoute: ReviewRoute,
   ScorecardRoute: ScorecardRoute,
   SignInRoute: SignInRoute,
-  AppraisalsSplatRoute: AppraisalsSplatRoute,
-  CasesCaseIdRoute: CasesCaseIdRouteWithChildren,
-  CasesNewRoute: CasesNewRoute,
+  AppraisalsCaseIdRoute: AppraisalsCaseIdRouteWithChildren,
+  AppraisalsNewRoute: AppraisalsNewRoute,
   DocreadySplatRoute: DocreadySplatRoute,
   AppraisalsIndexRoute: AppraisalsIndexRoute,
   DocreadyIndexRoute: DocreadyIndexRoute,

@@ -16,7 +16,7 @@ const SECTION: Record<View, { page: string; feature: string }> = {
   pd: { page: "draft", feature: "F-24" },
 };
 
-export const Route = createFileRoute("/cases/$caseId/outputs")({
+export const Route = createFileRoute("/appraisals/$caseId/outputs")({
   validateSearch: (search: Record<string, unknown>): { view?: View } => {
     const view = search["view"];
     return VIEWS.includes(view as View) ? { view: view as View } : {};
@@ -37,7 +37,7 @@ function OutputsTab() {
         {VIEWS.map((v) => (
           <Link
             key={v}
-            to="/cases/$caseId/outputs"
+            to="/appraisals/$caseId/outputs"
             params={{ caseId }}
             search={{ view: v }}
             data-testid={`view-${v}`}

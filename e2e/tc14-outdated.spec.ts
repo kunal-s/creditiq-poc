@@ -7,7 +7,7 @@ import { MockApi, signedIn } from "./support/api";
 test("TC-14: outdated document with date and permitted age", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api);
-  await page.goto(`/cases/${KESTREL}/completeness`);
+  await page.goto(`/appraisals/${KESTREL}/completeness`);
 
   const stock = page.locator('[data-testid="checklist-item"][data-item="stock_statement"]');
   await expect(stock).toHaveAttribute("data-status", "insufficient");

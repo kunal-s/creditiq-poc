@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 // The case workspace (FRD §6): one header, the six processing stages, and
 // the tabs in processing order. Every tab renders into the outlet.
 
-export const Route = createFileRoute("/cases/$caseId")({
+export const Route = createFileRoute("/appraisals/$caseId")({
   component: CaseLayout,
 });
 
@@ -154,7 +154,7 @@ function CaseHeader({ c, stage }: { c: CaseDetail; stage: Stage }) {
 
           {r && r.blocking_open > 0 ? (
             <Link
-              to="/cases/$caseId/completeness"
+              to="/appraisals/$caseId/completeness"
               params={{ caseId: c.id }}
               hash="readiness"
               className="rounded border border-destructive/35 bg-destructive/10 px-2.5 py-1.5 text-[11.5px] font-medium text-destructive"

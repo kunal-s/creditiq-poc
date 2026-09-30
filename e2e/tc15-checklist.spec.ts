@@ -8,7 +8,7 @@ import { MockApi, signedIn } from "./support/api";
 test("TC-15: sections in published order with weights", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api);
-  await page.goto(`/cases/${KESTREL}/completeness`);
+  await page.goto(`/appraisals/${KESTREL}/completeness`);
 
   const sections = page.getByTestId("checklist-section");
   await expect(sections).toHaveCount(4);
@@ -39,7 +39,7 @@ test("TC-15: sections in published order with weights", async ({ page }) => {
 test("TC-15: provisional while the constitution is unknown", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api);
-  await page.goto(`/cases/${ORIEL}/completeness`);
+  await page.goto(`/appraisals/${ORIEL}/completeness`);
   await expect(page.getByTestId("provisional")).toBeVisible();
   await expect(page.getByTestId("case-header")).toContainText("Not yet confirmed");
 });
@@ -47,7 +47,7 @@ test("TC-15: provisional while the constitution is unknown", async ({ page }) =>
 test("TC-15: an item states what complete means and what to ask for", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api);
-  await page.goto(`/cases/${KESTREL}/completeness`);
+  await page.goto(`/appraisals/${KESTREL}/completeness`);
   const gst = page.locator('[data-item="gst_returns"]');
   await gst.getByRole("button").first().click();
   await expect(gst.getByTestId("coverage")).toHaveText("Monthly periods: 12");

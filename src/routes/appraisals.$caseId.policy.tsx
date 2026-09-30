@@ -3,9 +3,9 @@ import { TabSection } from "@/components/case/TabSection";
 import { ScreenPending } from "@/components/shell/ScreenPending";
 import { t } from "@/config/terminology";
 
-export const Route = createFileRoute("/cases/$caseId/cross-verification")({
+export const Route = createFileRoute("/appraisals/$caseId/policy")({
   head: () => ({
-    meta: [{ title: `${t("caseTab.crossVerification")} — ${t("tenant.product.name")}` }],
+    meta: [{ title: `${t("caseTab.policy")} — ${t("tenant.product.name")}` }],
   }),
   component: PendingTab,
 });
@@ -13,12 +13,8 @@ export const Route = createFileRoute("/cases/$caseId/cross-verification")({
 function PendingTab() {
   return (
     <div className="pb-10">
-      <TabSection
-        id="crossVerification"
-        title={t("page.crossVerification.title")}
-        purpose={t("page.crossVerification.purpose")}
-      >
-        <ScreenPending feature="F-18 and F-19" />
+      <TabSection id="policy" title={t("page.policy.title")} purpose={t("page.policy.purpose")}>
+        <ScreenPending feature="F-20 and F-21" />
       </TabSection>
     </div>
   );

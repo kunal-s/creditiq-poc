@@ -124,9 +124,9 @@ These apply to every feature. A pull request that breaks one is not mergeable.
 
 | Role | In the PoC | Main screens |
 |---|---|---|
-| Relationship Manager (RM) | Creates the case, uploads documents, reads the checklist and the query list. Uses a phone as well as a desktop | Cases, New case; in a case: Overview, Documents, Completeness |
-| Credit Analyst | Resolves review items; reads extracted data, cross-checks and policy; produces outputs | Cases, New case, Review queue; every case tab except Comparison |
-| Credit Manager | Checker for maker-checker items; adjudicates in the comparison (the RBL credit reviewer signs in with this role) | Cases, Review queue, Scorecard; every case tab |
+| Relationship Manager (RM) | Creates the case, uploads documents, reads the checklist and the query list. Uses a phone as well as a desktop | Appraisals, New appraisal; in an appraisal: Overview, Documents, Completeness |
+| Credit Analyst | Resolves review items; reads extracted data, cross-checks and policy; produces outputs | Appraisals, New appraisal, Review queue; every appraisal tab except Comparison |
+| Credit Manager | Checker for maker-checker items; adjudicates in the comparison (the RBL credit reviewer signs in with this role) | Appraisals, Review queue, Scorecard; every appraisal tab |
 | Administrator | Authors and publishes configuration from the command line. No screen | None |
 
 Role gating is enforced on the server, and a role sees only the screens listed for it.
@@ -195,14 +195,14 @@ Two properties hold throughout:
 
 ## 6. Screen map
 
-The screens keep the visual style of the CreditIQ prototype that RBL has already seen: design system, shell, case header, tables and panels (decision AD-1, C.6). The structure follows the processing order (§5): **one case workspace**, whose tabs are the six stages in order, preceded by an overview. The prototype's two case workspaces and their names are not used.
+The screens keep the visual style of the CreditIQ prototype that RBL has already seen: design system, shell, case header, tables and panels (decision AD-1, C.6). The structure follows the processing order (§5): **one appraisal workspace** per case, whose tabs are the six stages in order, preceded by an overview. The prototype's two case workspaces and their names are not used.
 
 Prototype screens with no PoC feature are not built.
 
 ```mermaid
 flowchart TB
-  SI["Sign in"] --> CL["Cases"]
-  CL --> NC["New case"]
+  SI["Sign in"] --> CL["Appraisals"]
+  CL --> NC["New appraisal"]
   CL --> RQ["Review queue"]
   CL --> SC["Scorecard"]
   NC --> OV
@@ -225,16 +225,16 @@ flowchart TB
 | Screen | Route | What it holds | Feature | Roles | Phone |
 |---|---|---|---|---|---|
 | Sign in | `/sign-in` | Sign in | F-03 | All | Yes |
-| Cases | `/` | Every case the user may see, with counts at the top; filter by stage, owner and open review items. Replaces the prototype's workbench, My Appraisals and Readiness Console | F-01 | All | Yes |
-| New case | `/cases/new` | Paste the message, confirm the proposed case, add documents; opens the new case's Overview | F-04, F-05 | RM, Analyst | Yes |
-| Overview | `/cases/$caseId` | The stage progress, what is blocking the case, the next action, live processing, and counts of open review items, missing documents and findings | F-01, F-02, F-13.4 | All | Yes |
-| 1. Documents | `/cases/$caseId/documents` | Upload (files, ZIP, camera). One row per document with its live status (received, graded, split, classified); quality grade, split, label mismatch, party attribution and unclassified documents shown on the row, with the type assignment there | F-05, F-07 to F-11 | All | Yes |
-| 2. Extraction | `/cases/$caseId/extraction` | Key fields grouped as entity and parties, financials, GST and banking; each with its confidence and page; confirm or correct in place | F-15, F-16, F-17 | Analyst, Manager | No |
-| 3. Completeness | `/cases/$caseId/completeness` | Each document's required fields and format; the checklist with each item's status and deficiency; readiness against the gates; the pre-login query list | F-12, F-13, F-14 | All | Yes |
-| 4. Cross-verification | `/cases/$caseId/cross-verification` | Identity, turnover, bank accounts and obligations, the sources side by side with each finding | F-18, F-19 | Analyst, Manager | No |
-| 5. Policy | `/cases/$caseId/policy` | Each norm with its limit, the actual value and source; deviations; the approving authority | F-20, F-21 | Analyst, Manager | No |
-| 6. Outputs | `/cases/$caseId/outputs` | The spread, the draft CAM and the PD note, each a view within the tab, with citations and export | F-22, F-23, F-24 | Analyst, Manager | No |
-| Comparison | `/cases/$caseId/comparison` | This case's outputs beside RBL's record, with adjudication | F-25 | Manager | No |
+| Appraisals | `/` | Every appraisal the user may see, with counts at the top; filter by stage, owner and open review items. Replaces the prototype's workbench, My Appraisals and Readiness Console | F-01 | All | Yes |
+| New appraisal | `/appraisals/new` | Paste the message, confirm the proposed case, add documents; opens the new case's Overview | F-04, F-05 | RM, Analyst | Yes |
+| Overview | `/appraisals/$caseId` | The stage progress, what is blocking the case, the next action, live processing, and counts of open review items, missing documents and findings | F-01, F-02, F-13.4 | All | Yes |
+| 1. Documents | `/appraisals/$caseId/documents` | Upload (files, ZIP, camera). One row per document with its live status (received, graded, split, classified); quality grade, split, label mismatch, party attribution and unclassified documents shown on the row, with the type assignment there | F-05, F-07 to F-11 | All | Yes |
+| 2. Extraction | `/appraisals/$caseId/extraction` | Key fields grouped as entity and parties, financials, GST and banking; each with its confidence and page; confirm or correct in place | F-15, F-16, F-17 | Analyst, Manager | No |
+| 3. Completeness | `/appraisals/$caseId/completeness` | Each document's required fields and format; the checklist with each item's status and deficiency; readiness against the gates; the pre-login query list | F-12, F-13, F-14 | All | Yes |
+| 4. Cross-verification | `/appraisals/$caseId/cross-verification` | Identity, turnover, bank accounts and obligations, the sources side by side with each finding | F-18, F-19 | Analyst, Manager | No |
+| 5. Policy | `/appraisals/$caseId/policy` | Each norm with its limit, the actual value and source; deviations; the approving authority | F-20, F-21 | Analyst, Manager | No |
+| 6. Outputs | `/appraisals/$caseId/outputs` | The spread, the draft CAM and the PD note, each a view within the tab, with citations and export | F-22, F-23, F-24 | Analyst, Manager | No |
+| Comparison | `/appraisals/$caseId/comparison` | This case's outputs beside RBL's record, with adjudication | F-25 | Manager | No |
 | Review queue | `/review` | Everything waiting for a person, across cases | F-17 | Analyst, Manager | No |
 | Scorecard | `/scorecard` | The criteria per case and across the case set | F-26 | Manager | No |
 
@@ -248,9 +248,9 @@ flowchart TB
 - A review item is resolved where it arises (the document row, the field) as well as in the review queue.
 - Processing status updates without a page reload.
 
-**Side navigation:** Cases, New case, Review queue, Scorecard, per role. Case tabs appear only inside a case.
+**Side navigation:** Appraisals, New appraisal, Review queue, Scorecard, per role. An appraisal's tabs appear only inside it.
 
-**Earlier routes** (`/appraisals`, `/appraisals/new`, `/appraisals/$id/*`, `/docready`, `/docready/$caseId/*`, `/exceptions`) redirect to their new equivalents.
+**Earlier routes** (`/appraisals` as a list, the prototype's appraisal steps such as `/appraisals/$id/upload`, `/docready`, `/docready/$caseId/*`, `/exceptions`) redirect to their new equivalents. Screens say "appraisal"; the engine's record is the case.
 
 **Not built:**
 - Copilot rail
@@ -405,7 +405,7 @@ stateDiagram-v2
 - **F-01.1** Case store in SQLite (standard library) under the data root. Case IDs are issued from a configured format and a sequence that survives restarts.
 - **F-01.2** The case header keeps both values for every field: what the system proposed (with its source) and what a person confirmed or edited.
 - **F-01.3** `as_of` is fixed at creation and used by every age or window rule.
-- **F-01.4** The Cases screen lists cases with: borrower, case ID, product and amount, stage, RM, created date, and open review items. The RM sees their own cases; credit roles see all.
+- **F-01.4** The Appraisals screen lists cases with: borrower, case ID, product and amount, stage, RM, created date, and open review items. The RM sees their own cases; credit roles see all.
 - **F-01.5** A case can be reset to unprocessed, which clears derived outputs and keeps files and the audit record. A case can be purged, which deletes all its data and keeps a purge record.
 
 **Acceptance**
@@ -615,8 +615,8 @@ flowchart TD
 
 - **F-06.1** At phone width (375 px), these screens work without horizontal scrolling:
   - Sign in
-  - Cases
-  - New case
+  - Appraisals
+  - New appraisal
   - Overview
   - Documents, including upload from the camera or files
   - Completeness, including the query list
@@ -1475,7 +1475,7 @@ flowchart TD
 | 4 | Where the model runs for RBL data, and which provider | Phase 2 | Open for RBL data. For development, no model key yet: a stub provider plus recorded responses (AD-5) |
 | 5 | CAM export format (Word, PDF, or both) | F-23 | Match RBL's template's native format |
 | 6 | Evidence region: page is mandatory (C7). Should the region on the page be shown too? | F-16 | Page for every value; region where cheaply available |
-| 7 | Screen structure: the prototype's two case workspaces and 12 case screens, or one workspace in processing order | Screens | **Decided 30 Sep 2026:** one case workspace whose tabs follow §5; the prototype's visual style is kept; the DocReady and Appraisal names are dropped (§6) |
+| 7 | Screen structure: the prototype's two case workspaces and 12 case screens, or one workspace in processing order | Screens | **Decided 30 Sep 2026:** one case workspace whose tabs follow §5; the prototype's visual style is kept; the DocReady and Appraisal workspace names are dropped; screens call the record an appraisal (§6) |
 
 ## C.5 The base this build starts from
 

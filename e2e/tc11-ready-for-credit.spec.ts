@@ -8,7 +8,7 @@ test("TC-11: complete file is ready for credit", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api);
 
-  await page.goto(`/cases/${SAFFRON}/completeness`);
+  await page.goto(`/appraisals/${SAFFRON}/completeness`);
   await expect(page.getByTestId("checklist-status")).toHaveCount(9);
   const statuses = await page.getByTestId("checklist-status").allTextContents();
   expect(statuses.length).toBe(9);

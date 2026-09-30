@@ -74,7 +74,7 @@ export function CasesTable({ cases }: { cases: CaseSummary[] }) {
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <Link
-                  to="/cases/$caseId"
+                  to="/appraisals/$caseId"
                   params={{ caseId: c.id }}
                   className="break-words text-[13px] font-medium text-foreground hover:text-primary hover:underline"
                 >
@@ -120,7 +120,7 @@ export function CasesTable({ cases }: { cases: CaseSummary[] }) {
               >
                 <td className="px-4 py-3">
                   <Link
-                    to="/cases/$caseId"
+                    to="/appraisals/$caseId"
                     params={{ caseId: c.id }}
                     className="font-medium text-foreground hover:text-primary hover:underline"
                   >

@@ -7,7 +7,7 @@ import { MockApi, signedIn } from "./support/api";
 test("TC-12: missing items with a specific request", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api);
-  await page.goto(`/cases/${KESTREL}/completeness`);
+  await page.goto(`/appraisals/${KESTREL}/completeness`);
 
   const missing = page.locator('[data-testid="checklist-item"][data-status="missing"]');
   await expect(missing).toHaveCount(2);

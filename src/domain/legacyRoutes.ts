@@ -22,12 +22,12 @@ const DOCREADY: Record<string, Target> = {
   validation: { to: "documents", hash: "checks" },
 };
 
-/** Where `/appraisals/<splat>` or `/docready/<splat>` now lives. */
+/** Where an earlier `/appraisals/<id>/<step>` or `/docready/<splat>` now lives. */
 export function legacyTarget(workspace: "appraisals" | "docready", splat: string): Target {
   const [id, step] = splat.split("/").filter(Boolean);
   if (!id) return { to: "/" };
-  if (workspace === "appraisals" && id === "new" && !step) return { to: "/cases/new" };
-  const base = `/cases/${encodeURIComponent(decodeURIComponent(id))}`;
+  if (workspace === "appraisals" && id === "new" && !step) return { to: "/appraisals/new" };
+  const base = `/appraisals/${encodeURIComponent(decodeURIComponent(id))}`;
   const known = step ? (workspace === "appraisals" ? APPRAISAL : DOCREADY)[step] : undefined;
   if (!known) return { to: base };
   return { ...known, to: `${base}/${known.to}` };

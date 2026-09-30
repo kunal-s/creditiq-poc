@@ -96,7 +96,7 @@ export function DocumentChecksSection({ caseId }: { caseId: string }) {
           <p className="px-4 py-8 text-center text-[12.5px] text-muted-foreground">
             {t("validation.none")}{" "}
             <Link
-              to="/cases/$caseId/documents"
+              to="/appraisals/$caseId/documents"
               params={{ caseId: caseId }}
               className="font-medium text-primary hover:underline"
             >

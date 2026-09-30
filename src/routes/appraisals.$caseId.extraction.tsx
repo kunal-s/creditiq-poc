@@ -8,7 +8,7 @@ import { t } from "@/config/terminology";
 // Stage 2, extraction (FRD §5, §6): the entity and its parties, then every
 // extracted field with its confidence and page.
 
-export const Route = createFileRoute("/cases/$caseId/extraction")({
+export const Route = createFileRoute("/appraisals/$caseId/extraction")({
   head: () => ({
     meta: [{ title: `${t("caseTab.extraction")} — ${t("tenant.product.name")}` }],
   }),

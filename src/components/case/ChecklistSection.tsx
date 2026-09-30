@@ -93,7 +93,7 @@ function Checklist({
           }
           action={
             <Link
-              to="/cases/$caseId/completeness"
+              to="/appraisals/$caseId/completeness"
               hash="queries"
               params={{ caseId }}
               className="rounded border border-border px-2.5 py-1 text-[12px] font-medium hover:bg-muted"
@@ -164,7 +164,7 @@ function Checklist({
             ))}
           </div>
           <Link
-            to="/cases/$caseId/completeness"
+            to="/appraisals/$caseId/completeness"
             hash="readiness"
             params={{ caseId }}
             className="mt-3 block rounded border border-border px-3 py-1.5 text-center text-[12.5px] font-medium hover:bg-muted"
@@ -295,7 +295,7 @@ function Item({
                 </button>
               ))}
               <Link
-                to="/cases/$caseId/documents"
+                to="/appraisals/$caseId/documents"
                 hash="checks"
                 params={{ caseId }}
                 className="rounded border border-border px-2.5 py-1 text-[12px] font-medium text-primary hover:bg-muted"

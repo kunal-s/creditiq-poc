@@ -8,7 +8,7 @@ test("delete an application after confirming its ID and a reason", async ({ page
   const api = new MockApi();
   await signedIn(page, api);
 
-  await page.goto(`/cases/${SAFFRON}/completeness`);
+  await page.goto(`/appraisals/${SAFFRON}/completeness`);
   await page.getByTestId("delete-case").click();
 
   const confirm = page.getByTestId("delete-case-confirm");

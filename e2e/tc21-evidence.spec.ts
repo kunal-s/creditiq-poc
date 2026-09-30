@@ -8,7 +8,7 @@ import { MockApi, signedIn } from "./support/api";
 test("TC-21: a value opens its evidence page", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api);
-  await page.goto(`/cases/${KESTREL}/extraction`);
+  await page.goto(`/appraisals/${KESTREL}/extraction`);
 
   const value = page.locator('[data-testid="field-value"][data-field="monthly[2].credits"]');
   await expect(value).toHaveText("41,02,300");
@@ -42,7 +42,7 @@ test("TC-21: every field carries a confidence and a page link; corrections show 
 }) => {
   const api = new MockApi();
   await signedIn(page, api);
-  await page.goto(`/cases/${KESTREL}/extraction`);
+  await page.goto(`/appraisals/${KESTREL}/extraction`);
   const fields = page.getByTestId("section-fields");
 
   const rows = fields.getByTestId("field-row");
@@ -72,7 +72,7 @@ test("TC-21: every field carries a confidence and a page link; corrections show 
 test("TC-21: checklist evidence opens the document", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api);
-  await page.goto(`/cases/${KESTREL}/completeness`);
+  await page.goto(`/appraisals/${KESTREL}/completeness`);
   await page.locator('[data-item="gst_returns"]').getByRole("button").first().click();
   await page.getByTestId("linked-document").click();
   await expect(page.getByTestId("viewer-type")).toHaveText("GST registration");

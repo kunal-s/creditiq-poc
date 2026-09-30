@@ -4,13 +4,13 @@ import { expect, test } from "@playwright/test";
 import { KESTREL } from "./fixtures/data";
 import { MockApi, signedIn } from "./support/api";
 
-const C = `/cases/${KESTREL}`;
+const C = `/appraisals/${KESTREL}`;
 
 const REDIRECTS: [string, string][] = [
   ["/appraisals", "/"],
   ["/docready", "/"],
   ["/exceptions", "/review"],
-  ["/appraisals/new", "/cases/new"],
+  ["/appraisals/new", "/appraisals/new"],
   [`/appraisals/${KESTREL}`, C],
   [`/docready/${KESTREL}`, C],
   [`/appraisals/${KESTREL}/upload`, `${C}/documents`],

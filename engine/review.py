@@ -183,6 +183,10 @@ def decide(
 
         elif kind == "split":
             _require(decision == "confirm", "an uncertain split is confirmed")
+        elif kind == "finding":
+            # F-17.4, C5: a person accepts the flag as valid (confirm) or finds
+            # it not valid (waive, with the reason). The finding itself stays.
+            _require(decision in ("confirm", "waive"), "a finding is confirmed as valid or waived with a reason")
         else:
             raise ReviewError(422, f"{kind} items are decided elsewhere")
 

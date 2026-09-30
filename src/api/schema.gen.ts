@@ -1054,6 +1054,8 @@ export interface components {
        * @enum {string}
        */
       outcome: "pass" | "fail" | "incomplete" | "not_applicable";
+      /** Query */
+      query?: string | null;
       /** Rule Id */
       rule_id: string;
       /** Run Id */

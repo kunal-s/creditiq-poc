@@ -134,6 +134,24 @@ def build(conn: sqlite3.Connection, root: Path, case_id: str) -> list[dict]:
         else:
             text = phr["party_unmatched"].format(file=doc["original_name"], content=content)
         add("clarifications", text, "party", item["ref"], evidence)
+
+    # Cross-check failures that need the customer's explanation (F-19.5),
+    # unless a person has found the flag not valid.
+    waived = {
+        r["ref"]
+        for r in conn.execute(
+            "SELECT ref FROM review_items WHERE case_id = ? AND kind = 'finding' AND decision = 'waive'", (case_id,)
+        )
+    }
+    for f in conn.execute(
+        "SELECT * FROM findings WHERE case_id = ? AND outcome = 'fail' AND query IS NOT NULL ORDER BY rule_id, id",
+        (case_id,),
+    ).fetchall():
+        if f"finding:{f['id']}" in waived:
+            continue
+        sides = json.loads(f["sides"] or "[]")
+        evidence = [e for s in sides for e in (s.get("evidence") or [])[:1]]
+        add("clarifications", f["query"], "finding", f["rule_id"] + ":" + f["id"], evidence)
     return out
 
 

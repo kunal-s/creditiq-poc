@@ -78,6 +78,8 @@ class Finding(BaseModel):
     tolerance: str | None = None
     config_version: str | None = None
     run_id: str | None = None
+    query: str | None = None
+    """What to ask the customer about a failure (F-19.5), if the rule says."""
 
 
 ReviewKind = Literal["type", "field", "quality", "party", "split", "manual_entry", "finding"]

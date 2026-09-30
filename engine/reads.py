@@ -77,7 +77,12 @@ def field_values(conn: sqlite3.Connection, case_id: str, document_id: str | None
 
 
 def findings(conn: sqlite3.Connection, case_id: str) -> list[Finding]:
-    rows = conn.execute("SELECT * FROM findings WHERE case_id = ? ORDER BY blocking DESC, severity, rule_id", (case_id,))
+    rows = conn.execute(
+        """SELECT * FROM findings WHERE case_id = ? ORDER BY
+           CASE outcome WHEN 'fail' THEN 0 WHEN 'incomplete' THEN 1 WHEN 'pass' THEN 2 ELSE 3 END,
+           CASE severity WHEN 'serious' THEN 0 WHEN 'moderate' THEN 1 ELSE 2 END, blocking DESC, rule_id, title""",
+        (case_id,),
+    )
     out = []
     for row in rows:
         d = dict(row)

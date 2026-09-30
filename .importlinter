@@ -18,6 +18,7 @@ source_modules =
     engine.completeness
     engine.confidence
     engine.config
+    engine.crosschecks
     engine.contracts
     engine.db
     engine.deps

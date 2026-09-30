@@ -242,6 +242,10 @@ MIGRATIONS: list[str] = [
     UPDATE cases SET stage = 'Documents' WHERE stage = 'Readiness';
     UPDATE cases SET stage = 'CrossVerification' WHERE stage = 'Appraisal';
     """,
+    # 4: a failed cross-check's question for the customer (F-19.5).
+    """
+    ALTER TABLE findings ADD COLUMN query TEXT;
+    """,
 ]
 
 

@@ -470,9 +470,17 @@ def reextract_document(
 
 
 def refresh_case(conn: sqlite3.Connection, root: Path, case_id: str, *, running_job: str | None = None) -> None:
-    from . import parties, queries
+    from . import cases, crosschecks, parties, queries
 
     parties.refresh(conn, root, case_id)
+    case = cases.get_case(conn, case_id)
+    if case is not None:
+        try:
+            crosschecks.run(conn, root, case)
+        except reader.NoPublishedConfig:
+            # A configuration published before the cross-check sections
+            # existed: the checks wait for the next publish.
+            pass
     queries.refresh(conn, root, case_id)
     _update_stage(conn, root, case_id, running_job)
 

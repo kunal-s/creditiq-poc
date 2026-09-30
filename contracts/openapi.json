@@ -1558,6 +1558,17 @@
             "title": "Outcome",
             "type": "string"
           },
+          "query": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Query"
+          },
           "rule_id": {
             "title": "Rule Id",
             "type": "string"

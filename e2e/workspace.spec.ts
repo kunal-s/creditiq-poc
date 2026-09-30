@@ -174,3 +174,35 @@ test("Policy lists every norm with its required and actual value, deviations fir
     "Cannot evaluate: Commercial bureau rank not on file.",
   );
 });
+
+test("Outputs: the spread, the draft CAM and the PD note, each figure cited", async ({ page }) => {
+  const api = new MockApi();
+  await signedIn(page, api);
+  await page.goto(`/appraisals/${KESTREL}/outputs`);
+  await expect(page.getByTestId("spread-interim")).toBeVisible();
+  const revenue = page.locator('[data-testid="spread-row"][data-row="revenue_from_operations"]');
+  await revenue.getByTestId("spread-value").click();
+  await expect(page.getByTestId("evidence-viewer").getByTestId("viewer-page")).toContainText("4");
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("wc-verdict")).toContainText("INR 6.00 cr");
+
+  await page.getByTestId("view-cam").click();
+  const cam = page.getByTestId("cam");
+  await expect(cam.locator('[data-section="financials"]').getByTestId("citation")).toHaveCount(1);
+  await expect(cam.locator('[data-section="banking"]')).toContainText("Nothing on file yet.");
+  await expect(page.getByTestId("cam-summary")).toContainText("Findings (1)");
+  await expect(page.getByTestId("cam-recommendation")).toContainText("For credit to complete.");
+
+  await page.getByTestId("view-pd").click();
+  const questions = page.getByTestId("pd-question");
+  await expect(questions).toHaveCount(2);
+  await expect(questions.first()).toContainText("What are these payments for?");
+  await expect(questions.first().getByRole("link")).toHaveAttribute(
+    "href",
+    `/appraisals/${KESTREL}/cross-verification`,
+  );
+  await expect(questions.nth(1).getByRole("link")).toHaveAttribute(
+    "href",
+    `/appraisals/${KESTREL}/policy`,
+  );
+});

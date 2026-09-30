@@ -39,3 +39,21 @@ export function usePolicy(caseId: string) {
     queryFn: () => api.casePolicy(caseId),
   });
 }
+
+/** The spread, interim layout (F-22). */
+export function useSpread(caseId: string) {
+  return useQuery({ queryKey: ["cases", caseId, "spread"], queryFn: () => api.caseSpread(caseId) });
+}
+
+/** The draft CAM (F-23). */
+export function useCam(caseId: string) {
+  return useQuery({ queryKey: ["cases", caseId, "cam"], queryFn: () => api.caseCam(caseId) });
+}
+
+/** The PD question note (F-24). */
+export function usePdNote(caseId: string) {
+  return useQuery({
+    queryKey: ["cases", caseId, "pd-note"],
+    queryFn: () => api.casePdNote(caseId),
+  });
+}

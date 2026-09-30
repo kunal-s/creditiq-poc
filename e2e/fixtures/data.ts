@@ -3,9 +3,11 @@
 // contract (src/api/types.ts). Every name here is fictional and was checked
 // against the excluded-terms list.
 import type {
+  Cam,
   CaseDetail,
   CaseFacts,
   Finding,
+  PdNote,
   PolicyAssessment,
   CaseProposal,
   CaseSummary,
@@ -21,6 +23,7 @@ import type {
   Readiness,
   ReviewItem,
   SessionUser,
+  Spread,
   Span,
 } from "../../src/api/types";
 
@@ -867,6 +870,122 @@ export const POLICY: PolicyAssessment = {
       missing: [],
       note: null,
       provisional: true,
+    },
+  ],
+};
+
+// --- Outputs (F-22 to F-24) ---
+
+const cite = (page: number) => [{ document_id: "doc-bs", page }];
+
+export const SPREAD: Spread = {
+  case_id: KESTREL,
+  interim: true,
+  columns: [{ key: "audited-2026", fy: "FY 2025-26", period_end: "2026-03-31", basis: "audited" }],
+  rows: [
+    {
+      key: "revenue_from_operations",
+      label: "Revenue from operations",
+      section: "profit_and_loss",
+      kind: "line",
+      unit: "inr",
+      formula: null,
+      cells: [{ value: 300_000_000, evidence: cite(4), relies_on_manual: false }],
+    },
+    {
+      key: "current-ratio",
+      label: "Current ratio",
+      section: "ratios",
+      kind: "ratio",
+      unit: "x",
+      formula: "Current assets ÷ Current liabilities",
+      cells: [{ value: 1.5, evidence: cite(4), relies_on_manual: false }],
+    },
+  ],
+  working_capital: {
+    method: "turnover",
+    reason: "The request is within INR 5.00 cr, so the turnover method applies.",
+    column: "FY 2025-26 (audited)",
+    steps: [
+      {
+        label: "Turnover",
+        value: 300_000_000,
+        unit: "inr",
+        basis: "Revenue from operations",
+        evidence: cite(4),
+      },
+      {
+        label: "Eligible bank finance",
+        value: 60_000_000,
+        unit: "inr",
+        basis: "Requirement less the margin",
+        evidence: [],
+      },
+    ],
+    eligible: 60_000_000,
+    requested: 50_000_000,
+    missing: [],
+  },
+};
+
+export const CAM: Cam = {
+  case_id: KESTREL,
+  interim_template: true,
+  sections: [
+    {
+      id: "financials",
+      title: "Financial performance",
+      paragraphs: [
+        { text: "Revenue from operations was INR 30.00 cr in FY 2025-26.", citations: cite(4) },
+      ],
+      table: null,
+      empty: null,
+    },
+    {
+      id: "banking",
+      title: "Banking and account conduct",
+      paragraphs: [],
+      table: null,
+      empty: "Nothing on file yet.",
+    },
+  ],
+  summary_title: "Summary of findings, deviations and open queries",
+  summary: [
+    {
+      kind: "finding",
+      severity: "serious",
+      ref: "fnd-ob2",
+      text: "Regular debits to lender(s) not declared: ASHWOOD FINSERV.",
+      citations: [{ document_id: "doc-bank", page: 7 }],
+    },
+    { kind: "query", severity: null, ref: "q1", text: "KYC of Leela Varghese.", citations: [] },
+  ],
+  recommendation_title: "Recommendation",
+  recommendation: "",
+};
+
+export const PD_NOTE: PdNote = {
+  case_id: KESTREL,
+  questions: [
+    {
+      id: "pdq-1",
+      text: "Regular debits to lender(s) not declared: ASHWOOD FINSERV. What are these payments for?",
+      severity: "serious",
+      source: "finding",
+      ref: "fnd-ob2",
+      rule: "OB-02",
+      title: "Instalments in bank statements go to declared lenders",
+      evidence: [{ document_id: "doc-bank", page: 7 }],
+    },
+    {
+      id: "pdq-2",
+      text: "Debt / equity is 3.00x against a norm of at most 2.00x. What explains it?",
+      severity: "moderate",
+      source: "deviation",
+      ref: "FR-05",
+      rule: "FR-05",
+      title: "Debt / equity",
+      evidence: cite(4),
     },
   ],
 };

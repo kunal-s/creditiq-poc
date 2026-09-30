@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { CamView, PdNoteView, SpreadView } from "@/components/case/Outputs";
 import { TabSection } from "@/components/case/TabSection";
-import { ScreenPending } from "@/components/shell/ScreenPending";
 import { t } from "@/config/terminology";
 import { cn } from "@/lib/utils";
 
@@ -10,10 +10,10 @@ import { cn } from "@/lib/utils";
 const VIEWS = ["spread", "cam", "pd"] as const;
 type View = (typeof VIEWS)[number];
 
-const SECTION: Record<View, { page: string; feature: string }> = {
-  spread: { page: "spread", feature: "F-22" },
-  cam: { page: "draft", feature: "F-23" },
-  pd: { page: "draft", feature: "F-24" },
+const SECTION: Record<View, { page: string }> = {
+  spread: { page: "spread" },
+  cam: { page: "draft" },
+  pd: { page: "draft" },
 };
 
 export const Route = createFileRoute("/appraisals/$caseId/outputs")({
@@ -57,7 +57,15 @@ function OutputsTab() {
         title={t(`page.${section.page}.title`)}
         purpose={t(`page.${section.page}.purpose`)}
       >
-        <ScreenPending feature={section.feature} />
+        <div className="px-4 py-4 sm:px-6">
+          {view === "spread" ? (
+            <SpreadView caseId={caseId} />
+          ) : view === "cam" ? (
+            <CamView caseId={caseId} />
+          ) : (
+            <PdNoteView caseId={caseId} />
+          )}
+        </div>
       </TabSection>
     </div>
   );

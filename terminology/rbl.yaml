@@ -52,6 +52,41 @@ outputs:
     spread: Spread
     cam: Draft CAM
     pd: PD note
+  spread:
+    title: Financial spread
+    line: Line item
+    interim: This spread uses an interim layout. It will follow RBL's spread template, with an Excel export, when the template is available.
+    emptyTitle: No financial statements yet
+    emptyDescription: The spread fills in once audited, provisional or projected statements have been read.
+    wcTitle: Working-capital assessment
+    wcMissing: "Cannot be computed: {inputs} not on file."
+    wcVerdict: "Eligible bank finance {eligible} against the request of {requested}."
+    basis:
+      audited: Audited
+      provisional: Provisional
+      projected: Projected
+    section:
+      profit_and_loss: Profit and loss
+      balance_sheet: Balance sheet
+      ratios: Ratios
+  cam:
+    eyebrow: Draft for credit
+    title: Credit Approval Memo
+    interim: Sections follow an interim list until RBL's CAM template is available. Every figure links to the page it comes from.
+    recommendationEmpty: For credit to complete.
+    summary:
+      finding: "Findings ({n})"
+      deviation: "Deviations from policy ({n})"
+      query: "Open queries ({n})"
+  pd:
+    title: Questions for the personal discussion
+    subtitle: "{n} question(s), most serious first, each tied to its finding and pages."
+    emptyTitle: No questions yet
+    emptyDescription: Questions come from cross-check findings, policy deviations and open gaps.
+    source:
+      finding: Cross-check finding
+      deviation: Policy deviation
+      gap: Open gap
 
 # How serious a cross-check finding is (F-19.1).
 severity:

@@ -1,4 +1,5 @@
 import type {
+  Cam,
   CaseCreate,
   CaseDetail,
   CaseFacts,
@@ -14,6 +15,7 @@ import type {
   LogicalDocument,
   Meta,
   Party,
+  PdNote,
   PolicyAssessment,
   ProposalRequest,
   QueryItem,
@@ -21,6 +23,7 @@ import type {
   ReviewDecisionRequest,
   ReviewItem,
   SessionUser,
+  Spread,
   UploadResult,
 } from "./types";
 
@@ -132,6 +135,9 @@ export const api = {
   caseFindings: (id: string) => request<Finding[]>(`/api/cases/${q(id)}/findings`),
   caseFacts: (id: string) => request<CaseFacts>(`/api/cases/${q(id)}/facts`),
   casePolicy: (id: string) => request<PolicyAssessment>(`/api/cases/${q(id)}/policy`),
+  caseSpread: (id: string) => request<Spread>(`/api/cases/${q(id)}/spread`),
+  caseCam: (id: string) => request<Cam>(`/api/cases/${q(id)}/cam`),
+  casePdNote: (id: string) => request<PdNote>(`/api/cases/${q(id)}/pd-note`),
   reviewQueue: (options: { caseId?: string; includeDecided?: boolean } = {}) => {
     const params = new URLSearchParams();
     if (options.caseId) params.set("case_id", options.caseId);

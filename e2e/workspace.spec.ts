@@ -152,3 +152,25 @@ test("a blocking cross-check finding shows on the Completeness summary", async (
   await page.getByTestId("blocking-findings").click();
   await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}/cross-verification$`));
 });
+
+test("Policy lists every norm with its required and actual value, deviations first", async ({
+  page,
+}) => {
+  const api = new MockApi();
+  await signedIn(page, api);
+  await page.goto(`/appraisals/${KESTREL}/policy`);
+  await expect(page.getByTestId("deviation-summary")).toContainText("1 deviation(s) from policy");
+  await expect(page.getByTestId("deviation-summary")).toContainText(
+    "Financial norms: Debt / equity",
+  );
+  const de = page.locator('[data-testid="norm"][data-norm="FR-05"]');
+  await expect(de).toContainText("at most 2.00x");
+  await expect(de.getByTestId("norm-actual")).toHaveText("3.00x");
+  await de.getByTestId("norm-input").first().getByRole("button").click();
+  await expect(page.getByTestId("evidence-viewer").getByTestId("viewer-page")).toContainText("4");
+  await page.keyboard.press("Escape");
+  const rank = page.locator('[data-testid="norm"][data-norm="EL-02"]');
+  await expect(rank.getByTestId("norm-missing")).toHaveText(
+    "Cannot evaluate: Commercial bureau rank not on file.",
+  );
+});

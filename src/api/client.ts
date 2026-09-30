@@ -14,6 +14,7 @@ import type {
   LogicalDocument,
   Meta,
   Party,
+  PolicyAssessment,
   ProposalRequest,
   QueryItem,
   Readiness,
@@ -130,6 +131,7 @@ export const api = {
   caseQueries: (id: string) => request<QueryItem[]>(`/api/cases/${q(id)}/queries`),
   caseFindings: (id: string) => request<Finding[]>(`/api/cases/${q(id)}/findings`),
   caseFacts: (id: string) => request<CaseFacts>(`/api/cases/${q(id)}/facts`),
+  casePolicy: (id: string) => request<PolicyAssessment>(`/api/cases/${q(id)}/policy`),
   reviewQueue: (options: { caseId?: string; includeDecided?: boolean } = {}) => {
     const params = new URLSearchParams();
     if (options.caseId) params.set("case_id", options.caseId);

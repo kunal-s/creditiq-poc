@@ -8,6 +8,7 @@ import type {
   CaseDetail,
   CaseFacts,
   Finding,
+  PolicyAssessment,
   CaseProgress,
   CaseProposal,
   CaseSummary,
@@ -38,6 +39,7 @@ import {
   LOOSE_FILES,
   META,
   ORIEL,
+  POLICY,
   ORIEL_CHECKLIST,
   PAGE_PNG,
   PARTIES,
@@ -72,6 +74,7 @@ export class MockApi {
   review: ReviewItem[] = structuredClone(REVIEW);
   findings = new Map<string, Finding[]>([[KESTREL, FINDINGS]]);
   facts = new Map<string, CaseFacts>([[KESTREL, FACTS]]);
+  policy = new Map<string, PolicyAssessment>([[KESTREL, POLICY]]);
   /** Document reads still to answer as "received" before the final state. */
   pendingReads = new Map<string, number>();
   proposal: CaseProposal = proposal();
@@ -237,6 +240,14 @@ export class MockApi {
       ["GET", new RegExp(`^/api/cases/${id}/fields$`), one(this.fields, [])],
       ["GET", new RegExp(`^/api/cases/${id}/parties$`), one(this.parties, [])],
       ["GET", new RegExp(`^/api/cases/${id}/findings$`), one(this.findings, [])],
+      [
+        "GET",
+        new RegExp(`^/api/cases/${id}/policy$`),
+        (_req, m) => {
+          const caseId = decodeURIComponent(m[1]!);
+          return { json: this.policy.get(caseId) ?? { case_id: caseId, period: null, norms: [] } };
+        },
+      ],
       [
         "GET",
         new RegExp(`^/api/cases/${id}/facts$`),

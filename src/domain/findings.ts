@@ -31,3 +31,11 @@ export function countOutcomes(findings: Finding[]): Record<FindingOutcome, numbe
   for (const f of findings) counts[f.outcome] += 1;
   return counts;
 }
+
+/** Every policy norm for the case, with its outcome (F-20). */
+export function usePolicy(caseId: string) {
+  return useQuery({
+    queryKey: ["cases", caseId, "policy"],
+    queryFn: () => api.casePolicy(caseId),
+  });
+}

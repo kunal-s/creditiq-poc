@@ -66,3 +66,6 @@ export type AccountCredits = S["AccountCredits"];
 export type Obligation = S["Obligation"];
 export type AccountFact = S["AccountFact"];
 export type FacilityFact = S["FacilityFact"];
+export type PolicyAssessment = S["PolicyAssessment"];
+export type NormResult = S["NormResult"];
+export type NormOutcome = NormResult["outcome"];

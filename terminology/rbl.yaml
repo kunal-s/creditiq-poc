@@ -102,6 +102,33 @@ facts:
   none: Nothing on file yet.
   noTransactions: No bank transactions have been read yet.
 
+# Policy norms and deviations (F-20).
+policy:
+  title: Norms
+  summary: "{n} norms · {deviation} deviation(s) · {cannot} cannot be evaluated · {pass} passed"
+  deviations: "{n} deviation(s) from policy"
+  noDeviations: No deviation from the norms assessed.
+  period: "Financial figures from the audited statements for {period}."
+  required: Required
+  actual: Actual
+  rank: "rank {n}"
+  provisional: Provisional norm
+  missing: "Cannot evaluate: {inputs} not on file."
+  outcome:
+    cannot_evaluate: Cannot evaluate
+    not_applicable: Not applicable
+  filter:
+    all: "All ({n})"
+    deviation: "Deviations ({n})"
+    cannot_evaluate: "Cannot evaluate ({n})"
+    pass: "Passed ({n})"
+    not_applicable: "Not applicable ({n})"
+  family:
+    eligibility: Eligibility
+    ratios: Financial ratios
+    security_cover: Security cover
+    documentation: Documentation
+
 # Extracted data by kind of document (FRD §6).
 fieldSection:
   identity: Entity and identity

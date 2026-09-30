@@ -43,6 +43,8 @@ def test_stage_follows_processing_and_is_stored_on_the_case(client: TestClient, 
     status = _status(progress)
     assert status["documents"] in ("done", "needs_attention")
     assert status["extraction"] != "not_started"
+    # Nothing is running, so no stage says it is.
+    assert "in_progress" not in status.values()
     # Cross-verification onwards has no feature yet.
     assert [status[k] for k in KEYS[3:]] == ["not_started"] * 3
     assert client.get(f"/api/cases/{case_id}", headers=rm).json()["stage"] == progress["stage"]

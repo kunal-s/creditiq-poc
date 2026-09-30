@@ -103,10 +103,12 @@ def compute(conn: sqlite3.Connection, root: Path, case: CaseDetail, *, running_j
         attention=sum(1 for i in items if i.status in ("missing", "insufficient")),
     )
     if docs.status != "not_started":
-        if extraction.status == "done" and docs.status == "done":
-            complete.status = "done" if readiness.gate_met else "needs_attention"
-        else:
+        if "in_progress" in (docs.status, extraction.status):
             complete.status = "in_progress"
+        elif readiness.gate_met:
+            complete.status = "done"
+        else:
+            complete.status = "needs_attention"
 
     stages = [
         docs,

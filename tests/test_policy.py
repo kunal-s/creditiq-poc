@@ -111,3 +111,15 @@ def test_policy_needs_the_findings_permission(client: TestClient, published_data
     rm = sign_in(client, RM)
     case_id = make_case(client, rm, published_data_root)
     assert client.get(f"/api/cases/{case_id}/policy", headers=rm).status_code == 403
+
+
+def test_figures_are_taken_from_any_copy_of_the_latest_year(client: TestClient, published_data_root: Path):
+    analyst = sign_in(client, ANALYST)
+    case_id = make_case(client, analyst, published_data_root)
+    add_doc(published_data_root, case_id, "audited_financial_statements",
+            {"period_end": "2026-03-31", "revenue_from_operations": 300_000_000})
+    add_doc(published_data_root, case_id, "audited_financial_statements", FINANCIALS)
+    add_doc(published_data_root, case_id, "audited_financial_statements",
+            {"period_end": "2025-03-31", "current_assets": 1, "current_liabilities": 100})
+    norms = _policy(client, analyst, case_id)
+    assert norms["FR-01"]["outcome"] == "pass" and norms["FR-01"]["actual"] == 1.5

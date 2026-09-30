@@ -101,11 +101,16 @@ def gather(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> Inputs:
     years = {facts_module.fy_of(end.year, end.month, start) for end, _ in audited}
     inputs.put("audited_years", len(years), [e for _, d in audited for e in d.evidence(d.get("period_end"))[:1]])
     if audited:
-        end, latest = audited[-1]
+        end = audited[-1][0]
         inputs.period = facts_module.fy_name(facts_module.fy_of(end.year, end.month, start), start)
+        # More than one copy of the latest year's statements: each figure
+        # from the first copy that has it.
+        latest = [d for e, d in audited if e == end]
         for name in FINANCIAL_INPUTS:
-            v = latest.get(name)
-            inputs.put(name, _number(v), latest.evidence(v) if v else None, bool(v and v.manual))
+            found = next(((d, d.get(name)) for d in latest if _number(d.get(name)) is not None), None)
+            if found:
+                d, v = found
+                inputs.put(name, _number(v), d.evidence(v), v.manual)
 
     # The case: the amount asked for.
     inputs.put("amount_requested", case.amount_inr)

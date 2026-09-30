@@ -333,6 +333,24 @@ class CrossChecksSection(BaseModel):
     """The personal-discussion question for a check left incomplete (F-24.1)."""
 
 
+class CamSectionDef(BaseModel):
+    id: str
+    kind: Literal[
+        "borrower_profile", "proposal", "promoters", "financial_performance", "working_capital", "banking",
+        "existing_facilities", "cross_verification", "policy", "documentation",
+    ]
+    title: str
+
+
+class CamSectionConfig(BaseModel):
+    """config/cam.yaml (F-23.1)."""
+
+    interim_template: bool
+    sections: list[CamSectionDef]
+    summary_title: str
+    recommendation_title: str
+
+
 class ConfidenceSection(BaseModel):
     """config/confidence.yaml (F-17.1)."""
 
@@ -352,6 +370,7 @@ SECTION_MODELS: dict[str, type[BaseModel]] = {
     "confidence": ConfidenceSection,
     "alignment": AlignmentSection,
     "crosschecks": CrossChecksSection,
+    "cam": CamSectionConfig,
 }
 
 

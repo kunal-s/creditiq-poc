@@ -86,3 +86,47 @@ class PdQuestion(BaseModel):
 class PdNote(BaseModel):
     case_id: str
     questions: list[PdQuestion]
+
+
+class CamText(BaseModel):
+    """A statement in the memo with the pages it rests on (F-23.2)."""
+
+    text: str
+    citations: list[Evidence] = Field(default_factory=list)
+
+
+class CamTable(BaseModel):
+    columns: list[str]
+    rows: list[list[CamText]]
+
+
+class CamSection(BaseModel):
+    id: str
+    title: str
+    paragraphs: list[CamText] = Field(default_factory=list)
+    table: CamTable | None = None
+    empty: str | None = None
+    """What is shown when the section has nothing on file yet."""
+
+
+class CamSummaryItem(BaseModel):
+    kind: Literal["finding", "deviation", "query"]
+    text: str
+    severity: Literal["serious", "moderate", "mild"] | None = None
+    ref: str
+    citations: list[Evidence] = Field(default_factory=list)
+
+
+class Cam(BaseModel):
+    """The draft Credit Approval Memo (F-23)."""
+
+    case_id: str
+    interim_template: bool
+    """Sections from the interim list until RBL's template arrives (F-23.1)."""
+    sections: list[CamSection]
+    summary_title: str
+    summary: list[CamSummaryItem]
+    """Findings, deviations and open queries (F-23.3)."""
+    recommendation_title: str
+    recommendation: str = ""
+    """Left empty for credit to complete (F-23.4)."""

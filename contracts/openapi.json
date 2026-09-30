@@ -102,6 +102,201 @@
         "title": "AccountFact",
         "type": "object"
       },
+      "Cam": {
+        "description": "The draft Credit Approval Memo (F-23).",
+        "properties": {
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "interim_template": {
+            "title": "Interim Template",
+            "type": "boolean"
+          },
+          "recommendation": {
+            "default": "",
+            "title": "Recommendation",
+            "type": "string"
+          },
+          "recommendation_title": {
+            "title": "Recommendation Title",
+            "type": "string"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/CamSection"
+            },
+            "title": "Sections",
+            "type": "array"
+          },
+          "summary": {
+            "items": {
+              "$ref": "#/components/schemas/CamSummaryItem"
+            },
+            "title": "Summary",
+            "type": "array"
+          },
+          "summary_title": {
+            "title": "Summary Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "case_id",
+          "interim_template",
+          "sections",
+          "summary_title",
+          "summary",
+          "recommendation_title"
+        ],
+        "title": "Cam",
+        "type": "object"
+      },
+      "CamSection": {
+        "properties": {
+          "empty": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Empty"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "paragraphs": {
+            "items": {
+              "$ref": "#/components/schemas/CamText"
+            },
+            "title": "Paragraphs",
+            "type": "array"
+          },
+          "table": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CamTable"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "CamSection",
+        "type": "object"
+      },
+      "CamSummaryItem": {
+        "properties": {
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "finding",
+              "deviation",
+              "query"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "ref": {
+            "title": "Ref",
+            "type": "string"
+          },
+          "severity": {
+            "anyOf": [
+              {
+                "enum": [
+                  "serious",
+                  "moderate",
+                  "mild"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Severity"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "text",
+          "ref"
+        ],
+        "title": "CamSummaryItem",
+        "type": "object"
+      },
+      "CamTable": {
+        "properties": {
+          "columns": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Columns",
+            "type": "array"
+          },
+          "rows": {
+            "items": {
+              "items": {
+                "$ref": "#/components/schemas/CamText"
+              },
+              "type": "array"
+            },
+            "title": "Rows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "columns",
+          "rows"
+        ],
+        "title": "CamTable",
+        "type": "object"
+      },
+      "CamText": {
+        "description": "A statement in the memo with the pages it rests on (F-23.2).",
+        "properties": {
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "CamText",
+        "type": "object"
+      },
       "Candidate": {
         "properties": {
           "confidence": {
@@ -4291,6 +4486,62 @@
           }
         },
         "summary": "Get Case"
+      }
+    },
+    "/api/cases/{case_id}/cam": {
+      "get": {
+        "description": "F-23: the draft CAM, every figure cited, ending in the structured summary.",
+        "operationId": "case_cam_api_cases__case_id__cam_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cam"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Cam"
       }
     },
     "/api/cases/{case_id}/checklist": {

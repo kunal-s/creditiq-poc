@@ -13,6 +13,7 @@ type = forbidden
 source_modules =
     engine.api
     engine.auth
+    engine.cam
     engine.cases
     engine.checklist
     engine.completeness

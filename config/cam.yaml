@@ -1,0 +1,19 @@
+# The draft Credit Approval Memo (docs/functional-requirements.md F-23).
+# Interim section list until RBL's CAM template and completed examples
+# arrive (FRD C.3); then the sections follow RBL's template. Each section's
+# `kind` says what it is drafted from; titles are RBL-facing text.
+
+interim_template: true
+sections:
+  - {id: borrower, kind: borrower_profile, title: Borrower profile}
+  - {id: proposal, kind: proposal, title: Proposal}
+  - {id: promoters, kind: promoters, title: Promoters and management}
+  - {id: financials, kind: financial_performance, title: Financial performance}
+  - {id: working_capital, kind: working_capital, title: Assessment of working-capital requirement}
+  - {id: banking, kind: banking, title: Banking and account conduct}
+  - {id: obligations, kind: existing_facilities, title: Existing facilities and obligations}
+  - {id: verification, kind: cross_verification, title: Cross-verification of sources}
+  - {id: policy, kind: policy, title: Compliance with policy norms}
+  - {id: documentation, kind: documentation, title: Documentation status}
+summary_title: Summary of findings, deviations and open queries
+recommendation_title: Recommendation

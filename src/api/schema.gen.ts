@@ -116,6 +116,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/cases/{case_id}/cam": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Case Cam
+     * @description F-23: the draft CAM, every figure cited, ending in the structured summary.
+     */
+    get: operations["case_cam_api_cases__case_id__cam_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/cases/{case_id}/checklist": {
     parameters: {
       query?: never;
@@ -548,6 +568,74 @@ export interface components {
       last4: string | null;
       /** Sources */
       sources: string[];
+    };
+    /**
+     * Cam
+     * @description The draft Credit Approval Memo (F-23).
+     */
+    Cam: {
+      /** Case Id */
+      case_id: string;
+      /** Interim Template */
+      interim_template: boolean;
+      /**
+       * Recommendation
+       * @default
+       */
+      recommendation: string;
+      /** Recommendation Title */
+      recommendation_title: string;
+      /** Sections */
+      sections: components["schemas"]["CamSection"][];
+      /** Summary */
+      summary: components["schemas"]["CamSummaryItem"][];
+      /** Summary Title */
+      summary_title: string;
+    };
+    /** CamSection */
+    CamSection: {
+      /** Empty */
+      empty?: string | null;
+      /** Id */
+      id: string;
+      /** Paragraphs */
+      paragraphs?: components["schemas"]["CamText"][];
+      table?: components["schemas"]["CamTable"] | null;
+      /** Title */
+      title: string;
+    };
+    /** CamSummaryItem */
+    CamSummaryItem: {
+      /** Citations */
+      citations?: components["schemas"]["Evidence"][];
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: "finding" | "deviation" | "query";
+      /** Ref */
+      ref: string;
+      /** Severity */
+      severity?: ("serious" | "moderate" | "mild") | null;
+      /** Text */
+      text: string;
+    };
+    /** CamTable */
+    CamTable: {
+      /** Columns */
+      columns: string[];
+      /** Rows */
+      rows: components["schemas"]["CamText"][][];
+    };
+    /**
+     * CamText
+     * @description A statement in the memo with the pages it rests on (F-23.2).
+     */
+    CamText: {
+      /** Citations */
+      citations?: components["schemas"]["Evidence"][];
+      /** Text */
+      text: string;
     };
     /** Candidate */
     Candidate: {
@@ -2243,6 +2331,39 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  case_cam_api_cases__case_id__cam_get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Cam"];
+        };
       };
       /** @description Validation Error */
       422: {

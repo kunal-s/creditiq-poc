@@ -15,6 +15,7 @@ from pathlib import Path
 
 from .schema import (
     AlignmentSection,
+    CamSectionConfig,
     ChecklistTaxonomySection,
     ConfidenceSection,
     CrossChecksSection,
@@ -87,6 +88,10 @@ def load_tolerances(data_root: Path) -> TolerancesSection:
 
 def load_alignment(data_root: Path) -> AlignmentSection:
     return AlignmentSection.model_validate(_load_section(data_root, "alignment"))
+
+
+def load_cam(data_root: Path) -> CamSectionConfig:
+    return CamSectionConfig.model_validate(_load_section(data_root, "cam"))
 
 
 def load_crosschecks(data_root: Path) -> CrossChecksSection:

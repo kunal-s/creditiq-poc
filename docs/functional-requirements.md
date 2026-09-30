@@ -1209,7 +1209,7 @@ flowchart TD
 
 **Tests.** TC-18 (C3, C8).
 
-**Depends on.** F-15, F-18. **RBL's spread template** (C.3).
+**Depends on.** F-15, F-18. **RBL's spread template** (C.3); until it arrives, an interim layout on screen (decision C.4-8).
 
 **Requirements**
 
@@ -1456,7 +1456,7 @@ flowchart TD
 |---|---|---|
 | BBG document checklist by product and constitution | F-12, F-13 | Published-policy checklist (exists) |
 | CAM template (blank) and two or three completed examples | F-23 | Interim section list |
-| Spread template (Excel) | F-22 | None: F-22 waits |
+| Spread template (Excel) | F-22 | Interim spread on screen, no export (decision C.4-8) |
 | Key BBG policy norms: eligibility, ratios, security cover, documentation, deviation categories | F-20 | Published-policy ratios (exist, provisional) |
 | Approval and delegation matrix | F-21 | F-21 not built without it |
 | Credit tolerances (for example turnover variance) | F-19 | Delivery-team proposal, marked provisional |
@@ -1473,9 +1473,10 @@ flowchart TD
 | 2 | Constitutions: the checklist covers private limited, partnership and proprietorship. Add LLP and public limited? | F-12 | Open. Add them if the case set includes either |
 | 3 | Development data before RBL's cases arrive | Phase 2 | **Decided 29 Sep 2026:** controlled test documents under `tests/fixtures/TC-xx/`, each with its expected result (AD-6) |
 | 4 | Where the model runs for RBL data, and which provider | Phase 2 | Open for RBL data. For development, no model key yet: a stub provider plus recorded responses (AD-5) |
-| 5 | CAM export format (Word, PDF, or both) | F-23 | Match RBL's template's native format |
+| 5 | CAM export format (Word, PDF, or both) | F-23 | Match RBL's template's native format. **Decided 30 Sep 2026:** on screen only until the template arrives |
 | 6 | Evidence region: page is mandatory (C7). Should the region on the page be shown too? | F-16 | Page for every value; region where cheaply available |
 | 7 | Screen structure: the prototype's two case workspaces and 12 case screens, or one workspace in processing order | Screens | **Decided 30 Sep 2026:** one case workspace whose tabs follow §5; the prototype's visual style is kept; the DocReady and Appraisal workspace names are dropped; screens call the record an appraisal (§6) |
+| 8 | Spread before RBL's template arrives | F-22 | **Decided 30 Sep 2026:** an interim spread on screen (statement lines, ratios and the working-capital assessment with workings, every figure cited), marked interim; re-mapped to RBL's rows and exported to Excel (F-22.4) when the template arrives |
 
 ## C.5 The base this build starts from
 

@@ -984,6 +984,7 @@ data:
     method: Method
     status: Status
   raw: "As printed: {raw}"
+    row: Row
   cell: "{table}, row {row} · {column}"
   detailsFields: Fields on this document
   readBy: Read by

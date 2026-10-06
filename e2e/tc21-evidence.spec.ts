@@ -46,7 +46,9 @@ test("TC-21: every field carries a confidence and a page link; corrections show 
   const fields = page.getByTestId("section-fields");
 
   const rows = fields.getByTestId("field-row");
-  await expect(rows).toHaveCount(6);
+  await expect(rows).toHaveCount(4);
+  // The two monthly cells sit in one table, not in rows of their own.
+  await expect(fields.getByTestId("field-table-row")).toHaveCount(2);
   // Every extracted (non-missing) value is a link to its page with a confidence.
   await expect(fields.getByTestId("field-value")).toHaveCount(5);
   await expect(fields.getByTestId("confidence")).toHaveCount(5);

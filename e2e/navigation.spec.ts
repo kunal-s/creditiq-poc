@@ -1,25 +1,21 @@
-// Navigation: a case's two flows with their sub-tabs show above the case
-// (top tabs and sub-tabs) and in the side menu; Help explains the steps.
+// Navigation: a case's steps are in the side menu and the stage bar;
+// Help explains the steps.
 import { expect, test } from "@playwright/test";
 import { KESTREL } from "./fixtures/data";
 import { MockApi, signedIn } from "./support/api";
 
-test("a case groups its steps into two flows with sub-tabs", async ({ page }) => {
+test("a case's steps are reached from the side menu and the stage bar", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api);
   await page.goto(`/appraisals/${KESTREL}`);
-  await expect(page.getByTestId("flow-ingestion")).toHaveText("Documents and data");
-  await expect(page.getByTestId("flow-verification")).toHaveText("Verification and policy");
-  // Sub-tabs show only inside their flow.
+  // One way in: no tab row above the case.
   await expect(page.getByTestId("tab-extraction")).toHaveCount(0);
-  await page.getByTestId("flow-ingestion").click();
+  await expect(page.getByTestId("flow-ingestion")).toHaveCount(0);
+  const nav = page.getByTestId("case-nav");
+  await nav.getByRole("link", { name: "Files" }).click();
   await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}/documents$`));
-  await page.getByTestId("tab-extraction").click();
+  await page.getByTestId("stage-extraction").click();
   await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}/extraction$`));
-  await page.getByTestId("flow-verification").click();
-  await expect(page.getByTestId("tab-crossVerification")).toBeVisible();
-  await expect(page.getByTestId("tab-policy")).toBeVisible();
-  await expect(page.getByTestId("tab-extraction")).toHaveCount(0);
 });
 
 test("the side menu lists the open case's flows and statuses", async ({ page }) => {

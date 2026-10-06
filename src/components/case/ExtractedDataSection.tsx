@@ -17,7 +17,14 @@ import {
   useCaseFiles,
   useDocumentTypes,
 } from "@/domain/documents";
-import { fieldLabel, formatValue, effectiveValue, useFields } from "@/domain/extraction";
+import {
+  fieldLabel,
+  formatValue,
+  effectiveValue,
+  groupFields,
+  useFields,
+  type FieldTable,
+} from "@/domain/extraction";
 import { cn } from "@/lib/utils";
 
 const FILTERS = ["all", "in_review", "missing", "corrected"] as const;
@@ -176,6 +183,7 @@ function DocumentFields({
   const files = useCaseFiles(caseId);
   const viewer = useDocViewer();
   const file = files.data?.find((f) => f.id === doc.file_id);
+  const { plain, tables } = groupFields(fields);
   const title = doc.classification?.types.length
     ? doc.classification.types.map(types.name).join(" + ")
     : t("document.unclassified");
@@ -204,39 +212,44 @@ function DocumentFields({
         </span>
       }
     >
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[480px] text-[12.5px]">
-          <thead>
-            <tr className="border-b border-border text-left text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">
-              <th className="px-4 py-2 font-medium">{t("data.col.field")}</th>
-              <th className="px-3 py-2 font-medium">{t("data.col.value")}</th>
-              <th className="px-3 py-2 font-medium">{t("data.col.confidence")}</th>
-              <th className="px-4 py-2 font-medium">{t("data.col.status")}</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {fields.map((f) => (
-              <tr key={f.id} className="align-top" data-testid="field-row">
-                <td className="px-4 py-2 text-muted-foreground">{fieldLabel(f.field)}</td>
-                <td className="px-3 py-2">
-                  <FieldValueButton caseId={caseId} field={f} />
-                </td>
-                <td className="px-3 py-2">
-                  <ConfidenceChip
-                    confidence={f.confidence}
-                    components={f.confidence_components}
-                    flagged={f.status === "in_review"}
-                  />
-                </td>
-                <td className="px-4 py-2">
-                  <FieldStatusChip status={f.status} />
-                  <FieldRowDecision field={f} />
-                </td>
+      {plain.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[480px] text-[12.5px]">
+            <thead>
+              <tr className="border-b border-border text-left text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">
+                <th className="px-4 py-2 font-medium">{t("data.col.field")}</th>
+                <th className="px-3 py-2 font-medium">{t("data.col.value")}</th>
+                <th className="px-3 py-2 font-medium">{t("data.col.confidence")}</th>
+                <th className="px-4 py-2 font-medium">{t("data.col.status")}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {plain.map((f) => (
+                <tr key={f.id} className="align-top" data-testid="field-row">
+                  <td className="px-4 py-2 text-muted-foreground">{fieldLabel(f.field)}</td>
+                  <td className="px-3 py-2">
+                    <FieldValueButton caseId={caseId} field={f} />
+                  </td>
+                  <td className="px-3 py-2">
+                    <ConfidenceChip
+                      confidence={f.confidence}
+                      components={f.confidence_components}
+                      flagged={f.status === "in_review"}
+                    />
+                  </td>
+                  <td className="px-4 py-2">
+                    <FieldStatusChip status={f.status} />
+                    <FieldRowDecision field={f} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {tables.map((table) => (
+        <FieldTableView key={table.name} caseId={caseId} table={table} />
+      ))}
       <div className="border-t border-border px-4 py-3">
         <Details testId="field-details">
           <table className="w-full text-[12px]">
@@ -264,5 +277,64 @@ function DocumentFields({
         </Details>
       </div>
     </Panel>
+  );
+}
+
+/** A table read from a document: one row per table row, one column per column,
+ * every cell still opens its source page and carries its own confidence and
+ * decision (F-16.1, F-17). */
+function FieldTableView({ caseId, table }: { caseId: string; table: FieldTable }) {
+  return (
+    <div
+      className="overflow-x-auto border-t border-border first:border-t-0"
+      data-testid="field-table"
+    >
+      <p className="px-4 pt-3 text-[11.5px] font-semibold text-muted-foreground">{table.title}</p>
+      <table className="mt-1 w-full text-[12.5px]">
+        <thead>
+          <tr className="border-b border-border text-left text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">
+            <th className="px-4 py-2 font-medium">{t("data.col.row")}</th>
+            {table.columns.map((c) => (
+              <th key={c.key} className="px-3 py-2 font-medium">
+                {c.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border">
+          {table.rows.map((row) => (
+            <tr key={row.index} className="align-top" data-testid="field-table-row">
+              <td className="tabular px-4 py-2 text-muted-foreground">{row.index + 1}</td>
+              {table.columns.map((c) => {
+                const f = row.cells[c.key];
+                return (
+                  <td
+                    key={c.key}
+                    className={cn("px-3 py-2", f?.status === "in_review" && "bg-flag-soft")}
+                  >
+                    {f ? (
+                      <>
+                        <FieldValueButton caseId={caseId} field={f} />
+                        <div className="mt-1 flex flex-wrap items-center gap-1">
+                          <ConfidenceChip
+                            confidence={f.confidence}
+                            components={f.confidence_components}
+                            flagged={f.status === "in_review"}
+                          />
+                          {f.status !== "accepted" && <FieldStatusChip status={f.status} />}
+                        </div>
+                        <FieldRowDecision field={f} />
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

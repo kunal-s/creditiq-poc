@@ -58,7 +58,8 @@ test("TC-02: create a case and upload documents at 375 px", async ({ page }) => 
   await expect(page).toHaveURL(/\/appraisals\/BBG-2026-000031$/);
   await expect(page.getByTestId("stage-progress")).toBeVisible();
   expect(await scrollsSideways(page)).toBe(false);
-  await page.getByTestId("flow-ingestion").click();
+  await page.getByRole("button", { name: /Stage 1 of 6/ }).click();
+  await page.getByTestId("stage-documents").first().click();
   await expect(page.getByTestId("tree-file")).toHaveCount(2);
   await expect(page.getByTestId("count-registered")).toHaveText("2");
   expect(await scrollsSideways(page)).toBe(false);
@@ -74,7 +75,7 @@ test("TC-02: overview, completeness and documents at 375 px", async ({ page }) =
   await page.goto(`/appraisals/${KESTREL}`);
   await expect(page.getByTestId("next-action")).toBeVisible();
   // An RM sees only the tabs their role may open.
-  await expect(page.getByTestId("tab-extraction")).toHaveCount(0);
+  await expect(page.locator('a[data-testid="stage-extraction"]')).toHaveCount(0);
   expect(await scrollsSideways(page)).toBe(false);
   await page.goto(`/appraisals/${KESTREL}/completeness`);
   await expect(page.getByTestId("checklist")).toBeVisible();

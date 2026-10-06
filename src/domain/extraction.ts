@@ -70,6 +70,49 @@ export function fieldLabel(field: string): string {
   return words(field);
 }
 
+export interface FieldTable {
+  /** The table's name as extracted, e.g. "monthly". */
+  name: string;
+  title: string;
+  columns: { key: string; label: string }[];
+  rows: { index: number; cells: Record<string, FieldValue> }[];
+}
+
+/** Splits a document's fields into plain fields and tables. Table cells are
+ * named `table[row].column`; they are grouped by table, with rows in order and
+ * columns in the order first seen. A cell a row lacks is simply absent. */
+export function groupFields(fields: FieldValue[]): { plain: FieldValue[]; tables: FieldTable[] } {
+  const plain: FieldValue[] = [];
+  const byName = new Map<
+    string,
+    { columns: string[]; rows: Map<number, Record<string, FieldValue>> }
+  >();
+  for (const f of fields) {
+    const m = f.field.match(/^(\w+)\[(\d+)\]\.(\w+)$/);
+    if (!m) {
+      plain.push(f);
+      continue;
+    }
+    const [, name = "", row = "0", column = ""] = m;
+    let table = byName.get(name);
+    if (!table) byName.set(name, (table = { columns: [], rows: new Map() }));
+    if (!table.columns.includes(column)) table.columns.push(column);
+    const cells = table.rows.get(Number(row)) ?? {};
+    cells[column] = f;
+    table.rows.set(Number(row), cells);
+  }
+  const tables = [...byName].map(([name, t]) => ({
+    name,
+    title: tOr(`tableTitle.${name}`, words(name)),
+    columns: t.columns.map((key) => ({
+      key,
+      label: tOr(`tableColumn.${name}.${key}`, words(key)),
+    })),
+    rows: [...t.rows].sort(([a], [b]) => a - b).map(([index, cells]) => ({ index, cells })),
+  }));
+  return { plain, tables };
+}
+
 export function formatValue(value: FieldValue["value"]): string {
   if (value === null || value === undefined) return "—";
   if (typeof value === "number") return value.toLocaleString("en-IN");

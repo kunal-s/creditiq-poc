@@ -13,8 +13,8 @@ import { stageDetail, useCaseProgress } from "@/domain/progress";
 import { useCan, useSession } from "@/domain/session";
 import { cn } from "@/lib/utils";
 
-// The case workspace (FRD §6): one header, the six processing stages, and
-// the tabs in processing order. Every tab renders into the outlet.
+// The case workspace (FRD §6): one header and the six processing stages.
+// The side menu holds the case's steps; every step renders into the outlet.
 
 export const Route = createFileRoute("/appraisals/$caseId")({
   component: CaseLayout,
@@ -40,7 +40,7 @@ function Layout({ c }: { c: CaseDetail }) {
 
   return (
     <div>
-      <div className="border-b border-border bg-surface-muted/60 px-4 pt-4 sm:px-6">
+      <div className="border-b border-border bg-surface-muted/60 px-4 py-4 sm:px-6">
         <CaseHeader c={c} stage={progress.data?.stage ?? c.stage} />
         {progress.data && (
           <div className="mt-3">
@@ -51,50 +51,7 @@ function Layout({ c }: { c: CaseDetail }) {
             />
           </div>
         )}
-        <nav className="-mb-px mt-3 flex gap-4 overflow-x-auto" aria-label={t("caseHeader.tabs")}>
-          {top.map((o) => {
-            const first = o.kind === "tab" ? o.tab : o.tabs[0]!;
-            const active = o.kind === "tab" ? o.tab === activeTab : o === activeFlow;
-            return (
-              <Link
-                key={o.kind === "tab" ? o.tab.key : o.flow.id}
-                to={caseTabPath(c.id, first)}
-                data-testid={o.kind === "tab" ? `tab-${o.tab.key}` : `flow-${o.flow.id}`}
-                className={cn(
-                  "shrink-0 border-b-2 pb-2 text-[12.5px] font-medium transition-colors",
-                  active
-                    ? "border-primary text-foreground"
-                    : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
-                )}
-              >
-                {o.kind === "tab" ? t(`caseTab.${o.tab.key}`) : t(`caseFlow.${o.flow.id}`)}
-              </Link>
-            );
-          })}
-        </nav>
       </div>
-      {activeFlow?.kind === "flow" && activeFlow.tabs.length > 1 && (
-        <nav
-          className="flex gap-1 overflow-x-auto border-b border-border px-4 py-2 sm:px-6"
-          aria-label={t("caseFlow.subTabs")}
-        >
-          {activeFlow.tabs.map((tab) => (
-            <Link
-              key={tab.key}
-              to={caseTabPath(c.id, tab)}
-              data-testid={`tab-${tab.key}`}
-              className={cn(
-                "shrink-0 rounded-full px-3 py-1 text-[12px] font-medium transition-colors",
-                tab === activeTab
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-surface-muted hover:text-foreground",
-              )}
-            >
-              {t(`caseTab.${tab.key}`)}
-            </Link>
-          ))}
-        </nav>
-      )}
       {activeFlow && activeStageProgress && (
         <p
           className="border-b border-border bg-surface px-4 py-2 text-[12.5px] text-muted-foreground sm:px-6"

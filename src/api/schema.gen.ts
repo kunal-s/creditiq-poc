@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+  "/api/audit": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Audit Trail
+     * @description The append-only decision log, newest first, filtered and paged.
+     */
+    get: operations["audit_trail_api_audit_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/auth/login": {
     parameters: {
       query?: never;
@@ -455,6 +475,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/config/versions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Config Versions */
+    get: operations["config_versions_api_config_versions_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/health": {
     parameters: {
       query?: never;
@@ -527,6 +564,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/users": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** User Directory */
+    get: operations["user_directory_api_users_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -568,6 +622,36 @@ export interface components {
       last4: string | null;
       /** Sources */
       sources: string[];
+    };
+    /** AuditEntry */
+    AuditEntry: {
+      /** Action */
+      action: string;
+      /** Actor */
+      actor: string;
+      /** Actor Name */
+      actor_name: string;
+      /** At */
+      at: string;
+      /** Case Id */
+      case_id: string | null;
+      /** Detail */
+      detail: {
+        [key: string]: unknown;
+      };
+      /** Seq */
+      seq: number;
+    };
+    /** AuditPage */
+    AuditPage: {
+      /** Actions */
+      actions: string[];
+      /** Actors */
+      actors: string[];
+      /** Entries */
+      entries: components["schemas"]["AuditEntry"][];
+      /** Next Before */
+      next_before: number | null;
     };
     /**
      * Cam
@@ -933,6 +1017,23 @@ export interface components {
       /** Types */
       types: string[];
     };
+    /** ConfigVersion */
+    ConfigVersion: {
+      /** Author */
+      author: string;
+      /** Current */
+      current: boolean;
+      /** Note */
+      note: string;
+      /** Prior Version */
+      prior_version: string | null;
+      /** Published At */
+      published_at: string;
+      /** Sections Changed */
+      sections_changed: string[];
+      /** Version */
+      version: string;
+    };
     /**
      * CoverageRule
      * @description What "complete" means for an item beyond presence (F-13.2), always
@@ -974,6 +1075,23 @@ export interface components {
       key: string;
       /** Label */
       label: string;
+    };
+    /** DirectoryUser */
+    DirectoryUser: {
+      /** Branch */
+      branch: string;
+      /** Email */
+      email: string;
+      /** Id */
+      id: string;
+      /** Name */
+      name: string;
+      /** Permissions */
+      permissions: string[];
+      /** Role */
+      role: string;
+      /** Rolelabel */
+      roleLabel: string;
     };
     /** DocumentTypeDef */
     DocumentTypeDef: {
@@ -2081,6 +2199,43 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  audit_trail_api_audit_get: {
+    parameters: {
+      query?: {
+        case_id?: string | null;
+        actor?: string | null;
+        action?: string | null;
+        before?: number | null;
+        limit?: number;
+      };
+      header?: {
+        authorization?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AuditPage"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   login_api_auth_login_post: {
     parameters: {
       query?: never;
@@ -2973,6 +3128,37 @@ export interface operations {
       };
     };
   };
+  config_versions_api_config_versions_get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ConfigVersion"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   health_api_health_get: {
     parameters: {
       query?: never;
@@ -3084,6 +3270,37 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ReviewItem"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  user_directory_api_users_get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DirectoryUser"][];
         };
       };
       /** @description Validation Error */

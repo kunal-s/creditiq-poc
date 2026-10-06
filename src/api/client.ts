@@ -7,6 +7,10 @@ import type {
   CaseProposal,
   CaseSummary,
   ChecklistTaxonomy,
+  ConfigVersion,
+  DirectoryUser,
+  AuditPage,
+  PolicyConfig,
   DocumentTypes,
   FieldValue,
   FileRecord,
@@ -153,4 +157,16 @@ export const api = {
 
   documentTypes: () => request<DocumentTypes>("/api/config/document-types"),
   checklistTaxonomy: () => request<ChecklistTaxonomy>("/api/config/checklist-taxonomy"),
+  policyConfig: () => request<PolicyConfig>("/api/config/policy"),
+  configVersions: () => request<ConfigVersion[]>("/api/config/versions"),
+  users: () => request<DirectoryUser[]>("/api/users"),
+  audit: (params: { caseId?: string; actor?: string; action?: string; before?: number }) => {
+    const q = new URLSearchParams();
+    if (params.caseId) q.set("case_id", params.caseId);
+    if (params.actor) q.set("actor", params.actor);
+    if (params.action) q.set("action", params.action);
+    if (params.before) q.set("before", String(params.before));
+    q.set("limit", "50");
+    return request<AuditPage>(`/api/audit?${q.toString()}`);
+  },
 };

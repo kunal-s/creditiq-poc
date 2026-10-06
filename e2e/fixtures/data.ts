@@ -37,8 +37,10 @@ export const ANALYST: SessionUser = {
   role: "analyst",
   roleLabel: "Credit Analyst",
   branch: "Mumbai hub",
-  navGroups: ["workbench", "governance", "help"],
+  navGroups: ["workbench", "governance", "administration", "help"],
   permissions: [
+    "audit.read",
+    "config.read",
     "case.create",
     "case.read",
     "case.read.all",
@@ -984,6 +986,98 @@ export const PD_NOTE: PdNote = {
       rule: "FR-05",
       title: "Debt / equity",
       evidence: cite(4),
+    },
+  ],
+};
+
+export const CONFIG_VERSIONS = [
+  {
+    version: "v2hash",
+    author: "Config Admin",
+    note: "Tighten the review gate",
+    published_at: "2026-10-01T09:30:00+00:00",
+    prior_version: "v1hash",
+    sections_changed: ["policy", "ingestion.fields"],
+    current: true,
+  },
+  {
+    version: "v1hash",
+    author: "Config Admin",
+    note: "",
+    published_at: "2026-09-20T09:30:00+00:00",
+    prior_version: null,
+    sections_changed: ["policy", "checklist_taxonomy"],
+    current: false,
+  },
+];
+
+export const USERS = [ANALYST, RM].map((u) => ({
+  id: u.id,
+  name: u.name,
+  role: u.role,
+  roleLabel: u.roleLabel,
+  email: u.email,
+  branch: u.branch,
+  permissions: u.permissions,
+}));
+
+export const AUDIT = {
+  entries: [
+    {
+      seq: 2,
+      at: "2026-10-02T10:00:00+00:00",
+      actor: "ananya-krishnan",
+      actor_name: "Ananya Krishnan",
+      case_id: "BBG-2026-000021",
+      action: "review.decided",
+      detail: { decision: "confirm", item_id: "x" },
+    },
+    {
+      seq: 1,
+      at: "2026-10-02T09:00:00+00:00",
+      actor: "ananya-krishnan",
+      actor_name: "Ananya Krishnan",
+      case_id: null,
+      action: "session.signed_in",
+      detail: {},
+    },
+  ],
+  next_before: null,
+  actors: ["ananya-krishnan"],
+  actions: ["review.decided", "session.signed_in"],
+};
+
+export const POLICY_CONFIG = {
+  working_capital: {},
+  ratios: [
+    {
+      key: "dscr",
+      label: "Debt service coverage",
+      unit: "x",
+      kind: "min",
+      acceptable: 1.25,
+      marginal: 1.1,
+    },
+  ],
+  deviation_categories: [{ key: "credit", label: "Credit" }],
+  norms: [
+    {
+      id: "FR-01",
+      family: "ratios",
+      expression: "x",
+      ratio: "dscr",
+      category: "credit",
+      status: "confirmed",
+    },
+    {
+      id: "EL-01",
+      family: "eligibility",
+      expression: "x",
+      label: "Business vintage",
+      unit: "years",
+      kind: "min",
+      threshold: 3,
+      category: "credit",
     },
   ],
 };

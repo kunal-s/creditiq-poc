@@ -111,3 +111,29 @@ def section_path(data_root: Path, section: str) -> Path:
     published configuration directly (the ingest sidecar, AD-2)."""
     version = published_version(data_root)["version"]
     return _store_dir(data_root) / "versions" / version / f"{section}.json"
+
+
+def publish_history(data_root: Path) -> list[dict]:
+    """Every published version, newest first, with the sections each changed
+    against the one before it (an administrator's audit view)."""
+    log = _store_dir(data_root) / "publish_log.jsonl"
+    entries = [json.loads(line) for line in log.read_text(encoding="utf-8").splitlines() if line.strip()] if log.exists() else []
+    current = published_version(data_root)["version"]
+    by_version = {e["version"]: e for e in entries}
+    out = []
+    for e in entries:
+        prior = by_version.get(e.get("prior_version") or "")
+        before = prior["section_hashes"] if prior else {}
+        changed = sorted(k for k, h in e["section_hashes"].items() if before.get(k) != h)
+        out.append(
+            {
+                "version": e["version"],
+                "author": e["author"],
+                "note": e.get("note", ""),
+                "published_at": e["published_at"],
+                "prior_version": e.get("prior_version"),
+                "sections_changed": changed,
+                "current": e["version"] == current,
+            }
+        )
+    return sorted(out, key=lambda v: v["published_at"], reverse=True)

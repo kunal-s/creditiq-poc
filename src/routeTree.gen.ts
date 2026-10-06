@@ -10,11 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AuditRouteImport } from './routes/audit'
 import { Route as ExceptionsRouteImport } from './routes/exceptions'
 import { Route as HelpRouteImport } from './routes/help'
 import { Route as ReviewRouteImport } from './routes/review'
 import { Route as ScorecardRouteImport } from './routes/scorecard'
 import { Route as SignInRouteImport } from './routes/sign-in'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminChecklistRouteImport } from './routes/admin.checklist'
+import { Route as AdminDocumentTypesRouteImport } from './routes/admin.document-types'
+import { Route as AdminPolicyRouteImport } from './routes/admin.policy'
+import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AppraisalsIndexRouteImport } from './routes/appraisals.index'
 import { Route as AppraisalsCaseIdRouteImport } from './routes/appraisals.$caseId'
 import { Route as AppraisalsNewRouteImport } from './routes/appraisals.new'
@@ -33,6 +40,16 @@ import { Route as AppraisalsCaseIdPolicyRouteImport } from './routes/appraisals.
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuditRoute = AuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExceptionsRoute = ExceptionsRouteImport.update({
@@ -59,6 +76,31 @@ const SignInRoute = SignInRouteImport.update({
   id: '/sign-in',
   path: '/sign-in',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminChecklistRoute = AdminChecklistRouteImport.update({
+  id: '/checklist',
+  path: '/checklist',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminDocumentTypesRoute = AdminDocumentTypesRouteImport.update({
+  id: '/document-types',
+  path: '/document-types',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPolicyRoute = AdminPolicyRouteImport.update({
+  id: '/policy',
+  path: '/policy',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AppraisalsIndexRoute = AppraisalsIndexRouteImport.update({
   id: '/appraisals/',
@@ -138,14 +180,21 @@ const AppraisalsCaseIdPolicyRoute = AppraisalsCaseIdPolicyRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
+  '/audit': typeof AuditRoute
   '/exceptions': typeof ExceptionsRoute
   '/help': typeof HelpRoute
   '/review': typeof ReviewRoute
   '/scorecard': typeof ScorecardRoute
   '/sign-in': typeof SignInRoute
+  '/admin/checklist': typeof AdminChecklistRoute
+  '/admin/document-types': typeof AdminDocumentTypesRoute
+  '/admin/policy': typeof AdminPolicyRoute
+  '/admin/users': typeof AdminUsersRoute
   '/appraisals/$caseId': typeof AppraisalsCaseIdRouteWithChildren
   '/appraisals/new': typeof AppraisalsNewRoute
   '/docready/$': typeof DocreadySplatRoute
+  '/admin/': typeof AdminIndexRoute
   '/appraisals/': typeof AppraisalsIndexRoute
   '/docready/': typeof DocreadyIndexRoute
   '/appraisals/$caseId/$step': typeof AppraisalsCaseIdStepRoute
@@ -160,13 +209,19 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/audit': typeof AuditRoute
   '/exceptions': typeof ExceptionsRoute
   '/help': typeof HelpRoute
   '/review': typeof ReviewRoute
   '/scorecard': typeof ScorecardRoute
   '/sign-in': typeof SignInRoute
+  '/admin/checklist': typeof AdminChecklistRoute
+  '/admin/document-types': typeof AdminDocumentTypesRoute
+  '/admin/policy': typeof AdminPolicyRoute
+  '/admin/users': typeof AdminUsersRoute
   '/appraisals/new': typeof AppraisalsNewRoute
   '/docready/$': typeof DocreadySplatRoute
+  '/admin': typeof AdminIndexRoute
   '/appraisals': typeof AppraisalsIndexRoute
   '/docready': typeof DocreadyIndexRoute
   '/appraisals/$caseId/$step': typeof AppraisalsCaseIdStepRoute
@@ -182,14 +237,21 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
+  '/audit': typeof AuditRoute
   '/exceptions': typeof ExceptionsRoute
   '/help': typeof HelpRoute
   '/review': typeof ReviewRoute
   '/scorecard': typeof ScorecardRoute
   '/sign-in': typeof SignInRoute
+  '/admin/checklist': typeof AdminChecklistRoute
+  '/admin/document-types': typeof AdminDocumentTypesRoute
+  '/admin/policy': typeof AdminPolicyRoute
+  '/admin/users': typeof AdminUsersRoute
   '/appraisals/$caseId': typeof AppraisalsCaseIdRouteWithChildren
   '/appraisals/new': typeof AppraisalsNewRoute
   '/docready/$': typeof DocreadySplatRoute
+  '/admin/': typeof AdminIndexRoute
   '/appraisals/': typeof AppraisalsIndexRoute
   '/docready/': typeof DocreadyIndexRoute
   '/appraisals/$caseId/$step': typeof AppraisalsCaseIdStepRoute
@@ -206,14 +268,21 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
+    | '/audit'
     | '/exceptions'
     | '/help'
     | '/review'
     | '/scorecard'
     | '/sign-in'
+    | '/admin/checklist'
+    | '/admin/document-types'
+    | '/admin/policy'
+    | '/admin/users'
     | '/appraisals/$caseId'
     | '/appraisals/new'
     | '/docready/$'
+    | '/admin/'
     | '/appraisals/'
     | '/docready/'
     | '/appraisals/$caseId/$step'
@@ -228,13 +297,19 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/audit'
     | '/exceptions'
     | '/help'
     | '/review'
     | '/scorecard'
     | '/sign-in'
+    | '/admin/checklist'
+    | '/admin/document-types'
+    | '/admin/policy'
+    | '/admin/users'
     | '/appraisals/new'
     | '/docready/$'
+    | '/admin'
     | '/appraisals'
     | '/docready'
     | '/appraisals/$caseId/$step'
@@ -249,14 +324,21 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/admin'
+    | '/audit'
     | '/exceptions'
     | '/help'
     | '/review'
     | '/scorecard'
     | '/sign-in'
+    | '/admin/checklist'
+    | '/admin/document-types'
+    | '/admin/policy'
+    | '/admin/users'
     | '/appraisals/$caseId'
     | '/appraisals/new'
     | '/docready/$'
+    | '/admin/'
     | '/appraisals/'
     | '/docready/'
     | '/appraisals/$caseId/$step'
@@ -272,6 +354,8 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
+  AuditRoute: typeof AuditRoute
   ExceptionsRoute: typeof ExceptionsRoute
   HelpRoute: typeof HelpRoute
   ReviewRoute: typeof ReviewRoute
@@ -291,6 +375,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/audit': {
+      id: '/audit'
+      path: '/audit'
+      fullPath: '/audit'
+      preLoaderRoute: typeof AuditRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/exceptions': {
@@ -327,6 +425,41 @@ declare module '@tanstack/react-router' {
       fullPath: '/sign-in'
       preLoaderRoute: typeof SignInRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/checklist': {
+      id: '/admin/checklist'
+      path: '/checklist'
+      fullPath: '/admin/checklist'
+      preLoaderRoute: typeof AdminChecklistRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/document-types': {
+      id: '/admin/document-types'
+      path: '/document-types'
+      fullPath: '/admin/document-types'
+      preLoaderRoute: typeof AdminDocumentTypesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/policy': {
+      id: '/admin/policy'
+      path: '/policy'
+      fullPath: '/admin/policy'
+      preLoaderRoute: typeof AdminPolicyRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/appraisals/': {
       id: '/appraisals/'
@@ -429,6 +562,24 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminRouteChildren {
+  AdminChecklistRoute: typeof AdminChecklistRoute
+  AdminDocumentTypesRoute: typeof AdminDocumentTypesRoute
+  AdminPolicyRoute: typeof AdminPolicyRoute
+  AdminUsersRoute: typeof AdminUsersRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminChecklistRoute: AdminChecklistRoute,
+  AdminDocumentTypesRoute: AdminDocumentTypesRoute,
+  AdminPolicyRoute: AdminPolicyRoute,
+  AdminUsersRoute: AdminUsersRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 interface AppraisalsCaseIdRouteChildren {
   AppraisalsCaseIdStepRoute: typeof AppraisalsCaseIdStepRoute
   AppraisalsCaseIdComparisonRoute: typeof AppraisalsCaseIdComparisonRoute
@@ -459,6 +610,8 @@ const AppraisalsCaseIdRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
+  AuditRoute: AuditRoute,
   ExceptionsRoute: ExceptionsRoute,
   HelpRoute: HelpRoute,
   ReviewRoute: ReviewRoute,

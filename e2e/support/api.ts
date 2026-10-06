@@ -25,6 +25,10 @@ import type {
   UploadResult,
 } from "../../src/api/types";
 import {
+  AUDIT,
+  CONFIG_VERSIONS,
+  POLICY_CONFIG,
+  USERS,
   ANALYST,
   API,
   CAM,
@@ -178,6 +182,10 @@ export class MockApi {
       ["GET", /^\/api\/meta$/, () => ({ json: META })],
       ["GET", /^\/api\/config\/document-types$/, () => ({ json: DOCUMENT_TYPES })],
       ["GET", /^\/api\/config\/checklist-taxonomy$/, () => ({ json: TAXONOMY })],
+      ["GET", /^\/api\/config\/policy$/, () => ({ json: POLICY_CONFIG })],
+      ["GET", /^\/api\/config\/versions$/, () => ({ json: CONFIG_VERSIONS })],
+      ["GET", /^\/api\/users$/, () => ({ json: USERS })],
+      ["GET", /^\/api\/audit$/, () => ({ json: AUDIT })],
       ["GET", /^\/api\/cases$/, () => ({ json: this.cases })],
       ["POST", /^\/api\/cases\/proposals$/, () => ({ json: this.proposal })],
       ["POST", /^\/api\/cases$/, (req) => this.create(req.postDataJSON() as CaseCreate)],

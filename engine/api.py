@@ -8,6 +8,7 @@ import the configuration writer (CLAUDE.md rule 4; enforced by .importlinter).
 
 from __future__ import annotations
 
+import json
 import os
 import sqlite3
 from contextlib import asynccontextmanager
@@ -37,10 +38,13 @@ from . import (
     spread,
     uploads,
 )
-from .config import load_app_config, option_ids
+from .config import load_app_config, load_roles_config, option_ids, role_label, find_user_by_id
 from .configstore import reader as configstore_reader
 from .configstore.schema import ChecklistTaxonomySection, DocumentTypesSection, PolicySection
 from .contracts import (
+    AuditPage,
+    ConfigVersion,
+    DirectoryUser,
     CaseCreate,
     CaseDeleteRequest,
     Cam,
@@ -514,6 +518,85 @@ def _config(loader):
 @app.get("/api/config/version")
 def config_version(_: dict = Depends(current_user)) -> dict:
     return _config(configstore_reader.published_version)
+
+
+@app.get("/api/config/versions", response_model=list[ConfigVersion])
+def config_versions(_: dict = Depends(require("config.read"))):
+    return _config(configstore_reader.publish_history)
+
+
+@app.get("/api/users", response_model=list[DirectoryUser])
+def user_directory(_: dict = Depends(require("config.read"))):
+    roles = load_roles_config()
+    return [
+        {
+            "id": u["id"],
+            "name": u["name"],
+            "role": u["role"],
+            "roleLabel": role_label(u["role"]),
+            "email": u["email"],
+            "branch": u["branch"],
+            "permissions": list(roles.get("permissions", {}).get(u["role"], [])),
+        }
+        for u in roles["users"]
+    ]
+
+
+@app.get("/api/audit", response_model=AuditPage)
+def audit_trail(
+    case_id: str | None = None,
+    actor: str | None = None,
+    action: str | None = None,
+    before: int | None = None,
+    limit: int = 100,
+    _: dict = Depends(require("audit.read")),
+    conn: sqlite3.Connection = Depends(get_conn),
+):
+    """The append-only decision log, newest first, filtered and paged."""
+    limit = max(1, min(limit, 500))
+    where, args = [], []
+    for column, value in (("case_id", case_id), ("actor", actor), ("action", action)):
+        if value:
+            where.append(f"{column} = ?")
+            args.append(value)
+    if before is not None:
+        where.append("seq < ?")
+        args.append(before)
+    clause = f"WHERE {' AND '.join(where)}" if where else ""
+    rows = conn.execute(
+        f"SELECT seq, at, actor, case_id, action, detail FROM decision_log {clause} ORDER BY seq DESC LIMIT ?",
+        (*args, limit + 1),
+    ).fetchall()
+    page = rows[:limit]
+
+    def name(actor_id: str) -> str:
+        user = find_user_by_id(actor_id)
+        return user["name"] if user else actor_id
+
+    def detail(raw: str) -> dict:
+        try:
+            value = json.loads(raw)
+        except ValueError:
+            return {}
+        return value if isinstance(value, dict) else {}
+
+    return {
+        "entries": [
+            {
+                "seq": r["seq"],
+                "at": r["at"],
+                "actor": r["actor"],
+                "actor_name": name(r["actor"]),
+                "case_id": r["case_id"],
+                "action": r["action"],
+                "detail": detail(r["detail"]),
+            }
+            for r in page
+        ],
+        "next_before": page[-1]["seq"] if len(rows) > limit and page else None,
+        "actors": [r[0] for r in conn.execute("SELECT DISTINCT actor FROM decision_log ORDER BY actor")],
+        "actions": [r[0] for r in conn.execute("SELECT DISTINCT action FROM decision_log ORDER BY action")],
+    }
 
 
 @app.get("/api/config/policy", response_model=PolicySection)

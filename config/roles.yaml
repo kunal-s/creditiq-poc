@@ -19,8 +19,8 @@ roles:
 # also gated by its permission. A case's tabs are gated by permission only.
 navByRole:
   rm: [workbench, help]
-  analyst: [workbench, governance, help]
-  credit-manager: [workbench, governance, help]
+  analyst: [workbench, governance, administration, help]
+  credit-manager: [workbench, governance, administration, help]
 
 # What each role may do (F-03.1). The server denies anything not listed.
 # case.read.all: see every case (an RM sees only cases they created).
@@ -28,10 +28,11 @@ navByRole:
 permissions:
   rm: [case.create, case.read, case.delete, document.upload, checklist.read, query.read]
   analyst: [case.create, case.read, case.read.all, case.delete, document.upload, checklist.read, query.read,
-            data.read, review.read, review.decide, finding.read, output.read, manual.make]
+            data.read, review.read, review.decide, finding.read, output.read, manual.make,
+            audit.read, config.read]
   credit-manager: [case.read, case.read.all, case.delete, checklist.read, query.read, data.read, review.read,
                    review.decide, finding.read, output.read, manual.check, comparison.adjudicate,
-                   scorecard.read]
+                   scorecard.read, audit.read, config.read]
 
 # Every user signs in with this shared password until F-03 introduces named
 # credentials. Hash format: pbkdf2_sha256$<iterations>$<base64 salt>$<base64 digest>.

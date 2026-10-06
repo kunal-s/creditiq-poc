@@ -9,6 +9,7 @@ These pydantic models are the single source for:
 Change a model here, regenerate, and both sides see the change.
 """
 
+from .admin import AuditEntry, AuditPage, ConfigVersion, DirectoryUser
 from .appraisal import (
     ChecklistItemState,
     Finding,

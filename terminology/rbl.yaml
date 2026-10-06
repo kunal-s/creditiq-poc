@@ -20,6 +20,7 @@ nav:
   group:
     workbench: Workbench
     governance: Governance
+    administration: Administration
     help: Help
     thisCase: "Appraisal {id}"
   help: Guide to the steps
@@ -27,6 +28,13 @@ nav:
   newCase: New appraisal
   reviewQueue: Review queue
   scorecard: Scorecard
+  audit: Audit trail
+  admin:
+    configuration: Configuration
+    policy: Policy norms
+    checklist: Checklist
+    documentTypes: Document types
+    users: Users and roles
 
 action:
   retry: Try again
@@ -226,6 +234,15 @@ progress:
     other: Waiting for the stages before it
 
 page:
+  admin:
+    eyebrow: Administration
+    title: Administration
+    purpose: What the published configuration says and who may do what. It is read-only here; a change is published by an administrator as a new version.
+    sections: Administration sections
+  audit:
+    eyebrow: Governance
+    title: Audit trail
+    purpose: Who did what, and when. Entries are added as work happens and are never changed.
   help:
     eyebrow: Help
     title: Guide to the steps
@@ -576,6 +593,114 @@ document:
 
 details:
   title: How was this decided
+
+audit:
+  entries: Activity
+  none: No activity matches these filters.
+  filterAction: Filter by activity
+  filterPerson: Filter by person
+  allActions: All activity
+  allPeople: Everyone
+  caseId: Appraisal number
+  action:
+    session_signed_in: Signed in
+    case_created: Created an appraisal
+    case_deleted: Deleted an appraisal
+    case_stage: Stage changed
+    files_uploaded: Uploaded files
+    processing_run: Ran document processing
+    processing_reextract: Read a document again
+    review_decided: Decided a review item
+
+admin:
+  config:
+    current: In force now
+    publishedOn: Published
+    publishedBy: Published by
+    versionNumber: Version
+    readOnly: Configuration is read-only here. An administrator publishes a change as a new version, and earlier versions are kept.
+    history: Version history
+    historyHelp: Every version ever published, newest first.
+    versionN: "Version {n}"
+    inForce: In force
+    first: First version.
+    changed: "{n} section(s) changed: {sections}"
+  section:
+    policy: policy norms
+    checklist_taxonomy: checklist
+    document_types: document types
+    document_ages: document ages
+    crosschecks: cross-checks
+    tolerances: tolerances
+    alignment: alignment
+    statements: statements
+    cam: credit memo
+    ingestion_fields: field extraction
+    ingestion_signals: document signals
+    ingestion_confidence: confidence
+    ingestion_quality: quality checks
+    ingestion_routing: page reading
+    ingestion_validators: validation
+    ingestion_decision: decision rules
+    ingestion_llm: model settings
+    ingestion_document_types: document schemas
+  policy:
+    count: "{n} norm(s)"
+    norm: Norm
+    requirement: Requirement
+    deviation: Deviation counted as
+    byRule: Set by rule
+    min: "at least {value}"
+    max: "at most {value}"
+  unit:
+    x: times
+    "%": "%"
+    days: days
+    years: years
+    rank: rank
+  checklist:
+    gates: "An appraisal is ready for credit review at {review}% and for disbursement at {disbursement}%, and only when nothing blocking remains."
+    appliesTo: "Applies to: {constitutions}"
+  documents:
+    count: "{n} document type(s)"
+  documentGroup:
+    origination: Application
+    constitution: Constitution
+    registration: Registration
+    kyc: Identity and KYC
+    financials: Financial statements
+    working_capital: Working capital
+    tax: Tax
+    banking: Banking
+    collateral: Collateral
+    other: Other
+  users:
+    people: People
+    name: Name
+    role: Role
+    email: Email
+    branch: Branch
+    roles: What each role may do
+    rolesHelp: Permissions are enforced by the server; the menu only hides what a role cannot use.
+  permission:
+    case_create: Create appraisals
+    case_read: Open own appraisals
+    case_read_all: Open every appraisal
+    case_delete: Delete appraisals
+    document_upload: Upload documents
+    checklist_read: See the checklist
+    query_read: See the query list
+    data_read: See extracted data
+    review_read: See the review queue
+    review_decide: Decide review items
+    finding_read: See cross-checks and policy
+    output_read: See outputs
+    manual_make: Enter values by hand
+    manual_check: Check values entered by hand
+    comparison_adjudicate: Decide comparisons
+    scorecard_read: See the scorecard
+    audit_read: See the audit trail
+    config_read: See administration
 
 fileStatus:
   registered: Registered

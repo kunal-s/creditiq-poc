@@ -78,3 +78,9 @@ export type CamText = S["CamText"];
 export type CamSection = S["CamSection"];
 export type PdNote = S["PdNote"];
 export type PdQuestion = S["PdQuestion"];
+
+export type ConfigVersion = S["ConfigVersion"];
+export type DirectoryUser = S["DirectoryUser"];
+export type AuditEntry = S["AuditEntry"];
+export type AuditPage = S["AuditPage"];
+export type PolicyConfig = S["PolicySection"];

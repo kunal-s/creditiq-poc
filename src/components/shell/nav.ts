@@ -95,6 +95,22 @@ export function buildNav(): NavGroup[] {
       items: [
         { label: t("nav.reviewQueue"), to: "/review", permission: "review.read" },
         { label: t("nav.scorecard"), to: "/scorecard", permission: "scorecard.read" },
+        { label: t("nav.audit"), to: "/audit", permission: "audit.read" },
+      ],
+    },
+    {
+      id: "administration",
+      group: t("nav.group.administration"),
+      items: [
+        { label: t("nav.admin.configuration"), to: "/admin", permission: "config.read" },
+        { label: t("nav.admin.policy"), to: "/admin/policy", permission: "config.read" },
+        { label: t("nav.admin.checklist"), to: "/admin/checklist", permission: "config.read" },
+        {
+          label: t("nav.admin.documentTypes"),
+          to: "/admin/document-types",
+          permission: "config.read",
+        },
+        { label: t("nav.admin.users"), to: "/admin/users", permission: "config.read" },
       ],
     },
     {

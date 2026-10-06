@@ -21,8 +21,8 @@ test("TC-21: a value opens its evidence page", async ({ page }) => {
   await expect(page.getByTestId("viewer-page")).toHaveText("Page 7 · pages 3–9");
   await expect(page.getByTestId("viewer-value")).toHaveText("41,02,300");
   await expect(viewer).toContainText("Confidence 62%");
-  await expect(viewer).toContainText("Method Model reading");
-  await expect(viewer).toContainText("Degraded");
+  await expect(viewer).toContainText("Method Read from the page text");
+  await expect(viewer).toContainText("Readable");
   await expect(page.getByTestId("viewer-image")).toBeVisible();
   await expect(page.getByTestId("viewer-bbox")).toBeVisible();
   expect(api.called("GET", `/api/cases/${KESTREL}/documents/doc-bank/pages/7`)).toHaveLength(1);

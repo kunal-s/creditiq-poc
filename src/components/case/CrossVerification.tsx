@@ -17,11 +17,13 @@ import type {
   ReviewItem,
 } from "@/api/types";
 import { Chip, Panel } from "@/components/common/Panel";
+import { Details } from "@/components/common/Details";
 import { QueryView } from "@/components/common/States";
 import { useDocViewer } from "@/components/docviewer/DocViewer";
 import { decisionButton } from "@/components/review/styles";
 import { t } from "@/config/terminology";
 import { formatInr } from "@/domain/cases";
+import { useDocumentTypes } from "@/domain/documents";
 import { countOutcomes, OUTCOMES, useFacts, useFindings } from "@/domain/findings";
 import { useDecideReview, useReviewQueue } from "@/domain/review";
 import { useCan } from "@/domain/session";
@@ -205,9 +207,6 @@ function FindingRow({
             </p>
           )}
         </div>
-        <span className="tabular shrink-0 text-[11px] text-muted-foreground">
-          {finding.rule_id}
-        </span>
       </div>
 
       {finding.sides.length > 0 && (failed || finding.outcome === "incomplete") && (
@@ -230,12 +229,27 @@ function FindingRow({
               <EvidenceLinks caseId={caseId} evidence={side.evidence ?? []} />
             </div>
           ))}
-          {finding.tolerance && (
-            <p className="text-[11px] text-muted-foreground">
-              {t("crossCheck.tolerance", { tolerance: finding.tolerance })}
-            </p>
-          )}
         </dl>
+      )}
+      {finding.sides.length > 0 && (failed || finding.outcome === "incomplete") && (
+        <div className="ml-6">
+          <Details testId="finding-details">
+            <dl className="space-y-1 text-[12px]">
+              <div className="flex gap-2">
+                <dt className="w-24 shrink-0 text-muted-foreground">{t("crossCheck.check")}</dt>
+                <dd className="tabular">{finding.rule_id}</dd>
+              </div>
+              {finding.tolerance && (
+                <div className="flex gap-2">
+                  <dt className="w-24 shrink-0 text-muted-foreground">
+                    {t("crossCheck.allowedDifference")}
+                  </dt>
+                  <dd>{finding.tolerance}</dd>
+                </div>
+              )}
+            </dl>
+          </Details>
+        </div>
       )}
       {failed && item && (
         <div className="ml-6">
@@ -469,6 +483,7 @@ function ObligationsPanel({ facts, caseId }: { facts: CaseFacts; caseId: string 
 }
 
 function AccountsPanel({ facts, caseId }: { facts: CaseFacts; caseId: string }) {
+  const types = useDocumentTypes();
   return (
     <Panel title={t("facts.accounts")} subtitle={t("facts.accountsHelp")} testId="facts-accounts">
       {facts.accounts.length === 0 ? (
@@ -484,7 +499,9 @@ function AccountsPanel({ facts, caseId }: { facts: CaseFacts; caseId: string }) 
               <Chip tone={a.has_statement ? "positive" : "flag"}>
                 {a.has_statement ? t("facts.statement") : t("facts.noStatement")}
               </Chip>
-              <span className="min-w-0 flex-1 text-muted-foreground">{a.sources.join(", ")}</span>
+              <span className="min-w-0 flex-1 text-muted-foreground">
+                {a.sources.map(types.name).join(", ")}
+              </span>
               <EvidenceLinks caseId={caseId} evidence={a.evidence ?? []} />
             </li>
           ))}

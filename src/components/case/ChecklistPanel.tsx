@@ -9,6 +9,7 @@ import type {
   Readiness,
 } from "@/api/types";
 import { Chip, Panel } from "@/components/common/Panel";
+import { Details } from "@/components/common/Details";
 import { ChecklistStatusChip } from "@/components/documents/chips";
 import { useDocViewer } from "@/components/docviewer/DocViewer";
 import { t } from "@/config/terminology";
@@ -187,18 +188,6 @@ function Item({
               {item.why}
             </p>
           </div>
-          <div>
-            <p className="field-label">{t("checklist.basis")}</p>
-            <p className="mt-0.5 text-[12.5px] text-foreground">{item.basis}</p>
-          </div>
-          {def?.coverage && (
-            <div>
-              <p className="field-label">{t("checklist.coverage")}</p>
-              <p className="mt-0.5 text-[12.5px] text-foreground" data-testid="coverage">
-                {coverageText(def.coverage)}
-              </p>
-            </div>
-          )}
           {def?.request && item.status !== "satisfied" && item.status !== "waived" && (
             <div>
               <p className="field-label">{t("checklist.request")}</p>
@@ -206,6 +195,16 @@ function Item({
                 {def.request}
               </p>
             </div>
+          )}
+          {def?.coverage && (
+            <Details testId="coverage-details">
+              <div>
+                <p className="field-label">{t("checklist.coverage")}</p>
+                <p className="mt-0.5 text-[12.5px] text-foreground" data-testid="coverage">
+                  {coverageText(def.coverage)}
+                </p>
+              </div>
+            </Details>
           )}
           {item.deficiency && (
             <p className="rounded border border-destructive/30 bg-destructive/10 px-3 py-2 text-[12px] leading-relaxed text-destructive">

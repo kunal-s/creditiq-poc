@@ -29,7 +29,7 @@ test("TC-09: unclassified document with candidates, routed for review", async ({
 
   await page.goto(`/appraisals/${KESTREL}/documents`);
   const unc = page.getByTestId("section-files").locator('[data-document-id="doc-unc"]');
-  await expect(unc.getByTestId("unclassified")).toHaveText("Unclassified");
+  await expect(unc.getByTestId("unclassified")).toHaveText("Not identified");
   await expect(unc.getByTestId("stage-track")).toHaveAttribute("data-state", "attention");
   // Its top candidates are offered on the row, for a person to assign.
   await expect(unc.getByTestId("assign-candidate")).toHaveText([
@@ -55,7 +55,7 @@ test("TC-09: unclassified document with candidates, routed for review", async ({
     await items.nth(i).getByRole("button").first().click();
     linked += await page.getByTestId("linked-document").count();
     await expect(
-      page.getByTestId("linked-document").filter({ hasText: "Unclassified" }),
+      page.getByTestId("linked-document").filter({ hasText: "Not identified" }),
     ).toHaveCount(0);
   }
   expect(linked).toBeGreaterThan(0);

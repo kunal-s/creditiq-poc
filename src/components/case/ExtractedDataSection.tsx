@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ArrowRight, FileText } from "lucide-react";
 import type { FieldStatus, FieldValue, LogicalDocument } from "@/api/types";
 import { Panel } from "@/components/common/Panel";
+import { Details } from "@/components/common/Details";
 import { ErrorState, LoadingBlock } from "@/components/common/States";
 import { FieldValueButton } from "@/components/common/FieldValueButton";
 import { ConfidenceChip } from "@/components/common/ConfidenceChip";
@@ -9,8 +10,14 @@ import { FieldStatusChip, GradeChip } from "@/components/documents/chips";
 import { FieldRowDecision } from "@/components/review/FieldDecision";
 import { useDocViewer } from "@/components/docviewer/DocViewer";
 import { t } from "@/config/terminology";
-import { pageRange, useCaseDocuments, useCaseFiles, useDocumentTypes } from "@/domain/documents";
-import { fieldLabel, useFields } from "@/domain/extraction";
+import {
+  instanceLabel,
+  pageRange,
+  useCaseDocuments,
+  useCaseFiles,
+  useDocumentTypes,
+} from "@/domain/documents";
+import { fieldLabel, formatValue, effectiveValue, useFields } from "@/domain/extraction";
 import { cn } from "@/lib/utils";
 
 const FILTERS = ["all", "in_review", "missing", "corrected"] as const;
@@ -181,12 +188,12 @@ function DocumentFields({
         <span className="inline-flex flex-wrap items-center gap-1.5">
           <span className="break-all">{file?.original_name}</span>
           <span>· {pageRange(doc)}</span>
-          {doc.instance_key && <span>· {doc.instance_key}</span>}
+          {instanceLabel(doc.instance_key) && <span>· {instanceLabel(doc.instance_key)}</span>}
         </span>
       }
       action={
         <span className="flex items-center gap-2">
-          <GradeChip grade={doc.grade} />
+          {(doc.grade === "C" || doc.grade === "U") && <GradeChip grade={doc.grade} />}
           <button
             type="button"
             onClick={() => viewer.open({ caseId, documentId: doc.id, page: doc.page_from })}
@@ -198,13 +205,12 @@ function DocumentFields({
       }
     >
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[560px] text-[12.5px]">
+        <table className="w-full min-w-[480px] text-[12.5px]">
           <thead>
             <tr className="border-b border-border text-left text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">
               <th className="px-4 py-2 font-medium">{t("data.col.field")}</th>
               <th className="px-3 py-2 font-medium">{t("data.col.value")}</th>
               <th className="px-3 py-2 font-medium">{t("data.col.confidence")}</th>
-              <th className="px-3 py-2 font-medium">{t("data.col.method")}</th>
               <th className="px-4 py-2 font-medium">{t("data.col.status")}</th>
             </tr>
           </thead>
@@ -214,11 +220,6 @@ function DocumentFields({
                 <td className="px-4 py-2 text-muted-foreground">{fieldLabel(f.field)}</td>
                 <td className="px-3 py-2">
                   <FieldValueButton caseId={caseId} field={f} />
-                  {f.raw && f.status !== "missing" && (
-                    <div className="mt-0.5 text-[11px] text-muted-foreground">
-                      {t("data.raw", { raw: f.raw })}
-                    </div>
-                  )}
                 </td>
                 <td className="px-3 py-2">
                   <ConfidenceChip
@@ -227,7 +228,6 @@ function DocumentFields({
                     flagged={f.status === "in_review"}
                   />
                 </td>
-                <td className="px-3 py-2 text-muted-foreground">{t(`fieldMethod.${f.method}`)}</td>
                 <td className="px-4 py-2">
                   <FieldStatusChip status={f.status} />
                   <FieldRowDecision field={f} />
@@ -236,6 +236,32 @@ function DocumentFields({
             ))}
           </tbody>
         </table>
+      </div>
+      <div className="border-t border-border px-4 py-3">
+        <Details testId="field-details">
+          <table className="w-full text-[12px]">
+            <thead>
+              <tr className="text-left text-[10.5px] uppercase tracking-wide text-muted-foreground">
+                <th className="py-1 pr-3 font-medium">{t("data.col.field")}</th>
+                <th className="py-1 pr-3 font-medium">{t("data.readBy")}</th>
+                <th className="py-1 font-medium">{t("data.asPrinted")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {fields.map((f) => (
+                <tr key={f.id} className="border-t border-border align-top">
+                  <td className="py-1 pr-3 text-muted-foreground">{fieldLabel(f.field)}</td>
+                  <td className="py-1 pr-3">{t(`fieldMethod.${f.method}`)}</td>
+                  <td className="py-1" data-testid="as-printed">
+                    {f.raw && f.status !== "missing" && f.raw !== formatValue(effectiveValue(f))
+                      ? f.raw
+                      : "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Details>
       </div>
     </Panel>
   );

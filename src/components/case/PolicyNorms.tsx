@@ -2,9 +2,10 @@ import { useState } from "react";
 import { AlertTriangle, CheckCircle2, HelpCircle, MinusCircle } from "lucide-react";
 import type { NormOutcome, NormResult, PolicyAssessment } from "@/api/types";
 import { Chip, Panel } from "@/components/common/Panel";
+import { Details } from "@/components/common/Details";
 import { QueryView } from "@/components/common/States";
 import { useDocViewer } from "@/components/docviewer/DocViewer";
-import { t } from "@/config/terminology";
+import { t, tOr } from "@/config/terminology";
 import { formatInr } from "@/domain/cases";
 import { usePolicy } from "@/domain/findings";
 import { cn } from "@/lib/utils";
@@ -76,7 +77,6 @@ function NormRow({ caseId, norm }: { caseId: string; norm: NormResult }) {
             {norm.outcome === "deviation" && <Chip tone="critical">{norm.category_label}</Chip>}
             {norm.provisional && <Chip tone="muted">{t("policy.provisional")}</Chip>}
           </p>
-          <p className="mt-0.5 text-[11.5px] text-muted-foreground">{norm.formula}</p>
         </div>
         <div className="grid shrink-0 grid-cols-2 gap-x-4 text-right text-[12px]">
           <span className="text-muted-foreground">{t("policy.required")}</span>
@@ -94,7 +94,15 @@ function NormRow({ caseId, norm }: { caseId: string; norm: NormResult }) {
       </div>
       {(norm.missing ?? []).length > 0 && (
         <p className="ml-6 text-[12px] text-flag-foreground" data-testid="norm-missing">
-          {t("policy.missing", { inputs: (norm.missing ?? []).join(", ") })}
+          {t("policy.missing", {
+            inputs: (norm.missing ?? [])
+              .map(
+                (name) =>
+                  norm.inputs?.find((i) => i.name === name)?.label ??
+                  tOr(`policy.input.${name}`, name),
+              )
+              .join(", "),
+          })}
         </p>
       )}
       {norm.outcome !== "not_applicable" && (norm.inputs ?? []).length > 0 && (
@@ -132,6 +140,14 @@ function NormRow({ caseId, norm }: { caseId: string; norm: NormResult }) {
           })}
         </ul>
       )}
+      <div className="ml-6">
+        <Details testId="norm-details">
+          <p className="text-[12px] text-muted-foreground">
+            <span className="font-medium text-foreground">{t("policy.howCalculated")}: </span>
+            {norm.formula}
+          </p>
+        </Details>
+      </div>
     </li>
   );
 }

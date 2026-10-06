@@ -9,7 +9,7 @@ import { ScoreBar } from "@/components/common/Panel";
 import { t } from "@/config/terminology";
 import { formatInr, stageLabel, useLabels } from "@/domain/cases";
 import { countItems, readyForCredit, useChecklist } from "@/domain/checklist";
-import { useCaseProgress } from "@/domain/progress";
+import { stageDetail, useCaseProgress } from "@/domain/progress";
 import { useCan, useSession } from "@/domain/session";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +33,9 @@ function Layout({ c }: { c: CaseDetail }) {
   const activeTab = CASE_TABS.filter((tab) => permissions.includes(tab.permission)).find(
     (tab) => decodeURIComponent(caseTabPath(c.id, tab)) === pathname,
   );
+  const activeStageProgress = activeTab?.stage
+    ? progress.data?.stages.find((st) => st.key === activeTab.stage)
+    : undefined;
   const activeFlow = top.find((o) => o.kind === "flow" && activeTab && o.tabs.includes(activeTab));
 
   return (
@@ -91,6 +94,18 @@ function Layout({ c }: { c: CaseDetail }) {
             </Link>
           ))}
         </nav>
+      )}
+      {activeFlow && activeStageProgress && (
+        <p
+          className="border-b border-border bg-surface px-4 py-2 text-[12.5px] text-muted-foreground sm:px-6"
+          data-testid="flow-summary"
+        >
+          <span className="font-medium text-foreground">
+            {t(`progress.stage.${activeStageProgress.key}`)}
+          </span>
+          {" · "}
+          {stageDetail(activeStageProgress)}
+        </p>
       )}
 
       <Outlet />

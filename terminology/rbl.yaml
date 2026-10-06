@@ -118,6 +118,8 @@ crossCheck:
   morePages: "+{n} more"
   manual: Relies on a person's entry
   tolerance: "Tolerance {tolerance}"
+  check: Check reference
+  allowedDifference: Allowed difference
   valid: Valid
   notValid: Not valid…
   reason: Why the flag is not valid
@@ -158,6 +160,7 @@ policy:
   rank: "rank {n}"
   provisional: Provisional norm
   missing: "Cannot evaluate: {inputs} not on file."
+  howCalculated: How it is calculated
   outcome:
     cannot_evaluate: Cannot evaluate
     not_applicable: Not applicable
@@ -569,7 +572,10 @@ documentTrack:
     extracted: Extracted
 
 document:
-  unclassified: Unclassified
+  unclassified: Not identified
+
+details:
+  title: How was this decided
 
 fileStatus:
   registered: Registered
@@ -684,19 +690,25 @@ readinessGates:
 validation:
   kpi:
     checked: Documents checked
-    checkedNote: read and graded on receipt
+    checkedNote: read on receipt
     failing: Failing a check
     failingNote: on the query list
     caveat: Passing with a caveat
     caveatNote: usable, flagged for a person
     unclassified: Unclassified
     unclassifiedNote: waiting for a type in the review queue
-  subtitle: A rejection names the defect. Every document shows its page grades, how it was identified and each check.
+  subtitle: Each file is checked for readability and identified. A file that cannot be used is sent back with the reason.
   none: No documents have been read for this case yet.
   outcome:
     pass: All checks passed
     warn: Caveat
     fail: Check failed
+  readable: Every page can be read
+  hardToRead: "{n} of {total} pages are hard to read"
+  unreadable: "{n} of {total} pages cannot be read"
+  readability: Readability
+  documentType: Document type
+  nextClearer: Send a clearer copy of the affected pages.
   pages: Pages
   page: Page
   route: Read by
@@ -847,21 +859,25 @@ data:
     method: Method
     status: Status
   raw: "As printed: {raw}"
+  cell: "{table}, row {row} · {column}"
+  detailsFields: Fields on this document
+  readBy: Read by
+  asPrinted: As printed
   openEvidence: Open the source page
   composition: Confidence composition
 
 fieldStatus:
-  accepted: Accepted
-  in_review: In review
+  accepted: Confirmed
+  in_review: Please check
   corrected: Corrected
-  missing: Missing
+  missing: Not found
   rejected: Rejected
 
 fieldMethod:
-  deterministic: Rule
-  model: Model reading
-  manual: Manual entry
-  person: Person
+  deterministic: Read from fixed layout
+  model: Read from the page text
+  manual: Typed in
+  person: Entered by a person
 
 confidenceComponent:
   classification: Classification
@@ -886,9 +902,9 @@ viewer:
 
 # Page quality grade (FRD F-07).
 qualityGrade:
-  A: Clean
-  B: Degraded
-  C: Poor
+  A: Clear
+  B: Readable
+  C: Hard to read
   U: Unreadable
 
 # Cross-check outcome and severity (FRD F-19).

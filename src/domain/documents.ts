@@ -273,3 +273,11 @@ export function summariseSignals(
   if (counts.size === 0) return other;
   return [...counts].map(([id, c]) => ({ type: typeName(id), ...c }));
 }
+
+/** The part of an instance key a person recognises (a year, a month, a
+ * name). The generic kinds the service uses to group instances are not. */
+const GENERIC_INSTANCE_KEYS = new Set(["none", "person", "year", "property", "period", "account"]);
+
+export function instanceLabel(key: string | null | undefined): string | undefined {
+  return key && !GENERIC_INSTANCE_KEYS.has(key) ? key : undefined;
+}

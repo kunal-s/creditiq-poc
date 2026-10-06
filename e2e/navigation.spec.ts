@@ -45,3 +45,19 @@ test("Help explains each step and status", async ({ page }) => {
   await expect(page.getByTestId("help-step-crossVerification")).toBeVisible();
   await expect(page.getByText("Needs attention").first()).toBeVisible();
 });
+
+test("technical detail stays closed until asked for", async ({ page }) => {
+  const api = new MockApi();
+  await signedIn(page, api);
+  await page.goto(`/appraisals/${KESTREL}/cross-verification`);
+  const finding = page.getByTestId("finding-details").first();
+  await expect(finding).not.toHaveAttribute("open", "");
+  await expect(finding.getByText("Check reference")).toBeHidden();
+  await finding.getByText("How was this decided").click();
+  await expect(finding.getByText("Check reference")).toBeVisible();
+
+  await page.goto(`/appraisals/${KESTREL}/policy`);
+  const norm = page.getByTestId("norm-details").first();
+  await expect(norm).not.toHaveAttribute("open", "");
+  await expect(norm.getByText("How it is calculated")).toBeHidden();
+});

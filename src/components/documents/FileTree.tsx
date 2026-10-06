@@ -15,6 +15,7 @@ import { useCan } from "@/domain/session";
 import {
   countFiles,
   formatBytes,
+  instanceLabel,
   pageRange,
   useDocumentTypes,
   type TreeFile,
@@ -230,8 +231,8 @@ function DocumentRow({
           {classified ? (
             <span data-testid="document-type">
               {doc.classification!.types.map(types.name).join(" + ")}
-              {doc.instance_key && (
-                <span className="text-muted-foreground"> · {doc.instance_key}</span>
+              {instanceLabel(doc.instance_key) && (
+                <span className="text-muted-foreground"> · {instanceLabel(doc.instance_key)}</span>
               )}
             </span>
           ) : (

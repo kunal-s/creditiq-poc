@@ -12,12 +12,7 @@ import { t } from "@/config/terminology";
 const GRADE_TONE: Record<Grade, Tone> = { A: "positive", B: "info", C: "flag", U: "critical" };
 
 export function GradeChip({ grade }: { grade: Grade }) {
-  return (
-    <Chip tone={GRADE_TONE[grade]} title={t(`qualityGrade.${grade}`)}>
-      <span className="tabular font-semibold">{grade}</span>
-      <span className="hidden sm:inline">{t(`qualityGrade.${grade}`)}</span>
-    </Chip>
-  );
+  return <Chip tone={GRADE_TONE[grade]}>{t(`qualityGrade.${grade}`)}</Chip>;
 }
 
 const FILE_TONE: Record<FileStatus, Tone> = {

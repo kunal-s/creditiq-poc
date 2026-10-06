@@ -14,12 +14,14 @@
     "typecheck": "tsc --noEmit",
     "test:py": ".venv/bin/python -m pytest -q",
     "lint:imports": ".venv/bin/lint-imports",
+    "lint:ingestion": "cd services/ingestion && PYTHONPATH=. .venv/bin/lint-imports && PYTHONPATH=. .venv/bin/python -m ingestion.cli config-validate ../../config/ingestion",
+    "test:ingestion": "cd services/ingestion && PYTHONPATH=. .venv/bin/python -m pytest -q",
     "check:terms": ".venv/bin/python -m engine.cli check excluded-terms --names workflow/private/stakeholder-names.txt --root .",
     "config:publish": ".venv/bin/python -m engine.cli config publish --author",
     "gen:api": ".venv/bin/python scripts/gen_contracts.py && openapi-typescript contracts/openapi.json -o src/api/schema.gen.ts && prettier --write src/api/schema.gen.ts",
     "check:contracts": "npm run gen:api && git diff --exit-code -- contracts src/api/schema.gen.ts",
     "test:e2e": "playwright test",
-    "check": "npm run check:contracts && npm run typecheck && npm run lint && npm run test:py && npm run lint:imports && npm run check:terms && npm run build && npm run test:e2e"
+    "check": "npm run check:contracts && npm run typecheck && npm run lint && npm run test:py && npm run test:ingestion && npm run lint:imports && npm run lint:ingestion && npm run check:terms && npm run build && npm run test:e2e"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.15",

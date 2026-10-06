@@ -17,7 +17,6 @@ source_modules =
     engine.cases
     engine.checklist
     engine.completeness
-    engine.confidence
     engine.config
     engine.crosschecks
     engine.contracts
@@ -41,6 +40,7 @@ source_modules =
     engine.review
     engine.review_items
     engine.spread
+    engine.statements
     engine.store
     engine.uploads
     engine.util

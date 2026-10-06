@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Starts the three processes the app needs: the document-processing sidecar
-# (services/ingest-engine), the Python engine service, and the React frontend
+# Starts the three processes the app needs: the document-processing service
+# (services/ingestion), the Python engine service, and the React frontend
 # dev server. See README.md "Running the app" for the environment variables
 # this respects. Ctrl+C stops all three.
 set -euo pipefail
@@ -14,7 +14,7 @@ FRONTEND_PORT="${FRONTEND_PORT:-4173}"
 export INGEST_PORT="${INGEST_PORT:-3102}"
 export CREDITIQ_INGEST_URL="${CREDITIQ_INGEST_URL:-http://127.0.0.1:${INGEST_PORT}}"
 
-for need in .venv node_modules services/ingest-engine/node_modules; do
+for need in .venv node_modules services/ingestion/.venv; do
   if [ ! -d "$need" ]; then
     echo "error: $need not found. See README.md, one-time setup." >&2
     exit 1
@@ -42,10 +42,11 @@ wait_for() {
   exit 1
 }
 
-echo "Starting document-processing sidecar on http://127.0.0.1:${INGEST_PORT}"
-(cd services/ingest-engine && exec npm start) &
+echo "Starting document-processing service on http://127.0.0.1:${INGEST_PORT}"
+# The model runs from recordings unless INGEST_MODEL_MODE is record or live (and OPENAI_API_KEY is set).
+(cd services/ingestion && PYTHONPATH=. exec .venv/bin/python -m ingestion.cli serve) &
 PIDS+=($!)
-wait_for "http://127.0.0.1:${INGEST_PORT}/v1/health" "the sidecar"
+wait_for "http://127.0.0.1:${INGEST_PORT}/v1/health" "the document-processing service"
 
 echo "Starting engine service on http://localhost:${API_PORT} (CREDITIQ_DATA_ROOT=${CREDITIQ_DATA_ROOT})"
 .venv/bin/uvicorn engine.api:app --port "$API_PORT" &

@@ -15,7 +15,7 @@ This repository is the RBL Bank (Business Banking Group) instance of CreditIQ. I
 3. **Private material never enters git.** It all lives under the git-ignored `workflow/`: the stakeholder-name list and API keys (`workflow/private/`, mode 700), route captures (`workflow/captures/`; pre-strip ones contain removed names), copies of source documents (`workflow/docs/`), and all case data (`workflow/data/` is the default `CREDITIQ_DATA_ROOT`; RBL case files in `workflow/data/cases`, mode 700). Never `git add -f` anything under `workflow/`. **Never run `git clean -x` or `-X`**: it deletes ignored files, which would wipe the data root and the audit ledger. Never read `.env` values into a conversation.
 4. **Configuration governs behaviour; nothing learns at runtime.** Pipeline, review and harness code must not be able to import the configuration writer (add each new runtime package to `.importlinter`). An administrator's publish creates a new immutable version; nothing is edited in place.
 5. **No wall clock in rules.** Age and window checks use the case's fixed `as_of` date.
-6. **Determinism is record and replay** of model responses. Do not send sampling parameters to model APIs.
+6. **Determinism is record and replay** of model responses. The only sampling parameters sent to a model API are those named in the published configuration (`config/ingestion/llm.yaml`: `temperature` and `seed`); any other is refused. A fresh live call is not repeatable even then: only a recorded answer is.
 7. **Extraction is per document and context-free.** Never normalise an identifier toward another document's value.
 8. **Generated documents** never describe their own defects, never name a real company or lender in a planted finding, never imitate a government seal, emblem, QR code or security feature, and carry only the single-line footer (no watermark).
 9. **Nothing on screen may read as anything other than a working system at the bank**: no references to people at the bank, to meetings or to requirement rationale, and none of the excluded terms (FRD principle 11; `npm run check:terms`). Every label comes from the terminology configuration.
@@ -25,6 +25,7 @@ This repository is the RBL Bank (Business Banking Group) instance of CreditIQ. I
 
 - Check `whoami` inside WSL at the start of a session; it should be `zeya`, who owns this clone. If it reports `root`, run tools with `-u zeya` and re-own anything you wrote.
 - Node >= 22.12 is required. The system Node is too old; use the nvm install under `/home/zeya/.nvm` (v22.23.2). Use npm; there is no bun.
+- The document-processing service (`services/ingestion`) has its own Python 3.12 virtual environment (`services/ingestion/.venv`; deps in its `requirements.in`, locked with hashes). Its tests run from that directory: `PYTHONPATH=. .venv/bin/python -m pytest`.
 - Python 3.12 has no pip: use the virtual environment (`.venv`). Dependencies are declared in `requirements.in` and locked with `pip-compile --generate-hashes`; install with `.venv/bin/pip-sync requirements.txt`.
 - `npm run check` runs every gate (typecheck, eslint, pytest, import contract, excluded terms, build). Run it before handing work back.
 - Tesseract 5 (English only so far) and poppler-utils are installed. `pdftoppm` writes to stdout only when no output prefix is given; a lone `-` is treated as a file-name prefix.

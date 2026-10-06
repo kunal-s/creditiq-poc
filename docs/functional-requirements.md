@@ -110,7 +110,7 @@ These apply to every feature. A pull request that breaks one is not mergeable.
    Every output records the configuration version that produced it. Configuration is not adjusted per case. A change after the freeze is recorded, applied to every case, and every case is re-run.
 4. **Nothing learns at runtime.** Review decisions are recorded as overlays with reasons. They never change configuration, prompts or model behaviour. Runtime code cannot import the configuration writer (enforced by import-linter).
 5. **Uncertainty is surfaced.** Below-threshold results are routed for human review, never silently accepted.
-6. **Deterministic re-runs.** Model responses are recorded and replayed, keyed by a hash of the request. No sampling parameters are sent. A re-run on the same configuration gives the same result.
+6. **Deterministic re-runs.** Model responses are recorded and replayed, keyed by a hash of the request. The only sampling parameters sent are those named in the published configuration (`temperature` and `seed`; amended 6 October 2026), and any other is refused. A live call is not guaranteed to repeat, so determinism rests on the recording. A re-run on the same configuration gives the same result.
 7. **Extraction is per document and context-free.** A value is never corrected toward another document's value. Mismatches must survive to triangulation.
 8. **No wall clock in rules.** Age and window checks use the case's fixed `as_of` date.
 9. **Licences.** There are no AGPL, GPL or LGPL runtime dependencies. For example, PyMuPDF, Ghostscript, poppler as a runtime dependency, OCRmyPDF and libheif are all excluded.
@@ -630,7 +630,7 @@ flowchart TD
 
 ## Phase 2: Document intelligence (priority 1)
 
-F-07 to F-09, F-11 and F-15 are implemented in the vendored ingest engine sidecar (`services/ingest-engine`, decision AD-2). It returns results in the contract shape `contracts/ingest-result.schema.json` (AD-4). The CreditIQ engine owns everything case-level: the register, checklist mapping, party attribution, review and cross-checks.
+F-07 to F-09, F-11 and F-15 are implemented in the document-processing service (`services/ingestion`, decision AD-2a; it replaced the vendored Node sidecar of AD-2). It returns results in contract version 2, `contracts/ingest-result.schema.json` (AD-4). The CreditIQ engine owns everything case-level: the register, checklist mapping, party attribution, review and cross-checks.
 
 ### F-07. Page reading and quality grade
 
@@ -1469,7 +1469,7 @@ flowchart TD
 
 | # | Decision | Needed before | Status |
 |---|---|---|---|
-| 1 | Who implements F-07 to F-11 and F-15 | Phase 2 | **Decided 29 Sep 2026:** the vendored ingest engine, as a Node sidecar (AD-2) |
+| 1 | Who implements F-07 to F-11 and F-15 | Phase 2 | **Decided 29 Sep 2026:** the vendored ingest engine, as a Node sidecar (AD-2). **Superseded 6 Oct 2026:** the Python service `services/ingestion` (AD-2a); the sidecar is removed |
 | 2 | Constitutions: the checklist covers private limited, partnership and proprietorship. Add LLP and public limited? | F-12 | Open. Add them if the case set includes either |
 | 3 | Development data before RBL's cases arrive | Phase 2 | **Decided 29 Sep 2026:** controlled test documents under `tests/fixtures/TC-xx/`, each with its expected result (AD-6) |
 | 4 | Where the model runs for RBL data, and which provider | Phase 2 | Open for RBL data. For development, no model key yet: a stub provider plus recorded responses (AD-5) |
@@ -1552,16 +1552,18 @@ Decided 29 September 2026. A change to any of these is recorded here with its da
 |---|---|---|
 | AD-1 | **Screens keep the prototype's visual style, re-fed with real data; the structure follows §6** (amended 30 Sep 2026, decision C.4-7). Screen content is restored from the prototype source (git `6014167`) where it exists, keeping its components and look, and placed in the tab of the stage it belongs to. Its seeded data module is replaced by typed hooks over the engine API. Seeded values never return; every screen has designed loading, empty and error states. | RBL has seen this design. The test plan measures behaviour, so reusing the layout costs nothing and keeps the demo continuity. |
 | AD-2 | **Document processing (F-07 to F-09, F-11, F-15) is the vendored ingest engine** (`services/ingest-engine`, a Node/TypeScript sidecar), extended per its `VENDORED.md`. The CreditIQ engine calls it over HTTP through one client module and never parses documents itself. The sidecar reads the published CreditIQ configuration (document types, dictionaries, thresholds) and echoes the version it used. | The user chose to vendor rather than port. One client module keeps the boundary narrow and testable. |
+| AD-2a | **Amendment, 6 October 2026:** AD-2 is superseded in implementation. Document processing is the Python 3.12 service `services/ingestion`, a rewrite that replaces the vendored Node sidecar. The boundary is unchanged: the CreditIQ engine calls it over HTTP through one client module and never parses documents itself; it reads published configuration and echoes the version used. The result contract is redefined (`contracts/ingest-result.v2`). | PaddleOCR is Python; the rewrite makes every threshold, signal, alias, validator and prompt published configuration. Plan: `workflow/docs/plans/2026-10-05-ingestion-rebuild.md`. |
 | AD-3 | **SQLite (Python standard library) under the data root** holds cases, the document register, jobs, evidence, findings, queries, review decisions and the decision log. Files are stored by SHA-256 under `cases/<id>/files/`. | Simple and inspectable; survives restarts; no server to run. |
 | AD-4 | **The API contract is defined first and generated.** Pydantic models in `engine/contracts/` are the single source. The sidecar's result schema is `contracts/ingest-result.schema.json`, generated from the same models. TypeScript types are generated from the engine's OpenAPI into `src/api/schema.gen.ts` (`npm run gen:api`). Hand-written mirrors are removed. | Parallel streams build against one fixed interface and cannot drift. |
-| AD-5 | **Model layer:** one provider interface with Anthropic (default) and Gemini, both native. Every call is recorded, and replayed by the hash of its canonical request. No sampling parameters are sent. Until a key is supplied, a stub provider serves recorded responses, and a miss is an explicit error, never a guess. | Deterministic re-runs (principle 6) and a reproducible scorecard. |
+| AD-2b | **Amendment, 6 October 2026:** the closed list of document types is the nine types of the supplied schema (`config/ingestion/document_types.json`) plus the RM's sourcing message. The engine's checklist, completeness, party attribution, fact alignment, cross-checks, policy and spread are built on those nine; the thirty types of the earlier catalogue are removed, and with them the rules and checklist items whose only evidence they were (declared accounts and facilities, instalments to declared lenders, collateral, bureau, registrations). A type is added by configuration: its schema, signals, field rules and validators in `config/ingestion/`, and its entry and the checklist items it satisfies in `config/document_types.yaml` and `config/checklist_taxonomy.yaml`. One published version carries both the engine's sections and the service's (`ingestion.<section>`). | The PoC's documents are these nine. Financial figures are read from the printed statement rows by label (`config/statements.yaml`), so the policy norms, the spread and the turnover facts share one source. | one provider interface with Anthropic (default) and Gemini, both native. Every call is recorded, and replayed by the hash of its canonical request. No sampling parameters are sent. Until a key is supplied, a stub provider serves recorded responses, and a miss is an explicit error, never a guess. | Deterministic re-runs (principle 6) and a reproducible scorecard. |
+| AD-5a | **Amendment, 6 October 2026:** the model layer is provider-agnostic behind one interface; the first adapter is OpenAI-compatible (GPT-5.4 nano, model id in configuration), Anthropic and Gemini follow behind the same interface. Recordings and replay live in the service's SQLite database (`llm_calls`), keyed as before. Sampling: `temperature: 0` and `seed: 1`, set in `config/ingestion/llm.yaml`; no other parameter is sent. | Model choice is configuration, not code. |
 | AD-6 | **Every feature ships with fixtures and tests tagged by test case.** Fixtures live in `tests/fixtures/TC-xx/`, each with an expected result. There are pytest suites for the engine, `node:test` for the sidecar, and Playwright (including 375 px) for screens. The scorecard (F-26) runs from the first extraction. `npm run check` gates every merge. | Keeps every wave measured against C1 to C9. |
 
 **Build organisation.**
 
 - **Wave 0, foundation (sequential):** F-00 to F-03, the contract (AD-4) and the prototype shell.
 - **Wave 1, three parallel streams**, each on its own branch and git worktree, merged after review:
-  - document processing in the sidecar: F-07 to F-09, F-11 and F-15;
+  - document processing in the service: F-07 to F-09, F-11 and F-15;
   - intake and completeness in the engine: F-04, F-05, F-10, F-12 to F-14 and F-17;
   - screens: restoring and rewiring the prototype screens, F-06 and F-16.
 - **Wave 2, triangulation and policy:** F-18 to F-21.

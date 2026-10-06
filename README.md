@@ -20,7 +20,7 @@ FRD.
 
 ## Running the app
 
-Two processes: the Python engine service (port 8000) and the React frontend.
+Three processes: the document-processing service (port 3102), the Python engine service (port 8000) and the React frontend.
 
 **One-time setup** (inside WSL, as the repository owner)
 
@@ -33,18 +33,22 @@ python3 -m venv .venv
 .venv/bin/pip install pip-tools
 .venv/bin/pip-sync requirements.txt
 
-# Publish the authored configuration into the data root (once, and after
-# every change under config/)
+# The document-processing service has its own Python 3.12 environment
+(cd services/ingestion && python3.12 -m venv .venv && .venv/bin/pip install -r requirements.txt)
+# (scanned documents also need: .venv/bin/pip install -r requirements-ocr.txt)
+
+# Publish the authored configuration, the engine's and the service's, into the data root
+# (once, and after every change under config/)
 npm run config:publish -- "<your name>"
 ```
 
 **Start both**
 
 ```sh
-./scripts/start.sh        # engine in the background, frontend on :4173
+./scripts/start.sh        # service and engine in the background, frontend on :4173
 ```
 
-or in two terminals: `npm run dev:api` and `npm run dev`.
+or in separate terminals: the service (`cd services/ingestion && PYTHONPATH=. .venv/bin/python -m ingestion.cli serve`), `npm run dev:api` and `npm run dev`. The service answers from recorded model calls unless `INGEST_MODEL_MODE` is `record` or `live` and `OPENAI_API_KEY` is set.
 
 **Sign in** with any user in `config/roles.yaml` (one per role: RM, Credit
 Analyst, Credit Manager) and the shared password in that file.
@@ -52,7 +56,7 @@ Analyst, Credit Manager) and the shared password in that file.
 ## Checks
 
 ```sh
-npm run check     # typecheck, eslint, pytest, import contract, excluded terms, build
+npm run check     # contracts, typecheck, eslint, pytest (engine and service), import contracts, excluded terms, build, e2e
 ```
 
 Individually: `npm run typecheck`, `npm run lint`, `npm run test:py`,
@@ -66,7 +70,8 @@ Individually: `npm run typecheck`, `npm run lint`, `npm run test:py`,
 | `src/` | React frontend (TanStack Start and Router, Tailwind, shadcn/ui) |
 | `terminology/rbl.yaml` | Every on-screen label, read through `t()` |
 | `engine/` | Python service (FastAPI), CLI, config store, checklist, identifiers |
-| `config/` | Authored configuration, published as immutable versions to the data root |
+| `services/ingestion/` | The document-processing service (FastAPI, Python 3.12, SQLite): reads, classifies and extracts; see its README and GUIDE |
+| `config/` | Authored configuration, published as immutable versions to the data root; `config/ingestion/` is the document-processing service's |
 | `tests/` | Python tests |
 | `workflow/` | Local only, never committed: private notes, keys and the data root (`workflow/data`: `cases/` at mode 700, `config_store/`, `audit/`). Never run `git clean -x` or `-X` |
 

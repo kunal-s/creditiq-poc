@@ -134,7 +134,11 @@ def fy_end_of(value: object) -> date | None:
         return date(d.year if d.month <= 3 else d.year + 1, 3, 31)
     if value is None:
         return None
-    text = str(value).strip().upper().replace(" ", "")
+    # "FY2025 (ended 31 March 2025)": the printed year end wins over the label.
+    m = re.search(r"ended\s+(.+?)\)?$", str(value).strip(), re.IGNORECASE)
+    if m and (d := parse_date(m[1])):
+        return date(d.year if d.month <= 3 else d.year + 1, 3, 31)
+    text = str(value).strip().split("(")[0].strip().upper().replace(" ", "")
     m = re.fullmatch(r"(?:FY)?(\d{4})-(\d{2}|\d{4})", text)
     if m:
         return date(int(m[1]) + 1, 3, 31)

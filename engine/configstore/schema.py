@@ -149,18 +149,6 @@ class ChecklistTaxonomySection(BaseModel):
     items: list[ChecklistItemDef]
 
 
-class SignalSet(BaseModel):
-    """Deterministic classification signals (F-09.3). Each entry is a regular
-    expression matched case-insensitively against a document's page text."""
-
-    required: list[str] = Field(default_factory=list)
-    """All must match for a tier-1 exit."""
-    supporting: list[str] = Field(default_factory=list)
-    """Each match adds to the score."""
-    contrary: list[str] = Field(default_factory=list)
-    """Any match blocks a tier-1 exit for this type."""
-
-
 DocumentGroup = Literal[
     "origination",
     "constitution",
@@ -178,6 +166,19 @@ DocumentGroup = Literal[
 InstanceKey = Literal["none", "period", "year", "account", "person", "property"]
 
 
+class PartyList(BaseModel):
+    """A list of people a document names (F-10.2): the field that holds them and, for a list of
+    objects, the key of each part. A plain list of names has no `name_key`."""
+
+    field: str
+    name_key: str | None = None
+    din_key: str | None = None
+    pan_key: str | None = None
+    designation_key: str | None = None
+    role: str | None = None
+    """The party's role when the document does not say (director, partner, proprietor)."""
+
+
 class DocumentTypeDef(BaseModel):
     id: str
     name: str
@@ -192,57 +193,16 @@ class DocumentTypeDef(BaseModel):
     """Belongs to a person and is attributed to a party (F-10)."""
     partner_output: bool = False
     """A report from RBL's GST, bank-statement analysis or bureau partner (F-11)."""
-    dictionary: str | None = None
-    """Id of the field dictionary used to extract this type (F-15)."""
-    signals: SignalSet = Field(default_factory=SignalSet)
+    party_list: PartyList | None = None
+    """People this document names, for the case's party set (F-10.2)."""
 
 
 class DocumentTypesSection(BaseModel):
     """config/document_types.yaml (F-00.4)."""
 
-    tier1_margin: float = Field(gt=0, le=1)
-    """Minimum score margin over the runner-up for a tier-1 exit (F-09.3)."""
-    classify_threshold: float = Field(gt=0, le=1)
-    """Below this, a document is unclassified (F-09.5)."""
     types: list[DocumentTypeDef]
-
-
-FieldType = Literal["text", "date", "money_inr", "number", "percent", "identifier", "boolean", "period", "table"]
-IdentifierKind = Literal["pan", "gstin", "cin", "udyam", "din", "ifsc", "tan", "udin", "itr_ack"]
-
-
-class FieldDef(BaseModel):
-    name: str
-    label: str
-    type: FieldType
-    key_field: bool = False
-    """Counts towards C3 and is routed to review below threshold (F-17.2)."""
-    identifier: IdentifierKind | None = None
-    """For type "identifier": the format or checksum to validate against."""
-    description: str = ""
-    columns: list["FieldDef"] = Field(default_factory=list)
-    """For type "table": the columns of each row."""
-
-
-class DictionarySection(BaseModel):
-    """config/dictionaries/<id>.yaml (F-15)."""
-
-    id: str
-    fields: list[FieldDef]
-
-
-class QualitySection(BaseModel):
-    """config/quality.yaml (F-07.2)."""
-
-    min_dpi: int
-    ocr_confidence_floor: float
-    """Below this mean OCR confidence on a page carrying fields: grade C."""
-    ocr_confidence_degraded: float
-    """Below this (and at or above the floor): grade B."""
-    min_chars_text_layer: int
-    """A text layer with fewer characters than this is not trusted."""
-    reason_codes: dict[str, str]
-    """Code to plain-language re-scan request (F-07.4)."""
+    """The closed list. Signals, fields and tables of each type are in the ingestion sections
+    (config/ingestion/), published in the same version (FRD AD-2a)."""
 
 
 class DocumentAge(BaseModel):
@@ -351,30 +311,54 @@ class CamSectionConfig(BaseModel):
     recommendation_title: str
 
 
-class ConfidenceSection(BaseModel):
-    """config/confidence.yaml (F-17.1)."""
+class StatementLine(BaseModel):
+    """A row of a statement table, found by its printed label."""
 
-    weights: dict[str, float]
-    caps: dict[str, float]
-    key_field_review_threshold: float
-    manual_entry_cap: float
+    table: str
+    row: str
+    """Regular expression, case-insensitive, matched against the row's first column."""
+    column: str | None = None
+    """Overrides the section's column (for example `previous_period`)."""
+    label: str = "particulars"
+    """The column that holds the row's printed label."""
+
+
+class GstLine(BaseModel):
+    table: str
+    row: str
+    column: str
+    label: str = "description"
+
+
+class StatementsSection(BaseModel):
+    """config/statements.yaml: where the canonical financial lines are printed (F-18, F-20, F-22).
+
+    The document-processing service returns each statement as a table of printed rows. The
+    engine reads lines from those rows by label, and derives the rest, so the policy ratios, the
+    spread and the turnover facts all use the same figures."""
+
+    column: str = "current_period"
+    """The column holding the statement's own year; the other column is the comparative."""
+    lines: dict[str, StatementLine]
+    derived: dict[str, str] = Field(default_factory=dict)
+    """Line key to an expression over other lines (summed from the lines it names)."""
+    gst_outward: GstLine
 
 
 SECTION_MODELS: dict[str, type[BaseModel]] = {
     "policy": PolicySection,
     "checklist_taxonomy": ChecklistTaxonomySection,
     "document_types": DocumentTypesSection,
-    "quality": QualitySection,
     "document_ages": DocumentAgesSection,
     "tolerances": TolerancesSection,
-    "confidence": ConfidenceSection,
     "alignment": AlignmentSection,
     "crosschecks": CrossChecksSection,
     "cam": CamSectionConfig,
+    "statements": StatementsSection,
 }
 
 
-def cross_check(sections: dict[str, BaseModel]) -> list[str]:
+def cross_check(sections: dict[str, BaseModel], ingestion: dict[str, dict] | None = None) -> list[str]:
     """References between sections that must resolve. Returns problems."""
     problems: list[str] = []
     checklist = sections["checklist_taxonomy"]
@@ -388,14 +372,12 @@ def cross_check(sections: dict[str, BaseModel]) -> list[str]:
         for item in t.satisfies:
             if item not in item_ids:
                 problems.append(f"document_types.{t.id}: satisfies unknown checklist item {item!r}")
-        if t.dictionary and f"dictionary.{t.dictionary}" not in sections:
-            problems.append(f"document_types.{t.id}: no dictionary {t.dictionary!r}")
-        for kind in ("required", "supporting", "contrary"):
-            for pattern in getattr(t.signals, kind):
-                try:
-                    re.compile(pattern, re.IGNORECASE | re.MULTILINE)
-                except re.error as e:
-                    problems.append(f"document_types.{t.id}.signals.{kind}: {pattern!r} does not compile ({e})")
+    if ingestion is not None:
+        ingest_ids = [d["document_type"] for d in ingestion["document_types"]["documents"]]
+        engine_only = {t.id for t in types.types if t.group == "origination"}
+        if sorted(ingest_ids) != sorted(set(type_ids) - engine_only):
+            problems.append(f"document_types: ids differ from config/ingestion/document_types.json "
+                            f"(only in one: {sorted(set(ingest_ids) ^ (set(type_ids) - engine_only))})")
     covered = {item for t in types.types for item in t.satisfies}
     for item in sorted(item_ids - covered):
         problems.append(f"checklist item {item!r} is satisfied by no document type")

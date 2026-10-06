@@ -12,7 +12,6 @@ findings that use it (F-19.6).
 from __future__ import annotations
 
 import sqlite3
-from collections import defaultdict
 from pathlib import Path
 
 from . import facts as facts_module
@@ -207,105 +206,6 @@ def _label(source: str) -> str:
     }[source]
 
 
-# --- Bank accounts (BA-01, BA-02) ---
-
-
-def _accounts(ctx: Context, rule: CrossCheckRule) -> Finding:
-    accounts = ctx.facts.accounts
-    if not ctx.facts.declaration_received and not any(a.declared for a in accounts):
-        if not accounts:
-            return _finding(ctx, rule, "not_applicable", [], note="No bank account is on file.")
-        return _finding(ctx, rule, "incomplete", [],
-                        note="No declaration of existing banking is on file to compare with.")
-    if rule.variable == "declared_accounts_with_statements":
-        subject = [a for a in accounts if a.declared]
-        missing = [a for a in subject if not a.has_statement]
-        left, right = "Declared accounts", "Accounts with statements"
-        right_set = [a for a in accounts if a.has_statement]
-    else:
-        subject = [a for a in accounts if a.has_statement or any(not _is_declaration(s) for s in a.sources)]
-        missing = [a for a in subject if not a.declared]
-        left, right = "Accounts evidenced", "Declared accounts"
-        right_set = [a for a in accounts if a.declared]
-    sides = [
-        _side(left, ", ".join(a.label for a in subject) or "none", [e for a in subject for e in a.evidence[:1]]),
-        _side(right, ", ".join(a.label for a in right_set) or "none", [e for a in right_set for e in a.evidence[:1]]),
-    ]
-    if not missing:
-        return _finding(ctx, rule, "pass", sides, note=f"{len(subject)} account(s) reconcile.")
-    names = ", ".join(f"{a.label} ({', '.join(a.sources)})" for a in missing)
-    return _finding(ctx, rule, "fail", sides, missing=names)
-
-
-def _is_declaration(source: str) -> bool:
-    low = source.lower()
-    return "declaration" in low or "sourcing message" in low
-
-
-# --- Obligations (OB-01, OB-02) ---
-
-
-def _facilities(ctx: Context, rule: CrossCheckRule) -> Finding:
-    groups: dict[str, list] = defaultdict(list)
-    for f in ctx.facts.facilities:
-        if f.source in rule.sources:
-            groups[f.label].append(f)
-    declared_label = next((f.label for f in ctx.facts.facilities if f.source == "existing_facilities_declaration"),
-                          "Declaration of existing facilities")
-    if ctx.facts.declaration_received and declared_label not in groups:
-        groups[declared_label] = []  # a nil declaration still states a set: none
-    if len(groups) < 2:
-        return _finding(ctx, rule, "not_applicable", [], note="Fewer than two sources record existing facilities.")
-    threshold = ctx.tol("name_match", 0.85)
-    lenders: list[str] = []
-    for fs in groups.values():
-        for f in fs:
-            if not any(facts_module.same_entity(f.lender, q, ctx.noise, threshold) for q in lenders):
-                lenders.append(f.lender)
-    gaps = []
-    for lender in lenders:
-        absent = [label for label, fs in groups.items()
-                  if not any(facts_module.same_entity(lender, f.lender, ctx.noise, threshold) for f in fs)]
-        if absent:
-            gaps.append(f"{lender} is not in {', '.join(absent)}")
-    sides = [
-        _side(label, ", ".join(dict.fromkeys(f.lender for f in fs)) or "none",
-              [e for f in fs for e in f.evidence[:1]], any(f.relies_on_manual for f in fs))
-        for label, fs in groups.items()
-    ]
-    if not gaps:
-        return _finding(ctx, rule, "pass", sides, note=f"{len(lenders)} lender(s) agree across {len(groups)} sources.")
-    return _finding(ctx, rule, "fail", sides, items="; ".join(gaps))
-
-
-def _emis(ctx: Context, rule: CrossCheckRule) -> Finding:
-    if not ctx.facts.credits and not ctx.facts.obligations and not any(a.has_statement for a in ctx.facts.accounts):
-        return _finding(ctx, rule, "not_applicable", [], note="No bank statement is on file.")
-    if not ctx.facts.declaration_received:
-        return _finding(ctx, rule, "incomplete", [],
-                        note="No declaration of existing facilities is on file to compare with.")
-    threshold = ctx.tol("name_match", 0.85)
-    declared = [f for f in ctx.facts.facilities if f.source == "existing_facilities_declaration"]
-    undeclared = [o for o in ctx.facts.obligations
-                  if not any(facts_module.same_entity(o.lender, f.lender, ctx.noise, threshold) for f in declared)]
-    sides = [
-        _side("Instalments in bank statements",
-              ", ".join(f"{o.lender} ({facts_module.inr(o.typical_amount)} × {len(o.months)})"
-                        for o in ctx.facts.obligations) or "none",
-              [e for o in ctx.facts.obligations for e in o.evidence[:2]]),
-        _side("Declared facilities", ", ".join(f.lender for f in declared) or "none",
-              [e for f in declared for e in f.evidence[:1]], any(f.relies_on_manual for f in declared)),
-    ]
-    if not undeclared:
-        return _finding(ctx, rule, "pass", sides,
-                        note=f"{len(ctx.facts.obligations)} recurring instalment(s), all to declared lenders.")
-    missing = ", ".join(
-        f"{o.lender} ({facts_module.inr(o.typical_amount)} a month in {len(o.months)} months, {o.account})"
-        for o in undeclared
-    )
-    return _finding(ctx, rule, "fail", sides, missing=missing)
-
-
 def evaluate(root: Path, case: CaseDetail, facts: CaseFacts) -> list[Finding]:
     ctx = Context(root, case, facts)
     out: list[Finding] = []
@@ -317,12 +217,6 @@ def evaluate(root: Path, case: CaseDetail, facts: CaseFacts) -> list[Finding]:
             out.append(_persons(ctx, rule))
         elif v in TURNOVER_PAIRS:
             out.extend(_turnover(ctx, rule))
-        elif v in ("declared_accounts_with_statements", "evidenced_accounts_declared"):
-            out.append(_accounts(ctx, rule))
-        elif v == "facilities_reconcile":
-            out.append(_facilities(ctx, rule))
-        elif v == "emis_to_declared_lenders":
-            out.append(_emis(ctx, rule))
     return out
 
 

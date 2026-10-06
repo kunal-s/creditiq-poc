@@ -26,19 +26,39 @@ from pathlib import Path
 
 from .config import load_app_config
 from .configstore import reader
+from .configstore.schema import PartyList
 from .contracts import Party
 from .names import normalise_name, similarity, tokens
 from .review_items import close_item, raise_item
 from .util import stable_id
 
 _CELL = re.compile(r"^(\w+)\[(\d+)\]\.(\w+)$")
+_ITEM = re.compile(r"^(\w+)\[(\d+)\]$")
 
-# Constitution documents: (table field, role, name column, identifier columns).
-PARTY_TABLES = {
-    "board_resolution": ("directors", "director"),
-    "partnership_deed": ("partners", "partner"),
-    "gst_registration_certificate": ("persons", None),
-}
+
+def party_list_spec(type_def) -> PartyList | None:
+    """The people a document type names (config/document_types.yaml `party_list`), or None."""
+    return type_def.party_list if type_def is not None else None
+
+
+def party_entries(fields: dict[str, tuple[object, int | None]], spec: PartyList) -> list[dict]:
+    """The people listed in a document's fields: name, and DIN, PAN and designation where printed."""
+    if spec.name_key:
+        out = []
+        for row in table_rows(fields, spec.field):
+            name = row.get(spec.name_key, (None, None))
+            if name[0]:
+                out.append({"name": str(name[0]), "page": name[1],
+                            "din": _ident(row.get(spec.din_key)) if spec.din_key else None,
+                            "pan": _ident(row.get(spec.pan_key)) if spec.pan_key else None,
+                            "designation": row.get(spec.designation_key, (None, None))[0] if spec.designation_key else None})
+        return out
+    items = []
+    for key, (value, page) in fields.items():
+        m = _ITEM.match(key)
+        if m and m[1] == spec.field and value:
+            items.append((int(m[2]), {"name": str(value), "page": page, "din": None, "pan": None, "designation": None}))
+    return [e for _, e in sorted(items, key=lambda p: p[0])]
 
 
 @dataclass
@@ -133,41 +153,18 @@ def build_party_set(conn: sqlite3.Connection, root: Path, case_id: str) -> list[
     borrower_source = (header.get("borrower") or {}).get("source") or "person"
     add(_Party(name=case["borrower"], role="borrower", source=borrower_source, pan=case["pan"]))
 
+    type_defs = {t.id: t for t in reader.load_document_types(root).types}
     for doc in _active_documents(conn, case_id):
-        types = _types(doc)
         fields = None
-        for type_id in types:
-            if type_id in PARTY_TABLES:
-                table, role = PARTY_TABLES[type_id]
-                fields = fields if fields is not None else field_map(conn, doc["id"])
-                for row in table_rows(fields, table):
-                    name, page = row.get("name", (None, None))
-                    if not name:
-                        continue
-                    designation = row.get("designation", (None, None))[0]
-                    add(
-                        _Party(
-                            name=str(name),
-                            role=_role_from_designation(designation, role),
-                            source=f"document:{doc['id']}:p{page or doc['page_from']}",
-                            pan=_ident(row.get("pan")),
-                            din=_ident(row.get("din")),
-                        )
-                    )
-            if type_id == "bureau_consumer":
-                identity = json.loads(doc["identity"] or "{}")
-                fields = fields if fields is not None else field_map(conn, doc["id"])
-                name = identity.get("name") or (fields.get("subject_name") or (None, None))[0]
-                if name:
-                    page = (fields.get("subject_name") or (None, None))[1]
-                    add(
-                        _Party(
-                            name=str(name),
-                            role="promoter",
-                            source=f"document:{doc['id']}:p{page or doc['page_from']}",
-                            pan=_ident((identity.get("pan"), None)) or _ident(fields.get("pan")),
-                        )
-                    )
+        for type_id in _types(doc):
+            spec = party_list_spec(type_defs.get(type_id))
+            if spec is None:
+                continue
+            fields = fields if fields is not None else field_map(conn, doc["id"])
+            for entry in party_entries(fields, spec):
+                add(_Party(name=entry["name"], role=_role_from_designation(entry["designation"], spec.role),
+                           source=f"document:{doc['id']}:p{entry['page'] or doc['page_from']}",
+                           pan=entry["pan"], din=entry["din"]))
 
     promoters = header.get("promoters") or {}
     if promoters.get("value"):
@@ -283,7 +280,7 @@ def _attribute(
 ) -> tuple[str | None, str | None, str, str | None]:
     identity = json.loads(doc["identity"] or "{}")
     fields = field_map(conn, doc["id"])
-    name = identity.get("name") or (fields.get("name") or fields.get("subject_name") or (None, None))[0]
+    name = identity.get("name") or (fields.get("person_name") or (None, None))[0]
     pan = (identity.get("pan") or (fields.get("pan") or (None, None))[0] or "").strip().upper() or None
     din = (identity.get("din") or "").strip() or None
     label = doc["archive_path"] or doc["original_name"]

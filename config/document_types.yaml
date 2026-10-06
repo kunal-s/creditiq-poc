@@ -1,467 +1,75 @@
-# Closed list of document types (docs/functional-requirements.md F-00.4, F-09).
-# Classification chooses only from this list, or none_of_these.
-#
-# signals: regular expressions, matched case-insensitively against page text.
-#   required   all must match for a tier-1 (signals) exit
-#   supporting each match adds to the score
-#   contrary   any match blocks a tier-1 exit for this type
-# A tier-1 exit also needs tier1_margin over the runner-up (F-09.3).
-# satisfies: checklist item ids (config/checklist_taxonomy.yaml).
-# Interim values, tuned against RBL's documents once they arrive.
-
-tier1_margin: 0.2
-classify_threshold: 0.6
+# The closed list of document types (docs/functional-requirements.md F-00.4, F-09; AD-2a).
+# Classification chooses only from this list, or none_of_these. What each type contains
+# (fields, tables), how it is recognised (signals) and how it is read are in config/ingestion/,
+# published in the same version; the ids here must match config/ingestion/document_types.json.
+# `satisfies`: checklist item ids (config/checklist_taxonomy.yaml).
+# application_message is the RM's sourcing message, stored with the case (F-04); the
+# document-processing service does not read it.
 
 types:
-  # --- Origination ---
   - id: application_message
     name: Sourcing message
     group: origination
     description: The RM's sourcing email, WhatsApp message or notes, pasted when the application was created.
-    signals: {}
 
-  - id: application_form
-    name: Loan application form
-    group: origination
-    description: The borrower's signed application for credit facilities.
-    dictionary: application_form
-    signals:
-      required: ['application\s+(form|for\s+(credit|loan|working\s+capital))']
-      supporting: ['applicant', 'facility\s+(required|requested)', 'amount\s+(required|requested)', 'purpose']
-      contrary: ['sanction\s+letter', 'we\s+are\s+pleased\s+to\s+sanction']
-
-  # --- Constitution ---
   - id: certificate_of_incorporation
     name: Certificate of incorporation
     group: constitution
     description: Registrar of Companies certificate that a company is incorporated, with its CIN.
     satisfies: [coi]
-    dictionary: certificate_of_incorporation
-    signals:
-      required: ['certificate\s+of\s+incorporation']
-      supporting: ['registrar\s+of\s+companies', 'corporate\s+identity\s+number', '\b[LU]\d{5}[A-Z]{2}\d{4}[A-Z]{3}\d{6}\b', 'companies\s+act']
-      contrary: ['memorandum\s+of\s+association', 'board\s+resolution']
 
-  - id: moa_aoa
+  - id: memorandum_articles_of_association
     name: Memorandum and articles of association
     group: constitution
-    description: The company's memorandum and articles of association, including its borrowing powers.
+    description: The company's memorandum and articles of association, including its objects, capital and borrowing powers.
     satisfies: [moa_aoa]
-    dictionary: moa_aoa
-    signals:
-      required: ['(memorandum|articles)\s+of\s+association']
-      supporting: ['objects?\s+(of\s+the\s+company|clause)', 'authori[sz]ed\s+(share\s+)?capital', 'borrowing\s+powers', 'subscribers']
-      contrary: ['certificate\s+of\s+incorporation\s*$']
+    party_list: {field: directors, name_key: name, din_key: din, role: director}
 
-  - id: board_resolution
-    name: Board resolution to borrow
+  - id: board_resolution_borrowing
+    name: Board resolution for borrowing
     group: constitution
     description: Certified extract of a board resolution authorising the borrowing and the signatories.
     satisfies: [board_resolution]
-    dictionary: board_resolution
-    signals:
-      required: ['resolution', 'board\s+of\s+directors']
-      supporting: ['resolved\s+that', 'certified\s+true\s+copy', 'section\s+179', 'borrow', 'authori[sz]ed\s+signator']
-      contrary: ['declaration\s+of\s+existing', 'we\s+hereby\s+declare\s+that\s+we\s+have\s+no']
+    party_list: {field: authorized_persons, role: director}
 
-  - id: partnership_deed
-    name: Partnership deed
-    group: constitution
-    description: The deed constituting a partnership firm, with partners, shares and borrowing authority.
-    satisfies: [partnership_deed]
-    dictionary: partnership_deed
-    signals:
-      required: ['partnership\s+deed|deed\s+of\s+partnership']
-      supporting: ['partners?\s+of\s+the\s+(first|second)\s+part', 'profit\s+(and|&)\s+loss.*shar', 'indian\s+partnership\s+act', 'capital\s+contribution']
-      contrary: ['retirement\s+deed']
-
-  - id: partner_authority_letter
-    name: Partners' authority letter
-    group: constitution
-    description: Letter signed by all partners authorising the borrowing and the signatories.
-    satisfies: [partner_authority_letter]
-    dictionary: authority_letter
-    signals:
-      required: ['partners', 'authori[sz]']
-      supporting: ['letter\s+of\s+authority', 'jointly\s+and\s+severally', 'borrow', 'on\s+behalf\s+of\s+the\s+firm']
-      contrary: ['partnership\s+deed|deed\s+of\s+partnership', 'board\s+of\s+directors']
-
-  - id: proprietorship_proof
-    name: Proprietorship declaration or proof
-    group: constitution
-    description: Sole proprietor's declaration of ownership of the business, with supporting registration.
-    satisfies: [proprietor_declaration]
-    dictionary: authority_letter
-    signals:
-      required: ['proprietor']
-      supporting: ['sole\s+proprietor', 'declaration', 'shop\s+(and|&)\s+establishment', 'trade\s+licen[cs]e']
-      contrary: ['partnership\s+deed', 'board\s+of\s+directors']
-
-  # --- Registration ---
-  - id: pan_entity
-    name: PAN of the entity
+  - id: company_pan
+    name: Company PAN
     group: registration
-    description: Permanent Account Number card or letter issued to the business entity.
+    description: Income Tax Department intimation of the company's permanent account number.
     satisfies: [pan_entity]
-    dictionary: pan_entity
-    signals:
-      required: ['permanent\s+account\s+number|income\s+tax\s+department']
-      supporting: ['\b[A-Z]{3}[CFTHABGJL][A-Z]\d{4}[A-Z]\b', 'date\s+of\s+(incorporation|formation)']
-      contrary: ['\b[A-Z]{3}P[A-Z]\d{4}[A-Z]\b', 'father', 'date\s+of\s+birth', 'acknowledg', 'certificate\s+of\s+incorporation', 'registration\s+certificate']
 
-  - id: gst_registration_certificate
-    name: GST registration certificate
-    group: registration
-    description: Form GST REG-06 registration certificate with the GSTIN, legal name and constitution.
-    satisfies: [gst_registration]
-    dictionary: gst_registration_certificate
-    signals:
-      required: ['reg-?06|registration\s+certificate', 'goods\s+and\s+services\s+tax|\bgst(in)?\b']
-      supporting: ['goods\s+and\s+services\s+tax', '\b\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]\b', 'legal\s+name', 'constitution\s+of\s+business', 'date\s+of\s+liability']
-      contrary: ['gstr-?3b', 'gstr-?1\b', 'return\s+for\s+the\s+period']
-
-  - id: udyam_certificate
-    name: Udyam registration certificate
-    group: registration
-    description: Udyam registration certificate with the Udyam number and MSME classification.
-    satisfies: [udyam]
-    dictionary: udyam_certificate
-    signals:
-      required: ['udyam']
-      supporting: ['UDYAM-[A-Z]{2}-\d{2}-\d{7}', 'micro|small|medium', 'ministry\s+of\s+micro', 'type\s+of\s+enterprise']
-      contrary: []
-
-  # --- KYC (one instance per person) ---
-  - id: kyc_pan_individual
-    name: PAN card of an individual
+  - id: director_kyc
+    name: Director KYC
     group: kyc
-    description: PAN card of a promoter, director, partner, proprietor or guarantor.
+    description: A director's or promoter's identity details and identity document.
     satisfies: [kyc_promoters]
     instance_key: person
     personal: true
-    dictionary: kyc_person
-    signals:
-      required: ['permanent\s+account\s+number|income\s+tax\s+department']
-      supporting: ['\b[A-Z]{3}P[A-Z]\d{4}[A-Z]\b', 'father', 'date\s+of\s+birth']
-      contrary: ['date\s+of\s+(incorporation|formation)', 'acknowledg']
 
-  - id: kyc_aadhaar
-    name: Aadhaar
-    group: kyc
-    description: Aadhaar card or e-Aadhaar of an individual (only the last four digits are kept).
-    satisfies: [kyc_promoters]
-    instance_key: person
-    personal: true
-    dictionary: kyc_person
-    signals:
-      required: ['aadhaar|unique\s+identification\s+authority']
-      supporting: ['\b\d{4}\s?\d{4}\s?\d{4}\b', 'date\s+of\s+birth|dob', 'male|female', 'address']
-      contrary: []
-
-  - id: kyc_passport
-    name: Passport
-    group: kyc
-    description: Indian passport of an individual.
-    satisfies: [kyc_promoters]
-    instance_key: person
-    personal: true
-    dictionary: kyc_person
-    signals:
-      required: ['passport']
-      supporting: ['republic\s+of\s+india', 'place\s+of\s+(birth|issue)', 'date\s+of\s+expiry', 'P<IND']
-      contrary: []
-
-  - id: kyc_voter_id
-    name: Voter ID
-    group: kyc
-    description: Election commission elector's photo identity card.
-    satisfies: [kyc_promoters]
-    instance_key: person
-    personal: true
-    dictionary: kyc_person
-    signals:
-      required: ['election\s+commission|elector']
-      supporting: ['identity\s+card', 'father|husband', 'date\s+of\s+birth|age']
-      contrary: []
-
-  - id: kyc_driving_licence
-    name: Driving licence
-    group: kyc
-    description: Driving licence of an individual.
-    satisfies: [kyc_promoters]
-    instance_key: person
-    personal: true
-    dictionary: kyc_person
-    signals:
-      required: ['driving\s+licen[cs]e']
-      supporting: ['transport', 'valid\s+till', 'date\s+of\s+birth']
-      contrary: []
-
-  # --- Financials ---
   - id: audited_financial_statements
     name: Audited financial statements
     group: financials
-    description: Audited balance sheet and profit and loss account for one financial year, with the auditor's report.
+    description: Audited balance sheet, statement of profit and loss and cash flow statement for a financial year.
     satisfies: [fs_fy_minus2, fs_fy_minus1]
     instance_key: year
-    dictionary: financial_statements
-    signals:
-      required: ['balance\s+sheet', "(independent\\s+)?auditor'?s?\\s+report|chartered\\s+accountants"]
-      supporting: ['profit\s+(and|&)\s+loss|statement\s+of\s+profit', 'as\s+at\s+31(st)?\s+march', 'UDIN', 'revenue\s+from\s+operations']
-      contrary: ['provisional', 'projected|projections', 'estimated']
 
-  - id: provisional_financial_statements
-    name: Provisional financial statements
-    group: financials
-    description: Unaudited (provisional) balance sheet and profit and loss for the current or part year.
-    satisfies: [fs_provisional]
-    instance_key: year
-    dictionary: financial_statements
-    signals:
-      required: ['provisional', 'balance\s+sheet|profit\s+(and|&)\s+loss']
-      supporting: ['unaudited', 'as\s+at', 'revenue\s+from\s+operations', 'certified\s+by']
-      contrary: ['projected|projections']
-
-  - id: projected_financial_statements
-    name: Projected financial statements
-    group: financials
-    description: Projected balance sheet and profit and loss for future years.
-    satisfies: [fs_projected]
-    instance_key: year
-    dictionary: financial_statements
-    signals:
-      required: ['projected|projections|estimated']
-      supporting: ['balance\s+sheet', 'profit\s+(and|&)\s+loss', 'assumptions']
-      contrary: ['credit\s+monitoring\s+arrangement|\bCMA\b']
-
-  - id: cma_data
-    name: CMA data
-    group: financials
-    description: Credit Monitoring Arrangement data with assessment of working-capital requirement (MPBF).
-    satisfies: [cma_data]
-    dictionary: cma_data
-    signals:
-      required: ['credit\s+monitoring\s+arrangement|\bCMA\b']
-      supporting: ['maximum\s+permissible\s+bank\s+finance|MPBF', 'form\s+(ii|iii|iv|v|vi)', 'fund\s+flow', 'working\s+capital\s+gap']
-      contrary: []
-
-  # --- Tax ---
-  - id: itr_acknowledgement
-    name: ITR acknowledgement
+  - id: income_tax_return
+    name: Income tax return
     group: tax
-    description: Income-tax return filing acknowledgement (ITR-V) for one assessment year.
+    description: Income tax return acknowledgement with the computation of total income, for an assessment year.
     satisfies: [itr]
     instance_key: year
-    dictionary: itr_acknowledgement
-    signals:
-      required: ['acknowledg', 'income\s+tax\s+return|ITR']
-      supporting: ['assessment\s+year', 'e-?filing', 'gross\s+total\s+income', 'acknowledgement\s+number']
-      contrary: ['computation\s+of\s+(total\s+)?income']
-
-  - id: itr_computation
-    name: Computation of income
-    group: tax
-    description: Computation of total income accompanying an income-tax return, for one assessment year.
-    satisfies: [itr]
-    instance_key: year
-    dictionary: itr_computation
-    signals:
-      required: ['computation\s+of\s+(total\s+)?income']
-      supporting: ['assessment\s+year', 'income\s+from\s+business', 'total\s+income', 'tax\s+payable']
-      contrary: []
 
   - id: gstr_3b
-    name: GSTR-3B return
+    name: GSTR-3B
     group: tax
-    description: Monthly or quarterly GSTR-3B summary return for one tax period.
+    description: Monthly GST summary return (GSTR-3B), one per tax period.
     satisfies: [gst_returns]
     instance_key: period
-    dictionary: gstr_3b
-    signals:
-      required: ['gstr-?3b']
-      supporting: ['outward\s+taxable\s+supplies', 'eligible\s+itc|input\s+tax\s+credit', 'period|tax\s+period', '3\.1']
-      contrary: ['summary\s+report\s+of\s+gst|gst\s+analysis']
 
-  - id: gstr_1
-    name: GSTR-1 return
-    group: tax
-    description: GSTR-1 statement of outward supplies for one tax period.
-    satisfies: [gst_returns]
-    instance_key: period
-    dictionary: gstr_1
-    signals:
-      required: ['gstr-?1\b']
-      supporting: ['b2b', 'b2c', 'details\s+of\s+outward\s+supplies', 'hsn']
-      contrary: ['gstr-?3b']
-
-  - id: partner_gst_report
-    name: GST analysis report (partner)
-    group: tax
-    description: GST analysis report from RBL's GST partner, summarising returns and turnover across periods.
-    satisfies: [gst_returns]
-    partner_output: true
-    dictionary: partner_gst_report
-    signals:
-      required: ['gst', 'report|analysis|summary']
-      supporting: ['filing\s+(status|history)', 'turnover\s+trend', 'months?\s+(filed|not\s+filed)', 'gstr-?3b.*gstr-?1|gstr-?1.*gstr-?3b']
-      contrary: ['form\s+gstr-?3b\s*$']
-
-  # --- Banking ---
   - id: bank_statement
     name: Bank statement
     group: banking
-    description: Statement of one bank account for a period, with every transaction and running balance.
+    description: Statement of a current or cash credit account, with its transactions and balances.
     satisfies: [bank_statements]
     instance_key: account
-    dictionary: bank_statement
-    signals:
-      required: ['statement\s+of\s+account|account\s+statement|bank\s+statement', 'balance']
-      supporting: ['narration|particulars|description', 'withdrawal|debit', 'deposit|credit', 'IFSC', 'opening\s+balance']
-      contrary: ['analysis\s+report|banking\s+analysis', 'balance\s+sheet']
-
-  - id: partner_bank_analysis
-    name: Bank statement analysis report (partner)
-    group: banking
-    description: Bank statement analysis report from RBL's partner, summarising accounts month by month.
-    satisfies: [bank_statements]
-    partner_output: true
-    dictionary: partner_bank_analysis
-    signals:
-      required: ['analysis|analy[sz]er|summary', 'bank|account']
-      supporting: ['monthly\s+summary', 'emi|loan\s+repayment', 'bounce|cheque\s+return', 'cash\s+deposits?', 'average\s+(monthly\s+)?balance']
-      contrary: ['statement\s+of\s+account\s*$']
-
-  - id: sanction_letter_other_lender
-    name: Sanction letter from another lender
-    group: banking
-    description: Sanction letter of an existing facility with another bank or NBFC.
-    satisfies: [sanction_letters]
-    instance_key: account
-    dictionary: sanction_letter
-    signals:
-      required: ['sanction', 'term\s+loan|cash\s+credit|overdraft|working\s+capital|credit\s+facilit|loan\s+facilit|\bfacility\b']
-      supporting: ['pleased\s+to\s+(sanction|inform)', 'terms\s+and\s+conditions', 'rate\s+of\s+interest', 'tenor|repayment', 'limit']
-      contrary: ['application\s+form', 'credit\s+(information\s+)?report|bureau']
-
-  - id: existing_facilities_declaration
-    name: Declaration of existing facilities
-    group: banking
-    description: Borrower's declaration of all existing borrowings, or a nil declaration.
-    satisfies: [facilities_declaration]
-    dictionary: facilities_declaration
-    signals:
-      required: ['declar', 'facilit|borrowing|loan']
-      supporting: ['existing', 'nil', 'other\s+(banks?|lenders?|institutions?)', 'hereby']
-      contrary: ['board\s+of\s+directors', 'resolved\s+that']
-
-  # --- Working capital ---
-  - id: stock_statement
-    name: Stock and book-debt statement
-    group: working_capital
-    description: Statement of stock and receivables as at a date, for drawing-power computation.
-    satisfies: [stock_statement]
-    dictionary: stock_statement
-    signals:
-      required: ['stock', 'book\s+debts?|debtors|receivables']
-      supporting: ['statement', 'as\s+(at|on)', 'raw\s+material', 'finished\s+goods', 'drawing\s+power']
-      contrary: ['\bageing\b|\baging\b']
-
-  - id: debtors_creditors_ageing
-    name: Debtors and creditors ageing
-    group: working_capital
-    description: Ageing of receivables and payables by party and age bucket.
-    satisfies: [ageing]
-    dictionary: ageing
-    signals:
-      required: ['\bageing\b|\baging\b']
-      supporting: ['debtors|receivables', 'creditors|payables', '0\s*-\s*30|30\s*-\s*60|>\s*90|above\s+90']
-      contrary: []
-
-  # --- Collateral ---
-  - id: title_document
-    name: Title document
-    group: collateral
-    description: Registered sale deed, conveyance or title search report for the property offered as security.
-    satisfies: [title_document]
-    instance_key: property
-    dictionary: title_document
-    signals:
-      required: ['sale\s+deed|conveyance|title\s+(deed|search)|deed\s+of\s+sale']
-      supporting: ['sub-?registrar', 'survey\s+no', 'schedule\s+of\s+property', 'vendor|purchaser', 'consideration']
-      contrary: ['encumbrance\s+certificate', 'valuation\s+report']
-
-  - id: encumbrance_certificate
-    name: Encumbrance certificate
-    group: collateral
-    description: Certificate listing registered encumbrances on a property over a period.
-    satisfies: [title_document]
-    instance_key: property
-    dictionary: encumbrance_certificate
-    signals:
-      required: ['encumbrance']
-      supporting: ['certificate', 'sub-?registrar', 'period', 'survey\s+no', 'mortgage|charge']
-      contrary: ['valuation\s+report']
-
-  - id: valuation_report
-    name: Valuation report
-    group: collateral
-    description: Valuer's report on the market and realisable value of the property offered as security.
-    satisfies: [valuation_report]
-    instance_key: property
-    dictionary: valuation_report
-    signals:
-      required: ['valuation']
-      supporting: ['valuer', 'fair\s+market\s+value|market\s+value', 'realisable|distress', 'inspection']
-      contrary: ['encumbrance\s+certificate']
-
-  # --- Bureau ---
-  - id: bureau_commercial
-    name: Commercial bureau report
-    group: bureau
-    description: Commercial credit bureau report on the borrowing entity.
-    satisfies: [bureau_report]
-    partner_output: true
-    dictionary: bureau_report
-    signals:
-      required: ['credit\s+(information\s+)?report|bureau', 'commercial|company|entity']
-      supporting: ['CIBIL|Experian|Equifax|CRIF', 'rank|score', 'credit\s+facilities', 'overdue|dpd']
-      contrary: []
-
-  - id: bureau_consumer
-    name: Consumer bureau report
-    group: bureau
-    description: Consumer credit bureau report on a promoter, director, partner, proprietor or guarantor.
-    satisfies: [bureau_report]
-    instance_key: person
-    personal: true
-    partner_output: true
-    dictionary: bureau_report
-    signals:
-      required: ['credit\s+(information\s+)?report|bureau', 'consumer|individual|date\s+of\s+birth']
-      supporting: ['CIBIL|Experian|Equifax|CRIF', 'score', 'accounts?\s+summary', 'dpd|overdue']
-      contrary: []
-
-  # --- Other known types (recognised, satisfy nothing) ---
-  - id: covering_letter
-    name: Covering letter
-    group: other_known
-    description: A letter forwarding documents, often listing them; not a document on the checklist.
-    signals:
-      required: ['(please\s+find\s+)?enclosed|we\s+are\s+submitting|forwarding']
-      supporting: ['dear\s+sir|to\s+the\s+branch\s+manager', 'list\s+of\s+documents', 'thanking\s+you']
-
-  - id: index_page
-    name: Index page
-    group: other_known
-    description: An index or contents page of a document bundle.
-    signals:
-      required: ['index|contents|list\s+of\s+documents']
-      supporting: ['page\s+no', 's\.?\s*no']
-
-  - id: email_printout
-    name: Email printout
-    group: other_known
-    description: A printed email; any attachments are separate documents.
-    signals:
-      required: ['from:', 'subject:']
-      supporting: ['to:', 'sent:|date:', 'cc:']

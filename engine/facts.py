@@ -44,7 +44,8 @@ from .contracts import (
     TurnoverYear,
 )
 from .names import normalise_name, similarity
-from .parties import PARTY_TABLES
+from . import statements
+from .parties import party_list_spec
 from .pipeline import effective_types
 from .store import MESSAGE_FILE_NAME
 from .util import format_inr, month_add, month_label, parse_date, parse_period
@@ -52,14 +53,12 @@ from .util import format_inr, month_add, month_label, parse_date, parse_period
 USABLE = {"accepted", "in_review", "extracted", "classified"}
 
 # Where each identity is read, by field name (first found wins per document).
-PAN_FIELDS = ("pan", "entity_pan", "pan_number")
+PAN_FIELDS = ("pan",)
 GSTIN_FIELDS = ("gstin",)
-NAME_FIELDS = ("legal_name", "entity_name", "company_name", "name_of_company", "subject_name", "enterprise_name",
-               "name")
-# Document types whose "name" is a person's, not the entity's.
-PERSON_DOCS = {"kyc_pan_individual", "kyc_aadhaar", "kyc_passport", "kyc_voter_id", "kyc_driving_licence",
-               "bureau_consumer"}
-KYC_TYPES = PERSON_DOCS - {"bureau_consumer"}
+NAME_FIELDS = ("legal_name", "company_name", "taxpayer_name", "account_holder_name")
+# Document types whose names and PAN are a person's, not the entity's.
+PERSON_DOCS = {"director_kyc"}
+KYC_TYPES = {"director_kyc"}
 
 
 # --- Loading ---
@@ -92,6 +91,12 @@ class Doc:
             if v is not None and v.value not in (None, ""):
                 return v
         return None
+
+    def list(self, name: str) -> list[Value]:
+        """The elements of a plain list field, stored as name[0], name[1], ..."""
+        pattern = re.compile(rf"^{re.escape(name)}\[(\d+)\]$")
+        found = [(int(m[1]), v) for k, v in self.fields.items() if (m := pattern.match(k))]
+        return [v for _, v in sorted(found, key=lambda p: p[0])]
 
     def rows(self, table: str) -> list[dict[str, Value]]:
         out: dict[int, dict[str, Value]] = defaultdict(dict)
@@ -325,32 +330,29 @@ def _fv(d: Doc, v: Value, value: str | float | None) -> FactValue:
 
 def _persons(b: Build) -> list[PersonSet]:
     sets: list[PersonSet] = []
+    types = {t.id: t for t in reader.load_document_types(b.root).types}
     for d in b.docs:
         for type_id in d.types:
-            if type_id not in PARTY_TABLES:
+            spec = party_list_spec(types.get(type_id))
+            if spec is None:
                 continue
-            table, _role = PARTY_TABLES[type_id]
-            rows = [r for r in d.rows(table) if r.get("name") and r["name"].value]
-            if rows:
-                sets.append(
-                    PersonSet(
-                        source=type_id,
-                        label=d.label,
-                        names=[str(r["name"].value).strip() for r in rows],
-                        evidence=d.evidence(*(r["name"] for r in rows[:1])),
-                        relies_on_manual=any(r["name"].manual for r in rows),
-                    )
-                )
+            if spec.name_key:
+                values = [r[spec.name_key] for r in d.rows(spec.field) if r.get(spec.name_key) and r[spec.name_key].value]
+            else:
+                values = [v for v in d.list(spec.field) if v.value]
+            if values:
+                sets.append(PersonSet(source=type_id, label=d.label, names=[str(v.value).strip() for v in values],
+                                      evidence=d.evidence(*values[:1]), relies_on_manual=any(v.manual for v in values)))
     kyc = [d for d in b.docs if set(d.types) & KYC_TYPES]
     kyc_names, kyc_evidence, kyc_manual = [], [], False
     for d in kyc:
-        name = d.get("name", "holder_name", "full_name")
+        name = d.get("person_name")
         if name:
             kyc_names.append(str(name.value).strip())
             kyc_evidence += d.evidence(name)
             kyc_manual = kyc_manual or name.manual
     if kyc_names:
-        sets.append(PersonSet(source="kyc_pan_individual", label="KYC received", names=kyc_names,
+        sets.append(PersonSet(source="director_kyc", label="KYC received", names=kyc_names,
                               evidence=kyc_evidence, relies_on_manual=kyc_manual))
     promoters = b.message_value("promoters")
     if promoters:
@@ -371,11 +373,11 @@ def _transactions(b: Build) -> tuple[list[Txn], dict[str, set[tuple[int, int]]]]
     txns: list[Txn] = []
     coverage: dict[str, set[tuple[int, int]]] = defaultdict(set)
     for d in b.of_type("bank_statement"):
-        bank = str((d.get("bank").value if d.get("bank") else "") or "Bank")
-        last4 = _last4(d.get("account_number_masked", "account_number").value if d.get("account_number_masked", "account_number") else None)
+        bank = str((d.get("bank_name").value if d.get("bank_name") else "") or "Bank")
+        last4 = _last4(d.get("account_number").value if d.get("account_number") else None)
         account = _account_label(bank, last4)
-        start = parse_date(d.get("period_from").value) if d.get("period_from") else None
-        end = parse_date(d.get("period_to").value) if d.get("period_to") else None
+        start = parse_date(d.get("statement_period_start").value) if d.get("statement_period_start") else None
+        end = parse_date(d.get("statement_period_end").value) if d.get("statement_period_end") else None
         rows = d.rows("transactions")
         if start and end:
             ym = (start.year, start.month)
@@ -393,10 +395,10 @@ def _transactions(b: Build) -> tuple[list[Txn], dict[str, set[tuple[int, int]]]]
                 Txn(
                     account=account,
                     date=when,
-                    narration=str(r["narration"].value) if r.get("narration") else "",
+                    narration=str(r["description"].value) if r.get("description") else "",
                     debit=debit,
                     credit=credit,
-                    evidence=d.evidence(r.get("credit") or r.get("debit"), r.get("narration")),
+                    evidence=d.evidence(r.get("credit") or r.get("debit"), r.get("description")),
                     doc=d,
                 )
             )
@@ -427,32 +429,21 @@ def _accounts(b: Build, txns: list[Txn]) -> tuple[list[AccountFact], bool]:
         fact.evidence += evidence[:1]
 
     for d in b.of_type("bank_statement"):
-        bank = str(d.get("bank").value) if d.get("bank") else ""
-        acct = d.get("account_number_masked", "account_number")
+        bank = str(d.get("bank_name").value) if d.get("bank_name") else ""
+        acct = d.get("account_number")
         add(bank, _last4(acct.value if acct else None), d.label, d.evidence(acct), statement=True)
-    declarations = b.of_type("existing_facilities_declaration")
-    for d in declarations:
-        for r in d.rows("accounts"):
-            bank = str(r["bank"].value) if r.get("bank") else ""
-            acct = r.get("account_number_masked") or r.get("account_number")
-            add(bank, _last4(acct.value if acct else None), d.label, d.evidence(acct or r.get("bank")), declared=True)
     for field_name in ("existing_banking",):
         v = b.message_value(field_name)
         if v and isinstance(v.value, str):
             for m in re.finditer(r"(?:a/?c|account)[^\d]{0,12}(\d{4,})", v.value, re.I):
                 add("", _last4(m[1]), "Sourcing message", v.evidence, declared=True)
-    for d in b.of_type("partner_bank_analysis"):
-        for r in d.rows("accounts"):
-            bank = str(r["bank"].value) if r.get("bank") else ""
-            acct = r.get("account_number_masked")
-            add(bank, _last4(acct.value if acct else None), d.label, d.evidence(acct or r.get("bank")))
     own = {k[1] for k in found if k[1]}
     for t in txns:
         for m in re.finditer(r"(?:a/?c|acct|account|x{2,})[^\d]{0,6}(\d{4,})", t.narration, re.I):
             last4 = _last4(m[1])
             if last4 and last4 not in own and _phrase(t.narration, ["transfer", "trf", "neft", "rtgs", "imps", "self"]):
                 add("", last4, f"Transfer in {t.account}", t.evidence)
-    return list(found.values()), bool(declarations)
+    return list(found.values()), False
 
 
 def _cleanse(b: Build, txns: list[Txn], accounts: list[AccountFact]) -> tuple[list[AccountCredits], dict[str, dict]]:
@@ -543,67 +534,29 @@ def _counterparty(narration: str, cues: list[str]) -> str | None:
     return " ".join(words[:4]).strip() or None
 
 
-def _facilities(b: Build) -> list[FacilityFact]:
-    out: list[FacilityFact] = []
-    for d in b.of_type("existing_facilities_declaration"):
-        if d.get("nil_declared") and d.get("nil_declared").value is True and not d.rows("facilities"):
-            continue
-        for r in d.rows("facilities"):
-            if r.get("lender") and r["lender"].value:
-                out.append(_facility(d, r, "lender", "facility", ("limit", "outstanding"), "emi"))
-    for d in b.of_type("sanction_letter_other_lender"):
-        if d.get("lender"):
-            row = {k: v for k, v in d.fields.items() if "[" not in k}
-            out.append(_facility(d, row, "lender", "facility", ("sanctioned_amount",), "emi"))
-    for d in b.of_type("bureau_commercial"):
-        for r in d.rows("facilities"):
-            status = str(r["status"].value).lower() if r.get("status") else ""
-            if r.get("lender") and r["lender"].value and "closed" not in status:
-                out.append(_facility(d, r, "lender", "facility_type", ("sanctioned", "outstanding"), "emi"))
-    return out
-
-
-def _facility(d: Doc, r: dict[str, Value], lender: str, kind: str, amounts: tuple[str, ...], emi: str) -> FacilityFact:
-    amount = next((r[a] for a in amounts if r.get(a) and r[a].value not in (None, "")), None)
-    return FacilityFact(
-        source=d.types[0],
-        label=d.label,
-        lender=str(r[lender].value).strip(),
-        facility=str(r[kind].value) if r.get(kind) and r[kind].value else None,
-        amount=_amount(amount) or None,
-        emi=_amount(r.get(emi)) or None,
-        evidence=d.evidence(r.get(lender)),
-        relies_on_manual=any(v.manual for v in r.values()),
-    )
-
-
 def _turnover(b: Build, credits_by_month: dict, coverage: dict[str, set[tuple[int, int]]]) -> list[TurnoverYear]:
     years: dict[int, list[TurnoverFigure]] = defaultdict(list)
     start = b.start
 
+    cfg = reader.load_statements(b.root)
+
     # Audited financial statements: revenue from operations for the year.
     for d in b.of_type("audited_financial_statements"):
-        end = d.get("period_end")
-        revenue = d.get("revenue_from_operations", "turnover", "revenue")
-        when = parse_date(end.value) if end else None
+        when = statements.period_end(d)
+        revenue = statements.lines(d, cfg).get("revenue_from_operations")
         if not (when and revenue):
             continue
-        years[fy_of(when.year, when.month, start)].append(TurnoverFigure(source="financials", label="Audited financial statements",
-                                        value=_amount(revenue), evidence=d.evidence(revenue),
-                                        field_ids=[revenue.field_id], relies_on_manual=revenue.manual))
+        years[fy_of(when.year, when.month, start)].append(TurnoverFigure(
+            source="financials", label="Audited financial statements", value=revenue.value, evidence=revenue.evidence,
+            field_ids=revenue.field_ids, relies_on_manual=revenue.manual))
 
-    # GST: outward taxable supplies per return period (GSTR-3B first, then a partner report).
-    gst: dict[tuple[int, int], tuple[float, Doc, Value]] = {}
+    # GST: outward taxable supplies per return period, from each GSTR-3B.
+    gst: dict[tuple[int, int], tuple[float, Doc, statements.Line]] = {}
     for d in b.of_type("gstr_3b"):
-        period = parse_period(d.get("period").value) if d.get("period") else None
-        supplies = d.get("outward_taxable_supplies")
-        if period and supplies and period not in gst:
-            gst[period] = (_amount(supplies), d, supplies)
-    for d in b.of_type("partner_gst_report"):
-        for r in d.rows("periods"):
-            period = parse_period(r["period"].value) if r.get("period") else None
-            if period and r.get("turnover") and period not in gst:
-                gst[period] = (_amount(r["turnover"]), d, r["turnover"])
+        period = parse_period(d.get("tax_period").value) if d.get("tax_period") else None
+        line = statements.gst_outward(d, cfg)
+        if period and line and period not in gst:
+            gst[period] = (line.value, d, line)
     for fy in sorted({fy_of(y, m, start) for (y, m) in gst}):
         months = fy_months(fy, start)
         present = [m for m in months if m in gst]
@@ -611,8 +564,8 @@ def _turnover(b: Build, credits_by_month: dict, coverage: dict[str, set[tuple[in
         years[fy].append(TurnoverFigure(
             source="gst", label="GST outward supplies", value=sum(v[0] for v in values),
             months_covered=len(present), months_missing=[month_label(m) for m in months if m not in gst],
-            evidence=[e for v in values[:12] for e in v[1].evidence(v[2])[:1]],
-            field_ids=[v[2].field_id for v in values], relies_on_manual=any(v[2].manual for v in values)))
+            evidence=[e for v in values[:12] for e in v[2].evidence[:1]],
+            field_ids=[i for v in values for i in v[2].field_ids], relies_on_manual=any(v[2].manual for v in values)))
 
     # Bank: cleansed credits; a month counts as covered when every account's statements cover it.
     if coverage:
@@ -674,7 +627,7 @@ def compute(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> CaseFacts
         credits=credits,
         obligations=_obligations(b, txns),
         accounts=accounts,
-        facilities=_facilities(b),
+        facilities=[],
         declaration_received=declared,
     )
 

@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 
-from . import completeness, facts as facts_module
+from . import completeness, facts as facts_module, statements
 from .configstore import reader
 from .configstore.schema import PolicyNorm, PolicyRatio
 from .contracts import CaseDetail, Evidence, NormInput, NormResult, PolicyAssessment
@@ -92,68 +92,38 @@ def gather(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> Inputs:
     as_of = date.fromisoformat(case.as_of)
 
     # The latest audited statements, and how many years are on file.
+    cfg = reader.load_statements(root)
     audited = []
     for d in by_type("audited_financial_statements"):
-        end = parse_date(d.get("period_end").value) if d.get("period_end") else None
+        end = statements.period_end(d)
         if end:
             audited.append((end, d))
     audited.sort(key=lambda pair: pair[0])
     years = {facts_module.fy_of(end.year, end.month, start) for end, _ in audited}
-    inputs.put("audited_years", len(years), [e for _, d in audited for e in d.evidence(d.get("period_end"))[:1]])
+    inputs.put("audited_years", len(years), [e for _, d in audited for e in d.evidence(d.get("financial_year"))[:1]])
     if audited:
         end = audited[-1][0]
         inputs.period = facts_module.fy_name(facts_module.fy_of(end.year, end.month, start), start)
-        # More than one copy of the latest year's statements: each figure
-        # from the first copy that has it.
-        latest = [d for e, d in audited if e == end]
+        # More than one copy of the latest year's statements: each figure from the first copy that has it.
+        copies = [statements.lines(d, cfg) for e, d in audited if e == end]
         for name in FINANCIAL_INPUTS:
-            found = next(((d, d.get(name)) for d in latest if number(d.get(name)) is not None), None)
-            if found:
-                d, v = found
-                inputs.put(name, number(v), d.evidence(v), v.manual)
+            line = next((c[name] for c in copies if name in c), None)
+            if line:
+                inputs.put(name, line.value, line.evidence, line.manual)
 
     # The case: the amount asked for.
     inputs.put("amount_requested", case.amount_inr)
 
-    # Years in business: incorporation, else registration.
-    for type_id, field_name in (("certificate_of_incorporation", "incorporation_date"),
-                                ("udyam_certificate", "registration_date"),
-                                ("gst_registration_certificate", "registration_date")):
-        found = next(((d, d.get(field_name)) for d in by_type(type_id) if d.get(field_name)), None)
-        if found and (since := parse_date(found[1].value)):
-            inputs.put("vintage_years", round((as_of - since).days / 365.25, 1), found[0].evidence(found[1]),
-                       found[1].manual)
-            break
+    # Years in business: from the certificate of incorporation.
+    found = next(((d, d.get("date_of_incorporation")) for d in by_type("certificate_of_incorporation") if d.get("date_of_incorporation")), None)
+    if found and (since := parse_date(found[1].value)):
+        inputs.put("vintage_years", round((as_of - since).days / 365.25, 1), found[0].evidence(found[1]), found[1].manual)
 
-    # Commercial bureau rank: the number in "Rank 3", "CMR-3".
-    for d in by_type("bureau_commercial"):
-        score = d.get("score", "rank", "cmr_rank")
-        m = re.search(r"\d+", str(score.value)) if score else None
-        if m:
-            inputs.put("bureau_rank", int(m[0]), d.evidence(score), score.manual)
-            break
-
-    # Collateral values, summed over valuation reports.
-    for name in ("market_value", "realisable_value"):
-        values = [(d, d.get(name)) for d in by_type("valuation_report") if d.get(name)]
-        numbers = [(d, v, number(v)) for d, v in values if number(v) is not None]
-        if numbers:
-            inputs.put(name, sum(n for _, _, n in numbers), [e for d, v, _ in numbers for e in d.evidence(v)[:1]],
-                       any(v.manual for _, v, _ in numbers))
-
-    # Annual instalments: declared EMIs, plus inferred ones to other lenders.
+    # Annual instalments: recurring lender debits inferred from the bank statements (F-18.4).
     facts = facts_module.compute(conn, root, case)
-    noise = [w.lower() for w in reader.load_alignment(root).name_noise_words]
-    threshold = {t.key: t.value for t in reader.load_tolerances(root).tolerances}.get("name_match", 0.85)
-    declared = [f for f in facts.facilities if f.source == "existing_facilities_declaration"]
-    monthly = sum(f.emi or 0 for f in declared)
-    evidence = [e for f in declared if f.emi for e in f.evidence[:1]]
-    for o in facts.obligations:
-        if not any(facts_module.same_entity(o.lender, f.lender, noise, threshold) for f in declared if f.emi):
-            monthly += o.typical_amount
-            evidence += o.evidence[:1]
-    if facts.declaration_received or facts.obligations or any(a.has_statement for a in facts.accounts):
-        inputs.put("annual_instalments", monthly * 12, evidence)
+    if facts.obligations or any(a.has_statement for a in facts.accounts):
+        inputs.put("annual_instalments", sum(o.typical_amount for o in facts.obligations) * 12,
+                   [e for o in facts.obligations for e in o.evidence[:1]])
 
     # Blocking checklist items still open (F-13).
     readiness, _ = completeness.evaluate(conn, root, case)

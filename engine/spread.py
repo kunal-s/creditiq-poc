@@ -18,6 +18,7 @@ from pathlib import Path
 
 from . import facts as facts_module
 from . import policy as policy_module
+from . import statements
 from .configstore import reader
 from .contracts import (
     CaseDetail,
@@ -31,11 +32,7 @@ from .contracts import (
 )
 from .util import parse_date
 
-BASIS = {
-    "audited_financial_statements": "audited",
-    "provisional_financial_statements": "provisional",
-    "projected_financial_statements": "projected",
-}
+BASIS = {"audited_financial_statements": "audited"}
 
 PROFIT_AND_LOSS = [
     "revenue_from_operations", "other_income", "ebitda", "depreciation", "finance_costs", "profit_before_tax",
@@ -66,7 +63,7 @@ def _columns(conn: sqlite3.Connection, root: Path, case: CaseDetail):
     ends: dict[tuple[str, int], date] = {}
     for d in facts_module.load_documents(conn, root, case.id):
         basis = next((BASIS[t] for t in d.types if t in BASIS), None)
-        end = parse_date(d.get("period_end").value) if basis and d.get("period_end") else None
+        end = statements.period_end(d) if basis else None
         if not (basis and end):
             continue
         fy = facts_module.fy_of(end.year, end.month, start)
@@ -81,12 +78,11 @@ def _columns(conn: sqlite3.Connection, root: Path, case: CaseDetail):
     return columns, [groups[k] for k in keys]
 
 
-def _line(docs: list[facts_module.Doc], name: str) -> SpreadCell:
-    for d in docs:
-        v = d.get(name)
-        number = policy_module.number(v)
-        if number is not None:
-            return SpreadCell(value=number, evidence=d.evidence(v), relies_on_manual=v.manual)
+def _line(copies: list[dict[str, statements.Line]], name: str) -> SpreadCell:
+    for lines in copies:
+        if name in lines:
+            line = lines[name]
+            return SpreadCell(value=line.value, evidence=line.evidence, relies_on_manual=line.manual)
     return SpreadCell()
 
 
@@ -180,7 +176,8 @@ def build(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> Spread:
     policy = reader.load_policy(root)
     ratios = {r.key: r for r in policy.ratios}
     columns, groups = _columns(conn, root, case)
-    lines_by_column = [{name: _line(docs, name) for name in PROFIT_AND_LOSS + BALANCE_SHEET} for docs in groups]
+    cfg = reader.load_statements(root)
+    lines_by_column = [{name: _line([statements.lines(d, cfg) for d in docs], name) for name in PROFIT_AND_LOSS + BALANCE_SHEET} for docs in groups]
     rows: list[SpreadRow] = []
     for section, names in (("profit_and_loss", PROFIT_AND_LOSS), ("balance_sheet", BALANCE_SHEET)):
         for name in names:

@@ -18,7 +18,7 @@ from pathlib import Path
 import yaml
 from pydantic import BaseModel
 
-from .schema import SECTION_MODELS, DictionarySection, cross_check
+from .schema import SECTION_MODELS, cross_check
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_DIR = REPO_ROOT / "config"
@@ -42,6 +42,25 @@ def _load_yaml(path: Path) -> dict:
     return yaml.safe_load(path.read_text(encoding="utf-8"))
 
 
+INGESTION_SECTIONS = {
+    "document_types": "document_types.json", "signals": "signals.yaml", "fields": "fields.yaml", "validators": "validators.yaml",
+    "quality": "quality.yaml", "routing": "routing.yaml", "llm": "llm.yaml", "confidence": "confidence.yaml", "decision": "decision.yaml",
+}
+
+
+def load_ingestion_sections() -> dict[str, dict]:
+    """The document-processing service's configuration (config/ingestion/), stored raw: the service
+    validates it against its own models when it loads the version, and
+    `python -m ingestion.cli config-validate config/ingestion` checks it before a publish."""
+    out: dict[str, dict] = {}
+    for name, fname in INGESTION_SECTIONS.items():
+        path = CONFIG_DIR / "ingestion" / fname
+        if not path.is_file():
+            raise FileNotFoundError(f"missing ingestion config section: {path}")
+        out[name] = json.loads(path.read_text(encoding="utf-8")) if path.suffix == ".json" else _load_yaml(path)
+    return out
+
+
 def load_authored_sections() -> dict[str, BaseModel]:
     """Validate every authored config file under config/ against its schema."""
     sections: dict[str, BaseModel] = {}
@@ -52,14 +71,7 @@ def load_authored_sections() -> dict[str, BaseModel]:
             raise FileNotFoundError(f"missing authored config section: {path}")
         sections[name] = model.model_validate(_load_yaml(path))
 
-    # Field dictionaries, one per document type (F-15): config/dictionaries/<id>.yaml
-    for path in sorted((CONFIG_DIR / "dictionaries").glob("*.yaml")):
-        dictionary = DictionarySection.model_validate(_load_yaml(path))
-        if dictionary.id != path.stem:
-            raise ValueError(f"{path.name}: id {dictionary.id!r} does not match the file name")
-        sections[f"dictionary.{dictionary.id}"] = dictionary
-
-    problems = cross_check(sections)
+    problems = cross_check(sections, load_ingestion_sections())
     if problems:
         raise ValueError("config cross-check failed:\n  " + "\n  ".join(problems))
     return sections
@@ -71,6 +83,7 @@ def publish(*, data_root: Path, author: str, note: str = "") -> dict:
     published.json at it. Returns the version record."""
     sections = load_authored_sections()
     section_dumps = {name: model.model_dump(mode="json") for name, model in sections.items()}
+    section_dumps.update({f"ingestion.{name}": data for name, data in load_ingestion_sections().items()})
     section_hashes = {name: section_hash(dump) for name, dump in section_dumps.items()}
     version = _merkle_root(section_hashes)
 

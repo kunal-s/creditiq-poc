@@ -1,0 +1,37 @@
+# Where the canonical financial lines are printed (docs/functional-requirements.md F-18, F-20, F-22).
+# The document-processing service returns each statement as a table of its printed rows
+# (balance_sheet, profit_and_loss, cash_flow: particulars, current_period, previous_period).
+# A line is found by matching its label in the first column; derived lines are sums of
+# other lines. Policy norms, the spread and the turnover facts all read these figures.
+# Interim: re-map when RBL's statement layout and spread template arrive.
+
+column: current_period
+
+lines:
+  revenue_from_operations: {table: profit_and_loss, row: '^(I\.\s*)?revenue from operations'}
+  other_income:            {table: profit_and_loss, row: '^(II\.\s*)?other income'}
+  depreciation:            {table: profit_and_loss, row: '^depreciation'}
+  finance_costs:           {table: profit_and_loss, row: '^finance costs?'}
+  profit_before_tax:       {table: profit_and_loss, row: '^(V\.\s*)?profit before tax'}
+  profit_after_tax:        {table: profit_and_loss, row: '^(VII\.\s*)?profit (for the (year|period)|after tax)'}
+  share_capital:           {table: balance_sheet, row: '^\(\w\)\s*share capital'}
+  reserves_and_surplus:    {table: balance_sheet, row: '^\(\w\)\s*reserves and surplus'}
+  long_term_borrowings:    {table: balance_sheet, row: '^\(\w\)\s*long-term borrowings'}
+  short_term_borrowings:   {table: balance_sheet, row: '^\(\w\)\s*short-term borrowings'}
+  trade_payables:          {table: balance_sheet, row: '^\(\w\)\s*trade payables'}
+  other_current_liabilities: {table: balance_sheet, row: '^\(\w\)\s*other current liabilities'}
+  short_term_provisions:   {table: balance_sheet, row: '^\(\w\)\s*short-term provisions'}
+  inventories:             {table: balance_sheet, row: '^\(\w\)\s*inventories'}
+  trade_receivables:       {table: balance_sheet, row: '^\(\w\)\s*trade receivables'}
+  cash_and_bank_balances:  {table: balance_sheet, row: '^\(\w\)\s*cash and bank balances'}
+  short_term_loans_and_advances: {table: balance_sheet, row: '^\(\w\)\s*short-term loans and advances'}
+
+derived:
+  ebitda: profit_before_tax + finance_costs + depreciation
+  net_worth: share_capital + reserves_and_surplus
+  total_borrowings: long_term_borrowings + short_term_borrowings
+  current_assets: inventories + trade_receivables + cash_and_bank_balances + short_term_loans_and_advances
+  current_liabilities: short_term_borrowings + trade_payables + other_current_liabilities + short_term_provisions
+
+# GST turnover: outward taxable supplies, the first row of table 3.1 of each GSTR-3B.
+gst_outward: {table: outward_supplies, row: '^\(a\)', column: taxable_value}

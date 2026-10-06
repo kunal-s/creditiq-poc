@@ -979,8 +979,6 @@ export interface components {
     DocumentTypeDef: {
       /** Description */
       description: string;
-      /** Dictionary */
-      dictionary?: string | null;
       /**
        * Group
        * @enum {string}
@@ -1012,6 +1010,7 @@ export interface components {
        * @default false
        */
       partner_output: boolean;
+      party_list?: components["schemas"]["PartyList"] | null;
       /**
        * Personal
        * @default false
@@ -1019,17 +1018,12 @@ export interface components {
       personal: boolean;
       /** Satisfies */
       satisfies?: string[];
-      signals?: components["schemas"]["SignalSet"];
     };
     /**
      * DocumentTypesSection
      * @description config/document_types.yaml (F-00.4).
      */
     DocumentTypesSection: {
-      /** Classify Threshold */
-      classify_threshold: number;
-      /** Tier1 Margin */
-      tier1_margin: number;
       /** Types */
       types: components["schemas"]["DocumentTypeDef"][];
     };
@@ -1481,6 +1475,25 @@ export interface components {
       /** Source */
       source: string;
     };
+    /**
+     * PartyList
+     * @description A list of people a document names (F-10.2): the field that holds them and, for a list of
+     *     objects, the key of each part. A plain list of names has no `name_key`.
+     */
+    PartyList: {
+      /** Designation Key */
+      designation_key?: string | null;
+      /** Din Key */
+      din_key?: string | null;
+      /** Field */
+      field: string;
+      /** Name Key */
+      name_key?: string | null;
+      /** Pan Key */
+      pan_key?: string | null;
+      /** Role */
+      role?: string | null;
+    };
     /** PdNote */
     PdNote: {
       /** Case Id */
@@ -1802,19 +1815,6 @@ export interface components {
       role: string;
       /** Rolelabel */
       roleLabel: string;
-    };
-    /**
-     * SignalSet
-     * @description Deterministic classification signals (F-09.3). Each entry is a regular
-     *     expression matched case-insensitively against a document's page text.
-     */
-    SignalSet: {
-      /** Contrary */
-      contrary?: string[];
-      /** Required */
-      required?: string[];
-      /** Supporting */
-      supporting?: string[];
     };
     /**
      * Span

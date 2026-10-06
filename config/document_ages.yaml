@@ -3,10 +3,4 @@
 # Interim proposals until RBL confirms its own.
 
 ages:
-  - {type_id: stock_statement, max_age_days: 60, measured_from: as_at_date, source: provisional}
   - {type_id: bank_statement, max_age_days: 45, measured_from: period_end, source: provisional}
-  - {type_id: partner_bank_analysis, max_age_days: 45, measured_from: period_end, source: provisional}
-  - {type_id: valuation_report, max_age_days: 365, measured_from: valuation_date, source: provisional}
-  - {type_id: bureau_commercial, max_age_days: 30, measured_from: document_date, source: provisional}
-  - {type_id: bureau_consumer, max_age_days: 30, measured_from: document_date, source: provisional}
-  - {type_id: encumbrance_certificate, max_age_days: 90, measured_from: document_date, source: provisional}

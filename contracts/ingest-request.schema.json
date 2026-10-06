@@ -1,8 +1,22 @@
 {
   "$defs": {
     "IngestFile": {
+      "additionalProperties": false,
       "properties": {
+        "assigned_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Assigned Type"
+        },
         "content_type": {
+          "default": "application/octet-stream",
           "title": "Content Type",
           "type": "string"
         },
@@ -34,52 +48,14 @@
       "required": [
         "file_id",
         "sha256",
-        "original_name",
-        "content_type"
+        "original_name"
       ],
       "title": "IngestFile",
       "type": "object"
-    },
-    "TypeAssignment": {
-      "description": "A person's type assignment for one logical document (F-09.5, F-17.5):\nthe sidecar skips classification for this page range, uses `type_id`\n(exit tier \"person\") and extracts with that type's dictionary.",
-      "properties": {
-        "file_id": {
-          "title": "File Id",
-          "type": "string"
-        },
-        "page_from": {
-          "minimum": 1,
-          "title": "Page From",
-          "type": "integer"
-        },
-        "page_to": {
-          "minimum": 1,
-          "title": "Page To",
-          "type": "integer"
-        },
-        "type_id": {
-          "title": "Type Id",
-          "type": "string"
-        }
-      },
-      "required": [
-        "file_id",
-        "page_from",
-        "page_to",
-        "type_id"
-      ],
-      "title": "TypeAssignment",
-      "type": "object"
     }
   },
+  "additionalProperties": false,
   "properties": {
-    "assignments": {
-      "items": {
-        "$ref": "#/$defs/TypeAssignment"
-      },
-      "title": "Assignments",
-      "type": "array"
-    },
     "case_ref": {
       "title": "Case Ref",
       "type": "string"

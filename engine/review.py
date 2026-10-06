@@ -225,17 +225,13 @@ def _manual_entry(
                  "give the document's type (value) with a manual entry, as it could not be classified")
         types = [body.value]
         conn.execute("UPDATE documents SET assigned_types = ? WHERE id = ?", (json.dumps(types), doc["id"]))
-    type_defs = {t.id: t for t in reader.load_document_types(root).types}
     allowed: set[str] = set()
-    for t in types:
-        if t in type_defs and type_defs[t].dictionary:
-            try:
-                allowed |= {f.name for f in reader.load_dictionary(root, type_defs[t].dictionary).fields}
-            except reader.NoPublishedConfig:
-                pass
+    for d in reader.load_ingestion_section(root, "document_types")["documents"]:
+        if d["document_type"] in types:
+            allowed |= {f["name"] for f in d["schema"]["fields"]} | {t["name"] for t in d["schema"]["tables"]}
     unknown = [k for k in body.values if k.split("[", 1)[0].split(".", 1)[0] not in allowed]
     _require(not unknown, f"not fields of this document type: {', '.join(unknown)}")
-    cap = reader.load_confidence(root).manual_entry_cap
+    cap = reader.manual_entry_cap(root)
     for name, value in body.values.items():
         conn.execute(
             """INSERT INTO field_values (id, case_id, document_id, field, value, raw, evidence, method, confidence,

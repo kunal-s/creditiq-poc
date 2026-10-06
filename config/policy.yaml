@@ -141,17 +141,6 @@ norms:
     source: provisional
     status: provisional
     note: "Years since incorporation or registration, to the case's as-of date."
-  - id: EL-02
-    family: eligibility
-    label: Commercial bureau rank
-    expression: bureau_rank
-    unit: rank
-    kind: max
-    threshold: 6
-    category: eligibility
-    source: provisional
-    status: provisional
-    note: "Lower is better (rank 1 to 10)."
   - id: EL-03
     family: eligibility
     label: Positive net worth
@@ -222,21 +211,6 @@ norms:
     applies_when: working_capital
     note: "Days on sales; RBL's own computation may use cost of sales for inventory and payables."
 
-  # --- Security cover ---
-  - id: SC-01
-    family: security_cover
-    label: Collateral cover
-    expression: market_value / amount_requested
-    unit: x
-    kind: min
-    threshold: 1.25
-    category: security
-    applies_when: collateral
-    source: provisional
-    status: provisional
-    note: "Market value in the valuation report against the amount requested."
-
-  # --- Documentation ---
   - id: DOC-01
     family: documentation
     label: Blocking checklist items open

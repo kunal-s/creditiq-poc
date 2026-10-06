@@ -1,68 +1,142 @@
-"""The document-processing sidecar contract (FRD AD-2, F-07 to F-09, F-11, F-15).
+"""The document-processing service contract, version 2 (FRD AD-2a, AD-4; F-07 to F-09, F-11, F-15).
 
-The engine sends `POST {ingest_url}/v1/process` as multipart/form-data:
+The engine sends `POST {ingest_url}/v1/ingest` as multipart/form-data:
 - a part `request` holding IngestRequest as JSON;
 - one part per file, named by its `file_id`.
 
-The sidecar answers with IngestResult. The JSON schema of IngestResult is
-exported to contracts/ingest-result.schema.json (`npm run gen:api`); the
-sidecar validates its output against that file in its tests.
+The service answers with IngestResult. These models mirror services/ingestion/ingestion/contracts.py
+and forbid unknown keys, so a field added on one side fails the contract test on the other
+(tests/test_ingest_contract.py validates the real service output for every fixture document).
+Timings are not part of the result, so a replay is byte-identical (principle 6).
 """
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field
-
-from .documents import Classification, PageInfo
+from pydantic import BaseModel, ConfigDict, Field
 
 
-class IngestFile(BaseModel):
+class _C(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class IngestFile(_C):
     file_id: str
     sha256: str
     original_name: str
-    content_type: str
+    content_type: str = "application/octet-stream"
     label_hint: str | None = None
-    """Never used to classify (F-09.1); echoed for the label check (F-10.1)."""
+    """Never used to classify (F-09.1)."""
+    assigned_type: str | None = None
+    """A person's type assignment (F-09.5): classification is skipped and the file is read as this type."""
 
 
-class TypeAssignment(BaseModel):
-    """A person's type assignment for one logical document (F-09.5, F-17.5):
-    the sidecar skips classification for this page range, uses `type_id`
-    (exit tier "person") and extracts with that type's dictionary."""
-
-    file_id: str
-    page_from: int = Field(ge=1)
-    page_to: int = Field(ge=1)
-    type_id: str
-
-
-class IngestRequest(BaseModel):
+class IngestRequest(_C):
     case_ref: str
     config_version: str
-    """The published CreditIQ configuration version to use; the sidecar
-    refuses an unknown version and echoes the one it used (F-00.3)."""
+    """The published CreditIQ configuration version; the service refuses an unknown one (409) and echoes
+    the one it used (F-00.3)."""
     files: list[IngestFile]
-    assignments: list[TypeAssignment] = Field(default_factory=list)
-    """Type assignments made by a person; empty on a first run."""
 
 
-class ExtractedField(BaseModel):
-    field: str
-    """Dictionary field; table cells as "<table>[<row>].<column>"."""
-    value: str | float | int | bool | None
-    raw: str | None
-    """The text as printed on the page."""
-    page: int | None = Field(default=None, ge=1)
-    """Absolute page in the source file. None only when the value is missing."""
-    bbox: tuple[float, float, float, float] | None = None
-    method: Literal["deterministic", "model"]
-    confidence_components: dict[str, float] = Field(default_factory=dict)
-    missing_reason: str | None = None
+class IngestSource(_C):
+    kind: Literal["page", "cell"]
+    page: int | None = None
+    text: str | None = None
+    bbox: list[float] | None = None
+    sheet: str | None = None
+    range: str | None = None
 
 
-class DocumentDefect(BaseModel):
+class IngestField(_C):
+    status: Literal["found", "missing"]
+    reason: str | None = None
+    value: Any = None
+    raw_text: str | None = None
+    method: Literal["identifier", "alias", "pattern", "model"] | None = None
+    confidence: float = 0.0
+    components: dict[str, float] = Field(default_factory=dict)
+    source: IngestSource | None = None
+    required: bool = False
+    key_field: bool = False
+    needs_review: bool = False
+
+
+class IngestTableRow(_C):
+    cells: dict[str, Any]
+    raw: dict[str, str]
+    source: dict[str, Any]
+
+
+class IngestTable(_C):
+    status: Literal["found", "missing"]
+    reason: str | None = None
+    columns: list[str]
+    rows: list[IngestTableRow] = Field(default_factory=list)
+    source: dict[str, Any] | None = None
+    repairs: list[dict[str, Any]] = Field(default_factory=list)
+    unparsed: int = 0
+    confidence: float = 0.0
+
+
+class IngestCheck(_C):
+    id: str
+    label: str
+    outcome: Literal["pass", "warn", "fail"]
+    detail: str
+    severity: Literal["warn", "fail"]
+    fields: list[str] = Field(default_factory=list)
+    tables: list[str] = Field(default_factory=list)
+    kind: str = "rule"
+
+
+class IngestCandidate(_C):
+    type: str
+    score: float
+
+
+class IngestClassification(_C):
+    type: str | None
+    confidence: float
+    tier: Literal["signals", "model", "person", "none"]
+    signals: dict[str, Any] = Field(default_factory=dict)
+    candidates: list[IngestCandidate] = Field(default_factory=list)
+    needs_review: bool
+    reason: str | None = None
+    mixed_content: list[dict[str, Any]] = Field(default_factory=list)
+    model_error: str | None = None
+
+
+class IngestConfidence(_C):
+    document: float
+    decision: Literal["auto_accept", "human_review", "reject"]
+    reasons: list[dict[str, Any]] = Field(default_factory=list)
+    composition: dict[str, Any] = Field(default_factory=dict)
+
+
+class IngestTrace(_C):
+    stage: str
+    input_hash: str
+    output_hash: str
+
+
+class IngestPage(_C):
+    page: int
+    source: Literal["text_layer", "ocr", "sheet"]
+    width: float = 0.0
+    height: float = 0.0
+    """Page size in points; boxes are in points, origin top left. Zero for a spreadsheet."""
+    grade: Literal["A", "B", "C", "U"]
+    reasons: list[str] = Field(default_factory=list)
+    reading_trust: float
+    ocr_conf: float | None = None
+    sheet: str | None = None
+    blank: bool = False
+    words: int = 0
+
+
+class DocumentDefect(_C):
     """A defect of the document, not of the extraction (F-13.3)."""
 
     code: Literal["pages_absent", "period_gap", "unsigned", "unstamped", "plain_paper", "pagination_break"]
@@ -70,41 +144,61 @@ class DocumentDefect(BaseModel):
     pages: list[int] = Field(default_factory=list)
 
 
-class IngestDocument(BaseModel):
-    doc_key: str
-    """Content-derived and stable across re-runs (order independence)."""
-    file_id: str
+class IngestDocument(_C):
+    instance_no: int
+    instance_key: str | None = None
     page_from: int
     page_to: int
-    pages: list[PageInfo]
-    classification: Classification
-    instance_key: str | None = None
-    fields: list[ExtractedField] = Field(default_factory=list)
+    document_type: str
+    fields: dict[str, IngestField]
+    tables: dict[str, IngestTable]
+    validation: list[IngestCheck]
+    confidence: IngestConfidence
     identity: dict[str, str] = Field(default_factory=dict)
-    """Identity fields for party attribution (F-10): name, pan, din, dob, gstin, cin."""
+    """name, pan, din, dob, gstin, cin as read, for party attribution (F-10)."""
     defects: list[DocumentDefect] = Field(default_factory=list)
-    duplicate_of_key: str | None = None
-    split_uncertain: bool = False
 
 
-class IngestFileOutcome(BaseModel):
+class IngestReject(_C):
+    code: str
+    message: str
+    rescan_request: str | None = None
+
+
+class IngestFileResult(_C):
     file_id: str
-    status: Literal["processed", "exception", "rejected"]
-    reason: str | None = None
+    sha256: str
+    name: str
+    status: Literal["processed", "rejected", "failed"]
+    reject: IngestReject | None = None
+    error: dict[str, str] | None = None
+    run_id: str | None = None
+    source: dict[str, Any] = Field(default_factory=dict)
+    grade: str | None = None
+    route: dict[str, Any] = Field(default_factory=dict)
+    pages: list[IngestPage] = Field(default_factory=list)
+    front_matter_pages: list[int] = Field(default_factory=list)
+    classification: IngestClassification | None = None
+    documents: list[IngestDocument] = Field(default_factory=list)
+    decision: Literal["auto_accept", "human_review", "reject"] | None = None
+    review_reasons: list[dict[str, Any]] = Field(default_factory=list)
+    trace: list[IngestTrace] = Field(default_factory=list)
 
 
-class StageTiming(BaseModel):
-    stage: Literal["read", "grade", "split", "classify", "extract", "validate"]
-    file_id: str
-    ms: int
+class IngestConfigRef(_C):
+    version: str
+    hash: str
 
 
-class IngestResult(BaseModel):
+class IngestEngineRef(_C):
+    version: str
+    ocr: str
+    model: str
+
+
+class IngestResult(_C):
+    contract_version: str
     case_ref: str
-    config_version: str
-    engine_version: str
-    model_provider: str
-    """"anthropic", "gemini" or "stub"; recorded per run (AD-5)."""
-    files: list[IngestFileOutcome]
-    documents: list[IngestDocument]
-    timings: list[StageTiming] = Field(default_factory=list)
+    config: IngestConfigRef
+    engine: IngestEngineRef
+    files: list[IngestFileResult]

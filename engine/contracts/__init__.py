@@ -4,7 +4,7 @@ These pydantic models are the single source for:
 - the engine's HTTP API (FastAPI response models, and so its OpenAPI);
 - the TypeScript types the screens use (`npm run gen:api` -> src/api/schema.gen.ts);
 - the document-processing sidecar's result schema
-  (contracts/ingest-result.schema.json).
+  (contracts/ingest-result.schema.json, contract version 2).
 
 Change a model here, regenerate, and both sides see the change.
 """
@@ -69,13 +69,17 @@ from .documents import (
 )
 from .ingest import (
     DocumentDefect,
-    ExtractedField,
+    IngestCheck,
+    IngestClassification,
+    IngestConfidence,
     IngestDocument,
+    IngestField,
     IngestFile,
-    IngestFileOutcome,
+    IngestFileResult,
+    IngestPage,
     IngestRequest,
     IngestResult,
-    TypeAssignment,
+    IngestTable,
 )
 from .intake import (
     CaseProposal,
@@ -123,7 +127,6 @@ __all__ = [
     "CaseCreate",
     "CaseDeleteRequest",
     "DocumentDefect",
-    "ExtractedField",
     "IngestFile",
     "Party",
     "ProposalRequest",
@@ -131,7 +134,6 @@ __all__ = [
     "ProposedField",
     "Span",
     "StrippedSpan",
-    "TypeAssignment",
     "UploadResult",
     "CaseDetail",
     "CaseSummary",
@@ -144,8 +146,14 @@ __all__ = [
     "FindingSide",
     "Grade",
     "HeaderField",
+    "IngestCheck",
+    "IngestClassification",
+    "IngestConfidence",
     "IngestDocument",
-    "IngestFileOutcome",
+    "IngestField",
+    "IngestPage",
+    "IngestTable",
+    "IngestFileResult",
     "IngestRequest",
     "IngestResult",
     "LoginRequest",

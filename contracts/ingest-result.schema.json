@@ -1,73 +1,7 @@
 {
   "$defs": {
-    "Candidate": {
-      "properties": {
-        "confidence": {
-          "title": "Confidence",
-          "type": "number"
-        },
-        "type_id": {
-          "title": "Type Id",
-          "type": "string"
-        }
-      },
-      "required": [
-        "type_id",
-        "confidence"
-      ],
-      "title": "Candidate",
-      "type": "object"
-    },
-    "Classification": {
-      "description": "F-09.4: what was found, how it exited, and the runners-up.",
-      "properties": {
-        "candidates": {
-          "items": {
-            "$ref": "#/$defs/Candidate"
-          },
-          "maxItems": 3,
-          "title": "Candidates",
-          "type": "array"
-        },
-        "confidence": {
-          "title": "Confidence",
-          "type": "number"
-        },
-        "exit_tier": {
-          "enum": [
-            "signals",
-            "layout",
-            "model",
-            "person",
-            "none"
-          ],
-          "title": "Exit Tier",
-          "type": "string"
-        },
-        "signals": {
-          "items": {
-            "type": "string"
-          },
-          "title": "Signals",
-          "type": "array"
-        },
-        "types": {
-          "items": {
-            "type": "string"
-          },
-          "title": "Types",
-          "type": "array"
-        }
-      },
-      "required": [
-        "types",
-        "confidence",
-        "exit_tier"
-      ],
-      "title": "Classification",
-      "type": "object"
-    },
     "DocumentDefect": {
+      "additionalProperties": false,
       "description": "A defect of the document, not of the extraction (F-13.3).",
       "properties": {
         "code": {
@@ -101,125 +35,234 @@
       "title": "DocumentDefect",
       "type": "object"
     },
-    "ExtractedField": {
+    "IngestCandidate": {
+      "additionalProperties": false,
       "properties": {
-        "bbox": {
-          "anyOf": [
-            {
-              "maxItems": 4,
-              "minItems": 4,
-              "prefixItems": [
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "number"
-                }
-              ],
-              "type": "array"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Bbox"
+        "score": {
+          "title": "Score",
+          "type": "number"
         },
-        "confidence_components": {
-          "additionalProperties": {
-            "type": "number"
-          },
-          "title": "Confidence Components",
-          "type": "object"
-        },
-        "field": {
-          "title": "Field",
+        "type": {
+          "title": "Type",
           "type": "string"
-        },
-        "method": {
-          "enum": [
-            "deterministic",
-            "model"
-          ],
-          "title": "Method",
-          "type": "string"
-        },
-        "missing_reason": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Missing Reason"
-        },
-        "page": {
-          "anyOf": [
-            {
-              "minimum": 1,
-              "type": "integer"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Page"
-        },
-        "raw": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "title": "Raw"
-        },
-        "value": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "number"
-            },
-            {
-              "type": "integer"
-            },
-            {
-              "type": "boolean"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "title": "Value"
         }
       },
       "required": [
-        "field",
-        "value",
-        "raw",
-        "method"
+        "type",
+        "score"
       ],
-      "title": "ExtractedField",
+      "title": "IngestCandidate",
+      "type": "object"
+    },
+    "IngestCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "detail": {
+          "title": "Detail",
+          "type": "string"
+        },
+        "fields": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Fields",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "default": "rule",
+          "title": "Kind",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "outcome": {
+          "enum": [
+            "pass",
+            "warn",
+            "fail"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "severity": {
+          "enum": [
+            "warn",
+            "fail"
+          ],
+          "title": "Severity",
+          "type": "string"
+        },
+        "tables": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tables",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "outcome",
+        "detail",
+        "severity"
+      ],
+      "title": "IngestCheck",
+      "type": "object"
+    },
+    "IngestClassification": {
+      "additionalProperties": false,
+      "properties": {
+        "candidates": {
+          "items": {
+            "$ref": "#/$defs/IngestCandidate"
+          },
+          "title": "Candidates",
+          "type": "array"
+        },
+        "confidence": {
+          "title": "Confidence",
+          "type": "number"
+        },
+        "mixed_content": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Mixed Content",
+          "type": "array"
+        },
+        "model_error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Error"
+        },
+        "needs_review": {
+          "title": "Needs Review",
+          "type": "boolean"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "signals": {
+          "additionalProperties": true,
+          "title": "Signals",
+          "type": "object"
+        },
+        "tier": {
+          "enum": [
+            "signals",
+            "model",
+            "person",
+            "none"
+          ],
+          "title": "Tier",
+          "type": "string"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Type"
+        }
+      },
+      "required": [
+        "type",
+        "confidence",
+        "tier",
+        "needs_review"
+      ],
+      "title": "IngestClassification",
+      "type": "object"
+    },
+    "IngestConfidence": {
+      "additionalProperties": false,
+      "properties": {
+        "composition": {
+          "additionalProperties": true,
+          "title": "Composition",
+          "type": "object"
+        },
+        "decision": {
+          "enum": [
+            "auto_accept",
+            "human_review",
+            "reject"
+          ],
+          "title": "Decision",
+          "type": "string"
+        },
+        "document": {
+          "title": "Document",
+          "type": "number"
+        },
+        "reasons": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Reasons",
+          "type": "array"
+        }
+      },
+      "required": [
+        "document",
+        "decision"
+      ],
+      "title": "IngestConfidence",
+      "type": "object"
+    },
+    "IngestConfigRef": {
+      "additionalProperties": false,
+      "properties": {
+        "hash": {
+          "title": "Hash",
+          "type": "string"
+        },
+        "version": {
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "version",
+        "hash"
+      ],
+      "title": "IngestConfigRef",
       "type": "object"
     },
     "IngestDocument": {
+      "additionalProperties": false,
       "properties": {
-        "classification": {
-          "$ref": "#/$defs/Classification"
+        "confidence": {
+          "$ref": "#/$defs/IngestConfidence"
         },
         "defects": {
           "items": {
@@ -228,32 +271,16 @@
           "title": "Defects",
           "type": "array"
         },
-        "doc_key": {
-          "title": "Doc Key",
+        "document_type": {
+          "title": "Document Type",
           "type": "string"
-        },
-        "duplicate_of_key": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Duplicate Of Key"
         },
         "fields": {
-          "items": {
-            "$ref": "#/$defs/ExtractedField"
+          "additionalProperties": {
+            "$ref": "#/$defs/IngestField"
           },
           "title": "Fields",
-          "type": "array"
-        },
-        "file_id": {
-          "title": "File Id",
-          "type": "string"
+          "type": "object"
         },
         "identity": {
           "additionalProperties": {
@@ -274,6 +301,10 @@
           "default": null,
           "title": "Instance Key"
         },
+        "instance_no": {
+          "title": "Instance No",
+          "type": "integer"
+        },
         "page_from": {
           "title": "Page From",
           "type": "integer"
@@ -282,35 +313,112 @@
           "title": "Page To",
           "type": "integer"
         },
-        "pages": {
-          "items": {
-            "$ref": "#/$defs/PageInfo"
+        "tables": {
+          "additionalProperties": {
+            "$ref": "#/$defs/IngestTable"
           },
-          "title": "Pages",
-          "type": "array"
+          "title": "Tables",
+          "type": "object"
         },
-        "split_uncertain": {
-          "default": false,
-          "title": "Split Uncertain",
-          "type": "boolean"
+        "validation": {
+          "items": {
+            "$ref": "#/$defs/IngestCheck"
+          },
+          "title": "Validation",
+          "type": "array"
         }
       },
       "required": [
-        "doc_key",
-        "file_id",
+        "instance_no",
         "page_from",
         "page_to",
-        "pages",
-        "classification"
+        "document_type",
+        "fields",
+        "tables",
+        "validation",
+        "confidence"
       ],
       "title": "IngestDocument",
       "type": "object"
     },
-    "IngestFileOutcome": {
+    "IngestEngineRef": {
+      "additionalProperties": false,
       "properties": {
-        "file_id": {
-          "title": "File Id",
+        "model": {
+          "title": "Model",
           "type": "string"
+        },
+        "ocr": {
+          "title": "Ocr",
+          "type": "string"
+        },
+        "version": {
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "version",
+        "ocr",
+        "model"
+      ],
+      "title": "IngestEngineRef",
+      "type": "object"
+    },
+    "IngestField": {
+      "additionalProperties": false,
+      "properties": {
+        "components": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Components",
+          "type": "object"
+        },
+        "confidence": {
+          "default": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "key_field": {
+          "default": false,
+          "title": "Key Field",
+          "type": "boolean"
+        },
+        "method": {
+          "anyOf": [
+            {
+              "enum": [
+                "identifier",
+                "alias",
+                "pattern",
+                "model"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Method"
+        },
+        "needs_review": {
+          "default": false,
+          "title": "Needs Review",
+          "type": "boolean"
+        },
+        "raw_text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Raw Text"
         },
         "reason": {
           "anyOf": [
@@ -324,25 +432,207 @@
           "default": null,
           "title": "Reason"
         },
+        "required": {
+          "default": false,
+          "title": "Required",
+          "type": "boolean"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/IngestSource"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "status": {
           "enum": [
-            "processed",
-            "exception",
-            "rejected"
+            "found",
+            "missing"
           ],
           "title": "Status",
           "type": "string"
+        },
+        "value": {
+          "default": null,
+          "title": "Value"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "IngestField",
+      "type": "object"
+    },
+    "IngestFileResult": {
+      "additionalProperties": false,
+      "properties": {
+        "classification": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/IngestClassification"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "decision": {
+          "anyOf": [
+            {
+              "enum": [
+                "auto_accept",
+                "human_review",
+                "reject"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Decision"
+        },
+        "documents": {
+          "items": {
+            "$ref": "#/$defs/IngestDocument"
+          },
+          "title": "Documents",
+          "type": "array"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        },
+        "file_id": {
+          "title": "File Id",
+          "type": "string"
+        },
+        "front_matter_pages": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Front Matter Pages",
+          "type": "array"
+        },
+        "grade": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Grade"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "pages": {
+          "items": {
+            "$ref": "#/$defs/IngestPage"
+          },
+          "title": "Pages",
+          "type": "array"
+        },
+        "reject": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/IngestReject"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "review_reasons": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Review Reasons",
+          "type": "array"
+        },
+        "route": {
+          "additionalProperties": true,
+          "title": "Route",
+          "type": "object"
+        },
+        "run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Run Id"
+        },
+        "sha256": {
+          "title": "Sha256",
+          "type": "string"
+        },
+        "source": {
+          "additionalProperties": true,
+          "title": "Source",
+          "type": "object"
+        },
+        "status": {
+          "enum": [
+            "processed",
+            "rejected",
+            "failed"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "trace": {
+          "items": {
+            "$ref": "#/$defs/IngestTrace"
+          },
+          "title": "Trace",
+          "type": "array"
         }
       },
       "required": [
         "file_id",
+        "sha256",
+        "name",
         "status"
       ],
-      "title": "IngestFileOutcome",
+      "title": "IngestFileResult",
       "type": "object"
     },
-    "PageInfo": {
+    "IngestPage": {
+      "additionalProperties": false,
       "properties": {
+        "blank": {
+          "default": false,
+          "title": "Blank",
+          "type": "boolean"
+        },
         "grade": {
           "enum": [
             "A",
@@ -353,12 +643,12 @@
           "title": "Grade",
           "type": "string"
         },
-        "n": {
-          "minimum": 1,
-          "title": "N",
-          "type": "integer"
+        "height": {
+          "default": 0.0,
+          "title": "Height",
+          "type": "number"
         },
-        "ocr_confidence": {
+        "ocr_conf": {
           "anyOf": [
             {
               "type": "number"
@@ -368,7 +658,15 @@
             }
           ],
           "default": null,
-          "title": "Ocr Confidence"
+          "title": "Ocr Conf"
+        },
+        "page": {
+          "title": "Page",
+          "type": "integer"
+        },
+        "reading_trust": {
+          "title": "Reading Trust",
+          "type": "number"
         },
         "reasons": {
           "items": {
@@ -377,102 +675,319 @@
           "title": "Reasons",
           "type": "array"
         },
-        "route": {
+        "sheet": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sheet"
+        },
+        "source": {
           "enum": [
-            "text",
+            "text_layer",
             "ocr",
             "sheet"
           ],
-          "title": "Route",
+          "title": "Source",
           "type": "string"
+        },
+        "width": {
+          "default": 0.0,
+          "title": "Width",
+          "type": "number"
+        },
+        "words": {
+          "default": 0,
+          "title": "Words",
+          "type": "integer"
         }
       },
       "required": [
-        "n",
-        "route",
-        "grade"
+        "page",
+        "source",
+        "grade",
+        "reading_trust"
       ],
-      "title": "PageInfo",
+      "title": "IngestPage",
       "type": "object"
     },
-    "StageTiming": {
+    "IngestReject": {
+      "additionalProperties": false,
       "properties": {
-        "file_id": {
-          "title": "File Id",
+        "code": {
+          "title": "Code",
           "type": "string"
         },
-        "ms": {
-          "title": "Ms",
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "rescan_request": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rescan Request"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "IngestReject",
+      "type": "object"
+    },
+    "IngestSource": {
+      "additionalProperties": false,
+      "properties": {
+        "bbox": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bbox"
+        },
+        "kind": {
+          "enum": [
+            "page",
+            "cell"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page"
+        },
+        "range": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Range"
+        },
+        "sheet": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sheet"
+        },
+        "text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Text"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "title": "IngestSource",
+      "type": "object"
+    },
+    "IngestTable": {
+      "additionalProperties": false,
+      "properties": {
+        "columns": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Columns",
+          "type": "array"
+        },
+        "confidence": {
+          "default": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "repairs": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Repairs",
+          "type": "array"
+        },
+        "rows": {
+          "items": {
+            "$ref": "#/$defs/IngestTableRow"
+          },
+          "title": "Rows",
+          "type": "array"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source"
+        },
+        "status": {
+          "enum": [
+            "found",
+            "missing"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "unparsed": {
+          "default": 0,
+          "title": "Unparsed",
           "type": "integer"
+        }
+      },
+      "required": [
+        "status",
+        "columns"
+      ],
+      "title": "IngestTable",
+      "type": "object"
+    },
+    "IngestTableRow": {
+      "additionalProperties": false,
+      "properties": {
+        "cells": {
+          "additionalProperties": true,
+          "title": "Cells",
+          "type": "object"
+        },
+        "raw": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Raw",
+          "type": "object"
+        },
+        "source": {
+          "additionalProperties": true,
+          "title": "Source",
+          "type": "object"
+        }
+      },
+      "required": [
+        "cells",
+        "raw",
+        "source"
+      ],
+      "title": "IngestTableRow",
+      "type": "object"
+    },
+    "IngestTrace": {
+      "additionalProperties": false,
+      "properties": {
+        "input_hash": {
+          "title": "Input Hash",
+          "type": "string"
+        },
+        "output_hash": {
+          "title": "Output Hash",
+          "type": "string"
         },
         "stage": {
-          "enum": [
-            "read",
-            "grade",
-            "split",
-            "classify",
-            "extract",
-            "validate"
-          ],
           "title": "Stage",
           "type": "string"
         }
       },
       "required": [
         "stage",
-        "file_id",
-        "ms"
+        "input_hash",
+        "output_hash"
       ],
-      "title": "StageTiming",
+      "title": "IngestTrace",
       "type": "object"
     }
   },
+  "additionalProperties": false,
   "properties": {
     "case_ref": {
       "title": "Case Ref",
       "type": "string"
     },
-    "config_version": {
-      "title": "Config Version",
+    "config": {
+      "$ref": "#/$defs/IngestConfigRef"
+    },
+    "contract_version": {
+      "title": "Contract Version",
       "type": "string"
     },
-    "documents": {
-      "items": {
-        "$ref": "#/$defs/IngestDocument"
-      },
-      "title": "Documents",
-      "type": "array"
-    },
-    "engine_version": {
-      "title": "Engine Version",
-      "type": "string"
+    "engine": {
+      "$ref": "#/$defs/IngestEngineRef"
     },
     "files": {
       "items": {
-        "$ref": "#/$defs/IngestFileOutcome"
+        "$ref": "#/$defs/IngestFileResult"
       },
       "title": "Files",
-      "type": "array"
-    },
-    "model_provider": {
-      "title": "Model Provider",
-      "type": "string"
-    },
-    "timings": {
-      "items": {
-        "$ref": "#/$defs/StageTiming"
-      },
-      "title": "Timings",
       "type": "array"
     }
   },
   "required": [
+    "contract_version",
     "case_ref",
-    "config_version",
-    "engine_version",
-    "model_provider",
-    "files",
-    "documents"
+    "config",
+    "engine",
+    "files"
   ],
   "title": "IngestResult",
   "type": "object"

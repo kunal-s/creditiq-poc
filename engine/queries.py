@@ -3,7 +3,7 @@
 One list for the RM to take to the customer, in three groups:
 - documents needed: missing checklist items and coverage gaps;
 - documents to redo: defective or outdated copies, and quality exceptions
-  with the plain re-scan request from config/quality.yaml;
+  with the plain re-scan request from config/ingestion/quality.yaml;
 - clarifications: label mismatches and party flags still open.
 
 Phrasing comes from config/app.yaml `query_phrasing`. The list is refreshed
@@ -72,7 +72,7 @@ def build(conn: sqlite3.Connection, root: Path, case_id: str) -> list[dict]:
                     d.evidence)
 
     # Quality exceptions (F-07.4): the configured re-scan request.
-    reason_text = reader.load_quality(root).reason_codes
+    reason_text = reader.reason_codes(root)
     types = {t.id: t for t in reader.load_document_types(root).types}
     for item in conn.execute(
         "SELECT * FROM review_items WHERE case_id = ? AND kind = 'quality' AND status = 'open' ORDER BY created_at",

@@ -17,13 +17,11 @@ from .schema import (
     AlignmentSection,
     CamSectionConfig,
     ChecklistTaxonomySection,
-    ConfidenceSection,
     CrossChecksSection,
-    DictionarySection,
     DocumentAgesSection,
     DocumentTypesSection,
     PolicySection,
-    QualitySection,
+    StatementsSection,
     TolerancesSection,
 )
 
@@ -70,12 +68,18 @@ def load_document_types(data_root: Path) -> DocumentTypesSection:
     return DocumentTypesSection.model_validate(_load_section(data_root, "document_types"))
 
 
-def load_dictionary(data_root: Path, dictionary_id: str) -> DictionarySection:
-    return DictionarySection.model_validate(_load_section(data_root, f"dictionary.{dictionary_id}"))
+def load_ingestion_section(data_root: Path, name: str) -> dict:
+    """One section of the document-processing service's configuration, as published (raw JSON)."""
+    return _load_section(data_root, f"ingestion.{name}")
 
 
-def load_quality(data_root: Path) -> QualitySection:
-    return QualitySection.model_validate(_load_section(data_root, "quality"))
+def reason_codes(data_root: Path) -> dict[str, str]:
+    """Reason code to plain-language re-scan request (F-07.4)."""
+    return load_ingestion_section(data_root, "quality")["reason_codes"]
+
+
+def manual_entry_cap(data_root: Path) -> float:
+    return float(load_ingestion_section(data_root, "confidence")["manual_entry_cap"])
 
 
 def load_document_ages(data_root: Path) -> DocumentAgesSection:
@@ -90,16 +94,16 @@ def load_alignment(data_root: Path) -> AlignmentSection:
     return AlignmentSection.model_validate(_load_section(data_root, "alignment"))
 
 
+def load_statements(data_root: Path) -> StatementsSection:
+    return StatementsSection.model_validate(_load_section(data_root, "statements"))
+
+
 def load_cam(data_root: Path) -> CamSectionConfig:
     return CamSectionConfig.model_validate(_load_section(data_root, "cam"))
 
 
 def load_crosschecks(data_root: Path) -> CrossChecksSection:
     return CrossChecksSection.model_validate(_load_section(data_root, "crosschecks"))
-
-
-def load_confidence(data_root: Path) -> ConfidenceSection:
-    return ConfidenceSection.model_validate(_load_section(data_root, "confidence"))
 
 
 def section_path(data_root: Path, section: str) -> Path:

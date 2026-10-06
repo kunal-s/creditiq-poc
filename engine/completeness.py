@@ -54,10 +54,9 @@ USABLE = {"accepted", "in_review", "extracted", "classified"}
 # dictionary fields that carry that date.
 AGE_FIELDS = {
     "as_at_date": ["as_at_date"],
-    "period_end": ["period_to", "period_end"],
+    "period_end": ["statement_period_end"],
     "valuation_date": ["valuation_date"],
-    "document_date": ["report_date", "document_date", "declaration_date", "letter_date", "resolution_date",
-                      "issue_date"],
+    "document_date": ["date_of_issue", "filing_date", "audit_date", "resolution_date", "meeting_date"],
 }
 
 DEFECT_TEXT = {
@@ -69,12 +68,6 @@ DEFECT_TEXT = {
     "period_gap": "period gap",
 }
 
-SECTION_PATTERNS = {
-    "balance_sheet": r"balance\s*sheet",
-    "profit_and_loss": r"profit|p\s*&\s*l|income\s+statement",
-    "cash_flow": r"cash\s*flow",
-    "notes": r"notes",
-}
 SECTION_LABEL = {
     "balance_sheet": "balance sheet",
     "profit_and_loss": "profit and loss",
@@ -180,27 +173,14 @@ def load_case_data(conn: sqlite3.Connection, case: CaseDetail) -> CaseData:
         "SELECT * FROM parties WHERE case_id = ? AND role <> 'borrower' ORDER BY ord", (case.id,)
     ).fetchall()
 
-    declared_accounts: list[tuple[str, str]] = []
-    existing = False
-    declarations = [d for d in docs if "existing_facilities_declaration" in d.types and d.status in USABLE]
-    if declarations:
-        latest = max(declarations, key=lambda d: (parse_date(d.value("declaration_date")) or date.min, d.id))
-        for row in table_rows(latest.fields, "accounts"):
-            last4 = _last4((row.get("account_number_masked") or (None, None))[0])
-            if last4:
-                declared_accounts.append((str((row.get("bank") or ("", None))[0] or ""), last4))
-        facilities = [
-            r for r in table_rows(latest.fields, "facilities") if (r.get("lender") or (None, None))[0]
-        ]
-        existing = bool(facilities) and latest.value("nil_declared") is not True
     return CaseData(
         case=case,
         as_of=date.fromisoformat(case.as_of),
         docs=docs,
         parties=parties,
         waivers=waivers,
-        declared_accounts=declared_accounts,
-        existing_facilities_declared=existing,
+        declared_accounts=[],
+        existing_facilities_declared=False,
     )
 
 
@@ -261,13 +241,10 @@ class Evaluator:
             kind = cov.kind
             if kind == "financial_year":
                 target = fy_end(self.as_of, cov.offset)
-                docs = [
-                    d for d in usable
-                    if fy_end_of(d.value("period_end") or d.row["instance_key"]) == target and d.value("audited") is not False
-                ]
+                docs = [d for d in usable if fy_end_of(d.value("financial_year") or d.row["instance_key"]) == target]
                 if not docs:
                     others = sorted(
-                        {fy_end_of(d.value("period_end") or d.row["instance_key"]) for d in usable} - {None}
+                        {fy_end_of(d.value("financial_year") or d.row["instance_key"]) for d in usable} - {None}
                     )
                     missing = self.missing_request(item)
                     received = (
@@ -323,23 +300,23 @@ class Evaluator:
     # --- coverage rules ---
 
     def sections(self, docs: list[Doc], required: list[str]) -> list[Deficiency]:
+        """Statements the document must carry: a table of printed rows for each (F-13.2)."""
         out = []
         for d in docs:
             if any(df.get("code") == "pages_absent" for df in d.defects):
                 continue  # reported from the defect itself
-            present = d.value("pages_present")
-            if present is None or not required:
+            if not required:
                 continue
-            absent = [s for s in required if not re.search(SECTION_PATTERNS.get(s, s), str(present), re.IGNORECASE)]
+            absent = [s for s in required if not any(k.startswith(f"{s}[") and v[0] is not None for k, v in d.fields.items())]
             if absent:
                 what = " and ".join(SECTION_LABEL.get(s, s) for s in absent)
                 out.append(
                     Deficiency(
                         "redo",
                         f"sections:{d.id}",
-                        f"{what} pages absent ({d.label})",
+                        f"{what} not found ({d.label})",
                         f"the {what} pages are absent",
-                        [d.evidence("pages_present")],
+                        [d.evidence(*absent)],
                         name=self._doc_name(d),
                     )
                 )
@@ -377,7 +354,7 @@ class Evaluator:
                 missing = self._partner_missing_periods(d)
                 have |= set(window) - missing
                 continue
-            p = parse_period(d.value("period") or d.row["instance_key"])
+            p = parse_period(d.value("tax_period") or d.row["instance_key"])
             if p:
                 have.add(p)
         absent = [p for p in window if p not in have]
@@ -407,7 +384,7 @@ class Evaluator:
         return out
 
     def _account_of(self, d: Doc) -> str | None:
-        return _last4(d.value("account_number_masked")) or _last4(d.row["instance_key"])
+        return _last4(d.value("account_number")) or _last4(d.row["instance_key"])
 
     def account_months(self, item: ChecklistItemDef, docs: list[Doc], months: int) -> list[Deficiency]:
         window = months_before(self.as_of, months)
@@ -422,8 +399,8 @@ class Evaluator:
                         seen_bank.setdefault(last4, str((row.get("bank") or ("", None))[0] or ""))
                 continue
             last4 = self._account_of(d) or "?"
-            seen_bank.setdefault(last4, str(d.value("bank") or ""))
-            start, end = parse_date(d.value("period_from")), parse_date(d.value("period_to"))
+            seen_bank.setdefault(last4, str(d.value("bank_name") or ""))
+            start, end = parse_date(d.value("statement_period_start")), parse_date(d.value("statement_period_end"))
             months_cov = covered.setdefault(last4, set())
             if start and end:
                 for p in window:
@@ -501,8 +478,6 @@ class Evaluator:
         out = []
         for d in docs:
             found = list(d.defects)
-            if d.value("signed") is False and not any(df.get("code") == "unsigned" for df in found):
-                found.append({"code": "unsigned", "detail": "", "pages": []})
             for df in found:
                 code = df.get("code")
                 what = DEFECT_TEXT.get(code, code)

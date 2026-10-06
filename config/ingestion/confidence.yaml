@@ -1,0 +1,18 @@
+# Field confidence (FRD F-17.1):
+#   confidence = min(applicable caps) x sum(weight_i x component_i)
+# A model's self-reported confidence is never a component.
+weights:
+  classification: 0.15
+  page_grade: 0.20
+  reading_trust: 0.20      # text layer is trusted; OCR uses word confidence
+  validation: 0.25         # format, checksum, cross-field and table checks
+  agreement: 0.20          # two reads agree (pattern and model)
+caps:
+  checksum_fail: 0.30
+  not_found_on_page: 0.40
+  grade_c_page: 0.60
+grade_scores: {A: 1.0, B: 0.8, C: 0.5, U: 0.0}
+single_read: 0.8           # agreement component when only one method produced the value
+disagree: 0.2
+key_field_review_threshold: 0.80
+manual_entry_cap: 0.70

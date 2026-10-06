@@ -1,0 +1,6 @@
+# Document outcome (FRD F-17). Feeds the review queue; never a credit decision.
+accept_min_document_confidence: 0.85
+review_min_document_confidence: 0.50
+reject_grades: [U]
+review_on_failed_check: true
+review_on_missing_required: true

@@ -1,0 +1,3 @@
+# Optional: PaddleOCR (CPU). Installed only where scanned pages must be read.
+paddlepaddle
+paddleocr

@@ -1,0 +1,82 @@
+{
+  "$defs": {
+    "FileSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "assigned_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Assigned Type"
+        },
+        "content_type": {
+          "default": "application/octet-stream",
+          "title": "Content Type",
+          "type": "string"
+        },
+        "file_id": {
+          "title": "File Id",
+          "type": "string"
+        },
+        "label_hint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label Hint"
+        },
+        "original_name": {
+          "title": "Original Name",
+          "type": "string"
+        },
+        "sha256": {
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "file_id",
+        "sha256",
+        "original_name"
+      ],
+      "title": "FileSpec",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "case_ref": {
+      "title": "Case Ref",
+      "type": "string"
+    },
+    "config_version": {
+      "title": "Config Version",
+      "type": "string"
+    },
+    "files": {
+      "items": {
+        "$ref": "#/$defs/FileSpec"
+      },
+      "title": "Files",
+      "type": "array"
+    }
+  },
+  "required": [
+    "case_ref",
+    "config_version",
+    "files"
+  ],
+  "title": "IngestRequest",
+  "type": "object"
+}

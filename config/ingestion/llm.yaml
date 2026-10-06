@@ -1,0 +1,46 @@
+# Model layer (FRD AD-5a). The model id and endpoint are configuration; the key comes from the environment.
+# Sampling (principle 6, amended 6 Oct 2026): the only parameters ever sent are the two named here; a request
+# carrying any other is refused. Temperature 0 narrows the variation but does not guarantee identical output:
+# determinism rests on recording each answer and replaying it. Prompt text is part of the published version.
+provider: openai
+model: gpt-5.4-nano          # confirm the exact id against the provider before first live use
+base_url: https://api.openai.com/v1
+api_key_env: OPENAI_API_KEY
+temperature: 0
+seed: 1
+timeout_s: 120
+max_retries: 2
+classify_chars: 6000
+window_chars: 12000
+fill: missing                # the model may read any field the deterministic pass left empty (`llm: false` on a field forbids it)
+
+prompts:
+  classify:
+    system: |
+      You identify what kind of document a text extract comes from. Choose exactly one id from the
+      closed list, or "none_of_these" when the document is not one of them or you cannot tell.
+      Judge by what the document is and says, never by its file name. A document that merely mentions
+      another kind of document (a covering letter, a bank narration, a notes page) is not that kind.
+      Answer only with the JSON object requested.
+    user: |
+      Closed list of document types:
+      {{types}}
+
+      Document text (numbered lines):
+      {{lines}}
+  extract:
+    system: |
+      You read one {{type_name}} and report the values of the requested fields.
+      Rules:
+      - Copy each value exactly as printed in the numbered lines. Never infer, compute, correct or
+        normalise a value, and never use knowledge from outside the text.
+      - For every value you report, give the ids of the line(s) it was copied from.
+      - If a field is not stated in the text, report null with an empty list of line ids.
+      - For list fields, report one entry per item, each copied as printed.
+      Answer only with the JSON object requested.
+    user: |
+      Fields to report:
+      {{fields}}
+
+      Document text (numbered lines, page and line id first):
+      {{lines}}

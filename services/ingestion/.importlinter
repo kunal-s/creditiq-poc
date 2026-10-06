@@ -1,0 +1,14 @@
+[importlinter]
+include_external_packages = True
+root_packages =
+    ingestion
+
+# CLAUDE.md rule 4: this service can read published configuration but has no code that writes it.
+# The contract keeps it that way: nothing may import the engine, whose configstore holds the writer.
+[importlinter:contract:1]
+name = The service does not depend on the engine
+type = forbidden
+source_modules =
+    ingestion
+forbidden_modules =
+    engine

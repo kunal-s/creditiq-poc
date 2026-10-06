@@ -1,0 +1,15 @@
+# How pages are read (FRD F-07.1).
+reading:
+  drop_rotated_text: true      # watermarks and stamps set at an angle are not page content
+  max_rotation_deg: 2.0
+  x_tolerance: 1.5
+  y_tolerance: 2.0
+  line_y_tol: 3.0              # points; words within this vertical distance share a line
+  column_gap: 12.0             # points; a larger gap inside a line is a column break
+  boilerplate:                 # lines matching are kept in the index but excluded from text
+    - '^Page\s+\d+\s+of\s+\d+$'
+  accepted_formats: [pdf, png, jpg, tiff, bmp, webp, xlsx, csv]
+ocr:
+  engine: paddle
+  dpi: 200
+  det_limit_side: 1600

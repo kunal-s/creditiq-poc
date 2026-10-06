@@ -1,0 +1,31 @@
+# Quality gate and page grading (FRD F-07). Interim values, tuned on RBL's documents.
+max_file_bytes: 41943040
+max_pages: 300
+max_sheet_cells: 500000
+min_dpi: 150
+ocr_confidence_floor: 60
+ocr_confidence_degraded: 80
+min_chars_text_layer: 40
+garbage_ratio_max: 0.05
+blur_sharpness_min: 900
+skew_degrees_max: 1.5
+shadow_spread_max: 70
+blank_ink_max: 0.0008
+
+# Reason code -> plain-language re-scan request (F-07.4), used on the query list.
+reason_codes:
+  resolution: "The scan resolution is too low to read reliably. Please re-scan at 300 dpi or higher."
+  blur: "The image is blurred. Please re-scan or photograph it again, holding the camera steady."
+  skew: "The page is photographed at an angle. Please re-scan it flat."
+  shadow: "Part of the page is in shadow. Please re-scan in even light."
+  ocr_floor: "The text on this page cannot be read reliably. Please provide a clearer copy."
+  ocr_unavailable: "This page is an image and could not be read. Please provide a text-based copy."
+  corrupt: "The file is damaged and cannot be opened. Please send it again."
+  encrypted: "The file is password-protected. Please send the password or an unprotected copy."
+  blank: "The page is blank. Please check the document and send the full copy."
+  missing_page: "A page appears to be missing from this document. Please send the complete document."
+  unsupported: "This file type is not supported. Please send a PDF, an image, an Excel file or a CSV."
+  legacy_xls: "Old Excel (.xls) files are not supported. Please save the file as .xlsx and send it again."
+  too_large: "The file is larger than the permitted size. Please send a smaller copy."
+  too_many_pages: "The document has more pages than can be processed. Please split it and send the parts."
+  empty: "The file is empty. Please send it again."

@@ -1,0 +1,5 @@
+# Noise printed on every page of the Southgate fixture set; merged over config/ingestion in tests.
+reading:
+  boilerplate:
+    - '^Page\s+\d+\s+of\s+\d+$'
+    - '^Synthetic specimen generated'

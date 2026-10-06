@@ -1,0 +1,994 @@
+{
+  "$defs": {
+    "Candidate": {
+      "additionalProperties": false,
+      "properties": {
+        "score": {
+          "title": "Score",
+          "type": "number"
+        },
+        "type": {
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "score"
+      ],
+      "title": "Candidate",
+      "type": "object"
+    },
+    "Check": {
+      "additionalProperties": false,
+      "properties": {
+        "detail": {
+          "title": "Detail",
+          "type": "string"
+        },
+        "fields": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Fields",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "default": "rule",
+          "title": "Kind",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "outcome": {
+          "enum": [
+            "pass",
+            "warn",
+            "fail"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "severity": {
+          "enum": [
+            "warn",
+            "fail"
+          ],
+          "title": "Severity",
+          "type": "string"
+        },
+        "tables": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tables",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "outcome",
+        "detail",
+        "severity"
+      ],
+      "title": "Check",
+      "type": "object"
+    },
+    "Classification": {
+      "additionalProperties": false,
+      "properties": {
+        "candidates": {
+          "items": {
+            "$ref": "#/$defs/Candidate"
+          },
+          "title": "Candidates",
+          "type": "array"
+        },
+        "confidence": {
+          "title": "Confidence",
+          "type": "number"
+        },
+        "mixed_content": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Mixed Content",
+          "type": "array"
+        },
+        "model_error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Error"
+        },
+        "needs_review": {
+          "title": "Needs Review",
+          "type": "boolean"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "signals": {
+          "additionalProperties": true,
+          "title": "Signals",
+          "type": "object"
+        },
+        "tier": {
+          "enum": [
+            "signals",
+            "model",
+            "person",
+            "none"
+          ],
+          "title": "Tier",
+          "type": "string"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Type"
+        }
+      },
+      "required": [
+        "type",
+        "confidence",
+        "tier",
+        "needs_review"
+      ],
+      "title": "Classification",
+      "type": "object"
+    },
+    "Confidence": {
+      "additionalProperties": false,
+      "properties": {
+        "composition": {
+          "additionalProperties": true,
+          "title": "Composition",
+          "type": "object"
+        },
+        "decision": {
+          "enum": [
+            "auto_accept",
+            "human_review",
+            "reject"
+          ],
+          "title": "Decision",
+          "type": "string"
+        },
+        "document": {
+          "title": "Document",
+          "type": "number"
+        },
+        "reasons": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Reasons",
+          "type": "array"
+        }
+      },
+      "required": [
+        "document",
+        "decision"
+      ],
+      "title": "Confidence",
+      "type": "object"
+    },
+    "ConfigRef": {
+      "additionalProperties": false,
+      "properties": {
+        "hash": {
+          "title": "Hash",
+          "type": "string"
+        },
+        "version": {
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "version",
+        "hash"
+      ],
+      "title": "ConfigRef",
+      "type": "object"
+    },
+    "Defect": {
+      "additionalProperties": false,
+      "description": "A defect of the document, not of the extraction (F-13.3).",
+      "properties": {
+        "code": {
+          "enum": [
+            "pages_absent",
+            "period_gap",
+            "unsigned",
+            "unstamped",
+            "plain_paper",
+            "pagination_break"
+          ],
+          "title": "Code",
+          "type": "string"
+        },
+        "detail": {
+          "title": "Detail",
+          "type": "string"
+        },
+        "pages": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Pages",
+          "type": "array"
+        }
+      },
+      "required": [
+        "code",
+        "detail"
+      ],
+      "title": "Defect",
+      "type": "object"
+    },
+    "Document": {
+      "additionalProperties": false,
+      "properties": {
+        "confidence": {
+          "$ref": "#/$defs/Confidence"
+        },
+        "defects": {
+          "items": {
+            "$ref": "#/$defs/Defect"
+          },
+          "title": "Defects",
+          "type": "array"
+        },
+        "document_type": {
+          "title": "Document Type",
+          "type": "string"
+        },
+        "fields": {
+          "additionalProperties": {
+            "$ref": "#/$defs/FieldResult"
+          },
+          "title": "Fields",
+          "type": "object"
+        },
+        "identity": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Identity",
+          "type": "object"
+        },
+        "instance_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Instance Key"
+        },
+        "instance_no": {
+          "title": "Instance No",
+          "type": "integer"
+        },
+        "page_from": {
+          "title": "Page From",
+          "type": "integer"
+        },
+        "page_to": {
+          "title": "Page To",
+          "type": "integer"
+        },
+        "tables": {
+          "additionalProperties": {
+            "$ref": "#/$defs/TableResult"
+          },
+          "title": "Tables",
+          "type": "object"
+        },
+        "validation": {
+          "items": {
+            "$ref": "#/$defs/Check"
+          },
+          "title": "Validation",
+          "type": "array"
+        }
+      },
+      "required": [
+        "instance_no",
+        "page_from",
+        "page_to",
+        "document_type",
+        "fields",
+        "tables",
+        "validation",
+        "confidence"
+      ],
+      "title": "Document",
+      "type": "object"
+    },
+    "EngineRef": {
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "title": "Model",
+          "type": "string"
+        },
+        "ocr": {
+          "title": "Ocr",
+          "type": "string"
+        },
+        "version": {
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "version",
+        "ocr",
+        "model"
+      ],
+      "title": "EngineRef",
+      "type": "object"
+    },
+    "FieldResult": {
+      "additionalProperties": false,
+      "properties": {
+        "components": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Components",
+          "type": "object"
+        },
+        "confidence": {
+          "default": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "key_field": {
+          "default": false,
+          "title": "Key Field",
+          "type": "boolean"
+        },
+        "method": {
+          "anyOf": [
+            {
+              "enum": [
+                "identifier",
+                "alias",
+                "pattern",
+                "model"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Method"
+        },
+        "needs_review": {
+          "default": false,
+          "title": "Needs Review",
+          "type": "boolean"
+        },
+        "raw_text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Raw Text"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "required": {
+          "default": false,
+          "title": "Required",
+          "type": "boolean"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Source"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "status": {
+          "enum": [
+            "found",
+            "missing"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "value": {
+          "default": null,
+          "title": "Value"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "FieldResult",
+      "type": "object"
+    },
+    "FileResult": {
+      "additionalProperties": false,
+      "properties": {
+        "classification": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Classification"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "decision": {
+          "anyOf": [
+            {
+              "enum": [
+                "auto_accept",
+                "human_review",
+                "reject"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Decision"
+        },
+        "documents": {
+          "items": {
+            "$ref": "#/$defs/Document"
+          },
+          "title": "Documents",
+          "type": "array"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        },
+        "file_id": {
+          "title": "File Id",
+          "type": "string"
+        },
+        "front_matter_pages": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Front Matter Pages",
+          "type": "array"
+        },
+        "grade": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Grade"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "pages": {
+          "items": {
+            "$ref": "#/$defs/PageInfo"
+          },
+          "title": "Pages",
+          "type": "array"
+        },
+        "reject": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Reject"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "review_reasons": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Review Reasons",
+          "type": "array"
+        },
+        "route": {
+          "additionalProperties": true,
+          "title": "Route",
+          "type": "object"
+        },
+        "run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Run Id"
+        },
+        "sha256": {
+          "title": "Sha256",
+          "type": "string"
+        },
+        "source": {
+          "additionalProperties": true,
+          "title": "Source",
+          "type": "object"
+        },
+        "status": {
+          "enum": [
+            "processed",
+            "rejected",
+            "failed"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "trace": {
+          "items": {
+            "$ref": "#/$defs/TraceEntry"
+          },
+          "title": "Trace",
+          "type": "array"
+        }
+      },
+      "required": [
+        "file_id",
+        "sha256",
+        "name",
+        "status"
+      ],
+      "title": "FileResult",
+      "type": "object"
+    },
+    "PageInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "blank": {
+          "default": false,
+          "title": "Blank",
+          "type": "boolean"
+        },
+        "grade": {
+          "enum": [
+            "A",
+            "B",
+            "C",
+            "U"
+          ],
+          "title": "Grade",
+          "type": "string"
+        },
+        "height": {
+          "default": 0.0,
+          "title": "Height",
+          "type": "number"
+        },
+        "ocr_conf": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ocr Conf"
+        },
+        "page": {
+          "title": "Page",
+          "type": "integer"
+        },
+        "reading_trust": {
+          "title": "Reading Trust",
+          "type": "number"
+        },
+        "reasons": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reasons",
+          "type": "array"
+        },
+        "sheet": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sheet"
+        },
+        "source": {
+          "enum": [
+            "text_layer",
+            "ocr",
+            "sheet"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "width": {
+          "default": 0.0,
+          "title": "Width",
+          "type": "number"
+        },
+        "words": {
+          "default": 0,
+          "title": "Words",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "page",
+        "source",
+        "grade",
+        "reading_trust"
+      ],
+      "title": "PageInfo",
+      "type": "object"
+    },
+    "Reject": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "rescan_request": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rescan Request"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "Reject",
+      "type": "object"
+    },
+    "Source": {
+      "additionalProperties": false,
+      "properties": {
+        "bbox": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bbox"
+        },
+        "kind": {
+          "enum": [
+            "page",
+            "cell"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page"
+        },
+        "range": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Range"
+        },
+        "sheet": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sheet"
+        },
+        "text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Text"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "title": "Source",
+      "type": "object"
+    },
+    "TableResult": {
+      "additionalProperties": false,
+      "properties": {
+        "columns": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Columns",
+          "type": "array"
+        },
+        "confidence": {
+          "default": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "repairs": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Repairs",
+          "type": "array"
+        },
+        "rows": {
+          "items": {
+            "$ref": "#/$defs/TableRow"
+          },
+          "title": "Rows",
+          "type": "array"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source"
+        },
+        "status": {
+          "enum": [
+            "found",
+            "missing"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "unparsed": {
+          "default": 0,
+          "title": "Unparsed",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "status",
+        "columns"
+      ],
+      "title": "TableResult",
+      "type": "object"
+    },
+    "TableRow": {
+      "additionalProperties": false,
+      "properties": {
+        "cells": {
+          "additionalProperties": true,
+          "title": "Cells",
+          "type": "object"
+        },
+        "raw": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Raw",
+          "type": "object"
+        },
+        "source": {
+          "additionalProperties": true,
+          "title": "Source",
+          "type": "object"
+        }
+      },
+      "required": [
+        "cells",
+        "raw",
+        "source"
+      ],
+      "title": "TableRow",
+      "type": "object"
+    },
+    "TraceEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "input_hash": {
+          "title": "Input Hash",
+          "type": "string"
+        },
+        "output_hash": {
+          "title": "Output Hash",
+          "type": "string"
+        },
+        "stage": {
+          "title": "Stage",
+          "type": "string"
+        }
+      },
+      "required": [
+        "stage",
+        "input_hash",
+        "output_hash"
+      ],
+      "title": "TraceEntry",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "case_ref": {
+      "title": "Case Ref",
+      "type": "string"
+    },
+    "config": {
+      "$ref": "#/$defs/ConfigRef"
+    },
+    "contract_version": {
+      "title": "Contract Version",
+      "type": "string"
+    },
+    "engine": {
+      "$ref": "#/$defs/EngineRef"
+    },
+    "files": {
+      "items": {
+        "$ref": "#/$defs/FileResult"
+      },
+      "title": "Files",
+      "type": "array"
+    }
+  },
+  "required": [
+    "contract_version",
+    "case_ref",
+    "config",
+    "engine",
+    "files"
+  ],
+  "title": "IngestResult",
+  "type": "object"
+}

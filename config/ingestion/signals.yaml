@@ -1,0 +1,70 @@
+# Document type signals (FRD F-09). Regexes are case-insensitive and multiline.
+#   required    all must match for a tier-1 exit
+#   supporting  each match adds to the score
+#   contrary    any match blocks a tier-1 exit for the type
+#   instances   a file may hold several instances of one type; a page matching `start` opens one
+# Interim values, tuned against RBL's documents once they arrive.
+tier1_margin: 0.2
+classify_threshold: 0.6
+tier2_confidence: 0.7      # fixed score for a tier-2 assignment (a model's own confidence is never used)
+tier2_guard:                # the model's choice must still agree with the type's own signals
+  block_on_contrary: true
+  min_required_fraction: 0.5
+signal_pages: 3            # pages read for classification
+mixed_content_check: true  # flag a file whose pages match a different type
+mixed_min_score: 0.75
+
+types:
+  certificate_of_incorporation:
+    required: ['certificate\s+of\s+incorporation']
+    supporting: ['registrar\s+of\s+companies', 'corporate\s+identity\s+number', '\b[LU]\d{5}[A-Z]{2}\d{4}[A-Z]{3}\d{6}\b', 'companies\s+act']
+    contrary: ['memorandum\s+of\s+association\s+of', 'resolved\s+that', 'statement\s+of\s+account']
+
+  memorandum_articles_of_association:
+    required: ['memorandum\s+of\s+association\s+of']
+    supporting: ['name\s+clause', 'objects\s+clause', 'liability\s+clause', 'capital\s+clause', 'subscription\s+clause', 'articles\s+of\s+association']
+    contrary: ['certificate\s+of\s+incorporation\s*$', 'resolved\s+that']
+
+  company_pan:
+    required: ['intimation\s+of\s+allotment\s+of\s+permanent\s+account\s+number']
+    supporting: ['income\s+tax\s+department', 'assessing\s+officer', 'permanent\s+account\s+number\s+\(pan\)']
+    contrary: ['director\s+kyc', 'certificate\s+of\s+incorporation\s*$']
+
+  director_kyc:
+    required: ['director\s+kyc\s+summary\s+sheet']
+    supporting: ['director\s+identification\s+number', 'residential\s+address', 'relationship\s+with\s+company', 'aadhaar']
+    contrary: ['certificate\s+of\s+incorporation\s*$', 'memorandum\s+of\s+association\s+of']
+    instances:
+      start: 'director\s+kyc\s+summary\s+sheet'
+      keys: [person_name]
+
+  board_resolution_borrowing:
+    required: ['certified\s+true\s+copy\s+of\s+the\s+resolution|resolved\s+(further\s+)?that']
+    supporting: ['board\s+of\s+directors', 'section\s+179', 'borrow', 'authori[sz]ed\s+to\s+execute']
+    contrary: ['declaration\s+of\s+nil', 'memorandum\s+of\s+association\s+of']
+
+  audited_financial_statements:
+    required: ['audited\s+financial\s+statements']
+    supporting: ['independent\s+auditor', 'balance\s+sheet', 'statement\s+of\s+profit\s+and\s+loss', 'cash\s+flow\s+statement', 'firm\s+registration']
+    contrary: ['unaudited', 'provisional\s+financial', 'income\s+tax\s+return\s+acknowledgement', 'statement\s+of\s+account']
+
+  income_tax_return:
+    required: ['income\s+tax\s+return\s+acknowledgement']
+    supporting: ['assessment\s+year', 'form\s+itr', 'e-filing\s+acknowledgement', 'computation\s+of\s+total\s+income']
+    contrary: ['statement\s+of\s+account']
+    instances:
+      start: 'income\s+tax\s+return\s+acknowledgement'
+      keys: [assessment_year]
+
+  gstr_3b:
+    required: ['form\s+gstr-?3b|gstr-?3b\s+returns']
+    supporting: ['\barn\b', 'return\s+period', 'outward\s+taxable\s+supplies', 'gstin', 'eligible\s+input\s+tax\s+credit']
+    contrary: ['statement\s+of\s+account']
+    instances:
+      start: 'form\s+gstr-?3b'
+      keys: [tax_period]
+
+  bank_statement:
+    required: ['statement\s+of\s+account']
+    supporting: ['opening\s+balance', 'ifsc', 'debit\s+\(inr\)', 'credit\s+\(inr\)', 'account\s+number', 'branch']
+    contrary: ['gstr-?3b\s+returns', 'form\s+gstr']

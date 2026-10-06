@@ -1,0 +1,15 @@
+# Runtime (all permissive licences; no AGPL/GPL/LGPL, CLAUDE.md rule 10)
+fastapi
+uvicorn
+pydantic
+pyyaml
+python-multipart
+httpx
+pypdfium2
+pdfplumber
+openpyxl
+pillow
+numpy
+# Dev
+pytest
+import-linter

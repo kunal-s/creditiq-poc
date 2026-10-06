@@ -1,0 +1,200 @@
+# How each schema field and table is read (FRD F-15). document_types.json says WHAT exists;
+# this file says where it is printed. Order of attempts for a field:
+#   identifier scan -> label aliases -> patterns -> (optional) model for what is still missing.
+# Patterns: group 1 is the value unless `group` says otherwise; flags i=ignore case, m=multiline,
+# s=dot matches newline; `multi: true` makes every match one list element.
+types:
+  certificate_of_incorporation:
+    identity: {name: company_name, cin: cin}
+    fields:
+      company_name: {aliases: ['Name of Company']}
+      cin: {identifier: cin, validators: ['format:cin']}
+      date_of_incorporation: {aliases: ['Date of Incorporation']}
+      company_type: {aliases: ['Company Category']}
+      registered_address: {aliases: ['Registered Office'], llm: true}
+      roc: {patterns: ['Office of the (Registrar of Companies[^\n]*)']}
+
+  memorandum_articles_of_association:
+    identity: {name: company_name, cin: cin}
+    fields:
+      company_name: {patterns: ['The name of the company is\s+(.+?)\.\s*$']}
+      cin: {identifier: cin, validators: ['format:cin']}
+      registered_office: {patterns: ['registered office of the company will be situated in the State of\s+([A-Za-z ]+?)\.']}
+      authorized_share_capital: {patterns: ['authori[sz]ed\s+share\s+capital\s+of\s+the\s+company\s+is\s+Rs\.?\s*([\d,]+)']}
+      paid_up_share_capital: {patterns: ['paid-?up\s+capital\s+is\s+Rs\.?\s*([\d,]+)']}
+      objects_of_company: {patterns: [{regex: 'MAIN OBJECTS TO BE PURSUED[^\n]*\n(.+?)\n\(B\)', flags: ims, span_pages: true}]}
+      directors: {patterns: [{regex: 'first\s+directors\s+of\s+the\s+company\s+are\s+(.+?)\.\s*$', flags: ims, multi: true, split: '\s+and\s+|,\s*', strip: '^(?:Smt|Sri|Shri|Mr|Ms|Mrs)\.?\s+'}], llm: true}
+    tables:
+      shareholding:
+        page_match: 'SUBSCRIPTION CLAUSE'
+        start: '^Name, address, description and occupation of subscriber'
+        header_lines: 1
+        end: '^Dated this'
+        text_only: continuation
+        skip_rows: ['^Total']
+        columns:
+          - {name: shareholder_name, header: '^Name,$'}
+          - {name: number_of_shares, header: '^No\.$'}
+          - {name: signature, header: '^Signature$', emit: false}
+
+  company_pan:
+    identity: {name: company_name, pan: pan}
+    fields:
+      company_name: {aliases: ['Name']}
+      pan: {identifier: pan, validators: ['format:pan']}
+      date_of_issue: {patterns: ['^Date:\s*(\d{1,2}\s+[A-Za-z]+\s+\d{4})']}
+
+  director_kyc:
+    identity: {name: person_name, pan: pan, din: din, dob: date_of_birth}
+    fields:
+      person_name: {aliases: ['Name of Director']}
+      din: {aliases: ['Director Identification Number'], validators: ['format:din']}
+      designation: {aliases: ['Designation']}
+      date_of_birth: {aliases: ['Date of Birth']}
+      pan: {aliases: ['PAN \(masked\)', 'PAN'], validators: ['format:masked_pan']}
+      id_document_type: {patterns: ['\b(Aadhaar)\s+\(masked\)']}
+      id_number: {aliases: ['Aadhaar \(masked\)'], validators: ['format:masked_aadhaar']}
+      address: {aliases: ['Residential Address']}
+      # The KYC summary sheet does not print an identity document's number or dates; the model is not asked for them.
+      document_number: {llm: false}
+      issue_date: {llm: false}
+      expiry_date: {llm: false}
+
+  board_resolution_borrowing:
+    identity: {name: company_name}
+    fields:
+      company_name: {patterns: [{regex: 'Board of Directors of\s+(.+?)\s*\(CIN', flags: ims}]}
+      meeting_date: {patterns: [{regex: '\bon\s+(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+(\d{1,2}\s+[A-Za-z]+\s+\d{4})', flags: ims}]}
+      borrowing_limit: {patterns: ['aggregating\s+to\s+Rs\.?\s*([\d,]+)']}
+      lender_name: {patterns: [{regex: 'borrow\s+from\s+(.+?),\s*credit\s+facilities', flags: ims}]}
+      resolution_date: {llm: false}   # only a date the resolution itself carries; never derived from the meeting date
+      purpose_of_borrowing: {llm_hint: "The purpose of the borrowing exactly as the resolution states it (for example 'working capital'). A heading, or the bare words 'borrowing' or 'security', is not a purpose: report null when none is stated."}
+      authorized_persons: {patterns: [{regex: '(?:Smt|Sri|Shri|Mr|Ms|Mrs)\.?\s+([A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)*),\s+(?:Managing\s+)?Director', flags: m, multi: true}]}
+      authorized_signatories: {llm_hint: "The people the resolution authorises to sign or execute the loan documents: one entry per person, the name only (leave out Smt., Sri., titles, designations and DIN numbers). List every person named."}
+
+  audited_financial_statements:
+    identity: {name: company_name}
+    fields:
+      company_name: {aliases: ['Company']}
+      financial_year: {aliases: ['Financial Year']}
+      auditor_name: {aliases: ['Statutory Auditors']}
+      audit_date: {patterns: ['Place:\s*[A-Za-z]+\s*\|\s*Date:\s*(\d{1,2}\s+[A-Za-z]+\s+\d{4})']}
+      accounting_standard: {llm_hint: "The accounting standards or framework the statements say they follow (for example 'Indian GAAP' or 'Ind AS'), exactly as written; null if none is named."}
+    tables:
+      balance_sheet:
+        page_match: 'BALANCE SHEET AS AT'
+        start: 'As at 31 March\s+As at 31 March'
+        header_lines: 2
+        end: '^Net worth'
+        columns:
+          - {name: particulars, header: '^Particulars$'}
+          - {name: current_period, header: '^As$', nth: 0, align: right}
+          - {name: previous_period, header: '^As$', nth: 1, align: right}
+      profit_and_loss:
+        page_match: 'STATEMENT OF PROFIT AND LOSS FOR THE YEAR'
+        start: 'Year ended 31\s+Year ended 31'
+        header_lines: 2
+        end: '^EBITDA'
+        columns:
+          - {name: particulars, header: '^Particulars$'}
+          - {name: current_period, header: '^Year$', nth: 0, align: right}
+          - {name: previous_period, header: '^Year$', nth: 1, align: right}
+      cash_flow:
+        page_match: 'CASH FLOW STATEMENT FOR THE YEAR'
+        start: '^Year ended 31 March$'
+        header_lines: 2
+        columns:
+          - {name: particulars, header: '^Particulars$'}
+          - {name: current_period, header: '^Year$', nth: 0, align: right}
+
+  income_tax_return:
+    identity: {name: taxpayer_name, pan: pan}
+    fields:
+      pan: {identifier: pan, validators: ['format:pan']}
+      taxpayer_name: {aliases: ['Name']}
+      assessment_year: {aliases: ['Assessment Year']}
+      financial_year: {patterns: ['for the (FY\d{4})']}
+      filing_date: {aliases: ['Date of Filing']}
+      acknowledgement_number: {aliases: ['e-Filing Acknowledgement']}
+      gross_total_income: {patterns: ['Gross Total Income\s+([\d,]+)']}
+      total_income: {aliases: ['Total Income']}
+      tax_payable: {aliases: ['Total Tax and Interest Payable']}
+      tax_paid: {aliases: ['Taxes Paid \(TDS \+ Advance \+']}
+      refund_amount: {aliases: ['Tax Payable / \(Refund\)']}
+    tables:
+      income_computation:
+        page_match: 'COMPUTATION OF TOTAL INCOME'
+        start: '^Particulars\s+Amount'
+        end: '^Reconciliation'
+        columns:
+          - {name: particulars, header: '^Particulars$'}
+          - {name: amount, header: '^Amount$', align: right}
+
+  gstr_3b:
+    identity: {name: legal_name, gstin: gstin}
+    fields:
+      gstin: {identifier: gstin, validators: ['format:gstin']}
+      legal_name: {aliases: ['Legal Name']}
+      trade_name: {aliases: ['Trade Name']}
+      tax_period: {aliases: ['Tax Period']}
+      filing_date: {aliases: ['Date of Filing']}
+      return_status: {patterns: ['Return status:\s*([A-Za-z]+)']}
+    tables:
+      outward_supplies:
+        start: '^Nature of Supplies'
+        end: '^4\.'
+        row_start_col: description
+        row_start: '^\([a-z]\)\s'
+        columns:
+          - {name: description, header: '^Nature$'}
+          - {name: taxable_value, header: '^Taxable$', align: right}
+          - {name: igst, header: '^IGST$', align: right}
+          - {name: cgst, header: '^CGST$', align: right}
+          - {name: sgst, header: '^SGST$', align: right}
+      input_tax_credit:
+        start: '^Details\s+IGST'
+        end: '^5\.'
+        row_start_col: description
+        row_start: '^\([A-Z]\)\s'
+        columns:
+          - {name: description, header: '^Details$'}
+          - {name: igst, header: '^IGST$', align: right}
+          - {name: cgst, header: '^CGST$', align: right}
+          - {name: sgst, header: '^SGST$', align: right}
+      tax_payment:
+        start: '^Description\s+Tax Payable'
+        end: '^Verified and filed'
+        columns:
+          - {name: tax_type, header: '^Description$'}
+          - {name: tax_amount, header: '^Tax$', align: right}
+          - {name: paid_itc, header: '^Paid$', nth: 0, align: right, emit: false}
+          - {name: paid_cash, header: '^Paid$', nth: 1, align: right, emit: false}
+
+  bank_statement:
+    identity: {name: account_holder_name}
+    fields:
+      account_holder_name: {aliases: ['Account Name']}
+      account_number: {patterns: ['\bAccount(?:\s+(?:No\.?|Number))?\s+(\d{9,18})\b']}
+      bank_name: {patterns: ['^(.+?\bBank)\s*$']}
+      branch: {patterns: ['Branch\s*/\s*IFSC\s+(.+?)\s*/\s*[A-Z]{4}0[A-Z0-9]{6}\b']}
+      ifsc: {identifier: ifsc, validators: ['format:ifsc']}
+      statement_period_start: {patterns: ['Statement\s+(\d{1,2}\s+[A-Za-z]+\s+\d{4})\s+to\s+\d{1,2}\s+[A-Za-z]+\s+\d{4}']}
+      statement_period_end: {patterns: ['Statement\s+\d{1,2}\s+[A-Za-z]+\s+\d{4}\s+to\s+(\d{1,2}\s+[A-Za-z]+\s+\d{4})']}
+      opening_balance: {patterns: ['Opening Balance\s*\([^)]*\)\s+([\d,]+)']}
+      closing_balance: {patterns: ['Closing Balance\s*\([^)]*\)\s+([\d,]+)']}
+      currency: {patterns: ['Currency\s+([A-Z]{3})\b']}
+    tables:
+      transactions:
+        start: '^Date\s+Particulars\s+Reference'
+        end: '^Statement Summary'
+        multi_page: true
+        repair: {kind: running_balance, debit: debit, credit: credit, balance: balance}
+        row_start_col: date
+        row_start: '^(\d{1,2}\s+[A-Za-z]{3}\s+\d{4}|\d{4}-\d{2}-\d{2}|\d{1,2}[/-]\d{1,2}[/-]\d{4})$'
+        columns:
+          - {name: date, header: '^Date$'}
+          - {name: description, header: '^Particulars$'}
+          - {name: reference_number, header: '^Reference$', join: ''}
+          - {name: debit, header: '^Debit$', align: right}
+          - {name: credit, header: '^Credit$', align: right}
+          - {name: balance, header: '^Balance$', align: right}

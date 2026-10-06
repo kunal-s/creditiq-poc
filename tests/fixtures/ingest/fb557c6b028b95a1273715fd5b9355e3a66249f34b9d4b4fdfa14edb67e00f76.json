@@ -1,136 +1,372 @@
 {
- "case_ref": "fixture",
- "config_version": "fixture",
+ "classification": {
+  "candidates": [
+   {
+    "score": 0.95,
+    "type": "income_tax_return"
+   }
+  ],
+  "confidence": 0.95,
+  "mixed_content": [],
+  "model_error": null,
+  "needs_review": false,
+  "reason": null,
+  "signals": {
+   "contrary": [],
+   "required": [
+    "fixture"
+   ],
+   "supporting": []
+  },
+  "tier": "signals",
+  "type": "income_tax_return"
+ },
+ "decision": "auto_accept",
  "documents": [
   {
-   "classification": {
-    "candidates": [],
-    "confidence": 0.95,
-    "exit_tier": "signals",
-    "signals": [],
-    "types": [
-     "itr_acknowledgement"
-    ]
+   "confidence": {
+    "composition": {},
+    "decision": "auto_accept",
+    "document": 0.96,
+    "reasons": []
    },
    "defects": [],
-   "doc_key": "u-itr-clear",
-   "duplicate_of_key": null,
-   "fields": [
-    {
-     "bbox": [
-      0.1,
-      0.1,
-      0.5,
-      0.15
-     ],
-     "confidence_components": {
-      "agreement": 1.0,
+   "document_type": "income_tax_return",
+   "fields": {
+    "acknowledgement_number": {
+     "components": {
+      "agreement": 0.8,
       "classification": 1.0,
       "page_grade": 1.0,
       "reading_trust": 1.0,
       "validation": 1.0
      },
-     "field": "assessment_year",
-     "method": "deterministic",
-     "missing_reason": null,
-     "page": 1,
-     "raw": "2025-26",
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "247100320281024",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "247100320281024"
+     },
+     "status": "found",
+     "value": "247100320281024"
+    },
+    "assessment_year": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "2025-26",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "2025-26"
+     },
+     "status": "found",
      "value": "2025-26"
     },
-    {
-     "bbox": [
-      0.1,
-      0.1,
-      0.5,
-      0.15
-     ],
-     "confidence_components": {
-      "agreement": 1.0,
+    "filing_date": {
+     "components": {
+      "agreement": 0.8,
       "classification": 1.0,
       "page_grade": 1.0,
       "reading_trust": 1.0,
       "validation": 1.0
      },
-     "field": "pan",
-     "method": "deterministic",
-     "missing_reason": null,
-     "page": 1,
-     "raw": "AAACH5678Q",
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "2026-07-30",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "2026-07-30"
+     },
+     "status": "found",
+     "value": "2026-07-30"
+    },
+    "financial_year": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    },
+    "pan": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "identifier",
+     "needs_review": false,
+     "raw_text": "AAACH5678Q",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "AAACH5678Q"
+     },
+     "status": "found",
      "value": "AAACH5678Q"
     },
-    {
-     "bbox": [
-      0.1,
-      0.1,
-      0.5,
-      0.15
-     ],
-     "confidence_components": {
-      "agreement": 1.0,
+    "refund_amount": {
+     "components": {
+      "agreement": 0.8,
       "classification": 1.0,
       "page_grade": 1.0,
       "reading_trust": 1.0,
       "validation": 1.0
      },
-     "field": "total_income",
-     "method": "deterministic",
-     "missing_reason": null,
-     "page": 1,
-     "raw": "5100000",
-     "value": 5100000
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "0",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "0"
+     },
+     "status": "found",
+     "value": 0
+    },
+    "tax_paid": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "2150000",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "2150000"
+     },
+     "status": "found",
+     "value": 2150000
+    },
+    "tax_payable": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "2150000",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "2150000"
+     },
+     "status": "found",
+     "value": 2150000
+    },
+    "taxpayer_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Heronbay Polymers Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Heronbay Polymers Private Limited"
+     },
+     "status": "found",
+     "value": "Heronbay Polymers Private Limited"
+    },
+    "total_income": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "8600000",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "8600000"
+     },
+     "status": "found",
+     "value": 8600000
     }
-   ],
-   "file_id": "fixture",
-   "identity": {},
+   },
+   "identity": {
+    "name": "Heronbay Polymers Private Limited",
+    "pan": "AAACH5678Q"
+   },
    "instance_key": "2025-26",
+   "instance_no": 1,
    "page_from": 1,
    "page_to": 1,
-   "pages": [
-    {
-     "grade": "A",
-     "n": 1,
-     "ocr_confidence": null,
-     "reasons": [],
-     "route": "text"
-    }
-   ],
-   "split_uncertain": false
+   "tables": {},
+   "validation": []
   }
  ],
- "engine_version": "fixture",
- "files": [
+ "error": null,
+ "file_id": "fixture",
+ "front_matter_pages": [],
+ "grade": "A",
+ "name": "itr_clear.pdf",
+ "pages": [
   {
-   "file_id": "fixture",
-   "reason": null,
-   "status": "processed"
+   "blank": false,
+   "grade": "A",
+   "height": 842.0,
+   "ocr_conf": null,
+   "page": 1,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.0,
+   "words": 40
   }
  ],
- "model_provider": "stub",
- "timings": [
-  {
-   "file_id": "fixture",
-   "ms": 40,
-   "stage": "read"
-  },
-  {
-   "file_id": "fixture",
-   "ms": 12,
-   "stage": "grade"
-  },
-  {
-   "file_id": "fixture",
-   "ms": 8,
-   "stage": "split"
-  },
-  {
-   "file_id": "fixture",
-   "ms": 20,
-   "stage": "classify"
-  },
-  {
-   "file_id": "fixture",
-   "ms": 55,
-   "stage": "extract"
-  }
- ]
+ "reject": null,
+ "review_reasons": [],
+ "route": {},
+ "run_id": "RUN-FIXTURE",
+ "sha256": "fb557c6b028b95a1273715fd5b9355e3a66249f34b9d4b4fdfa14edb67e00f76",
+ "source": {
+  "kind": "pdf",
+  "pages": 1
+ },
+ "status": "processed",
+ "trace": []
 }

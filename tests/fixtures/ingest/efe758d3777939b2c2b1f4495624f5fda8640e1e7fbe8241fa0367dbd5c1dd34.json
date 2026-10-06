@@ -1,0 +1,266 @@
+{
+ "classification": {
+  "candidates": [
+   {
+    "score": 0.95,
+    "type": "certificate_of_incorporation"
+   }
+  ],
+  "confidence": 0.95,
+  "mixed_content": [],
+  "model_error": null,
+  "needs_review": false,
+  "reason": null,
+  "signals": {
+   "contrary": [],
+   "required": [
+    "fixture"
+   ],
+   "supporting": []
+  },
+  "tier": "signals",
+  "type": "certificate_of_incorporation"
+ },
+ "decision": "auto_accept",
+ "documents": [
+  {
+   "confidence": {
+    "composition": {},
+    "decision": "auto_accept",
+    "document": 0.96,
+    "reasons": []
+   },
+   "defects": [],
+   "document_type": "certificate_of_incorporation",
+   "fields": {
+    "cin": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "identifier",
+     "needs_review": false,
+     "raw_text": "U28999MH2015PTC123456",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "U28999MH2015PTC123456"
+     },
+     "status": "found",
+     "value": "U28999MH2015PTC123456"
+    },
+    "company_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Kestrel Fabricators Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Kestrel Fabricators Private Limited"
+     },
+     "status": "found",
+     "value": "Kestrel Fabricators Private Limited"
+    },
+    "company_type": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Company limited by shares",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Company limited by shares"
+     },
+     "status": "found",
+     "value": "Company limited by shares"
+    },
+    "date_of_incorporation": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "2015-06-12",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "2015-06-12"
+     },
+     "status": "found",
+     "value": "2015-06-12"
+    },
+    "registered_address": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Plot 7, Industrial Estate, Pune 411019",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Plot 7, Industrial Estate, Pune 411019"
+     },
+     "status": "found",
+     "value": "Plot 7, Industrial Estate, Pune 411019"
+    },
+    "roc": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Registrar of Companies, Pune",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Registrar of Companies, Pune"
+     },
+     "status": "found",
+     "value": "Registrar of Companies, Pune"
+    }
+   },
+   "identity": {
+    "cin": "U28999MH2015PTC123456",
+    "name": "Kestrel Fabricators Private Limited"
+   },
+   "instance_key": null,
+   "instance_no": 1,
+   "page_from": 1,
+   "page_to": 1,
+   "tables": {},
+   "validation": []
+  }
+ ],
+ "error": null,
+ "file_id": "fixture",
+ "front_matter_pages": [],
+ "grade": "A",
+ "name": "kestrel certificate of incorporation.pdf",
+ "pages": [
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 842.0,
+   "ocr_conf": null,
+   "page": 1,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.0,
+   "words": 40
+  }
+ ],
+ "reject": null,
+ "review_reasons": [],
+ "route": {},
+ "run_id": "RUN-FIXTURE",
+ "sha256": "efe758d3777939b2c2b1f4495624f5fda8640e1e7fbe8241fa0367dbd5c1dd34",
+ "source": {
+  "kind": "pdf",
+  "pages": 1
+ },
+ "status": "processed",
+ "trace": []
+}

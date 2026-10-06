@@ -38,6 +38,14 @@ def fixture_file(name: str) -> bytes:
     return (FIXTURE_FILES / name).read_bytes()
 
 
+def case_files(case: str) -> list[tuple[str, bytes]]:
+    """The files of a fixture case ("complete" or "partial"): one file per document."""
+    import json
+
+    names = json.loads((FIXTURE_FILES.parent / "cases.json").read_text())[case]
+    return [(n, fixture_file(n)) for n in names]
+
+
 def upload(client: TestClient, headers: dict, case_id: str, files: list[tuple[str, bytes]]):
     return client.post(
         f"/api/cases/{case_id}/files",

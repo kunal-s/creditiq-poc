@@ -1,0 +1,330 @@
+{
+ "classification": {
+  "candidates": [
+   {
+    "score": 0.95,
+    "type": "director_kyc"
+   }
+  ],
+  "confidence": 0.95,
+  "mixed_content": [],
+  "model_error": null,
+  "needs_review": false,
+  "reason": null,
+  "signals": {
+   "contrary": [],
+   "required": [
+    "fixture"
+   ],
+   "supporting": []
+  },
+  "tier": "signals",
+  "type": "director_kyc"
+ },
+ "decision": "auto_accept",
+ "documents": [
+  {
+   "confidence": {
+    "composition": {},
+    "decision": "auto_accept",
+    "document": 0.96,
+    "reasons": []
+   },
+   "defects": [],
+   "document_type": "director_kyc",
+   "fields": {
+    "address": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "12 Lake Road, Pune 411001",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "12 Lake Road, Pune 411001"
+     },
+     "status": "found",
+     "value": "12 Lake Road, Pune 411001"
+    },
+    "date_of_birth": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "1981-11-19",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "1981-11-19"
+     },
+     "status": "found",
+     "value": "1981-11-19"
+    },
+    "designation": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Director",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Director"
+     },
+     "status": "found",
+     "value": "Director"
+    },
+    "din": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "07654321",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "07654321"
+     },
+     "status": "found",
+     "value": "07654321"
+    },
+    "id_document_type": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Aadhaar",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Aadhaar"
+     },
+     "status": "found",
+     "value": "Aadhaar"
+    },
+    "id_number": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "XXXX XXXX 4471",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "XXXX XXXX 4471"
+     },
+     "status": "found",
+     "value": "XXXX XXXX 4471"
+    },
+    "pan": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "ABCPB5678M",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "ABCPB5678M"
+     },
+     "status": "found",
+     "value": "ABCPB5678M"
+    },
+    "person_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Ishita Barve",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Ishita Barve"
+     },
+     "status": "found",
+     "value": "Ishita Barve"
+    }
+   },
+   "identity": {
+    "din": "07654321",
+    "dob": "1981-11-19",
+    "name": "Ishita Barve",
+    "pan": "ABCPB5678M"
+   },
+   "instance_key": "Ishita Barve",
+   "instance_no": 1,
+   "page_from": 1,
+   "page_to": 1,
+   "tables": {},
+   "validation": []
+  }
+ ],
+ "error": null,
+ "file_id": "fixture",
+ "front_matter_pages": [],
+ "grade": "A",
+ "name": "Tarun Velankar PAN.pdf",
+ "pages": [
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 842.0,
+   "ocr_conf": null,
+   "page": 1,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.0,
+   "words": 40
+  }
+ ],
+ "reject": null,
+ "review_reasons": [],
+ "route": {},
+ "run_id": "RUN-FIXTURE",
+ "sha256": "c1b16bb848097c7597d09118665f3d199da5c4f87d7e1b6e32edda5212f1e290",
+ "source": {
+  "kind": "pdf",
+  "pages": 1
+ },
+ "status": "processed",
+ "trace": []
+}

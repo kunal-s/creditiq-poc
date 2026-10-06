@@ -1,0 +1,115 @@
+{
+ "classification": {
+  "candidates": [
+   {
+    "score": 0.05,
+    "type": "certificate_of_incorporation"
+   },
+   {
+    "score": 0.04,
+    "type": "gstr_3b"
+   },
+   {
+    "score": 0.0333,
+    "type": "bank_statement"
+   }
+  ],
+  "confidence": 0.0,
+  "mixed_content": [],
+  "model_error": null,
+  "needs_review": true,
+  "reason": "no type met the signal rules; no model configured",
+  "signals": {},
+  "tier": "none",
+  "type": null
+ },
+ "decision": "human_review",
+ "documents": [],
+ "error": null,
+ "file_id": "f0",
+ "front_matter_pages": [],
+ "grade": "A",
+ "name": "Southgate_Stock_BookDebt_30Jun2026.pdf",
+ "pages": [
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 1,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 285
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 2,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 38
+  }
+ ],
+ "reject": null,
+ "review_reasons": [
+  {
+   "detail": "no type met the signal rules; no model configured",
+   "kind": "type_unassigned"
+  }
+ ],
+ "route": {
+  "blank_pages": [],
+  "dropped_rotated_chars": 0,
+  "ocr_pages": 0,
+  "page_routes": [
+   {
+    "page": 1,
+    "route": "text"
+   },
+   {
+    "page": 2,
+    "route": "text"
+   }
+  ],
+  "pages": 2,
+  "route": "text",
+  "table_pages": 0
+ },
+ "run_id": "RUN-25070293894D",
+ "sha256": "2a1a1406bade7f17d85440353eedf2d558a9862e06464341db435697c28e4a0f",
+ "source": {
+  "kind": "pdf",
+  "pages": 2
+ },
+ "status": "processed",
+ "trace": [
+  {
+   "input_hash": "2a1a1406bade7f17d85440353eedf2d558a9862e06464341db435697c28e4a0f",
+   "output_hash": "f79d38dd1dc8e6ed2b5cf18b51b8289ef57a4478afda4532d9793d45d74a5e58",
+   "stage": "quality_gate"
+  },
+  {
+   "input_hash": "f79d38dd1dc8e6ed2b5cf18b51b8289ef57a4478afda4532d9793d45d74a5e58",
+   "output_hash": "fe4f2b76f529bffd72c92b5269015a548db74a039a81048882cdbe0114ae8a00",
+   "stage": "read"
+  },
+  {
+   "input_hash": "fe4f2b76f529bffd72c92b5269015a548db74a039a81048882cdbe0114ae8a00",
+   "output_hash": "bd472463de639960ef49afe79860acb5b35b89502ce921d27fd1d2717ff5e938",
+   "stage": "route"
+  },
+  {
+   "input_hash": "bd472463de639960ef49afe79860acb5b35b89502ce921d27fd1d2717ff5e938",
+   "output_hash": "5447a9e5f73d0cfbf3ac444b7b75ef132ddb4f073f9784d3fa73842de8e0ad13",
+   "stage": "classify"
+  }
+ ]
+}

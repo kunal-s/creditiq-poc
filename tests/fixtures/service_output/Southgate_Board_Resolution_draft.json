@@ -1,0 +1,417 @@
+{
+ "classification": {
+  "candidates": [
+   {
+    "score": 1.0,
+    "type": "board_resolution_borrowing"
+   },
+   {
+    "score": 0.0333,
+    "type": "bank_statement"
+   },
+   {
+    "score": 0.0,
+    "type": "audited_financial_statements"
+   }
+  ],
+  "confidence": 1.0,
+  "mixed_content": [],
+  "model_error": null,
+  "needs_review": false,
+  "reason": "signals matched: 4 supporting, margin 0.97",
+  "signals": {
+   "contrary": [],
+   "required": [
+    "certified\\s+true\\s+copy\\s+of\\s+the\\s+resolution|resolved\\s+(further\\s+)?that"
+   ],
+   "supporting": [
+    "board\\s+of\\s+directors",
+    "section\\s+179",
+    "borrow",
+    "authori[sz]ed\\s+to\\s+execute"
+   ]
+  },
+  "tier": "signals",
+  "type": "board_resolution_borrowing"
+ },
+ "decision": "human_review",
+ "documents": [
+  {
+   "confidence": {
+    "composition": {
+     "document_grade": "A",
+     "failed_checks": 1,
+     "found": 1,
+     "key_fields": 2,
+     "warnings": 1
+    },
+    "decision": "human_review",
+    "document": 0.48,
+    "reasons": [
+     {
+      "field": "resolution_date",
+      "kind": "missing_required",
+      "reason": "not_found"
+     },
+     {
+      "check": "required_present",
+      "detail": "Required fields missing: resolution_date",
+      "kind": "failed_check"
+     }
+    ]
+   },
+   "defects": [
+    {
+     "code": "unsigned",
+     "detail": "Left blank: Name:, Signature:.",
+     "pages": [
+      1
+     ]
+    }
+   ],
+   "document_type": "board_resolution_borrowing",
+   "fields": {
+    "authorized_persons": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Lakshmi Iyer; Venkat Iyer",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       225.97,
+       317.5,
+       282.75,
+       327.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Lakshmi Iyer"
+     },
+     "status": "found",
+     "value": [
+      "Lakshmi Iyer",
+      "Venkat Iyer"
+     ]
+    },
+    "authorized_signatories": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    },
+    "borrowing_limit": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "4,25,00,000",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       476.73,
+       226.5,
+       526.91,
+       236.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "4,25,00,000"
+     },
+     "status": "found",
+     "value": 42500000
+    },
+    "company_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Southgate Textiles Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       68.36,
+       96.0,
+       526.91,
+       119.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Southgate Textiles Private Limited"
+     },
+     "status": "found",
+     "value": "Southgate Textiles Private Limited"
+    },
+    "lender_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Continental Commercial Bank, Coimbatore SME Branch",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       287.99,
+       199.5,
+       526.91,
+       209.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Continental Commercial Bank, Coimbatore SME Branch"
+     },
+     "status": "found",
+     "value": "Continental Commercial Bank, Coimbatore SME Branch"
+    },
+    "meeting_date": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "03 August 2026",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       401.0,
+       123.0,
+       467.54,
+       132.5
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "03 August 2026"
+     },
+     "status": "found",
+     "value": "2026-08-03"
+    },
+    "purpose_of_borrowing": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    },
+    "resolution_date": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": true,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": true,
+     "source": null,
+     "status": "missing",
+     "value": null
+    },
+    "resolution_number": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    }
+   },
+   "identity": {
+    "name": "Southgate Textiles Private Limited"
+   },
+   "instance_key": null,
+   "instance_no": 1,
+   "page_from": 1,
+   "page_to": 1,
+   "tables": {},
+   "validation": [
+    {
+     "detail": "Required fields missing: resolution_date",
+     "fields": [
+      "resolution_date"
+     ],
+     "id": "required_present",
+     "kind": "rule",
+     "label": "Required fields present",
+     "outcome": "fail",
+     "severity": "fail",
+     "tables": []
+    },
+    {
+     "detail": "Left blank: Name:, Signature:.",
+     "fields": [],
+     "id": "signature_block_filled",
+     "kind": "rule",
+     "label": "Signature block completed",
+     "outcome": "warn",
+     "severity": "warn",
+     "tables": []
+    }
+   ]
+  }
+ ],
+ "error": null,
+ "file_id": "f0",
+ "front_matter_pages": [],
+ "grade": "A",
+ "name": "Southgate_Board_Resolution_draft.pdf",
+ "pages": [
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 1,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 314
+  }
+ ],
+ "reject": null,
+ "review_reasons": [
+  {
+   "field": "resolution_date",
+   "instance": 1,
+   "kind": "missing_required",
+   "reason": "not_found"
+  },
+  {
+   "check": "required_present",
+   "detail": "Required fields missing: resolution_date",
+   "instance": 1,
+   "kind": "failed_check"
+  }
+ ],
+ "route": {
+  "blank_pages": [],
+  "dropped_rotated_chars": 0,
+  "ocr_pages": 0,
+  "page_routes": [
+   {
+    "page": 1,
+    "route": "text"
+   }
+  ],
+  "pages": 1,
+  "route": "text",
+  "table_pages": 0
+ },
+ "run_id": "RUN-2098A1587B44",
+ "sha256": "8d5f94602f4f1b34a0d6379c2481b82a7511dc82ad57d9945a2f6899de3ed7f9",
+ "source": {
+  "kind": "pdf",
+  "pages": 1
+ },
+ "status": "processed",
+ "trace": [
+  {
+   "input_hash": "8d5f94602f4f1b34a0d6379c2481b82a7511dc82ad57d9945a2f6899de3ed7f9",
+   "output_hash": "7740dba57f556200a4a2d21e318cfd06a0998b799f17a3b94cffa8ffcdcb199a",
+   "stage": "quality_gate"
+  },
+  {
+   "input_hash": "7740dba57f556200a4a2d21e318cfd06a0998b799f17a3b94cffa8ffcdcb199a",
+   "output_hash": "9fd27b089b854a7a840b7795acff4ce3e1d2e9211b739b5ce09f837b18994072",
+   "stage": "read"
+  },
+  {
+   "input_hash": "9fd27b089b854a7a840b7795acff4ce3e1d2e9211b739b5ce09f837b18994072",
+   "output_hash": "82010eac674a47f79b986a970dd4eabfffcd51096a706261d62c4431bc53804f",
+   "stage": "route"
+  },
+  {
+   "input_hash": "82010eac674a47f79b986a970dd4eabfffcd51096a706261d62c4431bc53804f",
+   "output_hash": "1832503bee764c2983a658a5935613e6424af738e52d1aec657073c1d37420f3",
+   "stage": "classify"
+  },
+  {
+   "input_hash": "1832503bee764c2983a658a5935613e6424af738e52d1aec657073c1d37420f3",
+   "output_hash": "f3172c16a8b0187dca94aab0f3429dc7e924f87f0310196ab96ad5ed621a8ab2",
+   "stage": "instances"
+  },
+  {
+   "input_hash": "f3172c16a8b0187dca94aab0f3429dc7e924f87f0310196ab96ad5ed621a8ab2",
+   "output_hash": "84171776e1fdfb6f1784e9bdeaab89d1b370bcd28f5f3af724a022e712bf11fc",
+   "stage": "extract"
+  },
+  {
+   "input_hash": "84171776e1fdfb6f1784e9bdeaab89d1b370bcd28f5f3af724a022e712bf11fc",
+   "output_hash": "75a179e5435e74b35744891f91b39b2f384976f1dc40470b7ff0b426603b91ac",
+   "stage": "validate"
+  },
+  {
+   "input_hash": "75a179e5435e74b35744891f91b39b2f384976f1dc40470b7ff0b426603b91ac",
+   "output_hash": "607acace0f6a7468545a73bfccfa08f935859093a6021cea462476cf07872e30",
+   "stage": "score"
+  }
+ ]
+}

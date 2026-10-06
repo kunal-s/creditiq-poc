@@ -1,0 +1,1448 @@
+{
+ "classification": {
+  "candidates": [
+   {
+    "score": 1.0,
+    "type": "income_tax_return"
+   },
+   {
+    "score": 0.1,
+    "type": "audited_financial_statements"
+   },
+   {
+    "score": 0.05,
+    "type": "director_kyc"
+   }
+  ],
+  "confidence": 1.0,
+  "mixed_content": [],
+  "model_error": null,
+  "needs_review": false,
+  "reason": "signals matched: 4 supporting, margin 0.90",
+  "signals": {
+   "contrary": [],
+   "required": [
+    "income\\s+tax\\s+return\\s+acknowledgement"
+   ],
+   "supporting": [
+    "assessment\\s+year",
+    "form\\s+itr",
+    "e-filing\\s+acknowledgement",
+    "computation\\s+of\\s+total\\s+income"
+   ]
+  },
+  "tier": "signals",
+  "type": "income_tax_return"
+ },
+ "decision": "auto_accept",
+ "documents": [
+  {
+   "confidence": {
+    "composition": {
+     "document_grade": "A",
+     "failed_checks": 0,
+     "found": 3,
+     "key_fields": 3,
+     "warnings": 0
+    },
+    "decision": "auto_accept",
+    "document": 0.96,
+    "reasons": []
+   },
+   "defects": [],
+   "document_type": "income_tax_return",
+   "fields": {
+    "acknowledgement_number": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "247100320281024",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       223.27,
+       229.31,
+       294.99,
+       237.91
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "247100320281024"
+     },
+     "status": "found",
+     "value": "247100320281024"
+    },
+    "assessment_year": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "2024-25",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       223.27,
+       121.31,
+       254.82,
+       129.91
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "2024-25"
+     },
+     "status": "found",
+     "value": "2024-25"
+    },
+    "filing_date": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "28 October 2024",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       223.27,
+       341.31,
+       287.33,
+       349.91
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "28 October 2024"
+     },
+     "status": "found",
+     "value": "2024-10-28"
+    },
+    "financial_year": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "FY2024",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       313.11,
+       383.73,
+       341.82,
+       391.93
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "FY2024"
+     },
+     "status": "found",
+     "value": "FY2024"
+    },
+    "gross_total_income": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "1,18,02,986",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       476.82,
+       188.71,
+       522.24,
+       197.31
+      ],
+      "kind": "page",
+      "page": 2,
+      "range": null,
+      "sheet": null,
+      "text": "1,18,02,986"
+     },
+     "status": "found",
+     "value": 11802986
+    },
+    "pan": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "identifier",
+     "needs_review": false,
+     "raw_text": "AAHCS6612M",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       223.27,
+       157.31,
+       279.18,
+       165.91
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "AAHCS6612M"
+     },
+     "status": "found",
+     "value": "AAHCS6612M"
+    },
+    "refund_amount": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "Rs. 0",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       223.27,
+       323.31,
+       243.34,
+       331.91
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Rs. 0"
+     },
+     "status": "found",
+     "value": 0
+    },
+    "tax_paid": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "Rs. 30,68,776",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       223.27,
+       294.31,
+       276.81,
+       302.91
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Rs. 30,68,776"
+     },
+     "status": "found",
+     "value": 3068776
+    },
+    "tax_payable": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "Rs. 30,68,776",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       223.27,
+       276.31,
+       276.81,
+       284.91
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Rs. 30,68,776"
+     },
+     "status": "found",
+     "value": 3068776
+    },
+    "taxpayer_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "Southgate Textiles Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       223.27,
+       139.31,
+       353.76,
+       147.91
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Southgate Textiles Private Limited"
+     },
+     "status": "found",
+     "value": "Southgate Textiles Private Limited"
+    },
+    "total_income": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "Rs. 1,18,02,986",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       223.27,
+       258.31,
+       283.98,
+       266.91
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Rs. 1,18,02,986"
+     },
+     "status": "found",
+     "value": 11802986
+    }
+   },
+   "identity": {
+    "name": "Southgate Textiles Private Limited",
+    "pan": "AAHCS6612M"
+   },
+   "instance_key": "2024-25",
+   "instance_no": 1,
+   "page_from": 1,
+   "page_to": 2,
+   "tables": {
+    "income_computation": {
+     "columns": [
+      "particulars",
+      "amount"
+     ],
+     "confidence": 1.0,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "amount": 11802986,
+        "particulars": "Profits and gains of business or profession (as per P&L;)"
+       },
+       "raw": {
+        "amount": "1,18,02,986",
+        "particulars": "Profits and gains of business or profession (as per P&L;)"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         137.71,
+         522.24,
+         146.31
+        ],
+        "line_ids": [
+         "p2.l4"
+        ],
+        "page": 2
+       }
+      },
+      {
+       "cells": {
+        "amount": 0,
+        "particulars": "Add: Inadmissible expenses / disallowances"
+       },
+       "raw": {
+        "amount": "0",
+        "particulars": "Add: Inadmissible expenses / disallowances"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         154.71,
+         522.24,
+         163.31
+        ],
+        "line_ids": [
+         "p2.l5"
+        ],
+        "page": 2
+       }
+      },
+      {
+       "cells": {
+        "amount": 0,
+        "particulars": "Less: Deductions under Chapter VI-A"
+       },
+       "raw": {
+        "amount": "0",
+        "particulars": "Less: Deductions under Chapter VI-A"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         171.71,
+         522.24,
+         180.31
+        ],
+        "line_ids": [
+         "p2.l6"
+        ],
+        "page": 2
+       }
+      },
+      {
+       "cells": {
+        "amount": 11802986,
+        "particulars": "Gross Total Income"
+       },
+       "raw": {
+        "amount": "1,18,02,986",
+        "particulars": "Gross Total Income"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         188.71,
+         522.24,
+         197.31
+        ],
+        "line_ids": [
+         "p2.l7"
+        ],
+        "page": 2
+       }
+      },
+      {
+       "cells": {
+        "amount": 11802986,
+        "particulars": "Total Income (rounded off u/s 288A)"
+       },
+       "raw": {
+        "amount": "1,18,02,986",
+        "particulars": "Total Income (rounded off u/s 288A)"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         205.71,
+         522.24,
+         214.31
+        ],
+        "line_ids": [
+         "p2.l8"
+        ],
+        "page": 2
+       }
+      },
+      {
+       "cells": {
+        "amount": 2950746,
+        "particulars": "Income-tax at applicable rate (25% plus surcharge)"
+       },
+       "raw": {
+        "amount": "29,50,746",
+        "particulars": "Income-tax at applicable rate (25% plus surcharge)"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         222.71,
+         522.24,
+         231.31
+        ],
+        "line_ids": [
+         "p2.l9"
+        ],
+        "page": 2
+       }
+      },
+      {
+       "cells": {
+        "amount": 118030,
+        "particulars": "Add: Health and Education Cess at 4%"
+       },
+       "raw": {
+        "amount": "1,18,030",
+        "particulars": "Add: Health and Education Cess at 4%"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         239.71,
+         522.24,
+         248.31
+        ],
+        "line_ids": [
+         "p2.l10"
+        ],
+        "page": 2
+       }
+      },
+      {
+       "cells": {
+        "amount": 3068776,
+        "particulars": "Total Tax Liability"
+       },
+       "raw": {
+        "amount": "30,68,776",
+        "particulars": "Total Tax Liability"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         256.71,
+         522.24,
+         265.31
+        ],
+        "line_ids": [
+         "p2.l11"
+        ],
+        "page": 2
+       }
+      },
+      {
+       "cells": {
+        "amount": 3068776,
+        "particulars": "Less: Advance tax and TDS"
+       },
+       "raw": {
+        "amount": "30,68,776",
+        "particulars": "Less: Advance tax and TDS"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         273.71,
+         522.24,
+         282.31
+        ],
+        "line_ids": [
+         "p2.l12"
+        ],
+        "page": 2
+       }
+      },
+      {
+       "cells": {
+        "amount": 0,
+        "particulars": "Net Tax Payable / (Refundable)"
+       },
+       "raw": {
+        "amount": "0",
+        "particulars": "Net Tax Payable / (Refundable)"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         290.71,
+         522.24,
+         299.31
+        ],
+        "line_ids": [
+         "p2.l13"
+        ],
+        "page": 2
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       73.03,
+       137.71,
+       522.24,
+       299.31
+      ],
+      "page_end": 2,
+      "page_start": 2
+     },
+     "status": "found",
+     "unparsed": 0
+    }
+   },
+   "validation": [
+    {
+     "detail": "\"AAHCS6612M\" matches the PAN format",
+     "fields": [
+      "pan"
+     ],
+     "id": "format:pan",
+     "kind": "format",
+     "label": "pan format",
+     "outcome": "pass",
+     "severity": "fail",
+     "tables": []
+    },
+    {
+     "detail": "All required fields were found.",
+     "fields": [],
+     "id": "required_present",
+     "kind": "rule",
+     "label": "Required fields present",
+     "outcome": "pass",
+     "severity": "fail",
+     "tables": []
+    }
+   ]
+  },
+  {
+   "confidence": {
+    "composition": {
+     "document_grade": "A",
+     "failed_checks": 0,
+     "found": 3,
+     "key_fields": 3,
+     "warnings": 0
+    },
+    "decision": "auto_accept",
+    "document": 0.96,
+    "reasons": []
+   },
+   "defects": [],
+   "document_type": "income_tax_return",
+   "fields": {
+    "acknowledgement_number": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "247100915271025",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       223.27,
+       229.31,
+       294.99,
+       237.91
+      ],
+      "kind": "page",
+      "page": 3,
+      "range": null,
+      "sheet": null,
+      "text": "247100915271025"
+     },
+     "status": "found",
+     "value": "247100915271025"
+    },
+    "assessment_year": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "2025-26",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       223.27,
+       121.31,
+       254.82,
+       129.91
+      ],
+      "kind": "page",
+      "page": 3,
+      "range": null,
+      "sheet": null,
+      "text": "2025-26"
+     },
+     "status": "found",
+     "value": "2025-26"
+    },
+    "filing_date": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "27 October 2025",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       223.27,
+       341.31,
+       287.33,
+       349.91
+      ],
+      "kind": "page",
+      "page": 3,
+      "range": null,
+      "sheet": null,
+      "text": "27 October 2025"
+     },
+     "status": "found",
+     "value": "2025-10-27"
+    },
+    "financial_year": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "FY2025",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       313.11,
+       383.73,
+       341.82,
+       391.93
+      ],
+      "kind": "page",
+      "page": 3,
+      "range": null,
+      "sheet": null,
+      "text": "FY2025"
+     },
+     "status": "found",
+     "value": "FY2025"
+    },
+    "gross_total_income": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "1,54,90,378",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       476.82,
+       188.71,
+       522.24,
+       197.31
+      ],
+      "kind": "page",
+      "page": 4,
+      "range": null,
+      "sheet": null,
+      "text": "1,54,90,378"
+     },
+     "status": "found",
+     "value": 15490378
+    },
+    "pan": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "identifier",
+     "needs_review": false,
+     "raw_text": "AAHCS6612M",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       223.27,
+       157.31,
+       279.18,
+       165.91
+      ],
+      "kind": "page",
+      "page": 3,
+      "range": null,
+      "sheet": null,
+      "text": "AAHCS6612M"
+     },
+     "status": "found",
+     "value": "AAHCS6612M"
+    },
+    "refund_amount": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "Rs. 0",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       223.27,
+       323.31,
+       243.34,
+       331.91
+      ],
+      "kind": "page",
+      "page": 3,
+      "range": null,
+      "sheet": null,
+      "text": "Rs. 0"
+     },
+     "status": "found",
+     "value": 0
+    },
+    "tax_paid": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "Rs. 40,27,498",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       223.27,
+       294.31,
+       276.81,
+       302.91
+      ],
+      "kind": "page",
+      "page": 3,
+      "range": null,
+      "sheet": null,
+      "text": "Rs. 40,27,498"
+     },
+     "status": "found",
+     "value": 4027498
+    },
+    "tax_payable": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "Rs. 40,27,498",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       223.27,
+       276.31,
+       276.81,
+       284.91
+      ],
+      "kind": "page",
+      "page": 3,
+      "range": null,
+      "sheet": null,
+      "text": "Rs. 40,27,498"
+     },
+     "status": "found",
+     "value": 4027498
+    },
+    "taxpayer_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "Southgate Textiles Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       223.27,
+       139.31,
+       353.76,
+       147.91
+      ],
+      "kind": "page",
+      "page": 3,
+      "range": null,
+      "sheet": null,
+      "text": "Southgate Textiles Private Limited"
+     },
+     "status": "found",
+     "value": "Southgate Textiles Private Limited"
+    },
+    "total_income": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "Rs. 1,54,90,378",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       223.27,
+       258.31,
+       283.98,
+       266.91
+      ],
+      "kind": "page",
+      "page": 3,
+      "range": null,
+      "sheet": null,
+      "text": "Rs. 1,54,90,378"
+     },
+     "status": "found",
+     "value": 15490378
+    }
+   },
+   "identity": {
+    "name": "Southgate Textiles Private Limited",
+    "pan": "AAHCS6612M"
+   },
+   "instance_key": "2025-26",
+   "instance_no": 2,
+   "page_from": 3,
+   "page_to": 4,
+   "tables": {
+    "income_computation": {
+     "columns": [
+      "particulars",
+      "amount"
+     ],
+     "confidence": 1.0,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "amount": 15490378,
+        "particulars": "Profits and gains of business or profession (as per P&L;)"
+       },
+       "raw": {
+        "amount": "1,54,90,378",
+        "particulars": "Profits and gains of business or profession (as per P&L;)"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         137.71,
+         522.24,
+         146.31
+        ],
+        "line_ids": [
+         "p4.l4"
+        ],
+        "page": 4
+       }
+      },
+      {
+       "cells": {
+        "amount": 0,
+        "particulars": "Add: Inadmissible expenses / disallowances"
+       },
+       "raw": {
+        "amount": "0",
+        "particulars": "Add: Inadmissible expenses / disallowances"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         154.71,
+         522.24,
+         163.31
+        ],
+        "line_ids": [
+         "p4.l5"
+        ],
+        "page": 4
+       }
+      },
+      {
+       "cells": {
+        "amount": 0,
+        "particulars": "Less: Deductions under Chapter VI-A"
+       },
+       "raw": {
+        "amount": "0",
+        "particulars": "Less: Deductions under Chapter VI-A"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         171.71,
+         522.24,
+         180.31
+        ],
+        "line_ids": [
+         "p4.l6"
+        ],
+        "page": 4
+       }
+      },
+      {
+       "cells": {
+        "amount": 15490378,
+        "particulars": "Gross Total Income"
+       },
+       "raw": {
+        "amount": "1,54,90,378",
+        "particulars": "Gross Total Income"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         188.71,
+         522.24,
+         197.31
+        ],
+        "line_ids": [
+         "p4.l7"
+        ],
+        "page": 4
+       }
+      },
+      {
+       "cells": {
+        "amount": 15490378,
+        "particulars": "Total Income (rounded off u/s 288A)"
+       },
+       "raw": {
+        "amount": "1,54,90,378",
+        "particulars": "Total Income (rounded off u/s 288A)"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         205.71,
+         522.24,
+         214.31
+        ],
+        "line_ids": [
+         "p4.l8"
+        ],
+        "page": 4
+       }
+      },
+      {
+       "cells": {
+        "amount": 3872594,
+        "particulars": "Income-tax at applicable rate (25% plus surcharge)"
+       },
+       "raw": {
+        "amount": "38,72,594",
+        "particulars": "Income-tax at applicable rate (25% plus surcharge)"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         222.71,
+         522.24,
+         231.31
+        ],
+        "line_ids": [
+         "p4.l9"
+        ],
+        "page": 4
+       }
+      },
+      {
+       "cells": {
+        "amount": 154904,
+        "particulars": "Add: Health and Education Cess at 4%"
+       },
+       "raw": {
+        "amount": "1,54,904",
+        "particulars": "Add: Health and Education Cess at 4%"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         239.71,
+         522.24,
+         248.31
+        ],
+        "line_ids": [
+         "p4.l10"
+        ],
+        "page": 4
+       }
+      },
+      {
+       "cells": {
+        "amount": 4027498,
+        "particulars": "Total Tax Liability"
+       },
+       "raw": {
+        "amount": "40,27,498",
+        "particulars": "Total Tax Liability"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         256.71,
+         522.24,
+         265.31
+        ],
+        "line_ids": [
+         "p4.l11"
+        ],
+        "page": 4
+       }
+      },
+      {
+       "cells": {
+        "amount": 4027498,
+        "particulars": "Less: Advance tax and TDS"
+       },
+       "raw": {
+        "amount": "40,27,498",
+        "particulars": "Less: Advance tax and TDS"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         273.71,
+         522.24,
+         282.31
+        ],
+        "line_ids": [
+         "p4.l12"
+        ],
+        "page": 4
+       }
+      },
+      {
+       "cells": {
+        "amount": 0,
+        "particulars": "Net Tax Payable / (Refundable)"
+       },
+       "raw": {
+        "amount": "0",
+        "particulars": "Net Tax Payable / (Refundable)"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         290.71,
+         522.24,
+         299.31
+        ],
+        "line_ids": [
+         "p4.l13"
+        ],
+        "page": 4
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       73.03,
+       137.71,
+       522.24,
+       299.31
+      ],
+      "page_end": 4,
+      "page_start": 4
+     },
+     "status": "found",
+     "unparsed": 0
+    }
+   },
+   "validation": [
+    {
+     "detail": "\"AAHCS6612M\" matches the PAN format",
+     "fields": [
+      "pan"
+     ],
+     "id": "format:pan",
+     "kind": "format",
+     "label": "pan format",
+     "outcome": "pass",
+     "severity": "fail",
+     "tables": []
+    },
+    {
+     "detail": "All required fields were found.",
+     "fields": [],
+     "id": "required_present",
+     "kind": "rule",
+     "label": "Required fields present",
+     "outcome": "pass",
+     "severity": "fail",
+     "tables": []
+    }
+   ]
+  }
+ ],
+ "error": null,
+ "file_id": "f0",
+ "front_matter_pages": [],
+ "grade": "A",
+ "name": "Southgate_ITR_FY2024_FY2025.pdf",
+ "pages": [
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 1,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 145
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 2,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 131
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 3,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 145
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 4,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 131
+  }
+ ],
+ "reject": null,
+ "review_reasons": [],
+ "route": {
+  "blank_pages": [],
+  "dropped_rotated_chars": 0,
+  "ocr_pages": 0,
+  "page_routes": [
+   {
+    "page": 1,
+    "route": "text"
+   },
+   {
+    "page": 2,
+    "route": "text"
+   },
+   {
+    "page": 3,
+    "route": "text"
+   },
+   {
+    "page": 4,
+    "route": "text"
+   }
+  ],
+  "pages": 4,
+  "route": "text",
+  "table_pages": 0
+ },
+ "run_id": "RUN-4D52BBB0457A",
+ "sha256": "7953df2f24fa4bd861e132ab982b7a7465f2247d88325c3f3990b6c8108e7804",
+ "source": {
+  "kind": "pdf",
+  "pages": 4
+ },
+ "status": "processed",
+ "trace": [
+  {
+   "input_hash": "7953df2f24fa4bd861e132ab982b7a7465f2247d88325c3f3990b6c8108e7804",
+   "output_hash": "15d94ab80f8f9c18e274633dc91733d6334566fc7058675da348d72c5052ef2c",
+   "stage": "quality_gate"
+  },
+  {
+   "input_hash": "15d94ab80f8f9c18e274633dc91733d6334566fc7058675da348d72c5052ef2c",
+   "output_hash": "3752ea1bd03d2797f858fdc26768f7f21bf048aca4bbc0c184ff48237b409d50",
+   "stage": "read"
+  },
+  {
+   "input_hash": "3752ea1bd03d2797f858fdc26768f7f21bf048aca4bbc0c184ff48237b409d50",
+   "output_hash": "c71022c473ab2566a224d8c28c8787b77390297ab4af0923b19e2f3a0f9152e0",
+   "stage": "route"
+  },
+  {
+   "input_hash": "c71022c473ab2566a224d8c28c8787b77390297ab4af0923b19e2f3a0f9152e0",
+   "output_hash": "0892cba1d3f14598f651dfa3840b70212708f1d3649b2b84e0c6bc81ccdb223d",
+   "stage": "classify"
+  },
+  {
+   "input_hash": "0892cba1d3f14598f651dfa3840b70212708f1d3649b2b84e0c6bc81ccdb223d",
+   "output_hash": "f4cd359bddbc8acc53cb79803eb533f0e986fa314654e77e98875215f327c3c2",
+   "stage": "instances"
+  },
+  {
+   "input_hash": "f4cd359bddbc8acc53cb79803eb533f0e986fa314654e77e98875215f327c3c2",
+   "output_hash": "e8b8cc6f6caeff36a969bd7da6f16046e2170da1789899de9ea114a3ecec96ef",
+   "stage": "extract"
+  },
+  {
+   "input_hash": "e8b8cc6f6caeff36a969bd7da6f16046e2170da1789899de9ea114a3ecec96ef",
+   "output_hash": "2b688de6b4fcabbd84a88a0aad1583a433be01cb267baeae3d67201a5b90b781",
+   "stage": "validate"
+  },
+  {
+   "input_hash": "2b688de6b4fcabbd84a88a0aad1583a433be01cb267baeae3d67201a5b90b781",
+   "output_hash": "b372f765fa162e08ed457a0b51069d42329dfe1edd720f0f76a29273baf8774b",
+   "stage": "score"
+  }
+ ]
+}

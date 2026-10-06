@@ -11,7 +11,11 @@ from fastapi.testclient import TestClient
 
 from engine import db
 from engine.configstore import reader
-from tests.conftest import ANALYST, MANAGER, RM, fixture_file, make_case, run_jobs, sign_in, upload
+from engine.configstore import writer
+from engine.identifiers import build_gstin
+from tests.conftest import ANALYST, MANAGER, RM, case_files, fixture_file, make_case, run_jobs, sign_in, upload
+
+PARTIAL = [n for n, _ in case_files("partial")]
 
 
 def _case(client: TestClient, root: Path, names: list[str]) -> tuple[dict, dict, str]:
@@ -38,51 +42,51 @@ def _checklist(client, headers, case_id):
 
 
 def test_tc09_unclassified_goes_to_review_with_candidates_and_is_not_mapped(client, published_data_root):
-    rm, analyst, case_id = _case(client, published_data_root, ["partial_bundle.pdf", "scan_0412.pdf"])
+    rm, analyst, case_id = _case(client, published_data_root, PARTIAL + ["scan_0412.pdf"])
     [item] = _items(client, analyst, case_id, "type")
-    assert "Udyam registration certificate 0.41" in item["summary"]
+    assert "Company PAN 0.41" in item["summary"]
     docs = client.get(f"/api/cases/{case_id}/documents", headers=rm).json()
     unknown = next(d for d in docs if d["status"] == "unclassified")
     assert unknown["classification"]["types"] == []
-    assert [c["type_id"] for c in unknown["classification"]["candidates"]][0] == "udyam_certificate"
+    assert [c["type_id"] for c in unknown["classification"]["candidates"]][0] == "company_pan"
     # Not assigned to any checklist item, not even its top candidate's.
     checklist = _checklist(client, rm, case_id)
-    assert checklist["udyam"]["status"] == "missing"
+    assert checklist["pan_entity"]["status"] == "missing"
     assert all(unknown["id"] not in i["document_ids"] for i in checklist.values())
 
     # An assignment must come from the closed list.
     assert _decide(client, analyst, item["id"], decision="assign", value="utility_bill").status_code == 422
-    decided = _decide(client, analyst, item["id"], decision="assign", value="udyam_certificate",
-                      reason="Udyam certificate, scanned without its header")
+    decided = _decide(client, analyst, item["id"], decision="assign", value="company_pan",
+                      reason="PAN letter, scanned without its header")
     assert decided.status_code == 200 and decided.json()["decision"] == "assign"
     # Extraction re-runs for that document with the assigned type.
     assert run_jobs(published_data_root) == 1
     doc = next(d for d in client.get(f"/api/cases/{case_id}/documents", headers=rm).json() if d["id"] == unknown["id"])
-    assert doc["classification"]["types"] == ["udyam_certificate"]
+    assert doc["classification"]["types"] == ["company_pan"]
     assert doc["classification"]["exit_tier"] == "person"
     assert doc["status"] == "accepted"
     fields = client.get(f"/api/cases/{case_id}/fields?document_id={doc['id']}", headers=analyst).json()
-    assert {f["field"]: f["value"] for f in fields}["udyam_number"] == "UDYAM-MH-18-0099887"
-    assert _checklist(client, rm, case_id)["udyam"]["status"] == "satisfied"
+    assert {f["field"]: f["value"] for f in fields}["pan"] == "AAACH5678Q"
+    assert _checklist(client, rm, case_id)["pan_entity"]["status"] == "satisfied"
 
 
 def test_f17_correction_keeps_both_values(client: TestClient, published_data_root: Path):
     rm, analyst, case_id = _case(client, published_data_root, ["gst_sep_photo.pdf"])
     field_items = _items(client, analyst, case_id, "field")
     # Grade C: every key field goes to review (F-07.2).
-    assert len(field_items) == 4
-    target = next(i for i in field_items if "outward_taxable_supplies" in i["summary"])
-    assert _decide(client, analyst, target["id"], decision="correct", value=9150000).status_code == 422  # no reason
+    assert len(field_items) == 3  # the three key fields
+    target = next(i for i in field_items if "gstin" in i["summary"])
+    assert _decide(client, analyst, target["id"], decision="correct", value="27AAACH5678Q1Z9").status_code == 422  # no reason
     assert _decide(client, analyst, target["id"], decision="waive", reason="x").status_code == 422
-    done = _decide(client, analyst, target["id"], decision="correct", value=9150000, reason="Read from the portal copy")
+    done = _decide(client, analyst, target["id"], decision="correct", value="27AAACH5678Q1Z9", reason="Read from the portal copy")
     assert done.status_code == 200
     body = done.json()
     assert body["status"] == "decided" and body["decided_by"] == "ananya-krishnan" and body["reason"]
     value = next(
         f for f in client.get(f"/api/cases/{case_id}/fields", headers=analyst).json()
-        if f["field"] == "outward_taxable_supplies"
+        if f["field"] == "gstin"
     )
-    assert value["value"] == 9100000 and value["corrected_value"] == 9150000 and value["status"] == "corrected"
+    assert value["value"] == build_gstin("27", "AAACH5678Q") and value["corrected_value"] == "27AAACH5678Q1Z9" and value["status"] == "corrected"
     # Deciding twice is refused.
     assert _decide(client, analyst, target["id"], decision="confirm").status_code == 409
     # Once every value is decided, the document is accepted.
@@ -97,11 +101,11 @@ def test_f17_correction_keeps_both_values(client: TestClient, published_data_roo
     finally:
         conn.close()
     corrected = next(entry for entry in log if entry["decision"] == "correct")
-    assert corrected["system_value"] == 9100000 and corrected["corrected_value"] == 9150000
+    assert corrected["system_value"] == build_gstin("27", "AAACH5678Q") and corrected["corrected_value"] == "27AAACH5678Q1Z9"
 
 
 def test_f17_manual_entry_needs_a_different_checker(client: TestClient, published_data_root: Path):
-    rm, analyst, case_id = _case(client, published_data_root, ["partial_bundle.pdf", "itr_blurred.pdf"])
+    rm, analyst, case_id = _case(client, published_data_root, PARTIAL + ["itr_blurred.pdf"])
     manager = sign_in(client, MANAGER)
     [quality] = [i for i in _items(client, analyst, case_id, "quality") if "grade U" in i["summary"]]
     # A grade-U document is not simply confirmed.
@@ -150,27 +154,20 @@ def test_f17_waive_only_non_mandatory_items(client: TestClient, published_data_r
     assert _decide(client, analyst, quality["itr_blurred.pdf"]["id"], decision="waive").status_code == 422
 
 
-def test_f17_waiving_a_non_mandatory_exception_waives_its_item(client, published_data_root, tmp_path):
-    """A quality exception on a document serving only non-mandatory items
-    (the Udyam registration) can be waived with a reason."""
-    rm, analyst, case_id = _case(client, published_data_root, ["scan_0412.pdf"])
-    [type_item] = _items(client, analyst, case_id, "type")
-    _decide(client, analyst, type_item["id"], decision="assign", value="udyam_certificate", reason="Udyam")
-    run_jobs(published_data_root)
-    conn = db.connect(published_data_root)
-    try:
-        doc_id = conn.execute("SELECT id FROM documents WHERE case_id = ?", (case_id,)).fetchone()[0]
-        conn.execute("UPDATE documents SET status = 'in_exception', grade = 'U' WHERE id = ?", (doc_id,))
-        conn.execute(
-            "INSERT INTO review_items (id, case_id, kind, ref, summary, created_at, status, detail)"
-            " VALUES ('RV-T', ?, 'quality', ?, 'scan_0412.pdf grade U', '2026-09-29', 'open', ?)",
-            (case_id, f"document:{doc_id}", json.dumps({"document_id": doc_id, "reason_codes": ["blur"]})),
-        )
-    finally:
-        conn.close()
-    assert _decide(client, analyst, "RV-T", decision="waive", reason="MSME status confirmed on the portal").status_code == 200
-    udyam = _checklist(client, rm, case_id)["udyam"]
-    assert udyam["status"] == "waived" and "MSME status confirmed" in udyam["deficiency"]
+def test_f17_waiving_a_non_mandatory_exception_waives_its_item(client, published_data_root, monkeypatch):
+    """A quality exception on a document serving only a non-mandatory item can be waived with a reason.
+    None of the nine types' items is optional today, so this publishes a configuration in which the ITR is."""
+    authored = writer.load_authored_sections()
+    taxonomy = authored["checklist_taxonomy"].model_copy(deep=True)
+    next(i for i in taxonomy.items if i.id == "itr").blocking = False
+    monkeypatch.setattr(writer, "load_authored_sections", lambda: {**authored, "checklist_taxonomy": taxonomy})
+    writer.publish(data_root=published_data_root, author="test", note="the ITR is optional")
+    rm, analyst, case_id = _case(client, published_data_root, ["itr_blurred.pdf"])
+    [item] = [i for i in _items(client, analyst, case_id, "quality") if "grade U" in i["summary"]]
+    done = _decide(client, analyst, item["id"], decision="waive", reason="Income tax return not needed for this limit")
+    assert done.status_code == 200, done.text
+    itr = _checklist(client, rm, case_id)["itr"]
+    assert itr["status"] == "waived" and "not needed for this limit" in itr["deficiency"]
 
 
 def test_f17_decisions_never_change_configuration(client: TestClient, published_data_root: Path):

@@ -1,0 +1,375 @@
+{
+ "classification": {
+  "candidates": [
+   {
+    "score": 1.0,
+    "type": "certificate_of_incorporation"
+   },
+   {
+    "score": 0.0333,
+    "type": "bank_statement"
+   },
+   {
+    "score": 0.0,
+    "type": "audited_financial_statements"
+   }
+  ],
+  "confidence": 1.0,
+  "mixed_content": [],
+  "model_error": null,
+  "needs_review": false,
+  "reason": "signals matched: 4 supporting, margin 0.97",
+  "signals": {
+   "contrary": [],
+   "required": [
+    "certificate\\s+of\\s+incorporation"
+   ],
+   "supporting": [
+    "registrar\\s+of\\s+companies",
+    "corporate\\s+identity\\s+number",
+    "\\b[LU]\\d{5}[A-Z]{2}\\d{4}[A-Z]{3}\\d{6}\\b",
+    "companies\\s+act"
+   ]
+  },
+  "tier": "signals",
+  "type": "certificate_of_incorporation"
+ },
+ "decision": "auto_accept",
+ "documents": [
+  {
+   "confidence": {
+    "composition": {
+     "document_grade": "A",
+     "failed_checks": 0,
+     "found": 3,
+     "key_fields": 3,
+     "warnings": 0
+    },
+    "decision": "auto_accept",
+    "document": 0.96,
+    "reasons": []
+   },
+   "defects": [],
+   "document_type": "certificate_of_incorporation",
+   "fields": {
+    "cin": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "identifier",
+     "needs_review": false,
+     "raw_text": "U17291TZ2016PTC027431",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       279.03,
+       246.6,
+       398.37,
+       256.1
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "U17291TZ2016PTC027431"
+     },
+     "status": "found",
+     "value": "U17291TZ2016PTC027431"
+    },
+    "company_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "Southgate Textiles Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       223.27,
+       310.41,
+       353.76,
+       319.01
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Southgate Textiles Private Limited"
+     },
+     "status": "found",
+     "value": "Southgate Textiles Private Limited"
+    },
+    "company_type": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "Company limited by shares",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       223.27,
+       411.41,
+       326.98,
+       420.01
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Company limited by shares"
+     },
+     "status": "found",
+     "value": "Company limited by shares"
+    },
+    "date_of_incorporation": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "18 March 2016",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       223.27,
+       375.41,
+       280.63,
+       384.01
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "18 March 2016"
+     },
+     "status": "found",
+     "value": "2016-03-18"
+    },
+    "registered_address": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "Plot 47, SIDCO Industrial Estate, Kurichi, Coimbatore 641021, Tamil Nadu",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       223.27,
+       393.41,
+       506.22,
+       402.01
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Plot 47, SIDCO Industrial Estate, Kurichi, Coimbatore 641021, Tamil Nadu"
+     },
+     "status": "found",
+     "value": "Plot 47, SIDCO Industrial Estate, Kurichi, Coimbatore 641021, Tamil Nadu"
+    },
+    "roc": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Registrar of Companies, Coimbatore, Tamil Nadu",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       114.86,
+       107.73,
+       294.4,
+       115.93
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Registrar of Companies, Coimbatore, Tamil Nadu"
+     },
+     "status": "found",
+     "value": "Registrar of Companies, Coimbatore, Tamil Nadu"
+    }
+   },
+   "identity": {
+    "cin": "U17291TZ2016PTC027431",
+    "name": "Southgate Textiles Private Limited"
+   },
+   "instance_key": null,
+   "instance_no": 1,
+   "page_from": 1,
+   "page_to": 1,
+   "tables": {},
+   "validation": [
+    {
+     "detail": "\"U17291TZ2016PTC027431\" matches the CIN format",
+     "fields": [
+      "cin"
+     ],
+     "id": "format:cin",
+     "kind": "format",
+     "label": "cin format",
+     "outcome": "pass",
+     "severity": "fail",
+     "tables": []
+    },
+    {
+     "detail": "All required fields were found.",
+     "fields": [],
+     "id": "required_present",
+     "kind": "rule",
+     "label": "Required fields present",
+     "outcome": "pass",
+     "severity": "fail",
+     "tables": []
+    },
+    {
+     "detail": "The year in the CIN (2016) matches the date of incorporation (2016).",
+     "fields": [
+      "cin",
+      "date_of_incorporation"
+     ],
+     "id": "cin_year_matches_incorporation",
+     "kind": "rule",
+     "label": "CIN year matches date of incorporation",
+     "outcome": "pass",
+     "severity": "warn",
+     "tables": []
+    }
+   ]
+  }
+ ],
+ "error": null,
+ "file_id": "f0",
+ "front_matter_pages": [],
+ "grade": "A",
+ "name": "Southgate_Certificate_of_Incorporation.pdf",
+ "pages": [
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 1,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 212
+  }
+ ],
+ "reject": null,
+ "review_reasons": [],
+ "route": {
+  "blank_pages": [],
+  "dropped_rotated_chars": 0,
+  "ocr_pages": 0,
+  "page_routes": [
+   {
+    "page": 1,
+    "route": "text"
+   }
+  ],
+  "pages": 1,
+  "route": "text",
+  "table_pages": 0
+ },
+ "run_id": "RUN-FE63972E6A39",
+ "sha256": "0e7cecd5def756e50fa3e56d16b0d910ca6d901804c03365d75872c511b8cf2a",
+ "source": {
+  "kind": "pdf",
+  "pages": 1
+ },
+ "status": "processed",
+ "trace": [
+  {
+   "input_hash": "0e7cecd5def756e50fa3e56d16b0d910ca6d901804c03365d75872c511b8cf2a",
+   "output_hash": "7740dba57f556200a4a2d21e318cfd06a0998b799f17a3b94cffa8ffcdcb199a",
+   "stage": "quality_gate"
+  },
+  {
+   "input_hash": "7740dba57f556200a4a2d21e318cfd06a0998b799f17a3b94cffa8ffcdcb199a",
+   "output_hash": "ac8c66307cbfed567ecdf8fcdfc01e1b8d30075d37e8452c2b7635e13124fa82",
+   "stage": "read"
+  },
+  {
+   "input_hash": "ac8c66307cbfed567ecdf8fcdfc01e1b8d30075d37e8452c2b7635e13124fa82",
+   "output_hash": "82010eac674a47f79b986a970dd4eabfffcd51096a706261d62c4431bc53804f",
+   "stage": "route"
+  },
+  {
+   "input_hash": "82010eac674a47f79b986a970dd4eabfffcd51096a706261d62c4431bc53804f",
+   "output_hash": "029b2c07a70d96a177b6db889eb53d1afed4138e600daec07d0f9b5f2ee8b2a4",
+   "stage": "classify"
+  },
+  {
+   "input_hash": "029b2c07a70d96a177b6db889eb53d1afed4138e600daec07d0f9b5f2ee8b2a4",
+   "output_hash": "f3172c16a8b0187dca94aab0f3429dc7e924f87f0310196ab96ad5ed621a8ab2",
+   "stage": "instances"
+  },
+  {
+   "input_hash": "f3172c16a8b0187dca94aab0f3429dc7e924f87f0310196ab96ad5ed621a8ab2",
+   "output_hash": "094a919d69ebbc276a2b52606e2fbf5ed41bd2603981c346c8133094823c39df",
+   "stage": "extract"
+  },
+  {
+   "input_hash": "094a919d69ebbc276a2b52606e2fbf5ed41bd2603981c346c8133094823c39df",
+   "output_hash": "5e550502f46912ded6bbf6264c3bae819f0108b1bf25800d6ad1a7c978bd7a40",
+   "stage": "validate"
+  },
+  {
+   "input_hash": "5e550502f46912ded6bbf6264c3bae819f0108b1bf25800d6ad1a7c978bd7a40",
+   "output_hash": "2b8465518a0fbc0c84ce9d6a1599376e2674fa9929afb17123ed4c00bf7698ed",
+   "stage": "score"
+  }
+ ]
+}

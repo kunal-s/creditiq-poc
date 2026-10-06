@@ -12,9 +12,9 @@ endobj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R >>
 endobj
 5 0 obj
-<< /Length 97 >>
+<< /Length 137 >>
 stream
-BT /F1 11 Tf 50 800 Td 15 TL (FORM GSTR-3B) ' (GSTIN 27AAACH5678Q1ZS) ' (Tax period 2025-09) ' ET
+BT /F1 11 Tf 50 800 Td 15 TL (FORM GSTR-3B) ' (GSTIN 27AAACH5678Q1ZS) ' (Tax period September 2025) ' (3.1 Outward taxable supplies) ' ET
 endstream
 endobj
 xref
@@ -28,5 +28,5 @@ xref
 trailer
 << /Size 6 /Root 1 0 R >>
 startxref
-458
+499
 %%EOF

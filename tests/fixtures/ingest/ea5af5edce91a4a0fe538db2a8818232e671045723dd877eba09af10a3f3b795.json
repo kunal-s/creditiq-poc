@@ -1,0 +1,305 @@
+{
+ "classification": {
+  "candidates": [
+   {
+    "score": 0.95,
+    "type": "gstr_3b"
+   }
+  ],
+  "confidence": 0.95,
+  "mixed_content": [],
+  "model_error": null,
+  "needs_review": false,
+  "reason": null,
+  "signals": {
+   "contrary": [],
+   "required": [
+    "fixture"
+   ],
+   "supporting": []
+  },
+  "tier": "signals",
+  "type": "gstr_3b"
+ },
+ "decision": "auto_accept",
+ "documents": [
+  {
+   "confidence": {
+    "composition": {},
+    "decision": "auto_accept",
+    "document": 0.96,
+    "reasons": []
+   },
+   "defects": [],
+   "document_type": "gstr_3b",
+   "fields": {
+    "filing_date": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "2025-09-20",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "2025-09-20"
+     },
+     "status": "found",
+     "value": "2025-09-20"
+    },
+    "gstin": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 0.9,
+      "page_grade": 0.5,
+      "reading_trust": 0.4,
+      "validation": 1.0
+     },
+     "confidence": 0.55,
+     "key_field": true,
+     "method": "identifier",
+     "needs_review": true,
+     "raw_text": "27AAACH5678Q1ZS",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "27AAACH5678Q1ZS"
+     },
+     "status": "found",
+     "value": "27AAACH5678Q1ZS"
+    },
+    "legal_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 0.9,
+      "page_grade": 0.5,
+      "reading_trust": 0.4,
+      "validation": 1.0
+     },
+     "confidence": 0.57,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": true,
+     "raw_text": "Heronbay Polymers Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Heronbay Polymers Private Limited"
+     },
+     "status": "found",
+     "value": "Heronbay Polymers Private Limited"
+    },
+    "return_status": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Filed",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Filed"
+     },
+     "status": "found",
+     "value": "Filed"
+    },
+    "tax_period": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 0.9,
+      "page_grade": 0.5,
+      "reading_trust": 0.4,
+      "validation": 1.0
+     },
+     "confidence": 0.58,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": true,
+     "raw_text": "September 2025",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "September 2025"
+     },
+     "status": "found",
+     "value": "September 2025"
+    },
+    "trade_name": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    }
+   },
+   "identity": {
+    "gstin": "27AAACH5678Q1ZS",
+    "name": "Heronbay Polymers Private Limited"
+   },
+   "instance_key": "September 2025",
+   "instance_no": 1,
+   "page_from": 1,
+   "page_to": 1,
+   "tables": {
+    "outward_supplies": {
+     "columns": [
+      "description",
+      "taxable_value",
+      "igst",
+      "cgst",
+      "sgst"
+     ],
+     "confidence": 0.96,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "cgst": 882000,
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": 0,
+        "sgst": 882000,
+        "taxable_value": 9800000
+       },
+       "raw": {
+        "cgst": "882000",
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": "0",
+        "sgst": "882000",
+        "taxable_value": "9800000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         100.0,
+         300.0,
+         112.0
+        ],
+        "line_ids": [
+         "p1.l1"
+        ],
+        "page": 1
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       545.0,
+       115.0
+      ],
+      "page_end": 1,
+      "page_start": 1
+     },
+     "status": "found",
+     "unparsed": 0
+    }
+   },
+   "validation": []
+  }
+ ],
+ "error": null,
+ "file_id": "fixture",
+ "front_matter_pages": [],
+ "grade": "A",
+ "name": "gst_sep_photo.pdf",
+ "pages": [
+  {
+   "blank": false,
+   "grade": "C",
+   "height": 842.0,
+   "ocr_conf": null,
+   "page": 1,
+   "reading_trust": 0.4,
+   "reasons": [
+    "blur"
+   ],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.0,
+   "words": 40
+  }
+ ],
+ "reject": null,
+ "review_reasons": [],
+ "route": {},
+ "run_id": "RUN-FIXTURE",
+ "sha256": "ea5af5edce91a4a0fe538db2a8818232e671045723dd877eba09af10a3f3b795",
+ "source": {
+  "kind": "pdf",
+  "pages": 1
+ },
+ "status": "processed",
+ "trace": []
+}

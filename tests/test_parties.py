@@ -4,7 +4,9 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from tests.conftest import ANALYST, RM, fixture_file, make_case, run_jobs, sign_in, upload
+from tests.conftest import ANALYST, RM, case_files, fixture_file, make_case, run_jobs, sign_in, upload
+
+PARTIAL = [n for n, _ in case_files("partial")]
 
 
 def _case(client: TestClient, root: Path, names: list[str]) -> tuple[dict, str]:
@@ -23,7 +25,7 @@ def _doc_of(client, headers, case_id, file_name):
 
 
 def test_tc07_balance_sheet_named_as_bank_statement_is_classified_and_reported(client, published_data_root):
-    rm, case_id = _case(client, published_data_root, ["partial_bundle.pdf", "bank statement apr-mar.pdf"])
+    rm, case_id = _case(client, published_data_root, PARTIAL + ["bank statement apr-mar.pdf"])
     doc = _doc_of(client, rm, case_id, "bank statement apr-mar.pdf")
     # Classified by content, never by the name (F-09.1)...
     assert doc["classification"]["types"] == ["audited_financial_statements"]
@@ -37,14 +39,13 @@ def test_tc07_balance_sheet_named_as_bank_statement_is_classified_and_reported(c
     assert doc["id"] in items["fs_fy_minus2"]["document_ids"]
     assert doc["id"] not in items["bank_statements"]["document_ids"]
     # A file whose name agrees with its content is not flagged.
-    bundle = _doc_of(client, rm, case_id, "partial_bundle.pdf")
-    assert bundle["label_mismatch"] is False
+    assert _doc_of(client, rm, case_id, "heronbay audited fy2026.pdf")["label_mismatch"] is False
 
 
 def test_tc08_swapped_kyc_is_reattributed_and_flagged(client: TestClient, published_data_root: Path):
-    rm, case_id = _case(client, published_data_root, ["partial_bundle.pdf", "Tarun Velankar PAN.pdf"])
+    rm, case_id = _case(client, published_data_root, PARTIAL + ["Tarun Velankar PAN.pdf"])
     parties = {p["name"]: p for p in client.get(f"/api/cases/{case_id}/parties", headers=rm).json()}
-    assert parties["Tarun Velankar"]["role"] == "director" and parties["Tarun Velankar"]["din"] == "01234567"
+    assert parties["Tarun Velankar"]["role"] == "director"
     assert parties["Ishita Barve"]["source"].startswith("document:")
     swapped = _doc_of(client, rm, case_id, "Tarun Velankar PAN.pdf")
     # Filed under the person it belongs to, not the one the label names.
@@ -61,7 +62,7 @@ def test_tc08_swapped_kyc_is_reattributed_and_flagged(client: TestClient, publis
 
 
 def test_tc08_kyc_matching_no_party_may_not_belong(client: TestClient, published_data_root: Path):
-    rm, case_id = _case(client, published_data_root, ["partial_bundle.pdf", "Sunil Karve PAN.pdf"])
+    rm, case_id = _case(client, published_data_root, PARTIAL + ["Sunil Karve PAN.pdf"])
     stranger = _doc_of(client, rm, case_id, "Sunil Karve PAN.pdf")
     assert stranger["party_id"] is None
     analyst = sign_in(client, ANALYST)
@@ -90,3 +91,11 @@ def test_f10_parties_endpoint_permissions(client: TestClient, published_data_roo
     assert client.get(f"/api/cases/{case_id}/parties", headers=sign_in(client, RM)).status_code == 404
     parties = client.get(f"/api/cases/{case_id}/parties", headers=analyst).json()
     assert [p["role"] for p in parties] == ["borrower"]
+
+
+def test_f10_a_directors_din_from_the_memorandum_joins_the_party(client: TestClient, published_data_root: Path):
+    rm, case_id = _case(client, published_data_root, PARTIAL + ["kestrel memorandum and articles.pdf"])
+    parties = {p["name"]: p for p in client.get(f"/api/cases/{case_id}/parties", headers=rm).json()}
+    # The resolution names the directors; the memorandum's list adds each one's DIN, and the two are one party.
+    assert len([p for p in parties.values() if p["role"] != "borrower"]) == 2
+    assert parties["Tarun Velankar"]["din"] == "01234567" and parties["Ishita Barve"]["din"] == "07654321"

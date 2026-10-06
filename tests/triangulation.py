@@ -18,8 +18,11 @@ def _flatten(fields: dict) -> dict[str, object]:
     for name, value in fields.items():
         if isinstance(value, list):
             for i, row in enumerate(value):
-                for col, v in row.items():
-                    out[f"{name}[{i}].{col}"] = v
+                if isinstance(row, dict):
+                    for col, v in row.items():
+                        out[f"{name}[{i}].{col}"] = v
+                else:
+                    out[f"{name}[{i}]"] = row
         else:
             out[name] = value
     return out
@@ -80,3 +83,42 @@ def months(start: tuple[int, int], count: int) -> list[str]:
         if m == 13:
             y, m = y + 1, 1
     return out
+
+
+# --- The nine document types, as the service reads them ---
+
+
+def bank(root: Path, case_id: str, transactions: list[dict], *, last4: str = "1234", bank_name: str = "Lotuscrest Bank",
+         start: str = "2025-04-01", end: str = "2026-03-31", holder: str = "Kestrel Tools Pvt Ltd") -> str:
+    """A bank statement; each transaction has date, description and debit or credit."""
+    return add_doc(root, case_id, "bank_statement", {
+        "account_holder_name": holder, "account_number": f"90100000{last4}", "bank_name": bank_name,
+        "statement_period_start": start, "statement_period_end": end, "transactions": transactions,
+    })
+
+
+def gstr(root: Path, case_id: str, period: str, taxable: int, *, gstin: str = "27AAACK1234F1Z0") -> str:
+    """One GSTR-3B; `period` as printed, "April 2025"."""
+    return add_doc(root, case_id, "gstr_3b", {
+        "gstin": gstin, "legal_name": "Kestrel Tools Private Limited", "tax_period": period,
+        "outward_supplies": [{"description": "(a) Outward taxable supplies", "taxable_value": taxable}],
+    })
+
+
+def audited(root: Path, case_id: str, year_end: str = "2026-03-31", *, scale: float = 1.0, set_rows: dict[str, int | None] | None = None,
+            page: int = 1, **fields) -> str:
+    """Audited statements with the balance sheet and profit and loss rows as printed. `scale` scales every
+    figure; `set_rows` replaces a printed row's current-year figure by its label (None: the row is not printed)."""
+    from tests.fixtures.build_fixtures import statement_tables
+
+    tables = statement_tables(year_end, scale=scale)
+    year = int(year_end[:4])
+    doc = {"company_name": "Kestrel Tools Private Limited", "financial_year": f"FY{year} (ended 31 March {year})"}
+    for name, t in tables.items():
+        rows = [dict(r["cells"]) for r in t["rows"]]
+        for label, value in (set_rows or {}).items():
+            for r in rows:
+                if r["particulars"] == label:
+                    r["current_period"] = value
+        doc[name] = rows
+    return add_doc(root, case_id, "audited_financial_statements", {**doc, **fields}, page=page)

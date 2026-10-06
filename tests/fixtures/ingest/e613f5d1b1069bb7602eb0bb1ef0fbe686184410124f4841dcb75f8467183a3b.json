@@ -1,0 +1,3141 @@
+{
+ "classification": {
+  "candidates": [
+   {
+    "score": 0.95,
+    "type": "gstr_3b"
+   }
+  ],
+  "confidence": 0.95,
+  "mixed_content": [],
+  "model_error": null,
+  "needs_review": false,
+  "reason": null,
+  "signals": {
+   "contrary": [],
+   "required": [
+    "fixture"
+   ],
+   "supporting": []
+  },
+  "tier": "signals",
+  "type": "gstr_3b"
+ },
+ "decision": "auto_accept",
+ "documents": [
+  {
+   "confidence": {
+    "composition": {},
+    "decision": "auto_accept",
+    "document": 0.96,
+    "reasons": []
+   },
+   "defects": [],
+   "document_type": "gstr_3b",
+   "fields": {
+    "filing_date": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "2025-09-20",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "2025-09-20"
+     },
+     "status": "found",
+     "value": "2025-09-20"
+    },
+    "gstin": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "identifier",
+     "needs_review": false,
+     "raw_text": "27AAACK1234F1Z0",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "27AAACK1234F1Z0"
+     },
+     "status": "found",
+     "value": "27AAACK1234F1Z0"
+    },
+    "legal_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Kestrel Fabricators Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Kestrel Fabricators Private Limited"
+     },
+     "status": "found",
+     "value": "Kestrel Fabricators Private Limited"
+    },
+    "return_status": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Filed",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Filed"
+     },
+     "status": "found",
+     "value": "Filed"
+    },
+    "tax_period": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "September 2025",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "September 2025"
+     },
+     "status": "found",
+     "value": "September 2025"
+    },
+    "trade_name": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    }
+   },
+   "identity": {
+    "gstin": "27AAACK1234F1Z0",
+    "name": "Kestrel Fabricators Private Limited"
+   },
+   "instance_key": "September 2025",
+   "instance_no": 1,
+   "page_from": 1,
+   "page_to": 1,
+   "tables": {
+    "outward_supplies": {
+     "columns": [
+      "description",
+      "taxable_value",
+      "igst",
+      "cgst",
+      "sgst"
+     ],
+     "confidence": 0.96,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "cgst": 882000,
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": 0,
+        "sgst": 882000,
+        "taxable_value": 9800000
+       },
+       "raw": {
+        "cgst": "882000",
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": "0",
+        "sgst": "882000",
+        "taxable_value": "9800000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         100.0,
+         300.0,
+         112.0
+        ],
+        "line_ids": [
+         "p1.l1"
+        ],
+        "page": 1
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       545.0,
+       115.0
+      ],
+      "page_end": 1,
+      "page_start": 1
+     },
+     "status": "found",
+     "unparsed": 0
+    }
+   },
+   "validation": []
+  },
+  {
+   "confidence": {
+    "composition": {},
+    "decision": "auto_accept",
+    "document": 0.96,
+    "reasons": []
+   },
+   "defects": [],
+   "document_type": "gstr_3b",
+   "fields": {
+    "filing_date": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "2025-10-20",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 2,
+      "range": null,
+      "sheet": null,
+      "text": "2025-10-20"
+     },
+     "status": "found",
+     "value": "2025-10-20"
+    },
+    "gstin": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "identifier",
+     "needs_review": false,
+     "raw_text": "27AAACK1234F1Z0",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 2,
+      "range": null,
+      "sheet": null,
+      "text": "27AAACK1234F1Z0"
+     },
+     "status": "found",
+     "value": "27AAACK1234F1Z0"
+    },
+    "legal_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Kestrel Fabricators Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 2,
+      "range": null,
+      "sheet": null,
+      "text": "Kestrel Fabricators Private Limited"
+     },
+     "status": "found",
+     "value": "Kestrel Fabricators Private Limited"
+    },
+    "return_status": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Filed",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 2,
+      "range": null,
+      "sheet": null,
+      "text": "Filed"
+     },
+     "status": "found",
+     "value": "Filed"
+    },
+    "tax_period": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "October 2025",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 2,
+      "range": null,
+      "sheet": null,
+      "text": "October 2025"
+     },
+     "status": "found",
+     "value": "October 2025"
+    },
+    "trade_name": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    }
+   },
+   "identity": {
+    "gstin": "27AAACK1234F1Z0",
+    "name": "Kestrel Fabricators Private Limited"
+   },
+   "instance_key": "October 2025",
+   "instance_no": 2,
+   "page_from": 2,
+   "page_to": 2,
+   "tables": {
+    "outward_supplies": {
+     "columns": [
+      "description",
+      "taxable_value",
+      "igst",
+      "cgst",
+      "sgst"
+     ],
+     "confidence": 0.96,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "cgst": 882000,
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": 0,
+        "sgst": 882000,
+        "taxable_value": 9800000
+       },
+       "raw": {
+        "cgst": "882000",
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": "0",
+        "sgst": "882000",
+        "taxable_value": "9800000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         100.0,
+         300.0,
+         112.0
+        ],
+        "line_ids": [
+         "p1.l1"
+        ],
+        "page": 2
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       545.0,
+       115.0
+      ],
+      "page_end": 2,
+      "page_start": 2
+     },
+     "status": "found",
+     "unparsed": 0
+    }
+   },
+   "validation": []
+  },
+  {
+   "confidence": {
+    "composition": {},
+    "decision": "auto_accept",
+    "document": 0.96,
+    "reasons": []
+   },
+   "defects": [],
+   "document_type": "gstr_3b",
+   "fields": {
+    "filing_date": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "2025-11-20",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 3,
+      "range": null,
+      "sheet": null,
+      "text": "2025-11-20"
+     },
+     "status": "found",
+     "value": "2025-11-20"
+    },
+    "gstin": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "identifier",
+     "needs_review": false,
+     "raw_text": "27AAACK1234F1Z0",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 3,
+      "range": null,
+      "sheet": null,
+      "text": "27AAACK1234F1Z0"
+     },
+     "status": "found",
+     "value": "27AAACK1234F1Z0"
+    },
+    "legal_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Kestrel Fabricators Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 3,
+      "range": null,
+      "sheet": null,
+      "text": "Kestrel Fabricators Private Limited"
+     },
+     "status": "found",
+     "value": "Kestrel Fabricators Private Limited"
+    },
+    "return_status": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Filed",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 3,
+      "range": null,
+      "sheet": null,
+      "text": "Filed"
+     },
+     "status": "found",
+     "value": "Filed"
+    },
+    "tax_period": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "November 2025",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 3,
+      "range": null,
+      "sheet": null,
+      "text": "November 2025"
+     },
+     "status": "found",
+     "value": "November 2025"
+    },
+    "trade_name": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    }
+   },
+   "identity": {
+    "gstin": "27AAACK1234F1Z0",
+    "name": "Kestrel Fabricators Private Limited"
+   },
+   "instance_key": "November 2025",
+   "instance_no": 3,
+   "page_from": 3,
+   "page_to": 3,
+   "tables": {
+    "outward_supplies": {
+     "columns": [
+      "description",
+      "taxable_value",
+      "igst",
+      "cgst",
+      "sgst"
+     ],
+     "confidence": 0.96,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "cgst": 882000,
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": 0,
+        "sgst": 882000,
+        "taxable_value": 9800000
+       },
+       "raw": {
+        "cgst": "882000",
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": "0",
+        "sgst": "882000",
+        "taxable_value": "9800000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         100.0,
+         300.0,
+         112.0
+        ],
+        "line_ids": [
+         "p1.l1"
+        ],
+        "page": 3
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       545.0,
+       115.0
+      ],
+      "page_end": 3,
+      "page_start": 3
+     },
+     "status": "found",
+     "unparsed": 0
+    }
+   },
+   "validation": []
+  },
+  {
+   "confidence": {
+    "composition": {},
+    "decision": "auto_accept",
+    "document": 0.96,
+    "reasons": []
+   },
+   "defects": [],
+   "document_type": "gstr_3b",
+   "fields": {
+    "filing_date": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "2025-12-20",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 4,
+      "range": null,
+      "sheet": null,
+      "text": "2025-12-20"
+     },
+     "status": "found",
+     "value": "2025-12-20"
+    },
+    "gstin": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "identifier",
+     "needs_review": false,
+     "raw_text": "27AAACK1234F1Z0",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 4,
+      "range": null,
+      "sheet": null,
+      "text": "27AAACK1234F1Z0"
+     },
+     "status": "found",
+     "value": "27AAACK1234F1Z0"
+    },
+    "legal_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Kestrel Fabricators Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 4,
+      "range": null,
+      "sheet": null,
+      "text": "Kestrel Fabricators Private Limited"
+     },
+     "status": "found",
+     "value": "Kestrel Fabricators Private Limited"
+    },
+    "return_status": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Filed",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 4,
+      "range": null,
+      "sheet": null,
+      "text": "Filed"
+     },
+     "status": "found",
+     "value": "Filed"
+    },
+    "tax_period": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "December 2025",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 4,
+      "range": null,
+      "sheet": null,
+      "text": "December 2025"
+     },
+     "status": "found",
+     "value": "December 2025"
+    },
+    "trade_name": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    }
+   },
+   "identity": {
+    "gstin": "27AAACK1234F1Z0",
+    "name": "Kestrel Fabricators Private Limited"
+   },
+   "instance_key": "December 2025",
+   "instance_no": 4,
+   "page_from": 4,
+   "page_to": 4,
+   "tables": {
+    "outward_supplies": {
+     "columns": [
+      "description",
+      "taxable_value",
+      "igst",
+      "cgst",
+      "sgst"
+     ],
+     "confidence": 0.96,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "cgst": 882000,
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": 0,
+        "sgst": 882000,
+        "taxable_value": 9800000
+       },
+       "raw": {
+        "cgst": "882000",
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": "0",
+        "sgst": "882000",
+        "taxable_value": "9800000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         100.0,
+         300.0,
+         112.0
+        ],
+        "line_ids": [
+         "p1.l1"
+        ],
+        "page": 4
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       545.0,
+       115.0
+      ],
+      "page_end": 4,
+      "page_start": 4
+     },
+     "status": "found",
+     "unparsed": 0
+    }
+   },
+   "validation": []
+  },
+  {
+   "confidence": {
+    "composition": {},
+    "decision": "auto_accept",
+    "document": 0.96,
+    "reasons": []
+   },
+   "defects": [],
+   "document_type": "gstr_3b",
+   "fields": {
+    "filing_date": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "2026-01-20",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 5,
+      "range": null,
+      "sheet": null,
+      "text": "2026-01-20"
+     },
+     "status": "found",
+     "value": "2026-01-20"
+    },
+    "gstin": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "identifier",
+     "needs_review": false,
+     "raw_text": "27AAACK1234F1Z0",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 5,
+      "range": null,
+      "sheet": null,
+      "text": "27AAACK1234F1Z0"
+     },
+     "status": "found",
+     "value": "27AAACK1234F1Z0"
+    },
+    "legal_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Kestrel Fabricators Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 5,
+      "range": null,
+      "sheet": null,
+      "text": "Kestrel Fabricators Private Limited"
+     },
+     "status": "found",
+     "value": "Kestrel Fabricators Private Limited"
+    },
+    "return_status": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Filed",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 5,
+      "range": null,
+      "sheet": null,
+      "text": "Filed"
+     },
+     "status": "found",
+     "value": "Filed"
+    },
+    "tax_period": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "January 2026",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 5,
+      "range": null,
+      "sheet": null,
+      "text": "January 2026"
+     },
+     "status": "found",
+     "value": "January 2026"
+    },
+    "trade_name": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    }
+   },
+   "identity": {
+    "gstin": "27AAACK1234F1Z0",
+    "name": "Kestrel Fabricators Private Limited"
+   },
+   "instance_key": "January 2026",
+   "instance_no": 5,
+   "page_from": 5,
+   "page_to": 5,
+   "tables": {
+    "outward_supplies": {
+     "columns": [
+      "description",
+      "taxable_value",
+      "igst",
+      "cgst",
+      "sgst"
+     ],
+     "confidence": 0.96,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "cgst": 882000,
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": 0,
+        "sgst": 882000,
+        "taxable_value": 9800000
+       },
+       "raw": {
+        "cgst": "882000",
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": "0",
+        "sgst": "882000",
+        "taxable_value": "9800000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         100.0,
+         300.0,
+         112.0
+        ],
+        "line_ids": [
+         "p1.l1"
+        ],
+        "page": 5
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       545.0,
+       115.0
+      ],
+      "page_end": 5,
+      "page_start": 5
+     },
+     "status": "found",
+     "unparsed": 0
+    }
+   },
+   "validation": []
+  },
+  {
+   "confidence": {
+    "composition": {},
+    "decision": "auto_accept",
+    "document": 0.96,
+    "reasons": []
+   },
+   "defects": [],
+   "document_type": "gstr_3b",
+   "fields": {
+    "filing_date": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "2026-02-20",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 6,
+      "range": null,
+      "sheet": null,
+      "text": "2026-02-20"
+     },
+     "status": "found",
+     "value": "2026-02-20"
+    },
+    "gstin": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "identifier",
+     "needs_review": false,
+     "raw_text": "27AAACK1234F1Z0",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 6,
+      "range": null,
+      "sheet": null,
+      "text": "27AAACK1234F1Z0"
+     },
+     "status": "found",
+     "value": "27AAACK1234F1Z0"
+    },
+    "legal_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Kestrel Fabricators Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 6,
+      "range": null,
+      "sheet": null,
+      "text": "Kestrel Fabricators Private Limited"
+     },
+     "status": "found",
+     "value": "Kestrel Fabricators Private Limited"
+    },
+    "return_status": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Filed",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 6,
+      "range": null,
+      "sheet": null,
+      "text": "Filed"
+     },
+     "status": "found",
+     "value": "Filed"
+    },
+    "tax_period": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "February 2026",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 6,
+      "range": null,
+      "sheet": null,
+      "text": "February 2026"
+     },
+     "status": "found",
+     "value": "February 2026"
+    },
+    "trade_name": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    }
+   },
+   "identity": {
+    "gstin": "27AAACK1234F1Z0",
+    "name": "Kestrel Fabricators Private Limited"
+   },
+   "instance_key": "February 2026",
+   "instance_no": 6,
+   "page_from": 6,
+   "page_to": 6,
+   "tables": {
+    "outward_supplies": {
+     "columns": [
+      "description",
+      "taxable_value",
+      "igst",
+      "cgst",
+      "sgst"
+     ],
+     "confidence": 0.96,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "cgst": 882000,
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": 0,
+        "sgst": 882000,
+        "taxable_value": 9800000
+       },
+       "raw": {
+        "cgst": "882000",
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": "0",
+        "sgst": "882000",
+        "taxable_value": "9800000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         100.0,
+         300.0,
+         112.0
+        ],
+        "line_ids": [
+         "p1.l1"
+        ],
+        "page": 6
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       545.0,
+       115.0
+      ],
+      "page_end": 6,
+      "page_start": 6
+     },
+     "status": "found",
+     "unparsed": 0
+    }
+   },
+   "validation": []
+  },
+  {
+   "confidence": {
+    "composition": {},
+    "decision": "auto_accept",
+    "document": 0.96,
+    "reasons": []
+   },
+   "defects": [],
+   "document_type": "gstr_3b",
+   "fields": {
+    "filing_date": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "2026-03-20",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 7,
+      "range": null,
+      "sheet": null,
+      "text": "2026-03-20"
+     },
+     "status": "found",
+     "value": "2026-03-20"
+    },
+    "gstin": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "identifier",
+     "needs_review": false,
+     "raw_text": "27AAACK1234F1Z0",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 7,
+      "range": null,
+      "sheet": null,
+      "text": "27AAACK1234F1Z0"
+     },
+     "status": "found",
+     "value": "27AAACK1234F1Z0"
+    },
+    "legal_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Kestrel Fabricators Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 7,
+      "range": null,
+      "sheet": null,
+      "text": "Kestrel Fabricators Private Limited"
+     },
+     "status": "found",
+     "value": "Kestrel Fabricators Private Limited"
+    },
+    "return_status": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Filed",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 7,
+      "range": null,
+      "sheet": null,
+      "text": "Filed"
+     },
+     "status": "found",
+     "value": "Filed"
+    },
+    "tax_period": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "March 2026",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 7,
+      "range": null,
+      "sheet": null,
+      "text": "March 2026"
+     },
+     "status": "found",
+     "value": "March 2026"
+    },
+    "trade_name": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    }
+   },
+   "identity": {
+    "gstin": "27AAACK1234F1Z0",
+    "name": "Kestrel Fabricators Private Limited"
+   },
+   "instance_key": "March 2026",
+   "instance_no": 7,
+   "page_from": 7,
+   "page_to": 7,
+   "tables": {
+    "outward_supplies": {
+     "columns": [
+      "description",
+      "taxable_value",
+      "igst",
+      "cgst",
+      "sgst"
+     ],
+     "confidence": 0.96,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "cgst": 882000,
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": 0,
+        "sgst": 882000,
+        "taxable_value": 9800000
+       },
+       "raw": {
+        "cgst": "882000",
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": "0",
+        "sgst": "882000",
+        "taxable_value": "9800000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         100.0,
+         300.0,
+         112.0
+        ],
+        "line_ids": [
+         "p1.l1"
+        ],
+        "page": 7
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       545.0,
+       115.0
+      ],
+      "page_end": 7,
+      "page_start": 7
+     },
+     "status": "found",
+     "unparsed": 0
+    }
+   },
+   "validation": []
+  },
+  {
+   "confidence": {
+    "composition": {},
+    "decision": "auto_accept",
+    "document": 0.96,
+    "reasons": []
+   },
+   "defects": [],
+   "document_type": "gstr_3b",
+   "fields": {
+    "filing_date": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "2026-04-20",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 8,
+      "range": null,
+      "sheet": null,
+      "text": "2026-04-20"
+     },
+     "status": "found",
+     "value": "2026-04-20"
+    },
+    "gstin": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "identifier",
+     "needs_review": false,
+     "raw_text": "27AAACK1234F1Z0",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 8,
+      "range": null,
+      "sheet": null,
+      "text": "27AAACK1234F1Z0"
+     },
+     "status": "found",
+     "value": "27AAACK1234F1Z0"
+    },
+    "legal_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Kestrel Fabricators Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 8,
+      "range": null,
+      "sheet": null,
+      "text": "Kestrel Fabricators Private Limited"
+     },
+     "status": "found",
+     "value": "Kestrel Fabricators Private Limited"
+    },
+    "return_status": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Filed",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 8,
+      "range": null,
+      "sheet": null,
+      "text": "Filed"
+     },
+     "status": "found",
+     "value": "Filed"
+    },
+    "tax_period": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "April 2026",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 8,
+      "range": null,
+      "sheet": null,
+      "text": "April 2026"
+     },
+     "status": "found",
+     "value": "April 2026"
+    },
+    "trade_name": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    }
+   },
+   "identity": {
+    "gstin": "27AAACK1234F1Z0",
+    "name": "Kestrel Fabricators Private Limited"
+   },
+   "instance_key": "April 2026",
+   "instance_no": 8,
+   "page_from": 8,
+   "page_to": 8,
+   "tables": {
+    "outward_supplies": {
+     "columns": [
+      "description",
+      "taxable_value",
+      "igst",
+      "cgst",
+      "sgst"
+     ],
+     "confidence": 0.96,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "cgst": 882000,
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": 0,
+        "sgst": 882000,
+        "taxable_value": 9800000
+       },
+       "raw": {
+        "cgst": "882000",
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": "0",
+        "sgst": "882000",
+        "taxable_value": "9800000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         100.0,
+         300.0,
+         112.0
+        ],
+        "line_ids": [
+         "p1.l1"
+        ],
+        "page": 8
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       545.0,
+       115.0
+      ],
+      "page_end": 8,
+      "page_start": 8
+     },
+     "status": "found",
+     "unparsed": 0
+    }
+   },
+   "validation": []
+  },
+  {
+   "confidence": {
+    "composition": {},
+    "decision": "auto_accept",
+    "document": 0.96,
+    "reasons": []
+   },
+   "defects": [],
+   "document_type": "gstr_3b",
+   "fields": {
+    "filing_date": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "2026-05-20",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 9,
+      "range": null,
+      "sheet": null,
+      "text": "2026-05-20"
+     },
+     "status": "found",
+     "value": "2026-05-20"
+    },
+    "gstin": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "identifier",
+     "needs_review": false,
+     "raw_text": "27AAACK1234F1Z0",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 9,
+      "range": null,
+      "sheet": null,
+      "text": "27AAACK1234F1Z0"
+     },
+     "status": "found",
+     "value": "27AAACK1234F1Z0"
+    },
+    "legal_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Kestrel Fabricators Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 9,
+      "range": null,
+      "sheet": null,
+      "text": "Kestrel Fabricators Private Limited"
+     },
+     "status": "found",
+     "value": "Kestrel Fabricators Private Limited"
+    },
+    "return_status": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Filed",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 9,
+      "range": null,
+      "sheet": null,
+      "text": "Filed"
+     },
+     "status": "found",
+     "value": "Filed"
+    },
+    "tax_period": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "May 2026",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 9,
+      "range": null,
+      "sheet": null,
+      "text": "May 2026"
+     },
+     "status": "found",
+     "value": "May 2026"
+    },
+    "trade_name": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    }
+   },
+   "identity": {
+    "gstin": "27AAACK1234F1Z0",
+    "name": "Kestrel Fabricators Private Limited"
+   },
+   "instance_key": "May 2026",
+   "instance_no": 9,
+   "page_from": 9,
+   "page_to": 9,
+   "tables": {
+    "outward_supplies": {
+     "columns": [
+      "description",
+      "taxable_value",
+      "igst",
+      "cgst",
+      "sgst"
+     ],
+     "confidence": 0.96,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "cgst": 882000,
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": 0,
+        "sgst": 882000,
+        "taxable_value": 9800000
+       },
+       "raw": {
+        "cgst": "882000",
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": "0",
+        "sgst": "882000",
+        "taxable_value": "9800000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         100.0,
+         300.0,
+         112.0
+        ],
+        "line_ids": [
+         "p1.l1"
+        ],
+        "page": 9
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       545.0,
+       115.0
+      ],
+      "page_end": 9,
+      "page_start": 9
+     },
+     "status": "found",
+     "unparsed": 0
+    }
+   },
+   "validation": []
+  },
+  {
+   "confidence": {
+    "composition": {},
+    "decision": "auto_accept",
+    "document": 0.96,
+    "reasons": []
+   },
+   "defects": [],
+   "document_type": "gstr_3b",
+   "fields": {
+    "filing_date": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "2026-06-20",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 10,
+      "range": null,
+      "sheet": null,
+      "text": "2026-06-20"
+     },
+     "status": "found",
+     "value": "2026-06-20"
+    },
+    "gstin": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "identifier",
+     "needs_review": false,
+     "raw_text": "27AAACK1234F1Z0",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 10,
+      "range": null,
+      "sheet": null,
+      "text": "27AAACK1234F1Z0"
+     },
+     "status": "found",
+     "value": "27AAACK1234F1Z0"
+    },
+    "legal_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Kestrel Fabricators Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 10,
+      "range": null,
+      "sheet": null,
+      "text": "Kestrel Fabricators Private Limited"
+     },
+     "status": "found",
+     "value": "Kestrel Fabricators Private Limited"
+    },
+    "return_status": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Filed",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 10,
+      "range": null,
+      "sheet": null,
+      "text": "Filed"
+     },
+     "status": "found",
+     "value": "Filed"
+    },
+    "tax_period": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "June 2026",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 10,
+      "range": null,
+      "sheet": null,
+      "text": "June 2026"
+     },
+     "status": "found",
+     "value": "June 2026"
+    },
+    "trade_name": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    }
+   },
+   "identity": {
+    "gstin": "27AAACK1234F1Z0",
+    "name": "Kestrel Fabricators Private Limited"
+   },
+   "instance_key": "June 2026",
+   "instance_no": 10,
+   "page_from": 10,
+   "page_to": 10,
+   "tables": {
+    "outward_supplies": {
+     "columns": [
+      "description",
+      "taxable_value",
+      "igst",
+      "cgst",
+      "sgst"
+     ],
+     "confidence": 0.96,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "cgst": 882000,
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": 0,
+        "sgst": 882000,
+        "taxable_value": 9800000
+       },
+       "raw": {
+        "cgst": "882000",
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": "0",
+        "sgst": "882000",
+        "taxable_value": "9800000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         100.0,
+         300.0,
+         112.0
+        ],
+        "line_ids": [
+         "p1.l1"
+        ],
+        "page": 10
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       545.0,
+       115.0
+      ],
+      "page_end": 10,
+      "page_start": 10
+     },
+     "status": "found",
+     "unparsed": 0
+    }
+   },
+   "validation": []
+  },
+  {
+   "confidence": {
+    "composition": {},
+    "decision": "auto_accept",
+    "document": 0.96,
+    "reasons": []
+   },
+   "defects": [],
+   "document_type": "gstr_3b",
+   "fields": {
+    "filing_date": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "2026-07-20",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 11,
+      "range": null,
+      "sheet": null,
+      "text": "2026-07-20"
+     },
+     "status": "found",
+     "value": "2026-07-20"
+    },
+    "gstin": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "identifier",
+     "needs_review": false,
+     "raw_text": "27AAACK1234F1Z0",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 11,
+      "range": null,
+      "sheet": null,
+      "text": "27AAACK1234F1Z0"
+     },
+     "status": "found",
+     "value": "27AAACK1234F1Z0"
+    },
+    "legal_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Kestrel Fabricators Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 11,
+      "range": null,
+      "sheet": null,
+      "text": "Kestrel Fabricators Private Limited"
+     },
+     "status": "found",
+     "value": "Kestrel Fabricators Private Limited"
+    },
+    "return_status": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Filed",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 11,
+      "range": null,
+      "sheet": null,
+      "text": "Filed"
+     },
+     "status": "found",
+     "value": "Filed"
+    },
+    "tax_period": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "July 2026",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 11,
+      "range": null,
+      "sheet": null,
+      "text": "July 2026"
+     },
+     "status": "found",
+     "value": "July 2026"
+    },
+    "trade_name": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    }
+   },
+   "identity": {
+    "gstin": "27AAACK1234F1Z0",
+    "name": "Kestrel Fabricators Private Limited"
+   },
+   "instance_key": "July 2026",
+   "instance_no": 11,
+   "page_from": 11,
+   "page_to": 11,
+   "tables": {
+    "outward_supplies": {
+     "columns": [
+      "description",
+      "taxable_value",
+      "igst",
+      "cgst",
+      "sgst"
+     ],
+     "confidence": 0.96,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "cgst": 882000,
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": 0,
+        "sgst": 882000,
+        "taxable_value": 9800000
+       },
+       "raw": {
+        "cgst": "882000",
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": "0",
+        "sgst": "882000",
+        "taxable_value": "9800000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         100.0,
+         300.0,
+         112.0
+        ],
+        "line_ids": [
+         "p1.l1"
+        ],
+        "page": 11
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       545.0,
+       115.0
+      ],
+      "page_end": 11,
+      "page_start": 11
+     },
+     "status": "found",
+     "unparsed": 0
+    }
+   },
+   "validation": []
+  },
+  {
+   "confidence": {
+    "composition": {},
+    "decision": "auto_accept",
+    "document": 0.96,
+    "reasons": []
+   },
+   "defects": [],
+   "document_type": "gstr_3b",
+   "fields": {
+    "filing_date": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "2026-08-20",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 12,
+      "range": null,
+      "sheet": null,
+      "text": "2026-08-20"
+     },
+     "status": "found",
+     "value": "2026-08-20"
+    },
+    "gstin": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "identifier",
+     "needs_review": false,
+     "raw_text": "27AAACK1234F1Z0",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 12,
+      "range": null,
+      "sheet": null,
+      "text": "27AAACK1234F1Z0"
+     },
+     "status": "found",
+     "value": "27AAACK1234F1Z0"
+    },
+    "legal_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Kestrel Fabricators Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 12,
+      "range": null,
+      "sheet": null,
+      "text": "Kestrel Fabricators Private Limited"
+     },
+     "status": "found",
+     "value": "Kestrel Fabricators Private Limited"
+    },
+    "return_status": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Filed",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 12,
+      "range": null,
+      "sheet": null,
+      "text": "Filed"
+     },
+     "status": "found",
+     "value": "Filed"
+    },
+    "tax_period": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "August 2026",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 12,
+      "range": null,
+      "sheet": null,
+      "text": "August 2026"
+     },
+     "status": "found",
+     "value": "August 2026"
+    },
+    "trade_name": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    }
+   },
+   "identity": {
+    "gstin": "27AAACK1234F1Z0",
+    "name": "Kestrel Fabricators Private Limited"
+   },
+   "instance_key": "August 2026",
+   "instance_no": 12,
+   "page_from": 12,
+   "page_to": 12,
+   "tables": {
+    "outward_supplies": {
+     "columns": [
+      "description",
+      "taxable_value",
+      "igst",
+      "cgst",
+      "sgst"
+     ],
+     "confidence": 0.96,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "cgst": 882000,
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": 0,
+        "sgst": 882000,
+        "taxable_value": 9800000
+       },
+       "raw": {
+        "cgst": "882000",
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": "0",
+        "sgst": "882000",
+        "taxable_value": "9800000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         100.0,
+         300.0,
+         112.0
+        ],
+        "line_ids": [
+         "p1.l1"
+        ],
+        "page": 12
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       545.0,
+       115.0
+      ],
+      "page_end": 12,
+      "page_start": 12
+     },
+     "status": "found",
+     "unparsed": 0
+    }
+   },
+   "validation": []
+  }
+ ],
+ "error": null,
+ "file_id": "fixture",
+ "front_matter_pages": [],
+ "grade": "A",
+ "name": "kestrel gst returns.pdf",
+ "pages": [
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 842.0,
+   "ocr_conf": null,
+   "page": 1,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.0,
+   "words": 40
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 842.0,
+   "ocr_conf": null,
+   "page": 2,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.0,
+   "words": 40
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 842.0,
+   "ocr_conf": null,
+   "page": 3,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.0,
+   "words": 40
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 842.0,
+   "ocr_conf": null,
+   "page": 4,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.0,
+   "words": 40
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 842.0,
+   "ocr_conf": null,
+   "page": 5,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.0,
+   "words": 40
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 842.0,
+   "ocr_conf": null,
+   "page": 6,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.0,
+   "words": 40
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 842.0,
+   "ocr_conf": null,
+   "page": 7,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.0,
+   "words": 40
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 842.0,
+   "ocr_conf": null,
+   "page": 8,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.0,
+   "words": 40
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 842.0,
+   "ocr_conf": null,
+   "page": 9,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.0,
+   "words": 40
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 842.0,
+   "ocr_conf": null,
+   "page": 10,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.0,
+   "words": 40
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 842.0,
+   "ocr_conf": null,
+   "page": 11,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.0,
+   "words": 40
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 842.0,
+   "ocr_conf": null,
+   "page": 12,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.0,
+   "words": 40
+  }
+ ],
+ "reject": null,
+ "review_reasons": [],
+ "route": {},
+ "run_id": "RUN-FIXTURE",
+ "sha256": "e613f5d1b1069bb7602eb0bb1ef0fbe686184410124f4841dcb75f8467183a3b",
+ "source": {
+  "kind": "pdf",
+  "pages": 12
+ },
+ "status": "processed",
+ "trace": []
+}

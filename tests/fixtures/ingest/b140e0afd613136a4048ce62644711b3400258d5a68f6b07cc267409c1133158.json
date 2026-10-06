@@ -1,0 +1,649 @@
+{
+ "classification": {
+  "candidates": [
+   {
+    "score": 0.95,
+    "type": "bank_statement"
+   }
+  ],
+  "confidence": 0.95,
+  "mixed_content": [],
+  "model_error": null,
+  "needs_review": false,
+  "reason": null,
+  "signals": {
+   "contrary": [],
+   "required": [
+    "fixture"
+   ],
+   "supporting": []
+  },
+  "tier": "signals",
+  "type": "bank_statement"
+ },
+ "decision": "auto_accept",
+ "documents": [
+  {
+   "confidence": {
+    "composition": {},
+    "decision": "auto_accept",
+    "document": 0.96,
+    "reasons": []
+   },
+   "defects": [],
+   "document_type": "bank_statement",
+   "fields": {
+    "account_holder_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Heronbay Polymers Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Heronbay Polymers Private Limited"
+     },
+     "status": "found",
+     "value": "Heronbay Polymers Private Limited"
+    },
+    "account_number": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "901000001234",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "901000001234"
+     },
+     "status": "found",
+     "value": "901000001234"
+    },
+    "bank_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Lotuscrest Bank",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Lotuscrest Bank"
+     },
+     "status": "found",
+     "value": "Lotuscrest Bank"
+    },
+    "branch": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Pune",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Pune"
+     },
+     "status": "found",
+     "value": "Pune"
+    },
+    "closing_balance": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "81000000",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "81000000"
+     },
+     "status": "found",
+     "value": 81000000
+    },
+    "currency": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "INR",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "INR"
+     },
+     "status": "found",
+     "value": "INR"
+    },
+    "ifsc": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "LOTU0000123",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "LOTU0000123"
+     },
+     "status": "found",
+     "value": "LOTU0000123"
+    },
+    "opening_balance": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "5000000",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "5000000"
+     },
+     "status": "found",
+     "value": 5000000
+    },
+    "statement_period_end": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "2026-08-31",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "2026-08-31"
+     },
+     "status": "found",
+     "value": "2026-08-31"
+    },
+    "statement_period_start": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "2026-01-01",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "2026-01-01"
+     },
+     "status": "found",
+     "value": "2026-01-01"
+    }
+   },
+   "identity": {
+    "name": "Heronbay Polymers Private Limited"
+   },
+   "instance_key": "1234",
+   "instance_no": 1,
+   "page_from": 1,
+   "page_to": 1,
+   "tables": {
+    "transactions": {
+     "columns": [
+      "date",
+      "description",
+      "reference_number",
+      "debit",
+      "credit",
+      "balance"
+     ],
+     "confidence": 0.96,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "balance": 14500000,
+        "credit": 9500000,
+        "date": "2026-01-05",
+        "debit": null,
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0000"
+       },
+       "raw": {
+        "balance": "14500000",
+        "credit": "9500000",
+        "date": "2026-01-05",
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         100.0,
+         300.0,
+         112.0
+        ],
+        "line_ids": [
+         "p1.l1"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "balance": 24000000,
+        "credit": 9500000,
+        "date": "2026-02-05",
+        "debit": null,
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0001"
+       },
+       "raw": {
+        "balance": "24000000",
+        "credit": "9500000",
+        "date": "2026-02-05",
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0001"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         115.0,
+         300.0,
+         127.0
+        ],
+        "line_ids": [
+         "p1.l2"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "balance": 33500000,
+        "credit": 9500000,
+        "date": "2026-03-05",
+        "debit": null,
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0002"
+       },
+       "raw": {
+        "balance": "33500000",
+        "credit": "9500000",
+        "date": "2026-03-05",
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0002"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         130.0,
+         300.0,
+         142.0
+        ],
+        "line_ids": [
+         "p1.l3"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "balance": 43000000,
+        "credit": 9500000,
+        "date": "2026-04-05",
+        "debit": null,
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0003"
+       },
+       "raw": {
+        "balance": "43000000",
+        "credit": "9500000",
+        "date": "2026-04-05",
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0003"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         145.0,
+         300.0,
+         157.0
+        ],
+        "line_ids": [
+         "p1.l4"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "balance": 52500000,
+        "credit": 9500000,
+        "date": "2026-05-05",
+        "debit": null,
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0004"
+       },
+       "raw": {
+        "balance": "52500000",
+        "credit": "9500000",
+        "date": "2026-05-05",
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0004"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         160.0,
+         300.0,
+         172.0
+        ],
+        "line_ids": [
+         "p1.l5"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "balance": 62000000,
+        "credit": 9500000,
+        "date": "2026-06-05",
+        "debit": null,
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0005"
+       },
+       "raw": {
+        "balance": "62000000",
+        "credit": "9500000",
+        "date": "2026-06-05",
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0005"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         175.0,
+         300.0,
+         187.0
+        ],
+        "line_ids": [
+         "p1.l6"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "balance": 71500000,
+        "credit": 9500000,
+        "date": "2026-07-05",
+        "debit": null,
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0006"
+       },
+       "raw": {
+        "balance": "71500000",
+        "credit": "9500000",
+        "date": "2026-07-05",
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0006"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         190.0,
+         300.0,
+         202.0
+        ],
+        "line_ids": [
+         "p1.l7"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "balance": 81000000,
+        "credit": 9500000,
+        "date": "2026-08-05",
+        "debit": null,
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0007"
+       },
+       "raw": {
+        "balance": "81000000",
+        "credit": "9500000",
+        "date": "2026-08-05",
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0007"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         205.0,
+         300.0,
+         217.0
+        ],
+        "line_ids": [
+         "p1.l8"
+        ],
+        "page": 1
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       545.0,
+       220.0
+      ],
+      "page_end": 1,
+      "page_start": 1
+     },
+     "status": "found",
+     "unparsed": 0
+    }
+   },
+   "validation": []
+  }
+ ],
+ "error": null,
+ "file_id": "fixture",
+ "front_matter_pages": [],
+ "grade": "A",
+ "name": "heronbay current account.pdf",
+ "pages": [
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 842.0,
+   "ocr_conf": null,
+   "page": 1,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.0,
+   "words": 40
+  }
+ ],
+ "reject": null,
+ "review_reasons": [],
+ "route": {},
+ "run_id": "RUN-FIXTURE",
+ "sha256": "b140e0afd613136a4048ce62644711b3400258d5a68f6b07cc267409c1133158",
+ "source": {
+  "kind": "pdf",
+  "pages": 1
+ },
+ "status": "processed",
+ "trace": []
+}

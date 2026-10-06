@@ -1,0 +1,1065 @@
+{
+ "classification": {
+  "candidates": [
+   {
+    "score": 0.95,
+    "type": "audited_financial_statements"
+   }
+  ],
+  "confidence": 0.95,
+  "mixed_content": [],
+  "model_error": null,
+  "needs_review": false,
+  "reason": null,
+  "signals": {
+   "contrary": [],
+   "required": [
+    "fixture"
+   ],
+   "supporting": []
+  },
+  "tier": "signals",
+  "type": "audited_financial_statements"
+ },
+ "decision": "auto_accept",
+ "documents": [
+  {
+   "confidence": {
+    "composition": {},
+    "decision": "auto_accept",
+    "document": 0.96,
+    "reasons": []
+   },
+   "defects": [],
+   "document_type": "audited_financial_statements",
+   "fields": {
+    "accounting_standard": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    },
+    "audit_date": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "2025-08-29",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "2025-08-29"
+     },
+     "status": "found",
+     "value": "2025-08-29"
+    },
+    "auditor_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "M/s. Rao and Associates, Chartered Accountants",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "M/s. Rao and Associates, Chartered Accountants"
+     },
+     "status": "found",
+     "value": "M/s. Rao and Associates, Chartered Accountants"
+    },
+    "company_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Kestrel Fabricators Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Kestrel Fabricators Private Limited"
+     },
+     "status": "found",
+     "value": "Kestrel Fabricators Private Limited"
+    },
+    "financial_year": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "FY2025 (ended 31 March 2025)",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "FY2025 (ended 31 March 2025)"
+     },
+     "status": "found",
+     "value": "FY2025 (ended 31 March 2025)"
+    }
+   },
+   "identity": {
+    "name": "Kestrel Fabricators Private Limited"
+   },
+   "instance_key": "FY2025",
+   "instance_no": 1,
+   "page_from": 1,
+   "page_to": 1,
+   "tables": {
+    "balance_sheet": {
+     "columns": [
+      "particulars",
+      "current_period",
+      "previous_period"
+     ],
+     "confidence": 0.96,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "current_period": null,
+        "particulars": "I. EQUITY AND LIABILITIES",
+        "previous_period": null
+       },
+       "raw": {
+        "particulars": "I. EQUITY AND LIABILITIES"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         100.0,
+         300.0,
+         112.0
+        ],
+        "line_ids": [
+         "p1.l1"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": null,
+        "particulars": "(1) Shareholders' funds",
+        "previous_period": null
+       },
+       "raw": {
+        "particulars": "(1) Shareholders' funds"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         115.0,
+         300.0,
+         127.0
+        ],
+        "line_ids": [
+         "p1.l2"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": 10000000,
+        "particulars": "(a) Share capital",
+        "previous_period": 8500000
+       },
+       "raw": {
+        "current_period": "10000000",
+        "particulars": "(a) Share capital",
+        "previous_period": "8500000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         130.0,
+         300.0,
+         142.0
+        ],
+        "line_ids": [
+         "p1.l3"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": 32000000,
+        "particulars": "(b) Reserves and surplus",
+        "previous_period": 27200000
+       },
+       "raw": {
+        "current_period": "32000000",
+        "particulars": "(b) Reserves and surplus",
+        "previous_period": "27200000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         145.0,
+         300.0,
+         157.0
+        ],
+        "line_ids": [
+         "p1.l4"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": null,
+        "particulars": "(2) Non-current liabilities",
+        "previous_period": null
+       },
+       "raw": {
+        "particulars": "(2) Non-current liabilities"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         160.0,
+         300.0,
+         172.0
+        ],
+        "line_ids": [
+         "p1.l5"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": 15000000,
+        "particulars": "(a) Long-term borrowings",
+        "previous_period": 12750000
+       },
+       "raw": {
+        "current_period": "15000000",
+        "particulars": "(a) Long-term borrowings",
+        "previous_period": "12750000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         175.0,
+         300.0,
+         187.0
+        ],
+        "line_ids": [
+         "p1.l6"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": null,
+        "particulars": "(3) Current liabilities",
+        "previous_period": null
+       },
+       "raw": {
+        "particulars": "(3) Current liabilities"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         190.0,
+         300.0,
+         202.0
+        ],
+        "line_ids": [
+         "p1.l7"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": 12000000,
+        "particulars": "(a) Short-term borrowings",
+        "previous_period": 10200000
+       },
+       "raw": {
+        "current_period": "12000000",
+        "particulars": "(a) Short-term borrowings",
+        "previous_period": "10200000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         205.0,
+         300.0,
+         217.0
+        ],
+        "line_ids": [
+         "p1.l8"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": 20000000,
+        "particulars": "(b) Trade payables",
+        "previous_period": 17000000
+       },
+       "raw": {
+        "current_period": "20000000",
+        "particulars": "(b) Trade payables",
+        "previous_period": "17000000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         220.0,
+         300.0,
+         232.0
+        ],
+        "line_ids": [
+         "p1.l9"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": 3000000,
+        "particulars": "(c) Other current liabilities",
+        "previous_period": 2550000
+       },
+       "raw": {
+        "current_period": "3000000",
+        "particulars": "(c) Other current liabilities",
+        "previous_period": "2550000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         235.0,
+         300.0,
+         247.0
+        ],
+        "line_ids": [
+         "p1.l10"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": 2000000,
+        "particulars": "(d) Short-term provisions",
+        "previous_period": 1700000
+       },
+       "raw": {
+        "current_period": "2000000",
+        "particulars": "(d) Short-term provisions",
+        "previous_period": "1700000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         250.0,
+         300.0,
+         262.0
+        ],
+        "line_ids": [
+         "p1.l11"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": 94000000,
+        "particulars": "TOTAL",
+        "previous_period": 79900000
+       },
+       "raw": {
+        "current_period": "94000000",
+        "particulars": "TOTAL",
+        "previous_period": "79900000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         265.0,
+         300.0,
+         277.0
+        ],
+        "line_ids": [
+         "p1.l12"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": null,
+        "particulars": "II. ASSETS",
+        "previous_period": null
+       },
+       "raw": {
+        "particulars": "II. ASSETS"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         280.0,
+         300.0,
+         292.0
+        ],
+        "line_ids": [
+         "p1.l13"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": null,
+        "particulars": "(1) Non-current assets",
+        "previous_period": null
+       },
+       "raw": {
+        "particulars": "(1) Non-current assets"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         295.0,
+         300.0,
+         307.0
+        ],
+        "line_ids": [
+         "p1.l14"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": 35000000,
+        "particulars": "(a) Property, plant and equipment",
+        "previous_period": 29750000
+       },
+       "raw": {
+        "current_period": "35000000",
+        "particulars": "(a) Property, plant and equipment",
+        "previous_period": "29750000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         310.0,
+         300.0,
+         322.0
+        ],
+        "line_ids": [
+         "p1.l15"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": null,
+        "particulars": "(2) Current assets",
+        "previous_period": null
+       },
+       "raw": {
+        "particulars": "(2) Current assets"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         325.0,
+         300.0,
+         337.0
+        ],
+        "line_ids": [
+         "p1.l16"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": 25000000,
+        "particulars": "(a) Inventories",
+        "previous_period": 21250000
+       },
+       "raw": {
+        "current_period": "25000000",
+        "particulars": "(a) Inventories",
+        "previous_period": "21250000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         340.0,
+         300.0,
+         352.0
+        ],
+        "line_ids": [
+         "p1.l17"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": 24000000,
+        "particulars": "(b) Trade receivables",
+        "previous_period": 20400000
+       },
+       "raw": {
+        "current_period": "24000000",
+        "particulars": "(b) Trade receivables",
+        "previous_period": "20400000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         355.0,
+         300.0,
+         367.0
+        ],
+        "line_ids": [
+         "p1.l18"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": 6000000,
+        "particulars": "(c) Cash and bank balances",
+        "previous_period": 5100000
+       },
+       "raw": {
+        "current_period": "6000000",
+        "particulars": "(c) Cash and bank balances",
+        "previous_period": "5100000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         370.0,
+         300.0,
+         382.0
+        ],
+        "line_ids": [
+         "p1.l19"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": 4000000,
+        "particulars": "(d) Short-term loans and advances",
+        "previous_period": 3400000
+       },
+       "raw": {
+        "current_period": "4000000",
+        "particulars": "(d) Short-term loans and advances",
+        "previous_period": "3400000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         385.0,
+         300.0,
+         397.0
+        ],
+        "line_ids": [
+         "p1.l20"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": 94000000,
+        "particulars": "TOTAL",
+        "previous_period": 79900000
+       },
+       "raw": {
+        "current_period": "94000000",
+        "particulars": "TOTAL",
+        "previous_period": "79900000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         400.0,
+         300.0,
+         412.0
+        ],
+        "line_ids": [
+         "p1.l21"
+        ],
+        "page": 1
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       545.0,
+       415.0
+      ],
+      "page_end": 1,
+      "page_start": 1
+     },
+     "status": "found",
+     "unparsed": 0
+    },
+    "profit_and_loss": {
+     "columns": [
+      "particulars",
+      "current_period",
+      "previous_period"
+     ],
+     "confidence": 0.96,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "current_period": 118000000,
+        "particulars": "I. Revenue from operations",
+        "previous_period": 100300000
+       },
+       "raw": {
+        "current_period": "118000000",
+        "particulars": "I. Revenue from operations",
+        "previous_period": "100300000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         100.0,
+         300.0,
+         112.0
+        ],
+        "line_ids": [
+         "p1.l1"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": 1000000,
+        "particulars": "II. Other income",
+        "previous_period": 850000
+       },
+       "raw": {
+        "current_period": "1000000",
+        "particulars": "II. Other income",
+        "previous_period": "850000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         115.0,
+         300.0,
+         127.0
+        ],
+        "line_ids": [
+         "p1.l2"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": 119000000,
+        "particulars": "III. Total income (I + II)",
+        "previous_period": 101150000
+       },
+       "raw": {
+        "current_period": "119000000",
+        "particulars": "III. Total income (I + II)",
+        "previous_period": "101150000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         130.0,
+         300.0,
+         142.0
+        ],
+        "line_ids": [
+         "p1.l3"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": null,
+        "particulars": "IV. Expenses:",
+        "previous_period": null
+       },
+       "raw": {
+        "particulars": "IV. Expenses:"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         145.0,
+         300.0,
+         157.0
+        ],
+        "line_ids": [
+         "p1.l4"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": 80000000,
+        "particulars": "Cost of materials consumed",
+        "previous_period": 68000000
+       },
+       "raw": {
+        "current_period": "80000000",
+        "particulars": "Cost of materials consumed",
+        "previous_period": "68000000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         160.0,
+         300.0,
+         172.0
+        ],
+        "line_ids": [
+         "p1.l5"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": 12000000,
+        "particulars": "Employee benefits expense",
+        "previous_period": 10200000
+       },
+       "raw": {
+        "current_period": "12000000",
+        "particulars": "Employee benefits expense",
+        "previous_period": "10200000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         175.0,
+         300.0,
+         187.0
+        ],
+        "line_ids": [
+         "p1.l6"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": 3500000,
+        "particulars": "Finance costs",
+        "previous_period": 2975000
+       },
+       "raw": {
+        "current_period": "3500000",
+        "particulars": "Finance costs",
+        "previous_period": "2975000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         190.0,
+         300.0,
+         202.0
+        ],
+        "line_ids": [
+         "p1.l7"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": 4000000,
+        "particulars": "Depreciation and amortisation",
+        "previous_period": 3400000
+       },
+       "raw": {
+        "current_period": "4000000",
+        "particulars": "Depreciation and amortisation",
+        "previous_period": "3400000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         205.0,
+         300.0,
+         217.0
+        ],
+        "line_ids": [
+         "p1.l8"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": 12000000,
+        "particulars": "Other expenses",
+        "previous_period": 10200000
+       },
+       "raw": {
+        "current_period": "12000000",
+        "particulars": "Other expenses",
+        "previous_period": "10200000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         220.0,
+         300.0,
+         232.0
+        ],
+        "line_ids": [
+         "p1.l9"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": 111500000,
+        "particulars": "Total expenses",
+        "previous_period": 94775000
+       },
+       "raw": {
+        "current_period": "111500000",
+        "particulars": "Total expenses",
+        "previous_period": "94775000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         235.0,
+         300.0,
+         247.0
+        ],
+        "line_ids": [
+         "p1.l10"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": 7500000,
+        "particulars": "V. Profit before tax (III - IV)",
+        "previous_period": 6375000
+       },
+       "raw": {
+        "current_period": "7500000",
+        "particulars": "V. Profit before tax (III - IV)",
+        "previous_period": "6375000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         250.0,
+         300.0,
+         262.0
+        ],
+        "line_ids": [
+         "p1.l11"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": 1100000,
+        "particulars": "VI. Tax expense (current and deferred)",
+        "previous_period": 935000
+       },
+       "raw": {
+        "current_period": "1100000",
+        "particulars": "VI. Tax expense (current and deferred)",
+        "previous_period": "935000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         265.0,
+         300.0,
+         277.0
+        ],
+        "line_ids": [
+         "p1.l12"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "current_period": 6400000,
+        "particulars": "VII. Profit for the year (V - VI)",
+        "previous_period": 5440000
+       },
+       "raw": {
+        "current_period": "6400000",
+        "particulars": "VII. Profit for the year (V - VI)",
+        "previous_period": "5440000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         280.0,
+         300.0,
+         292.0
+        ],
+        "line_ids": [
+         "p1.l13"
+        ],
+        "page": 1
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       545.0,
+       295.0
+      ],
+      "page_end": 1,
+      "page_start": 1
+     },
+     "status": "found",
+     "unparsed": 0
+    }
+   },
+   "validation": []
+  }
+ ],
+ "error": null,
+ "file_id": "fixture",
+ "front_matter_pages": [],
+ "grade": "A",
+ "name": "kestrel audited fy2025.pdf",
+ "pages": [
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 842.0,
+   "ocr_conf": null,
+   "page": 1,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.0,
+   "words": 40
+  }
+ ],
+ "reject": null,
+ "review_reasons": [],
+ "route": {},
+ "run_id": "RUN-FIXTURE",
+ "sha256": "0ea53b895a9bb1e04c16d5bff426ff9ae3731e087509524d4e62e7a651e47f4e",
+ "source": {
+  "kind": "pdf",
+  "pages": 1
+ },
+ "status": "processed",
+ "trace": []
+}

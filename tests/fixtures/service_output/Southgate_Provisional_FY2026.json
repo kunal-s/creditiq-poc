@@ -1,0 +1,149 @@
+{
+ "classification": {
+  "candidates": [
+   {
+    "score": 0.1,
+    "type": "certificate_of_incorporation"
+   },
+   {
+    "score": 0.04,
+    "type": "gstr_3b"
+   },
+   {
+    "score": 0.0,
+    "type": "audited_financial_statements"
+   }
+  ],
+  "confidence": 0.0,
+  "mixed_content": [],
+  "model_error": null,
+  "needs_review": true,
+  "reason": "no type met the signal rules; no model configured",
+  "signals": {},
+  "tier": "none",
+  "type": null
+ },
+ "decision": "human_review",
+ "documents": [],
+ "error": null,
+ "file_id": "f0",
+ "front_matter_pages": [],
+ "grade": "A",
+ "name": "Southgate_Provisional_FY2026.pdf",
+ "pages": [
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 1,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 128
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 2,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 105
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 3,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 221
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 4,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 85
+  }
+ ],
+ "reject": null,
+ "review_reasons": [
+  {
+   "detail": "no type met the signal rules; no model configured",
+   "kind": "type_unassigned"
+  }
+ ],
+ "route": {
+  "blank_pages": [],
+  "dropped_rotated_chars": 0,
+  "ocr_pages": 0,
+  "page_routes": [
+   {
+    "page": 1,
+    "route": "text"
+   },
+   {
+    "page": 2,
+    "route": "text"
+   },
+   {
+    "page": 3,
+    "route": "text"
+   },
+   {
+    "page": 4,
+    "route": "text"
+   }
+  ],
+  "pages": 4,
+  "route": "text",
+  "table_pages": 0
+ },
+ "run_id": "RUN-F3B4525A6102",
+ "sha256": "bc35d45988e496be160049314e77fdf7707445db2152dc5499dbf9a9f3eb89e7",
+ "source": {
+  "kind": "pdf",
+  "pages": 4
+ },
+ "status": "processed",
+ "trace": [
+  {
+   "input_hash": "bc35d45988e496be160049314e77fdf7707445db2152dc5499dbf9a9f3eb89e7",
+   "output_hash": "15d94ab80f8f9c18e274633dc91733d6334566fc7058675da348d72c5052ef2c",
+   "stage": "quality_gate"
+  },
+  {
+   "input_hash": "15d94ab80f8f9c18e274633dc91733d6334566fc7058675da348d72c5052ef2c",
+   "output_hash": "d52376940219e9812ff543bc48c3223f392b3bdd069afa956fd230b707d41d48",
+   "stage": "read"
+  },
+  {
+   "input_hash": "d52376940219e9812ff543bc48c3223f392b3bdd069afa956fd230b707d41d48",
+   "output_hash": "c71022c473ab2566a224d8c28c8787b77390297ab4af0923b19e2f3a0f9152e0",
+   "stage": "route"
+  },
+  {
+   "input_hash": "c71022c473ab2566a224d8c28c8787b77390297ab4af0923b19e2f3a0f9152e0",
+   "output_hash": "185ed11afd752a3f0a9ff5304509344f6593cff2a104a7c1ae269d82e9d072cd",
+   "stage": "classify"
+  }
+ ]
+}

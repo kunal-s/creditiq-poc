@@ -206,20 +206,20 @@ def test_f05_size_limit_applies_while_streaming(client, published_data_root, mon
     small = uploads.limits()
     small.max_file = 1000
     monkeypatch.setattr(uploads, "limits", lambda: small)
-    big = fixture_file("partial_bundle.pdf")
+    big = fixture_file("kestrel gst returns.pdf")
     assert len(big) > 1000
-    files = upload(client, rm, case_id, [("partial_bundle.pdf", big)]).json()["files"]
+    files = upload(client, rm, case_id, [("kestrel gst returns.pdf", big)]).json()["files"]
     assert files[0]["status"] == "rejected" and "limit" in files[0]["reason"]
 
 
 def test_f05_resubmission_is_idempotent(client: TestClient, published_data_root: Path):
     rm = sign_in(client, RM)
     case_id = make_case(client, rm, published_data_root, borrower="Kestrel Fabricators Pvt Ltd")
-    data = fixture_file("complete_bundle.pdf")
-    first = upload(client, rm, case_id, [("complete_bundle.pdf", data)]).json()
+    data = fixture_file("kestrel itr.pdf")
+    first = upload(client, rm, case_id, [("kestrel itr.pdf", data)]).json()
     assert run_jobs(published_data_root) == 1
     docs_before = client.get(f"/api/cases/{case_id}/documents", headers=rm).json()
-    again = upload(client, rm, case_id, [("complete bundle (1).pdf", data)]).json()
+    again = upload(client, rm, case_id, [("kestrel itr (1).pdf", data)]).json()
     assert again["files"][0]["status"] == "duplicate"
     assert again["files"][0]["duplicate_of"] == first["files"][0]["id"]
     assert again["job_id"] is None
@@ -250,7 +250,7 @@ def test_f05_page_images(client: TestClient, published_data_root: Path):
 
     rm = sign_in(client, RM)
     case_id = make_case(client, rm, published_data_root, borrower="Heronbay Polymers Pvt Ltd")
-    upload(client, rm, case_id, [("partial_bundle.pdf", fixture_file("partial_bundle.pdf"))])
+    upload(client, rm, case_id, [("heronbay gst returns.pdf", fixture_file("heronbay gst returns.pdf"))])
     run_jobs(published_data_root)
     docs = client.get(f"/api/cases/{case_id}/documents", headers=rm).json()
     third = next(d for d in docs if d["page_from"] == 3)

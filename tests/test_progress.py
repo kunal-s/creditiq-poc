@@ -138,13 +138,12 @@ def test_an_unreadable_upload_is_not_mistaken_for_no_upload(client: TestClient, 
 
 
 def test_the_outputs_stage_needs_financial_statements(client: TestClient, published_data_root: Path):
-    from tests.test_policy import FINANCIALS
-    from tests.triangulation import add_doc
+    from tests.triangulation import add_doc, audited
 
     analyst = sign_in(client, ANALYST)
     case_id = make_case(client, analyst, published_data_root)
-    add_doc(published_data_root, case_id, "pan_entity", {"pan": "AAACK1234F"})
-    add_doc(published_data_root, case_id, "bureau_commercial", {"pan": "AAACK1234F", "score": "Rank 3"})
+    add_doc(published_data_root, case_id, "company_pan", {"pan": "AAACK1234F"})
+    add_doc(published_data_root, case_id, "income_tax_return", {"pan": "AAACK1234F"})
     conn = db.connect(published_data_root)
     try:
         from engine import pipeline
@@ -154,6 +153,6 @@ def test_the_outputs_stage_needs_financial_statements(client: TestClient, publis
         conn.close()
     outputs = _progress(client, analyst, case_id)["stages"][5]
     assert outputs["status"] == "needs_attention" and outputs["done"] == 2
-    add_doc(published_data_root, case_id, "audited_financial_statements", FINANCIALS)
+    audited(published_data_root, case_id)
     outputs = _progress(client, analyst, case_id)["stages"][5]
     assert outputs["status"] == "done" and outputs["done"] == 3

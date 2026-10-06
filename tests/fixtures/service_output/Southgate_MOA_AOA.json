@@ -1,0 +1,530 @@
+{
+ "classification": {
+  "candidates": [
+   {
+    "score": 0.9167,
+    "type": "memorandum_articles_of_association"
+   },
+   {
+    "score": 0.0,
+    "type": "audited_financial_statements"
+   },
+   {
+    "score": 0.0,
+    "type": "bank_statement"
+   }
+  ],
+  "confidence": 0.9167,
+  "mixed_content": [],
+  "model_error": null,
+  "needs_review": false,
+  "reason": "signals matched: 5 supporting, margin 0.92",
+  "signals": {
+   "contrary": [],
+   "required": [
+    "memorandum\\s+of\\s+association\\s+of"
+   ],
+   "supporting": [
+    "name\\s+clause",
+    "objects\\s+clause",
+    "liability\\s+clause",
+    "capital\\s+clause",
+    "subscription\\s+clause"
+   ]
+  },
+  "tier": "signals",
+  "type": "memorandum_articles_of_association"
+ },
+ "decision": "auto_accept",
+ "documents": [
+  {
+   "confidence": {
+    "composition": {
+     "document_grade": "A",
+     "failed_checks": 0,
+     "found": 1,
+     "key_fields": 1,
+     "warnings": 0
+    },
+    "decision": "auto_accept",
+    "document": 0.9475,
+    "reasons": []
+   },
+   "defects": [],
+   "document_type": "memorandum_articles_of_association",
+   "fields": {
+    "authorized_share_capital": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 0.9167,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.9475,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "1,50,00,000",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       313.38,
+       380.5,
+       363.56,
+       390.0
+      ],
+      "kind": "page",
+      "page": 2,
+      "range": null,
+      "sheet": null,
+      "text": "1,50,00,000"
+     },
+     "status": "found",
+     "value": 15000000
+    },
+    "cin": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    },
+    "company_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 0.9167,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.9475,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Southgate Textiles Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       201.43,
+       204.1,
+       359.28,
+       213.6
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Southgate Textiles Private Limited"
+     },
+     "status": "found",
+     "value": "Southgate Textiles Private Limited"
+    },
+    "directors": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 0.9167,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.9475,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Lakshmi Iyer; Venkat Iyer",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       191.39,
+       127.5,
+       356.12,
+       137.0
+      ],
+      "kind": "page",
+      "page": 5,
+      "range": null,
+      "sheet": null,
+      "text": "Smt. Lakshmi Iyer and Sri. Venkat Iyer"
+     },
+     "status": "found",
+     "value": [
+      {
+       "din": null,
+       "name": "Lakshmi Iyer"
+      },
+      {
+       "din": null,
+       "name": "Venkat Iyer"
+      }
+     ]
+    },
+    "objects_of_company": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 0.9167,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.9475,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "1. To carry on in India and elsewhere the business of manufacturers, spinners, weavers, processors, dyers, printers, converters, importers, exporters, wholesalers, retailers and dealers in home textiles, furnishing fabrics, made-up textile articles, bed and bath linen, curtains, upholstery fabrics, yarn, cloth and all kinds of textile goods, whether made of cotton, silk, wool, jute, synthetic fibres or any combination thereof. 2. To set up, establish, operate and maintain factories, weaving and processing units, dye houses, finishing plants, warehouses and showrooms, and to acquire, install and operate looms, spinning frames, dyeing and printing machinery and other plant and equipment required for the manufacture and processing of textiles. 3. To buy, sell, prepare for market, import, export and deal in raw materials, stores, dyes, chemicals, packing materials, accessories and other articles required for or connected with the business of the company.",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       68.36,
+       318.1,
+       526.91,
+       445.6
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "1. To carry on in India and elsewhere the business of manufacturers, spinners, weavers, processors, dyers, printers, converters, importers, exporters, wholesalers, retailers and dealers in home textiles, furnishing fabrics, made-up textile articles, bed and bath linen, curtains, upholstery fabrics, yarn, cloth and all kinds of textile goods, whether made of cotton, silk, wool, jute, synthetic fibr"
+     },
+     "status": "found",
+     "value": "1. To carry on in India and elsewhere the business of manufacturers, spinners, weavers, processors, dyers, printers, converters, importers, exporters, wholesalers, retailers and dealers in home textiles, furnishing fabrics, made-up textile articles, bed and bath linen, curtains, upholstery fabrics, yarn, cloth and all kinds of textile goods, whether made of cotton, silk, wool, jute, synthetic fibres or any combination thereof. 2. To set up, establish, operate and maintain factories, weaving and processing units, dye houses, finishing plants, warehouses and showrooms, and to acquire, install and operate looms, spinning frames, dyeing and printing machinery and other plant and equipment required for the manufacture and processing of textiles. 3. To buy, sell, prepare for market, import, export and deal in raw materials, stores, dyes, chemicals, packing materials, accessories and other articles required for or connected with the business of the company."
+    },
+    "paid_up_share_capital": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 0.9167,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.9475,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "1,00,00,000",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       124.85,
+       407.5,
+       175.03,
+       417.0
+      ],
+      "kind": "page",
+      "page": 2,
+      "range": null,
+      "sheet": null,
+      "text": "1,00,00,000"
+     },
+     "status": "found",
+     "value": 10000000
+    },
+    "registered_office": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 0.9167,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.9475,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Tamil Nadu",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       361.96,
+       242.6,
+       413.16,
+       252.1
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Tamil Nadu"
+     },
+     "status": "found",
+     "value": "Tamil Nadu"
+    }
+   },
+   "identity": {
+    "name": "Southgate Textiles Private Limited"
+   },
+   "instance_key": null,
+   "instance_no": 1,
+   "page_from": 1,
+   "page_to": 6,
+   "tables": {
+    "shareholding": {
+     "columns": [
+      "shareholder_name",
+      "number_of_shares",
+      "shareholding_percentage"
+     ],
+     "confidence": 1.0,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "number_of_shares": 510000,
+        "shareholder_name": "Lakshmi Iyer, No. 9, Race Course Road, Coimbatore 641018. Occupation: Business.",
+        "shareholding_percentage": null
+       },
+       "raw": {
+        "number_of_shares": "5,10,000",
+        "shareholder_name": "Lakshmi Iyer, No. 9, Race Course Road, Coimbatore 641018. Occupation: Business."
+       },
+       "source": {
+        "bbox": [
+         76.87,
+         178.31,
+         483.82,
+         197.91
+        ],
+        "line_ids": [
+         "p3.l7",
+         "p3.l8"
+        ],
+        "page": 3
+       }
+      },
+      {
+       "cells": {
+        "number_of_shares": 490000,
+        "shareholder_name": "Venkat Iyer, No. 9, Race Course Road, Coimbatore 641018. Occupation: Business.",
+        "shareholding_percentage": null
+       },
+       "raw": {
+        "number_of_shares": "4,90,000",
+        "shareholder_name": "Venkat Iyer, No. 9, Race Course Road, Coimbatore 641018. Occupation: Business."
+       },
+       "source": {
+        "bbox": [
+         76.87,
+         208.31,
+         483.82,
+         227.91
+        ],
+        "line_ids": [
+         "p3.l9",
+         "p3.l10"
+        ],
+        "page": 3
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       76.87,
+       178.31,
+       483.82,
+       227.91
+      ],
+      "page_end": 3,
+      "page_start": 3
+     },
+     "status": "found",
+     "unparsed": 0
+    }
+   },
+   "validation": [
+    {
+     "detail": "All required fields were found.",
+     "fields": [],
+     "id": "required_present",
+     "kind": "rule",
+     "label": "Required fields present",
+     "outcome": "pass",
+     "severity": "fail",
+     "tables": []
+    }
+   ]
+  }
+ ],
+ "error": null,
+ "file_id": "f0",
+ "front_matter_pages": [],
+ "grade": "A",
+ "name": "Southgate_MOA_AOA.pdf",
+ "pages": [
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 1,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 233
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 2,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 294
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 3,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 124
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 4,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 304
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 5,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 146
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 6,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 317
+  }
+ ],
+ "reject": null,
+ "review_reasons": [],
+ "route": {
+  "blank_pages": [],
+  "dropped_rotated_chars": 0,
+  "ocr_pages": 0,
+  "page_routes": [
+   {
+    "page": 1,
+    "route": "text"
+   },
+   {
+    "page": 2,
+    "route": "text"
+   },
+   {
+    "page": 3,
+    "route": "text"
+   },
+   {
+    "page": 4,
+    "route": "text"
+   },
+   {
+    "page": 5,
+    "route": "text"
+   },
+   {
+    "page": 6,
+    "route": "text"
+   }
+  ],
+  "pages": 6,
+  "route": "text",
+  "table_pages": 0
+ },
+ "run_id": "RUN-23B8DE9CFDC6",
+ "sha256": "c37386aac3381b1771e525d8773edc01cd1cc4309408ecb6e0b32d4259a69921",
+ "source": {
+  "kind": "pdf",
+  "pages": 6
+ },
+ "status": "processed",
+ "trace": [
+  {
+   "input_hash": "c37386aac3381b1771e525d8773edc01cd1cc4309408ecb6e0b32d4259a69921",
+   "output_hash": "9f42d15a29d2132822e6b3afd48174a0e9d9ada83af6d7d268cc3d6eb4bbd973",
+   "stage": "quality_gate"
+  },
+  {
+   "input_hash": "9f42d15a29d2132822e6b3afd48174a0e9d9ada83af6d7d268cc3d6eb4bbd973",
+   "output_hash": "85e2a87eb3747ee76ad3c2ad00dc4bc37b7b2dc4615a7cc758bb7d1f6bae3403",
+   "stage": "read"
+  },
+  {
+   "input_hash": "85e2a87eb3747ee76ad3c2ad00dc4bc37b7b2dc4615a7cc758bb7d1f6bae3403",
+   "output_hash": "1512723fefd90e4293d7d89a557368dfe69812c22f9d4df0195b32940a2fbcbf",
+   "stage": "route"
+  },
+  {
+   "input_hash": "1512723fefd90e4293d7d89a557368dfe69812c22f9d4df0195b32940a2fbcbf",
+   "output_hash": "72cd212dca4a6eea75702cedcb8bd4c9d992821520d86313cd61ace0ed66c985",
+   "stage": "classify"
+  },
+  {
+   "input_hash": "72cd212dca4a6eea75702cedcb8bd4c9d992821520d86313cd61ace0ed66c985",
+   "output_hash": "cd695d47b0a925d07fa1c23bf7db7b50640a2485f478459fcb0b88d2d9f35228",
+   "stage": "instances"
+  },
+  {
+   "input_hash": "cd695d47b0a925d07fa1c23bf7db7b50640a2485f478459fcb0b88d2d9f35228",
+   "output_hash": "09f7bf29ec68827cc7713803351644abdde0217440f3368edd50d48e098fe276",
+   "stage": "extract"
+  },
+  {
+   "input_hash": "09f7bf29ec68827cc7713803351644abdde0217440f3368edd50d48e098fe276",
+   "output_hash": "3e438fa3c982efd8c44586a2b0280564ccb20662b941ff2ee82728c92b86911f",
+   "stage": "validate"
+  },
+  {
+   "input_hash": "3e438fa3c982efd8c44586a2b0280564ccb20662b941ff2ee82728c92b86911f",
+   "output_hash": "23aea509999bbb9eddb2760e470e85f51a7bb1696acebc915cbb37a7c0b7f967",
+   "stage": "score"
+  }
+ ]
+}

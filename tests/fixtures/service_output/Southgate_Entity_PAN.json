@@ -1,0 +1,280 @@
+{
+ "classification": {
+  "candidates": [
+   {
+    "score": 1.0,
+    "type": "company_pan"
+   },
+   {
+    "score": 0.05,
+    "type": "certificate_of_incorporation"
+   },
+   {
+    "score": 0.0333,
+    "type": "bank_statement"
+   }
+  ],
+  "confidence": 1.0,
+  "mixed_content": [],
+  "model_error": null,
+  "needs_review": false,
+  "reason": "signals matched: 3 supporting, margin 0.95",
+  "signals": {
+   "contrary": [],
+   "required": [
+    "intimation\\s+of\\s+allotment\\s+of\\s+permanent\\s+account\\s+number"
+   ],
+   "supporting": [
+    "income\\s+tax\\s+department",
+    "assessing\\s+officer",
+    "permanent\\s+account\\s+number\\s+\\(pan\\)"
+   ]
+  },
+  "tier": "signals",
+  "type": "company_pan"
+ },
+ "decision": "auto_accept",
+ "documents": [
+  {
+   "confidence": {
+    "composition": {
+     "document_grade": "A",
+     "failed_checks": 0,
+     "found": 2,
+     "key_fields": 2,
+     "warnings": 0
+    },
+    "decision": "auto_accept",
+    "document": 0.96,
+    "reasons": []
+   },
+   "defects": [],
+   "document_type": "company_pan",
+   "fields": {
+    "company_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "Southgate Textiles Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       223.27,
+       317.91,
+       353.76,
+       326.51
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Southgate Textiles Private Limited"
+     },
+     "status": "found",
+     "value": "Southgate Textiles Private Limited"
+    },
+    "date_of_issue": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "24 March 2016",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       90.24,
+       142.83,
+       144.93,
+       151.03
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "24 March 2016"
+     },
+     "status": "found",
+     "value": "2016-03-24"
+    },
+    "pan": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "identifier",
+     "needs_review": false,
+     "raw_text": "AAHCS6612M",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       223.27,
+       288.91,
+       280.13,
+       297.51
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "AAHCS6612M"
+     },
+     "status": "found",
+     "value": "AAHCS6612M"
+    }
+   },
+   "identity": {
+    "name": "Southgate Textiles Private Limited",
+    "pan": "AAHCS6612M"
+   },
+   "instance_key": null,
+   "instance_no": 1,
+   "page_from": 1,
+   "page_to": 1,
+   "tables": {},
+   "validation": [
+    {
+     "detail": "\"AAHCS6612M\" matches the PAN format",
+     "fields": [
+      "pan"
+     ],
+     "id": "format:pan",
+     "kind": "format",
+     "label": "pan format",
+     "outcome": "pass",
+     "severity": "fail",
+     "tables": []
+    },
+    {
+     "detail": "All required fields were found.",
+     "fields": [],
+     "id": "required_present",
+     "kind": "rule",
+     "label": "Required fields present",
+     "outcome": "pass",
+     "severity": "fail",
+     "tables": []
+    },
+    {
+     "detail": "The fourth character of the PAN is C; C is expected.",
+     "fields": [
+      "pan"
+     ],
+     "id": "pan_is_company",
+     "kind": "rule",
+     "label": "PAN belongs to a company",
+     "outcome": "pass",
+     "severity": "warn",
+     "tables": []
+    }
+   ]
+  }
+ ],
+ "error": null,
+ "file_id": "f0",
+ "front_matter_pages": [],
+ "grade": "A",
+ "name": "Southgate_Entity_PAN.pdf",
+ "pages": [
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 1,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 184
+  }
+ ],
+ "reject": null,
+ "review_reasons": [],
+ "route": {
+  "blank_pages": [],
+  "dropped_rotated_chars": 0,
+  "ocr_pages": 0,
+  "page_routes": [
+   {
+    "page": 1,
+    "route": "text"
+   }
+  ],
+  "pages": 1,
+  "route": "text",
+  "table_pages": 0
+ },
+ "run_id": "RUN-DDDE26D08227",
+ "sha256": "713f3acfca3b30dbbed07598f7d51836e9c007397536aa04cc95d5168481fa7d",
+ "source": {
+  "kind": "pdf",
+  "pages": 1
+ },
+ "status": "processed",
+ "trace": [
+  {
+   "input_hash": "713f3acfca3b30dbbed07598f7d51836e9c007397536aa04cc95d5168481fa7d",
+   "output_hash": "7740dba57f556200a4a2d21e318cfd06a0998b799f17a3b94cffa8ffcdcb199a",
+   "stage": "quality_gate"
+  },
+  {
+   "input_hash": "7740dba57f556200a4a2d21e318cfd06a0998b799f17a3b94cffa8ffcdcb199a",
+   "output_hash": "9be3e838c30153bfbcf318fb6c89adf0433fc2f266817989cff776db5bfebf4a",
+   "stage": "read"
+  },
+  {
+   "input_hash": "9be3e838c30153bfbcf318fb6c89adf0433fc2f266817989cff776db5bfebf4a",
+   "output_hash": "82010eac674a47f79b986a970dd4eabfffcd51096a706261d62c4431bc53804f",
+   "stage": "route"
+  },
+  {
+   "input_hash": "82010eac674a47f79b986a970dd4eabfffcd51096a706261d62c4431bc53804f",
+   "output_hash": "28a6dfd648c5185b8cdd2e90213630a787818212a4cd93aee15803e614a805f1",
+   "stage": "classify"
+  },
+  {
+   "input_hash": "28a6dfd648c5185b8cdd2e90213630a787818212a4cd93aee15803e614a805f1",
+   "output_hash": "f3172c16a8b0187dca94aab0f3429dc7e924f87f0310196ab96ad5ed621a8ab2",
+   "stage": "instances"
+  },
+  {
+   "input_hash": "f3172c16a8b0187dca94aab0f3429dc7e924f87f0310196ab96ad5ed621a8ab2",
+   "output_hash": "a4eadf5511022dd572a1f0592c673fdbd9e477c81de24fc678c0e3c8f04cee93",
+   "stage": "extract"
+  },
+  {
+   "input_hash": "a4eadf5511022dd572a1f0592c673fdbd9e477c81de24fc678c0e3c8f04cee93",
+   "output_hash": "23d8e1e290c2dbbc0b45b75ad26e9c8a71c17459a6e513f0b77bb29ed6ed60b8",
+   "stage": "validate"
+  },
+  {
+   "input_hash": "23d8e1e290c2dbbc0b45b75ad26e9c8a71c17459a6e513f0b77bb29ed6ed60b8",
+   "output_hash": "c553ccc3076129c29d657eb6c092b25f6ca112878f12c030ff610ab912143b92",
+   "stage": "score"
+  }
+ ]
+}

@@ -1,0 +1,59 @@
+{
+ "classification": {
+  "candidates": [
+   {
+    "score": 0.41,
+    "type": "company_pan"
+   },
+   {
+    "score": 0.3,
+    "type": "certificate_of_incorporation"
+   },
+   {
+    "score": 0.12,
+    "type": "director_kyc"
+   }
+  ],
+  "confidence": 0.41,
+  "mixed_content": [],
+  "model_error": null,
+  "needs_review": true,
+  "reason": null,
+  "signals": {},
+  "tier": "none",
+  "type": null
+ },
+ "decision": "human_review",
+ "documents": [],
+ "error": null,
+ "file_id": "fixture",
+ "front_matter_pages": [],
+ "grade": "A",
+ "name": "scan_0412.pdf",
+ "pages": [
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 842.0,
+   "ocr_conf": null,
+   "page": 1,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.0,
+   "words": 40
+  }
+ ],
+ "reject": null,
+ "review_reasons": [],
+ "route": {},
+ "run_id": "RUN-FIXTURE",
+ "sha256": "da85f5ceac09fe979aabcb06aa453831fccdae45a1c4a9ec53e2a7f27bfaf3d4",
+ "source": {
+  "kind": "pdf",
+  "pages": 1
+ },
+ "status": "processed",
+ "trace": []
+}

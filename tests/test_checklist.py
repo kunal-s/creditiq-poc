@@ -14,70 +14,33 @@ def _ids(items) -> set[str]:
 
 CONSTITUTION_ONLY_ITEMS = {
     "private_limited": {"coi", "moa_aoa", "board_resolution"},
-    "proprietorship": {"proprietor_declaration"},
-    "partnership": {"partnership_deed", "partner_authority_letter"},
+    "proprietorship": set(),
+    "partnership": set(),
 }
 
-UNIVERSAL_ITEMS = {
-    "pan_entity",
-    "gst_registration",
-    "udyam",
-    "kyc_promoters",
-    "fs_fy_minus2",
-    "fs_fy_minus1",
-    "fs_provisional",
-    "itr",
-    "bank_statements",
-    "gst_returns",
-}
+UNIVERSAL_ITEMS = {"pan_entity", "kyc_promoters", "fs_fy_minus2", "fs_fy_minus1", "itr", "bank_statements", "gst_returns"}
+
+# Items for documents the configured types cannot read are not on the list (AD-2a).
+NOT_ON_THE_LIST = {"gst_registration", "udyam", "fs_provisional", "fs_projected", "cma_data", "stock_statement", "title_document",
+                   "valuation_report", "bureau_report", "facilities_declaration", "sanction_letters"}
 
 
 def test_every_constitution_and_attribute_combination(published_data_root: Path):
-    for constitution, facility_types, (collateral, mpbf) in itertools.product(
-        CONSTITUTIONS, FACILITY_COMBOS, BOOL_COMBOS
-    ):
-        attrs = CaseAttributes.from_request(
-            facility_types=facility_types,
-            collateral_present=collateral,
-            mpbf_applicable=mpbf,
-        )
-        items = derive_checklist(published_data_root, constitution, attrs)
-        ids = _ids(items)
+    for constitution, facility_types, (collateral, mpbf) in itertools.product(CONSTITUTIONS, FACILITY_COMBOS, BOOL_COMBOS):
+        attrs = CaseAttributes.from_request(facility_types=facility_types, collateral_present=collateral, mpbf_applicable=mpbf)
+        ids = _ids(derive_checklist(published_data_root, constitution, attrs))
         case = f"{constitution} / facilities={facility_types} / collateral={collateral} / mpbf={mpbf}"
 
         # Universal items are always required, whatever the constitution or attributes.
         assert UNIVERSAL_ITEMS <= ids, f"missing universal items for {case}: {UNIVERSAL_ITEMS - ids}"
-
-        # Constitution-specific documents: exactly the right family, and no other.
+        # The constitution documents the nine types can read, for a company only.
         for other_constitution, other_items in CONSTITUTION_ONLY_ITEMS.items():
             if other_constitution == constitution:
                 assert other_items <= ids, f"missing {other_constitution} documents for {case}"
             else:
                 assert not (other_items & ids), f"leaked {other_constitution} documents into {case}"
-
-        # Collateral-gated items.
-        collateral_items = {"title_document", "valuation_report"}
-        if collateral:
-            assert collateral_items <= ids, f"missing collateral documents for {case}"
-        else:
-            assert not (collateral_items & ids), f"collateral documents present without collateral for {case}"
-
-        # MPBF-gated item.
-        if mpbf:
-            assert "cma_data" in ids, f"missing CMA data for {case}"
-        else:
-            assert "cma_data" not in ids, f"CMA data present without MPBF for {case}"
-
-        # Facility-gated items.
-        if "term_loan" in facility_types:
-            assert "fs_projected" in ids, f"missing projected financials for {case}"
-        else:
-            assert "fs_projected" not in ids, f"projected financials present without a term loan for {case}"
-
-        if "cash_credit" in facility_types:
-            assert "stock_statement" in ids, f"missing stock statement for {case}"
-        else:
-            assert "stock_statement" not in ids, f"stock statement present without cash credit for {case}"
+        assert not (NOT_ON_THE_LIST & ids), f"{NOT_ON_THE_LIST & ids} should not be asked for in {case}"
+        assert ids == UNIVERSAL_ITEMS | CONSTITUTION_ONLY_ITEMS[constitution]
 
 
 def test_derive_checklist_is_deterministic(published_data_root: Path):
@@ -97,5 +60,5 @@ def test_section_weights_partition_by_category(published_data_root: Path):
     )
     items = derive_checklist(published_data_root, "private_limited", attrs)
     weights = section_weights(items)
-    assert set(weights) <= {"Constitution and KYC", "Financials", "Banking and operations", "Collateral and security"}
+    assert set(weights) <= {"Constitution and KYC", "Financials", "Banking and operations"}
     assert sum(weights.values()) == sum(i.weight for i in items)

@@ -1,0 +1,149 @@
+{
+ "classification": {
+  "candidates": [
+   {
+    "score": 0.1,
+    "type": "certificate_of_incorporation"
+   },
+   {
+    "score": 0.0333,
+    "type": "bank_statement"
+   },
+   {
+    "score": 0.0,
+    "type": "audited_financial_statements"
+   }
+  ],
+  "confidence": 0.0,
+  "mixed_content": [],
+  "model_error": null,
+  "needs_review": true,
+  "reason": "no type met the signal rules; no model configured",
+  "signals": {},
+  "tier": "none",
+  "type": null
+ },
+ "decision": "human_review",
+ "documents": [],
+ "error": null,
+ "file_id": "f0",
+ "front_matter_pages": [],
+ "grade": "A",
+ "name": "Southgate_Title_Deed_Coimbatore_Unit.pdf",
+ "pages": [
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 1,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 292
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 2,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 335
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 3,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 204
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 4,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 162
+  }
+ ],
+ "reject": null,
+ "review_reasons": [
+  {
+   "detail": "no type met the signal rules; no model configured",
+   "kind": "type_unassigned"
+  }
+ ],
+ "route": {
+  "blank_pages": [],
+  "dropped_rotated_chars": 0,
+  "ocr_pages": 0,
+  "page_routes": [
+   {
+    "page": 1,
+    "route": "text"
+   },
+   {
+    "page": 2,
+    "route": "text"
+   },
+   {
+    "page": 3,
+    "route": "text"
+   },
+   {
+    "page": 4,
+    "route": "text"
+   }
+  ],
+  "pages": 4,
+  "route": "text",
+  "table_pages": 0
+ },
+ "run_id": "RUN-4D327D4A5867",
+ "sha256": "ef80cf680fdebba0833568ec4178ab6c1cb4160b7c5d1a650a6800bdf3b7b569",
+ "source": {
+  "kind": "pdf",
+  "pages": 4
+ },
+ "status": "processed",
+ "trace": [
+  {
+   "input_hash": "ef80cf680fdebba0833568ec4178ab6c1cb4160b7c5d1a650a6800bdf3b7b569",
+   "output_hash": "15d94ab80f8f9c18e274633dc91733d6334566fc7058675da348d72c5052ef2c",
+   "stage": "quality_gate"
+  },
+  {
+   "input_hash": "15d94ab80f8f9c18e274633dc91733d6334566fc7058675da348d72c5052ef2c",
+   "output_hash": "f5632ac5ffeeda9d3396dff2d22b4b1a7a6cbd309385eb4283412cb71576f66f",
+   "stage": "read"
+  },
+  {
+   "input_hash": "f5632ac5ffeeda9d3396dff2d22b4b1a7a6cbd309385eb4283412cb71576f66f",
+   "output_hash": "c71022c473ab2566a224d8c28c8787b77390297ab4af0923b19e2f3a0f9152e0",
+   "stage": "route"
+  },
+  {
+   "input_hash": "c71022c473ab2566a224d8c28c8787b77390297ab4af0923b19e2f3a0f9152e0",
+   "output_hash": "ef2f97eb4ee7078eec21fb5b4409bc0b87987ffc7cd7379ce6e6e9cff974dce3",
+   "stage": "classify"
+  }
+ ]
+}

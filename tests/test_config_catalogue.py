@@ -1,9 +1,29 @@
-"""The configuration catalogue (docs/functional-requirements.md F-00)."""
+"""The configuration catalogue (docs/functional-requirements.md F-00, AD-2a)."""
 
+import subprocess
 from pathlib import Path
 
+import pytest
+
+from engine import policy
 from engine.configstore import reader, writer
 from engine.configstore.schema import cross_check
+
+ROOT = Path(__file__).resolve().parents[1]
+INGESTION_VENV = ROOT / "services" / "ingestion" / ".venv" / "bin" / "python"
+NINE = {
+    "certificate_of_incorporation", "memorandum_articles_of_association", "board_resolution_borrowing", "company_pan",
+    "director_kyc", "audited_financial_statements", "income_tax_return", "gstr_3b", "bank_statement",
+}
+
+
+def _cross(sections, **changes):
+    return cross_check({**sections, **changes}, writer.load_ingestion_sections())
+
+
+def test_the_closed_list_is_the_nine_types_and_the_sourcing_message(published_data_root: Path):
+    ids = {t.id for t in reader.load_document_types(published_data_root).types}
+    assert ids == NINE | {"application_message"}
 
 
 def test_every_checklist_item_is_satisfied_by_some_document_type(published_data_root: Path):
@@ -13,58 +33,67 @@ def test_every_checklist_item_is_satisfied_by_some_document_type(published_data_
     assert {i.id for i in taxonomy.items} <= covered
 
 
-def test_every_referenced_dictionary_is_published(published_data_root: Path):
-    types = reader.load_document_types(published_data_root)
-    for t in types.types:
-        if t.dictionary:
-            assert reader.load_dictionary(published_data_root, t.dictionary).id == t.dictionary
+def test_one_version_carries_the_engine_and_the_service_configuration(published_data_root: Path):
+    ing = {n: reader.load_ingestion_section(published_data_root, n) for n in writer.INGESTION_SECTIONS}
+    assert {d["document_type"] for d in ing["document_types"]["documents"]} == NINE
+    assert set(ing["signals"]["types"]) == NINE and "reason_codes" in ing["quality"]
+    version = reader.published_version(published_data_root)
+    assert {f"ingestion.{n}" for n in writer.INGESTION_SECTIONS} <= set(version["section_hashes"])
+
+
+def test_changing_the_service_configuration_changes_the_version(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    a = writer.publish(data_root=tmp_path / "a", author="t")["version"]
+    original = writer.load_ingestion_sections
+
+    def edited():
+        sections = original()
+        sections["decision"] = {**sections["decision"], "accept_min_document_confidence": 0.99}
+        return sections
+
+    monkeypatch.setattr(writer, "load_ingestion_sections", edited)
+    b = writer.publish(data_root=tmp_path / "b", author="t")["version"]
+    assert a != b
+
+
+@pytest.mark.skipif(not INGESTION_VENV.exists(), reason="the ingestion service is not installed")
+def test_the_service_accepts_the_published_configuration():
+    out = subprocess.run([str(INGESTION_VENV), "-m", "ingestion.cli", "config-validate", str(ROOT / "config" / "ingestion")],
+                         cwd=ROOT / "services" / "ingestion", env={"PYTHONPATH": "."}, capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    assert "9 document types" in out.stdout
 
 
 def test_cross_check_reports_a_dangling_reference():
     sections = writer.load_authored_sections()
     broken = sections["document_types"].model_copy(deep=True)
     broken.types[1].satisfies = ["no_such_item"]
-    problems = cross_check({**sections, "document_types": broken})
-    assert any("no_such_item" in p for p in problems)
+    assert any("no_such_item" in p for p in _cross(sections, document_types=broken))
 
 
-def test_cross_check_reports_a_bad_regex():
+def test_cross_check_reports_a_type_the_service_does_not_know():
     sections = writer.load_authored_sections()
     broken = sections["document_types"].model_copy(deep=True)
-    broken.types[1].signals.required = ["(unclosed"]
-    assert any("does not compile" in p for p in cross_check({**sections, "document_types": broken}))
+    broken.types[1].id = "memorandum_of_association"
+    assert any("ids differ" in p for p in _cross(sections, document_types=broken))
 
 
-def test_key_fields_cover_the_test_plan_list(published_data_root: Path):
-    """Test plan §5.3: the key fields exist in some dictionary, flagged key."""
-    key = set()
-    for t in reader.load_document_types(published_data_root).types:
-        if t.dictionary:
-            d = reader.load_dictionary(published_data_root, t.dictionary)
-            key |= {f.name for f in d.fields if f.key_field}
-    expected = {
-        "pan", "gstin", "cin", "udyam_number", "revenue_from_operations", "ebitda", "profit_after_tax",
-        "net_worth", "total_borrowings", "current_assets", "current_liabilities", "outward_taxable_supplies",
-        "transactions", "score", "facilities", "amount_requested",
-    }
-    assert expected <= key, expected - key
+def test_required_fields_include_the_identifiers_the_checks_rely_on():
+    docs = {d["document_type"]: d for d in writer.load_ingestion_sections()["document_types"]["documents"]}
+    required = {t: {f["name"] for f in d["schema"]["fields"] if f["required"]} for t, d in docs.items()}
+    assert {"cin", "date_of_incorporation"} <= required["certificate_of_incorporation"]
+    assert {"pan"} <= required["company_pan"] and {"gstin", "tax_period"} <= required["gstr_3b"]
+    assert {"account_number", "statement_period_start", "statement_period_end"} <= required["bank_statement"]
+    assert {"assessment_year"} <= required["income_tax_return"] and {"financial_year"} <= required["audited_financial_statements"]
+    assert {"borrowing_limit", "lender_name"} <= {f["name"] for f in docs["board_resolution_borrowing"]["schema"]["fields"]}
 
 
 def test_alignment_and_crosschecks_are_published(published_data_root: Path):
     alignment = reader.load_alignment(published_data_root)
     assert alignment.financial_year_start_month == 4
-    assert {e.id for e in alignment.bank_credit_exclusions} >= {
-        "own_account_transfer",
-        "loan_disbursal",
-        "reversal",
-        "returned_cheque",
-    }
+    assert {e.id for e in alignment.bank_credit_exclusions} >= {"own_account_transfer", "loan_disbursal", "reversal", "returned_cheque"}
     rules = reader.load_crosschecks(published_data_root).rules
-    # The F-19.2 minimum rule set.
-    assert {r.id for r in rules} >= {
-        "ID-01", "ID-02", "ID-03", "ID-04", "TO-01", "TO-02", "TO-03", "TO-04",
-        "BA-01", "BA-02", "OB-01", "OB-02",
-    }
+    # The rules the nine document types can evaluate; a rule returns when a type that supplies its evidence does.
+    assert {r.id for r in rules} == {"ID-01", "ID-02", "ID-03", "ID-04", "TO-01", "TO-02", "TO-03", "TO-04"}
 
 
 def test_cross_check_reports_an_unknown_tolerance_and_source():
@@ -72,17 +101,29 @@ def test_cross_check_reports_an_unknown_tolerance_and_source():
     broken = sections["crosschecks"].model_copy(deep=True)
     broken.rules[0].tolerance = "no_such_tolerance"
     broken.rules[1].sources = ["no_such_type"]
-    problems = cross_check({**sections, "crosschecks": broken})
+    problems = _cross(sections, crosschecks=broken)
     assert any("no_such_tolerance" in p for p in problems)
     assert any("no_such_type" in p for p in problems)
 
 
 def test_policy_norms_are_published_with_their_categories(published_data_root: Path):
-    policy = reader.load_policy(published_data_root)
-    families = {n.family for n in policy.norms}
-    assert families == {"eligibility", "ratios", "security_cover", "documentation"}
-    categories = {c.key for c in policy.deviation_categories}
-    assert all(n.category in categories for n in policy.norms)
+    pol = reader.load_policy(published_data_root)
+    assert {n.family for n in pol.norms} == {"eligibility", "ratios", "documentation"}
+    categories = {c.key for c in pol.deviation_categories}
+    assert all(n.category in categories for n in pol.norms)
+
+
+def test_every_financial_input_of_the_policy_has_a_configured_statement_line(published_data_root: Path):
+    cfg = reader.load_statements(published_data_root)
+    assert set(policy.FINANCIAL_INPUTS) <= set(cfg.lines) | set(cfg.derived)
+
+
+def test_derived_statement_lines_name_configured_lines(published_data_root: Path):
+    from engine.statements import _terms
+
+    cfg = reader.load_statements(published_data_root)
+    for key, expression in cfg.derived.items():
+        assert {name for _, name in _terms(expression)} <= set(cfg.lines) | set(cfg.derived) - {key}, key
 
 
 def test_cross_check_reports_a_bad_norm():
@@ -91,7 +132,7 @@ def test_cross_check_reports_a_bad_norm():
     broken.norms[0].expression = "no_such_input / net_worth"
     broken.norms[1].category = "no_such_category"
     broken.norms[2].expression = "net_worth /"
-    problems = cross_check({**sections, "policy": broken})
+    problems = _cross(sections, policy=broken)
     assert any("no_such_input" in p for p in problems)
     assert any("no_such_category" in p for p in problems)
     assert any("does not parse" in p for p in problems)

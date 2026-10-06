@@ -13,7 +13,7 @@ from fastapi.testclient import TestClient
 
 from engine import cli, db, jobs, pipeline
 from engine.ingest_client import StubIngestClient
-from tests.conftest import RM, fixture_file, make_case, run_jobs, sign_in, upload
+from tests.conftest import RM, case_files, fixture_file, make_case, run_jobs, sign_in, upload
 
 
 class RecordingClient(StubIngestClient):
@@ -105,7 +105,7 @@ def test_f02_a_failing_job_stops_after_its_attempts(client, published_data_root,
 
 
 def test_f02_statuses_timings_and_run_record(client, published_data_root):
-    names = ["partial_bundle.pdf", "scan_0412.pdf", "gst_sep_photo.pdf", "itr_blurred.pdf"]
+    names = [n for n, _ in case_files("partial")] + ["scan_0412.pdf", "gst_sep_photo.pdf", "itr_blurred.pdf"]
     case_id, _ = _case_with_upload(client, published_data_root, names)
     run_jobs(published_data_root)
     rm = sign_in(client, RM)
@@ -119,9 +119,9 @@ def test_f02_statuses_timings_and_run_record(client, published_data_root):
 
     fields = client.get(f"/api/cases/{case_id}/fields", headers=sign_in(client, "ananya.krishnan@rblbank.com")).json()
     assert all(f["confidence"] is not None and f["evidence"]["page"] >= 1 for f in fields if f["value"] is not None)
-    low = next(f for f in fields if f["field"] == "outward_taxable_supplies" and f["status"] == "in_review")
+    low = next(f for f in fields if f["field"] == "gstin" and f["status"] == "in_review")
     assert low["confidence"] < 0.8
-    assert low["confidence_components"]["cap.grade_c_page"] == 0.6
+    assert low["confidence_components"]["page_grade"] == 0.5
 
     conn = db.connect(published_data_root)
     try:
@@ -131,7 +131,7 @@ def test_f02_statuses_timings_and_run_record(client, published_data_root):
         ).fetchone()
     finally:
         conn.close()
-    assert {"ingest", "read", "grade", "classify", "extract", "store"} <= stages
+    assert {"ingest", "store"} <= stages
     assert json.loads(run["detail"])["config_version"]
 
     out = io.StringIO()

@@ -1,0 +1,98 @@
+{
+ "classification": {
+  "candidates": [
+   {
+    "score": 0.05,
+    "type": "certificate_of_incorporation"
+   },
+   {
+    "score": 0.04,
+    "type": "gstr_3b"
+   },
+   {
+    "score": 0.0333,
+    "type": "bank_statement"
+   }
+  ],
+  "confidence": 0.0,
+  "mixed_content": [],
+  "model_error": null,
+  "needs_review": true,
+  "reason": "no type met the signal rules; no model configured",
+  "signals": {},
+  "tier": "none",
+  "type": null
+ },
+ "decision": "human_review",
+ "documents": [],
+ "error": null,
+ "file_id": "f0",
+ "front_matter_pages": [],
+ "grade": "A",
+ "name": "Southgate_Nil_Facilities_Declaration.pdf",
+ "pages": [
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 1,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 339
+  }
+ ],
+ "reject": null,
+ "review_reasons": [
+  {
+   "detail": "no type met the signal rules; no model configured",
+   "kind": "type_unassigned"
+  }
+ ],
+ "route": {
+  "blank_pages": [],
+  "dropped_rotated_chars": 0,
+  "ocr_pages": 0,
+  "page_routes": [
+   {
+    "page": 1,
+    "route": "text"
+   }
+  ],
+  "pages": 1,
+  "route": "text",
+  "table_pages": 0
+ },
+ "run_id": "RUN-66C37BE643DA",
+ "sha256": "9254dab35d6e804a68ab37091ba9f55adcaa375a49c0e4967832df3f524433c3",
+ "source": {
+  "kind": "pdf",
+  "pages": 1
+ },
+ "status": "processed",
+ "trace": [
+  {
+   "input_hash": "9254dab35d6e804a68ab37091ba9f55adcaa375a49c0e4967832df3f524433c3",
+   "output_hash": "7740dba57f556200a4a2d21e318cfd06a0998b799f17a3b94cffa8ffcdcb199a",
+   "stage": "quality_gate"
+  },
+  {
+   "input_hash": "7740dba57f556200a4a2d21e318cfd06a0998b799f17a3b94cffa8ffcdcb199a",
+   "output_hash": "51ab1b7930ff043fe54664bebcf99c837906827437c7352218974df252632275",
+   "stage": "read"
+  },
+  {
+   "input_hash": "51ab1b7930ff043fe54664bebcf99c837906827437c7352218974df252632275",
+   "output_hash": "82010eac674a47f79b986a970dd4eabfffcd51096a706261d62c4431bc53804f",
+   "stage": "route"
+  },
+  {
+   "input_hash": "82010eac674a47f79b986a970dd4eabfffcd51096a706261d62c4431bc53804f",
+   "output_hash": "5447a9e5f73d0cfbf3ac444b7b75ef132ddb4f073f9784d3fa73842de8e0ad13",
+   "stage": "classify"
+  }
+ ]
+}

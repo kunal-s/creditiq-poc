@@ -1,0 +1,922 @@
+{
+ "classification": {
+  "candidates": [
+   {
+    "score": 1.0,
+    "type": "director_kyc"
+   },
+   {
+    "score": 0.05,
+    "type": "certificate_of_incorporation"
+   },
+   {
+    "score": 0.04,
+    "type": "gstr_3b"
+   }
+  ],
+  "confidence": 1.0,
+  "mixed_content": [],
+  "model_error": null,
+  "needs_review": false,
+  "reason": "signals matched: 4 supporting, margin 0.95",
+  "signals": {
+   "contrary": [],
+   "required": [
+    "director\\s+kyc\\s+summary\\s+sheet"
+   ],
+   "supporting": [
+    "director\\s+identification\\s+number",
+    "residential\\s+address",
+    "relationship\\s+with\\s+company",
+    "aadhaar"
+   ]
+  },
+  "tier": "signals",
+  "type": "director_kyc"
+ },
+ "decision": "auto_accept",
+ "documents": [
+  {
+   "confidence": {
+    "composition": {
+     "document_grade": "A",
+     "failed_checks": 0,
+     "found": 1,
+     "key_fields": 1,
+     "warnings": 0
+    },
+    "decision": "auto_accept",
+    "document": 0.96,
+    "reasons": []
+   },
+   "defects": [],
+   "document_type": "director_kyc",
+   "fields": {
+    "address": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "No. 9, Race Course Road, Coimbatore 641018, Tamil Nadu",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       223.27,
+       272.31,
+       450.78,
+       280.91
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "No. 9, Race Course Road, Coimbatore 641018, Tamil Nadu"
+     },
+     "status": "found",
+     "value": "No. 9, Race Course Road, Coimbatore 641018, Tamil Nadu"
+    },
+    "date_of_birth": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "12 July 1979",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       223.27,
+       254.31,
+       272.03,
+       262.91
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "12 July 1979"
+     },
+     "status": "found",
+     "value": "1979-07-12"
+    },
+    "designation": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "Managing Director",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       223.27,
+       207.31,
+       293.52,
+       215.91
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Managing Director"
+     },
+     "status": "found",
+     "value": "Managing Director"
+    },
+    "din": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "07421683",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       223.27,
+       225.31,
+       261.52,
+       233.91
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "07421683"
+     },
+     "status": "found",
+     "value": "07421683"
+    },
+    "document_number": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    },
+    "expiry_date": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    },
+    "father_or_spouse_name": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    },
+    "gender": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    },
+    "id_document_type": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Aadhaar",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       75.87,
+       326.31,
+       110.27,
+       334.91
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Aadhaar"
+     },
+     "status": "found",
+     "value": "Aadhaar"
+    },
+    "id_number": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "XXXX XXXX 4471",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       223.27,
+       326.31,
+       293.07,
+       334.91
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "XXXX XXXX 4471"
+     },
+     "status": "found",
+     "value": "XXXX XXXX 4471"
+    },
+    "issue_date": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    },
+    "pan": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "AXXXX1683M",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       223.27,
+       308.31,
+       278.24,
+       316.91
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "AXXXX1683M"
+     },
+     "status": "found",
+     "value": "AXXXX1683M"
+    },
+    "person_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "Lakshmi Iyer",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       223.27,
+       189.31,
+       272.01,
+       197.91
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Lakshmi Iyer"
+     },
+     "status": "found",
+     "value": "Lakshmi Iyer"
+    }
+   },
+   "identity": {
+    "din": "07421683",
+    "dob": "1979-07-12",
+    "name": "Lakshmi Iyer",
+    "pan": "AXXXX1683M"
+   },
+   "instance_key": "Lakshmi Iyer",
+   "instance_no": 1,
+   "page_from": 1,
+   "page_to": 1,
+   "tables": {},
+   "validation": [
+    {
+     "detail": "\"07421683\" matches the DIN format",
+     "fields": [
+      "din"
+     ],
+     "id": "format:din",
+     "kind": "format",
+     "label": "din format",
+     "outcome": "pass",
+     "severity": "fail",
+     "tables": []
+    },
+    {
+     "detail": "\"AXXXX1683M\" matches the MASKED_PAN format",
+     "fields": [
+      "pan"
+     ],
+     "id": "format:pan",
+     "kind": "format",
+     "label": "pan format",
+     "outcome": "pass",
+     "severity": "fail",
+     "tables": []
+    },
+    {
+     "detail": "\"XXXX XXXX 4471\" matches the MASKED_AADHAAR format",
+     "fields": [
+      "id_number"
+     ],
+     "id": "format:id_number",
+     "kind": "format",
+     "label": "id_number format",
+     "outcome": "pass",
+     "severity": "fail",
+     "tables": []
+    },
+    {
+     "detail": "All required fields were found.",
+     "fields": [],
+     "id": "required_present",
+     "kind": "rule",
+     "label": "Required fields present",
+     "outcome": "pass",
+     "severity": "fail",
+     "tables": []
+    }
+   ]
+  },
+  {
+   "confidence": {
+    "composition": {
+     "document_grade": "A",
+     "failed_checks": 0,
+     "found": 1,
+     "key_fields": 1,
+     "warnings": 0
+    },
+    "decision": "auto_accept",
+    "document": 0.96,
+    "reasons": []
+   },
+   "defects": [],
+   "document_type": "director_kyc",
+   "fields": {
+    "address": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "No. 9, Race Course Road, Coimbatore 641018, Tamil Nadu",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       223.27,
+       272.31,
+       450.78,
+       280.91
+      ],
+      "kind": "page",
+      "page": 2,
+      "range": null,
+      "sheet": null,
+      "text": "No. 9, Race Course Road, Coimbatore 641018, Tamil Nadu"
+     },
+     "status": "found",
+     "value": "No. 9, Race Course Road, Coimbatore 641018, Tamil Nadu"
+    },
+    "date_of_birth": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "03 September 1976",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       223.27,
+       254.31,
+       298.8,
+       262.91
+      ],
+      "kind": "page",
+      "page": 2,
+      "range": null,
+      "sheet": null,
+      "text": "03 September 1976"
+     },
+     "status": "found",
+     "value": "1976-09-03"
+    },
+    "designation": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "Director",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       223.27,
+       207.31,
+       253.37,
+       215.91
+      ],
+      "kind": "page",
+      "page": 2,
+      "range": null,
+      "sheet": null,
+      "text": "Director"
+     },
+     "status": "found",
+     "value": "Director"
+    },
+    "din": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "07421699",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       223.27,
+       225.31,
+       261.52,
+       233.91
+      ],
+      "kind": "page",
+      "page": 2,
+      "range": null,
+      "sheet": null,
+      "text": "07421699"
+     },
+     "status": "found",
+     "value": "07421699"
+    },
+    "document_number": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    },
+    "expiry_date": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    },
+    "father_or_spouse_name": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    },
+    "gender": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    },
+    "id_document_type": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Aadhaar",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       75.87,
+       326.31,
+       110.27,
+       334.91
+      ],
+      "kind": "page",
+      "page": 2,
+      "range": null,
+      "sheet": null,
+      "text": "Aadhaar"
+     },
+     "status": "found",
+     "value": "Aadhaar"
+    },
+    "id_number": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "XXXX XXXX 9026",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       223.27,
+       326.31,
+       293.07,
+       334.91
+      ],
+      "kind": "page",
+      "page": 2,
+      "range": null,
+      "sheet": null,
+      "text": "XXXX XXXX 9026"
+     },
+     "status": "found",
+     "value": "XXXX XXXX 9026"
+    },
+    "issue_date": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    },
+    "pan": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "AXXXX1699V",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       223.27,
+       308.31,
+       276.81,
+       316.91
+      ],
+      "kind": "page",
+      "page": 2,
+      "range": null,
+      "sheet": null,
+      "text": "AXXXX1699V"
+     },
+     "status": "found",
+     "value": "AXXXX1699V"
+    },
+    "person_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "Venkat Iyer",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       223.27,
+       189.31,
+       266.77,
+       197.91
+      ],
+      "kind": "page",
+      "page": 2,
+      "range": null,
+      "sheet": null,
+      "text": "Venkat Iyer"
+     },
+     "status": "found",
+     "value": "Venkat Iyer"
+    }
+   },
+   "identity": {
+    "din": "07421699",
+    "dob": "1976-09-03",
+    "name": "Venkat Iyer",
+    "pan": "AXXXX1699V"
+   },
+   "instance_key": "Venkat Iyer",
+   "instance_no": 2,
+   "page_from": 2,
+   "page_to": 2,
+   "tables": {},
+   "validation": [
+    {
+     "detail": "\"07421699\" matches the DIN format",
+     "fields": [
+      "din"
+     ],
+     "id": "format:din",
+     "kind": "format",
+     "label": "din format",
+     "outcome": "pass",
+     "severity": "fail",
+     "tables": []
+    },
+    {
+     "detail": "\"AXXXX1699V\" matches the MASKED_PAN format",
+     "fields": [
+      "pan"
+     ],
+     "id": "format:pan",
+     "kind": "format",
+     "label": "pan format",
+     "outcome": "pass",
+     "severity": "fail",
+     "tables": []
+    },
+    {
+     "detail": "\"XXXX XXXX 9026\" matches the MASKED_AADHAAR format",
+     "fields": [
+      "id_number"
+     ],
+     "id": "format:id_number",
+     "kind": "format",
+     "label": "id_number format",
+     "outcome": "pass",
+     "severity": "fail",
+     "tables": []
+    },
+    {
+     "detail": "All required fields were found.",
+     "fields": [],
+     "id": "required_present",
+     "kind": "rule",
+     "label": "Required fields present",
+     "outcome": "pass",
+     "severity": "fail",
+     "tables": []
+    }
+   ]
+  }
+ ],
+ "error": null,
+ "file_id": "f0",
+ "front_matter_pages": [],
+ "grade": "A",
+ "name": "Southgate_Director_KYC_Iyer_x2.pdf",
+ "pages": [
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 1,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 150
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 2,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 149
+  }
+ ],
+ "reject": null,
+ "review_reasons": [],
+ "route": {
+  "blank_pages": [],
+  "dropped_rotated_chars": 0,
+  "ocr_pages": 0,
+  "page_routes": [
+   {
+    "page": 1,
+    "route": "text"
+   },
+   {
+    "page": 2,
+    "route": "text"
+   }
+  ],
+  "pages": 2,
+  "route": "text",
+  "table_pages": 0
+ },
+ "run_id": "RUN-8A68919D9286",
+ "sha256": "0b38c33839694d363b161a88dfc151b41bc96d7ab42a6f8f190178f54ee2fe84",
+ "source": {
+  "kind": "pdf",
+  "pages": 2
+ },
+ "status": "processed",
+ "trace": [
+  {
+   "input_hash": "0b38c33839694d363b161a88dfc151b41bc96d7ab42a6f8f190178f54ee2fe84",
+   "output_hash": "f79d38dd1dc8e6ed2b5cf18b51b8289ef57a4478afda4532d9793d45d74a5e58",
+   "stage": "quality_gate"
+  },
+  {
+   "input_hash": "f79d38dd1dc8e6ed2b5cf18b51b8289ef57a4478afda4532d9793d45d74a5e58",
+   "output_hash": "32e894f2f149761edce137b6884d22f7041d18061854340b4b8911f102751244",
+   "stage": "read"
+  },
+  {
+   "input_hash": "32e894f2f149761edce137b6884d22f7041d18061854340b4b8911f102751244",
+   "output_hash": "bd472463de639960ef49afe79860acb5b35b89502ce921d27fd1d2717ff5e938",
+   "stage": "route"
+  },
+  {
+   "input_hash": "bd472463de639960ef49afe79860acb5b35b89502ce921d27fd1d2717ff5e938",
+   "output_hash": "b47517ae1d3c0aabe90748372b1f6d97fa85973599209b5306bfea3a2040690e",
+   "stage": "classify"
+  },
+  {
+   "input_hash": "b47517ae1d3c0aabe90748372b1f6d97fa85973599209b5306bfea3a2040690e",
+   "output_hash": "e16b21511bea238d9d6e0f92123cf559e8d3fda8cb9e76436939b8deaf017cca",
+   "stage": "instances"
+  },
+  {
+   "input_hash": "e16b21511bea238d9d6e0f92123cf559e8d3fda8cb9e76436939b8deaf017cca",
+   "output_hash": "0ffdf60666e6c2941f8f64e758e11c5e0ea204a514c48dcbdb003370d8d350d7",
+   "stage": "extract"
+  },
+  {
+   "input_hash": "0ffdf60666e6c2941f8f64e758e11c5e0ea204a514c48dcbdb003370d8d350d7",
+   "output_hash": "85d943d7835038be27d294a9254cc3dc1d2ab0ec724aa7010df87e5a6af2c2db",
+   "stage": "validate"
+  },
+  {
+   "input_hash": "85d943d7835038be27d294a9254cc3dc1d2ab0ec724aa7010df87e5a6af2c2db",
+   "output_hash": "b22108e07160bb6313754f96c68df8e6738a018fe64c0baebea791c6f81830a8",
+   "stage": "score"
+  }
+ ]
+}

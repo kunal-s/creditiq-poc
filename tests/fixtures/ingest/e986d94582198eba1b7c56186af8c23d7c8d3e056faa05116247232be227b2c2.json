@@ -1,0 +1,939 @@
+{
+ "classification": {
+  "candidates": [
+   {
+    "score": 0.95,
+    "type": "bank_statement"
+   }
+  ],
+  "confidence": 0.95,
+  "mixed_content": [],
+  "model_error": null,
+  "needs_review": false,
+  "reason": null,
+  "signals": {
+   "contrary": [],
+   "required": [
+    "fixture"
+   ],
+   "supporting": []
+  },
+  "tier": "signals",
+  "type": "bank_statement"
+ },
+ "decision": "auto_accept",
+ "documents": [
+  {
+   "confidence": {
+    "composition": {},
+    "decision": "auto_accept",
+    "document": 0.96,
+    "reasons": []
+   },
+   "defects": [],
+   "document_type": "bank_statement",
+   "fields": {
+    "account_holder_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Kestrel Fabricators Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Kestrel Fabricators Private Limited"
+     },
+     "status": "found",
+     "value": "Kestrel Fabricators Private Limited"
+    },
+    "account_number": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "901000001234",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "901000001234"
+     },
+     "status": "found",
+     "value": "901000001234"
+    },
+    "bank_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Lotuscrest Bank",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Lotuscrest Bank"
+     },
+     "status": "found",
+     "value": "Lotuscrest Bank"
+    },
+    "branch": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Pune",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Pune"
+     },
+     "status": "found",
+     "value": "Pune"
+    },
+    "closing_balance": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "117500000",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "117500000"
+     },
+     "status": "found",
+     "value": 117500000
+    },
+    "currency": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "INR",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "INR"
+     },
+     "status": "found",
+     "value": "INR"
+    },
+    "ifsc": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "LOTU0000123",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "LOTU0000123"
+     },
+     "status": "found",
+     "value": "LOTU0000123"
+    },
+    "opening_balance": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "5000000",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "5000000"
+     },
+     "status": "found",
+     "value": 5000000
+    },
+    "statement_period_end": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "2026-08-31",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "2026-08-31"
+     },
+     "status": "found",
+     "value": "2026-08-31"
+    },
+    "statement_period_start": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "2025-09-01",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "2025-09-01"
+     },
+     "status": "found",
+     "value": "2025-09-01"
+    }
+   },
+   "identity": {
+    "name": "Kestrel Fabricators Private Limited"
+   },
+   "instance_key": "1234",
+   "instance_no": 1,
+   "page_from": 1,
+   "page_to": 1,
+   "tables": {
+    "transactions": {
+     "columns": [
+      "date",
+      "description",
+      "reference_number",
+      "debit",
+      "credit",
+      "balance"
+     ],
+     "confidence": 0.96,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "balance": 14500000,
+        "credit": 9500000,
+        "date": "2025-09-05",
+        "debit": null,
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0000"
+       },
+       "raw": {
+        "balance": "14500000",
+        "credit": "9500000",
+        "date": "2025-09-05",
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         100.0,
+         300.0,
+         112.0
+        ],
+        "line_ids": [
+         "p1.l1"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "balance": 14250000,
+        "credit": null,
+        "date": "2025-09-10",
+        "debit": 250000,
+        "description": "NACH DR TIDEWATER FIN EMI 000123",
+        "reference_number": "ACH/0000"
+       },
+       "raw": {
+        "balance": "14250000",
+        "date": "2025-09-10",
+        "debit": "250000",
+        "description": "NACH DR TIDEWATER FIN EMI 000123",
+        "reference_number": "ACH/0000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         115.0,
+         300.0,
+         127.0
+        ],
+        "line_ids": [
+         "p1.l2"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "balance": 23750000,
+        "credit": 9500000,
+        "date": "2025-10-05",
+        "debit": null,
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0001"
+       },
+       "raw": {
+        "balance": "23750000",
+        "credit": "9500000",
+        "date": "2025-10-05",
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0001"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         130.0,
+         300.0,
+         142.0
+        ],
+        "line_ids": [
+         "p1.l3"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "balance": 23500000,
+        "credit": null,
+        "date": "2025-10-10",
+        "debit": 250000,
+        "description": "NACH DR TIDEWATER FIN EMI 000123",
+        "reference_number": "ACH/0001"
+       },
+       "raw": {
+        "balance": "23500000",
+        "date": "2025-10-10",
+        "debit": "250000",
+        "description": "NACH DR TIDEWATER FIN EMI 000123",
+        "reference_number": "ACH/0001"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         145.0,
+         300.0,
+         157.0
+        ],
+        "line_ids": [
+         "p1.l4"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "balance": 33000000,
+        "credit": 9500000,
+        "date": "2025-11-05",
+        "debit": null,
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0002"
+       },
+       "raw": {
+        "balance": "33000000",
+        "credit": "9500000",
+        "date": "2025-11-05",
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0002"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         160.0,
+         300.0,
+         172.0
+        ],
+        "line_ids": [
+         "p1.l5"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "balance": 32750000,
+        "credit": null,
+        "date": "2025-11-10",
+        "debit": 250000,
+        "description": "NACH DR TIDEWATER FIN EMI 000123",
+        "reference_number": "ACH/0002"
+       },
+       "raw": {
+        "balance": "32750000",
+        "date": "2025-11-10",
+        "debit": "250000",
+        "description": "NACH DR TIDEWATER FIN EMI 000123",
+        "reference_number": "ACH/0002"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         175.0,
+         300.0,
+         187.0
+        ],
+        "line_ids": [
+         "p1.l6"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "balance": 42250000,
+        "credit": 9500000,
+        "date": "2025-12-05",
+        "debit": null,
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0003"
+       },
+       "raw": {
+        "balance": "42250000",
+        "credit": "9500000",
+        "date": "2025-12-05",
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0003"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         190.0,
+         300.0,
+         202.0
+        ],
+        "line_ids": [
+         "p1.l7"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "balance": 42000000,
+        "credit": null,
+        "date": "2025-12-10",
+        "debit": 250000,
+        "description": "NACH DR TIDEWATER FIN EMI 000123",
+        "reference_number": "ACH/0003"
+       },
+       "raw": {
+        "balance": "42000000",
+        "date": "2025-12-10",
+        "debit": "250000",
+        "description": "NACH DR TIDEWATER FIN EMI 000123",
+        "reference_number": "ACH/0003"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         205.0,
+         300.0,
+         217.0
+        ],
+        "line_ids": [
+         "p1.l8"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "balance": 51500000,
+        "credit": 9500000,
+        "date": "2026-01-05",
+        "debit": null,
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0004"
+       },
+       "raw": {
+        "balance": "51500000",
+        "credit": "9500000",
+        "date": "2026-01-05",
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0004"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         220.0,
+         300.0,
+         232.0
+        ],
+        "line_ids": [
+         "p1.l9"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "balance": 51250000,
+        "credit": null,
+        "date": "2026-01-10",
+        "debit": 250000,
+        "description": "NACH DR TIDEWATER FIN EMI 000123",
+        "reference_number": "ACH/0004"
+       },
+       "raw": {
+        "balance": "51250000",
+        "date": "2026-01-10",
+        "debit": "250000",
+        "description": "NACH DR TIDEWATER FIN EMI 000123",
+        "reference_number": "ACH/0004"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         235.0,
+         300.0,
+         247.0
+        ],
+        "line_ids": [
+         "p1.l10"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "balance": 60750000,
+        "credit": 9500000,
+        "date": "2026-02-05",
+        "debit": null,
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0005"
+       },
+       "raw": {
+        "balance": "60750000",
+        "credit": "9500000",
+        "date": "2026-02-05",
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0005"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         250.0,
+         300.0,
+         262.0
+        ],
+        "line_ids": [
+         "p1.l11"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "balance": 60500000,
+        "credit": null,
+        "date": "2026-02-10",
+        "debit": 250000,
+        "description": "NACH DR TIDEWATER FIN EMI 000123",
+        "reference_number": "ACH/0005"
+       },
+       "raw": {
+        "balance": "60500000",
+        "date": "2026-02-10",
+        "debit": "250000",
+        "description": "NACH DR TIDEWATER FIN EMI 000123",
+        "reference_number": "ACH/0005"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         265.0,
+         300.0,
+         277.0
+        ],
+        "line_ids": [
+         "p1.l12"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "balance": 70000000,
+        "credit": 9500000,
+        "date": "2026-03-05",
+        "debit": null,
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0006"
+       },
+       "raw": {
+        "balance": "70000000",
+        "credit": "9500000",
+        "date": "2026-03-05",
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0006"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         280.0,
+         300.0,
+         292.0
+        ],
+        "line_ids": [
+         "p1.l13"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "balance": 79500000,
+        "credit": 9500000,
+        "date": "2026-04-05",
+        "debit": null,
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0007"
+       },
+       "raw": {
+        "balance": "79500000",
+        "credit": "9500000",
+        "date": "2026-04-05",
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0007"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         295.0,
+         300.0,
+         307.0
+        ],
+        "line_ids": [
+         "p1.l14"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "balance": 89000000,
+        "credit": 9500000,
+        "date": "2026-05-05",
+        "debit": null,
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0008"
+       },
+       "raw": {
+        "balance": "89000000",
+        "credit": "9500000",
+        "date": "2026-05-05",
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0008"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         310.0,
+         300.0,
+         322.0
+        ],
+        "line_ids": [
+         "p1.l15"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "balance": 98500000,
+        "credit": 9500000,
+        "date": "2026-06-05",
+        "debit": null,
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0009"
+       },
+       "raw": {
+        "balance": "98500000",
+        "credit": "9500000",
+        "date": "2026-06-05",
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0009"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         325.0,
+         300.0,
+         337.0
+        ],
+        "line_ids": [
+         "p1.l16"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "balance": 108000000,
+        "credit": 9500000,
+        "date": "2026-07-05",
+        "debit": null,
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0010"
+       },
+       "raw": {
+        "balance": "108000000",
+        "credit": "9500000",
+        "date": "2026-07-05",
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0010"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         340.0,
+         300.0,
+         352.0
+        ],
+        "line_ids": [
+         "p1.l17"
+        ],
+        "page": 1
+       }
+      },
+      {
+       "cells": {
+        "balance": 117500000,
+        "credit": 9500000,
+        "date": "2026-08-05",
+        "debit": null,
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0011"
+       },
+       "raw": {
+        "balance": "117500000",
+        "credit": "9500000",
+        "date": "2026-08-05",
+        "description": "NEFT CR CUSTOMER RECEIPT",
+        "reference_number": "NEFT/0011"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         355.0,
+         300.0,
+         367.0
+        ],
+        "line_ids": [
+         "p1.l18"
+        ],
+        "page": 1
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       545.0,
+       370.0
+      ],
+      "page_end": 1,
+      "page_start": 1
+     },
+     "status": "found",
+     "unparsed": 0
+    }
+   },
+   "validation": []
+  }
+ ],
+ "error": null,
+ "file_id": "fixture",
+ "front_matter_pages": [],
+ "grade": "A",
+ "name": "kestrel current account.pdf",
+ "pages": [
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 842.0,
+   "ocr_conf": null,
+   "page": 1,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.0,
+   "words": 40
+  }
+ ],
+ "reject": null,
+ "review_reasons": [],
+ "route": {},
+ "run_id": "RUN-FIXTURE",
+ "sha256": "e986d94582198eba1b7c56186af8c23d7c8d3e056faa05116247232be227b2c2",
+ "source": {
+  "kind": "pdf",
+  "pages": 1
+ },
+ "status": "processed",
+ "trace": []
+}

@@ -1,0 +1,4833 @@
+{
+ "classification": {
+  "candidates": [
+   {
+    "score": 1.0,
+    "type": "gstr_3b"
+   },
+   {
+    "score": 0.05,
+    "type": "certificate_of_incorporation"
+   },
+   {
+    "score": 0.0,
+    "type": "audited_financial_statements"
+   }
+  ],
+  "confidence": 1.0,
+  "mixed_content": [],
+  "model_error": null,
+  "needs_review": false,
+  "reason": "signals matched: 5 supporting, margin 0.95",
+  "signals": {
+   "contrary": [],
+   "required": [
+    "form\\s+gstr-?3b|gstr-?3b\\s+returns"
+   ],
+   "supporting": [
+    "\\barn\\b",
+    "return\\s+period",
+    "outward\\s+taxable\\s+supplies",
+    "gstin",
+    "eligible\\s+input\\s+tax\\s+credit"
+   ]
+  },
+  "tier": "signals",
+  "type": "gstr_3b"
+ },
+ "decision": "human_review",
+ "documents": [
+  {
+   "confidence": {
+    "composition": {
+     "document_grade": "A",
+     "failed_checks": 1,
+     "found": 3,
+     "key_fields": 3,
+     "warnings": 0
+    },
+    "decision": "human_review",
+    "document": 0.711,
+    "reasons": [
+     {
+      "confidence": 0.213,
+      "field": "gstin",
+      "kind": "field_review"
+     },
+     {
+      "check": "format:gstin",
+      "detail": "\"33AAHCS6612M1ZQ\" has the GSTIN format but its check digit is wrong",
+      "kind": "failed_check"
+     }
+    ]
+   },
+   "defects": [],
+   "document_type": "gstr_3b",
+   "fields": {
+    "filing_date": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "18 January 2026",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       400.02,
+       153.81,
+       464.08,
+       162.41
+      ],
+      "kind": "page",
+      "page": 2,
+      "range": null,
+      "sheet": null,
+      "text": "18 January 2026"
+     },
+     "status": "found",
+     "value": "2026-01-18"
+    },
+    "gstin": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 0.0
+     },
+     "confidence": 0.213,
+     "key_field": true,
+     "method": "identifier",
+     "needs_review": true,
+     "raw_text": "33AAHCS6612M1ZQ",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       150.57,
+       119.81,
+       232.77,
+       128.41
+      ],
+      "kind": "page",
+      "page": 2,
+      "range": null,
+      "sheet": null,
+      "text": "33AAHCS6612M1ZQ"
+     },
+     "status": "found",
+     "value": "33AAHCS6612M1ZQ"
+    },
+    "legal_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "Southgate Textiles Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       150.57,
+       136.81,
+       281.05,
+       145.41
+      ],
+      "kind": "page",
+      "page": 2,
+      "range": null,
+      "sheet": null,
+      "text": "Southgate Textiles Private Limited"
+     },
+     "status": "found",
+     "value": "Southgate Textiles Private Limited"
+    },
+    "return_status": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Filed",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       360.98,
+       507.93,
+       381.03,
+       516.13
+      ],
+      "kind": "page",
+      "page": 2,
+      "range": null,
+      "sheet": null,
+      "text": "Filed"
+     },
+     "status": "found",
+     "value": "Filed"
+    },
+    "tax_period": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "December 2025",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       400.02,
+       136.81,
+       461.2,
+       145.41
+      ],
+      "kind": "page",
+      "page": 2,
+      "range": null,
+      "sheet": null,
+      "text": "December 2025"
+     },
+     "status": "found",
+     "value": "December 2025"
+    },
+    "trade_name": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    }
+   },
+   "identity": {
+    "gstin": "33AAHCS6612M1ZQ",
+    "name": "Southgate Textiles Private Limited"
+   },
+   "instance_key": "December 2025",
+   "instance_no": 1,
+   "page_from": 2,
+   "page_to": 2,
+   "tables": {
+    "input_tax_credit": {
+     "columns": [
+      "description",
+      "igst",
+      "cgst",
+      "sgst"
+     ],
+     "confidence": 1.0,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "cgst": 518590,
+        "description": "(A) ITC Available (whether in full or part)",
+        "igst": 0,
+        "sgst": 518590
+       },
+       "raw": {
+        "cgst": "5,18,590",
+        "description": "(A) ITC Available (whether in full or part)",
+        "igst": "0",
+        "sgst": "5,18,590"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         350.41,
+         516.57,
+         359.01
+        ],
+        "line_ids": [
+         "p2.l16"
+        ],
+        "page": 2
+       }
+      },
+      {
+       "cells": {
+        "cgst": 518590,
+        "description": "(C) Net ITC Available",
+        "igst": 0,
+        "sgst": 518590
+       },
+       "raw": {
+        "cgst": "5,18,590",
+        "description": "(C) Net ITC Available",
+        "igst": "0",
+        "sgst": "5,18,590"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         367.81,
+         516.57,
+         376.41
+        ],
+        "line_ids": [
+         "p2.l17"
+        ],
+        "page": 2
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       78.7,
+       350.41,
+       516.57,
+       376.41
+      ],
+      "page_end": 2,
+      "page_start": 2
+     },
+     "status": "found",
+     "unparsed": 0
+    },
+    "outward_supplies": {
+     "columns": [
+      "description",
+      "taxable_value",
+      "igst",
+      "cgst",
+      "sgst"
+     ],
+     "confidence": 1.0,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "cgst": 603012,
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": 0,
+        "sgst": 603012,
+        "taxable_value": 24120500
+       },
+       "raw": {
+        "cgst": "6,03,012",
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": "0",
+        "sgst": "6,03,012",
+        "taxable_value": "2,41,20,500"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         221.41,
+         516.57,
+         241.01
+        ],
+        "line_ids": [
+         "p2.l8",
+         "p2.l9",
+         "p2.l10"
+        ],
+        "page": 2
+       }
+      },
+      {
+       "cells": {
+        "cgst": 0,
+        "description": "(b) Outward taxable supplies (zero rated)",
+        "igst": 0,
+        "sgst": 0,
+        "taxable_value": 0
+       },
+       "raw": {
+        "cgst": "0",
+        "description": "(b) Outward taxable supplies (zero rated)",
+        "igst": "0",
+        "sgst": "0",
+        "taxable_value": "0"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         249.81,
+         516.57,
+         258.41
+        ],
+        "line_ids": [
+         "p2.l11"
+        ],
+        "page": 2
+       }
+      },
+      {
+       "cells": {
+        "cgst": 0,
+        "description": "(c) Other outward supplies (nil rated, exempted)",
+        "igst": 0,
+        "sgst": 0,
+        "taxable_value": 0
+       },
+       "raw": {
+        "cgst": "0",
+        "description": "(c) Other outward supplies (nil rated, exempted)",
+        "igst": "0",
+        "sgst": "0",
+        "taxable_value": "0"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         267.21,
+         516.57,
+         275.81
+        ],
+        "line_ids": [
+         "p2.l12"
+        ],
+        "page": 2
+       }
+      },
+      {
+       "cells": {
+        "cgst": 0,
+        "description": "(d) Inward supplies (liable to reverse charge)",
+        "igst": 0,
+        "sgst": 0,
+        "taxable_value": 0
+       },
+       "raw": {
+        "cgst": "0",
+        "description": "(d) Inward supplies (liable to reverse charge)",
+        "igst": "0",
+        "sgst": "0",
+        "taxable_value": "0"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         284.61,
+         516.57,
+         293.21
+        ],
+        "line_ids": [
+         "p2.l13"
+        ],
+        "page": 2
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       78.7,
+       221.41,
+       516.57,
+       293.21
+      ],
+      "page_end": 2,
+      "page_start": 2
+     },
+     "status": "found",
+     "unparsed": 0
+    },
+    "tax_payment": {
+     "columns": [
+      "tax_type",
+      "tax_amount"
+     ],
+     "confidence": 1.0,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "tax_amount": 0,
+        "tax_type": "Integrated Tax (IGST)"
+       },
+       "raw": {
+        "tax_amount": "0",
+        "tax_type": "Integrated Tax (IGST)"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         433.61,
+         519.41,
+         442.21
+        ],
+        "line_ids": [
+         "p2.l20"
+        ],
+        "page": 2
+       }
+      },
+      {
+       "cells": {
+        "tax_amount": 603012,
+        "tax_type": "Central Tax (CGST)"
+       },
+       "raw": {
+        "tax_amount": "6,03,012",
+        "tax_type": "Central Tax (CGST)"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         451.01,
+         519.41,
+         459.61
+        ],
+        "line_ids": [
+         "p2.l21"
+        ],
+        "page": 2
+       }
+      },
+      {
+       "cells": {
+        "tax_amount": 603012,
+        "tax_type": "State Tax (SGST)"
+       },
+       "raw": {
+        "tax_amount": "6,03,012",
+        "tax_type": "State Tax (SGST)"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         468.41,
+         519.41,
+         477.01
+        ],
+        "line_ids": [
+         "p2.l22"
+        ],
+        "page": 2
+       }
+      },
+      {
+       "cells": {
+        "tax_amount": 1206024,
+        "tax_type": "Total"
+       },
+       "raw": {
+        "tax_amount": "12,06,024",
+        "tax_type": "Total"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         485.81,
+         519.41,
+         494.41
+        ],
+        "line_ids": [
+         "p2.l23"
+        ],
+        "page": 2
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       75.87,
+       433.61,
+       519.41,
+       494.41
+      ],
+      "page_end": 2,
+      "page_start": 2
+     },
+     "status": "found",
+     "unparsed": 0
+    }
+   },
+   "validation": [
+    {
+     "detail": "\"33AAHCS6612M1ZQ\" has the GSTIN format but its check digit is wrong",
+     "fields": [
+      "gstin"
+     ],
+     "id": "format:gstin",
+     "kind": "checksum",
+     "label": "gstin format",
+     "outcome": "fail",
+     "severity": "fail",
+     "tables": []
+    },
+    {
+     "detail": "All required fields were found.",
+     "fields": [],
+     "id": "required_present",
+     "kind": "rule",
+     "label": "Required fields present",
+     "outcome": "pass",
+     "severity": "fail",
+     "tables": []
+    }
+   ]
+  },
+  {
+   "confidence": {
+    "composition": {
+     "document_grade": "A",
+     "failed_checks": 1,
+     "found": 3,
+     "key_fields": 3,
+     "warnings": 0
+    },
+    "decision": "human_review",
+    "document": 0.711,
+    "reasons": [
+     {
+      "confidence": 0.213,
+      "field": "gstin",
+      "kind": "field_review"
+     },
+     {
+      "check": "format:gstin",
+      "detail": "\"33AAHCS6612M1ZQ\" has the GSTIN format but its check digit is wrong",
+      "kind": "failed_check"
+     }
+    ]
+   },
+   "defects": [],
+   "document_type": "gstr_3b",
+   "fields": {
+    "filing_date": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "17 February 2026",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       400.02,
+       153.81,
+       467.9,
+       162.41
+      ],
+      "kind": "page",
+      "page": 3,
+      "range": null,
+      "sheet": null,
+      "text": "17 February 2026"
+     },
+     "status": "found",
+     "value": "2026-02-17"
+    },
+    "gstin": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 0.0
+     },
+     "confidence": 0.213,
+     "key_field": true,
+     "method": "identifier",
+     "needs_review": true,
+     "raw_text": "33AAHCS6612M1ZQ",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       150.57,
+       119.81,
+       232.77,
+       128.41
+      ],
+      "kind": "page",
+      "page": 3,
+      "range": null,
+      "sheet": null,
+      "text": "33AAHCS6612M1ZQ"
+     },
+     "status": "found",
+     "value": "33AAHCS6612M1ZQ"
+    },
+    "legal_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "Southgate Textiles Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       150.57,
+       136.81,
+       281.05,
+       145.41
+      ],
+      "kind": "page",
+      "page": 3,
+      "range": null,
+      "sheet": null,
+      "text": "Southgate Textiles Private Limited"
+     },
+     "status": "found",
+     "value": "Southgate Textiles Private Limited"
+    },
+    "return_status": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Filed",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       360.98,
+       507.93,
+       381.03,
+       516.13
+      ],
+      "kind": "page",
+      "page": 3,
+      "range": null,
+      "sheet": null,
+      "text": "Filed"
+     },
+     "status": "found",
+     "value": "Filed"
+    },
+    "tax_period": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "January 2026",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       400.02,
+       136.81,
+       452.12,
+       145.41
+      ],
+      "kind": "page",
+      "page": 3,
+      "range": null,
+      "sheet": null,
+      "text": "January 2026"
+     },
+     "status": "found",
+     "value": "January 2026"
+    },
+    "trade_name": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    }
+   },
+   "identity": {
+    "gstin": "33AAHCS6612M1ZQ",
+    "name": "Southgate Textiles Private Limited"
+   },
+   "instance_key": "January 2026",
+   "instance_no": 2,
+   "page_from": 3,
+   "page_to": 3,
+   "tables": {
+    "input_tax_credit": {
+     "columns": [
+      "description",
+      "igst",
+      "cgst",
+      "sgst"
+     ],
+     "confidence": 1.0,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "cgst": 513076,
+        "description": "(A) ITC Available (whether in full or part)",
+        "igst": 0,
+        "sgst": 513076
+       },
+       "raw": {
+        "cgst": "5,13,076",
+        "description": "(A) ITC Available (whether in full or part)",
+        "igst": "0",
+        "sgst": "5,13,076"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         350.41,
+         516.57,
+         359.01
+        ],
+        "line_ids": [
+         "p3.l16"
+        ],
+        "page": 3
+       }
+      },
+      {
+       "cells": {
+        "cgst": 513076,
+        "description": "(C) Net ITC Available",
+        "igst": 0,
+        "sgst": 513076
+       },
+       "raw": {
+        "cgst": "5,13,076",
+        "description": "(C) Net ITC Available",
+        "igst": "0",
+        "sgst": "5,13,076"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         367.81,
+         516.57,
+         376.41
+        ],
+        "line_ids": [
+         "p3.l17"
+        ],
+        "page": 3
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       78.7,
+       350.41,
+       516.57,
+       376.41
+      ],
+      "page_end": 3,
+      "page_start": 3
+     },
+     "status": "found",
+     "unparsed": 0
+    },
+    "outward_supplies": {
+     "columns": [
+      "description",
+      "taxable_value",
+      "igst",
+      "cgst",
+      "sgst"
+     ],
+     "confidence": 1.0,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "cgst": 596600,
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": 0,
+        "sgst": 596600,
+        "taxable_value": 23864000
+       },
+       "raw": {
+        "cgst": "5,96,600",
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": "0",
+        "sgst": "5,96,600",
+        "taxable_value": "2,38,64,000"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         221.41,
+         516.57,
+         241.01
+        ],
+        "line_ids": [
+         "p3.l8",
+         "p3.l9",
+         "p3.l10"
+        ],
+        "page": 3
+       }
+      },
+      {
+       "cells": {
+        "cgst": 0,
+        "description": "(b) Outward taxable supplies (zero rated)",
+        "igst": 0,
+        "sgst": 0,
+        "taxable_value": 0
+       },
+       "raw": {
+        "cgst": "0",
+        "description": "(b) Outward taxable supplies (zero rated)",
+        "igst": "0",
+        "sgst": "0",
+        "taxable_value": "0"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         249.81,
+         516.57,
+         258.41
+        ],
+        "line_ids": [
+         "p3.l11"
+        ],
+        "page": 3
+       }
+      },
+      {
+       "cells": {
+        "cgst": 0,
+        "description": "(c) Other outward supplies (nil rated, exempted)",
+        "igst": 0,
+        "sgst": 0,
+        "taxable_value": 0
+       },
+       "raw": {
+        "cgst": "0",
+        "description": "(c) Other outward supplies (nil rated, exempted)",
+        "igst": "0",
+        "sgst": "0",
+        "taxable_value": "0"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         267.21,
+         516.57,
+         275.81
+        ],
+        "line_ids": [
+         "p3.l12"
+        ],
+        "page": 3
+       }
+      },
+      {
+       "cells": {
+        "cgst": 0,
+        "description": "(d) Inward supplies (liable to reverse charge)",
+        "igst": 0,
+        "sgst": 0,
+        "taxable_value": 0
+       },
+       "raw": {
+        "cgst": "0",
+        "description": "(d) Inward supplies (liable to reverse charge)",
+        "igst": "0",
+        "sgst": "0",
+        "taxable_value": "0"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         284.61,
+         516.57,
+         293.21
+        ],
+        "line_ids": [
+         "p3.l13"
+        ],
+        "page": 3
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       78.7,
+       221.41,
+       516.57,
+       293.21
+      ],
+      "page_end": 3,
+      "page_start": 3
+     },
+     "status": "found",
+     "unparsed": 0
+    },
+    "tax_payment": {
+     "columns": [
+      "tax_type",
+      "tax_amount"
+     ],
+     "confidence": 1.0,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "tax_amount": 0,
+        "tax_type": "Integrated Tax (IGST)"
+       },
+       "raw": {
+        "tax_amount": "0",
+        "tax_type": "Integrated Tax (IGST)"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         433.61,
+         519.41,
+         442.21
+        ],
+        "line_ids": [
+         "p3.l20"
+        ],
+        "page": 3
+       }
+      },
+      {
+       "cells": {
+        "tax_amount": 596600,
+        "tax_type": "Central Tax (CGST)"
+       },
+       "raw": {
+        "tax_amount": "5,96,600",
+        "tax_type": "Central Tax (CGST)"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         451.01,
+         519.41,
+         459.61
+        ],
+        "line_ids": [
+         "p3.l21"
+        ],
+        "page": 3
+       }
+      },
+      {
+       "cells": {
+        "tax_amount": 596600,
+        "tax_type": "State Tax (SGST)"
+       },
+       "raw": {
+        "tax_amount": "5,96,600",
+        "tax_type": "State Tax (SGST)"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         468.41,
+         519.41,
+         477.01
+        ],
+        "line_ids": [
+         "p3.l22"
+        ],
+        "page": 3
+       }
+      },
+      {
+       "cells": {
+        "tax_amount": 1193200,
+        "tax_type": "Total"
+       },
+       "raw": {
+        "tax_amount": "11,93,200",
+        "tax_type": "Total"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         485.81,
+         519.41,
+         494.41
+        ],
+        "line_ids": [
+         "p3.l23"
+        ],
+        "page": 3
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       75.87,
+       433.61,
+       519.41,
+       494.41
+      ],
+      "page_end": 3,
+      "page_start": 3
+     },
+     "status": "found",
+     "unparsed": 0
+    }
+   },
+   "validation": [
+    {
+     "detail": "\"33AAHCS6612M1ZQ\" has the GSTIN format but its check digit is wrong",
+     "fields": [
+      "gstin"
+     ],
+     "id": "format:gstin",
+     "kind": "checksum",
+     "label": "gstin format",
+     "outcome": "fail",
+     "severity": "fail",
+     "tables": []
+    },
+    {
+     "detail": "All required fields were found.",
+     "fields": [],
+     "id": "required_present",
+     "kind": "rule",
+     "label": "Required fields present",
+     "outcome": "pass",
+     "severity": "fail",
+     "tables": []
+    }
+   ]
+  },
+  {
+   "confidence": {
+    "composition": {
+     "document_grade": "A",
+     "failed_checks": 1,
+     "found": 3,
+     "key_fields": 3,
+     "warnings": 0
+    },
+    "decision": "human_review",
+    "document": 0.711,
+    "reasons": [
+     {
+      "confidence": 0.213,
+      "field": "gstin",
+      "kind": "field_review"
+     },
+     {
+      "check": "format:gstin",
+      "detail": "\"33AAHCS6612M1ZQ\" has the GSTIN format but its check digit is wrong",
+      "kind": "failed_check"
+     }
+    ]
+   },
+   "defects": [],
+   "document_type": "gstr_3b",
+   "fields": {
+    "filing_date": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "18 March 2026",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       400.02,
+       153.81,
+       457.38,
+       162.41
+      ],
+      "kind": "page",
+      "page": 4,
+      "range": null,
+      "sheet": null,
+      "text": "18 March 2026"
+     },
+     "status": "found",
+     "value": "2026-03-18"
+    },
+    "gstin": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 0.0
+     },
+     "confidence": 0.213,
+     "key_field": true,
+     "method": "identifier",
+     "needs_review": true,
+     "raw_text": "33AAHCS6612M1ZQ",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       150.57,
+       119.81,
+       232.77,
+       128.41
+      ],
+      "kind": "page",
+      "page": 4,
+      "range": null,
+      "sheet": null,
+      "text": "33AAHCS6612M1ZQ"
+     },
+     "status": "found",
+     "value": "33AAHCS6612M1ZQ"
+    },
+    "legal_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "Southgate Textiles Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       150.57,
+       136.81,
+       281.05,
+       145.41
+      ],
+      "kind": "page",
+      "page": 4,
+      "range": null,
+      "sheet": null,
+      "text": "Southgate Textiles Private Limited"
+     },
+     "status": "found",
+     "value": "Southgate Textiles Private Limited"
+    },
+    "return_status": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Filed",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       360.98,
+       507.93,
+       381.03,
+       516.13
+      ],
+      "kind": "page",
+      "page": 4,
+      "range": null,
+      "sheet": null,
+      "text": "Filed"
+     },
+     "status": "found",
+     "value": "Filed"
+    },
+    "tax_period": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "February 2026",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       400.02,
+       136.81,
+       455.94,
+       145.41
+      ],
+      "kind": "page",
+      "page": 4,
+      "range": null,
+      "sheet": null,
+      "text": "February 2026"
+     },
+     "status": "found",
+     "value": "February 2026"
+    },
+    "trade_name": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    }
+   },
+   "identity": {
+    "gstin": "33AAHCS6612M1ZQ",
+    "name": "Southgate Textiles Private Limited"
+   },
+   "instance_key": "February 2026",
+   "instance_no": 3,
+   "page_from": 4,
+   "page_to": 4,
+   "tables": {
+    "input_tax_credit": {
+     "columns": [
+      "description",
+      "igst",
+      "cgst",
+      "sgst"
+     ],
+     "confidence": 1.0,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "cgst": 488169,
+        "description": "(A) ITC Available (whether in full or part)",
+        "igst": 0,
+        "sgst": 488169
+       },
+       "raw": {
+        "cgst": "4,88,169",
+        "description": "(A) ITC Available (whether in full or part)",
+        "igst": "0",
+        "sgst": "4,88,169"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         350.41,
+         516.57,
+         359.01
+        ],
+        "line_ids": [
+         "p4.l16"
+        ],
+        "page": 4
+       }
+      },
+      {
+       "cells": {
+        "cgst": 488169,
+        "description": "(C) Net ITC Available",
+        "igst": 0,
+        "sgst": 488169
+       },
+       "raw": {
+        "cgst": "4,88,169",
+        "description": "(C) Net ITC Available",
+        "igst": "0",
+        "sgst": "4,88,169"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         367.81,
+         516.57,
+         376.41
+        ],
+        "line_ids": [
+         "p4.l17"
+        ],
+        "page": 4
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       78.7,
+       350.41,
+       516.57,
+       376.41
+      ],
+      "page_end": 4,
+      "page_start": 4
+     },
+     "status": "found",
+     "unparsed": 0
+    },
+    "outward_supplies": {
+     "columns": [
+      "description",
+      "taxable_value",
+      "igst",
+      "cgst",
+      "sgst"
+     ],
+     "confidence": 1.0,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "cgst": 567638,
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": 0,
+        "sgst": 567638,
+        "taxable_value": 22705500
+       },
+       "raw": {
+        "cgst": "5,67,638",
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": "0",
+        "sgst": "5,67,638",
+        "taxable_value": "2,27,05,500"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         221.41,
+         516.57,
+         241.01
+        ],
+        "line_ids": [
+         "p4.l8",
+         "p4.l9",
+         "p4.l10"
+        ],
+        "page": 4
+       }
+      },
+      {
+       "cells": {
+        "cgst": 0,
+        "description": "(b) Outward taxable supplies (zero rated)",
+        "igst": 0,
+        "sgst": 0,
+        "taxable_value": 0
+       },
+       "raw": {
+        "cgst": "0",
+        "description": "(b) Outward taxable supplies (zero rated)",
+        "igst": "0",
+        "sgst": "0",
+        "taxable_value": "0"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         249.81,
+         516.57,
+         258.41
+        ],
+        "line_ids": [
+         "p4.l11"
+        ],
+        "page": 4
+       }
+      },
+      {
+       "cells": {
+        "cgst": 0,
+        "description": "(c) Other outward supplies (nil rated, exempted)",
+        "igst": 0,
+        "sgst": 0,
+        "taxable_value": 0
+       },
+       "raw": {
+        "cgst": "0",
+        "description": "(c) Other outward supplies (nil rated, exempted)",
+        "igst": "0",
+        "sgst": "0",
+        "taxable_value": "0"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         267.21,
+         516.57,
+         275.81
+        ],
+        "line_ids": [
+         "p4.l12"
+        ],
+        "page": 4
+       }
+      },
+      {
+       "cells": {
+        "cgst": 0,
+        "description": "(d) Inward supplies (liable to reverse charge)",
+        "igst": 0,
+        "sgst": 0,
+        "taxable_value": 0
+       },
+       "raw": {
+        "cgst": "0",
+        "description": "(d) Inward supplies (liable to reverse charge)",
+        "igst": "0",
+        "sgst": "0",
+        "taxable_value": "0"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         284.61,
+         516.57,
+         293.21
+        ],
+        "line_ids": [
+         "p4.l13"
+        ],
+        "page": 4
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       78.7,
+       221.41,
+       516.57,
+       293.21
+      ],
+      "page_end": 4,
+      "page_start": 4
+     },
+     "status": "found",
+     "unparsed": 0
+    },
+    "tax_payment": {
+     "columns": [
+      "tax_type",
+      "tax_amount"
+     ],
+     "confidence": 1.0,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "tax_amount": 0,
+        "tax_type": "Integrated Tax (IGST)"
+       },
+       "raw": {
+        "tax_amount": "0",
+        "tax_type": "Integrated Tax (IGST)"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         433.61,
+         519.41,
+         442.21
+        ],
+        "line_ids": [
+         "p4.l20"
+        ],
+        "page": 4
+       }
+      },
+      {
+       "cells": {
+        "tax_amount": 567638,
+        "tax_type": "Central Tax (CGST)"
+       },
+       "raw": {
+        "tax_amount": "5,67,638",
+        "tax_type": "Central Tax (CGST)"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         451.01,
+         519.41,
+         459.61
+        ],
+        "line_ids": [
+         "p4.l21"
+        ],
+        "page": 4
+       }
+      },
+      {
+       "cells": {
+        "tax_amount": 567638,
+        "tax_type": "State Tax (SGST)"
+       },
+       "raw": {
+        "tax_amount": "5,67,638",
+        "tax_type": "State Tax (SGST)"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         468.41,
+         519.41,
+         477.01
+        ],
+        "line_ids": [
+         "p4.l22"
+        ],
+        "page": 4
+       }
+      },
+      {
+       "cells": {
+        "tax_amount": 1135276,
+        "tax_type": "Total"
+       },
+       "raw": {
+        "tax_amount": "11,35,276",
+        "tax_type": "Total"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         485.81,
+         519.41,
+         494.41
+        ],
+        "line_ids": [
+         "p4.l23"
+        ],
+        "page": 4
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       75.87,
+       433.61,
+       519.41,
+       494.41
+      ],
+      "page_end": 4,
+      "page_start": 4
+     },
+     "status": "found",
+     "unparsed": 0
+    }
+   },
+   "validation": [
+    {
+     "detail": "\"33AAHCS6612M1ZQ\" has the GSTIN format but its check digit is wrong",
+     "fields": [
+      "gstin"
+     ],
+     "id": "format:gstin",
+     "kind": "checksum",
+     "label": "gstin format",
+     "outcome": "fail",
+     "severity": "fail",
+     "tables": []
+    },
+    {
+     "detail": "All required fields were found.",
+     "fields": [],
+     "id": "required_present",
+     "kind": "rule",
+     "label": "Required fields present",
+     "outcome": "pass",
+     "severity": "fail",
+     "tables": []
+    }
+   ]
+  },
+  {
+   "confidence": {
+    "composition": {
+     "document_grade": "A",
+     "failed_checks": 1,
+     "found": 3,
+     "key_fields": 3,
+     "warnings": 0
+    },
+    "decision": "human_review",
+    "document": 0.711,
+    "reasons": [
+     {
+      "confidence": 0.213,
+      "field": "gstin",
+      "kind": "field_review"
+     },
+     {
+      "check": "format:gstin",
+      "detail": "\"33AAHCS6612M1ZQ\" has the GSTIN format but its check digit is wrong",
+      "kind": "failed_check"
+     }
+    ]
+   },
+   "defects": [],
+   "document_type": "gstr_3b",
+   "fields": {
+    "filing_date": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "18 April 2026",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       400.02,
+       153.81,
+       450.69,
+       162.41
+      ],
+      "kind": "page",
+      "page": 5,
+      "range": null,
+      "sheet": null,
+      "text": "18 April 2026"
+     },
+     "status": "found",
+     "value": "2026-04-18"
+    },
+    "gstin": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 0.0
+     },
+     "confidence": 0.213,
+     "key_field": true,
+     "method": "identifier",
+     "needs_review": true,
+     "raw_text": "33AAHCS6612M1ZQ",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       150.57,
+       119.81,
+       232.77,
+       128.41
+      ],
+      "kind": "page",
+      "page": 5,
+      "range": null,
+      "sheet": null,
+      "text": "33AAHCS6612M1ZQ"
+     },
+     "status": "found",
+     "value": "33AAHCS6612M1ZQ"
+    },
+    "legal_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "Southgate Textiles Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       150.57,
+       136.81,
+       281.05,
+       145.41
+      ],
+      "kind": "page",
+      "page": 5,
+      "range": null,
+      "sheet": null,
+      "text": "Southgate Textiles Private Limited"
+     },
+     "status": "found",
+     "value": "Southgate Textiles Private Limited"
+    },
+    "return_status": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Filed",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       360.98,
+       507.93,
+       381.03,
+       516.13
+      ],
+      "kind": "page",
+      "page": 5,
+      "range": null,
+      "sheet": null,
+      "text": "Filed"
+     },
+     "status": "found",
+     "value": "Filed"
+    },
+    "tax_period": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "March 2026",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       400.02,
+       136.81,
+       445.42,
+       145.41
+      ],
+      "kind": "page",
+      "page": 5,
+      "range": null,
+      "sheet": null,
+      "text": "March 2026"
+     },
+     "status": "found",
+     "value": "March 2026"
+    },
+    "trade_name": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    }
+   },
+   "identity": {
+    "gstin": "33AAHCS6612M1ZQ",
+    "name": "Southgate Textiles Private Limited"
+   },
+   "instance_key": "March 2026",
+   "instance_no": 4,
+   "page_from": 5,
+   "page_to": 5,
+   "tables": {
+    "input_tax_credit": {
+     "columns": [
+      "description",
+      "igst",
+      "cgst",
+      "sgst"
+     ],
+     "confidence": 1.0,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "cgst": 589494,
+        "description": "(A) ITC Available (whether in full or part)",
+        "igst": 0,
+        "sgst": 589494
+       },
+       "raw": {
+        "cgst": "5,89,494",
+        "description": "(A) ITC Available (whether in full or part)",
+        "igst": "0",
+        "sgst": "5,89,494"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         350.41,
+         516.57,
+         359.01
+        ],
+        "line_ids": [
+         "p5.l16"
+        ],
+        "page": 5
+       }
+      },
+      {
+       "cells": {
+        "cgst": 589494,
+        "description": "(C) Net ITC Available",
+        "igst": 0,
+        "sgst": 589494
+       },
+       "raw": {
+        "cgst": "5,89,494",
+        "description": "(C) Net ITC Available",
+        "igst": "0",
+        "sgst": "5,89,494"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         367.81,
+         516.57,
+         376.41
+        ],
+        "line_ids": [
+         "p5.l17"
+        ],
+        "page": 5
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       78.7,
+       350.41,
+       516.57,
+       376.41
+      ],
+      "page_end": 5,
+      "page_start": 5
+     },
+     "status": "found",
+     "unparsed": 0
+    },
+    "outward_supplies": {
+     "columns": [
+      "description",
+      "taxable_value",
+      "igst",
+      "cgst",
+      "sgst"
+     ],
+     "confidence": 1.0,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "cgst": 685458,
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": 0,
+        "sgst": 685458,
+        "taxable_value": 27418300
+       },
+       "raw": {
+        "cgst": "6,85,458",
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": "0",
+        "sgst": "6,85,458",
+        "taxable_value": "2,74,18,300"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         221.41,
+         516.57,
+         241.01
+        ],
+        "line_ids": [
+         "p5.l8",
+         "p5.l9",
+         "p5.l10"
+        ],
+        "page": 5
+       }
+      },
+      {
+       "cells": {
+        "cgst": 0,
+        "description": "(b) Outward taxable supplies (zero rated)",
+        "igst": 0,
+        "sgst": 0,
+        "taxable_value": 0
+       },
+       "raw": {
+        "cgst": "0",
+        "description": "(b) Outward taxable supplies (zero rated)",
+        "igst": "0",
+        "sgst": "0",
+        "taxable_value": "0"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         249.81,
+         516.57,
+         258.41
+        ],
+        "line_ids": [
+         "p5.l11"
+        ],
+        "page": 5
+       }
+      },
+      {
+       "cells": {
+        "cgst": 0,
+        "description": "(c) Other outward supplies (nil rated, exempted)",
+        "igst": 0,
+        "sgst": 0,
+        "taxable_value": 0
+       },
+       "raw": {
+        "cgst": "0",
+        "description": "(c) Other outward supplies (nil rated, exempted)",
+        "igst": "0",
+        "sgst": "0",
+        "taxable_value": "0"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         267.21,
+         516.57,
+         275.81
+        ],
+        "line_ids": [
+         "p5.l12"
+        ],
+        "page": 5
+       }
+      },
+      {
+       "cells": {
+        "cgst": 0,
+        "description": "(d) Inward supplies (liable to reverse charge)",
+        "igst": 0,
+        "sgst": 0,
+        "taxable_value": 0
+       },
+       "raw": {
+        "cgst": "0",
+        "description": "(d) Inward supplies (liable to reverse charge)",
+        "igst": "0",
+        "sgst": "0",
+        "taxable_value": "0"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         284.61,
+         516.57,
+         293.21
+        ],
+        "line_ids": [
+         "p5.l13"
+        ],
+        "page": 5
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       78.7,
+       221.41,
+       516.57,
+       293.21
+      ],
+      "page_end": 5,
+      "page_start": 5
+     },
+     "status": "found",
+     "unparsed": 0
+    },
+    "tax_payment": {
+     "columns": [
+      "tax_type",
+      "tax_amount"
+     ],
+     "confidence": 1.0,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "tax_amount": 0,
+        "tax_type": "Integrated Tax (IGST)"
+       },
+       "raw": {
+        "tax_amount": "0",
+        "tax_type": "Integrated Tax (IGST)"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         433.61,
+         519.41,
+         442.21
+        ],
+        "line_ids": [
+         "p5.l20"
+        ],
+        "page": 5
+       }
+      },
+      {
+       "cells": {
+        "tax_amount": 685458,
+        "tax_type": "Central Tax (CGST)"
+       },
+       "raw": {
+        "tax_amount": "6,85,458",
+        "tax_type": "Central Tax (CGST)"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         451.01,
+         519.41,
+         459.61
+        ],
+        "line_ids": [
+         "p5.l21"
+        ],
+        "page": 5
+       }
+      },
+      {
+       "cells": {
+        "tax_amount": 685458,
+        "tax_type": "State Tax (SGST)"
+       },
+       "raw": {
+        "tax_amount": "6,85,458",
+        "tax_type": "State Tax (SGST)"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         468.41,
+         519.41,
+         477.01
+        ],
+        "line_ids": [
+         "p5.l22"
+        ],
+        "page": 5
+       }
+      },
+      {
+       "cells": {
+        "tax_amount": 1370916,
+        "tax_type": "Total"
+       },
+       "raw": {
+        "tax_amount": "13,70,916",
+        "tax_type": "Total"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         485.81,
+         519.41,
+         494.41
+        ],
+        "line_ids": [
+         "p5.l23"
+        ],
+        "page": 5
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       75.87,
+       433.61,
+       519.41,
+       494.41
+      ],
+      "page_end": 5,
+      "page_start": 5
+     },
+     "status": "found",
+     "unparsed": 0
+    }
+   },
+   "validation": [
+    {
+     "detail": "\"33AAHCS6612M1ZQ\" has the GSTIN format but its check digit is wrong",
+     "fields": [
+      "gstin"
+     ],
+     "id": "format:gstin",
+     "kind": "checksum",
+     "label": "gstin format",
+     "outcome": "fail",
+     "severity": "fail",
+     "tables": []
+    },
+    {
+     "detail": "All required fields were found.",
+     "fields": [],
+     "id": "required_present",
+     "kind": "rule",
+     "label": "Required fields present",
+     "outcome": "pass",
+     "severity": "fail",
+     "tables": []
+    }
+   ]
+  },
+  {
+   "confidence": {
+    "composition": {
+     "document_grade": "A",
+     "failed_checks": 1,
+     "found": 3,
+     "key_fields": 3,
+     "warnings": 0
+    },
+    "decision": "human_review",
+    "document": 0.711,
+    "reasons": [
+     {
+      "confidence": 0.213,
+      "field": "gstin",
+      "kind": "field_review"
+     },
+     {
+      "check": "format:gstin",
+      "detail": "\"33AAHCS6612M1ZQ\" has the GSTIN format but its check digit is wrong",
+      "kind": "failed_check"
+     }
+    ]
+   },
+   "defects": [],
+   "document_type": "gstr_3b",
+   "fields": {
+    "filing_date": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "19 May 2026",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       400.02,
+       153.81,
+       449.73,
+       162.41
+      ],
+      "kind": "page",
+      "page": 6,
+      "range": null,
+      "sheet": null,
+      "text": "19 May 2026"
+     },
+     "status": "found",
+     "value": "2026-05-19"
+    },
+    "gstin": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 0.0
+     },
+     "confidence": 0.213,
+     "key_field": true,
+     "method": "identifier",
+     "needs_review": true,
+     "raw_text": "33AAHCS6612M1ZQ",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       150.57,
+       119.81,
+       232.77,
+       128.41
+      ],
+      "kind": "page",
+      "page": 6,
+      "range": null,
+      "sheet": null,
+      "text": "33AAHCS6612M1ZQ"
+     },
+     "status": "found",
+     "value": "33AAHCS6612M1ZQ"
+    },
+    "legal_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "Southgate Textiles Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       150.57,
+       136.81,
+       281.05,
+       145.41
+      ],
+      "kind": "page",
+      "page": 6,
+      "range": null,
+      "sheet": null,
+      "text": "Southgate Textiles Private Limited"
+     },
+     "status": "found",
+     "value": "Southgate Textiles Private Limited"
+    },
+    "return_status": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Filed",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       360.98,
+       507.93,
+       381.03,
+       516.13
+      ],
+      "kind": "page",
+      "page": 6,
+      "range": null,
+      "sheet": null,
+      "text": "Filed"
+     },
+     "status": "found",
+     "value": "Filed"
+    },
+    "tax_period": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "April 2026",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       400.02,
+       136.81,
+       438.73,
+       145.41
+      ],
+      "kind": "page",
+      "page": 6,
+      "range": null,
+      "sheet": null,
+      "text": "April 2026"
+     },
+     "status": "found",
+     "value": "April 2026"
+    },
+    "trade_name": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    }
+   },
+   "identity": {
+    "gstin": "33AAHCS6612M1ZQ",
+    "name": "Southgate Textiles Private Limited"
+   },
+   "instance_key": "April 2026",
+   "instance_no": 5,
+   "page_from": 6,
+   "page_to": 6,
+   "tables": {
+    "input_tax_credit": {
+     "columns": [
+      "description",
+      "igst",
+      "cgst",
+      "sgst"
+     ],
+     "confidence": 1.0,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "cgst": 537079,
+        "description": "(A) ITC Available (whether in full or part)",
+        "igst": 0,
+        "sgst": 537079
+       },
+       "raw": {
+        "cgst": "5,37,079",
+        "description": "(A) ITC Available (whether in full or part)",
+        "igst": "0",
+        "sgst": "5,37,079"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         350.41,
+         516.57,
+         359.01
+        ],
+        "line_ids": [
+         "p6.l16"
+        ],
+        "page": 6
+       }
+      },
+      {
+       "cells": {
+        "cgst": 537079,
+        "description": "(C) Net ITC Available",
+        "igst": 0,
+        "sgst": 537079
+       },
+       "raw": {
+        "cgst": "5,37,079",
+        "description": "(C) Net ITC Available",
+        "igst": "0",
+        "sgst": "5,37,079"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         367.81,
+         516.57,
+         376.41
+        ],
+        "line_ids": [
+         "p6.l17"
+        ],
+        "page": 6
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       78.7,
+       350.41,
+       516.57,
+       376.41
+      ],
+      "page_end": 6,
+      "page_start": 6
+     },
+     "status": "found",
+     "unparsed": 0
+    },
+    "outward_supplies": {
+     "columns": [
+      "description",
+      "taxable_value",
+      "igst",
+      "cgst",
+      "sgst"
+     ],
+     "confidence": 1.0,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "cgst": 624510,
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": 0,
+        "sgst": 624510,
+        "taxable_value": 24980400
+       },
+       "raw": {
+        "cgst": "6,24,510",
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": "0",
+        "sgst": "6,24,510",
+        "taxable_value": "2,49,80,400"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         221.41,
+         516.57,
+         241.01
+        ],
+        "line_ids": [
+         "p6.l8",
+         "p6.l9",
+         "p6.l10"
+        ],
+        "page": 6
+       }
+      },
+      {
+       "cells": {
+        "cgst": 0,
+        "description": "(b) Outward taxable supplies (zero rated)",
+        "igst": 0,
+        "sgst": 0,
+        "taxable_value": 0
+       },
+       "raw": {
+        "cgst": "0",
+        "description": "(b) Outward taxable supplies (zero rated)",
+        "igst": "0",
+        "sgst": "0",
+        "taxable_value": "0"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         249.81,
+         516.57,
+         258.41
+        ],
+        "line_ids": [
+         "p6.l11"
+        ],
+        "page": 6
+       }
+      },
+      {
+       "cells": {
+        "cgst": 0,
+        "description": "(c) Other outward supplies (nil rated, exempted)",
+        "igst": 0,
+        "sgst": 0,
+        "taxable_value": 0
+       },
+       "raw": {
+        "cgst": "0",
+        "description": "(c) Other outward supplies (nil rated, exempted)",
+        "igst": "0",
+        "sgst": "0",
+        "taxable_value": "0"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         267.21,
+         516.57,
+         275.81
+        ],
+        "line_ids": [
+         "p6.l12"
+        ],
+        "page": 6
+       }
+      },
+      {
+       "cells": {
+        "cgst": 0,
+        "description": "(d) Inward supplies (liable to reverse charge)",
+        "igst": 0,
+        "sgst": 0,
+        "taxable_value": 0
+       },
+       "raw": {
+        "cgst": "0",
+        "description": "(d) Inward supplies (liable to reverse charge)",
+        "igst": "0",
+        "sgst": "0",
+        "taxable_value": "0"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         284.61,
+         516.57,
+         293.21
+        ],
+        "line_ids": [
+         "p6.l13"
+        ],
+        "page": 6
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       78.7,
+       221.41,
+       516.57,
+       293.21
+      ],
+      "page_end": 6,
+      "page_start": 6
+     },
+     "status": "found",
+     "unparsed": 0
+    },
+    "tax_payment": {
+     "columns": [
+      "tax_type",
+      "tax_amount"
+     ],
+     "confidence": 1.0,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "tax_amount": 0,
+        "tax_type": "Integrated Tax (IGST)"
+       },
+       "raw": {
+        "tax_amount": "0",
+        "tax_type": "Integrated Tax (IGST)"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         433.61,
+         519.41,
+         442.21
+        ],
+        "line_ids": [
+         "p6.l20"
+        ],
+        "page": 6
+       }
+      },
+      {
+       "cells": {
+        "tax_amount": 624510,
+        "tax_type": "Central Tax (CGST)"
+       },
+       "raw": {
+        "tax_amount": "6,24,510",
+        "tax_type": "Central Tax (CGST)"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         451.01,
+         519.41,
+         459.61
+        ],
+        "line_ids": [
+         "p6.l21"
+        ],
+        "page": 6
+       }
+      },
+      {
+       "cells": {
+        "tax_amount": 624510,
+        "tax_type": "State Tax (SGST)"
+       },
+       "raw": {
+        "tax_amount": "6,24,510",
+        "tax_type": "State Tax (SGST)"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         468.41,
+         519.41,
+         477.01
+        ],
+        "line_ids": [
+         "p6.l22"
+        ],
+        "page": 6
+       }
+      },
+      {
+       "cells": {
+        "tax_amount": 1249020,
+        "tax_type": "Total"
+       },
+       "raw": {
+        "tax_amount": "12,49,020",
+        "tax_type": "Total"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         485.81,
+         519.41,
+         494.41
+        ],
+        "line_ids": [
+         "p6.l23"
+        ],
+        "page": 6
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       75.87,
+       433.61,
+       519.41,
+       494.41
+      ],
+      "page_end": 6,
+      "page_start": 6
+     },
+     "status": "found",
+     "unparsed": 0
+    }
+   },
+   "validation": [
+    {
+     "detail": "\"33AAHCS6612M1ZQ\" has the GSTIN format but its check digit is wrong",
+     "fields": [
+      "gstin"
+     ],
+     "id": "format:gstin",
+     "kind": "checksum",
+     "label": "gstin format",
+     "outcome": "fail",
+     "severity": "fail",
+     "tables": []
+    },
+    {
+     "detail": "All required fields were found.",
+     "fields": [],
+     "id": "required_present",
+     "kind": "rule",
+     "label": "Required fields present",
+     "outcome": "pass",
+     "severity": "fail",
+     "tables": []
+    }
+   ]
+  },
+  {
+   "confidence": {
+    "composition": {
+     "document_grade": "A",
+     "failed_checks": 1,
+     "found": 3,
+     "key_fields": 3,
+     "warnings": 0
+    },
+    "decision": "human_review",
+    "document": 0.711,
+    "reasons": [
+     {
+      "confidence": 0.213,
+      "field": "gstin",
+      "kind": "field_review"
+     },
+     {
+      "check": "format:gstin",
+      "detail": "\"33AAHCS6612M1ZQ\" has the GSTIN format but its check digit is wrong",
+      "kind": "failed_check"
+     }
+    ]
+   },
+   "defects": [],
+   "document_type": "gstr_3b",
+   "fields": {
+    "filing_date": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "18 June 2026",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       400.02,
+       153.81,
+       452.13,
+       162.41
+      ],
+      "kind": "page",
+      "page": 7,
+      "range": null,
+      "sheet": null,
+      "text": "18 June 2026"
+     },
+     "status": "found",
+     "value": "2026-06-18"
+    },
+    "gstin": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 0.0
+     },
+     "confidence": 0.213,
+     "key_field": true,
+     "method": "identifier",
+     "needs_review": true,
+     "raw_text": "33AAHCS6612M1ZQ",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       150.57,
+       119.81,
+       232.77,
+       128.41
+      ],
+      "kind": "page",
+      "page": 7,
+      "range": null,
+      "sheet": null,
+      "text": "33AAHCS6612M1ZQ"
+     },
+     "status": "found",
+     "value": "33AAHCS6612M1ZQ"
+    },
+    "legal_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "Southgate Textiles Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       150.57,
+       136.81,
+       281.05,
+       145.41
+      ],
+      "kind": "page",
+      "page": 7,
+      "range": null,
+      "sheet": null,
+      "text": "Southgate Textiles Private Limited"
+     },
+     "status": "found",
+     "value": "Southgate Textiles Private Limited"
+    },
+    "return_status": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Filed",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       360.98,
+       507.93,
+       381.03,
+       516.13
+      ],
+      "kind": "page",
+      "page": 7,
+      "range": null,
+      "sheet": null,
+      "text": "Filed"
+     },
+     "status": "found",
+     "value": "Filed"
+    },
+    "tax_period": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "May 2026",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       400.02,
+       136.81,
+       437.78,
+       145.41
+      ],
+      "kind": "page",
+      "page": 7,
+      "range": null,
+      "sheet": null,
+      "text": "May 2026"
+     },
+     "status": "found",
+     "value": "May 2026"
+    },
+    "trade_name": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    }
+   },
+   "identity": {
+    "gstin": "33AAHCS6612M1ZQ",
+    "name": "Southgate Textiles Private Limited"
+   },
+   "instance_key": "May 2026",
+   "instance_no": 6,
+   "page_from": 7,
+   "page_to": 7,
+   "tables": {
+    "input_tax_credit": {
+     "columns": [
+      "description",
+      "igst",
+      "cgst",
+      "sgst"
+     ],
+     "confidence": 1.0,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "cgst": 562066,
+        "description": "(A) ITC Available (whether in full or part)",
+        "igst": 0,
+        "sgst": 562066
+       },
+       "raw": {
+        "cgst": "5,62,066",
+        "description": "(A) ITC Available (whether in full or part)",
+        "igst": "0",
+        "sgst": "5,62,066"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         350.41,
+         516.57,
+         359.01
+        ],
+        "line_ids": [
+         "p7.l16"
+        ],
+        "page": 7
+       }
+      },
+      {
+       "cells": {
+        "cgst": 562066,
+        "description": "(C) Net ITC Available",
+        "igst": 0,
+        "sgst": 562066
+       },
+       "raw": {
+        "cgst": "5,62,066",
+        "description": "(C) Net ITC Available",
+        "igst": "0",
+        "sgst": "5,62,066"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         367.81,
+         516.57,
+         376.41
+        ],
+        "line_ids": [
+         "p7.l17"
+        ],
+        "page": 7
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       78.7,
+       350.41,
+       516.57,
+       376.41
+      ],
+      "page_end": 7,
+      "page_start": 7
+     },
+     "status": "found",
+     "unparsed": 0
+    },
+    "outward_supplies": {
+     "columns": [
+      "description",
+      "taxable_value",
+      "igst",
+      "cgst",
+      "sgst"
+     ],
+     "confidence": 1.0,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "cgst": 653565,
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": 0,
+        "sgst": 653565,
+        "taxable_value": 26142600
+       },
+       "raw": {
+        "cgst": "6,53,565",
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": "0",
+        "sgst": "6,53,565",
+        "taxable_value": "2,61,42,600"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         221.41,
+         516.57,
+         241.01
+        ],
+        "line_ids": [
+         "p7.l8",
+         "p7.l9",
+         "p7.l10"
+        ],
+        "page": 7
+       }
+      },
+      {
+       "cells": {
+        "cgst": 0,
+        "description": "(b) Outward taxable supplies (zero rated)",
+        "igst": 0,
+        "sgst": 0,
+        "taxable_value": 0
+       },
+       "raw": {
+        "cgst": "0",
+        "description": "(b) Outward taxable supplies (zero rated)",
+        "igst": "0",
+        "sgst": "0",
+        "taxable_value": "0"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         249.81,
+         516.57,
+         258.41
+        ],
+        "line_ids": [
+         "p7.l11"
+        ],
+        "page": 7
+       }
+      },
+      {
+       "cells": {
+        "cgst": 0,
+        "description": "(c) Other outward supplies (nil rated, exempted)",
+        "igst": 0,
+        "sgst": 0,
+        "taxable_value": 0
+       },
+       "raw": {
+        "cgst": "0",
+        "description": "(c) Other outward supplies (nil rated, exempted)",
+        "igst": "0",
+        "sgst": "0",
+        "taxable_value": "0"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         267.21,
+         516.57,
+         275.81
+        ],
+        "line_ids": [
+         "p7.l12"
+        ],
+        "page": 7
+       }
+      },
+      {
+       "cells": {
+        "cgst": 0,
+        "description": "(d) Inward supplies (liable to reverse charge)",
+        "igst": 0,
+        "sgst": 0,
+        "taxable_value": 0
+       },
+       "raw": {
+        "cgst": "0",
+        "description": "(d) Inward supplies (liable to reverse charge)",
+        "igst": "0",
+        "sgst": "0",
+        "taxable_value": "0"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         284.61,
+         516.57,
+         293.21
+        ],
+        "line_ids": [
+         "p7.l13"
+        ],
+        "page": 7
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       78.7,
+       221.41,
+       516.57,
+       293.21
+      ],
+      "page_end": 7,
+      "page_start": 7
+     },
+     "status": "found",
+     "unparsed": 0
+    },
+    "tax_payment": {
+     "columns": [
+      "tax_type",
+      "tax_amount"
+     ],
+     "confidence": 1.0,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "tax_amount": 0,
+        "tax_type": "Integrated Tax (IGST)"
+       },
+       "raw": {
+        "tax_amount": "0",
+        "tax_type": "Integrated Tax (IGST)"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         433.61,
+         519.41,
+         442.21
+        ],
+        "line_ids": [
+         "p7.l20"
+        ],
+        "page": 7
+       }
+      },
+      {
+       "cells": {
+        "tax_amount": 653565,
+        "tax_type": "Central Tax (CGST)"
+       },
+       "raw": {
+        "tax_amount": "6,53,565",
+        "tax_type": "Central Tax (CGST)"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         451.01,
+         519.41,
+         459.61
+        ],
+        "line_ids": [
+         "p7.l21"
+        ],
+        "page": 7
+       }
+      },
+      {
+       "cells": {
+        "tax_amount": 653565,
+        "tax_type": "State Tax (SGST)"
+       },
+       "raw": {
+        "tax_amount": "6,53,565",
+        "tax_type": "State Tax (SGST)"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         468.41,
+         519.41,
+         477.01
+        ],
+        "line_ids": [
+         "p7.l22"
+        ],
+        "page": 7
+       }
+      },
+      {
+       "cells": {
+        "tax_amount": 1307130,
+        "tax_type": "Total"
+       },
+       "raw": {
+        "tax_amount": "13,07,130",
+        "tax_type": "Total"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         485.81,
+         519.41,
+         494.41
+        ],
+        "line_ids": [
+         "p7.l23"
+        ],
+        "page": 7
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       75.87,
+       433.61,
+       519.41,
+       494.41
+      ],
+      "page_end": 7,
+      "page_start": 7
+     },
+     "status": "found",
+     "unparsed": 0
+    }
+   },
+   "validation": [
+    {
+     "detail": "\"33AAHCS6612M1ZQ\" has the GSTIN format but its check digit is wrong",
+     "fields": [
+      "gstin"
+     ],
+     "id": "format:gstin",
+     "kind": "checksum",
+     "label": "gstin format",
+     "outcome": "fail",
+     "severity": "fail",
+     "tables": []
+    },
+    {
+     "detail": "All required fields were found.",
+     "fields": [],
+     "id": "required_present",
+     "kind": "rule",
+     "label": "Required fields present",
+     "outcome": "pass",
+     "severity": "fail",
+     "tables": []
+    }
+   ]
+  },
+  {
+   "confidence": {
+    "composition": {
+     "document_grade": "A",
+     "failed_checks": 1,
+     "found": 3,
+     "key_fields": 3,
+     "warnings": 0
+    },
+    "decision": "human_review",
+    "document": 0.711,
+    "reasons": [
+     {
+      "confidence": 0.213,
+      "field": "gstin",
+      "kind": "field_review"
+     },
+     {
+      "check": "format:gstin",
+      "detail": "\"33AAHCS6612M1ZQ\" has the GSTIN format but its check digit is wrong",
+      "kind": "failed_check"
+     }
+    ]
+   },
+   "defects": [],
+   "document_type": "gstr_3b",
+   "fields": {
+    "filing_date": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "17 July 2026",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       400.02,
+       153.81,
+       448.78,
+       162.41
+      ],
+      "kind": "page",
+      "page": 8,
+      "range": null,
+      "sheet": null,
+      "text": "17 July 2026"
+     },
+     "status": "found",
+     "value": "2026-07-17"
+    },
+    "gstin": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 0.0
+     },
+     "confidence": 0.213,
+     "key_field": true,
+     "method": "identifier",
+     "needs_review": true,
+     "raw_text": "33AAHCS6612M1ZQ",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       150.57,
+       119.81,
+       232.77,
+       128.41
+      ],
+      "kind": "page",
+      "page": 8,
+      "range": null,
+      "sheet": null,
+      "text": "33AAHCS6612M1ZQ"
+     },
+     "status": "found",
+     "value": "33AAHCS6612M1ZQ"
+    },
+    "legal_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "Southgate Textiles Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       150.57,
+       136.81,
+       281.05,
+       145.41
+      ],
+      "kind": "page",
+      "page": 8,
+      "range": null,
+      "sheet": null,
+      "text": "Southgate Textiles Private Limited"
+     },
+     "status": "found",
+     "value": "Southgate Textiles Private Limited"
+    },
+    "return_status": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Filed",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       360.98,
+       507.93,
+       381.03,
+       516.13
+      ],
+      "kind": "page",
+      "page": 8,
+      "range": null,
+      "sheet": null,
+      "text": "Filed"
+     },
+     "status": "found",
+     "value": "Filed"
+    },
+    "tax_period": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "June 2026",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       400.02,
+       136.81,
+       440.18,
+       145.41
+      ],
+      "kind": "page",
+      "page": 8,
+      "range": null,
+      "sheet": null,
+      "text": "June 2026"
+     },
+     "status": "found",
+     "value": "June 2026"
+    },
+    "trade_name": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    }
+   },
+   "identity": {
+    "gstin": "33AAHCS6612M1ZQ",
+    "name": "Southgate Textiles Private Limited"
+   },
+   "instance_key": "June 2026",
+   "instance_no": 7,
+   "page_from": 8,
+   "page_to": 8,
+   "tables": {
+    "input_tax_credit": {
+     "columns": [
+      "description",
+      "igst",
+      "cgst",
+      "sgst"
+     ],
+     "confidence": 1.0,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "cgst": 556272,
+        "description": "(A) ITC Available (whether in full or part)",
+        "igst": 0,
+        "sgst": 556272
+       },
+       "raw": {
+        "cgst": "5,56,272",
+        "description": "(A) ITC Available (whether in full or part)",
+        "igst": "0",
+        "sgst": "5,56,272"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         350.41,
+         516.57,
+         359.01
+        ],
+        "line_ids": [
+         "p8.l16"
+        ],
+        "page": 8
+       }
+      },
+      {
+       "cells": {
+        "cgst": 556272,
+        "description": "(C) Net ITC Available",
+        "igst": 0,
+        "sgst": 556272
+       },
+       "raw": {
+        "cgst": "5,56,272",
+        "description": "(C) Net ITC Available",
+        "igst": "0",
+        "sgst": "5,56,272"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         367.81,
+         516.57,
+         376.41
+        ],
+        "line_ids": [
+         "p8.l17"
+        ],
+        "page": 8
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       78.7,
+       350.41,
+       516.57,
+       376.41
+      ],
+      "page_end": 8,
+      "page_start": 8
+     },
+     "status": "found",
+     "unparsed": 0
+    },
+    "outward_supplies": {
+     "columns": [
+      "description",
+      "taxable_value",
+      "igst",
+      "cgst",
+      "sgst"
+     ],
+     "confidence": 1.0,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "cgst": 646828,
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": 0,
+        "sgst": 646828,
+        "taxable_value": 25873100
+       },
+       "raw": {
+        "cgst": "6,46,828",
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": "0",
+        "sgst": "6,46,828",
+        "taxable_value": "2,58,73,100"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         221.41,
+         516.57,
+         241.01
+        ],
+        "line_ids": [
+         "p8.l8",
+         "p8.l9",
+         "p8.l10"
+        ],
+        "page": 8
+       }
+      },
+      {
+       "cells": {
+        "cgst": 0,
+        "description": "(b) Outward taxable supplies (zero rated)",
+        "igst": 0,
+        "sgst": 0,
+        "taxable_value": 0
+       },
+       "raw": {
+        "cgst": "0",
+        "description": "(b) Outward taxable supplies (zero rated)",
+        "igst": "0",
+        "sgst": "0",
+        "taxable_value": "0"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         249.81,
+         516.57,
+         258.41
+        ],
+        "line_ids": [
+         "p8.l11"
+        ],
+        "page": 8
+       }
+      },
+      {
+       "cells": {
+        "cgst": 0,
+        "description": "(c) Other outward supplies (nil rated, exempted)",
+        "igst": 0,
+        "sgst": 0,
+        "taxable_value": 0
+       },
+       "raw": {
+        "cgst": "0",
+        "description": "(c) Other outward supplies (nil rated, exempted)",
+        "igst": "0",
+        "sgst": "0",
+        "taxable_value": "0"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         267.21,
+         516.57,
+         275.81
+        ],
+        "line_ids": [
+         "p8.l12"
+        ],
+        "page": 8
+       }
+      },
+      {
+       "cells": {
+        "cgst": 0,
+        "description": "(d) Inward supplies (liable to reverse charge)",
+        "igst": 0,
+        "sgst": 0,
+        "taxable_value": 0
+       },
+       "raw": {
+        "cgst": "0",
+        "description": "(d) Inward supplies (liable to reverse charge)",
+        "igst": "0",
+        "sgst": "0",
+        "taxable_value": "0"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         284.61,
+         516.57,
+         293.21
+        ],
+        "line_ids": [
+         "p8.l13"
+        ],
+        "page": 8
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       78.7,
+       221.41,
+       516.57,
+       293.21
+      ],
+      "page_end": 8,
+      "page_start": 8
+     },
+     "status": "found",
+     "unparsed": 0
+    },
+    "tax_payment": {
+     "columns": [
+      "tax_type",
+      "tax_amount"
+     ],
+     "confidence": 1.0,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "tax_amount": 0,
+        "tax_type": "Integrated Tax (IGST)"
+       },
+       "raw": {
+        "tax_amount": "0",
+        "tax_type": "Integrated Tax (IGST)"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         433.61,
+         519.41,
+         442.21
+        ],
+        "line_ids": [
+         "p8.l20"
+        ],
+        "page": 8
+       }
+      },
+      {
+       "cells": {
+        "tax_amount": 646828,
+        "tax_type": "Central Tax (CGST)"
+       },
+       "raw": {
+        "tax_amount": "6,46,828",
+        "tax_type": "Central Tax (CGST)"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         451.01,
+         519.41,
+         459.61
+        ],
+        "line_ids": [
+         "p8.l21"
+        ],
+        "page": 8
+       }
+      },
+      {
+       "cells": {
+        "tax_amount": 646828,
+        "tax_type": "State Tax (SGST)"
+       },
+       "raw": {
+        "tax_amount": "6,46,828",
+        "tax_type": "State Tax (SGST)"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         468.41,
+         519.41,
+         477.01
+        ],
+        "line_ids": [
+         "p8.l22"
+        ],
+        "page": 8
+       }
+      },
+      {
+       "cells": {
+        "tax_amount": 1293656,
+        "tax_type": "Total"
+       },
+       "raw": {
+        "tax_amount": "12,93,656",
+        "tax_type": "Total"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         485.81,
+         519.41,
+         494.41
+        ],
+        "line_ids": [
+         "p8.l23"
+        ],
+        "page": 8
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       75.87,
+       433.61,
+       519.41,
+       494.41
+      ],
+      "page_end": 8,
+      "page_start": 8
+     },
+     "status": "found",
+     "unparsed": 0
+    }
+   },
+   "validation": [
+    {
+     "detail": "\"33AAHCS6612M1ZQ\" has the GSTIN format but its check digit is wrong",
+     "fields": [
+      "gstin"
+     ],
+     "id": "format:gstin",
+     "kind": "checksum",
+     "label": "gstin format",
+     "outcome": "fail",
+     "severity": "fail",
+     "tables": []
+    },
+    {
+     "detail": "All required fields were found.",
+     "fields": [],
+     "id": "required_present",
+     "kind": "rule",
+     "label": "Required fields present",
+     "outcome": "pass",
+     "severity": "fail",
+     "tables": []
+    }
+   ]
+  },
+  {
+   "confidence": {
+    "composition": {
+     "document_grade": "A",
+     "failed_checks": 1,
+     "found": 3,
+     "key_fields": 3,
+     "warnings": 0
+    },
+    "decision": "human_review",
+    "document": 0.711,
+    "reasons": [
+     {
+      "confidence": 0.213,
+      "field": "gstin",
+      "kind": "field_review"
+     },
+     {
+      "check": "format:gstin",
+      "detail": "\"33AAHCS6612M1ZQ\" has the GSTIN format but its check digit is wrong",
+      "kind": "failed_check"
+     }
+    ]
+   },
+   "defects": [],
+   "document_type": "gstr_3b",
+   "fields": {
+    "filing_date": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "18 August 2026",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       400.02,
+       153.81,
+       460.26,
+       162.41
+      ],
+      "kind": "page",
+      "page": 9,
+      "range": null,
+      "sheet": null,
+      "text": "18 August 2026"
+     },
+     "status": "found",
+     "value": "2026-08-18"
+    },
+    "gstin": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 0.0
+     },
+     "confidence": 0.213,
+     "key_field": true,
+     "method": "identifier",
+     "needs_review": true,
+     "raw_text": "33AAHCS6612M1ZQ",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       150.57,
+       119.81,
+       232.77,
+       128.41
+      ],
+      "kind": "page",
+      "page": 9,
+      "range": null,
+      "sheet": null,
+      "text": "33AAHCS6612M1ZQ"
+     },
+     "status": "found",
+     "value": "33AAHCS6612M1ZQ"
+    },
+    "legal_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "Southgate Textiles Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       150.57,
+       136.81,
+       281.05,
+       145.41
+      ],
+      "kind": "page",
+      "page": 9,
+      "range": null,
+      "sheet": null,
+      "text": "Southgate Textiles Private Limited"
+     },
+     "status": "found",
+     "value": "Southgate Textiles Private Limited"
+    },
+    "return_status": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Filed",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       360.98,
+       507.93,
+       381.03,
+       516.13
+      ],
+      "kind": "page",
+      "page": 9,
+      "range": null,
+      "sheet": null,
+      "text": "Filed"
+     },
+     "status": "found",
+     "value": "Filed"
+    },
+    "tax_period": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "July 2026",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       400.02,
+       136.81,
+       436.82,
+       145.41
+      ],
+      "kind": "page",
+      "page": 9,
+      "range": null,
+      "sheet": null,
+      "text": "July 2026"
+     },
+     "status": "found",
+     "value": "July 2026"
+    },
+    "trade_name": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    }
+   },
+   "identity": {
+    "gstin": "33AAHCS6612M1ZQ",
+    "name": "Southgate Textiles Private Limited"
+   },
+   "instance_key": "July 2026",
+   "instance_no": 8,
+   "page_from": 9,
+   "page_to": 9,
+   "tables": {
+    "input_tax_credit": {
+     "columns": [
+      "description",
+      "igst",
+      "cgst",
+      "sgst"
+     ],
+     "confidence": 1.0,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "cgst": 513654,
+        "description": "(A) ITC Available (whether in full or part)",
+        "igst": 0,
+        "sgst": 513654
+       },
+       "raw": {
+        "cgst": "5,13,654",
+        "description": "(A) ITC Available (whether in full or part)",
+        "igst": "0",
+        "sgst": "5,13,654"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         350.41,
+         516.57,
+         359.01
+        ],
+        "line_ids": [
+         "p9.l16"
+        ],
+        "page": 9
+       }
+      },
+      {
+       "cells": {
+        "cgst": 513654,
+        "description": "(C) Net ITC Available",
+        "igst": 0,
+        "sgst": 513654
+       },
+       "raw": {
+        "cgst": "5,13,654",
+        "description": "(C) Net ITC Available",
+        "igst": "0",
+        "sgst": "5,13,654"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         367.81,
+         516.57,
+         376.41
+        ],
+        "line_ids": [
+         "p9.l17"
+        ],
+        "page": 9
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       78.7,
+       350.41,
+       516.57,
+       376.41
+      ],
+      "page_end": 9,
+      "page_start": 9
+     },
+     "status": "found",
+     "unparsed": 0
+    },
+    "outward_supplies": {
+     "columns": [
+      "description",
+      "taxable_value",
+      "igst",
+      "cgst",
+      "sgst"
+     ],
+     "confidence": 1.0,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "cgst": 597272,
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": 0,
+        "sgst": 597272,
+        "taxable_value": 23890900
+       },
+       "raw": {
+        "cgst": "5,97,272",
+        "description": "(a) Outward taxable supplies (other than zero rated, nil rated and exempted)",
+        "igst": "0",
+        "sgst": "5,97,272",
+        "taxable_value": "2,38,90,900"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         221.41,
+         516.57,
+         241.01
+        ],
+        "line_ids": [
+         "p9.l8",
+         "p9.l9",
+         "p9.l10"
+        ],
+        "page": 9
+       }
+      },
+      {
+       "cells": {
+        "cgst": 0,
+        "description": "(b) Outward taxable supplies (zero rated)",
+        "igst": 0,
+        "sgst": 0,
+        "taxable_value": 0
+       },
+       "raw": {
+        "cgst": "0",
+        "description": "(b) Outward taxable supplies (zero rated)",
+        "igst": "0",
+        "sgst": "0",
+        "taxable_value": "0"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         249.81,
+         516.57,
+         258.41
+        ],
+        "line_ids": [
+         "p9.l11"
+        ],
+        "page": 9
+       }
+      },
+      {
+       "cells": {
+        "cgst": 0,
+        "description": "(c) Other outward supplies (nil rated, exempted)",
+        "igst": 0,
+        "sgst": 0,
+        "taxable_value": 0
+       },
+       "raw": {
+        "cgst": "0",
+        "description": "(c) Other outward supplies (nil rated, exempted)",
+        "igst": "0",
+        "sgst": "0",
+        "taxable_value": "0"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         267.21,
+         516.57,
+         275.81
+        ],
+        "line_ids": [
+         "p9.l12"
+        ],
+        "page": 9
+       }
+      },
+      {
+       "cells": {
+        "cgst": 0,
+        "description": "(d) Inward supplies (liable to reverse charge)",
+        "igst": 0,
+        "sgst": 0,
+        "taxable_value": 0
+       },
+       "raw": {
+        "cgst": "0",
+        "description": "(d) Inward supplies (liable to reverse charge)",
+        "igst": "0",
+        "sgst": "0",
+        "taxable_value": "0"
+       },
+       "source": {
+        "bbox": [
+         78.7,
+         284.61,
+         516.57,
+         293.21
+        ],
+        "line_ids": [
+         "p9.l13"
+        ],
+        "page": 9
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       78.7,
+       221.41,
+       516.57,
+       293.21
+      ],
+      "page_end": 9,
+      "page_start": 9
+     },
+     "status": "found",
+     "unparsed": 0
+    },
+    "tax_payment": {
+     "columns": [
+      "tax_type",
+      "tax_amount"
+     ],
+     "confidence": 1.0,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "tax_amount": 0,
+        "tax_type": "Integrated Tax (IGST)"
+       },
+       "raw": {
+        "tax_amount": "0",
+        "tax_type": "Integrated Tax (IGST)"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         433.61,
+         519.41,
+         442.21
+        ],
+        "line_ids": [
+         "p9.l20"
+        ],
+        "page": 9
+       }
+      },
+      {
+       "cells": {
+        "tax_amount": 597272,
+        "tax_type": "Central Tax (CGST)"
+       },
+       "raw": {
+        "tax_amount": "5,97,272",
+        "tax_type": "Central Tax (CGST)"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         451.01,
+         519.41,
+         459.61
+        ],
+        "line_ids": [
+         "p9.l21"
+        ],
+        "page": 9
+       }
+      },
+      {
+       "cells": {
+        "tax_amount": 597272,
+        "tax_type": "State Tax (SGST)"
+       },
+       "raw": {
+        "tax_amount": "5,97,272",
+        "tax_type": "State Tax (SGST)"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         468.41,
+         519.41,
+         477.01
+        ],
+        "line_ids": [
+         "p9.l22"
+        ],
+        "page": 9
+       }
+      },
+      {
+       "cells": {
+        "tax_amount": 1194544,
+        "tax_type": "Total"
+       },
+       "raw": {
+        "tax_amount": "11,94,544",
+        "tax_type": "Total"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         485.81,
+         519.41,
+         494.41
+        ],
+        "line_ids": [
+         "p9.l23"
+        ],
+        "page": 9
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       75.87,
+       433.61,
+       519.41,
+       494.41
+      ],
+      "page_end": 9,
+      "page_start": 9
+     },
+     "status": "found",
+     "unparsed": 0
+    }
+   },
+   "validation": [
+    {
+     "detail": "\"33AAHCS6612M1ZQ\" has the GSTIN format but its check digit is wrong",
+     "fields": [
+      "gstin"
+     ],
+     "id": "format:gstin",
+     "kind": "checksum",
+     "label": "gstin format",
+     "outcome": "fail",
+     "severity": "fail",
+     "tables": []
+    },
+    {
+     "detail": "All required fields were found.",
+     "fields": [],
+     "id": "required_present",
+     "kind": "rule",
+     "label": "Required fields present",
+     "outcome": "pass",
+     "severity": "fail",
+     "tables": []
+    }
+   ]
+  }
+ ],
+ "error": null,
+ "file_id": "f0",
+ "front_matter_pages": [
+  1
+ ],
+ "grade": "A",
+ "name": "Southgate_GSTR3B_Dec2025_Jul2026.pdf",
+ "pages": [
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 1,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 200
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 2,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 204
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 3,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 204
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 4,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 204
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 5,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 204
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 6,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 204
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 7,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 204
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 8,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 204
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 9,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 204
+  }
+ ],
+ "reject": null,
+ "review_reasons": [
+  {
+   "confidence": 0.213,
+   "field": "gstin",
+   "instance": 1,
+   "kind": "field_review"
+  },
+  {
+   "check": "format:gstin",
+   "detail": "\"33AAHCS6612M1ZQ\" has the GSTIN format but its check digit is wrong",
+   "instance": 1,
+   "kind": "failed_check"
+  },
+  {
+   "confidence": 0.213,
+   "field": "gstin",
+   "instance": 2,
+   "kind": "field_review"
+  },
+  {
+   "check": "format:gstin",
+   "detail": "\"33AAHCS6612M1ZQ\" has the GSTIN format but its check digit is wrong",
+   "instance": 2,
+   "kind": "failed_check"
+  },
+  {
+   "confidence": 0.213,
+   "field": "gstin",
+   "instance": 3,
+   "kind": "field_review"
+  },
+  {
+   "check": "format:gstin",
+   "detail": "\"33AAHCS6612M1ZQ\" has the GSTIN format but its check digit is wrong",
+   "instance": 3,
+   "kind": "failed_check"
+  },
+  {
+   "confidence": 0.213,
+   "field": "gstin",
+   "instance": 4,
+   "kind": "field_review"
+  },
+  {
+   "check": "format:gstin",
+   "detail": "\"33AAHCS6612M1ZQ\" has the GSTIN format but its check digit is wrong",
+   "instance": 4,
+   "kind": "failed_check"
+  },
+  {
+   "confidence": 0.213,
+   "field": "gstin",
+   "instance": 5,
+   "kind": "field_review"
+  },
+  {
+   "check": "format:gstin",
+   "detail": "\"33AAHCS6612M1ZQ\" has the GSTIN format but its check digit is wrong",
+   "instance": 5,
+   "kind": "failed_check"
+  },
+  {
+   "confidence": 0.213,
+   "field": "gstin",
+   "instance": 6,
+   "kind": "field_review"
+  },
+  {
+   "check": "format:gstin",
+   "detail": "\"33AAHCS6612M1ZQ\" has the GSTIN format but its check digit is wrong",
+   "instance": 6,
+   "kind": "failed_check"
+  },
+  {
+   "confidence": 0.213,
+   "field": "gstin",
+   "instance": 7,
+   "kind": "field_review"
+  },
+  {
+   "check": "format:gstin",
+   "detail": "\"33AAHCS6612M1ZQ\" has the GSTIN format but its check digit is wrong",
+   "instance": 7,
+   "kind": "failed_check"
+  },
+  {
+   "confidence": 0.213,
+   "field": "gstin",
+   "instance": 8,
+   "kind": "field_review"
+  },
+  {
+   "check": "format:gstin",
+   "detail": "\"33AAHCS6612M1ZQ\" has the GSTIN format but its check digit is wrong",
+   "instance": 8,
+   "kind": "failed_check"
+  }
+ ],
+ "route": {
+  "blank_pages": [],
+  "dropped_rotated_chars": 0,
+  "ocr_pages": 0,
+  "page_routes": [
+   {
+    "page": 1,
+    "route": "text"
+   },
+   {
+    "page": 2,
+    "route": "text"
+   },
+   {
+    "page": 3,
+    "route": "text"
+   },
+   {
+    "page": 4,
+    "route": "text"
+   },
+   {
+    "page": 5,
+    "route": "text"
+   },
+   {
+    "page": 6,
+    "route": "text"
+   },
+   {
+    "page": 7,
+    "route": "text"
+   },
+   {
+    "page": 8,
+    "route": "text"
+   },
+   {
+    "page": 9,
+    "route": "text"
+   }
+  ],
+  "pages": 9,
+  "route": "text",
+  "table_pages": 9
+ },
+ "run_id": "RUN-31B5EE8542CF",
+ "sha256": "6de2b33879def2a4c0b6a67abba2d7455e7aa7f7d27f99922a9a925ce69fd380",
+ "source": {
+  "kind": "pdf",
+  "pages": 9
+ },
+ "status": "processed",
+ "trace": [
+  {
+   "input_hash": "6de2b33879def2a4c0b6a67abba2d7455e7aa7f7d27f99922a9a925ce69fd380",
+   "output_hash": "0df87a335781bcc64a70fc1b870534955f9895831120ceb44a13d9ca7a2faee8",
+   "stage": "quality_gate"
+  },
+  {
+   "input_hash": "0df87a335781bcc64a70fc1b870534955f9895831120ceb44a13d9ca7a2faee8",
+   "output_hash": "c3ad222c2c96c433d45788f9206f9c4d8fdda73256a057f906550bb2c50069d5",
+   "stage": "read"
+  },
+  {
+   "input_hash": "c3ad222c2c96c433d45788f9206f9c4d8fdda73256a057f906550bb2c50069d5",
+   "output_hash": "83232396a051b287a72f416cb5ff213ccd82ba744c31669ddc46f475332aa771",
+   "stage": "route"
+  },
+  {
+   "input_hash": "83232396a051b287a72f416cb5ff213ccd82ba744c31669ddc46f475332aa771",
+   "output_hash": "eef63ba14f7ea3cb5e56dd8482689e4220b85f30bae925ffb1b7040fa7af7e4b",
+   "stage": "classify"
+  },
+  {
+   "input_hash": "eef63ba14f7ea3cb5e56dd8482689e4220b85f30bae925ffb1b7040fa7af7e4b",
+   "output_hash": "facd9f2050cd579a2d4ead52acafe082fdcadbea934d7b0533118c9f4f76b9d6",
+   "stage": "instances"
+  },
+  {
+   "input_hash": "facd9f2050cd579a2d4ead52acafe082fdcadbea934d7b0533118c9f4f76b9d6",
+   "output_hash": "84a846bda45baef18ee59c0d888c0115113dc086b6633eae00efcbbdd444b726",
+   "stage": "extract"
+  },
+  {
+   "input_hash": "84a846bda45baef18ee59c0d888c0115113dc086b6633eae00efcbbdd444b726",
+   "output_hash": "49a21e13e5b60eb53ef46625732a7c7d05e362ffe030306f0238f470bf52fda8",
+   "stage": "validate"
+  },
+  {
+   "input_hash": "49a21e13e5b60eb53ef46625732a7c7d05e362ffe030306f0238f470bf52fda8",
+   "output_hash": "15b4de2cd5c1cf09033fd59fad12fe2163f97e4ec864ef64397c892457cd7ca9",
+   "stage": "score"
+  }
+ ]
+}

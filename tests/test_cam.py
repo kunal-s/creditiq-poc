@@ -56,7 +56,7 @@ def test_tc28_the_memo_ends_in_the_summary_and_an_empty_recommendation(
     cam = _cam(client, analyst, published_data_root, case_id)
     kinds = {i["kind"] for i in cam["summary"]}
     assert kinds == {"finding", "deviation", "query"}
-    finding = next(i for i in cam["summary"] if i["kind"] == "finding" and "ASHWOOD" in i["text"])
+    finding = next(i for i in cam["summary"] if i["kind"] == "finding" and "AAACK9876Q" in i["text"])
     assert finding["severity"] == "serious" and finding["citations"]
     assert cam["recommendation_title"] == "Recommendation" and cam["recommendation"] == ""
 

@@ -1,0 +1,1841 @@
+{
+ "classification": {
+  "candidates": [
+   {
+    "score": 1.0,
+    "type": "audited_financial_statements"
+   },
+   {
+    "score": 0.1,
+    "type": "certificate_of_incorporation"
+   },
+   {
+    "score": 0.05,
+    "type": "board_resolution_borrowing"
+   }
+  ],
+  "confidence": 1.0,
+  "mixed_content": [],
+  "model_error": null,
+  "needs_review": false,
+  "reason": "signals matched: 5 supporting, margin 0.90",
+  "signals": {
+   "contrary": [],
+   "required": [
+    "audited\\s+financial\\s+statements"
+   ],
+   "supporting": [
+    "independent\\s+auditor",
+    "balance\\s+sheet",
+    "statement\\s+of\\s+profit\\s+and\\s+loss",
+    "cash\\s+flow\\s+statement",
+    "firm\\s+registration"
+   ]
+  },
+  "tier": "signals",
+  "type": "audited_financial_statements"
+ },
+ "decision": "auto_accept",
+ "documents": [
+  {
+   "confidence": {
+    "composition": {
+     "document_grade": "A",
+     "failed_checks": 0,
+     "found": 2,
+     "key_fields": 2,
+     "warnings": 0
+    },
+    "decision": "auto_accept",
+    "document": 0.96,
+    "reasons": []
+   },
+   "defects": [],
+   "document_type": "audited_financial_statements",
+   "fields": {
+    "accounting_standard": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    },
+    "audit_date": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "27 August 2024",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       184.88,
+       368.5,
+       251.43,
+       378.0
+      ],
+      "kind": "page",
+      "page": 3,
+      "range": null,
+      "sheet": null,
+      "text": "27 August 2024"
+     },
+     "status": "found",
+     "value": "2024-08-27"
+    },
+    "auditor_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "M/s. Rangaswamy & Associates, Chartered Accountants",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       223.27,
+       315.41,
+       438.83,
+       324.01
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "M/s. Rangaswamy & Associates, Chartered Accountants"
+     },
+     "status": "found",
+     "value": "M/s. Rangaswamy & Associates, Chartered Accountants"
+    },
+    "company_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "Southgate Textiles Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       223.27,
+       225.41,
+       353.76,
+       234.01
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Southgate Textiles Private Limited"
+     },
+     "status": "found",
+     "value": "Southgate Textiles Private Limited"
+    },
+    "financial_year": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "alias",
+     "needs_review": false,
+     "raw_text": "FY2024 (ended 31 March 2024)",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       223.27,
+       279.41,
+       345.16,
+       288.01
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "FY2024 (ended 31 March 2024)"
+     },
+     "status": "found",
+     "value": "FY2024 (ended 31 March 2024)"
+    }
+   },
+   "identity": {
+    "name": "Southgate Textiles Private Limited"
+   },
+   "instance_key": null,
+   "instance_no": 1,
+   "page_from": 1,
+   "page_to": 9,
+   "tables": {
+    "balance_sheet": {
+     "columns": [
+      "particulars",
+      "current_period",
+      "previous_period"
+     ],
+     "confidence": 1.0,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "current_period": null,
+        "particulars": "I. EQUITY AND LIABILITIES",
+        "previous_period": null
+       },
+       "raw": {
+        "particulars": "I. EQUITY AND LIABILITIES"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         137.81,
+         185.32,
+         146.41
+        ],
+        "line_ids": [
+         "p5.l6"
+        ],
+        "page": 5
+       }
+      },
+      {
+       "cells": {
+        "current_period": null,
+        "particulars": "(1) Shareholders' funds",
+        "previous_period": null
+       },
+       "raw": {
+        "particulars": "(1) Shareholders' funds"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         154.81,
+         164.98,
+         163.41
+        ],
+        "line_ids": [
+         "p5.l7"
+        ],
+        "page": 5
+       }
+      },
+      {
+       "cells": {
+        "current_period": 10000000,
+        "particulars": "(a) Share capital",
+        "previous_period": 10000000
+       },
+       "raw": {
+        "current_period": "1,00,00,000",
+        "particulars": "(a) Share capital",
+        "previous_period": "1,00,00,000"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         171.81,
+         519.41,
+         180.41
+        ],
+        "line_ids": [
+         "p5.l8"
+        ],
+        "page": 5
+       }
+      },
+      {
+       "cells": {
+        "current_period": 36218750,
+        "particulars": "(b) Reserves and surplus",
+        "previous_period": 27484540
+       },
+       "raw": {
+        "current_period": "3,62,18,750",
+        "particulars": "(b) Reserves and surplus",
+        "previous_period": "2,74,84,540"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         188.81,
+         519.41,
+         197.41
+        ],
+        "line_ids": [
+         "p5.l9"
+        ],
+        "page": 5
+       }
+      },
+      {
+       "cells": {
+        "current_period": null,
+        "particulars": "(2) Non-current liabilities",
+        "previous_period": null
+       },
+       "raw": {
+        "particulars": "(2) Non-current liabilities"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         205.81,
+         169.05,
+         214.41
+        ],
+        "line_ids": [
+         "p5.l10"
+        ],
+        "page": 5
+       }
+      },
+      {
+       "cells": {
+        "current_period": 14500000,
+        "particulars": "(a) Long-term borrowings",
+        "previous_period": 15500000
+       },
+       "raw": {
+        "current_period": "1,45,00,000",
+        "particulars": "(a) Long-term borrowings",
+        "previous_period": "1,55,00,000"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         222.81,
+         519.41,
+         231.41
+        ],
+        "line_ids": [
+         "p5.l11"
+        ],
+        "page": 5
+       }
+      },
+      {
+       "cells": {
+        "current_period": 1980000,
+        "particulars": "(b) Deferred tax liabilities (net)",
+        "previous_period": 1750000
+       },
+       "raw": {
+        "current_period": "19,80,000",
+        "particulars": "(b) Deferred tax liabilities (net)",
+        "previous_period": "17,50,000"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         239.81,
+         519.41,
+         248.41
+        ],
+        "line_ids": [
+         "p5.l12"
+        ],
+        "page": 5
+       }
+      },
+      {
+       "cells": {
+        "current_period": null,
+        "particulars": "(3) Current liabilities",
+        "previous_period": null
+       },
+       "raw": {
+        "particulars": "(3) Current liabilities"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         256.81,
+         152.32,
+         265.41
+        ],
+        "line_ids": [
+         "p5.l13"
+        ],
+        "page": 5
+       }
+      },
+      {
+       "cells": {
+        "current_period": 8000000,
+        "particulars": "(a) Short-term borrowings",
+        "previous_period": 7000000
+       },
+       "raw": {
+        "current_period": "80,00,000",
+        "particulars": "(a) Short-term borrowings",
+        "previous_period": "70,00,000"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         273.81,
+         519.41,
+         282.41
+        ],
+        "line_ids": [
+         "p5.l14"
+        ],
+        "page": 5
+       }
+      },
+      {
+       "cells": {
+        "current_period": 21800000,
+        "particulars": "(b) Trade payables",
+        "previous_period": 19500000
+       },
+       "raw": {
+        "current_period": "2,18,00,000",
+        "particulars": "(b) Trade payables",
+        "previous_period": "1,95,00,000"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         290.81,
+         519.41,
+         299.41
+        ],
+        "line_ids": [
+         "p5.l15"
+        ],
+        "page": 5
+       }
+      },
+      {
+       "cells": {
+        "current_period": 3150000,
+        "particulars": "(c) Other current liabilities",
+        "previous_period": 2800000
+       },
+       "raw": {
+        "current_period": "31,50,000",
+        "particulars": "(c) Other current liabilities",
+        "previous_period": "28,00,000"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         307.81,
+         519.41,
+         316.41
+        ],
+        "line_ids": [
+         "p5.l16"
+        ],
+        "page": 5
+       }
+      },
+      {
+       "cells": {
+        "current_period": 3400000,
+        "particulars": "(d) Short-term provisions",
+        "previous_period": 3000000
+       },
+       "raw": {
+        "current_period": "34,00,000",
+        "particulars": "(d) Short-term provisions",
+        "previous_period": "30,00,000"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         324.81,
+         519.41,
+         333.41
+        ],
+        "line_ids": [
+         "p5.l17"
+        ],
+        "page": 5
+       }
+      },
+      {
+       "cells": {
+        "current_period": 99048750,
+        "particulars": "TOTAL",
+        "previous_period": 87034540
+       },
+       "raw": {
+        "current_period": "9,90,48,750",
+        "particulars": "TOTAL",
+        "previous_period": "8,70,34,540"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         341.81,
+         519.41,
+         350.41
+        ],
+        "line_ids": [
+         "p5.l18"
+        ],
+        "page": 5
+       }
+      },
+      {
+       "cells": {
+        "current_period": null,
+        "particulars": "II. ASSETS",
+        "previous_period": null
+       },
+       "raw": {
+        "particulars": "II. ASSETS"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         358.81,
+         119.36,
+         367.41
+        ],
+        "line_ids": [
+         "p5.l19"
+        ],
+        "page": 5
+       }
+      },
+      {
+       "cells": {
+        "current_period": null,
+        "particulars": "(1) Non-current assets",
+        "previous_period": null
+       },
+       "raw": {
+        "particulars": "(1) Non-current assets"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         375.81,
+         161.41,
+         384.41
+        ],
+        "line_ids": [
+         "p5.l20"
+        ],
+        "page": 5
+       }
+      },
+      {
+       "cells": {
+        "current_period": 34800000,
+        "particulars": "(a) Property, plant and equipment",
+        "previous_period": 33000000
+       },
+       "raw": {
+        "current_period": "3,48,00,000",
+        "particulars": "(a) Property, plant and equipment",
+        "previous_period": "3,30,00,000"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         392.81,
+         519.41,
+         401.41
+        ],
+        "line_ids": [
+         "p5.l21"
+        ],
+        "page": 5
+       }
+      },
+      {
+       "cells": {
+        "current_period": 320000,
+        "particulars": "(b) Intangible assets",
+        "previous_period": 280000
+       },
+       "raw": {
+        "current_period": "3,20,000",
+        "particulars": "(b) Intangible assets",
+        "previous_period": "2,80,000"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         409.81,
+         519.41,
+         418.41
+        ],
+        "line_ids": [
+         "p5.l22"
+        ],
+        "page": 5
+       }
+      },
+      {
+       "cells": {
+        "current_period": 2200000,
+        "particulars": "(c) Long-term loans and advances",
+        "previous_period": 2000000
+       },
+       "raw": {
+        "current_period": "22,00,000",
+        "particulars": "(c) Long-term loans and advances",
+        "previous_period": "20,00,000"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         426.81,
+         519.41,
+         435.41
+        ],
+        "line_ids": [
+         "p5.l23"
+        ],
+        "page": 5
+       }
+      },
+      {
+       "cells": {
+        "current_period": null,
+        "particulars": "(2) Current assets",
+        "previous_period": null
+       },
+       "raw": {
+        "particulars": "(2) Current assets"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         443.81,
+         144.68,
+         452.41
+        ],
+        "line_ids": [
+         "p5.l24"
+        ],
+        "page": 5
+       }
+      },
+      {
+       "cells": {
+        "current_period": 33000000,
+        "particulars": "(a) Inventories",
+        "previous_period": 30500000
+       },
+       "raw": {
+        "current_period": "3,30,00,000",
+        "particulars": "(a) Inventories",
+        "previous_period": "3,05,00,000"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         460.81,
+         519.41,
+         469.41
+        ],
+        "line_ids": [
+         "p5.l25"
+        ],
+        "page": 5
+       }
+      },
+      {
+       "cells": {
+        "current_period": 25500000,
+        "particulars": "(b) Trade receivables",
+        "previous_period": 22000000
+       },
+       "raw": {
+        "current_period": "2,55,00,000",
+        "particulars": "(b) Trade receivables",
+        "previous_period": "2,20,00,000"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         477.81,
+         519.41,
+         486.41
+        ],
+        "line_ids": [
+         "p5.l26"
+        ],
+        "page": 5
+       }
+      },
+      {
+       "cells": {
+        "current_period": 2600000,
+        "particulars": "(c) Cash and bank balances",
+        "previous_period": 2400000
+       },
+       "raw": {
+        "current_period": "26,00,000",
+        "particulars": "(c) Cash and bank balances",
+        "previous_period": "24,00,000"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         494.81,
+         519.41,
+         503.41
+        ],
+        "line_ids": [
+         "p5.l27"
+        ],
+        "page": 5
+       }
+      },
+      {
+       "cells": {
+        "current_period": 628750,
+        "particulars": "(d) Short-term loans and advances",
+        "previous_period": -3145460
+       },
+       "raw": {
+        "current_period": "6,28,750",
+        "particulars": "(d) Short-term loans and advances",
+        "previous_period": "-31,45,460"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         511.81,
+         519.41,
+         520.41
+        ],
+        "line_ids": [
+         "p5.l28"
+        ],
+        "page": 5
+       }
+      },
+      {
+       "cells": {
+        "current_period": 99048750,
+        "particulars": "TOTAL",
+        "previous_period": 87034540
+       },
+       "raw": {
+        "current_period": "9,90,48,750",
+        "particulars": "TOTAL",
+        "previous_period": "8,70,34,540"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         528.81,
+         519.41,
+         537.41
+        ],
+        "line_ids": [
+         "p5.l29"
+        ],
+        "page": 5
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       75.87,
+       137.81,
+       519.41,
+       537.41
+      ],
+      "page_end": 5,
+      "page_start": 5
+     },
+     "status": "found",
+     "unparsed": 0
+    },
+    "cash_flow": {
+     "columns": [
+      "particulars",
+      "current_period",
+      "previous_period"
+     ],
+     "confidence": 1.0,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "current_period": null,
+        "particulars": "A. Cash flow from operating activities",
+        "previous_period": null
+       },
+       "raw": {
+        "particulars": "A. Cash flow from operating activities"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         137.81,
+         214.5,
+         146.41
+        ],
+        "line_ids": [
+         "p7.l6"
+        ],
+        "page": 7
+       }
+      },
+      {
+       "cells": {
+        "current_period": 11802986,
+        "particulars": "Profit before tax",
+        "previous_period": null
+       },
+       "raw": {
+        "current_period": "1,18,02,986",
+        "particulars": "Profit before tax"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         154.81,
+         522.24,
+         163.41
+        ],
+        "line_ids": [
+         "p7.l7"
+        ],
+        "page": 7
+       }
+      },
+      {
+       "cells": {
+        "current_period": 6800000,
+        "particulars": "Adjustments: depreciation and amortisation",
+        "previous_period": null
+       },
+       "raw": {
+        "current_period": "68,00,000",
+        "particulars": "Adjustments: depreciation and amortisation"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         171.81,
+         522.24,
+         180.41
+        ],
+        "line_ids": [
+         "p7.l8"
+        ],
+        "page": 7
+       }
+      },
+      {
+       "cells": {
+        "current_period": 3509102,
+        "particulars": "Adjustments: finance costs",
+        "previous_period": null
+       },
+       "raw": {
+        "current_period": "35,09,102",
+        "particulars": "Adjustments: finance costs"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         188.81,
+         522.24,
+         197.41
+        ],
+        "line_ids": [
+         "p7.l9"
+        ],
+        "page": 7
+       }
+      },
+      {
+       "cells": {
+        "current_period": 22112088,
+        "particulars": "Operating profit before working capital changes",
+        "previous_period": null
+       },
+       "raw": {
+        "current_period": "2,21,12,088",
+        "particulars": "Operating profit before working capital changes"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         205.81,
+         522.24,
+         214.41
+        ],
+        "line_ids": [
+         "p7.l10"
+        ],
+        "page": 7
+       }
+      },
+      {
+       "cells": {
+        "current_period": -2950000,
+        "particulars": "Changes in working capital (net)",
+        "previous_period": null
+       },
+       "raw": {
+        "current_period": "-29,50,000",
+        "particulars": "Changes in working capital (net)"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         222.81,
+         522.24,
+         231.41
+        ],
+        "line_ids": [
+         "p7.l11"
+        ],
+        "page": 7
+       }
+      },
+      {
+       "cells": {
+        "current_period": -3068776,
+        "particulars": "Direct taxes paid",
+        "previous_period": null
+       },
+       "raw": {
+        "current_period": "-30,68,776",
+        "particulars": "Direct taxes paid"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         239.81,
+         522.24,
+         248.41
+        ],
+        "line_ids": [
+         "p7.l12"
+        ],
+        "page": 7
+       }
+      },
+      {
+       "cells": {
+        "current_period": 16093312,
+        "particulars": "Net cash from operating activities (A)",
+        "previous_period": null
+       },
+       "raw": {
+        "current_period": "1,60,93,312",
+        "particulars": "Net cash from operating activities (A)"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         256.81,
+         522.24,
+         265.41
+        ],
+        "line_ids": [
+         "p7.l13"
+        ],
+        "page": 7
+       }
+      },
+      {
+       "cells": {
+        "current_period": null,
+        "particulars": "B. Cash flow from investing activities",
+        "previous_period": null
+       },
+       "raw": {
+        "particulars": "B. Cash flow from investing activities"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         273.81,
+         212.58,
+         282.41
+        ],
+        "line_ids": [
+         "p7.l14"
+        ],
+        "page": 7
+       }
+      },
+      {
+       "cells": {
+        "current_period": -8600000,
+        "particulars": "Purchase of property, plant and equipment",
+        "previous_period": null
+       },
+       "raw": {
+        "current_period": "-86,00,000",
+        "particulars": "Purchase of property, plant and equipment"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         290.81,
+         522.24,
+         299.41
+        ],
+        "line_ids": [
+         "p7.l15"
+        ],
+        "page": 7
+       }
+      },
+      {
+       "cells": {
+        "current_period": -240000,
+        "particulars": "Movement in intangibles and long-term advances",
+        "previous_period": null
+       },
+       "raw": {
+        "current_period": "-2,40,000",
+        "particulars": "Movement in intangibles and long-term advances"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         307.81,
+         522.24,
+         316.41
+        ],
+        "line_ids": [
+         "p7.l16"
+        ],
+        "page": 7
+       }
+      },
+      {
+       "cells": {
+        "current_period": -8840000,
+        "particulars": "Net cash used in investing activities (B)",
+        "previous_period": null
+       },
+       "raw": {
+        "current_period": "-88,40,000",
+        "particulars": "Net cash used in investing activities (B)"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         324.81,
+         522.24,
+         333.41
+        ],
+        "line_ids": [
+         "p7.l17"
+        ],
+        "page": 7
+       }
+      },
+      {
+       "cells": {
+        "current_period": null,
+        "particulars": "C. Cash flow from financing activities",
+        "previous_period": null
+       },
+       "raw": {
+        "particulars": "C. Cash flow from financing activities"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         341.81,
+         213.54,
+         350.41
+        ],
+        "line_ids": [
+         "p7.l18"
+        ],
+        "page": 7
+       }
+      },
+      {
+       "cells": {
+        "current_period": -7053312,
+        "particulars": "Net borrowings, interest paid and other financing",
+        "previous_period": null
+       },
+       "raw": {
+        "current_period": "-70,53,312",
+        "particulars": "Net borrowings, interest paid and other financing"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         358.81,
+         522.24,
+         367.41
+        ],
+        "line_ids": [
+         "p7.l19"
+        ],
+        "page": 7
+       }
+      },
+      {
+       "cells": {
+        "current_period": -7053312,
+        "particulars": "Net cash from financing activities (C)",
+        "previous_period": null
+       },
+       "raw": {
+        "current_period": "-70,53,312",
+        "particulars": "Net cash from financing activities (C)"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         375.81,
+         522.24,
+         384.41
+        ],
+        "line_ids": [
+         "p7.l20"
+        ],
+        "page": 7
+       }
+      },
+      {
+       "cells": {
+        "current_period": 200000,
+        "particulars": "Net increase / (decrease) in cash (A + B + C)",
+        "previous_period": null
+       },
+       "raw": {
+        "current_period": "2,00,000",
+        "particulars": "Net increase / (decrease) in cash (A + B + C)"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         392.81,
+         522.24,
+         401.41
+        ],
+        "line_ids": [
+         "p7.l21"
+        ],
+        "page": 7
+       }
+      },
+      {
+       "cells": {
+        "current_period": 2400000,
+        "particulars": "Cash and cash equivalents at beginning of year",
+        "previous_period": null
+       },
+       "raw": {
+        "current_period": "24,00,000",
+        "particulars": "Cash and cash equivalents at beginning of year"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         409.81,
+         522.24,
+         418.41
+        ],
+        "line_ids": [
+         "p7.l22"
+        ],
+        "page": 7
+       }
+      },
+      {
+       "cells": {
+        "current_period": 2600000,
+        "particulars": "Cash and cash equivalents at end of year",
+        "previous_period": null
+       },
+       "raw": {
+        "current_period": "26,00,000",
+        "particulars": "Cash and cash equivalents at end of year"
+       },
+       "source": {
+        "bbox": [
+         73.03,
+         426.81,
+         522.24,
+         435.41
+        ],
+        "line_ids": [
+         "p7.l23"
+        ],
+        "page": 7
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       73.03,
+       137.81,
+       522.24,
+       435.41
+      ],
+      "page_end": 7,
+      "page_start": 7
+     },
+     "status": "found",
+     "unparsed": 0
+    },
+    "profit_and_loss": {
+     "columns": [
+      "particulars",
+      "current_period",
+      "previous_period"
+     ],
+     "confidence": 1.0,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "current_period": 184267400,
+        "particulars": "I. Revenue from operations",
+        "previous_period": 159200000
+       },
+       "raw": {
+        "current_period": "18,42,67,400",
+        "particulars": "I. Revenue from operations",
+        "previous_period": "15,92,00,000"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         137.81,
+         519.41,
+         146.41
+        ],
+        "line_ids": [
+         "p6.l6"
+        ],
+        "page": 6
+       }
+      },
+      {
+       "cells": {
+        "current_period": 980000,
+        "particulars": "II. Other income",
+        "previous_period": 850000
+       },
+       "raw": {
+        "current_period": "9,80,000",
+        "particulars": "II. Other income",
+        "previous_period": "8,50,000"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         154.81,
+         519.41,
+         163.41
+        ],
+        "line_ids": [
+         "p6.l7"
+        ],
+        "page": 6
+       }
+      },
+      {
+       "cells": {
+        "current_period": 185247400,
+        "particulars": "III. Total income (I + II)",
+        "previous_period": 160050000
+       },
+       "raw": {
+        "current_period": "18,52,47,400",
+        "particulars": "III. Total income (I + II)",
+        "previous_period": "16,00,50,000"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         171.81,
+         519.41,
+         180.41
+        ],
+        "line_ids": [
+         "p6.l8"
+        ],
+        "page": 6
+       }
+      },
+      {
+       "cells": {
+        "current_period": null,
+        "particulars": "IV. Expenses:",
+        "previous_period": null
+       },
+       "raw": {
+        "particulars": "IV. Expenses:"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         188.81,
+         128.93,
+         197.41
+        ],
+        "line_ids": [
+         "p6.l9"
+        ],
+        "page": 6
+       }
+      },
+      {
+       "cells": {
+        "current_period": 119000000,
+        "particulars": "Cost of materials consumed",
+        "previous_period": 103000000
+       },
+       "raw": {
+        "current_period": "11,90,00,000",
+        "particulars": "Cost of materials consumed",
+        "previous_period": "10,30,00,000"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         205.81,
+         519.41,
+         214.41
+        ],
+        "line_ids": [
+         "p6.l10"
+        ],
+        "page": 6
+       }
+      },
+      {
+       "cells": {
+        "current_period": -1800000,
+        "particulars": "Changes in inventories of FG and WIP",
+        "previous_period": -1500000
+       },
+       "raw": {
+        "current_period": "-18,00,000",
+        "particulars": "Changes in inventories of FG and WIP",
+        "previous_period": "-15,00,000"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         222.81,
+         519.41,
+         231.41
+        ],
+        "line_ids": [
+         "p6.l11"
+        ],
+        "page": 6
+       }
+      },
+      {
+       "cells": {
+        "current_period": 22800000,
+        "particulars": "Employee benefits expense",
+        "previous_period": 19800000
+       },
+       "raw": {
+        "current_period": "2,28,00,000",
+        "particulars": "Employee benefits expense",
+        "previous_period": "1,98,00,000"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         239.81,
+         519.41,
+         248.41
+        ],
+        "line_ids": [
+         "p6.l12"
+        ],
+        "page": 6
+       }
+      },
+      {
+       "cells": {
+        "current_period": 3509102,
+        "particulars": "Finance costs",
+        "previous_period": 3233784
+       },
+       "raw": {
+        "current_period": "35,09,102",
+        "particulars": "Finance costs",
+        "previous_period": "32,33,784"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         256.81,
+         519.41,
+         265.41
+        ],
+        "line_ids": [
+         "p6.l13"
+        ],
+        "page": 6
+       }
+      },
+      {
+       "cells": {
+        "current_period": 6800000,
+        "particulars": "Depreciation and amortisation",
+        "previous_period": 6200000
+       },
+       "raw": {
+        "current_period": "68,00,000",
+        "particulars": "Depreciation and amortisation",
+        "previous_period": "62,00,000"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         273.81,
+         519.41,
+         282.41
+        ],
+        "line_ids": [
+         "p6.l14"
+        ],
+        "page": 6
+       }
+      },
+      {
+       "cells": {
+        "current_period": 23135312,
+        "particulars": "Other expenses",
+        "previous_period": 20100000
+       },
+       "raw": {
+        "current_period": "2,31,35,312",
+        "particulars": "Other expenses",
+        "previous_period": "2,01,00,000"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         290.81,
+         519.41,
+         299.41
+        ],
+        "line_ids": [
+         "p6.l15"
+        ],
+        "page": 6
+       }
+      },
+      {
+       "cells": {
+        "current_period": 173444414,
+        "particulars": "Total expenses",
+        "previous_period": 150833784
+       },
+       "raw": {
+        "current_period": "17,34,44,414",
+        "particulars": "Total expenses",
+        "previous_period": "15,08,33,784"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         307.81,
+         519.41,
+         316.41
+        ],
+        "line_ids": [
+         "p6.l16"
+        ],
+        "page": 6
+       }
+      },
+      {
+       "cells": {
+        "current_period": 11802986,
+        "particulars": "V. Profit before tax (III - IV)",
+        "previous_period": 9216216
+       },
+       "raw": {
+        "current_period": "1,18,02,986",
+        "particulars": "V. Profit before tax (III - IV)",
+        "previous_period": "92,16,216"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         324.81,
+         519.41,
+         333.41
+        ],
+        "line_ids": [
+         "p6.l17"
+        ],
+        "page": 6
+       }
+      },
+      {
+       "cells": {
+        "current_period": 3068776,
+        "particulars": "VI. Tax expense (current and deferred)",
+        "previous_period": 2396216
+       },
+       "raw": {
+        "current_period": "30,68,776",
+        "particulars": "VI. Tax expense (current and deferred)",
+        "previous_period": "23,96,216"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         341.81,
+         519.41,
+         350.41
+        ],
+        "line_ids": [
+         "p6.l18"
+        ],
+        "page": 6
+       }
+      },
+      {
+       "cells": {
+        "current_period": 8734210,
+        "particulars": "VII. Profit for the year (V - VI)",
+        "previous_period": 6820000
+       },
+       "raw": {
+        "current_period": "87,34,210",
+        "particulars": "VII. Profit for the year (V - VI)",
+        "previous_period": "68,20,000"
+       },
+       "source": {
+        "bbox": [
+         75.87,
+         358.81,
+         519.41,
+         367.41
+        ],
+        "line_ids": [
+         "p6.l19"
+        ],
+        "page": 6
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       75.87,
+       137.81,
+       519.41,
+       367.41
+      ],
+      "page_end": 6,
+      "page_start": 6
+     },
+     "status": "found",
+     "unparsed": 0
+    }
+   },
+   "validation": [
+    {
+     "detail": "All required fields were found.",
+     "fields": [],
+     "id": "required_present",
+     "kind": "rule",
+     "label": "Required fields present",
+     "outcome": "pass",
+     "severity": "fail",
+     "tables": []
+    },
+    {
+     "detail": "99,048,750 and 99,048,750 agree.",
+     "fields": [],
+     "id": "balance_sheet_balances",
+     "kind": "rule",
+     "label": "Balance sheet totals agree",
+     "outcome": "pass",
+     "severity": "fail",
+     "tables": [
+      "balance_sheet"
+     ]
+    },
+    {
+     "detail": "87,034,540 and 87,034,540 agree.",
+     "fields": [],
+     "id": "balance_sheet_balances_previous",
+     "kind": "rule",
+     "label": "Balance sheet totals agree (previous year)",
+     "outcome": "pass",
+     "severity": "fail",
+     "tables": [
+      "balance_sheet"
+     ]
+    }
+   ]
+  }
+ ],
+ "error": null,
+ "file_id": "f0",
+ "front_matter_pages": [],
+ "grade": "A",
+ "name": "Southgate_Audited_FS_FY2024.pdf",
+ "pages": [
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 1,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 105
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 2,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 330
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 3,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 217
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 4,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 288
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 5,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 180
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 6,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 157
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 7,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 162
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 8,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 293
+  },
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 841.89,
+   "ocr_conf": null,
+   "page": 9,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.28,
+   "words": 215
+  }
+ ],
+ "reject": null,
+ "review_reasons": [],
+ "route": {
+  "blank_pages": [],
+  "dropped_rotated_chars": 0,
+  "ocr_pages": 0,
+  "page_routes": [
+   {
+    "page": 1,
+    "route": "text"
+   },
+   {
+    "page": 2,
+    "route": "text"
+   },
+   {
+    "page": 3,
+    "route": "text"
+   },
+   {
+    "page": 4,
+    "route": "text"
+   },
+   {
+    "page": 5,
+    "route": "text"
+   },
+   {
+    "page": 6,
+    "route": "text"
+   },
+   {
+    "page": 7,
+    "route": "text"
+   },
+   {
+    "page": 8,
+    "route": "text"
+   },
+   {
+    "page": 9,
+    "route": "text"
+   }
+  ],
+  "pages": 9,
+  "route": "text",
+  "table_pages": 3
+ },
+ "run_id": "RUN-283D2DD30C80",
+ "sha256": "8e03e5ad048678a48e6314003b6359cee20b5fbd91abb32839fb79f70e8a9005",
+ "source": {
+  "kind": "pdf",
+  "pages": 9
+ },
+ "status": "processed",
+ "trace": [
+  {
+   "input_hash": "8e03e5ad048678a48e6314003b6359cee20b5fbd91abb32839fb79f70e8a9005",
+   "output_hash": "0df87a335781bcc64a70fc1b870534955f9895831120ceb44a13d9ca7a2faee8",
+   "stage": "quality_gate"
+  },
+  {
+   "input_hash": "0df87a335781bcc64a70fc1b870534955f9895831120ceb44a13d9ca7a2faee8",
+   "output_hash": "4b4995dfaea412ca63fc460f339855dbac151f51c0710e356a2a589c1517caed",
+   "stage": "read"
+  },
+  {
+   "input_hash": "4b4995dfaea412ca63fc460f339855dbac151f51c0710e356a2a589c1517caed",
+   "output_hash": "86fe81735311f1f1d692b2ac617da2b6d42093347a4c70e4c019d68c51a79229",
+   "stage": "route"
+  },
+  {
+   "input_hash": "86fe81735311f1f1d692b2ac617da2b6d42093347a4c70e4c019d68c51a79229",
+   "output_hash": "e727585d77e881b549c3e167874d4e7527d0bfd2a15d043e7850dc5422f25f5e",
+   "stage": "classify"
+  },
+  {
+   "input_hash": "e727585d77e881b549c3e167874d4e7527d0bfd2a15d043e7850dc5422f25f5e",
+   "output_hash": "7a495c2c9def6e1b0ec372e7aca571ed319ec10a1fb6d12235eb21b85d9be379",
+   "stage": "instances"
+  },
+  {
+   "input_hash": "7a495c2c9def6e1b0ec372e7aca571ed319ec10a1fb6d12235eb21b85d9be379",
+   "output_hash": "6750930a17dcbfae6f34d5a599514b5adc90eab905d830c924fdf5180d5f36a6",
+   "stage": "extract"
+  },
+  {
+   "input_hash": "6750930a17dcbfae6f34d5a599514b5adc90eab905d830c924fdf5180d5f36a6",
+   "output_hash": "96790cfc99e3ff16dca24721ef40897c7686673663388e5ab48657a00bdd763d",
+   "stage": "validate"
+  },
+  {
+   "input_hash": "96790cfc99e3ff16dca24721ef40897c7686673663388e5ab48657a00bdd763d",
+   "output_hash": "c553ccc3076129c29d657eb6c092b25f6ca112878f12c030ff610ab912143b92",
+   "stage": "score"
+  }
+ ]
+}

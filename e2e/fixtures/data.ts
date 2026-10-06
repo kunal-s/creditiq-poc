@@ -450,8 +450,6 @@ export const DOCUMENTS: LogicalDocument[] = [
 ];
 
 export const DOCUMENT_TYPES: DocumentTypes = {
-  classify_threshold: 0.7,
-  tier1_margin: 0.2,
   types: [
     ["pan_individual", "PAN (individual)", "kyc"],
     ["gst_registration", "GST registration", "registration"],

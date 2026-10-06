@@ -12,9 +12,11 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from tests.conftest import RM, fixture_file, make_case, run_jobs, set_as_of, sign_in, upload
+from tests.conftest import RM, case_files, fixture_file, make_case, run_jobs, set_as_of, sign_in, upload
 
-PARTIAL = ["partial_bundle.pdf"]
+PARTIAL = [n for n, _ in case_files("partial")]
+UNIVERSAL = {"pan_entity", "kyc_promoters", "fs_fy_minus2", "fs_fy_minus1", "itr", "bank_statements", "gst_returns"}
+COMPANY = {"coi", "moa_aoa", "board_resolution"}
 
 
 def _checklist(client: TestClient, headers: dict, case_id: str) -> tuple[dict, dict[str, dict]]:
@@ -22,63 +24,51 @@ def _checklist(client: TestClient, headers: dict, case_id: str) -> tuple[dict, d
     return readiness, {i["item_id"]: i for i in readiness["items"]}
 
 
-def _heronbay(client: TestClient, root: Path, names: list[str]) -> tuple[dict, str]:
+def _case(client: TestClient, root: Path, names: list[str], borrower: str = "Heronbay Polymers Pvt Ltd") -> tuple[dict, str]:
     rm = sign_in(client, RM)
-    case_id = make_case(
-        client, rm, root, borrower="Heronbay Polymers Pvt Ltd", facilities=["cash_credit"], amount_inr=30000000,
-        collateral_present=False,
-    )
+    case_id = make_case(client, rm, root, borrower=borrower, facilities=["cash_credit"], amount_inr=30000000, collateral_present=False)
     assert upload(client, rm, case_id, [(n, fixture_file(n)) for n in names]).status_code == 202
     run_jobs(root)
     return rm, case_id
 
 
 def test_tc11_complete_file_meets_the_gate_and_is_ready_for_credit(client: TestClient, published_data_root: Path):
-    rm = sign_in(client, RM)
-    case_id = make_case(client, rm, published_data_root, borrower="Kestrel Fabricators Pvt Ltd")
-    upload(client, rm, case_id, [("complete_bundle.pdf", fixture_file("complete_bundle.pdf"))])
-    run_jobs(published_data_root)
+    rm, case_id = _case(client, published_data_root, [n for n, _ in case_files("complete")], "Kestrel Fabricators Pvt Ltd")
     readiness, items = _checklist(client, rm, case_id)
+    assert set(items) == UNIVERSAL | COMPANY
     assert {i["status"] for i in items.values()} == {"satisfied"}, {k: v["deficiency"] for k, v in items.items()}
     assert readiness["score_pct"] == 100.0 and readiness["gate_met"] is True
     assert readiness["blocking_open"] == 0 and readiness["ready_for_credit"] is True
     # Every satisfied item links its documents.
     assert all(i["document_ids"] for i in items.values())
-    # The nil declaration means no sanction letters are required (F-12.1).
-    assert "sanction_letters" not in items
-    # No open query remains.
+    assert len(items["gst_returns"]["document_ids"]) == 12 and len(items["kyc_promoters"]["document_ids"]) == 2
     queries = client.get(f"/api/cases/{case_id}/queries", headers=rm).json()
     assert queries and all(q["resolved"] for q in queries)
 
 
 def test_tc11_same_file_a_year_later_is_outdated_not_satisfied(client: TestClient, published_data_root: Path):
     """No wall clock: moving as_of moves every age and window rule."""
-    rm = sign_in(client, RM)
-    case_id = make_case(client, rm, published_data_root, borrower="Kestrel Fabricators Pvt Ltd")
-    upload(client, rm, case_id, [("complete_bundle.pdf", fixture_file("complete_bundle.pdf"))])
-    run_jobs(published_data_root)
+    rm, case_id = _case(client, published_data_root, [n for n, _ in case_files("complete")], "Kestrel Fabricators Pvt Ltd")
     set_as_of(published_data_root, case_id, "2027-09-29")
     readiness, items = _checklist(client, rm, case_id)
     assert readiness["gate_met"] is False
     assert items["fs_fy_minus1"]["status"] == "missing"
     assert "FY 2026-27" in items["fs_fy_minus1"]["deficiency"]
-    assert items["stock_statement"]["status"] == "insufficient"
+    assert items["bank_statements"]["status"] == "insufficient" and "Outdated" in items["bank_statements"]["deficiency"]
+    assert items["gst_returns"]["status"] == "insufficient"
 
 
 def test_tc12_missing_items_each_with_a_specific_request(client: TestClient, published_data_root: Path):
-    rm, case_id = _heronbay(client, published_data_root, PARTIAL)
+    rm, case_id = _case(client, published_data_root, PARTIAL)
     readiness, items = _checklist(client, rm, case_id)
     missing = {k for k, v in items.items() if v["status"] == "missing"}
-    assert missing == {"moa_aoa", "pan_entity", "gst_registration", "udyam", "fs_fy_minus2", "itr", "ageing",
-                       "bureau_report", "sanction_letters"}
+    assert missing == {"moa_aoa", "pan_entity", "fs_fy_minus2", "itr"}
     assert items["fs_fy_minus2"]["deficiency"] == (
         "Not received: Audited financial statements for FY 2024-25 (year ended 31 Mar 2025)"
         " (received: FY 2025-26 (year ended 31 Mar 2026))"
     )
     assert "AY 2026-27 and AY 2025-26" in items["itr"]["deficiency"]
     assert items["moa_aoa"]["deficiency"].startswith("Not received: Memorandum and Articles")
-    # Declared existing facilities bring in their sanction letters (F-12.1).
-    assert items["sanction_letters"]["blocking"] is False
     assert readiness["gate_met"] is False and readiness["ready_for_credit"] is False
     needed = [q["text"] for q in client.get(f"/api/cases/{case_id}/queries", headers=rm).json()
               if q["group"] == "documents_needed" and not q["resolved"]]
@@ -87,7 +77,7 @@ def test_tc12_missing_items_each_with_a_specific_request(client: TestClient, pub
 
 
 def test_tc13_incomplete_documents_are_insufficient_with_their_deficiency(client, published_data_root):
-    rm, case_id = _heronbay(client, published_data_root, PARTIAL)
+    rm, case_id = _case(client, published_data_root, PARTIAL)
     _, items = _checklist(client, rm, case_id)
     gst = items["gst_returns"]
     assert gst["status"] == "insufficient"
@@ -95,33 +85,29 @@ def test_tc13_incomplete_documents_are_insufficient_with_their_deficiency(client
     assert len(gst["document_ids"]) == 8
     resolution = items["board_resolution"]
     assert resolution["status"] == "insufficient" and resolution["deficiency"].startswith("not signed")
-    provisional = items["fs_provisional"]
-    assert provisional["status"] == "insufficient" and "balance sheet pages absent" in provisional["deficiency"]
     bank = items["bank_statements"]
     assert bank["status"] == "insufficient"
-    assert "Tidewater Bank ·5678" in bank["deficiency"] and "1 of 2" in bank["deficiency"]
+    assert "Lotuscrest Bank ·1234" in bank["deficiency"] and "Sep 2025 to Dec 2025 absent" in bank["deficiency"]
     # KYC against the party set: the resolution names two directors, one KYC received.
     assert items["kyc_promoters"]["status"] == "insufficient"
     assert items["kyc_promoters"]["deficiency"] == "KYC missing for 1 of 2: Ishita Barve"
 
 
 def test_tc14_outdated_document_states_its_date_and_permitted_age(client, published_data_root):
-    rm, case_id = _heronbay(client, published_data_root, PARTIAL)
+    rm, case_id = _case(client, published_data_root, PARTIAL)
+    set_as_of(published_data_root, case_id, "2026-11-30")
     _, items = _checklist(client, rm, case_id)
-    stock = items["stock_statement"]
-    assert stock["status"] == "insufficient"
-    assert stock["deficiency"] == "Outdated: dated 30 Jun 2026, permitted age 60 days from 29 Sep 2026"
+    bank = items["bank_statements"]
+    assert bank["status"] == "insufficient"
+    assert "Outdated" in bank["deficiency"] and "dated 31 Aug 2026, permitted age 45 days from 30 Nov 2026" in bank["deficiency"]
     queries = client.get(f"/api/cases/{case_id}/queries", headers=rm).json()
     redo = [q["text"] for q in queries if q["group"] == "documents_to_redo"]
-    assert (
-        "Stock and book-debt statement dated within the last 60 days (the copy received is dated 30 Jun 2026)."
-        in redo
-    )
+    assert any("dated within the last 45 days" in t and "31 Aug 2026" in t for t in redo), redo
 
 
 def test_tc16_one_consolidated_query_list(client: TestClient, published_data_root: Path):
     names = PARTIAL + ["bank statement apr-mar.pdf", "Sunil Karve PAN.pdf", "gst_sep_photo.pdf", "itr_blurred.pdf"]
-    rm, case_id = _heronbay(client, published_data_root, names)
+    rm, case_id = _case(client, published_data_root, names)
     queries = [q for q in client.get(f"/api/cases/{case_id}/queries", headers=rm).json() if not q["resolved"]]
     groups = [q["group"] for q in queries]
     # Grouped, in order: documents needed, documents to redo, clarifications.
@@ -141,7 +127,7 @@ def test_tc16_one_consolidated_query_list(client: TestClient, published_data_roo
 
 
 def test_tc16_resolved_items_stay_on_the_list_as_resolved(client: TestClient, published_data_root: Path):
-    rm, case_id = _heronbay(client, published_data_root, PARTIAL)
+    rm, case_id = _case(client, published_data_root, PARTIAL)
     before = {q["id"]: q for q in client.get(f"/api/cases/{case_id}/queries", headers=rm).json()}
     fy2 = next(q for q in before.values() if q["source_ref"] == "fs_fy_minus2")
     assert fy2["resolved"] is False
@@ -156,35 +142,23 @@ def test_tc16_resolved_items_stay_on_the_list_as_resolved(client: TestClient, pu
 
 
 @pytest.mark.parametrize(
-    "constitution,facilities,amount,collateral,expected,absent",
+    "constitution,facilities,amount,collateral",
     [
-        ("private_limited", ["cash_credit", "term_loan"], 65000000, True,
-         {"coi", "moa_aoa", "board_resolution", "fs_projected", "cma_data", "stock_statement", "title_document"},
-         {"partnership_deed", "proprietor_declaration"}),
-        ("partnership", ["overdraft"], 20000000, False,
-         {"partnership_deed", "partner_authority_letter", "stock_statement", "ageing"},
-         {"coi", "board_resolution", "fs_projected", "cma_data", "title_document"}),
-        ("proprietorship", ["term_loan"], 8000000, True,
-         {"proprietor_declaration", "fs_projected", "title_document", "valuation_report"},
-         {"coi", "partnership_deed", "stock_statement", "cma_data"}),
-        ("private_limited", ["bank_guarantee"], 10000000, False,
-         {"coi", "bank_statements", "gst_returns"},
-         {"stock_statement", "fs_projected", "cma_data", "title_document"}),
-        ("partnership", ["cash_credit"], 90000000, False,
-         {"cma_data", "stock_statement", "partnership_deed"},
-         {"fs_projected", "coi"}),
+        ("private_limited", ["cash_credit", "term_loan"], 65000000, True),
+        ("partnership", ["overdraft"], 20000000, False),
+        ("proprietorship", ["term_loan"], 8000000, True),
+        ("private_limited", ["bank_guarantee"], 10000000, False),
+        ("partnership", ["cash_credit"], 90000000, False),
     ],
 )
-def test_tc15_checklist_per_constitution_and_facility(
-    client, published_data_root, constitution, facilities, amount, collateral, expected, absent
-):
+def test_tc15_checklist_per_constitution_and_facility(client, published_data_root, constitution, facilities, amount, collateral):
+    """The checklist asks for what the configured document types can satisfy: the company documents for a
+    company, and the rest for every constitution, whatever the facilities or collateral."""
     rm = sign_in(client, RM)
     case_id = make_case(client, rm, published_data_root, borrower=f"Case {constitution} {facilities[0]} {amount}",
-                        constitution=constitution, facilities=facilities, amount_inr=amount,
-                        collateral_present=collateral)
+                        constitution=constitution, facilities=facilities, amount_inr=amount, collateral_present=collateral)
     readiness, items = _checklist(client, rm, case_id)
-    assert expected <= set(items)
-    assert not absent & set(items)
+    assert set(items) == UNIVERSAL | (COMPANY if constitution == "private_limited" else set())
     assert readiness["provisional"] is False
     for item in items.values():
         assert item["why"] and item["basis"]

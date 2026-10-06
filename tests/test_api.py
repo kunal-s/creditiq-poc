@@ -77,8 +77,8 @@ def test_checklist_is_derived_from_the_case(client: TestClient):
     case_id = client.post("/api/cases", json=new_case(), headers=rm).json()["id"]
     readiness = client.get(f"/api/cases/{case_id}/checklist", headers=rm).json()
     items = {i["item_id"] for i in readiness["items"]}
-    # Private limited, CC + TL above the MPBF limit, with collateral.
-    assert {"coi", "board_resolution", "fs_projected", "cma_data", "stock_statement", "title_document"} <= items
+    # Private limited: the company documents, and what every case needs.
+    assert {"coi", "moa_aoa", "board_resolution", "pan_entity", "kyc_promoters", "gst_returns"} <= items
     assert "partnership_deed" not in items
     assert readiness["provisional"] is False
     assert readiness["gate_met"] is False  # nothing received yet

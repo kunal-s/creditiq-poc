@@ -20,6 +20,9 @@ nav:
   group:
     workbench: Workbench
     governance: Governance
+    help: Help
+    thisCase: "Appraisal {id}"
+  help: Guide to the steps
   cases: Appraisals
   newCase: New appraisal
   reviewQueue: Review queue
@@ -38,13 +41,19 @@ action:
 # The case workspace's tabs, in processing order (FRD §6).
 caseTab:
   overview: Overview
-  documents: Documents
-  extraction: Extraction
+  documents: Files
+  extraction: Extracted data
   completeness: Completeness
-  crossVerification: Cross-verification
+  crossVerification: Cross-checks
   policy: Policy
   outputs: Outputs
   comparison: Comparison
+
+# The two processing flows of a case; each groups sub-tabs (caseTab.*).
+caseFlow:
+  ingestion: Documents and data
+  verification: Verification and policy
+  subTabs: Sections of this step
 
 # Views within the Outputs tab.
 outputs:
@@ -214,6 +223,36 @@ progress:
     other: Waiting for the stages before it
 
 page:
+  help:
+    eyebrow: Help
+    title: Guide to the steps
+    purpose: What each step of an appraisal does, what the statuses mean and what is asked of you.
+    stepsTitle: The steps
+    statusTitle: What the statuses mean
+    step:
+      documents:
+        title: Files
+        body: Every file you upload is checked for readability and identified as a kind of document. A file that cannot be read is sent back with a request for a clearer copy.
+      extraction:
+        title: Extracted data
+        body: The figures and details printed on each document are read out and shown next to the page they came from. Check anything marked for review.
+      completeness:
+        title: Completeness
+        body: The documents received are compared with those the facility needs. What is missing, stale or incomplete is listed with the request to send to the customer.
+      crossVerification:
+        title: Cross-checks
+        body: The same fact is compared across documents, for example a name or a turnover figure. Differences are listed with both values for you to accept or reject.
+      policy:
+        title: Policy
+        body: The application is measured against each credit policy norm, with the required and the actual value side by side.
+      outputs:
+        title: Outputs
+        body: The interim spread, the draft credit memo and the personal discussion questions, each figure linked to its source.
+    status:
+      not_started: The step has not begun, usually because an earlier step is still running.
+      in_progress: The step is running now. It updates on its own.
+      needs_attention: "Something needs a person: a document, a value or a decision."
+      done: The step is complete.
   home:
     title: Credit Workbench
     purpose: Every application in progress, with its stage and the items waiting for review.

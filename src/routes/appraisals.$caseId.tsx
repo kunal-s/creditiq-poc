@@ -4,7 +4,7 @@ import type { CaseDetail, Stage } from "@/api/types";
 import { CaseScreen } from "@/components/shell/CaseScreen";
 import { DeleteCaseButton } from "@/components/cases/DeleteCaseButton";
 import { StageProgressBar } from "@/components/case/StageProgress";
-import { CASE_TABS, caseTabPath } from "@/components/shell/nav";
+import { CASE_TABS, caseTabPath, topTabs } from "@/components/shell/nav";
 import { ScoreBar } from "@/components/common/Panel";
 import { t } from "@/config/terminology";
 import { formatInr, stageLabel, useLabels } from "@/domain/cases";
@@ -29,8 +29,11 @@ function Layout({ c }: { c: CaseDetail }) {
   const pathname = decodeURIComponent(useRouterState({ select: (s) => s.location.pathname }));
   const permissions = useSession()?.user.permissions ?? [];
   const progress = useCaseProgress(c.id);
-  const tabs = CASE_TABS.filter((tab) => permissions.includes(tab.permission));
-  const activeTab = tabs.find((tab) => decodeURIComponent(caseTabPath(c.id, tab)) === pathname);
+  const top = topTabs(permissions);
+  const activeTab = CASE_TABS.filter((tab) => permissions.includes(tab.permission)).find(
+    (tab) => decodeURIComponent(caseTabPath(c.id, tab)) === pathname,
+  );
+  const activeFlow = top.find((o) => o.kind === "flow" && activeTab && o.tabs.includes(activeTab));
 
   return (
     <div>
@@ -46,26 +49,49 @@ function Layout({ c }: { c: CaseDetail }) {
           </div>
         )}
         <nav className="-mb-px mt-3 flex gap-4 overflow-x-auto" aria-label={t("caseHeader.tabs")}>
-          {tabs.map((tab) => {
-            const to = caseTabPath(c.id, tab);
+          {top.map((o) => {
+            const first = o.kind === "tab" ? o.tab : o.tabs[0]!;
+            const active = o.kind === "tab" ? o.tab === activeTab : o === activeFlow;
             return (
               <Link
-                key={tab.key}
-                to={to}
-                data-testid={`tab-${tab.key}`}
+                key={o.kind === "tab" ? o.tab.key : o.flow.id}
+                to={caseTabPath(c.id, first)}
+                data-testid={o.kind === "tab" ? `tab-${o.tab.key}` : `flow-${o.flow.id}`}
                 className={cn(
                   "shrink-0 border-b-2 pb-2 text-[12.5px] font-medium transition-colors",
-                  tab === activeTab
+                  active
                     ? "border-primary text-foreground"
                     : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
                 )}
               >
-                {t(`caseTab.${tab.key}`)}
+                {o.kind === "tab" ? t(`caseTab.${o.tab.key}`) : t(`caseFlow.${o.flow.id}`)}
               </Link>
             );
           })}
         </nav>
       </div>
+      {activeFlow?.kind === "flow" && activeFlow.tabs.length > 1 && (
+        <nav
+          className="flex gap-1 overflow-x-auto border-b border-border px-4 py-2 sm:px-6"
+          aria-label={t("caseFlow.subTabs")}
+        >
+          {activeFlow.tabs.map((tab) => (
+            <Link
+              key={tab.key}
+              to={caseTabPath(c.id, tab)}
+              data-testid={`tab-${tab.key}`}
+              className={cn(
+                "shrink-0 rounded-full px-3 py-1 text-[12px] font-medium transition-colors",
+                tab === activeTab
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-surface-muted hover:text-foreground",
+              )}
+            >
+              {t(`caseTab.${tab.key}`)}
+            </Link>
+          ))}
+        </nav>
+      )}
 
       <Outlet />
     </div>

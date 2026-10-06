@@ -39,6 +39,41 @@ export function tabForStage(stage: StageKey): CaseTab {
   return CASE_TABS.find((tab) => tab.stage === stage)!;
 }
 
+export type CaseFlow = {
+  id: "ingestion" | "verification";
+  /** Keys of the CASE_TABS entries shown as sub-tabs, in order. */
+  tabs: string[];
+};
+
+/** The two processing flows; their tabs show as sub-tabs under one top-level tab. */
+export const CASE_FLOWS: CaseFlow[] = [
+  { id: "ingestion", tabs: ["documents", "extraction", "completeness"] },
+  { id: "verification", tabs: ["crossVerification", "policy"] },
+];
+
+/** A top-level tab: a single case tab, or a flow standing for its sub-tabs. */
+export type CaseTopTab =
+  { kind: "tab"; tab: CaseTab } | { kind: "flow"; flow: CaseFlow; tabs: CaseTab[] };
+
+/** The top-level tabs the permissions allow, in processing order. A flow
+ *  appears at the position of its first tab and opens on its first allowed one. */
+export function topTabs(permissions: string[]): CaseTopTab[] {
+  const out: CaseTopTab[] = [];
+  for (const tab of CASE_TABS) {
+    if (!permissions.includes(tab.permission)) continue;
+    const flow = CASE_FLOWS.find((f) => f.tabs.includes(tab.key));
+    if (!flow) {
+      out.push({ kind: "tab", tab });
+    } else if (!out.some((o) => o.kind === "flow" && o.flow === flow)) {
+      const tabs = flow.tabs
+        .map((k) => CASE_TABS.find((x) => x.key === k)!)
+        .filter((x) => permissions.includes(x.permission));
+      out.push({ kind: "flow", flow, tabs });
+    }
+  }
+  return out;
+}
+
 export function caseTabPath(caseId: string, tab: CaseTab): string {
   const base = `/appraisals/${encodeURIComponent(caseId)}`;
   return tab.to ? `${base}/${tab.to}` : base;
@@ -61,6 +96,11 @@ export function buildNav(): NavGroup[] {
         { label: t("nav.reviewQueue"), to: "/review", permission: "review.read" },
         { label: t("nav.scorecard"), to: "/scorecard", permission: "scorecard.read" },
       ],
+    },
+    {
+      id: "help",
+      group: t("nav.group.help"),
+      items: [{ label: t("nav.help"), to: "/help" }],
     },
   ];
 }

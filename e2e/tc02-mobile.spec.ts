@@ -58,7 +58,7 @@ test("TC-02: create a case and upload documents at 375 px", async ({ page }) => 
   await expect(page).toHaveURL(/\/appraisals\/BBG-2026-000031$/);
   await expect(page.getByTestId("stage-progress")).toBeVisible();
   expect(await scrollsSideways(page)).toBe(false);
-  await page.getByTestId("tab-documents").click();
+  await page.getByTestId("flow-ingestion").click();
   await expect(page.getByTestId("tree-file")).toHaveCount(2);
   await expect(page.getByTestId("count-registered")).toHaveText("2");
   expect(await scrollsSideways(page)).toBe(false);

@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { useMemo, useState, type ReactNode } from "react";
 import { LogOut, Menu } from "lucide-react";
 import { buildNav, type NavGroup, type NavItem } from "./nav";
+import { CaseNav } from "./CaseNav";
 import { useSession, signOut } from "@/domain/session";
 import { DocViewerProvider } from "@/components/docviewer/DocViewer";
 import { t } from "@/config/terminology";
@@ -77,8 +78,12 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
       ? pathname === "/" || (pathname.startsWith("/appraisals/") && pathname !== "/appraisals/new")
       : pathname === to || pathname.startsWith(to + "/");
 
+  const openCase = /^\/appraisals\/([^/]+)/.exec(pathname)?.[1];
+  const caseId = openCase && openCase !== "new" ? decodeURIComponent(openCase) : undefined;
+
   return (
     <>
+      {caseId && <CaseNav caseId={caseId} pathname={pathname} onNavigate={onNavigate} />}
       {visible.map((group) => (
         <div key={group.id} className="mb-4 px-2.5">
           <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.09em] text-sidebar-foreground/45">

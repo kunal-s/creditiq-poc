@@ -18,9 +18,9 @@ roles:
 # listed here is not rendered for that role; within a group, each item is
 # also gated by its permission. A case's tabs are gated by permission only.
 navByRole:
-  rm: [workbench]
-  analyst: [workbench, governance]
-  credit-manager: [workbench, governance]
+  rm: [workbench, help]
+  analyst: [workbench, governance, help]
+  credit-manager: [workbench, governance, help]
 
 # What each role may do (F-03.1). The server denies anything not listed.
 # case.read.all: see every case (an RM sees only cases they created).

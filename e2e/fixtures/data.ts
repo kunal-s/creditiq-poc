@@ -37,7 +37,7 @@ export const ANALYST: SessionUser = {
   role: "analyst",
   roleLabel: "Credit Analyst",
   branch: "Mumbai hub",
-  navGroups: ["workbench", "governance"],
+  navGroups: ["workbench", "governance", "help"],
   permissions: [
     "case.create",
     "case.read",
@@ -63,7 +63,7 @@ export const RM: SessionUser = {
   role: "rm",
   roleLabel: "Relationship Manager",
   branch: "Mumbai hub",
-  navGroups: ["workbench"],
+  navGroups: ["workbench", "help"],
   permissions: [
     "case.create",
     "case.read",

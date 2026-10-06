@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ExceptionsRouteImport } from './routes/exceptions'
+import { Route as HelpRouteImport } from './routes/help'
 import { Route as ReviewRouteImport } from './routes/review'
 import { Route as ScorecardRouteImport } from './routes/scorecard'
 import { Route as SignInRouteImport } from './routes/sign-in'
@@ -37,6 +38,11 @@ const IndexRoute = IndexRouteImport.update({
 const ExceptionsRoute = ExceptionsRouteImport.update({
   id: '/exceptions',
   path: '/exceptions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HelpRoute = HelpRouteImport.update({
+  id: '/help',
+  path: '/help',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReviewRoute = ReviewRouteImport.update({
@@ -133,6 +139,7 @@ const AppraisalsCaseIdPolicyRoute = AppraisalsCaseIdPolicyRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/exceptions': typeof ExceptionsRoute
+  '/help': typeof HelpRoute
   '/review': typeof ReviewRoute
   '/scorecard': typeof ScorecardRoute
   '/sign-in': typeof SignInRoute
@@ -154,6 +161,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/exceptions': typeof ExceptionsRoute
+  '/help': typeof HelpRoute
   '/review': typeof ReviewRoute
   '/scorecard': typeof ScorecardRoute
   '/sign-in': typeof SignInRoute
@@ -175,6 +183,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/exceptions': typeof ExceptionsRoute
+  '/help': typeof HelpRoute
   '/review': typeof ReviewRoute
   '/scorecard': typeof ScorecardRoute
   '/sign-in': typeof SignInRoute
@@ -198,6 +207,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/exceptions'
+    | '/help'
     | '/review'
     | '/scorecard'
     | '/sign-in'
@@ -219,6 +229,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/exceptions'
+    | '/help'
     | '/review'
     | '/scorecard'
     | '/sign-in'
@@ -239,6 +250,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/exceptions'
+    | '/help'
     | '/review'
     | '/scorecard'
     | '/sign-in'
@@ -261,6 +273,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ExceptionsRoute: typeof ExceptionsRoute
+  HelpRoute: typeof HelpRoute
   ReviewRoute: typeof ReviewRoute
   ScorecardRoute: typeof ScorecardRoute
   SignInRoute: typeof SignInRoute
@@ -285,6 +298,13 @@ declare module '@tanstack/react-router' {
       path: '/exceptions'
       fullPath: '/exceptions'
       preLoaderRoute: typeof ExceptionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/help': {
+      id: '/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof HelpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/review': {
@@ -440,6 +460,7 @@ const AppraisalsCaseIdRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ExceptionsRoute: ExceptionsRoute,
+  HelpRoute: HelpRoute,
   ReviewRoute: ReviewRoute,
   ScorecardRoute: ScorecardRoute,
   SignInRoute: SignInRoute,

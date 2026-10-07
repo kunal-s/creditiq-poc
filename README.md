@@ -20,7 +20,7 @@ FRD.
 
 ## Running the app
 
-Three processes: the document-processing service (port 3102), the Python engine service (port 8000) and the React frontend.
+Three processes: the document-processing service (port 3102), the Python engine service (port 8010) and the React frontend.
 
 **One-time setup** (inside WSL, as the repository owner)
 

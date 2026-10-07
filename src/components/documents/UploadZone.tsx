@@ -44,17 +44,17 @@ export function UploadZone({
       }}
       data-testid="upload-zone"
       className={cn(
-        "flex flex-col items-center justify-center rounded border border-dashed border-border bg-surface-muted px-4 text-center",
-        compact ? "py-5" : "py-10",
-        dragging && "border-primary bg-primary/5",
+        "flex flex-col items-center justify-center rounded border-2 border-dashed border-primary/30 bg-primary/5 px-4 text-center transition-colors",
+        compact ? "py-4" : "py-10",
+        dragging && "border-primary bg-primary/10",
         off && "opacity-60",
       )}
     >
-      <UploadCloud className="h-6 w-6 text-muted-foreground" />
+      <UploadCloud className={cn("text-primary", compact ? "h-5 w-5" : "h-6 w-6")} />
       <p className="mt-2 text-[13px] font-medium text-foreground">
         {busy ? t("upload.busy") : t("upload.drop")}
       </p>
-      <p className="mt-0.5 text-[12px] text-muted-foreground">{t("upload.formats")}</p>
+      <p className="mt-0.5 text-[11.5px] text-muted-foreground">{t("upload.formats")}</p>
       <input
         ref={fileInput}
         type="file"
@@ -79,7 +79,7 @@ export function UploadZone({
           e.target.value = "";
         }}
       />
-      <div className="mt-3 flex flex-wrap justify-center gap-2">
+      <div className={cn("flex flex-wrap justify-center gap-2", compact ? "mt-2.5" : "mt-3")}>
         <button
           type="button"
           disabled={off}

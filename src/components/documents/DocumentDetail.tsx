@@ -4,12 +4,12 @@ import type { ChecklistItemState, FileRecord, LogicalDocument } from "@/api/type
 import { useDocViewer } from "@/components/docviewer/DocViewer";
 import { t, tOr } from "@/config/terminology";
 import { Details } from "@/components/common/Details";
-import { summariseSignals, useDocumentTypes } from "@/domain/documents";
+import { useDocumentTypes } from "@/domain/documents";
 import { GradeChip } from "./chips";
 
-/** What the machine found on one document: each page's route and grade,
- * the classification with its signals and candidates, and any defect the
- * checklist found (F-07 to F-10, F-13). Opened from its register row. */
+/** What was found on one document: its type, how readable it is, any flag
+ * and any defect the checklist found (F-07 to F-10, F-13). Opened from its
+ * register row. */
 export function DocumentDetail({
   caseId,
   doc,
@@ -86,92 +86,40 @@ export function DocumentDetail({
       )}
 
       <Details testId="doc-details">
-        <div className="grid gap-3 md:grid-cols-2">
-          <div className="min-w-0">
-            <p className="field-label">{t("validation.pages")}</p>
-            <table className="mt-1 w-full text-[12px]">
-              <thead>
-                <tr className="text-left text-[10.5px] uppercase tracking-wide text-muted-foreground">
-                  <th className="py-1 pr-2 font-medium">{t("validation.page")}</th>
-                  <th className="py-1 pr-2 font-medium">{t("validation.route")}</th>
-                  <th className="py-1 pr-2 font-medium">{t("validation.grade")}</th>
-                  <th className="py-1 font-medium">{t("validation.reasons")}</th>
+        <div className="min-w-0">
+          <p className="field-label">{t("validation.pages")}</p>
+          <table className="mt-1 w-full text-[12px]">
+            <thead>
+              <tr className="text-left text-[10.5px] uppercase tracking-wide text-muted-foreground">
+                <th className="py-1 pr-2 font-medium">{t("validation.page")}</th>
+                <th className="py-1 pr-2 font-medium">{t("validation.grade")}</th>
+                <th className="py-1 font-medium">{t("validation.reasons")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {doc.pages.map((p) => (
+                <tr key={p.n} className="border-t border-border align-top">
+                  <td className="tabular py-1 pr-2">
+                    <button
+                      type="button"
+                      className="text-primary hover:underline"
+                      onClick={() => viewer.open({ caseId, documentId: doc.id, page: p.n })}
+                    >
+                      {p.n}
+                    </button>
+                  </td>
+                  <td className="py-1 pr-2">
+                    <GradeChip grade={p.grade} />
+                  </td>
+                  <td className="py-1 text-muted-foreground" data-testid="page-reasons">
+                    {(p.reasons ?? []).map((r) => tOr(`gradeReason.${r}`, r)).join(", ") || "—"}
+                    {typeof p.ocr_confidence === "number" &&
+                      ` · ${t("validation.ocr", { pct: Math.round(p.ocr_confidence * 100) })}`}
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {doc.pages.map((p) => (
-                  <tr key={p.n} className="border-t border-border align-top">
-                    <td className="tabular py-1 pr-2">
-                      <button
-                        type="button"
-                        className="text-primary hover:underline"
-                        onClick={() => viewer.open({ caseId, documentId: doc.id, page: p.n })}
-                      >
-                        {p.n}
-                      </button>
-                    </td>
-                    <td className="py-1 pr-2 text-muted-foreground">{t(`pageRoute.${p.route}`)}</td>
-                    <td className="py-1 pr-2">
-                      <GradeChip grade={p.grade} />
-                    </td>
-                    <td className="py-1 text-muted-foreground" data-testid="page-reasons">
-                      {(p.reasons ?? []).map((r) => tOr(`gradeReason.${r}`, r)).join(", ") || "—"}
-                      {typeof p.ocr_confidence === "number" &&
-                        ` · ${t("validation.ocr", { pct: Math.round(p.ocr_confidence * 100) })}`}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="min-w-0 space-y-2 text-[12px]">
-            <p className="field-label">{t("validation.classification")}</p>
-            {c ? (
-              <dl className="space-y-1">
-                <div className="flex gap-2">
-                  <dt className="w-28 shrink-0 text-muted-foreground">{t("validation.types")}</dt>
-                  <dd className="min-w-0 text-foreground">
-                    {classified ? c.types.map(types.name).join(" + ") : t("document.unclassified")}
-                  </dd>
-                </div>
-                <div className="flex gap-2">
-                  <dt className="w-28 shrink-0 text-muted-foreground">
-                    {t("validation.exitTier")}
-                  </dt>
-                  <dd className="text-foreground" data-testid="exit-tier">
-                    {t(`exitTier.${c.exit_tier}`)}
-                  </dd>
-                </div>
-                <div className="flex gap-2">
-                  <dt className="w-28 shrink-0 text-muted-foreground">
-                    {t("validation.confidence")}
-                  </dt>
-                  <dd className="tabular text-foreground">{Math.round(c.confidence * 100)}%</dd>
-                </div>
-                <div className="flex gap-2">
-                  <dt className="w-28 shrink-0 text-muted-foreground">{t("validation.signals")}</dt>
-                  <dd className="min-w-0 break-words text-foreground">
-                    {signalText(summariseSignals(c.signals ?? [], types.name))}
-                  </dd>
-                </div>
-                <div className="flex gap-2">
-                  <dt className="w-28 shrink-0 text-muted-foreground">
-                    {t("validation.candidates")}
-                  </dt>
-                  <dd className="min-w-0 text-foreground" data-testid="candidates">
-                    {(c.candidates ?? []).length > 0
-                      ? (c.candidates ?? [])
-                          .map((k) => `${types.name(k.type_id)} ${Math.round(k.confidence * 100)}%`)
-                          .join(" · ")
-                      : "—"}
-                  </dd>
-                </div>
-              </dl>
-            ) : (
-              <p className="text-muted-foreground">{t("validation.notClassifiedYet")}</p>
-            )}
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
       </Details>
 
@@ -184,19 +132,4 @@ export function DocumentDetail({
       </button>
     </div>
   );
-}
-
-function signalText(summary: ReturnType<typeof summariseSignals>): string {
-  if (summary.length === 0) return "—";
-  return summary
-    .map((s) =>
-      typeof s === "string"
-        ? s
-        : t("validation.signalCount", {
-            type: s.type,
-            required: s.required,
-            supporting: s.supporting,
-          }) + (s.contrary ? ` · ${t("validation.signalContrary", { n: s.contrary })}` : ""),
-    )
-    .join(" · ");
 }

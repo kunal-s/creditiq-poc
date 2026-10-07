@@ -35,9 +35,7 @@ test("501 from the Wave 1 endpoints reads as not available yet", async ({ page }
     mimeType: "application/pdf",
     buffer: Buffer.from("%PDF"),
   });
-  await expect(
-    page.getByTestId("files-received").locator("..").getByTestId("state-notAvailable"),
-  ).toBeVisible();
+  await expect(page.getByTestId("add-documents").getByTestId("state-notAvailable")).toBeVisible();
 
   await page.goto("/review");
   await page.getByTestId("decide").first().click();

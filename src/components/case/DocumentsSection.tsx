@@ -116,17 +116,8 @@ export function DocumentsSection({ caseId }: { caseId: string }) {
   };
 
   return (
-    <div className="grid gap-4 px-4 py-5 sm:px-6 lg:grid-cols-[minmax(0,1fr)_300px]">
-      <div className="min-w-0 space-y-4">
-        {canUpload && (
-          <Panel title={t("documents.add")} subtitle={t("documents.addHelp")}>
-            <div className="space-y-3 p-4">
-              <UploadZone onFiles={onFiles} busy={upload.isPending} />
-              {upload.isError && <ErrorState error={upload.error} compact />}
-            </div>
-          </Panel>
-        )}
-
+    <div className="grid gap-4 px-4 py-5 sm:px-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="order-2 min-w-0 space-y-4 lg:order-1">
         <Panel
           title={t("documents.received")}
           subtitle={
@@ -193,9 +184,33 @@ export function DocumentsSection({ caseId }: { caseId: string }) {
         </Panel>
       </div>
 
-      <div className="min-w-0 space-y-3">
-        <Summary files={files.data} documents={documents.data} />
+      <div className="order-1 min-w-0 space-y-4 lg:order-2 lg:sticky lg:top-4 lg:self-start">
+        {canUpload && (
+          <Panel title={t("documents.add")} testId="add-documents">
+            <div className="space-y-2 p-3">
+              <UploadZone compact onFiles={onFiles} busy={upload.isPending} />
+              {upload.isError && <ErrorState error={upload.error} compact />}
+            </div>
+          </Panel>
+        )}
+        <Summary files={files.data} documents={documents.data} context={context} />
       </div>
+    </div>
+  );
+}
+
+function Stat({ label, value, tone }: { label: string; value: number; tone?: "flag" | "ok" }) {
+  return (
+    <div className="rounded border border-border bg-surface-muted/50 px-3 py-2">
+      <p
+        className={cn(
+          "tabular text-[20px] font-semibold leading-none",
+          tone === "flag" && value > 0 ? "text-flag-foreground" : "text-foreground",
+        )}
+      >
+        {value}
+      </p>
+      <p className="mt-1 text-[11px] leading-tight text-muted-foreground">{label}</p>
     </div>
   );
 }
@@ -203,19 +218,28 @@ export function DocumentsSection({ caseId }: { caseId: string }) {
 function Summary({
   files,
   documents,
+  context,
 }: {
   files: FileRecord[] | undefined;
   documents: LogicalDocument[] | undefined;
+  context: RegisterContext;
 }) {
   if (!files || !documents) return null;
   const count = (s: FileStatus) => files.filter((f) => f.status === s).length;
   const unclassified = documents.filter((d) => (d.classification?.types.length ?? 0) === 0).length;
   const mismatched = documents.filter((d) => d.label_mismatch).length;
+  const attention = documents.filter((d) => needsAttention(d, context)).length;
   return (
     <Panel title={t("documents.summary")} testId="documents-summary">
-      <dl className="divide-y divide-border text-[12.5px]">
+      <div className="grid grid-cols-2 gap-2 p-3">
+        <Stat label={t("documents.logical")} value={documents.length} />
+        <Stat label={t("documents.needsAttention")} value={attention} tone="flag" />
+        <Stat label={t("document.unclassified")} value={unclassified} tone="flag" />
+        <Stat label={t("documents.labelMismatches")} value={mismatched} tone="flag" />
+      </div>
+      <dl className="divide-y divide-border border-t border-border text-[12.5px]">
         {STATUS_ORDER.map((s) => (
-          <div key={s} className="flex items-center justify-between gap-3 px-4 py-2">
+          <div key={s} className="flex items-center justify-between gap-3 px-4 py-1.5">
             <dt>
               <FileStatusChip status={s} />
             </dt>
@@ -224,18 +248,6 @@ function Summary({
             </dd>
           </div>
         ))}
-        <div className="flex justify-between gap-3 px-4 py-2">
-          <dt className="text-muted-foreground">{t("documents.logical")}</dt>
-          <dd className="tabular">{documents.length}</dd>
-        </div>
-        <div className="flex justify-between gap-3 px-4 py-2">
-          <dt className="text-muted-foreground">{t("document.unclassified")}</dt>
-          <dd className="tabular">{unclassified}</dd>
-        </div>
-        <div className="flex justify-between gap-3 px-4 py-2">
-          <dt className="text-muted-foreground">{t("documents.labelMismatches")}</dt>
-          <dd className="tabular">{mismatched}</dd>
-        </div>
       </dl>
     </Panel>
   );

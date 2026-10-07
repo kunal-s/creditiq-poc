@@ -544,6 +544,7 @@ upload:
 documents:
   add: Add documents
   addHelp: Single files, several files or a ZIP archive. Each file is registered and read.
+  needsAttention: Need attention
   received: Files received
   receivedHelp: Every file with its status; archives shown as folders.
   processing: Reading documents…
@@ -983,8 +984,8 @@ data:
     confidence: Confidence
     method: Method
     status: Status
-  raw: "As printed: {raw}"
     row: Row
+  raw: "As printed: {raw}"
   cell: "{table}, row {row} · {column}"
   detailsFields: Fields on this document
   readBy: Read by

@@ -41,10 +41,9 @@ test("TC-09: unclassified document with candidates, routed for review", async ({
   await expect(unc).toBeVisible();
 
   await unc.getByTestId("document-toggle").click();
-  await expect(unc.getByTestId("candidates")).toHaveText(
-    "Utility bill 41% · ITR acknowledgement 22% · Bank statement 10%",
-  );
-  await expect(unc.getByTestId("exit-tier")).toHaveText("Not classified");
+  await expect(unc.getByTestId("doc-summary")).toContainText("Not identified");
+  await expect(unc.getByTestId("exit-tier")).toHaveCount(0);
+  await expect(unc.getByTestId("candidates")).toHaveCount(0);
 
   // Not assigned to any checklist item.
   await page.goto(`/appraisals/${KESTREL}/completeness`);

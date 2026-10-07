@@ -2,14 +2,14 @@
 fastapi
 uvicorn
 pydantic
-pyyaml
+pyyaml==6.0.2   # paddlex 3.x pins this exact version; the base lock must match so both files sync together
 python-multipart
 httpx
 pypdfium2
 pdfplumber
 openpyxl
 pillow
-numpy
+numpy<2.4   # paddlex 3.x (requirements-ocr.in) needs numpy<2.4; one pin keeps both lock files installable together
 # Dev
 pytest
 import-linter

@@ -4,6 +4,7 @@ aliases, patterns. Everything is read from the page index; nothing is inferred."
 from __future__ import annotations
 
 import re
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 
 from ...config.models import FieldRule, Pattern, re_flags
@@ -27,17 +28,16 @@ def _pages(pages: list[Page], rule: FieldRule) -> list[Page]:
     return [p for p in pages if rx.search(p.text())]
 
 
-def _identifier(kind: str, pages: list[Page]) -> Found | None:
+def _identifier(kind: str, pages: list[Page]) -> Iterator[Found]:
     for p in pages:
         text = p.text()
         m = identifiers.find(kind, text)
         if m:
             ev = evidence_for_lines(p, lines_overlapping(p, m.start(), m.end()))
-            return Found(m.group(0), "identifier", ev)
-    return None
+            yield Found(m.group(0), "identifier", ev)
 
 
-def _alias(aliases: list[str], rule: FieldRule, pages: list[Page]) -> Found | None:
+def _alias(aliases: list[str], rule: FieldRule, pages: list[Page]) -> Iterator[Found]:
     for alias in aliases:
         rx = re.compile(r"(?:^|\s{2})(?:%s)(?=\s|:|$)" % alias, re.I)
         for p in pages:
@@ -64,8 +64,7 @@ def _alias(aliases: list[str], rule: FieldRule, pages: list[Page]) -> Found | No
                     continue
                 a = base + (len(rest) - len(rest.lstrip()))
                 ev = evidence_for_lines(p, [(src_line, a, a + len(seg))])
-                return Found(seg, "alias", ev)
-    return None
+                yield Found(seg, "alias", ev)
 
 
 def _split_elems(pat: Pattern, captured: str) -> list[str]:
@@ -80,7 +79,7 @@ def _split_elems(pat: Pattern, captured: str) -> list[str]:
     return out
 
 
-def _spanning(pat: Pattern, pages: list[Page]) -> Found | None:
+def _spanning(pat: Pattern, pages: list[Page]) -> Iterator[Found]:
     """One regex over the pages joined; evidence starts on the page where the value starts."""
     rx = re.compile(pat.regex, re_flags(pat.flags))
     texts = [p.text() for p in pages]
@@ -90,7 +89,7 @@ def _spanning(pat: Pattern, pages: list[Page]) -> Found | None:
         pos += len(t) + 1
     m = rx.search("\n".join(texts))
     if not m or m.group(pat.group) is None:
-        return None
+        return
     s, e = m.start(pat.group), m.end(pat.group)
     parts_ev = []
     for p, o, t in zip(pages, offs, texts):
@@ -98,15 +97,13 @@ def _spanning(pat: Pattern, pages: list[Page]) -> Found | None:
             parts_ev.append(evidence_for_lines(p, lines_overlapping(p, max(s - o, 0), min(e - o, len(t)))))
     ev = parts_ev[0]
     ev.line_ids = [i for x in parts_ev for i in x.line_ids]
-    return Found(collapse_ws(m.group(pat.group)), "pattern", ev)
+    yield Found(collapse_ws(m.group(pat.group)), "pattern", ev)
 
 
-def _pattern(pats: list[Pattern], pages: list[Page]) -> Found | None:
+def _pattern(pats: list[Pattern], pages: list[Page]) -> Iterator[Found]:
     for pat in pats:
         if pat.span_pages and not pat.multi:
-            f = _spanning(pat, pages)
-            if f:
-                return f
+            yield from _spanning(pat, pages)
             continue
         rx = re.compile(pat.regex, re_flags(pat.flags))
         if pat.multi:
@@ -122,28 +119,38 @@ def _pattern(pats: list[Pattern], pages: list[Page]) -> Found | None:
             if vals:
                 ev = evs[0]
                 ev.line_ids = [i for e in evs for i in e.line_ids]
-                return Found(vals, "pattern", ev)
+                yield Found(vals, "pattern", ev)
             continue
         for p in pages:
             text = p.text()
-            m = rx.search(text)
-            if m and m.group(pat.group) is not None:
+            for m in rx.finditer(text):
+                if m.group(pat.group) is None:
+                    continue
                 s, e = m.start(pat.group), m.end(pat.group)
                 ev = evidence_for_lines(p, lines_overlapping(p, s, e))
-                return Found(collapse_ws(m.group(pat.group)), "pattern", ev)
-    return None
+                yield Found(collapse_ws(m.group(pat.group)), "pattern", ev)
 
 
-def extract_scalar(rule: FieldRule, pages: list[Page]) -> Found | None:
+def candidates(rule: FieldRule, pages: list[Page]) -> Iterator[Found]:
+    """Every place the rule finds a value, in a fixed order: identifier scan, then label aliases (in
+    the order configured, each over the pages in order), then patterns."""
     cand = _pages(pages, rule)
     if rule.identifier:
-        f = _identifier(rule.identifier, cand)
-        if f:
-            return f
+        yield from _identifier(rule.identifier, cand)
     if rule.aliases:
-        f = _alias(rule.aliases, rule, cand)
-        if f:
-            return f
+        yield from _alias(rule.aliases, rule, cand)
     if rule.patterns:
-        return _pattern(rule.pattern_list(), cand)
-    return None
+        yield from _pattern(rule.pattern_list(), cand)
+
+
+def extract_scalar(rule: FieldRule, pages: list[Page], accept: Callable[[Found], bool] | None = None) -> Found | None:
+    """The first candidate `accept` allows, so a label that is followed by something that is not a
+    value (a heading, a sentence) does not hide the real one further down. When none is accepted the
+    first candidate is returned, so the field is reported with the text as printed and why it failed."""
+    first = None
+    for f in candidates(rule, pages):
+        if first is None:
+            first = f
+        if accept is None or accept(f):
+            return f
+    return first

@@ -49,7 +49,8 @@ def extract_instance(cfg: IngestionConfig, doc_type: str, pages: list[Page], mod
     pending: list[FieldDef] = []
     for f in td.schema_.fields:
         rule = rules_f.get(f.name, FieldRule())
-        found = extract_scalar(rule, pages) if (rule.identifier or rule.aliases or rule.patterns) else None
+        accept = None if f.type == "array" else (lambda c, k=_kind(f, rule): normalise(str(c.raw), k)[1] is None)
+        found = extract_scalar(rule, pages, accept) if (rule.identifier or rule.aliases or rule.patterns) else None
         if found:
             out_fields[f.name] = _finish(f, rule, found)
             if out_fields[f.name]["status"] == "found":

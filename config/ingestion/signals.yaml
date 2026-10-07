@@ -1,70 +1,171 @@
-# Document type signals (FRD F-09). Regexes are case-insensitive and multiline.
-#   required    all must match for a tier-1 exit
-#   supporting  each match adds to the score
-#   contrary    any match blocks a tier-1 exit for the type
-#   instances   a file may hold several instances of one type; a page matching `start` opens one
+# Document type signals (FRD F-09). Regexes are case-insensitive and multiline, and are matched
+# against normalised text (dashes folded to "-", ligatures and invisible characters removed).
+#
+# A type is recognised from three kinds of evidence:
+#   required    a list of requirements, ALL of which must be met. A requirement is met when ANY of its
+#               alternatives matches, so a document that words its title differently still qualifies.
+#               `zone: head` limits the match to the opening lines of a page (where a document names
+#               itself), so a passing mention in the body is not enough.
+#   supporting  each match adds its `weight` (default 1) to the corroboration; `corroboration` (below, or
+#               per type) is the total that counts as full. Score = 0.5 + 0.5 x min(1, matched / corroboration),
+#               so adding alternatives to a list never lowers a document's score.
+#   contrary    any match blocks a tier-1 exit for the type; `zone: head` limits it to a page's opening
+#               lines, so a note deep in the body cannot rule a document out.
+#   instances   a file may hold several instances of one type. `start`: a page matching it opens one.
+#               `key_pattern`: a page naming a different value for the key opens one, and pages that
+#               name none stay with the one before (so rewording a page never splits a document).
+# Fragments written once under `patterns` are used as {NAME} inside any regex.
 # Interim values, tuned against RBL's documents once they arrive.
 tier1_margin: 0.2
 classify_threshold: 0.6
+corroboration: 3           # supporting weight that counts as full corroboration
 tier2_confidence: 0.7      # fixed score for a tier-2 assignment (a model's own confidence is never used)
 tier2_guard:                # the model's choice must still agree with the type's own signals
   block_on_contrary: true
   min_required_fraction: 0.5
-signal_pages: 3            # pages read for classification
+signal_pages: 20           # non-blank pages read for classification
+head_lines: 6              # opening lines of a page that count as its title zone
 mixed_content_check: true  # flag a file whose pages match a different type
 mixed_min_score: 0.75
 
+patterns:
+  PAN: '\b[A-Z]{5}\d{4}[A-Z]\b'
+  GSTIN: '\b\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]\b'
+  CIN: '\b[LU]\d{5}[A-Z]{2}\d{4}[A-Z]{3}\d{6}\b'
+  IFSC: '\b[A-Z]{4}0[A-Z0-9]{6}\b'
+
 types:
   certificate_of_incorporation:
-    required: ['certificate\s+of\s+incorporation']
-    supporting: ['registrar\s+of\s+companies', 'corporate\s+identity\s+number', '\b[LU]\d{5}[A-Z]{2}\d{4}[A-Z]{3}\d{6}\b', 'companies\s+act']
+    required:
+      - {any: ['certificate\s+of\s+incorporation'], zone: head}
+    supporting:
+      - 'registrar\s+of\s+companies'
+      - 'corporate\s+identity\s+number'
+      - '{CIN}'
+      - 'companies\s+act'
+      - 'ministry\s+of\s+corporate\s+affairs'
+      - 'is\s+(this\s+day\s+)?incorporated'
     contrary: ['memorandum\s+of\s+association\s+of', 'resolved\s+that', 'statement\s+of\s+account']
 
   memorandum_articles_of_association:
-    required: ['memorandum\s+of\s+association\s+of']
-    supporting: ['name\s+clause', 'objects\s+clause', 'liability\s+clause', 'capital\s+clause', 'subscription\s+clause', 'articles\s+of\s+association']
+    required:
+      - {any: ['memorandum\s+of\s+association', 'memorandum\s+and\s+articles\s+of\s+association', 'articles\s+of\s+association\s+of'], zone: head}
+    supporting:
+      - 'name\s+clause'
+      - 'objects?\s+clause'
+      - 'liability\s+clause'
+      - 'capital\s+clause'
+      - 'subscription\s+clause'
+      - 'articles\s+of\s+association'
+      - 'we,?\s+the\s+several\s+persons|subscribers?'
     contrary: ['certificate\s+of\s+incorporation\s*$', 'resolved\s+that']
 
   company_pan:
-    required: ['intimation\s+of\s+allotment\s+of\s+permanent\s+account\s+number']
-    supporting: ['income\s+tax\s+department', 'assessing\s+officer', 'permanent\s+account\s+number\s+\(pan\)']
-    contrary: ['director\s+kyc', 'certificate\s+of\s+incorporation\s*$']
+    required:
+      - any: ['intimation\s+of\s+allotment\s+of\s+(permanent\s+account\s+number|pan)', 'permanent\s+account\s+number\s+(card|allotment)', 'pan\s+(card|allotment|intimation)', '\be-?pan\b']
+        zone: head
+    supporting:
+      - 'income\s+tax\s+department'
+      - 'assessing\s+officer'
+      - 'permanent\s+account\s+number\s+\(pan\)'
+      - '{PAN}'
+      - 'form\s+49a'
+    contrary:
+      - 'director\s+kyc'
+      - 'certificate\s+of\s+incorporation\s*$'
+      - {rx: 'income[\s-]*tax\s+return|assessment\s+year', zone: head}
 
   director_kyc:
-    required: ['director\s+kyc\s+summary\s+sheet']
-    supporting: ['director\s+identification\s+number', 'residential\s+address', 'relationship\s+with\s+company', 'aadhaar']
+    required:
+      - {any: ['director\s+kyc', 'dir-?3\s+kyc', 'kyc\s+of\s+(the\s+)?director'], zone: head}
+    supporting:
+      - 'director\s+identification\s+number|\bdin\b'
+      - 'residential\s+address'
+      - 'relationship\s+with\s+company'
+      - 'aadhaar'
+      - '{PAN}'
     contrary: ['certificate\s+of\s+incorporation\s*$', 'memorandum\s+of\s+association\s+of']
     instances:
       start: 'director\s+kyc\s+summary\s+sheet'
       keys: [person_name]
 
   board_resolution_borrowing:
-    required: ['certified\s+true\s+copy\s+of\s+the\s+resolution|resolved\s+(further\s+)?that']
-    supporting: ['board\s+of\s+directors', 'section\s+179', 'borrow', 'authori[sz]ed\s+to\s+execute']
+    required:
+      - any: ['certified\s+true\s+copy', 'extract\s+(from|of)\s+the\s+minutes', 'board\s+resolution', 'resolution\s+(passed|adopted)', 'minutes\s+of\s+(the\s+)?(meeting\s+of\s+the\s+)?board']
+        zone: head
+    supporting:
+      - {rx: 'resolved\s+(further\s+)?that', weight: 2}
+      - 'board\s+of\s+directors'
+      - 'section\s+179'
+      - {rx: 'borrow', weight: 2}
+      - 'authori[sz]ed\s+to\s+execute'
     contrary: ['declaration\s+of\s+nil', 'memorandum\s+of\s+association\s+of']
 
   audited_financial_statements:
-    required: ['audited\s+financial\s+statements']
-    supporting: ['independent\s+auditor', 'balance\s+sheet', 'statement\s+of\s+profit\s+and\s+loss', 'cash\s+flow\s+statement', 'firm\s+registration']
-    contrary: ['unaudited', 'provisional\s+financial', 'income\s+tax\s+return\s+acknowledgement', 'statement\s+of\s+account']
+    required:
+      - any: ['audited\s+(standalone\s+|consolidated\s+)?(financial\s+statements|accounts)', 'independent\s+auditor', 'balance\s+sheet\s+as\s+(at|on)', 'financial\s+statements\s+for\s+the\s+(year|period)']
+        zone: head
+    supporting:
+      - {rx: 'independent\s+auditor', weight: 2}
+      - 'balance[\s-]*sheet'
+      - 'statement\s+of\s+profit\s+and\s+loss'
+      - 'cash[\s-]*flow\s+statement'
+      - 'firm\s+registration'
+    contrary:
+      - 'unaudited'
+      - 'provisional\s+financial'
+      - 'statement\s+of\s+account'
+      - {rx: 'income[\s-]*tax\s+return|form\s+itr', zone: head}
 
   income_tax_return:
-    required: ['income\s+tax\s+return\s+acknowledgement']
-    supporting: ['assessment\s+year', 'form\s+itr', 'e-filing\s+acknowledgement', 'computation\s+of\s+total\s+income']
+    required:
+      - any: ['income[\s-]*tax\s+return', 'form\s+itr[\s-]*\d?', '\bitr[\s-]*(v|[1-7])\b', 'return\s+of\s+income', 'itr\s+acknowledg(e)?ment', 'acknowledg(e)?ment\s+of\s+(receipt\s+of\s+)?(income[\s-]*tax\s+)?return']
+        zone: head
+      - any: ['assessment\s+year', '\bAY\s*20\d{2}', 'previous\s+year']
+    supporting:
+      - 'assessment\s+year'
+      - 'form\s+itr'
+      - 'e-?filing\s+acknowledg(e)?ment'
+      - 'computation\s+of\s+(total\s+)?income'
+      - 'acknowledg(e)?ment\s+(no|number)'
+      - 'income[\s-]*tax\s+department'
+      - 'gross\s+total\s+income'
+      - 'section\s+139'
+      - 'date\s+of\s+filing'
+      - '{PAN}'
     contrary: ['statement\s+of\s+account']
     instances:
-      start: 'income\s+tax\s+return\s+acknowledgement'
+      key_pattern: 'assessment\s+year\s*:?\s*(20\d{2})'
       keys: [assessment_year]
 
   gstr_3b:
-    required: ['form\s+gstr-?3b|gstr-?3b\s+returns']
-    supporting: ['\barn\b', 'return\s+period', 'outward\s+taxable\s+supplies', 'gstin', 'eligible\s+input\s+tax\s+credit']
+    required:
+      - {any: ['form\s+gstr[\s-]*3b', 'gstr[\s-]*3b\s+(return|summary)', 'monthly\s+return\s+\(gstr[\s-]*3b\)'], zone: head}
+    supporting:
+      - '\barn\b'
+      - 'return\s+period'
+      - 'outward\s+taxable\s+supplies'
+      - '{GSTIN}|\bgstin\b'
+      - 'eligible\s+input\s+tax\s+credit'
+      - 'table\s+3\.1'
     contrary: ['statement\s+of\s+account']
     instances:
-      start: 'form\s+gstr-?3b'
+      start: 'form\s+gstr[\s-]*3b'
       keys: [tax_period]
 
   bank_statement:
-    required: ['statement\s+of\s+account']
-    supporting: ['opening\s+balance', 'ifsc', 'debit\s+\(inr\)', 'credit\s+\(inr\)', 'account\s+number', 'branch']
-    contrary: ['gstr-?3b\s+returns', 'form\s+gstr']
+    required:
+      - any: ['statement\s+of\s+account', 'account\s+statement', 'statement\s+of\s+(bank\s+)?transactions', 'bank\s+statement', 'transaction\s+(history|statement)', 'statement\s+for\s+(the\s+)?(period|account)']
+        zone: head
+    supporting:
+      - {rx: '(withdrawal|debit)[^\n]{0,50}(deposit|credit)[^\n]{0,50}balance', weight: 3}
+      - 'opening\s+balance'
+      - 'closing\s+balance'
+      - '{IFSC}|\bifsc\b'
+      - 'debit\s+\(inr\)'
+      - 'credit\s+\(inr\)'
+      - 'account\s+(number|no)'
+      - 'branch'
+      - 'narration|particulars'
+      - 'value\s+date'
+    contrary: ['gstr-?3b\s+returns', {rx: 'form\s+gstr', zone: head}]

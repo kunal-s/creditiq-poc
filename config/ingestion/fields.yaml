@@ -111,24 +111,24 @@ types:
     identity: {name: taxpayer_name, pan: pan}
     fields:
       pan: {identifier: pan, validators: ['format:pan']}
-      taxpayer_name: {aliases: ['Name']}
-      assessment_year: {aliases: ['Assessment Year']}
-      financial_year: {patterns: ['for the (FY\d{4})']}
-      filing_date: {aliases: ['Date of Filing']}
-      acknowledgement_number: {aliases: ['e-Filing Acknowledgement']}
-      gross_total_income: {patterns: ['Gross Total Income\s+([\d,]+)']}
-      total_income: {aliases: ['Total Income']}
-      tax_payable: {aliases: ['Total Tax and Interest Payable']}
-      tax_paid: {aliases: ['Taxes Paid \(TDS \+ Advance \+']}
-      refund_amount: {aliases: ['Tax Payable / \(Refund\)']}
+      taxpayer_name: {aliases: ['Name of (?:the )?(?:assessee|taxpayer)', 'Assessee Name', 'Taxpayer Name', 'Name']}
+      assessment_year: {aliases: ['Assessment Year', 'A\.?Y\.?']}
+      financial_year: {aliases: ['Financial Year', 'Previous Year'], patterns: ['for the (FY\d{4})']}
+      filing_date: {aliases: ['Date of (?:e-?)?Filing', 'Filing Date', 'e-?Filed on', 'Filed on', 'Date of Submission']}
+      acknowledgement_number: {aliases: ['e-?Filing Acknowledgement(?: Number| No\.?)?', 'Acknowledgement (?:Number|No\.?)', 'Ack(?:nowledgement)?\.? (?:Number|No\.?)', 'Receipt (?:Number|No\.?)']}
+      gross_total_income: {aliases: ['Gross Total Income'], patterns: ['Gross Total Income\s+([\d,]+)']}
+      total_income: {aliases: ['Total Income', 'Total Taxable Income']}
+      tax_payable: {aliases: ['Total Tax and Interest Payable', 'Total Tax Payable', 'Net Tax Payable']}
+      tax_paid: {aliases: ['Taxes Paid \(TDS \+ Advance \+', 'Total Taxes Paid', 'Taxes Paid']}
+      refund_amount: {aliases: ['Tax Payable / \(Refund\)', 'Refund(?:able)? Amount', 'Refund Due']}
     tables:
       income_computation:
-        page_match: 'COMPUTATION OF TOTAL INCOME'
+        page_match: 'COMPUTATION OF (?:TOTAL )?INCOME'
         start: '^Particulars\s+Amount'
         end: '^Reconciliation'
         columns:
           - {name: particulars, header: '^Particulars$'}
-          - {name: amount, header: '^Amount$', align: right}
+          - {name: amount, header: '^Amount(?:\s*\(.*\))?$', align: right}
 
   gstr_3b:
     identity: {name: legal_name, gstin: gstin}

@@ -7,6 +7,8 @@ The file name is never an input. Anything unplaced goes to review and is never e
 from __future__ import annotations
 
 import re
+import unicodedata
+from dataclasses import dataclass
 
 from ..config.models import IngestionConfig
 from ..llm.provider import ModelError, ModelRequest
@@ -16,32 +18,58 @@ from ..pageindex import Page
 
 FLAGS = re.I | re.M
 
+_DASHES = {ord(c): "-" for c in "\u2010\u2011\u2012\u2013\u2014\u2015\u2212"}
+_INVISIBLE = {ord(c): None for c in "\u200b\u200c\u200d\u00ad\ufeff"}
+_PAGE_BREAK = "\n\x00\n"  # \s never matches it, so a phrase cannot run across two pages
 
-def signal_text(pages: list[Page], n: int) -> str:
-    real = [p for p in pages if not p.blank]
-    return "\n".join(p.text() for p in real[:n])
+
+def normalise(text: str) -> str:
+    """What a pattern is matched against: compatibility forms folded (ligatures, full-width), every
+    dash a plain hyphen, invisible characters dropped, runs of spaces collapsed. Case is the pattern's job."""
+    t = unicodedata.normalize("NFKC", text).translate(_DASHES).translate(_INVISIBLE)
+    return re.sub(r"[ \t\xa0]+", " ", t)
 
 
-def score_types(cfg: IngestionConfig, text: str) -> list[dict]:
+@dataclass
+class Evidence:
+    """The text a type's signals are looked for in: `body` is every page read, `head` is only the
+    opening lines of each page (where a document names itself)."""
+
+    body: str
+    head: str
+
+
+def evidence(pages: list[Page], n: int, head_lines: int) -> Evidence:
+    real = [p for p in pages if not p.blank][:n]
+    body = _PAGE_BREAK.join(normalise(p.text()) for p in real)
+    head = _PAGE_BREAK.join(normalise("\n".join(l.text for l in p.content_lines()[:head_lines])) for p in real)
+    return Evidence(body, head)
+
+
+def _search(rx: str, ev: Evidence, zone: str) -> bool:
+    return re.search(rx, ev.head if zone == "head" else ev.body, FLAGS) is not None
+
+
+def score_types(cfg: IngestionConfig, ev: Evidence) -> list[dict]:
     out = []
     for tid, ts in cfg.signals.types.items():
-        req = [bool(re.search(rx, text, FLAGS)) for rx in ts.required]
-        sup = [rx for rx in ts.supporting if re.search(rx, text, FLAGS)]
-        con = [rx for rx in ts.contrary if re.search(rx, text, FLAGS)]
-        req_frac = sum(req) / len(req) if req else 1.0
-        sup_frac = len(sup) / len(ts.supporting) if ts.supporting else 1.0
-        eligible = all(req) and not con
+        met = [next((rx for rx in r.any if _search(rx, ev, r.zone)), None) for r in ts.required]
+        sup = [x for x in ts.supporting if _search(x.rx, ev, "any")]
+        con = [x.rx for x in ts.contrary if _search(x.rx, ev, x.zone)]
+        req_frac = sum(m is not None for m in met) / len(met) if met else 1.0
+        need = ts.corroboration or cfg.signals.corroboration
+        sup_frac = min(1.0, sum(x.weight for x in sup) / need)  # saturates: listing more alternatives never lowers a score
+        eligible = all(m is not None for m in met) and not con
         score = (0.5 + 0.5 * sup_frac) if eligible else max(0.0, 0.4 * req_frac + 0.2 * sup_frac - (0.3 if con else 0.0))
         out.append({"type": tid, "score": round(score, 4), "eligible": eligible,
-                    "signals": {"required": [r for r, ok in zip(ts.required, req) if ok], "supporting": sup, "contrary": con}})
+                    "signals": {"required": [m for m in met if m is not None], "supporting": [x.rx for x in sup], "contrary": con}})
     out.sort(key=lambda c: (-c["score"], c["type"]))
     return out
 
 
 def classify(cfg: IngestionConfig, pages: list[Page], model: ModelClient | None) -> dict:
     sig = cfg.signals
-    text = signal_text(pages, sig.signal_pages)
-    ranked = score_types(cfg, text)
+    ranked = score_types(cfg, evidence(pages, sig.signal_pages, sig.head_lines))
     candidates = [{"type": c["type"], "score": c["score"]} for c in ranked[:3]]
     top = ranked[0]
     others = [c["score"] for c in ranked[1:]]
@@ -115,7 +143,7 @@ def _mixed(cfg: IngestionConfig, pages: list[Page], doc_type: str) -> list[dict]
     for p in pages:
         if p.blank:
             continue
-        ranked = score_types(cfg, p.text())
+        ranked = score_types(cfg, evidence([p], 1, cfg.signals.head_lines))
         top = ranked[0]
         if top["eligible"] and top["type"] != doc_type and top["score"] >= cfg.signals.mixed_min_score:
             out.append({"page": p.no, "type": top["type"], "score": top["score"]})

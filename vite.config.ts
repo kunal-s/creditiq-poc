@@ -20,7 +20,7 @@ export default defineConfig(({ mode, command }) => {
     // dev server must neither watch nor serve it.
     // fs.deny replaces Vite's default list, so its defaults are restated here.
     server: {
-      watch: { ignored: ["**/workflow/**"] },
+      watch: { ignored: ["**/workflow/**", "**/services/**/.venv/**", "**/.venv/**"] },
       fs: { deny: [".env", ".env.*", "*.{crt,pem}", "**/.git/**", "**/workflow/**"] },
     },
     resolve: {

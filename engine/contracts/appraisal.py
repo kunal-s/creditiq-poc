@@ -56,11 +56,35 @@ Outcome = Literal["pass", "fail", "incomplete", "not_applicable"]
 Severity = Literal["serious", "moderate", "mild"]
 
 
+CheckArea = Literal["identity", "authority", "turnover", "tax", "financials", "accounts", "obligations"]
+
+
 class FindingSide(BaseModel):
     label: str
     value: str | float | None
     evidence: list[Evidence] = Field(default_factory=list)
     relies_on_manual: bool = False
+    awaiting_review: bool = False
+    """The value is still waiting for a person's review (F-17.2): the check
+    is incomplete until it is confirmed or corrected."""
+    differs: bool = False
+    """This side disagrees with the rest (the minority value of a failed check)."""
+    field_ids: list[str] = Field(default_factory=list)
+
+
+class FindingDetailRow(BaseModel):
+    label: str
+    cells: list[str | float | None]
+    flagged: bool = False
+    """The row is one of the reasons the check failed."""
+
+
+class FindingDetail(BaseModel):
+    """The line-by-line comparison behind a finding: months, people, years."""
+
+    columns: list[str]
+    """Headings of the cells; the row label has none."""
+    rows: list[FindingDetailRow]
 
 
 class Finding(BaseModel):
@@ -70,11 +94,17 @@ class Finding(BaseModel):
     case_id: str
     rule_id: str
     title: str
+    area: CheckArea = "identity"
+    scope: str | None = None
+    """What one run of the rule covers: a financial year, a window of months."""
     outcome: Outcome
     severity: Severity
     blocking: bool
     explanation: str
     sides: list[FindingSide]
+    detail: FindingDetail | None = None
+    missing: list[str] = Field(default_factory=list)
+    """Documents the check needs that are not on file (F-19.3, incomplete)."""
     tolerance: str | None = None
     config_version: str | None = None
     run_id: str | None = None

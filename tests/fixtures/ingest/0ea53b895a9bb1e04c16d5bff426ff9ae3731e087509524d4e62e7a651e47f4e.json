@@ -235,12 +235,12 @@
       },
       {
        "cells": {
-        "current_period": 10000000,
+        "current_period": 8500000,
         "particulars": "(a) Share capital",
         "previous_period": 8500000
        },
        "raw": {
-        "current_period": "10000000",
+        "current_period": "8500000",
         "particulars": "(a) Share capital",
         "previous_period": "8500000"
        },
@@ -259,12 +259,12 @@
       },
       {
        "cells": {
-        "current_period": 32000000,
+        "current_period": 27200000,
         "particulars": "(b) Reserves and surplus",
         "previous_period": 27200000
        },
        "raw": {
-        "current_period": "32000000",
+        "current_period": "27200000",
         "particulars": "(b) Reserves and surplus",
         "previous_period": "27200000"
        },
@@ -305,12 +305,12 @@
       },
       {
        "cells": {
-        "current_period": 15000000,
+        "current_period": 12750000,
         "particulars": "(a) Long-term borrowings",
         "previous_period": 12750000
        },
        "raw": {
-        "current_period": "15000000",
+        "current_period": "12750000",
         "particulars": "(a) Long-term borrowings",
         "previous_period": "12750000"
        },
@@ -351,12 +351,12 @@
       },
       {
        "cells": {
-        "current_period": 12000000,
+        "current_period": 10200000,
         "particulars": "(a) Short-term borrowings",
         "previous_period": 10200000
        },
        "raw": {
-        "current_period": "12000000",
+        "current_period": "10200000",
         "particulars": "(a) Short-term borrowings",
         "previous_period": "10200000"
        },
@@ -375,12 +375,12 @@
       },
       {
        "cells": {
-        "current_period": 20000000,
+        "current_period": 17000000,
         "particulars": "(b) Trade payables",
         "previous_period": 17000000
        },
        "raw": {
-        "current_period": "20000000",
+        "current_period": "17000000",
         "particulars": "(b) Trade payables",
         "previous_period": "17000000"
        },
@@ -399,12 +399,12 @@
       },
       {
        "cells": {
-        "current_period": 3000000,
+        "current_period": 2550000,
         "particulars": "(c) Other current liabilities",
         "previous_period": 2550000
        },
        "raw": {
-        "current_period": "3000000",
+        "current_period": "2550000",
         "particulars": "(c) Other current liabilities",
         "previous_period": "2550000"
        },
@@ -423,12 +423,12 @@
       },
       {
        "cells": {
-        "current_period": 2000000,
+        "current_period": 1700000,
         "particulars": "(d) Short-term provisions",
         "previous_period": 1700000
        },
        "raw": {
-        "current_period": "2000000",
+        "current_period": "1700000",
         "particulars": "(d) Short-term provisions",
         "previous_period": "1700000"
        },
@@ -447,12 +447,12 @@
       },
       {
        "cells": {
-        "current_period": 94000000,
+        "current_period": 79900000,
         "particulars": "TOTAL",
         "previous_period": 79900000
        },
        "raw": {
-        "current_period": "94000000",
+        "current_period": "79900000",
         "particulars": "TOTAL",
         "previous_period": "79900000"
        },
@@ -515,12 +515,12 @@
       },
       {
        "cells": {
-        "current_period": 35000000,
+        "current_period": 29750000,
         "particulars": "(a) Property, plant and equipment",
         "previous_period": 29750000
        },
        "raw": {
-        "current_period": "35000000",
+        "current_period": "29750000",
         "particulars": "(a) Property, plant and equipment",
         "previous_period": "29750000"
        },
@@ -561,12 +561,12 @@
       },
       {
        "cells": {
-        "current_period": 25000000,
+        "current_period": 21250000,
         "particulars": "(a) Inventories",
         "previous_period": 21250000
        },
        "raw": {
-        "current_period": "25000000",
+        "current_period": "21250000",
         "particulars": "(a) Inventories",
         "previous_period": "21250000"
        },
@@ -585,12 +585,12 @@
       },
       {
        "cells": {
-        "current_period": 24000000,
+        "current_period": 20400000,
         "particulars": "(b) Trade receivables",
         "previous_period": 20400000
        },
        "raw": {
-        "current_period": "24000000",
+        "current_period": "20400000",
         "particulars": "(b) Trade receivables",
         "previous_period": "20400000"
        },
@@ -609,12 +609,12 @@
       },
       {
        "cells": {
-        "current_period": 6000000,
+        "current_period": 5100000,
         "particulars": "(c) Cash and bank balances",
         "previous_period": 5100000
        },
        "raw": {
-        "current_period": "6000000",
+        "current_period": "5100000",
         "particulars": "(c) Cash and bank balances",
         "previous_period": "5100000"
        },
@@ -633,12 +633,12 @@
       },
       {
        "cells": {
-        "current_period": 4000000,
+        "current_period": 3400000,
         "particulars": "(d) Short-term loans and advances",
         "previous_period": 3400000
        },
        "raw": {
-        "current_period": "4000000",
+        "current_period": "3400000",
         "particulars": "(d) Short-term loans and advances",
         "previous_period": "3400000"
        },
@@ -657,12 +657,12 @@
       },
       {
        "cells": {
-        "current_period": 94000000,
+        "current_period": 79900000,
         "particulars": "TOTAL",
         "previous_period": 79900000
        },
        "raw": {
-        "current_period": "94000000",
+        "current_period": "79900000",
         "particulars": "TOTAL",
         "previous_period": "79900000"
        },
@@ -705,12 +705,12 @@
      "rows": [
       {
        "cells": {
-        "current_period": 118000000,
+        "current_period": 100300000,
         "particulars": "I. Revenue from operations",
         "previous_period": 100300000
        },
        "raw": {
-        "current_period": "118000000",
+        "current_period": "100300000",
         "particulars": "I. Revenue from operations",
         "previous_period": "100300000"
        },
@@ -729,12 +729,12 @@
       },
       {
        "cells": {
-        "current_period": 1000000,
+        "current_period": 850000,
         "particulars": "II. Other income",
         "previous_period": 850000
        },
        "raw": {
-        "current_period": "1000000",
+        "current_period": "850000",
         "particulars": "II. Other income",
         "previous_period": "850000"
        },
@@ -753,12 +753,12 @@
       },
       {
        "cells": {
-        "current_period": 119000000,
+        "current_period": 101150000,
         "particulars": "III. Total income (I + II)",
         "previous_period": 101150000
        },
        "raw": {
-        "current_period": "119000000",
+        "current_period": "101150000",
         "particulars": "III. Total income (I + II)",
         "previous_period": "101150000"
        },
@@ -799,12 +799,12 @@
       },
       {
        "cells": {
-        "current_period": 80000000,
+        "current_period": 68000000,
         "particulars": "Cost of materials consumed",
         "previous_period": 68000000
        },
        "raw": {
-        "current_period": "80000000",
+        "current_period": "68000000",
         "particulars": "Cost of materials consumed",
         "previous_period": "68000000"
        },
@@ -823,12 +823,12 @@
       },
       {
        "cells": {
-        "current_period": 12000000,
+        "current_period": 10200000,
         "particulars": "Employee benefits expense",
         "previous_period": 10200000
        },
        "raw": {
-        "current_period": "12000000",
+        "current_period": "10200000",
         "particulars": "Employee benefits expense",
         "previous_period": "10200000"
        },
@@ -847,12 +847,12 @@
       },
       {
        "cells": {
-        "current_period": 3500000,
+        "current_period": 2975000,
         "particulars": "Finance costs",
         "previous_period": 2975000
        },
        "raw": {
-        "current_period": "3500000",
+        "current_period": "2975000",
         "particulars": "Finance costs",
         "previous_period": "2975000"
        },
@@ -871,12 +871,12 @@
       },
       {
        "cells": {
-        "current_period": 4000000,
+        "current_period": 3400000,
         "particulars": "Depreciation and amortisation",
         "previous_period": 3400000
        },
        "raw": {
-        "current_period": "4000000",
+        "current_period": "3400000",
         "particulars": "Depreciation and amortisation",
         "previous_period": "3400000"
        },
@@ -895,12 +895,12 @@
       },
       {
        "cells": {
-        "current_period": 12000000,
+        "current_period": 10200000,
         "particulars": "Other expenses",
         "previous_period": 10200000
        },
        "raw": {
-        "current_period": "12000000",
+        "current_period": "10200000",
         "particulars": "Other expenses",
         "previous_period": "10200000"
        },
@@ -919,12 +919,12 @@
       },
       {
        "cells": {
-        "current_period": 111500000,
+        "current_period": 94775000,
         "particulars": "Total expenses",
         "previous_period": 94775000
        },
        "raw": {
-        "current_period": "111500000",
+        "current_period": "94775000",
         "particulars": "Total expenses",
         "previous_period": "94775000"
        },
@@ -943,12 +943,12 @@
       },
       {
        "cells": {
-        "current_period": 7500000,
+        "current_period": 6375000,
         "particulars": "V. Profit before tax (III - IV)",
         "previous_period": 6375000
        },
        "raw": {
-        "current_period": "7500000",
+        "current_period": "6375000",
         "particulars": "V. Profit before tax (III - IV)",
         "previous_period": "6375000"
        },
@@ -967,12 +967,12 @@
       },
       {
        "cells": {
-        "current_period": 1100000,
+        "current_period": 935000,
         "particulars": "VI. Tax expense (current and deferred)",
         "previous_period": 935000
        },
        "raw": {
-        "current_period": "1100000",
+        "current_period": "935000",
         "particulars": "VI. Tax expense (current and deferred)",
         "previous_period": "935000"
        },
@@ -991,12 +991,12 @@
       },
       {
        "cells": {
-        "current_period": 6400000,
+        "current_period": 5440000,
         "particulars": "VII. Profit for the year (V - VI)",
         "previous_period": 5440000
        },
        "raw": {
-        "current_period": "6400000",
+        "current_period": "5440000",
         "particulars": "VII. Profit for the year (V - VI)",
         "previous_period": "5440000"
        },

@@ -81,6 +81,21 @@ def test_tc22_consistent_identities_pass(client, analyst, published_data_root):
     assert [f["outcome"] for f in found["ID-02"]] == ["not_applicable"]
 
 
+def test_tc22_a_legal_name_mismatch_is_flagged_with_its_sources(client, analyst, published_data_root):
+    case_id = _case(client, analyst, published_data_root)
+    pan_doc = add_doc(published_data_root, case_id, "company_pan", {"pan": "AAACK1234F", "company_name": "Kestrel Tools Pvt Ltd"})
+    itr = add_doc(published_data_root, case_id, "income_tax_return", {"pan": "AAACK1234F", "taxpayer_name": "KESTREL TOOLS PRIVATE LIMITED"})
+    afs = add_doc(published_data_root, case_id, "audited_financial_statements", {"company_name": "Orchid Castings Private Limited"})
+    [f] = _findings(client, analyst, published_data_root, case_id)["ID-03"]
+    assert f["outcome"] == "fail" and f["severity"] == "moderate" and not f["blocking"]
+    odd = next(s for s in f["sides"] if s["differs"])
+    assert odd["value"] == "Orchid Castings Private Limited" and odd["evidence"][0]["document_id"] == afs
+    # The two documents that agree are one side, each with its page.
+    agree = next(s for s in f["sides"] if not s["differs"])
+    assert {e["document_id"] for e in agree["evidence"]} == {pan_doc, itr}
+    assert "Orchid Castings Private Limited" in f["explanation"] and "Company PAN" in f["explanation"]
+
+
 def test_tc22_two_gstins_across_returns_are_flagged(client, analyst, published_data_root):
     case_id = _case(client, analyst, published_data_root)
     add_doc(published_data_root, case_id, "gstr_3b", {"gstin": "27AAACK1234F1Z0", "tax_period": "April 2025"})
@@ -90,20 +105,27 @@ def test_tc22_two_gstins_across_returns_are_flagged(client, analyst, published_d
 
 
 def test_tc22_a_promoter_missing_from_one_source_is_flagged(client, analyst, published_data_root):
-    case_id = _case(client, analyst, published_data_root)
-    add_doc(published_data_root, case_id, "board_resolution_borrowing", {"authorized_persons": ["Tarun Velankar", "Leela Varghese"]})
-    add_doc(published_data_root, case_id, "memorandum_articles_of_association", {"directors": [{"name": "Tarun Velankar"}]})
-    [f] = _findings(client, analyst, published_data_root, case_id)["ID-04"]
-    assert f["outcome"] == "fail"
-    assert "Leela Varghese is not in Memorandum and articles of association" in f["explanation"]
-
-
-def test_tc22_the_kyc_received_is_a_source_of_the_promoter_set(client, analyst, published_data_root):
-    case_id = _case(client, analyst, published_data_root)
-    add_doc(published_data_root, case_id, "board_resolution_borrowing", {"authorized_persons": ["Tarun Velankar", "Ishita Barve"]})
+    case_id = make_case(client, analyst, published_data_root, borrower="Kestrel Tools Pvt Ltd",
+                        header={"promoters": {"value": "Tarun Velankar; Leela Varghese", "source": "person"}})
     add_doc(published_data_root, case_id, "director_kyc", {"person_name": "Tarun Velankar", "din": "01234567"})
     [f] = _findings(client, analyst, published_data_root, case_id)["ID-04"]
-    assert f["outcome"] == "fail" and "Ishita Barve is not in KYC received" in f["explanation"]
+    assert f["outcome"] == "fail" and f["area"] == "identity"
+    assert "Leela Varghese is not in KYC received" in f["explanation"]
+    rows = {r["label"]: r for r in f["detail"]["rows"]}
+    assert rows["Leela Varghese"]["flagged"] and not rows["Tarun Velankar"]["flagged"]
+    assert [s["differs"] for s in f["sides"]] == [True, False]  # the KYC received is short of a person
+
+
+def test_tc22_the_board_resolutions_signatories_are_not_the_promoter_set(client, analyst, published_data_root):
+    # A resolution authorising some of the directors is not a promoter mismatch (BR-02 checks it).
+    case_id = make_case(client, analyst, published_data_root, borrower="Kestrel Tools Pvt Ltd",
+                        header={"promoters": {"value": "Tarun Velankar; Ishita Barve", "source": "person"}})
+    add_doc(published_data_root, case_id, "board_resolution_borrowing", {"authorized_persons": ["Tarun Velankar"]})
+    add_doc(published_data_root, case_id, "director_kyc", {"person_name": "Tarun Velankar", "din": "01234567"})
+    add_doc(published_data_root, case_id, "director_kyc", {"person_name": "Ishita Barve", "din": "07654321"})
+    found = _findings(client, analyst, published_data_root, case_id)
+    assert [f["outcome"] for f in found["ID-04"]] == ["pass"]
+    assert [f["outcome"] for f in found["BR-02"]] == ["pass"]
 
 
 # --- TC-23: turnover ---

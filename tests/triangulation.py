@@ -29,10 +29,10 @@ def _flatten(fields: dict) -> dict[str, object]:
 
 
 def add_doc(root: Path, case_id: str, type_id: str, fields: dict, *, page: int = 1,
-            corrected: dict | None = None) -> str:
+            corrected: dict | None = None, pending: set[str] | None = None) -> str:
     """File one accepted document of `type_id` with these field values.
     Table fields are lists of row dicts. `corrected` maps a field to a
-    person's correction of it."""
+    person's correction of it; fields in `pending` still wait for review."""
     global _count
     _count += 1
     file_id = stable_id("F", case_id, type_id, _count)
@@ -65,7 +65,7 @@ def add_doc(root: Path, case_id: str, type_id: str, fields: dict, *, page: int =
                     json.dumps(value),
                     str(value),
                     json.dumps({"document_id": doc_id, "page": page}),
-                    "corrected" if fix is not None else "accepted",
+                    "corrected" if fix is not None else ("in_review" if name in (pending or set()) else "accepted"),
                     json.dumps(fix) if fix is not None else None,
                 ),
             )

@@ -246,6 +246,14 @@ MIGRATIONS: list[str] = [
     """
     ALTER TABLE findings ADD COLUMN query TEXT;
     """,
+    # 5: a finding's area and scope, its line-by-line detail, and the
+    # documents it waits for (F-19.3).
+    """
+    ALTER TABLE findings ADD COLUMN area TEXT NOT NULL DEFAULT 'identity';
+    ALTER TABLE findings ADD COLUMN scope TEXT;
+    ALTER TABLE findings ADD COLUMN detail TEXT;            -- JSON FindingDetail
+    ALTER TABLE findings ADD COLUMN missing TEXT NOT NULL DEFAULT '[]';  -- JSON list
+    """,
 ]
 
 

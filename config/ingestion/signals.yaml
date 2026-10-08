@@ -64,6 +64,22 @@ types:
       start: 'form\s+gstr-?3b'
       keys: [tax_period]
 
+  # A declaration of nil facilities is a declaration of existing facilities that declares none.
+  existing_facilities_declaration:
+    required: ['declaration\s+of\s+(nil\s+)?existing\s+(credit\s+)?facilit']
+    supporting: ['hereby\s+(solemnly\s+)?declare', 'existing\s+credit\s+facilities', 'name\s+of\s+lender', 'nature\s+of\s+facility', '\boutstanding\b', 'banking\s+(relationship|arrangements?)']
+    contrary: ['statement\s+of\s+account', 'resolved\s+(further\s+)?that', 'sanction\s+letter|letter\s+of\s+sanction', 'credit\s+information\s+report']
+
+  sanction_letter:
+    required: ['sanction\s+letter|letter\s+of\s+sanction']
+    supporting: ['pleased\s+to\s+sanction', 'sanctioned\s+amount', 'rate\s+of\s+interest', '\btenure\b', 'equated\s+monthly|\bemi\b', 'terms\s+and\s+conditions']
+    contrary: ['statement\s+of\s+account', 'resolved\s+(further\s+)?that', 'declaration\s+of\s+(nil\s+)?existing', 'credit\s+information\s+report']
+
+  commercial_bureau_report:
+    required: ['commercial\s+credit\s+information\s+report|company\s+credit\s+(information\s+)?report']
+    supporting: ['credit\s+rank', 'credit\s+facilities', '\boverdue\b', 'related\s+parties', 'report\s+date', 'days\s+past\s+due|\bdpd\b']
+    contrary: ['statement\s+of\s+account', 'sanction\s+letter|letter\s+of\s+sanction', 'declaration\s+of\s+(nil\s+)?existing']
+
   bank_statement:
     required: ['statement\s+of\s+account']
     supporting: ['opening\s+balance', 'ifsc', 'debit\s+\(inr\)', 'credit\s+\(inr\)', 'account\s+number', 'branch']

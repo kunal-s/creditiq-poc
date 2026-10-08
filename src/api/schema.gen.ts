@@ -654,6 +654,35 @@ export interface components {
       next_before: number | null;
     };
     /**
+     * AuthorityFact
+     * @description What one board resolution for borrowing authorises (BR-01 to BR-04).
+     */
+    AuthorityFact: {
+      borrowing_limit?: components["schemas"]["FactValue"] | null;
+      /** Document Id */
+      document_id: string;
+      /** Label */
+      label: string;
+      lender?: components["schemas"]["FactValue"] | null;
+      resolution_date?: components["schemas"]["FactValue"] | null;
+      /** Signatories */
+      signatories?: components["schemas"]["PersonEntry"][];
+    };
+    /**
+     * BalanceFact
+     * @description One account's balance on a financial-year end, from its statement (FS-02).
+     */
+    BalanceFact: {
+      /** Account */
+      account: string;
+      /** Balance */
+      balance: number;
+      /** Date */
+      date: string;
+      /** Evidence */
+      evidence?: components["schemas"]["Evidence"][];
+    };
+    /**
      * Cam
      * @description The draft Credit Approval Memo (F-23).
      */
@@ -835,21 +864,37 @@ export interface components {
     CaseFacts: {
       /** Accounts */
       accounts: components["schemas"]["AccountFact"][];
+      /** Authority */
+      authority?: components["schemas"]["AuthorityFact"][];
+      /** Balances */
+      balances?: components["schemas"]["BalanceFact"][];
       /** Case Id */
       case_id: string;
       /** Credits */
       credits: components["schemas"]["AccountCredits"][];
+      declaration?: components["schemas"]["FactValue"] | null;
       /** Declaration Received */
       declaration_received: boolean;
+      declared_banking?: components["schemas"]["FactValue"] | null;
       /** Facilities */
       facilities: components["schemas"]["FacilityFact"][];
+      /** Financial Years */
+      financial_years?: components["schemas"]["FinancialYear"][];
       identities: components["schemas"]["IdentityFacts"];
+      incorporation?: components["schemas"]["IncorporationFact"];
+      /** Months */
+      months?: components["schemas"]["MonthFigure"][];
       /** Obligations */
       obligations: components["schemas"]["Obligation"][];
       /** Persons */
       persons: components["schemas"]["PersonSet"][];
+      requested_amount?: components["schemas"]["FactValue"] | null;
+      /** Tax Years */
+      tax_years?: components["schemas"]["TaxYear"][];
       /** Turnover */
       turnover: components["schemas"]["TurnoverYear"][];
+      /** Types On File */
+      types_on_file?: string[];
     };
     /** CaseProgress */
     CaseProgress: {
@@ -1181,11 +1226,17 @@ export interface components {
     };
     /**
      * FacilityFact
-     * @description An existing facility as one source records it (F-19 OB-01).
+     * @description An existing facility as one source records it (F-19 OB-01): the declaration of existing
+     *     facilities, a sanction letter or the commercial bureau report.
      */
     FacilityFact: {
       /** Amount */
       amount?: number | null;
+      /**
+       * Awaiting Review
+       * @default false
+       */
+      awaiting_review: boolean;
       /** Emi */
       emi?: number | null;
       /** Evidence */
@@ -1196,6 +1247,10 @@ export interface components {
       label: string;
       /** Lender */
       lender: string;
+      /** Outstanding */
+      outstanding?: number | null;
+      /** Overdue */
+      overdue?: number | null;
       /**
        * Relies On Manual
        * @default false
@@ -1209,6 +1264,11 @@ export interface components {
      * @description One source's value for a fact, with where it came from (F-18.6).
      */
     FactValue: {
+      /**
+       * Awaiting Review
+       * @default false
+       */
+      awaiting_review: boolean;
       /** Evidence */
       evidence?: components["schemas"]["Evidence"][];
       /** Field Ids */
@@ -1302,20 +1362,50 @@ export interface components {
       uploaded_by: string;
     };
     /**
+     * FinancialYear
+     * @description One year's audited statements: their own year and the comparative column.
+     */
+    FinancialYear: {
+      /** Current */
+      current?: {
+        [key: string]: components["schemas"]["FactValue"];
+      };
+      /** Fy */
+      fy: string;
+      /** Fy End */
+      fy_end: string;
+      /** Label */
+      label: string;
+      /** Previous */
+      previous?: {
+        [key: string]: components["schemas"]["FactValue"];
+      };
+    };
+    /**
      * Finding
      * @description A cross-check or policy outcome (F-19, F-20).
      */
     Finding: {
+      /**
+       * Area
+       * @default identity
+       * @enum {string}
+       */
+      area:
+        "identity" | "authority" | "turnover" | "tax" | "financials" | "accounts" | "obligations";
       /** Blocking */
       blocking: boolean;
       /** Case Id */
       case_id: string;
       /** Config Version */
       config_version?: string | null;
+      detail?: components["schemas"]["FindingDetail"] | null;
       /** Explanation */
       explanation: string;
       /** Id */
       id: string;
+      /** Missing */
+      missing?: string[];
       /**
        * Outcome
        * @enum {string}
@@ -1327,6 +1417,8 @@ export interface components {
       rule_id: string;
       /** Run Id */
       run_id?: string | null;
+      /** Scope */
+      scope?: string | null;
       /**
        * Severity
        * @enum {string}
@@ -1339,10 +1431,44 @@ export interface components {
       /** Tolerance */
       tolerance?: string | null;
     };
+    /**
+     * FindingDetail
+     * @description The line-by-line comparison behind a finding: months, people, years.
+     */
+    FindingDetail: {
+      /** Columns */
+      columns: string[];
+      /** Rows */
+      rows: components["schemas"]["FindingDetailRow"][];
+    };
+    /** FindingDetailRow */
+    FindingDetailRow: {
+      /** Cells */
+      cells: (string | number | null)[];
+      /**
+       * Flagged
+       * @default false
+       */
+      flagged: boolean;
+      /** Label */
+      label: string;
+    };
     /** FindingSide */
     FindingSide: {
+      /**
+       * Awaiting Review
+       * @default false
+       */
+      awaiting_review: boolean;
+      /**
+       * Differs
+       * @default false
+       */
+      differs: boolean;
       /** Evidence */
       evidence?: components["schemas"]["Evidence"][];
+      /** Field Ids */
+      field_ids?: string[];
       /** Label */
       label: string;
       /**
@@ -1373,12 +1499,22 @@ export interface components {
     };
     /** IdentityFacts */
     IdentityFacts: {
+      /** Cin */
+      cin?: components["schemas"]["FactValue"][];
       /** Entity Pan */
       entity_pan?: components["schemas"]["FactValue"][];
       /** Gstin */
       gstin?: components["schemas"]["FactValue"][];
       /** Legal Name */
       legal_name?: components["schemas"]["FactValue"][];
+    };
+    /**
+     * IncorporationFact
+     * @description The company's incorporation as the certificate of incorporation records it.
+     */
+    IncorporationFact: {
+      company_type?: components["schemas"]["FactValue"] | null;
+      date_of_incorporation?: components["schemas"]["FactValue"] | null;
     };
     /**
      * LogicalDocument
@@ -1461,6 +1597,29 @@ export interface components {
       constitutions: components["schemas"]["Option"][];
       /** Facilities */
       facilities: components["schemas"]["Option"][];
+    };
+    /**
+     * MonthFigure
+     * @description GST outward supplies and cleansed bank credits for one month (TO-05).
+     */
+    MonthFigure: {
+      /**
+       * Awaiting Review
+       * @default false
+       */
+      awaiting_review: boolean;
+      /** Bank */
+      bank?: number | null;
+      /** Bank Evidence */
+      bank_evidence?: components["schemas"]["Evidence"][];
+      /** Gst */
+      gst?: number | null;
+      /** Gst Evidence */
+      gst_evidence?: components["schemas"]["Evidence"][];
+      /** Label */
+      label: string;
+      /** Month */
+      month: string;
     };
     /**
      * NormInput
@@ -1648,10 +1807,38 @@ export interface components {
       title: string;
     };
     /**
+     * PersonEntry
+     * @description One person as one source names them, with the identifiers printed there.
+     */
+    PersonEntry: {
+      /**
+       * Awaiting Review
+       * @default false
+       */
+      awaiting_review: boolean;
+      /** Din */
+      din?: string | null;
+      /** Evidence */
+      evidence?: components["schemas"]["Evidence"][];
+      /** Name */
+      name: string;
+      /** Pan */
+      pan?: string | null;
+      /**
+       * Relies On Manual
+       * @default false
+       */
+      relies_on_manual: boolean;
+      /** Role */
+      role?: string | null;
+    };
+    /**
      * PersonSet
      * @description The promoters one source names (F-18.3: variants resolved later).
      */
     PersonSet: {
+      /** Entries */
+      entries?: components["schemas"]["PersonEntry"][];
       /** Evidence */
       evidence?: components["schemas"]["Evidence"][];
       /** Label */
@@ -2061,10 +2248,33 @@ export interface components {
       span: components["schemas"]["Span"];
     };
     /**
+     * TaxYear
+     * @description One income tax return, by the financial year it covers.
+     */
+    TaxYear: {
+      /** Assessment Year */
+      assessment_year: string;
+      /** Evidence */
+      evidence?: components["schemas"]["Evidence"][];
+      /** Fy */
+      fy: string;
+      /** Fy End */
+      fy_end: string;
+      /** Lines */
+      lines?: {
+        [key: string]: components["schemas"]["FactValue"];
+      };
+    };
+    /**
      * TurnoverFigure
      * @description One source's turnover for one financial year (F-18.1).
      */
     TurnoverFigure: {
+      /**
+       * Awaiting Review
+       * @default false
+       */
+      awaiting_review: boolean;
       /** Evidence */
       evidence?: components["schemas"]["Evidence"][];
       /** Field Ids */

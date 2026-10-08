@@ -679,6 +679,235 @@
           }
         ]
       }
+    },
+    {
+      "document_type": "existing_facilities_declaration",
+      "display_name": "Declaration of Existing Facilities",
+      "category": "banking_operations",
+      "priority": "optional",
+      "schema": {
+        "fields": [
+          {
+            "name": "company_name",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "declaration_date",
+            "type": "date",
+            "required": false
+          },
+          {
+            "name": "pan",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "cin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "gstin",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "tables": [
+          {
+            "name": "facilities",
+            "description": "Existing credit facilities as declared",
+            "columns": [
+              {
+                "name": "lender",
+                "type": "string"
+              },
+              {
+                "name": "facility",
+                "type": "string"
+              },
+              {
+                "name": "sanctioned_amount",
+                "type": "number"
+              },
+              {
+                "name": "outstanding",
+                "type": "number"
+              },
+              {
+                "name": "emi",
+                "type": "number"
+              }
+            ]
+          },
+          {
+            "name": "bank_accounts",
+            "description": "Bank accounts the borrower declares it holds",
+            "columns": [
+              {
+                "name": "bank",
+                "type": "string"
+              },
+              {
+                "name": "account_number",
+                "type": "string"
+              },
+              {
+                "name": "account_type",
+                "type": "string"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "document_type": "sanction_letter",
+      "display_name": "Sanction Letter",
+      "category": "banking_operations",
+      "priority": "optional",
+      "schema": {
+        "fields": [
+          {
+            "name": "lender_name",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "borrower_name",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "sanction_date",
+            "type": "date",
+            "required": false
+          },
+          {
+            "name": "reference_number",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "tables": [
+          {
+            "name": "facilities",
+            "description": "Facilities sanctioned by the letter",
+            "columns": [
+              {
+                "name": "facility",
+                "type": "string"
+              },
+              {
+                "name": "sanctioned_amount",
+                "type": "number"
+              },
+              {
+                "name": "interest_rate",
+                "type": "string"
+              },
+              {
+                "name": "tenure",
+                "type": "string"
+              },
+              {
+                "name": "emi",
+                "type": "number"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "document_type": "commercial_bureau_report",
+      "display_name": "Commercial Bureau Report",
+      "category": "credit_bureau",
+      "priority": "optional",
+      "schema": {
+        "fields": [
+          {
+            "name": "company_name",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "pan",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "cin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "gstin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "report_date",
+            "type": "date",
+            "required": false
+          },
+          {
+            "name": "credit_rank",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "tables": [
+          {
+            "name": "credit_facilities",
+            "description": "Credit facilities the bureau reports for the borrower",
+            "columns": [
+              {
+                "name": "lender",
+                "type": "string"
+              },
+              {
+                "name": "facility",
+                "type": "string"
+              },
+              {
+                "name": "sanctioned_amount",
+                "type": "number"
+              },
+              {
+                "name": "outstanding",
+                "type": "number"
+              },
+              {
+                "name": "overdue",
+                "type": "number"
+              },
+              {
+                "name": "status",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "related_parties",
+            "description": "Directors, promoters and guarantors the bureau reports",
+            "columns": [
+              {
+                "name": "name",
+                "type": "string"
+              },
+              {
+                "name": "relationship",
+                "type": "string"
+              },
+              {
+                "name": "pan",
+                "type": "string"
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }

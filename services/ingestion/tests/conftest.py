@@ -30,9 +30,11 @@ IN_SCOPE = {
     "Southgate_ITR_FY2024_FY2025.pdf": "income_tax_return",
     "Southgate_GSTR3B_Dec2025_Jul2026.pdf": "gstr_3b",
     "Southgate_CCB_CA_Statements_12m.pdf": "bank_statement",
+    # A declaration of nil facilities is a declaration of existing facilities that declares none.
+    "Southgate_Nil_Facilities_Declaration.pdf": "existing_facilities_declaration",
 }
 OUT_OF_SCOPE = ["Southgate_Provisional_FY2026.pdf", "Southgate_Stock_BookDebt_30Jun2026.pdf",
-                "Southgate_Title_Deed_Coimbatore_Unit.pdf", "Southgate_Nil_Facilities_Declaration.pdf"]
+                "Southgate_Title_Deed_Coimbatore_Unit.pdf"]
 
 
 @pytest.fixture(scope="session")

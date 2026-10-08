@@ -88,6 +88,8 @@ def findings(conn: sqlite3.Connection, case_id: str) -> list[Finding]:
         d = dict(row)
         d["blocking"] = bool(d["blocking"])
         d["sides"] = [FindingSide(**s) for s in json.loads(d["sides"])]
+        d["detail"] = json.loads(d["detail"]) if d.get("detail") else None
+        d["missing"] = json.loads(d.get("missing") or "[]")
         out.append(Finding(**d))
     return out
 

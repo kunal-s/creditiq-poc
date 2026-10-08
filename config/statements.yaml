@@ -33,5 +33,13 @@ derived:
   current_assets: inventories + trade_receivables + cash_and_bank_balances + short_term_loans_and_advances
   current_liabilities: short_term_borrowings + trade_payables + other_current_liabilities + short_term_provisions
 
-# GST turnover: outward taxable supplies, the first row of table 3.1 of each GSTR-3B.
-gst_outward: {table: outward_supplies, row: '^\(a\)', column: taxable_value}
+# GST turnover from table 3.1 of each GSTR-3B: every matching row is summed.
+# (a) taxable, (b) zero rated and (c) nil rated or exempted outward supplies
+# are sales; (d) inward reverse-charge and (e) non-GST supplies are not.
+gst_outward: {table: outward_supplies, row: '^\((a|b|c)\)', column: taxable_value}
+
+# The lines of an income tax return's computation compared with the books
+# (TX-02 book profit, TX-03 turnover). Rows found by their printed label.
+itr_lines:
+  profit_before_tax: {table: income_computation, row: '(net )?profit (before tax )?as per (the )?(statement of )?(profit and loss|p\s*&\s*l)', column: amount}
+  turnover:          {table: income_computation, row: '^(revenue from operations|gross receipts|turnover|sales turnover|total sales)', column: amount}

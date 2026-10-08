@@ -197,6 +197,93 @@
         "title": "AuditPage",
         "type": "object"
       },
+      "AuthorityFact": {
+        "description": "What one board resolution for borrowing authorises (BR-01 to BR-04).",
+        "properties": {
+          "borrowing_limit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FactValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "document_id": {
+            "title": "Document Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "lender": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FactValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resolution_date": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FactValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "signatories": {
+            "items": {
+              "$ref": "#/components/schemas/PersonEntry"
+            },
+            "title": "Signatories",
+            "type": "array"
+          }
+        },
+        "required": [
+          "document_id",
+          "label"
+        ],
+        "title": "AuthorityFact",
+        "type": "object"
+      },
+      "BalanceFact": {
+        "description": "One account's balance on a financial-year end, from its statement (FS-02).",
+        "properties": {
+          "account": {
+            "title": "Account",
+            "type": "string"
+          },
+          "balance": {
+            "title": "Balance",
+            "type": "number"
+          },
+          "date": {
+            "title": "Date",
+            "type": "string"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          }
+        },
+        "required": [
+          "account",
+          "date",
+          "balance"
+        ],
+        "title": "BalanceFact",
+        "type": "object"
+      },
       "Cam": {
         "description": "The draft Credit Approval Memo (F-23).",
         "properties": {
@@ -706,6 +793,20 @@
             "title": "Accounts",
             "type": "array"
           },
+          "authority": {
+            "items": {
+              "$ref": "#/components/schemas/AuthorityFact"
+            },
+            "title": "Authority",
+            "type": "array"
+          },
+          "balances": {
+            "items": {
+              "$ref": "#/components/schemas/BalanceFact"
+            },
+            "title": "Balances",
+            "type": "array"
+          },
           "case_id": {
             "title": "Case Id",
             "type": "string"
@@ -717,9 +818,29 @@
             "title": "Credits",
             "type": "array"
           },
+          "declaration": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FactValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "declaration_received": {
             "title": "Declaration Received",
             "type": "boolean"
+          },
+          "declared_banking": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FactValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "facilities": {
             "items": {
@@ -728,8 +849,25 @@
             "title": "Facilities",
             "type": "array"
           },
+          "financial_years": {
+            "items": {
+              "$ref": "#/components/schemas/FinancialYear"
+            },
+            "title": "Financial Years",
+            "type": "array"
+          },
           "identities": {
             "$ref": "#/components/schemas/IdentityFacts"
+          },
+          "incorporation": {
+            "$ref": "#/components/schemas/IncorporationFact"
+          },
+          "months": {
+            "items": {
+              "$ref": "#/components/schemas/MonthFigure"
+            },
+            "title": "Months",
+            "type": "array"
           },
           "obligations": {
             "items": {
@@ -745,11 +883,35 @@
             "title": "Persons",
             "type": "array"
           },
+          "requested_amount": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FactValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tax_years": {
+            "items": {
+              "$ref": "#/components/schemas/TaxYear"
+            },
+            "title": "Tax Years",
+            "type": "array"
+          },
           "turnover": {
             "items": {
               "$ref": "#/components/schemas/TurnoverYear"
             },
             "title": "Turnover",
+            "type": "array"
+          },
+          "types_on_file": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Types On File",
             "type": "array"
           }
         },
@@ -1533,7 +1695,7 @@
         "type": "object"
       },
       "FacilityFact": {
-        "description": "An existing facility as one source records it (F-19 OB-01).",
+        "description": "An existing facility as one source records it (F-19 OB-01): the declaration of existing\nfacilities, a sanction letter or the commercial bureau report.",
         "properties": {
           "amount": {
             "anyOf": [
@@ -1545,6 +1707,11 @@
               }
             ],
             "title": "Amount"
+          },
+          "awaiting_review": {
+            "default": false,
+            "title": "Awaiting Review",
+            "type": "boolean"
           },
           "emi": {
             "anyOf": [
@@ -1583,6 +1750,28 @@
             "title": "Lender",
             "type": "string"
           },
+          "outstanding": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outstanding"
+          },
+          "overdue": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overdue"
+          },
           "relies_on_manual": {
             "default": false,
             "title": "Relies On Manual",
@@ -1604,6 +1793,11 @@
       "FactValue": {
         "description": "One source's value for a fact, with where it came from (F-18.6).",
         "properties": {
+          "awaiting_review": {
+            "default": false,
+            "title": "Awaiting Review",
+            "type": "boolean"
+          },
           "evidence": {
             "items": {
               "$ref": "#/components/schemas/Evidence"
@@ -1907,9 +2101,61 @@
         "title": "FileRecord",
         "type": "object"
       },
+      "FinancialYear": {
+        "description": "One year's audited statements: their own year and the comparative column.",
+        "properties": {
+          "current": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FactValue"
+            },
+            "title": "Current",
+            "type": "object"
+          },
+          "fy": {
+            "title": "Fy",
+            "type": "string"
+          },
+          "fy_end": {
+            "title": "Fy End",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "previous": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FactValue"
+            },
+            "title": "Previous",
+            "type": "object"
+          }
+        },
+        "required": [
+          "fy",
+          "fy_end",
+          "label"
+        ],
+        "title": "FinancialYear",
+        "type": "object"
+      },
       "Finding": {
         "description": "A cross-check or policy outcome (F-19, F-20).",
         "properties": {
+          "area": {
+            "default": "identity",
+            "enum": [
+              "identity",
+              "authority",
+              "turnover",
+              "tax",
+              "financials",
+              "accounts",
+              "obligations"
+            ],
+            "title": "Area",
+            "type": "string"
+          },
           "blocking": {
             "title": "Blocking",
             "type": "boolean"
@@ -1929,6 +2175,16 @@
             ],
             "title": "Config Version"
           },
+          "detail": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FindingDetail"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "explanation": {
             "title": "Explanation",
             "type": "string"
@@ -1936,6 +2192,13 @@
           "id": {
             "title": "Id",
             "type": "string"
+          },
+          "missing": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing",
+            "type": "array"
           },
           "outcome": {
             "enum": [
@@ -1972,6 +2235,17 @@
               }
             ],
             "title": "Run Id"
+          },
+          "scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope"
           },
           "severity": {
             "enum": [
@@ -2019,13 +2293,91 @@
         "title": "Finding",
         "type": "object"
       },
+      "FindingDetail": {
+        "description": "The line-by-line comparison behind a finding: months, people, years.",
+        "properties": {
+          "columns": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Columns",
+            "type": "array"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/FindingDetailRow"
+            },
+            "title": "Rows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "columns",
+          "rows"
+        ],
+        "title": "FindingDetail",
+        "type": "object"
+      },
+      "FindingDetailRow": {
+        "properties": {
+          "cells": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Cells",
+            "type": "array"
+          },
+          "flagged": {
+            "default": false,
+            "title": "Flagged",
+            "type": "boolean"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "cells"
+        ],
+        "title": "FindingDetailRow",
+        "type": "object"
+      },
       "FindingSide": {
         "properties": {
+          "awaiting_review": {
+            "default": false,
+            "title": "Awaiting Review",
+            "type": "boolean"
+          },
+          "differs": {
+            "default": false,
+            "title": "Differs",
+            "type": "boolean"
+          },
           "evidence": {
             "items": {
               "$ref": "#/components/schemas/Evidence"
             },
             "title": "Evidence",
+            "type": "array"
+          },
+          "field_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Field Ids",
             "type": "array"
           },
           "label": {
@@ -2117,6 +2469,13 @@
       },
       "IdentityFacts": {
         "properties": {
+          "cin": {
+            "items": {
+              "$ref": "#/components/schemas/FactValue"
+            },
+            "title": "Cin",
+            "type": "array"
+          },
           "entity_pan": {
             "items": {
               "$ref": "#/components/schemas/FactValue"
@@ -2140,6 +2499,33 @@
           }
         },
         "title": "IdentityFacts",
+        "type": "object"
+      },
+      "IncorporationFact": {
+        "description": "The company's incorporation as the certificate of incorporation records it.",
+        "properties": {
+          "company_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FactValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "date_of_incorporation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FactValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "IncorporationFact",
         "type": "object"
       },
       "LogicalDocument": {
@@ -2358,6 +2744,66 @@
           "case_create_minimum"
         ],
         "title": "Meta",
+        "type": "object"
+      },
+      "MonthFigure": {
+        "description": "GST outward supplies and cleansed bank credits for one month (TO-05).",
+        "properties": {
+          "awaiting_review": {
+            "default": false,
+            "title": "Awaiting Review",
+            "type": "boolean"
+          },
+          "bank": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bank"
+          },
+          "bank_evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Bank Evidence",
+            "type": "array"
+          },
+          "gst": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gst"
+          },
+          "gst_evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Gst Evidence",
+            "type": "array"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          }
+        },
+        "required": [
+          "month",
+          "label"
+        ],
+        "title": "MonthFigure",
         "type": "object"
       },
       "NormInput": {
@@ -2860,9 +3306,80 @@
         "title": "PdQuestion",
         "type": "object"
       },
+      "PersonEntry": {
+        "description": "One person as one source names them, with the identifiers printed there.",
+        "properties": {
+          "awaiting_review": {
+            "default": false,
+            "title": "Awaiting Review",
+            "type": "boolean"
+          },
+          "din": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Din"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "pan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pan"
+          },
+          "relies_on_manual": {
+            "default": false,
+            "title": "Relies On Manual",
+            "type": "boolean"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "PersonEntry",
+        "type": "object"
+      },
       "PersonSet": {
         "description": "The promoters one source names (F-18.3: variants resolved later).",
         "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/PersonEntry"
+            },
+            "title": "Entries",
+            "type": "array"
+          },
           "evidence": {
             "items": {
               "$ref": "#/components/schemas/Evidence"
@@ -3968,9 +4485,52 @@
         "title": "StrippedSpan",
         "type": "object"
       },
+      "TaxYear": {
+        "description": "One income tax return, by the financial year it covers.",
+        "properties": {
+          "assessment_year": {
+            "title": "Assessment Year",
+            "type": "string"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "fy": {
+            "title": "Fy",
+            "type": "string"
+          },
+          "fy_end": {
+            "title": "Fy End",
+            "type": "string"
+          },
+          "lines": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FactValue"
+            },
+            "title": "Lines",
+            "type": "object"
+          }
+        },
+        "required": [
+          "assessment_year",
+          "fy",
+          "fy_end"
+        ],
+        "title": "TaxYear",
+        "type": "object"
+      },
       "TurnoverFigure": {
         "description": "One source's turnover for one financial year (F-18.1).",
         "properties": {
+          "awaiting_review": {
+            "default": false,
+            "title": "Awaiting Review",
+            "type": "boolean"
+          },
           "evidence": {
             "items": {
               "$ref": "#/components/schemas/Evidence"

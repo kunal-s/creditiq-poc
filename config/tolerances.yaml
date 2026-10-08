@@ -7,3 +7,9 @@ tolerances:
   - {key: name_match, label: Minimum name similarity to treat two names as one, value: 0.85, unit: ratio, source: provisional}
   - {key: emi_amount_match, label: EMI amount match between sources, value: 5, unit: "%", source: provisional}
   - {key: emi_min_occurrences, label: Monthly debits needed to infer a recurring obligation, value: 3, unit: ratio, source: provisional}
+  - {key: turnover_window_min_months, label: Months both GST returns and bank statements must cover before they are compared, value: 3, unit: ratio, source: provisional}
+  - {key: itr_due_days, label: Days after a financial year ends before its income tax return is expected, value: 214, unit: days, source: provisional}
+  - {key: profit_variance, label: Book profit against the profit in the income tax return, value: 10, unit: "%", source: provisional}
+  - {key: comparatives_variance, label: Previous-year figures against the previous year's audited statements, value: 1, unit: "%", source: provisional}
+  - {key: facility_amount_match, label: Sanctioned amount of one facility between the declaration, sanction letters and the bureau, value: 5, unit: "%", source: provisional}
+  - {key: balance_variance, label: Year-end bank balances above the audited cash and bank balance, value: 1, unit: "%", source: provisional}

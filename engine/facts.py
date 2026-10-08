@@ -5,8 +5,15 @@ value read (the effective value), and a value entered or corrected by a
 person is flagged (F-19.4). Every fact keeps the field-value ids and the
 evidence it came from (F-18.6), so a finding can point at both sides.
 
-- Identities (PAN, GSTIN, legal name) by document.
-- Promoter sets by source.
+A value still waiting for review is carried with `awaiting_review`, so a
+check that would rely on it waits for the person (F-17.2).
+
+- Identities (PAN, GSTIN, legal name, CIN) by document; the PAN inside each
+  GSTIN counts as a statement of the entity's PAN.
+- Promoter sets by source, each person with the DIN and PAN printed there.
+- Incorporation, the board resolution's terms, income tax returns and the
+  audited statements by year (both columns), for the identity, authority,
+  tax and statement checks.
 - Turnover by financial year from the financial statements, GST returns,
   cleansed bank credits and the RM's message (F-18.1).
 - Bank credits cleansed by configured narration rules (F-18.2).
@@ -31,15 +38,22 @@ from .configstore.schema import AlignmentSection
 from .contracts import (
     AccountCredits,
     AccountFact,
+    AuthorityFact,
+    BalanceFact,
     CaseDetail,
     CaseFacts,
     Evidence,
     Exclusion,
     FacilityFact,
     FactValue,
+    FinancialYear,
     IdentityFacts,
+    IncorporationFact,
+    MonthFigure,
     Obligation,
+    PersonEntry,
     PersonSet,
+    TaxYear,
     TurnoverFigure,
     TurnoverYear,
 )
@@ -48,17 +62,25 @@ from . import statements
 from .parties import party_list_spec
 from .pipeline import effective_types
 from .store import MESSAGE_FILE_NAME
-from .util import format_inr, month_add, month_label, parse_date, parse_period
+from .util import assessment_year_start, format_inr, month_add, month_label, parse_date, parse_period
 
 USABLE = {"accepted", "in_review", "extracted", "classified"}
 
 # Where each identity is read, by field name (first found wins per document).
 PAN_FIELDS = ("pan",)
 GSTIN_FIELDS = ("gstin",)
-NAME_FIELDS = ("legal_name", "company_name", "taxpayer_name", "account_holder_name")
+NAME_FIELDS = ("legal_name", "company_name", "taxpayer_name", "account_holder_name", "borrower_name")
+CIN_FIELDS = ("cin",)
+# Where existing facilities are recorded (OB-01, OB-02).
+DECLARATION = "existing_facilities_declaration"
+SANCTION = "sanction_letter"
+BUREAU = "commercial_bureau_report"
 # Document types whose names and PAN are a person's, not the entity's.
 PERSON_DOCS = {"director_kyc"}
 KYC_TYPES = {"director_kyc"}
+# The statement lines the year-on-year and bank checks read (FS-01, FS-02, OB-03).
+YEAR_LINES = ("revenue_from_operations", "profit_before_tax", "profit_after_tax", "net_worth", "total_borrowings",
+              "long_term_borrowings", "finance_costs", "cash_and_bank_balances")
 
 
 # --- Loading ---
@@ -70,6 +92,8 @@ class Value:
     value: object
     evidence: dict | None
     manual: bool
+    pending: bool = False
+    """Still waiting for a person's review (F-17.2)."""
 
 
 @dataclass
@@ -144,6 +168,7 @@ def load_documents(conn: sqlite3.Connection, root: Path, case_id: str) -> list[D
                 value=_effective(fv),
                 evidence=json.loads(fv["evidence"]) if fv["evidence"] else None,
                 manual=fv["method"] == "manual" or fv["status"] == "corrected",
+                pending=fv["status"] == "in_review",
             )
         docs.append(
             Doc(
@@ -222,6 +247,7 @@ class Txn:
     credit: float
     evidence: list[Evidence]
     doc: Doc
+    balance: float | None = None
 
 
 def _amount(v: Value | None) -> float:
@@ -296,20 +322,33 @@ class Build:
         )
 
 
+def _ident(value: object) -> str:
+    return str(value).strip().upper().replace(" ", "")
+
+
 def _identities(b: Build) -> IdentityFacts:
     facts = IdentityFacts()
     for d in b.docs:
         pan = d.get(*PAN_FIELDS) if not set(d.types) & PERSON_DOCS else None
         if pan:
-            facts.entity_pan.append(_fv(d, pan, str(pan.value).strip().upper().replace(" ", "")))
+            facts.entity_pan.append(_fv(d, pan, _ident(pan.value)))
         gstin = d.get(*GSTIN_FIELDS)
         if gstin:
-            facts.gstin.append(_fv(d, gstin, str(gstin.value).strip().upper().replace(" ", "")))
+            number = _ident(gstin.value)
+            facts.gstin.append(_fv(d, gstin, number))
+            # Characters 3 to 12 of a GSTIN are the holder's PAN (ID-01).
+            if len(number) == 15 and not set(d.types) & PERSON_DOCS:
+                derived = _fv(d, gstin, number[2:12])
+                derived.label = f"{d.label} (PAN within the GSTIN)"
+                facts.entity_pan.append(derived)
+        cin = d.get(*CIN_FIELDS)
+        if cin and not set(d.types) & PERSON_DOCS:
+            facts.cin.append(_fv(d, cin, _ident(cin.value)))
         if not set(d.types) & PERSON_DOCS:
             name = d.get(*NAME_FIELDS)
             if name:
                 facts.legal_name.append(_fv(d, name, str(name.value).strip()))
-    for key, target in (("pan", facts.entity_pan), ("gstin", facts.gstin)):
+    for key, target in (("pan", facts.entity_pan), ("gstin", facts.gstin), ("cin", facts.cin)):
         v = b.message_value(key)
         if v:
             v.value = str(v.value).strip().upper()
@@ -325,7 +364,13 @@ def _fv(d: Doc, v: Value, value: str | float | None) -> FactValue:
         evidence=d.evidence(v),
         field_ids=[v.field_id],
         relies_on_manual=v.manual,
+        awaiting_review=v.pending,
     )
+
+
+def _line_fv(d: Doc, line: statements.Line) -> FactValue:
+    return FactValue(source=d.types[0], label=d.label, value=line.value, evidence=line.evidence,
+                     field_ids=line.field_ids, relies_on_manual=line.manual, awaiting_review=line.pending)
 
 
 def _persons(b: Build) -> list[PersonSet]:
@@ -336,24 +381,47 @@ def _persons(b: Build) -> list[PersonSet]:
             spec = party_list_spec(types.get(type_id))
             if spec is None:
                 continue
+            entries: list[PersonEntry] = []
             if spec.name_key:
-                values = [r[spec.name_key] for r in d.rows(spec.field) if r.get(spec.name_key) and r[spec.name_key].value]
+                for r in d.rows(spec.field):
+                    name = r.get(spec.name_key)
+                    if not (name and name.value):
+                        continue
+                    din = r.get(spec.din_key) if spec.din_key else None
+                    pan = r.get(spec.pan_key) if spec.pan_key else None
+                    title = r.get(spec.designation_key) if spec.designation_key else None
+                    entries.append(PersonEntry(
+                        name=str(name.value).strip(), din=_ident(din.value) if din and din.value else None,
+                        pan=_ident(pan.value) if pan and pan.value else None,
+                        role=str(title.value).strip() if title and title.value else spec.role,
+                        evidence=d.evidence(name), relies_on_manual=name.manual,
+                        awaiting_review=name.pending or bool(din and din.pending) or bool(pan and pan.pending)))
             else:
-                values = [v for v in d.list(spec.field) if v.value]
-            if values:
-                sets.append(PersonSet(source=type_id, label=d.label, names=[str(v.value).strip() for v in values],
-                                      evidence=d.evidence(*values[:1]), relies_on_manual=any(v.manual for v in values)))
-    kyc = [d for d in b.docs if set(d.types) & KYC_TYPES]
-    kyc_names, kyc_evidence, kyc_manual = [], [], False
-    for d in kyc:
+                for v in d.list(spec.field):
+                    if v.value:
+                        entries.append(PersonEntry(name=str(v.value).strip(), role=spec.role, evidence=d.evidence(v),
+                                                   relies_on_manual=v.manual, awaiting_review=v.pending))
+            if entries:
+                sets.append(PersonSet(source=type_id, label=d.label, names=[e.name for e in entries],
+                                      evidence=entries[0].evidence,
+                                      relies_on_manual=any(e.relies_on_manual for e in entries), entries=entries))
+    kyc_entries: list[PersonEntry] = []
+    for d in b.docs:
+        if not set(d.types) & KYC_TYPES:
+            continue
         name = d.get("person_name")
-        if name:
-            kyc_names.append(str(name.value).strip())
-            kyc_evidence += d.evidence(name)
-            kyc_manual = kyc_manual or name.manual
-    if kyc_names:
-        sets.append(PersonSet(source="director_kyc", label="KYC received", names=kyc_names,
-                              evidence=kyc_evidence, relies_on_manual=kyc_manual))
+        if not name:
+            continue
+        din, pan = d.get("din"), d.get("pan")
+        kyc_entries.append(PersonEntry(
+            name=str(name.value).strip(), din=_ident(din.value) if din else None, pan=_ident(pan.value) if pan else None,
+            role=str(d.get("designation").value) if d.get("designation") else "director",
+            evidence=d.evidence(name), relies_on_manual=name.manual or bool(din and din.manual),
+            awaiting_review=name.pending or bool(din and din.pending) or bool(pan and pan.pending)))
+    if kyc_entries:
+        sets.append(PersonSet(source="director_kyc", label="KYC received", names=[e.name for e in kyc_entries],
+                              evidence=[e for k in kyc_entries for e in k.evidence[:1]],
+                              relies_on_manual=any(k.relies_on_manual for k in kyc_entries), entries=kyc_entries))
     promoters = b.message_value("promoters")
     if promoters:
         sets.append(
@@ -363,9 +431,171 @@ def _persons(b: Build) -> list[PersonSet]:
                 names=[n.strip() for n in str(promoters.value).split(";") if n.strip()],
                 evidence=promoters.evidence,
                 relies_on_manual=promoters.relies_on_manual,
+                entries=[PersonEntry(name=n.strip(), evidence=promoters.evidence, relies_on_manual=promoters.relies_on_manual)
+                         for n in str(promoters.value).split(";") if n.strip()],
             )
         )
     return sets
+
+
+def _number(v: Value | None) -> float | None:
+    return _amount(v) if v is not None and v.value not in (None, "") else None
+
+
+def _facility(d: Doc, lender: str, row: dict[str, Value], anchor: Value) -> FacilityFact:
+    facility = row.get("facility")
+    used = [v for v in row.values() if v is not None] + [anchor]
+    return FacilityFact(
+        source=d.types[0], label=d.label, lender=lender,
+        facility=str(facility.value).strip() if facility and facility.value else None,
+        amount=_number(row.get("sanctioned_amount")), emi=_number(row.get("emi")),
+        outstanding=_number(row.get("outstanding")), overdue=_number(row.get("overdue")),
+        evidence=d.evidence(row.get("sanctioned_amount") or anchor),
+        relies_on_manual=any(v.manual for v in used), awaiting_review=any(v.pending for v in used),
+    )
+
+
+def _facilities(b: Build) -> list[FacilityFact]:
+    """Existing facilities as the declaration, each sanction letter and the bureau record them (OB-01)."""
+    out: list[FacilityFact] = []
+    for d in b.of_type(DECLARATION):
+        for r in d.rows("facilities"):
+            lender = r.get("lender")
+            if lender and lender.value:
+                out.append(_facility(d, str(lender.value).strip(), r, lender))
+    for d in b.of_type(SANCTION):
+        lender = d.get("lender_name")
+        if lender:
+            for r in d.rows("facilities") or [{}]:
+                out.append(_facility(d, str(lender.value).strip(), r, lender))
+    for d in b.of_type(BUREAU):
+        for r in d.rows("credit_facilities"):
+            lender = r.get("lender")
+            if lender and lender.value:
+                out.append(_facility(d, str(lender.value).strip(), r, lender))
+    return out
+
+
+def _declaration(b: Build) -> FactValue | None:
+    """The declaration of existing facilities: the lenders it declares, or that it declares none."""
+    docs = b.of_type(DECLARATION)
+    if not docs:
+        return None
+    d = docs[0]
+    lenders = [str(r["lender"].value).strip() for r in d.rows("facilities") if r.get("lender") and r["lender"].value]
+    anchor = d.get("company_name", "declaration_date")
+    return FactValue(source=DECLARATION, label=d.label, value="; ".join(lenders) if lenders else "None declared",
+                     evidence=d.evidence(anchor), field_ids=[anchor.field_id] if anchor else [],
+                     relies_on_manual=bool(anchor and anchor.manual), awaiting_review=bool(anchor and anchor.pending))
+
+
+def _requested(b: Build) -> FactValue | None:
+    """The amount requested, as the case records it, with the message as its evidence."""
+    if not b.case.amount_inr:
+        return None
+    v = b.message_value("amount_inr")
+    evidence = v.evidence if v else ([Evidence(document_id=b.message_doc, page=1)] if b.message_doc else [])
+    return FactValue(source="application_message", label="Amount requested", value=float(b.case.amount_inr),
+                     evidence=evidence, relies_on_manual=bool(v and v.relies_on_manual))
+
+
+def _incorporation(b: Build) -> IncorporationFact:
+    fact = IncorporationFact()
+    for d in b.of_type("certificate_of_incorporation"):
+        when, kind = d.get("date_of_incorporation"), d.get("company_type")
+        if when and fact.date_of_incorporation is None:
+            fact.date_of_incorporation = _fv(d, when, str(when.value))
+        if kind and fact.company_type is None:
+            fact.company_type = _fv(d, kind, str(kind.value))
+    return fact
+
+
+def _authority(b: Build) -> list[AuthorityFact]:
+    """Each board resolution's terms: the limit, the lender, the date, the signatories."""
+    out = []
+    for d in b.of_type("board_resolution_borrowing"):
+        limit, lender, when = d.get("borrowing_limit"), d.get("lender_name"), d.get("resolution_date")
+        signatories: list[PersonEntry] = []
+        for name in ("authorized_signatories", "authorized_persons"):
+            for v in d.list(name):
+                text = str(v.value or "").strip()
+                if text and not any(normalise_name(text) == normalise_name(s.name) for s in signatories):
+                    signatories.append(PersonEntry(name=text, evidence=d.evidence(v), relies_on_manual=v.manual,
+                                                   awaiting_review=v.pending))
+        amount = _amount(limit) if limit else None
+        out.append(AuthorityFact(
+            document_id=d.id, label=d.label,
+            borrowing_limit=_fv(d, limit, amount) if limit and amount else None,
+            lender=_fv(d, lender, str(lender.value).strip()) if lender else None,
+            resolution_date=_fv(d, when, str(when.value)) if when else None,
+            signatories=signatories,
+        ))
+    return out
+
+
+def _tax_years(b: Build) -> list[TaxYear]:
+    cfg = reader.load_statements(b.root)
+    out: dict[str, TaxYear] = {}
+    for d in b.of_type("income_tax_return"):
+        ay = d.get("assessment_year")
+        start = assessment_year_start(ay.value) if ay else None
+        if not start:
+            continue
+        end = date(start, 3, 31)
+        fy = fy_name(fy_of(end.year, end.month, b.start), b.start)
+        year = out.setdefault(fy, TaxYear(assessment_year=f"{start}-{str(start + 1)[2:]}", fy=fy,
+                                          fy_end=end.isoformat(), evidence=d.evidence(ay)))
+        for key, line in statements.itr_lines(d, cfg).items():
+            year.lines.setdefault(key, _line_fv(d, line))
+        total = d.get("total_income")
+        if total and "total_income" not in year.lines:
+            year.lines["total_income"] = _fv(d, total, _amount(total))
+    return sorted(out.values(), key=lambda y: y.fy_end, reverse=True)
+
+
+def _financial_years(b: Build) -> list[FinancialYear]:
+    """Each audited year's lines, its own column and the comparative column."""
+    cfg = reader.load_statements(b.root)
+    out: dict[str, FinancialYear] = {}
+    for d in b.of_type("audited_financial_statements"):
+        end = statements.period_end(d)
+        if not end:
+            continue
+        fy_year = fy_of(end.year, end.month, b.start)
+        fy = fy_name(fy_year, b.start)
+        if fy in out:
+            continue
+        current = statements.lines(d, cfg)
+        previous = statements.lines(d, cfg, column="previous_period")
+        out[fy] = FinancialYear(
+            fy=fy, fy_end=fy_end_date(fy_year, b.start).isoformat(), label=d.label,
+            current={k: _line_fv(d, v) for k, v in current.items() if k in YEAR_LINES},
+            previous={k: _line_fv(d, v) for k, v in previous.items() if k in YEAR_LINES},
+        )
+    return sorted(out.values(), key=lambda y: y.fy_end, reverse=True)
+
+
+def _balances(b: Build, txns: list[Txn], years: list[FinancialYear]) -> list[BalanceFact]:
+    """Each account's balance on each audited year end its statements cover (FS-02)."""
+    out = []
+    for year in years:
+        end = date.fromisoformat(year.fy_end)
+        for d in b.of_type("bank_statement"):
+            start = parse_date(d.get("statement_period_start").value) if d.get("statement_period_start") else None
+            stop = parse_date(d.get("statement_period_end").value) if d.get("statement_period_end") else None
+            if not (start and stop and start <= end <= stop):
+                continue
+            bank = str((d.get("bank_name").value if d.get("bank_name") else "") or "Bank")
+            account = _account_label(bank, _last4(d.get("account_number").value if d.get("account_number") else None))
+            dated = [t for t in txns if t.doc is d and t.date and t.date <= end and t.balance is not None]
+            if dated:
+                last = max(dated, key=lambda t: t.date)
+                out.append(BalanceFact(account=account, date=end.isoformat(), balance=last.balance,
+                                       evidence=last.evidence[:1]))
+            elif d.get("opening_balance"):
+                v = d.get("opening_balance")
+                out.append(BalanceFact(account=account, date=end.isoformat(), balance=_amount(v), evidence=d.evidence(v)))
+    return out
 
 
 def _transactions(b: Build) -> tuple[list[Txn], dict[str, set[tuple[int, int]]]]:
@@ -400,6 +630,7 @@ def _transactions(b: Build) -> tuple[list[Txn], dict[str, set[tuple[int, int]]]]
                     credit=credit,
                     evidence=d.evidence(r.get("credit") or r.get("debit"), r.get("description")),
                     doc=d,
+                    balance=_amount(r["balance"]) if r.get("balance") and r["balance"].value not in (None, "") else None,
                 )
             )
     return txns, coverage
@@ -432,6 +663,14 @@ def _accounts(b: Build, txns: list[Txn]) -> tuple[list[AccountFact], bool]:
         bank = str(d.get("bank_name").value) if d.get("bank_name") else ""
         acct = d.get("account_number")
         add(bank, _last4(acct.value if acct else None), d.label, d.evidence(acct), statement=True)
+    # The accounts a declaration of existing facilities lists are declared (BA-01, BA-02).
+    for d in b.of_type(DECLARATION):
+        for r in d.rows("bank_accounts"):
+            number = r.get("account_number")
+            last4 = _last4(number.value if number else None)
+            if last4:
+                bank = str(r["bank"].value).strip() if r.get("bank") and r["bank"].value else ""
+                add(bank, last4, d.label, d.evidence(number), declared=True)
     for field_name in ("existing_banking",):
         v = b.message_value(field_name)
         if v and isinstance(v.value, str):
@@ -443,7 +682,7 @@ def _accounts(b: Build, txns: list[Txn]) -> tuple[list[AccountFact], bool]:
             last4 = _last4(m[1])
             if last4 and last4 not in own and _phrase(t.narration, ["transfer", "trf", "neft", "rtgs", "imps", "self"]):
                 add("", last4, f"Transfer in {t.account}", t.evidence)
-    return list(found.values()), False
+    return list(found.values()), bool(b.of_type(DECLARATION))
 
 
 def _cleanse(b: Build, txns: list[Txn], accounts: list[AccountFact]) -> tuple[list[AccountCredits], dict[str, dict]]:
@@ -534,6 +773,35 @@ def _counterparty(narration: str, cues: list[str]) -> str | None:
     return " ".join(words[:4]).strip() or None
 
 
+def _gst_by_month(b: Build) -> dict[tuple[int, int], tuple[float, Doc, statements.Line]]:
+    """Outward supplies per return period, from each GSTR-3B (the first return for a period)."""
+    cfg = reader.load_statements(b.root)
+    gst: dict[tuple[int, int], tuple[float, Doc, statements.Line]] = {}
+    for d in b.of_type("gstr_3b"):
+        period = parse_period(d.get("tax_period").value) if d.get("tax_period") else None
+        line = statements.gst_outward(d, cfg)
+        if period and line and period not in gst:
+            gst[period] = (line.value, d, line)
+    return gst
+
+
+def _months(b: Build, credits_by_month: dict, coverage: dict[str, set[tuple[int, int]]]) -> list[MonthFigure]:
+    """GST and cleansed bank credits month by month (TO-05). A month has a bank
+    figure only when every account's statements cover it."""
+    gst = _gst_by_month(b)
+    covered = set.intersection(*coverage.values()) if coverage else set()
+    out = []
+    for ym in sorted(set(gst) | covered):
+        g = gst.get(ym)
+        out.append(MonthFigure(
+            month=f"{ym[0]}-{ym[1]:02d}", label=month_label(ym),
+            gst=g[0] if g else None, bank=credits_by_month["net"].get(ym, 0.0) if ym in covered else None,
+            gst_evidence=g[2].evidence[:1] if g else [],
+            bank_evidence=credits_by_month["evidence"].get(ym, [])[:1] if ym in covered else [],
+            awaiting_review=bool(g and g[2].pending)))
+    return out
+
+
 def _turnover(b: Build, credits_by_month: dict, coverage: dict[str, set[tuple[int, int]]]) -> list[TurnoverYear]:
     years: dict[int, list[TurnoverFigure]] = defaultdict(list)
     start = b.start
@@ -548,15 +816,10 @@ def _turnover(b: Build, credits_by_month: dict, coverage: dict[str, set[tuple[in
             continue
         years[fy_of(when.year, when.month, start)].append(TurnoverFigure(
             source="financials", label="Audited financial statements", value=revenue.value, evidence=revenue.evidence,
-            field_ids=revenue.field_ids, relies_on_manual=revenue.manual))
+            field_ids=revenue.field_ids, relies_on_manual=revenue.manual, awaiting_review=revenue.pending))
 
-    # GST: outward taxable supplies per return period, from each GSTR-3B.
-    gst: dict[tuple[int, int], tuple[float, Doc, statements.Line]] = {}
-    for d in b.of_type("gstr_3b"):
-        period = parse_period(d.get("tax_period").value) if d.get("tax_period") else None
-        line = statements.gst_outward(d, cfg)
-        if period and line and period not in gst:
-            gst[period] = (line.value, d, line)
+    # GST: outward supplies per return period, from each GSTR-3B.
+    gst = _gst_by_month(b)
     for fy in sorted({fy_of(y, m, start) for (y, m) in gst}):
         months = fy_months(fy, start)
         present = [m for m in months if m in gst]
@@ -565,7 +828,8 @@ def _turnover(b: Build, credits_by_month: dict, coverage: dict[str, set[tuple[in
             source="gst", label="GST outward supplies", value=sum(v[0] for v in values),
             months_covered=len(present), months_missing=[month_label(m) for m in months if m not in gst],
             evidence=[e for v in values[:12] for e in v[2].evidence[:1]],
-            field_ids=[i for v in values for i in v[2].field_ids], relies_on_manual=any(v[2].manual for v in values)))
+            field_ids=[i for v in values for i in v[2].field_ids], relies_on_manual=any(v[2].manual for v in values),
+            awaiting_review=any(v[2].pending for v in values)))
 
     # Bank: cleansed credits; a month counts as covered when every account's statements cover it.
     if coverage:
@@ -619,6 +883,7 @@ def compute(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> CaseFacts
     txns, coverage = _transactions(b)
     accounts, declared = _accounts(b, txns)
     credits, by_month = _cleanse(b, txns, accounts)
+    years = _financial_years(b)
     return CaseFacts(
         case_id=case.id,
         identities=_identities(b),
@@ -627,8 +892,18 @@ def compute(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> CaseFacts
         credits=credits,
         obligations=_obligations(b, txns),
         accounts=accounts,
-        facilities=[],
+        facilities=_facilities(b),
         declaration_received=declared,
+        declaration=_declaration(b),
+        declared_banking=b.message_value("existing_banking"),
+        requested_amount=_requested(b),
+        incorporation=_incorporation(b),
+        authority=_authority(b),
+        tax_years=_tax_years(b),
+        financial_years=years,
+        months=_months(b, by_month, coverage),
+        balances=_balances(b, txns, years),
+        types_on_file=sorted({t for d in b.docs for t in d.types}),
     )
 
 

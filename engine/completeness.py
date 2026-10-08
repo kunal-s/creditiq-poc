@@ -561,9 +561,10 @@ class Evaluator:
         return out
 
 
-def applicable_items(root: Path, case: CaseDetail, data: CaseData) -> tuple[list[ChecklistItemDef], bool]:
+def applicable_items(root: Path, case: CaseDetail, data: CaseData | None) -> tuple[list[ChecklistItemDef], bool]:
     """F-12: the items for the case's constitution and attributes. While the
-    constitution is unknown, only the items every constitution needs (F-12.3)."""
+    constitution is unknown, only the items every constitution needs (F-12.3).
+    Without the case's documents (`data` None), no facilities are taken as declared."""
     taxonomy = reader.load_checklist_taxonomy(root)
     policy = reader.load_policy(root)
     facility_sets = {f["id"]: f.get("sets") for f in load_app_config()["facilities"]}
@@ -573,7 +574,7 @@ def applicable_items(root: Path, case: CaseDetail, data: CaseData) -> tuple[list
         collateral_present=case.collateral_present,
         facility_sets=facility_sets,
         mpbf_above_limit_inr=policy.working_capital.mpbf_above_limit_inr,
-        existing_facilities_declared=data.existing_facilities_declared,
+        existing_facilities_declared=data.existing_facilities_declared if data else False,
     )
     provisional = case.constitution not in ALL_CONSTITUTIONS
     if provisional:

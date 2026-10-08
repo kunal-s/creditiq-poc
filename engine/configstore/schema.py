@@ -249,22 +249,41 @@ class AlignmentSection(BaseModel):
     bank_credit_exclusions: list[CreditExclusion]
     obligation_narration_any: list[str]
     name_noise_words: list[str]
+    own_bank_names: list[str] = Field(default_factory=list)
+    """The names a board resolution in favour of this bank may use (BR-03)."""
 
 
 CrossCheckVariable = Literal[
     "entity_pan",
     "gstin",
     "legal_name",
+    "cin",
     "promoter_set",
+    "director_identifiers",
+    "incorporation_particulars",
+    "memorandum_directors",
+    "borrowing_limit",
+    "signatories_are_directors",
+    "resolution_lender",
+    "resolution_date",
     "turnover_audited_vs_gst",
     "turnover_gst_vs_bank",
     "turnover_audited_vs_bank",
     "turnover_declared_vs_evidenced",
+    "turnover_gst_vs_bank_window",
+    "itr_years",
+    "itr_profit",
+    "comparatives",
+    "year_end_balance",
     "declared_accounts_with_statements",
     "evidenced_accounts_declared",
     "facilities_reconcile",
     "emis_to_declared_lenders",
+    "borrowings_serviced",
 ]
+
+# Where a rule's outcome is shown and reported (the Cross-verification tab, the CAM).
+CheckArea = Literal["identity", "authority", "turnover", "tax", "financials", "accounts", "obligations"]
 
 
 class CrossCheckRule(BaseModel):
@@ -272,9 +291,12 @@ class CrossCheckRule(BaseModel):
 
     id: str
     title: str
+    area: CheckArea
     variable: CrossCheckVariable
     sources: list[str]
-    comparison: Literal["exact", "tolerance", "set_equal", "set_contains", "presence"]
+    comparison: Literal["exact", "tolerance", "set_equal", "set_contains", "presence", "bound", "order"]
+    """F-19.1's five comparisons, plus `bound` (one value at least or at most
+    another) and `order` (dates in sequence)."""
     tolerance: str | None = None
     severity: Literal["serious", "moderate", "mild"]
     blocking: bool
@@ -343,6 +365,9 @@ class StatementsSection(BaseModel):
     derived: dict[str, str] = Field(default_factory=dict)
     """Line key to an expression over other lines (summed from the lines it names)."""
     gst_outward: GstLine
+    """GST turnover: every row of the return's table that matches is summed."""
+    itr_lines: dict[str, StatementLine] = Field(default_factory=dict)
+    """Lines of an income tax return's computation, compared with the books (TX-02, TX-03)."""
 
 
 SECTION_MODELS: dict[str, type[BaseModel]] = {

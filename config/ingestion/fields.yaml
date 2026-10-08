@@ -198,3 +198,78 @@ types:
           - {name: debit, header: '^Debit$', align: right}
           - {name: credit, header: '^Credit$', align: right}
           - {name: balance, header: '^Balance$', align: right}
+
+  # Declaration of existing facilities: a table of facilities and one of bank accounts. A nil
+  # declaration prints neither; its letterhead carries the identifiers.
+  existing_facilities_declaration:
+    identity: {name: company_name, pan: pan, cin: cin, gstin: gstin}
+    fields:
+      company_name: {aliases: ['Name of Company', 'Name of the Company'], patterns: [{regex: '^For\s+(.+?(?:Limited|Ltd\.?|LLP))\s*$', flags: im}]}
+      declaration_date: {aliases: ['Date of Declaration', 'Date']}
+      pan: {identifier: pan, validators: ['format:pan']}
+      cin: {identifier: cin, validators: ['format:cin']}
+      gstin: {identifier: gstin, validators: ['format:gstin']}
+    tables:
+      facilities:
+        start: '^Name of Lender\s+Nature of Facility'
+        end: '^(Total\b|We (also|further) declare|Bank accounts)'
+        columns:
+          - {name: lender, header: '^Lender$'}
+          - {name: facility, header: '^Facility$'}
+          - {name: sanctioned_amount, header: '^Limit$', align: right}
+          - {name: outstanding, header: '^Outstanding$', align: right}
+          - {name: emi, header: '^EMI$', align: right}
+      bank_accounts:
+        start: '^Name of Bank\s+Account Number'
+        end: '^(For\s|Place\b|Authori[sz]ed)'
+        columns:
+          - {name: bank, header: '^Bank$'}
+          - {name: account_number, header: '^Number$'}
+          - {name: account_type, header: '^Type$'}
+
+  sanction_letter:
+    identity: {name: borrower_name}
+    fields:
+      lender_name: {aliases: ['Lender', 'Name of Lender'], patterns: [{regex: '^For\s+(.+?(?:Bank|Limited|Ltd\.?|Finance|Finserv))\s*$', flags: im}]}
+      borrower_name: {aliases: ['Borrower', 'Name of Borrower']}
+      sanction_date: {aliases: ['Date of Sanction', 'Date']}
+      reference_number: {aliases: ['Reference', 'Ref\.? No\.?']}
+    tables:
+      facilities:
+        start: '^Facility\s+Sanctioned Amount'
+        end: '^(Terms and conditions|Security\b|For\s)'
+        columns:
+          - {name: facility, header: '^Facility$'}
+          - {name: sanctioned_amount, header: '^Amount$', align: right}
+          - {name: interest_rate, header: '^Interest$'}
+          - {name: tenure, header: '^Tenure$'}
+          - {name: emi, header: '^EMI$', align: right}
+
+  # The company's PAN is printed above the related parties, so the first PAN on the page is the company's.
+  commercial_bureau_report:
+    identity: {name: company_name, pan: pan, cin: cin, gstin: gstin}
+    fields:
+      company_name: {aliases: ['Company Name', 'Name of Company']}
+      pan: {identifier: pan, validators: ['format:pan']}
+      cin: {identifier: cin, validators: ['format:cin']}
+      gstin: {identifier: gstin, validators: ['format:gstin']}
+      report_date: {aliases: ['Report Date', 'Date of Report']}
+      credit_rank: {aliases: ['Credit Rank']}
+    tables:
+      credit_facilities:
+        start: '^Lender\s+Facility\s+Sanctioned'
+        end: '^(RELATED PARTIES|END OF REPORT)'
+        columns:
+          - {name: lender, header: '^Lender$'}
+          - {name: facility, header: '^Facility$'}
+          - {name: sanctioned_amount, header: '^Sanctioned$', align: right}
+          - {name: outstanding, header: '^Outstanding$', align: right}
+          - {name: overdue, header: '^Overdue$', align: right}
+          - {name: status, header: '^Status$'}
+      related_parties:
+        start: '^Name\s+Relationship'
+        end: '^END OF REPORT'
+        columns:
+          - {name: name, header: '^Name$'}
+          - {name: relationship, header: '^Relationship$'}
+          - {name: pan, header: '^PAN$'}

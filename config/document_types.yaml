@@ -73,3 +73,24 @@ types:
     description: Statement of a current or cash credit account, with its transactions and balances.
     satisfies: [bank_statements]
     instance_key: account
+
+  # Existing facilities and the bureau (TC-20, TC-23; docs/cross-verification-plan.md). On no
+  # checklist item: what is declared, sanctioned and reported is reconciled by the cross-checks
+  # (OB-01, OB-02, BA-01, BA-02), and the bureau report is obtained by the bank, not asked of
+  # the customer.
+  - id: existing_facilities_declaration
+    name: Declaration of existing facilities
+    group: banking
+    description: The borrower's declaration of its existing credit facilities and bank accounts, or that it has none.
+
+  - id: sanction_letter
+    name: Sanction letter
+    group: banking
+    description: A lender's letter sanctioning a credit facility to the borrower, with the amount and terms.
+
+  - id: commercial_bureau_report
+    name: Commercial bureau report
+    group: bureau
+    description: A credit information company's report on the borrower, with its credit facilities, credit rank and related parties.
+    partner_output: true
+    party_list: {field: related_parties, name_key: name, pan_key: pan, designation_key: relationship, role: director}

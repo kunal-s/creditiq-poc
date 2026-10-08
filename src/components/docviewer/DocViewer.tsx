@@ -42,6 +42,16 @@ export type ViewerRequest = {
   field?: FieldValue;
   /** Open with the correction form showing (the row's Correct). */
   correct?: boolean;
+  /** Two or more sources shown side by side (F-16.2), for a finding's sides. */
+  compare?: CompareSource[];
+};
+
+export type CompareSource = {
+  documentId: string;
+  page?: number;
+  bbox?: [number, number, number, number] | null;
+  /** What this source says, e.g. "Company PAN: AAACK1234F". */
+  label: string;
 };
 
 type Ctx = { open: (request: ViewerRequest) => void; close: () => void };
@@ -71,7 +81,10 @@ export function DocViewerProvider({ children }: { children: ReactNode }) {
   return (
     <DocViewerContext.Provider value={value}>
       {children}
-      {request && (
+      {request && (request.compare?.length ?? 0) >= 2 && (
+        <ComparePanel caseId={request.caseId} sources={request.compare ?? []} onClose={close} />
+      )}
+      {request && (request.compare?.length ?? 0) < 2 && (
         <ViewerPanel
           key={`${request.documentId}-${request.page ?? ""}`}
           request={request}
@@ -209,6 +222,116 @@ function ViewerPanel({ request, onClose }: { request: ViewerRequest; onClose: ()
         </div>
       </aside>
     </div>
+  );
+}
+
+/** F-16.2: the sources of a finding side by side, each at its own page. */
+function ComparePanel({
+  caseId,
+  sources,
+  onClose,
+}: {
+  caseId: string;
+  sources: CompareSource[];
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end" data-testid="evidence-compare">
+      <button
+        type="button"
+        aria-label={t("viewer.close")}
+        onClick={onClose}
+        className="absolute inset-0 bg-foreground/25"
+      />
+      <aside
+        className="relative flex h-full w-full max-w-[1500px] flex-col border-l border-border bg-surface-muted shadow-2xl"
+        role="dialog"
+        aria-label={t("viewer.compareTitle")}
+      >
+        <header className="flex items-center gap-3 border-b border-border bg-surface px-4 py-3">
+          <FileText className="h-4 w-4 text-primary" />
+          <p className="flex-1 text-[14px] font-semibold text-foreground">
+            {t("viewer.compareTitle")}
+          </p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded border border-border p-1 text-muted-foreground hover:bg-muted"
+            aria-label={t("viewer.close")}
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </header>
+        <div
+          className={cn(
+            "grid min-h-0 flex-1 gap-px bg-border",
+            sources.length === 2 ? "grid-cols-2" : "grid-cols-2 xl:grid-cols-3",
+          )}
+        >
+          {sources.slice(0, 3).map((source, i) => (
+            <ComparePane key={`${source.documentId}-${i}`} caseId={caseId} source={source} />
+          ))}
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+function ComparePane({ caseId, source }: { caseId: string; source: CompareSource }) {
+  const documents = useCaseDocuments(caseId);
+  const files = useCaseFiles(caseId);
+  const types = useDocumentTypes();
+  const doc = documents.data?.find((d) => d.id === source.documentId);
+  const file = files.data?.find((f) => f.id === doc?.file_id);
+  const first = doc?.page_from ?? source.page ?? 1;
+  const last = doc?.page_to ?? source.page ?? 1;
+  const evidencePage = source.page ?? first;
+  const [page, setPage] = useState(evidencePage);
+  const typeNames = doc?.classification?.types.length
+    ? doc.classification.types.map(types.name).join(" + ")
+    : "";
+  return (
+    <section className="flex min-h-0 flex-col bg-surface-muted" data-testid="compare-pane">
+      <div className="space-y-1 border-b border-border bg-surface px-4 py-2.5">
+        <p className="text-[12.5px] font-semibold text-foreground">{source.label}</p>
+        <p className="tabular truncate text-[11px] text-muted-foreground">
+          {[typeNames, file?.original_name].filter(Boolean).join(" · ")}
+        </p>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setPage((n) => Math.max(first, n - 1))}
+            disabled={page <= first}
+            className="rounded border border-border p-1 text-muted-foreground hover:bg-muted disabled:opacity-40"
+            aria-label={t("viewer.previousPage")}
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+          </button>
+          <span className="tabular text-[11.5px] text-muted-foreground" data-testid="compare-page">
+            {first === last
+              ? t("viewer.pageOne", { page })
+              : t("viewer.pageOf", { page, first, last })}
+          </span>
+          <button
+            type="button"
+            onClick={() => setPage((n) => Math.min(last, n + 1))}
+            disabled={page >= last}
+            className="rounded border border-border p-1 text-muted-foreground hover:bg-muted disabled:opacity-40"
+            aria-label={t("viewer.nextPage")}
+          >
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+      <div className="min-h-0 flex-1 overflow-auto px-3 py-3">
+        <PageImage
+          caseId={caseId}
+          documentId={source.documentId}
+          page={page}
+          bbox={page === evidencePage ? (source.bbox ?? null) : null}
+        />
+      </div>
+    </section>
   );
 }
 

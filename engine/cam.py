@@ -196,7 +196,9 @@ class Draft:
         out = [CamText(text=f"{len(counted)} cross-checks were run: {len(fails)} found a discrepancy, "
                             f"{len(incomplete)} could not be completed and "
                             f"{len(counted) - len(fails) - len(incomplete)} agreed.")]
-        for f in fails:
+        # Grouped as the Cross-verification tab shows them: identity first, obligations last.
+        order = ["identity", "authority", "turnover", "tax", "financials", "accounts", "obligations"]
+        for f in sorted(fails, key=lambda f: order.index(f.area) if f.area in order else len(order)):
             status = " A reviewer has found this flag not valid." if f"finding:{f.id}" in self.waived else ""
             out.append(CamText(text=f"{f.explanation}{status}",
                                citations=[e for s in f.sides for e in s.evidence[:1]]))

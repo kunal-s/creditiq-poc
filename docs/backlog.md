@@ -25,6 +25,7 @@ variants, are configuration (`config/ingestion/quality.yaml`, `fields.yaml`).
 - Constitutions other than a private limited company have no company documents on the checklist (the nine types do not read a partnership deed or a proprietor's declaration).
 - Quarterly GST filers; bank statements covering part months (F-13.2).
 - Case reset and purge (F-01.5).
+- Whether RBL wants the declaration of existing facilities and the sanction letters on the checklist when existing facilities are declared: the `existing_facilities_declared` attribute exists but is never set. Today the cross-checks reconcile them (OB-01) without asking for them.
 
 ## Document-processing service (`services/ingestion`)
 
@@ -37,16 +38,17 @@ variants, are configuration (`config/ingestion/quality.yaml`, `fields.yaml`).
 - Party attribution of identifiers beyond caption anchoring (F-15.5).
 - Recordings of model calls are keyed on the page text and the prompt: a prompt edit or a different OCR build causes replay misses; re-record.
 - OCR speed on CPU: 10 to 70 s a page with PaddleOCR; cache by page image is in place; consider a smaller model or a worker pool.
-- Add the document types the earlier catalogue had, as the PoC needs them (each is configuration plus a fixture).
+- Add further document types from the earlier catalogue as the PoC needs them (each is configuration plus a fixture). The declaration of existing facilities, the sanction letter and the commercial bureau report were added on 8 October 2026.
+- Re-record the four classification answers in `tests/fixtures/recordings/reference.sqlite3`: the classification prompt now lists twelve types, so they no longer replay (`scripts/record_reference.py`, live key).
 
 ## Screens
 
-- Evidence viewer side-by-side mode (F-16.2), needed by cross-verification.
 - The e2e mocks still use illustrative type names (`e2e/fixtures/data.ts`); align them with the nine types.
 
 ## Measured so far (the reference documents, digital only)
 
 14 documents, 63 pages (one fictional company; read from `workflow/docs/reference/fixtures/`):
-classification 10/10 in scope, 4/4 outside the closed list left unassigned; scalar fields 69/69 correct
+classification 11/11 in scope (the nil-facilities declaration is in scope since 8 October 2026), 3/3 outside the closed
+list left unassigned; scalar fields 74/74 correct
 (`services/ingestion/tests/test_extraction.py`). These are our own documents; accuracy on RBL's documents is
 measured by the scorecard (F-26).

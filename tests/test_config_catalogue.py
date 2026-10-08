@@ -65,7 +65,7 @@ def test_the_service_accepts_the_published_configuration():
     out = subprocess.run([str(INGESTION_VENV), "-m", "ingestion.cli", "config-validate", str(ROOT / "config" / "ingestion")],
                          cwd=ROOT / "services" / "ingestion", env={"PYTHONPATH": "."}, capture_output=True, text=True)
     assert out.returncode == 0, out.stderr
-    assert "9 document types" in out.stdout
+    assert "12 document types" in out.stdout
 
 
 def test_cross_check_reports_a_dangling_reference():

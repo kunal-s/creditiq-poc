@@ -113,6 +113,9 @@ label_keywords:
   certificate_of_incorporation: ['incorporation', '\bcoi\b']
   memorandum_articles_of_association: ['\bmoa\b', '\baoa\b', 'memorandum', 'articles']
   board_resolution_borrowing: ['resolution', '\bbr\b']
+  existing_facilities_declaration: ['declaration', 'existing\s+facilit', 'nil\s+facilit']
+  sanction_letter: ['sanction']
+  commercial_bureau_report: ['bureau', '\bcmr\b', '\bccr\b', 'credit\s+(information\s+)?report']
 
 # Plain-language phrasing of the pre-login query list (F-14.2). Placeholders
 # are filled by engine/queries.py.

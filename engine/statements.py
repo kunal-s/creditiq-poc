@@ -25,6 +25,8 @@ class Line:
     evidence: list[Evidence] = field(default_factory=list)
     manual: bool = False
     field_ids: list[str] = field(default_factory=list)
+    pending: bool = False
+    """A cell it was read from is still waiting for review (F-17.2)."""
 
 
 def _number(v) -> float | None:
@@ -36,8 +38,9 @@ def _number(v) -> float | None:
         return None
 
 
-def _find(doc, table: str, row_pattern: str, column: str, label_column: str = "particulars") -> tuple[float, object] | None:
+def _find_all(doc, table: str, row_pattern: str, column: str, label_column: str = "particulars") -> list[tuple[float, object]]:
     rx = re.compile(row_pattern, re.IGNORECASE)
+    out = []
     for row in doc.rows(table):
         label = row.get(label_column)
         if label is None or not rx.search(str(label.value or "").strip()):
@@ -45,8 +48,17 @@ def _find(doc, table: str, row_pattern: str, column: str, label_column: str = "p
         cell = row.get(column)
         number = _number(cell)
         if number is not None:
-            return number, cell
-    return None
+            out.append((number, cell))
+    return out
+
+
+def _find(doc, table: str, row_pattern: str, column: str, label_column: str = "particulars") -> tuple[float, object] | None:
+    found = _find_all(doc, table, row_pattern, column, label_column)
+    return found[0] if found else None
+
+
+def _line(doc, number: float, cell) -> Line:
+    return Line(number, doc.evidence(cell), cell.manual, [cell.field_id], getattr(cell, "pending", False))
 
 
 def _terms(expression: str) -> list[tuple[int, str]]:
@@ -74,8 +86,7 @@ def lines(doc, cfg: StatementsSection, *, column: str | None = None) -> dict[str
     for key, spec in cfg.lines.items():
         found = _find(doc, spec.table, spec.row, spec.column or col, spec.label)
         if found:
-            number, cell = found
-            out[key] = Line(number, doc.evidence(cell), cell.manual, [cell.field_id])
+            out[key] = _line(doc, *found)
     for key, expression in cfg.derived.items():
         terms = _terms(expression)
         if all(name in out for _, name in terms):
@@ -84,17 +95,35 @@ def lines(doc, cfg: StatementsSection, *, column: str | None = None) -> dict[str
                 [e for _, name in terms for e in out[name].evidence[:1]],
                 any(out[name].manual for _, name in terms),
                 [i for _, name in terms for i in out[name].field_ids],
+                any(out[name].pending for _, name in terms),
             )
     return out
 
 
 def gst_outward(doc, cfg: StatementsSection) -> Line | None:
+    """The return's outward supplies: the sum of every configured row of its table."""
     spec = cfg.gst_outward
-    found = _find(doc, spec.table, spec.row, spec.column, spec.label)
+    found = _find_all(doc, spec.table, spec.row, spec.column, spec.label)
     if not found:
         return None
-    number, cell = found
-    return Line(number, doc.evidence(cell), cell.manual, [cell.field_id])
+    cells = [cell for _, cell in found]
+    return Line(
+        sum(number for number, _ in found),
+        doc.evidence(*cells[:1]),
+        any(c.manual for c in cells),
+        [c.field_id for c in cells],
+        any(getattr(c, "pending", False) for c in cells),
+    )
+
+
+def itr_lines(doc, cfg: StatementsSection) -> dict[str, Line]:
+    """The configured lines of an income tax return's computation (TX-02, TX-03)."""
+    out: dict[str, Line] = {}
+    for key, spec in cfg.itr_lines.items():
+        found = _find(doc, spec.table, spec.row, spec.column or "amount", spec.label)
+        if found:
+            out[key] = _line(doc, *found)
+    return out
 
 
 def period_end(doc) -> date | None:

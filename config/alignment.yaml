@@ -32,6 +32,10 @@ bank_credit_exclusions:
 # obligation.
 obligation_narration_any: ["nach", "ecs", "emi", "ach dr", "ach-dr", "si-", "standing instruction", "loan repay"]
 
+# The names under which a board resolution for borrowing is in favour of
+# this bank (BR-03). Compared after the noise words below are removed.
+own_bank_names: ["RBL Bank Limited", "RBL Bank", "Ratnakar Bank Limited"]
+
 # Words removed from lender and firm names before comparing them (F-18.3),
 # so "Lotuscrest Bank Ltd" and "LOTUSCREST BANK LIMITED" resolve to one.
 name_noise_words: ["bank", "ltd", "limited", "pvt", "private", "co", "company", "finance", "financial", "services", "nbfc", "the"]

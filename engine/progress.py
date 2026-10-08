@@ -116,10 +116,11 @@ def compute(conn: sqlite3.Connection, root: Path, case: CaseDetail, *, running_j
         else:
             complete.status = "needs_attention"
 
-    # 4. Cross-verification (F-18, F-19): done when every failed check has a
-    # person's decision.
+    # 4. Cross-verification (F-18, F-19): starts once a check has compared
+    # two sources; done when every failed check has a person's decision.
+    # Checks waiting for a document count towards the total, not the start.
     outcomes = [r["outcome"] for r in conn.execute("SELECT outcome FROM findings WHERE case_id = ?", (case_id,))]
-    applicable = [o for o in outcomes if o != "not_applicable"]
+    applicable = [o for o in outcomes if o != "not_applicable"] if {"pass", "fail"} & set(outcomes) else []
     open_findings = _open_items(conn, case_id, ("finding",))
     cross = StageProgress(
         key="cross_verification",

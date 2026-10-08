@@ -35,6 +35,9 @@ EXPECTED = {
         "account_holder_name": CO, "account_number": "914020055831447", "bank_name": "Continental Commercial Bank", "branch": "Coimbatore SME",
         "ifsc": "CCBL0004821", "statement_period_start": "2025-08-01", "statement_period_end": "2026-07-31",
         "opening_balance": 18809000, "closing_balance": 25622250, "currency": "INR"}],
+    "Southgate_Nil_Facilities_Declaration.pdf": [{
+        "company_name": CO, "declaration_date": "2026-08-06", "pan": "AAHCS6612M", "cin": "U17291TZ2016PTC027431",
+        "gstin": "33AAHCS6612M1ZQ"}],
 }
 GSTR_PERIODS = ["December 2025", "January 2026", "February 2026", "March 2026", "April 2026", "May 2026", "June 2026", "July 2026"]
 GSTR_TAXABLE = [24120500, 23864000, 22705500, 27418300, 24980400, 26142600, 25873100, 23890900]
@@ -116,6 +119,15 @@ def test_unsigned_draft_resolution_goes_to_review_with_reasons(results):
     kinds = {x["kind"] for x in r.review_reasons}
     assert r.decision == "human_review" and {"missing_required", "failed_check"} <= kinds
     assert next(c for c in d.validation if c.id == "signature_block_filled").outcome == "warn"
+
+
+def test_a_nil_declaration_declares_no_facilities_and_goes_to_review(results):
+    r = results["Southgate_Nil_Facilities_Declaration.pdf"]
+    [d] = r.documents
+    assert d.tables["facilities"].status == "missing" and d.tables["facilities"].reason == "table_not_found"
+    # A person confirms that nothing is declared; the letterhead's GSTIN also fails its check digit.
+    kinds = {x["kind"] for x in r.review_reasons}
+    assert r.decision == "human_review" and {"table_missing", "failed_check"} <= kinds
 
 
 def test_clean_documents_are_accepted(results):

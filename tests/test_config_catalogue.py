@@ -15,15 +15,20 @@ NINE = {
     "certificate_of_incorporation", "memorandum_articles_of_association", "board_resolution_borrowing", "company_pan",
     "director_kyc", "audited_financial_statements", "income_tax_return", "gstr_3b", "bank_statement",
 }
+# Existing facilities and the bureau (test plan TC-20, TC-23).
+FACILITIES = {"existing_facilities_declaration", "sanction_letter", "commercial_bureau_report"}
+TYPES = NINE | FACILITIES
 
 
 def _cross(sections, **changes):
     return cross_check({**sections, **changes}, writer.load_ingestion_sections())
 
 
-def test_the_closed_list_is_the_nine_types_and_the_sourcing_message(published_data_root: Path):
-    ids = {t.id for t in reader.load_document_types(published_data_root).types}
-    assert ids == NINE | {"application_message"}
+def test_the_closed_list_is_the_document_types_and_the_sourcing_message(published_data_root: Path):
+    types = reader.load_document_types(published_data_root).types
+    assert {t.id for t in types} == TYPES | {"application_message"}
+    # The facility and bureau types are reconciled by the cross-checks, not asked for on the checklist.
+    assert all(not t.satisfies for t in types if t.id in FACILITIES)
 
 
 def test_every_checklist_item_is_satisfied_by_some_document_type(published_data_root: Path):
@@ -35,8 +40,8 @@ def test_every_checklist_item_is_satisfied_by_some_document_type(published_data_
 
 def test_one_version_carries_the_engine_and_the_service_configuration(published_data_root: Path):
     ing = {n: reader.load_ingestion_section(published_data_root, n) for n in writer.INGESTION_SECTIONS}
-    assert {d["document_type"] for d in ing["document_types"]["documents"]} == NINE
-    assert set(ing["signals"]["types"]) == NINE and "reason_codes" in ing["quality"]
+    assert {d["document_type"] for d in ing["document_types"]["documents"]} == TYPES
+    assert set(ing["signals"]["types"]) == TYPES and "reason_codes" in ing["quality"]
     version = reader.published_version(published_data_root)
     assert {f"ingestion.{n}" for n in writer.INGESTION_SECTIONS} <= set(version["section_hashes"])
 
@@ -92,8 +97,16 @@ def test_alignment_and_crosschecks_are_published(published_data_root: Path):
     assert alignment.financial_year_start_month == 4
     assert {e.id for e in alignment.bank_credit_exclusions} >= {"own_account_transfer", "loan_disbursal", "reversal", "returned_cheque"}
     rules = reader.load_crosschecks(published_data_root).rules
-    # The rules the nine document types can evaluate; a rule returns when a type that supplies its evidence does.
-    assert {r.id for r in rules} == {"ID-01", "ID-02", "ID-03", "ID-04", "TO-01", "TO-02", "TO-03", "TO-04"}
+    # The rules of docs/cross-verification-plan.md, with OB-01 now that the declaration of existing
+    # facilities, the sanction letter and the bureau report are document types.
+    assert {r.id for r in rules} == {
+        "ID-01", "ID-02", "ID-03", "ID-04", "ID-05", "ID-06", "ID-07", "ID-08",
+        "BR-01", "BR-02", "BR-03", "BR-04",
+        "TO-01", "TO-02", "TO-03", "TO-04", "TO-05",
+        "TX-01", "TX-02", "FS-01", "FS-02",
+        "BA-01", "BA-02", "OB-01", "OB-02", "OB-03",
+    }
+    assert {r.area for r in rules} == {"identity", "authority", "turnover", "tax", "financials", "accounts", "obligations"}
 
 
 def test_cross_check_reports_an_unknown_tolerance_and_source():

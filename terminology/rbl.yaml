@@ -134,6 +134,53 @@ crossCheck:
   saveNotValid: Record as not valid
   decidedValid: "Accepted as valid by {who}."
   decidedNotValid: "Found not valid by {who}: {reason}"
+  tile:
+    fail: Discrepancies
+    incomplete: Incomplete
+    pass: Sources agree
+    not_applicable: Not applicable
+  tileNote:
+    fail: "{blocking} blocking · {open} to decide"
+    incomplete: Waiting for a document or a review
+    pass: Checked and consistent
+    not_applicable: Nothing on file to compare
+  areasTitle: Where the file stands
+  areasHelp: Each area of the file, with what the checks found. Choose one to see only its checks.
+  area:
+    identity: Identity
+    authority: Borrowing authority
+    turnover: Turnover
+    tax: Income tax
+    financials: Financial statements
+    accounts: Bank accounts
+    obligations: Obligations
+  areaHelp:
+    identity: PAN, GSTIN, CIN, legal name and directors
+    authority: The board resolution against the request
+    turnover: Audited, GST and banked turnover
+    tax: Income tax returns against the books
+    financials: Year against year, and year-end bank balances
+    accounts: Declared and seen accounts have statements
+    obligations: Instalments and borrowings
+  areaState:
+    failOne: 1 discrepancy
+    fail: "{n} discrepancies"
+    incomplete: "{n} incomplete"
+    pass: "{n} agree"
+    none: No checks apply yet
+  showingArea: "Showing {area} only."
+  allAreas: Show all areas
+  source: Source
+  value: Value
+  pages: Pages
+  differs: Differs
+  awaitingReview: Waiting for review
+  reviewValue: Review
+  notOnFile: Not on file
+  addDocuments: Add documents
+  compare: Compare side by side
+  lineByLine: "Line by line ({n})"
+  sources: "Sources compared ({n})"
 
 facts:
   title: Aligned facts
@@ -155,6 +202,33 @@ facts:
   noStatement: No statements
   none: Nothing on file yet.
   noTransactions: No bank transactions have been read yet.
+  identity: Identifiers by document
+  identityHelp: Each identifier with every document that states it; a second value is highlighted.
+  identifier:
+    entity_pan: PAN
+    gstin: GSTIN
+    cin: CIN
+    legal_name: Legal name
+  people: Directors and promoters
+  peopleHelp: Each person and the sources that name them, with the DIN and PAN printed there.
+  person: Person
+  din: DIN
+  pan: PAN
+  authority: Board resolution
+  authorityHelp: What the board resolution authorises, against the request.
+  borrowingLimit: Borrowing limit
+  amountRequested: Amount requested
+  lender: Lender
+  resolutionDate: Dated
+  signatories: Authorised signatories
+  noResolution: No board resolution on file yet.
+  tax: Income tax and the books
+  taxHelp: Each financial year with its audited figures and its income tax return.
+  year: Year
+  revenue: Revenue
+  profitBeforeTax: Profit before tax
+  returnProfit: Profit in the return
+  returnFiled: Return
 
 # Policy norms and deviations (F-20).
 policy:
@@ -674,6 +748,7 @@ admin:
     tax: Tax
     banking: Banking
     collateral: Collateral
+    bureau: Credit bureau
     other: Other
   users:
     people: People
@@ -1024,6 +1099,7 @@ viewer:
   nextPage: Next page
   regionHighlighted: Region highlighted
   backToEvidence: "Back to page {page}"
+  compareTitle: Sources side by side
   rendering: Rendering page
   pageAlt: "Page {page}"
 

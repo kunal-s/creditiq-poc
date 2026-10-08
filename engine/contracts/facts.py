@@ -21,12 +21,27 @@ class FactValue(BaseModel):
     field_ids: list[str] = Field(default_factory=list)
     relies_on_manual: bool = False
     """The value was entered or corrected by a person (F-19.4)."""
+    awaiting_review: bool = False
+    """The value is below its confidence threshold and not yet reviewed (F-17.2)."""
 
 
 class IdentityFacts(BaseModel):
     entity_pan: list[FactValue] = Field(default_factory=list)
     gstin: list[FactValue] = Field(default_factory=list)
     legal_name: list[FactValue] = Field(default_factory=list)
+    cin: list[FactValue] = Field(default_factory=list)
+
+
+class PersonEntry(BaseModel):
+    """One person as one source names them, with the identifiers printed there."""
+
+    name: str
+    din: str | None = None
+    pan: str | None = None
+    role: str | None = None
+    evidence: list[Evidence] = Field(default_factory=list)
+    relies_on_manual: bool = False
+    awaiting_review: bool = False
 
 
 class PersonSet(BaseModel):
@@ -37,6 +52,69 @@ class PersonSet(BaseModel):
     names: list[str]
     evidence: list[Evidence] = Field(default_factory=list)
     relies_on_manual: bool = False
+    entries: list[PersonEntry] = Field(default_factory=list)
+
+
+class IncorporationFact(BaseModel):
+    """The company's incorporation as the certificate of incorporation records it."""
+
+    date_of_incorporation: FactValue | None = None
+    company_type: FactValue | None = None
+
+
+class AuthorityFact(BaseModel):
+    """What one board resolution for borrowing authorises (BR-01 to BR-04)."""
+
+    document_id: str
+    label: str
+    borrowing_limit: FactValue | None = None
+    lender: FactValue | None = None
+    resolution_date: FactValue | None = None
+    signatories: list[PersonEntry] = Field(default_factory=list)
+
+
+class TaxYear(BaseModel):
+    """One income tax return, by the financial year it covers."""
+
+    assessment_year: str
+    fy: str
+    fy_end: str
+    lines: dict[str, FactValue] = Field(default_factory=dict)
+    """Computation lines configured in statements.itr_lines."""
+    evidence: list[Evidence] = Field(default_factory=list)
+
+
+class FinancialYear(BaseModel):
+    """One year's audited statements: their own year and the comparative column."""
+
+    fy: str
+    fy_end: str
+    label: str
+    current: dict[str, FactValue] = Field(default_factory=dict)
+    previous: dict[str, FactValue] = Field(default_factory=dict)
+
+
+class MonthFigure(BaseModel):
+    """GST outward supplies and cleansed bank credits for one month (TO-05)."""
+
+    month: str
+    """"2025-09"."""
+    label: str
+    """"Sep 2025"."""
+    gst: float | None = None
+    bank: float | None = None
+    gst_evidence: list[Evidence] = Field(default_factory=list)
+    bank_evidence: list[Evidence] = Field(default_factory=list)
+    awaiting_review: bool = False
+
+
+class BalanceFact(BaseModel):
+    """One account's balance on a financial-year end, from its statement (FS-02)."""
+
+    account: str
+    date: str
+    balance: float
+    evidence: list[Evidence] = Field(default_factory=list)
 
 
 TurnoverSource = Literal["financials", "gst", "bank", "declared"]
@@ -54,6 +132,7 @@ class TurnoverFigure(BaseModel):
     evidence: list[Evidence] = Field(default_factory=list)
     field_ids: list[str] = Field(default_factory=list)
     relies_on_manual: bool = False
+    awaiting_review: bool = False
 
 
 class TurnoverYear(BaseModel):
@@ -111,16 +190,21 @@ class AccountFact(BaseModel):
 
 
 class FacilityFact(BaseModel):
-    """An existing facility as one source records it (F-19 OB-01)."""
+    """An existing facility as one source records it (F-19 OB-01): the declaration of existing
+    facilities, a sanction letter or the commercial bureau report."""
 
     source: str
     label: str
     lender: str
     facility: str | None = None
     amount: float | None = None
+    """The sanctioned amount or limit."""
     emi: float | None = None
+    outstanding: float | None = None
+    overdue: float | None = None
     evidence: list[Evidence] = Field(default_factory=list)
     relies_on_manual: bool = False
+    awaiting_review: bool = False
 
 
 class CaseFacts(BaseModel):
@@ -134,3 +218,17 @@ class CaseFacts(BaseModel):
     facilities: list[FacilityFact]
     declaration_received: bool
     """A declaration of existing banking and facilities is on file."""
+    declared_banking: FactValue | None = None
+    """The existing banking the RM declared in the sourcing message."""
+    declaration: FactValue | None = None
+    """The declaration of existing facilities, when one is on file: the lenders it declares, or "None declared"."""
+    requested_amount: FactValue | None = None
+    """The amount the case requests (BR-01)."""
+    incorporation: IncorporationFact = Field(default_factory=IncorporationFact)
+    authority: list[AuthorityFact] = Field(default_factory=list)
+    tax_years: list[TaxYear] = Field(default_factory=list)
+    financial_years: list[FinancialYear] = Field(default_factory=list)
+    months: list[MonthFigure] = Field(default_factory=list)
+    balances: list[BalanceFact] = Field(default_factory=list)
+    types_on_file: list[str] = Field(default_factory=list)
+    """The document types the case has a usable document of."""

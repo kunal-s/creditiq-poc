@@ -1,0 +1,258 @@
+{
+ "classification": {
+  "candidates": [
+   {
+    "score": 0.95,
+    "type": "sanction_letter"
+   }
+  ],
+  "confidence": 0.95,
+  "mixed_content": [],
+  "model_error": null,
+  "needs_review": false,
+  "reason": null,
+  "signals": {
+   "contrary": [],
+   "required": [
+    "fixture"
+   ],
+   "supporting": []
+  },
+  "tier": "signals",
+  "type": "sanction_letter"
+ },
+ "decision": "auto_accept",
+ "documents": [
+  {
+   "confidence": {
+    "composition": {},
+    "decision": "auto_accept",
+    "document": 0.96,
+    "reasons": []
+   },
+   "defects": [],
+   "document_type": "sanction_letter",
+   "fields": {
+    "borrower_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Kestrel Fabricators Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Kestrel Fabricators Private Limited"
+     },
+     "status": "found",
+     "value": "Kestrel Fabricators Private Limited"
+    },
+    "lender_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Tidewater Finance Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Tidewater Finance Limited"
+     },
+     "status": "found",
+     "value": "Tidewater Finance Limited"
+    },
+    "reference_number": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "TFL/SL/2024/0457",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "TFL/SL/2024/0457"
+     },
+     "status": "found",
+     "value": "TFL/SL/2024/0457"
+    },
+    "sanction_date": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "2024-04-12",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "2024-04-12"
+     },
+     "status": "found",
+     "value": "2024-04-12"
+    }
+   },
+   "identity": {
+    "name": "Kestrel Fabricators Private Limited"
+   },
+   "instance_key": null,
+   "instance_no": 1,
+   "page_from": 1,
+   "page_to": 1,
+   "tables": {
+    "facilities": {
+     "columns": [
+      "facility",
+      "sanctioned_amount",
+      "interest_rate",
+      "tenure",
+      "emi"
+     ],
+     "confidence": 0.96,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "emi": 250000,
+        "facility": "Term loan",
+        "interest_rate": "11.25% p.a.",
+        "sanctioned_amount": 12000000,
+        "tenure": "60 months"
+       },
+       "raw": {
+        "emi": "250000",
+        "facility": "Term loan",
+        "interest_rate": "11.25% p.a.",
+        "sanctioned_amount": "12000000",
+        "tenure": "60 months"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         100.0,
+         300.0,
+         112.0
+        ],
+        "line_ids": [
+         "p1.l1"
+        ],
+        "page": 1
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       545.0,
+       115.0
+      ],
+      "page_end": 1,
+      "page_start": 1
+     },
+     "status": "found",
+     "unparsed": 0
+    }
+   },
+   "validation": []
+  }
+ ],
+ "error": null,
+ "file_id": "fixture",
+ "front_matter_pages": [],
+ "grade": "A",
+ "name": "kestrel sanction letter tidewater.pdf",
+ "pages": [
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 842.0,
+   "ocr_conf": null,
+   "page": 1,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.0,
+   "words": 40
+  }
+ ],
+ "reject": null,
+ "review_reasons": [],
+ "route": {},
+ "run_id": "RUN-FIXTURE",
+ "sha256": "3d9ebe3a569e091328f2ff71cb0d69d7cf597de8576fee5ef8ae6d50b6c6e498",
+ "source": {
+  "kind": "pdf",
+  "pages": 1
+ },
+ "status": "processed",
+ "trace": []
+}

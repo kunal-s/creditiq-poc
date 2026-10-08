@@ -2,7 +2,7 @@
 # Field-level format checks are named in fields.yaml (`validators: [format:pan]`).
 rules:
   - id: required_present
-    types: [certificate_of_incorporation, memorandum_articles_of_association, company_pan, director_kyc, board_resolution_borrowing, audited_financial_statements, income_tax_return, gstr_3b, bank_statement]
+    types: [certificate_of_incorporation, memorandum_articles_of_association, company_pan, director_kyc, board_resolution_borrowing, audited_financial_statements, income_tax_return, gstr_3b, bank_statement, existing_facilities_declaration, sanction_letter, commercial_bureau_report]
     kind: required
     severity: fail
     label: Required fields present

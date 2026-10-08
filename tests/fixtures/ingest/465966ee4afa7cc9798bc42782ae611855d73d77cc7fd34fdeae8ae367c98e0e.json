@@ -1,0 +1,321 @@
+{
+ "classification": {
+  "candidates": [
+   {
+    "score": 0.95,
+    "type": "existing_facilities_declaration"
+   }
+  ],
+  "confidence": 0.95,
+  "mixed_content": [],
+  "model_error": null,
+  "needs_review": false,
+  "reason": null,
+  "signals": {
+   "contrary": [],
+   "required": [
+    "fixture"
+   ],
+   "supporting": []
+  },
+  "tier": "signals",
+  "type": "existing_facilities_declaration"
+ },
+ "decision": "auto_accept",
+ "documents": [
+  {
+   "confidence": {
+    "composition": {},
+    "decision": "auto_accept",
+    "document": 0.96,
+    "reasons": []
+   },
+   "defects": [],
+   "document_type": "existing_facilities_declaration",
+   "fields": {
+    "cin": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "identifier",
+     "needs_review": false,
+     "raw_text": "U28999MH2015PTC123456",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "U28999MH2015PTC123456"
+     },
+     "status": "found",
+     "value": "U28999MH2015PTC123456"
+    },
+    "company_name": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": true,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "Kestrel Fabricators Private Limited",
+     "reason": null,
+     "required": true,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Kestrel Fabricators Private Limited"
+     },
+     "status": "found",
+     "value": "Kestrel Fabricators Private Limited"
+    },
+    "declaration_date": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "pattern",
+     "needs_review": false,
+     "raw_text": "2026-09-15",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "2026-09-15"
+     },
+     "status": "found",
+     "value": "2026-09-15"
+    },
+    "gstin": {
+     "components": {},
+     "confidence": 0.0,
+     "key_field": false,
+     "method": null,
+     "needs_review": false,
+     "raw_text": null,
+     "reason": "not_found",
+     "required": false,
+     "source": null,
+     "status": "missing",
+     "value": null
+    },
+    "pan": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "identifier",
+     "needs_review": false,
+     "raw_text": "AAACK1234F",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "AAACK1234F"
+     },
+     "status": "found",
+     "value": "AAACK1234F"
+    }
+   },
+   "identity": {
+    "cin": "U28999MH2015PTC123456",
+    "name": "Kestrel Fabricators Private Limited",
+    "pan": "AAACK1234F"
+   },
+   "instance_key": null,
+   "instance_no": 1,
+   "page_from": 1,
+   "page_to": 1,
+   "tables": {
+    "bank_accounts": {
+     "columns": [
+      "bank",
+      "account_number",
+      "account_type"
+     ],
+     "confidence": 0.96,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "account_number": "901000001234",
+        "account_type": "Current account",
+        "bank": "Lotuscrest Bank"
+       },
+       "raw": {
+        "account_number": "901000001234",
+        "account_type": "Current account",
+        "bank": "Lotuscrest Bank"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         100.0,
+         300.0,
+         112.0
+        ],
+        "line_ids": [
+         "p1.l1"
+        ],
+        "page": 1
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       545.0,
+       115.0
+      ],
+      "page_end": 1,
+      "page_start": 1
+     },
+     "status": "found",
+     "unparsed": 0
+    },
+    "facilities": {
+     "columns": [
+      "lender",
+      "facility",
+      "sanctioned_amount",
+      "outstanding",
+      "emi"
+     ],
+     "confidence": 0.96,
+     "reason": null,
+     "repairs": [],
+     "rows": [
+      {
+       "cells": {
+        "emi": 250000,
+        "facility": "Term loan",
+        "lender": "Tidewater Finance Limited",
+        "outstanding": 7500000,
+        "sanctioned_amount": 12000000
+       },
+       "raw": {
+        "emi": "250000",
+        "facility": "Term loan",
+        "lender": "Tidewater Finance Limited",
+        "outstanding": "7500000",
+        "sanctioned_amount": "12000000"
+       },
+       "source": {
+        "bbox": [
+         50.0,
+         100.0,
+         300.0,
+         112.0
+        ],
+        "line_ids": [
+         "p1.l1"
+        ],
+        "page": 1
+       }
+      }
+     ],
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       545.0,
+       115.0
+      ],
+      "page_end": 1,
+      "page_start": 1
+     },
+     "status": "found",
+     "unparsed": 0
+    }
+   },
+   "validation": []
+  }
+ ],
+ "error": null,
+ "file_id": "fixture",
+ "front_matter_pages": [],
+ "grade": "A",
+ "name": "kestrel existing facilities declaration.pdf",
+ "pages": [
+  {
+   "blank": false,
+   "grade": "A",
+   "height": 842.0,
+   "ocr_conf": null,
+   "page": 1,
+   "reading_trust": 1.0,
+   "reasons": [],
+   "sheet": null,
+   "source": "text_layer",
+   "width": 595.0,
+   "words": 40
+  }
+ ],
+ "reject": null,
+ "review_reasons": [],
+ "route": {},
+ "run_id": "RUN-FIXTURE",
+ "sha256": "465966ee4afa7cc9798bc42782ae611855d73d77cc7fd34fdeae8ae367c98e0e",
+ "source": {
+  "kind": "pdf",
+  "pages": 1
+ },
+ "status": "processed",
+ "trace": []
+}

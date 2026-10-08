@@ -225,14 +225,14 @@ def director_kyc(f: File, person: dict, text_extra: str = "", *, grade: str = "A
           instance_key=person["name"], grade=grade, reasons=reasons)
 
 
-def audited_fs(f: File, entity: dict, year_end: str, text_extra: str = "") -> None:
+def audited_fs(f: File, entity: dict, year_end: str, text_extra: str = "", *, scale: float = 1.0) -> None:
     year = int(year_end[:4])
     f.add(f"{entity['name']}\nAUDITED FINANCIAL STATEMENTS\nBALANCE SHEET AS AT {year_end}\n{text_extra}", "audited_financial_statements",
           {"company_name": fld(entity["name"], required=True),
            "financial_year": fld(f"FY{year} (ended 31 March {year})", required=True),
            "auditor_name": fld("M/s. Rao and Associates, Chartered Accountants"), "audit_date": fld(f"{year}-08-29"),
            "accounting_standard": fld(None)},
-          tables=statement_tables(year_end), identity={"name": entity["name"]}, instance_key=f"FY{year}")
+          tables=statement_tables(year_end, scale=scale), identity={"name": entity["name"]}, instance_key=f"FY{year}")
 
 
 def itr(f: File, entity: dict, years: list[str]) -> None:
@@ -263,8 +263,9 @@ def gstr3b(f: File, entity: dict, periods: list[str], *, taxable: int = 9_800_00
 
 
 def bank_statement(f: File, account: str, bank: str, holder: str, *, start: str = "2025-09-01", end: str = "2026-08-31", credit: int = 9_500_000,
-                   emi: tuple[str, int, int] | None = None) -> None:
-    """One credit a month; optionally a monthly instalment debit (narration, amount, months)."""
+                   emi: tuple[str, int, int] | None = None, payments: int = 0) -> None:
+    """One credit a month; optionally a monthly instalment debit (narration, amount, months) and a
+    monthly payment to suppliers."""
     rows = []
     y, m = int(start[:4]), int(start[5:7])
     ey, em = int(end[:4]), int(end[5:7])
@@ -273,6 +274,10 @@ def bank_statement(f: File, account: str, bank: str, holder: str, *, start: str 
         balance += credit
         rows.append({"date": f"{y}-{m:02d}-05", "description": "NEFT CR CUSTOMER RECEIPT", "reference_number": f"NEFT/{k:04d}",
                      "debit": None, "credit": credit, "balance": balance})
+        if payments:
+            balance -= payments
+            rows.append({"date": f"{y}-{m:02d}-07", "description": "NEFT DR SUPPLIER PAYMENT", "reference_number": f"NEFT/P{k:04d}",
+                         "debit": payments, "credit": None, "balance": balance})
         if emi and k < emi[2]:
             balance -= emi[1]
             rows.append({"date": f"{y}-{m:02d}-10", "description": emi[0], "reference_number": f"ACH/{k:04d}", "debit": emi[1],
@@ -288,6 +293,48 @@ def bank_statement(f: File, account: str, bank: str, holder: str, *, start: str 
           identity={"name": holder}, instance_key=account)
 
 
+# Existing facilities and the bureau (test plan TC-20, TC-23): one term loan from a fictional lender,
+# the same in the declaration, its sanction letter and the bureau report, and paid in the bank statement.
+TIDEWATER_TL = {"lender": "Tidewater Finance Limited", "facility": "Term loan", "sanctioned_amount": 12_000_000,
+                "outstanding": 7_500_000, "emi": 250_000}
+
+
+def facilities_declaration(f: File, entity: dict, account: str) -> None:
+    f.add(f"DECLARATION OF EXISTING CREDIT FACILITIES AND BANK ACCOUNTS\nName of Company {entity['name']}\n"
+          "We hereby declare that the company has the following existing credit facilities", "existing_facilities_declaration",
+          {"company_name": fld(entity["name"], required=True), "declaration_date": fld("2026-09-15"),
+           "pan": fld(entity["pan"], method="identifier"), "cin": fld(entity["cin"], method="identifier"), "gstin": fld(None)},
+          tables={"facilities": table(["lender", "facility", "sanctioned_amount", "outstanding", "emi"], [TIDEWATER_TL]),
+                  "bank_accounts": table(["bank", "account_number", "account_type"],
+                                         [{"bank": "Lotuscrest Bank", "account_number": f"90100000{account}", "account_type": "Current account"}])},
+          identity={"name": entity["name"], "pan": entity["pan"], "cin": entity["cin"]})
+
+
+def sanction_letter(f: File, entity: dict) -> None:
+    f.add(f"TIDEWATER FINANCE LIMITED\nSANCTION LETTER\nBorrower {entity['name']}\nWe are pleased to sanction the following credit facility",
+          "sanction_letter",
+          {"lender_name": fld("Tidewater Finance Limited", required=True), "borrower_name": fld(entity["name"], required=True),
+           "sanction_date": fld("2024-04-12"), "reference_number": fld("TFL/SL/2024/0457")},
+          tables={"facilities": table(["facility", "sanctioned_amount", "interest_rate", "tenure", "emi"],
+                                      [{"facility": "Term loan", "sanctioned_amount": 12_000_000, "interest_rate": "11.25% p.a.",
+                                        "tenure": "60 months", "emi": 250_000}])},
+          identity={"name": entity["name"]})
+
+
+def bureau_report(f: File, entity: dict, directors: list[dict]) -> None:
+    gstin = build_gstin("27", entity["pan"])
+    f.add(f"COMMERCIAL CREDIT INFORMATION REPORT\nCompany Name {entity['name']}\nPAN {entity['pan']}\nCredit Rank 4",
+          "commercial_bureau_report",
+          {"company_name": fld(entity["name"], required=True), "pan": fld(entity["pan"], method="identifier", required=True),
+           "cin": fld(entity["cin"], method="identifier"), "gstin": fld(gstin, method="identifier"),
+           "report_date": fld("2026-09-20"), "credit_rank": fld("4")},
+          tables={"credit_facilities": table(["lender", "facility", "sanctioned_amount", "outstanding", "overdue", "status"],
+                                             [{**{k: v for k, v in TIDEWATER_TL.items() if k != "emi"}, "overdue": 0, "status": "Standard"}]),
+                  "related_parties": table(["name", "relationship", "pan"],
+                                           [{"name": d["name"], "relationship": "Director", "pan": d["pan"]} for d in directors])},
+          identity={"name": entity["name"], "pan": entity["pan"], "cin": entity["cin"], "gstin": gstin})
+
+
 # --- Cases ---
 
 
@@ -301,13 +348,19 @@ def complete_case() -> list[File]:
         ("kestrel board resolution.pdf", "board_resolution_borrowing", lambda f: board_resolution(f, e, signed=True)),
         ("kestrel pan.pdf", "company_pan", lambda f: company_pan(f, e)),
         ("kestrel audited fy2026.pdf", "audited_financial_statements", lambda f: audited_fs(f, e, "2026-03-31")),
-        ("kestrel audited fy2025.pdf", "audited_financial_statements", lambda f: audited_fs(f, e, "2025-03-31")),
+        # The FY 2025-26 statements show FY 2024-25 at 0.85 of this year: the FY 2024-25 statements agree (FS-01).
+        ("kestrel audited fy2025.pdf", "audited_financial_statements", lambda f: audited_fs(f, e, "2025-03-31", scale=0.85)),
         ("kestrel itr.pdf", "income_tax_return", lambda f: itr(f, e, ["2026-27", "2025-26"])),
         ("kestrel gst returns.pdf", "gstr_3b", lambda f: gstr3b(f, e, GST_WINDOW)),
         ("kestrel current account.pdf", "bank_statement",
-         lambda f: bank_statement(f, "1234", "Lotuscrest Bank", e["name"], emi=("NACH DR TIDEWATER FIN EMI 000123", 250_000, 6))),
+         lambda f: bank_statement(f, "1234", "Lotuscrest Bank", e["name"], emi=("NACH DR TIDEWATER FIN EMI 000123", 250_000, 6),
+                                  payments=9_300_000)),
         ("kyc tarun velankar.pdf", "director_kyc", lambda f: director_kyc(f, TARUN)),
         ("kyc ishita barve.pdf", "director_kyc", lambda f: director_kyc(f, ISHITA)),
+        ("kestrel existing facilities declaration.pdf", "existing_facilities_declaration",
+         lambda f: facilities_declaration(f, e, "1234")),
+        ("kestrel sanction letter tidewater.pdf", "sanction_letter", lambda f: sanction_letter(f, e)),
+        ("kestrel bureau report.pdf", "commercial_bureau_report", lambda f: bureau_report(f, e, [TARUN, ISHITA])),
     ]:
         f = File(name, type_id)
         build(f)

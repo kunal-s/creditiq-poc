@@ -27,9 +27,11 @@ def test_identities_are_collected_per_document(client: TestClient, published_dat
     add_doc(published_data_root, case_id, "gstr_3b", {"gstin": "27AAACK1234F1Z0", "legal_name": "Kestrel Tools Private Limited"})
     add_doc(published_data_root, case_id, "director_kyc", {"person_name": "Tarun Velankar", "pan": "ABCPV1234K"})
     facts = _facts(client, analyst, case_id)
-    pans = {v["value"]: v for v in facts["identities"]["entity_pan"]}
-    # A director's PAN is not the entity's.
-    assert set(pans) == {"AAACK1234F", "AAACK1234G"}
+    pans = {v["value"]: v for v in facts["identities"]["entity_pan"] if v["source"] != "gstr_3b"}
+    # A director's PAN is not the entity's; the PAN within the GSTIN is (ID-01).
+    assert {v["value"] for v in facts["identities"]["entity_pan"]} == {"AAACK1234F", "AAACK1234G"}
+    within = next(v for v in facts["identities"]["entity_pan"] if v["source"] == "gstr_3b")
+    assert within["value"] == "AAACK1234F" and within["label"].endswith("(PAN within the GSTIN)")
     assert pans["AAACK1234F"]["evidence"][0]["document_id"] == pan
     assert pans["AAACK1234F"]["field_ids"]
     assert [v["value"] for v in facts["identities"]["gstin"]] == ["27AAACK1234F1Z0"]

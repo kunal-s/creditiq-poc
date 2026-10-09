@@ -82,17 +82,56 @@ class DocumentTypesConfig(Strict):
 
 class InstanceRule(Strict):
     """A file may hold several instances of one type (two directors, eight returns).
-    A page matching `start` opens a new instance; earlier pages are front matter."""
+    Either `start` (a page matching it opens a new instance) or `key_pattern` (a page carrying a
+    different value for the key than the instance before it opens a new one; pages without the key
+    stay with the instance they follow). Earlier pages are front matter."""
 
-    start: str
+    start: str | None = None
+    key_pattern: str | None = None  # one capture group: the value that tells instances apart
     keys: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _one_way(self) -> "InstanceRule":
+        if bool(self.start) == bool(self.key_pattern):
+            raise ValueError("instances: give exactly one of `start` and `key_pattern`")
+        return self
+
+
+class Required(Strict):
+    """One requirement of a type. It is met when any alternative matches. `zone: head` means the
+    match must be in the opening lines of a page (a title), so a passing mention in the body does not count."""
+
+    any: list[str] = Field(min_length=1)
+    zone: Literal["head", "any"] = "any"
+
+
+class Supporting(Strict):
+    rx: str
+    weight: float = Field(default=1.0, gt=0)
+
+
+class Contrary(Strict):
+    rx: str
+    zone: Literal["head", "any"] = "any"
 
 
 class TypeSignals(Strict):
-    required: list[str] = Field(default_factory=list)
-    supporting: list[str] = Field(default_factory=list)
-    contrary: list[str] = Field(default_factory=list)
+    corroboration: float | None = Field(default=None, gt=0)  # supporting weight that counts as full corroboration (default: the section's)
+    required: list[Required] = Field(default_factory=list)
+    supporting: list[Supporting] = Field(default_factory=list)
+    contrary: list[Contrary] = Field(default_factory=list)
     instances: InstanceRule | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _shorthand(cls, data):
+        if not isinstance(data, dict):
+            return data
+        d = dict(data)
+        d["required"] = [{"any": [x]} if isinstance(x, str) else x for x in d.get("required", [])]
+        d["supporting"] = [{"rx": x} if isinstance(x, str) else x for x in d.get("supporting", [])]
+        d["contrary"] = [{"rx": x} if isinstance(x, str) else x for x in d.get("contrary", [])]
+        return d
 
 
 class Tier2Guard(Strict):
@@ -104,15 +143,45 @@ class Tier2Guard(Strict):
     min_required_fraction: float = 0.5
 
 
+_MACRO = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)\}")
+
+
 class SignalsConfig(Strict):
     tier1_margin: float = 0.2
     classify_threshold: float = 0.6
     tier2_confidence: float = 0.7
     tier2_guard: Tier2Guard = Field(default_factory=Tier2Guard)
-    signal_pages: int = 3
+    corroboration: float = Field(default=3.0, gt=0)  # supporting weight that counts as full corroboration
+    signal_pages: int = 20      # non-blank pages read for classification
+    head_lines: int = 6         # the opening lines of a page that count as its title zone
     mixed_content_check: bool = True
     mixed_min_score: float = 0.75
+    patterns: dict[str, str] = Field(default_factory=dict)  # named fragments, used as {NAME} inside any signal
     types: dict[str, TypeSignals]
+
+    @model_validator(mode="after")
+    def _expand_patterns(self) -> "SignalsConfig":
+        """Named fragments (a PAN, a GSTIN) are written once and expanded here, so the matching code
+        only ever sees plain regular expressions."""
+        def sub(rx: str, where: str) -> str:
+            def one(m: re.Match) -> str:
+                if m[1] not in self.patterns:
+                    raise ValueError(f"{where}: unknown pattern {{{m[1]}}}")
+                return f"(?:{self.patterns[m[1]]})"
+            return _MACRO.sub(one, rx)
+
+        for tid, ts in self.types.items():
+            for r in ts.required:
+                r.any = [sub(x, f"signals.{tid}.required") for x in r.any]
+            for x in ts.supporting:
+                x.rx = sub(x.rx, f"signals.{tid}.supporting")
+            for x in ts.contrary:
+                x.rx = sub(x.rx, f"signals.{tid}.contrary")
+            if ts.instances:
+                i = ts.instances
+                i.start = sub(i.start, f"signals.{tid}.instances") if i.start else None
+                i.key_pattern = sub(i.key_pattern, f"signals.{tid}.instances") if i.key_pattern else None
+        return self
 
 
 # --- fields.yaml -------------------------------------------------------------------------------
@@ -163,6 +232,7 @@ class TableRule(Strict):
     row_start: str | None = None
     row_start_col: str | None = None
     text_only: Literal["row", "continuation"] = "row"
+    attach: Literal["nearest", "heading"] = "nearest"   # heading: a label-only line heads the next row; any other line outside a row is dropped
     skip_rows: list[str] = Field(default_factory=list)
     max_attach: float = 24.0   # points; a line farther than this from every row is not part of the table
     multi_page: bool = False
@@ -176,7 +246,7 @@ IDENTITY_KEYS = {"name", "pan", "din", "dob", "gstin", "cin"}
 class TypeFields(Strict):
     fields: dict[str, FieldRule] = Field(default_factory=dict)
     identity: dict[str, str] = Field(default_factory=dict)  # identity key (name, pan, din, dob, gstin, cin) -> schema field
-    tables: dict[str, TableRule] = Field(default_factory=dict)
+    tables: dict[str, TableRule | list[TableRule]] = Field(default_factory=dict)   # a list is layout variants, tried in order
 
 
 class FieldsConfig(Strict):
@@ -234,6 +304,7 @@ class ReadingConfig(Strict):
     x_tolerance: float = 1.5
     y_tolerance: float = 2.0
     line_y_tol: float = 3.0
+    line_overlap: float = Field(default=0.0, ge=0, le=1)  # share of the shorter box two words must overlap vertically to share a line (0: off)
     column_gap: float = 12.0
     boilerplate: list[str] = Field(default_factory=list)
     accepted_formats: list[str] = Field(default_factory=lambda: ["pdf", "png", "jpg", "tiff", "bmp", "webp", "xlsx", "csv"])
@@ -324,11 +395,21 @@ class IngestionConfig(Strict):
         for tid, ts in self.signals.types.items():
             if tid not in types:
                 problems.append(f"signals: unknown document type {tid}")
-            for kind in ("required", "supporting", "contrary"):
-                for rx in getattr(ts, kind):
-                    _compile(rx, f"signals.{tid}.{kind}", problems)
+            for r in ts.required:
+                for rx in r.any:
+                    _compile(rx, f"signals.{tid}.required", problems)
+            for x in (*ts.supporting, *ts.contrary):
+                _compile(x.rx, f"signals.{tid}", problems)
             if ts.instances:
-                _compile(ts.instances.start, f"signals.{tid}.instances.start", problems)
+                for label, rx in (("start", ts.instances.start), ("key_pattern", ts.instances.key_pattern)):
+                    if rx:
+                        _compile(rx, f"signals.{tid}.instances.{label}", problems)
+                if ts.instances.key_pattern:
+                    try:
+                        if re.compile(ts.instances.key_pattern).groups != 1:
+                            problems.append(f"signals.{tid}.instances.key_pattern: needs exactly one capture group")
+                    except re.error:
+                        pass  # already reported by _compile
                 for k in ts.instances.keys:
                     if tid in types and k not in {f.name for f in types[tid].schema_.fields}:
                         problems.append(f"signals.{tid}.instances.keys: unknown field {k}")
@@ -350,17 +431,18 @@ class IngestionConfig(Strict):
                     _compile(p.regex, f"fields.{tid}.{fname}", problems, p.flags)
                 if rule.page_match:
                     _compile(rule.page_match, f"fields.{tid}.{fname}.page_match", problems)
-            for tname, tr in tf.tables.items():
+            for tname, trs in tf.tables.items():
                 if tname not in tnames:
                     problems.append(f"fields.{tid}.tables.{tname}: not in the type's schema")
                     continue
                 cols = {c.name for c in tnames[tname].columns}
-                emitted = {c.name for c in tr.columns if c.emit}
-                if emitted - cols:
-                    problems.append(f"fields.{tid}.tables.{tname}: unknown columns {sorted(emitted - cols)}")
-                for rx in [tr.start, tr.end, tr.row_start, tr.page_match, *tr.skip_rows, *[c.header for c in tr.columns]]:
-                    if rx:
-                        _compile(rx, f"fields.{tid}.tables.{tname}", problems)
+                for tr in trs if isinstance(trs, list) else [trs]:
+                    emitted = {c.name for c in tr.columns if c.emit}
+                    if emitted - cols:
+                        problems.append(f"fields.{tid}.tables.{tname}: unknown columns {sorted(emitted - cols)}")
+                    for rx in [tr.start, tr.end, tr.row_start, tr.page_match, *tr.skip_rows, *[c.header for c in tr.columns]]:
+                        if rx:
+                            _compile(rx, f"fields.{tid}.tables.{tname}", problems)
         for r in self.validators.rules:
             for t in r.types:
                 if t not in types:

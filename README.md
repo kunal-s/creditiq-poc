@@ -48,7 +48,7 @@ npm run config:publish -- "<your name>"
 ./scripts/start.sh        # service and engine in the background, frontend on :4173
 ```
 
-or in separate terminals: the service (`cd services/ingestion && PYTHONPATH=. .venv/bin/python -m ingestion.cli serve`), `npm run dev:api` and `npm run dev`. The service answers from recorded model calls unless `INGEST_MODEL_MODE` is `record` or `live` and `OPENAI_API_KEY` is set.
+or in separate terminals: the service (`cd services/ingestion && PYTHONPATH=. .venv/bin/python -m ingestion.cli serve`), `npm run dev:api` and `npm run dev`. The service answers from recorded model calls unless `INGEST_MODEL_MODE` is `record` or `live`. A document nobody has processed before has no recording, so its model steps fail in the default mode. `INGEST_MODEL_MODE=record ./scripts/start.sh` calls the model once for such a document, stores the answer and replays it afterwards. It needs `OPENAI_API_KEY`, from the environment, `.env.local` or `workflow/private/openai.env`, and stops with a message if neither has a value. The model is only a fallback: most documents are read by the rules alone.
 
 **Sign in** with any user in `config/roles.yaml` (one per role: RM, Credit
 Analyst, Credit Manager) and the shared password in that file.

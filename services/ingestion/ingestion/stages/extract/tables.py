@@ -82,7 +82,7 @@ def split_at_numeric_columns(segs: list[Seg], cols: list[ColRule], anchors: dict
     would glue them into one segment."""
     edges = [(anchors[c.name][1], True) if c.align == "right" else (anchors[c.name][0], False) for c in cols[1:] if c.name in anchors]
     if not edges:
-        return segs
+        return _split_adjacent_numbers(segs, cols, anchors)
     out: list[Seg] = []
     for seg in segs:
         cur: list[Word] = []
@@ -91,6 +91,24 @@ def split_at_numeric_columns(segs: list[Seg], cols: list[ColRule], anchors: dict
                 out.append(Seg(" ".join(x.text for x in cur), cur[0].x0, cur[-1].x1, cur))
                 cur = []
             cur.append(w)
+        out.append(Seg(" ".join(x.text for x in cur), cur[0].x0, cur[-1].x1, cur))
+    return _split_adjacent_numbers(out, cols, anchors)
+
+
+def _split_adjacent_numbers(segs: list[Seg], cols: list[ColRule], anchors: dict[str, tuple[float, float]]) -> list[Seg]:
+    """Two numbers closer together than the column gap are still two cells when each one's nearest
+    column differs (tightly set statements run a figure into the next column's)."""
+    out: list[Seg] = []
+    for seg in segs:
+        cur: list[Word] = []
+        col = None
+        for w in seg.words:
+            wc = _assign(Seg(w.text, w.x0, w.x1, [w]), cols, anchors) if NUM_RX.match(w.text) else None
+            if cur and wc and col and wc != col:
+                out.append(Seg(" ".join(x.text for x in cur), cur[0].x0, cur[-1].x1, cur))
+                cur = []
+            cur.append(w)
+            col = wc
         out.append(Seg(" ".join(x.text for x in cur), cur[0].x0, cur[-1].x1, cur))
     return out
 
@@ -167,10 +185,14 @@ def build_table(rule: TableRule, defs: list[ColumnDef], pages: list[Page], readi
                 stop = True
                 break
             cells: dict[str, list[Seg]] = {}
-            for seg in split_at_numeric_columns(segments(line, gap), cols, anchors):
-                col = _assign(seg, cols, anchors)
-                if col:
-                    cells.setdefault(col, []).append(seg)
+            segs = split_at_numeric_columns(segments(line, gap), cols, anchors)
+            if rule.attach == "heading" and not any(NUM_RX.match(sg.text) for sg in segs):
+                cells[label_col] = segs  # a heading may run across the columns: all of it is the label
+            else:
+                for seg in segs:
+                    col = _assign(seg, cols, anchors)
+                    if col:
+                        cells.setdefault(col, []).append(seg)
             if cells:
                 dls.append(_DL(p, line, cells, pi * 100000 + line.words[0].yc))
         last_page = pi
@@ -197,6 +219,13 @@ def build_table(rule: TableRule, defs: list[ColumnDef], pages: list[Page], readi
             continue
         label_only = bool(d.cells.get(label_col)) and not any(c != label_col for c in d.cells)
         prior = [s for s in starts if s.y_abs <= d.y_abs]
+        if rule.attach == "heading":
+            following = [s for s in starts if s.y_abs > d.y_abs]
+            if label_only and following:
+                groups[id(following[0])].append(d)
+            else:
+                dropped += 1
+            continue
         if not row_rx and rule.text_only == "continuation" and label_only and prior:
             near = prior[-1]  # a wrapped label belongs to the row above it
         else:

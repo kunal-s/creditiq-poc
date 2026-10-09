@@ -99,3 +99,62 @@ def test_f10_a_directors_din_from_the_memorandum_joins_the_party(client: TestCli
     # The resolution names the directors; the memorandum's list adds each one's DIN, and the two are one party.
     assert len([p for p in parties.values() if p["role"] != "borrower"]) == 2
     assert parties["Tarun Velankar"]["din"] == "01234567" and parties["Ishita Barve"]["din"] == "07654321"
+
+
+def _flip_identity(root: Path, doc_id: str, **changes) -> None:
+    """Rewrite what a document's identity block says, then rebuild attribution."""
+    import json
+
+    from engine import db, parties
+
+    conn = db.connect(root)
+    try:
+        identity = json.loads(conn.execute("SELECT identity FROM documents WHERE id = ?", (doc_id,)).fetchone()["identity"])
+        identity.update(changes)
+        conn.execute("UPDATE documents SET identity = ? WHERE id = ?", (json.dumps(identity), doc_id))
+        case_id = conn.execute("SELECT case_id FROM documents WHERE id = ?", (doc_id,)).fetchone()["case_id"]
+        parties.refresh(conn, root, case_id)
+    finally:
+        conn.close()
+
+
+def test_identifier_and_printed_name_naming_different_people_is_a_conflict(client, published_data_root):
+    rm, case_id = _case(client, published_data_root, [n for n, _ in case_files("complete")])
+    parties_by_name = {p["name"]: p for p in client.get(f"/api/cases/{case_id}/parties", headers=rm).json()}
+    ishita_doc = parties_by_name["Ishita Barve"]["kyc_document_ids"][0]
+    # Ishita's PAN and DIN, Tarun's name.
+    _flip_identity(published_data_root, ishita_doc, name="Tarun Velankar")
+    doc = next(d for d in client.get(f"/api/cases/{case_id}/documents", headers=rm).json() if d["id"] == ishita_doc)
+    assert doc["party_id"] == parties_by_name["Ishita Barve"]["id"]  # the identifier's party is proposed
+    analyst = sign_in(client, ANALYST)
+    flags = [i for i in client.get(f"/api/review?case_id={case_id}", headers=analyst).json() if i["kind"] == "party"]
+    assert len(flags) == 1
+    assert "PAN matches Ishita Barve but the name printed is Tarun Velankar" in flags[0]["summary"]
+    queries = [q["text"] for q in client.get(f"/api/cases/{case_id}/queries", headers=rm).json()
+               if q["source_kind"] == "party" and not q["resolved"]]
+    assert len(queries) == 1 and "identity number of Ishita Barve but the name of Tarun Velankar" in queries[0]
+
+
+def test_identifier_match_with_an_unrelated_name_is_not_a_conflict(client, published_data_root):
+    rm, case_id = _case(client, published_data_root, [n for n, _ in case_files("complete")])
+    parties_by_name = {p["name"]: p for p in client.get(f"/api/cases/{case_id}/parties", headers=rm).json()}
+    ishita_doc = parties_by_name["Ishita Barve"]["kyc_document_ids"][0]
+    _flip_identity(published_data_root, ishita_doc, name="Tarun Velankar")
+    # An unrelated name with a matching PAN is not a conflict: no second person is named.
+    _flip_identity(published_data_root, ishita_doc, name="Zzyzx Qwerty")
+    analyst = sign_in(client, ANALYST)
+    flags = [i for i in client.get(f"/api/review?case_id={case_id}", headers=analyst).json() if i["kind"] == "party"]
+    assert flags == []
+
+
+def test_a_parallel_din_list_gives_each_named_person_a_din_only_when_counts_agree():
+    from engine.configstore.schema import PartyList
+    from engine.parties import party_entries
+
+    spec = PartyList(field="authorized_persons", din_field="authorized_person_dins", role="director")
+    fields = {"authorized_persons[0]": ("A Rao", 1), "authorized_persons[1]": ("B Nair", 1),
+              "authorized_person_dins[0]": ("01234567", 1), "authorized_person_dins[1]": ("07654321", 1)}
+    assert [e["din"] for e in party_entries(fields, spec)] == ["01234567", "07654321"]
+    # One person without a printed DIN: the lists cannot be paired, so none is trusted.
+    del fields["authorized_person_dins[1]"]
+    assert [e["din"] for e in party_entries(fields, spec)] == [None, None]

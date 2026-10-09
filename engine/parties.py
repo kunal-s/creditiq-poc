@@ -58,7 +58,18 @@ def party_entries(fields: dict[str, tuple[object, int | None]], spec: PartyList)
         m = _ITEM.match(key)
         if m and m[1] == spec.field and value:
             items.append((int(m[2]), {"name": str(value), "page": page, "din": None, "pan": None, "designation": None}))
-    return [e for _, e in sorted(items, key=lambda p: p[0])]
+    entries = [e for _, e in sorted(items, key=lambda p: p[0])]
+    if spec.din_field:
+        found = []
+        for key, pair in fields.items():
+            m = _ITEM.match(key)
+            if m and m[1] == spec.din_field:
+                found.append((int(m[2]), _ident(pair)))
+        dins = [din for _, din in sorted(found, key=lambda p: p[0])]
+        if len(dins) == len(entries):  # one per name, or none are trusted
+            for entry, din in zip(entries, dins):
+                entry["din"] = din
+    return entries
 
 
 @dataclass
@@ -295,6 +306,18 @@ def _attribute(
         if scored and scored[0][0] >= tol:
             match = scored[0][2]
     labelled = _hint_party(doc["label_hint"], people)
+    if match is not None and name and (pan or din) and similarity(name, match.name) < tol:
+        # An identifier names one party and the printed name another: the document is internally
+        # inconsistent. The identifier's party is proposed; a person decides.
+        named = max(people, key=lambda p: (similarity(name, p.name), -p.ord))
+        if named.id != match.id and similarity(name, named.name) >= tol:
+            how = "PAN" if pan and match.pan == pan else "DIN"
+            return (
+                match.id,
+                "conflict",
+                f"{label}: {how} matches {match.name} but the name printed is {named.name}; proposed under {match.name}",
+                named.name,
+            )
     if match is None:
         who = name or "an unnamed person"
         return None, "no_party", f"{label}: {who} matches no party on this case; may not belong to this case", None

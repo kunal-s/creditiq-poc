@@ -52,7 +52,8 @@ def read_document(data: bytes, kind: str, q: QualityConfig, r: RoutingConfig, oc
 
 
 def _lines(no: int, words: list[Word], r: RoutingConfig, bp: list[re.Pattern]) -> list[Line]:
-    return build_lines(no, words, y_tol=r.reading.line_y_tol, column_gap=r.reading.column_gap, boilerplate=bp)
+    return build_lines(no, words, y_tol=r.reading.line_y_tol, column_gap=r.reading.column_gap, boilerplate=bp,
+                       min_overlap=r.reading.line_overlap)
 
 
 def _read_pdf(data, q, r, ocr, cache, bp) -> list[Page]:

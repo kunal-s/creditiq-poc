@@ -908,6 +908,12 @@ validation:
   hardToRead: "{n} of {total} pages are hard to read"
   unreadable: "{n} of {total} pages cannot be read"
   readability: Readability
+  pageClear: 1 page, clear
+  pagesClear: "{n} pages, all clear"
+  valuesRead: Values read
+  valuesSummary: "{n} values, {pct} average confidence"
+  keyValues: Key values
+  moreValues: "{n} more values"
   documentType: Document type
   nextClearer: Send a clearer copy of the affected pages.
   pages: Pages

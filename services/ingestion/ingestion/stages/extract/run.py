@@ -49,7 +49,8 @@ def extract_instance(cfg: IngestionConfig, doc_type: str, pages: list[Page], mod
     pending: list[FieldDef] = []
     for f in td.schema_.fields:
         rule = rules_f.get(f.name, FieldRule())
-        found = extract_scalar(rule, pages) if (rule.identifier or rule.aliases or rule.patterns) else None
+        accept = None if f.type == "array" else (lambda c, k=_kind(f, rule): normalise(str(c.raw), k)[1] is None)
+        found = extract_scalar(rule, pages, accept) if (rule.identifier or rule.aliases or rule.patterns) else None
         if found:
             out_fields[f.name] = _finish(f, rule, found)
             if out_fields[f.name]["status"] == "found":
@@ -81,7 +82,7 @@ def extract_instance(cfg: IngestionConfig, doc_type: str, pages: list[Page], mod
         if tr is None:
             tables[t.name] = {"status": "missing", "reason": "no_rule", "columns": [c.name for c in t.columns], "rows": [], "source": None, "repairs": [], "unparsed": 0}
             continue
-        res = build_table(tr, t.columns, pages, cfg.routing.reading)
+        res = next((r for v in (tr if isinstance(tr, list) else [tr]) if (r := build_table(v, t.columns, pages, cfg.routing.reading))), None)
         if res is None:
             tables[t.name] = {"status": "missing", "reason": "table_not_found", "columns": [c.name for c in t.columns], "rows": [], "source": None, "repairs": [], "unparsed": 0}
             continue

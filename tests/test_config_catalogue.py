@@ -17,7 +17,9 @@ NINE = {
 }
 # Existing facilities and the bureau (test plan TC-20, TC-23).
 FACILITIES = {"existing_facilities_declaration", "sanction_letter", "commercial_bureau_report"}
-TYPES = NINE | FACILITIES
+# GSTR-1 is read for the turnover cross-checks; GSTR-3B is what the checklist item asks for.
+SALES = {"gstr_1"}
+TYPES = NINE | FACILITIES | SALES
 
 
 def _cross(sections, **changes):
@@ -28,7 +30,7 @@ def test_the_closed_list_is_the_document_types_and_the_sourcing_message(publishe
     types = reader.load_document_types(published_data_root).types
     assert {t.id for t in types} == TYPES | {"application_message"}
     # The facility and bureau types are reconciled by the cross-checks, not asked for on the checklist.
-    assert all(not t.satisfies for t in types if t.id in FACILITIES)
+    assert all(not t.satisfies for t in types if t.id in FACILITIES | SALES)
 
 
 def test_every_checklist_item_is_satisfied_by_some_document_type(published_data_root: Path):
@@ -65,7 +67,7 @@ def test_the_service_accepts_the_published_configuration():
     out = subprocess.run([str(INGESTION_VENV), "-m", "ingestion.cli", "config-validate", str(ROOT / "config" / "ingestion")],
                          cwd=ROOT / "services" / "ingestion", env={"PYTHONPATH": "."}, capture_output=True, text=True)
     assert out.returncode == 0, out.stderr
-    assert "12 document types" in out.stdout
+    assert "13 document types" in out.stdout
 
 
 def test_cross_check_reports_a_dangling_reference():

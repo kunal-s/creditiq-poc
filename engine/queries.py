@@ -124,7 +124,14 @@ def build(conn: sqlite3.Connection, root: Path, case_id: str) -> list[dict]:
 
         content = _join_names([types[t].name for t in effective_types(doc) if t in types]).lower()
         evidence = [{"document_id": doc["id"], "page": doc["page_from"]}]
-        if detail.get("flag") == "refiled":
+        if detail.get("flag") == "conflict":
+            party = conn.execute("SELECT name FROM parties WHERE id = ?", (doc["party_id"],)).fetchone()
+            text = phr["party_conflict"].format(
+                file=doc["original_name"],
+                label_party=detail.get("label_party") or "another person",
+                party=party["name"] if party else "",
+            )
+        elif detail.get("flag") == "refiled":
             party = conn.execute("SELECT name FROM parties WHERE id = ?", (doc["party_id"],)).fetchone()
             text = phr["party_refiled"].format(
                 file=doc["original_name"],

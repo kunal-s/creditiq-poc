@@ -151,7 +151,22 @@ types:
     contrary: ['statement\s+of\s+account']
     instances:
       start: 'form\s+gstr[\s-]*3b'
-      keys: [tax_period]
+      keys: [tax_period, financial_year]
+
+  gstr_1:
+    required:
+      - {any: ['form\s+gstr[\s-]*1\b', 'details\s+of\s+outward\s+supplies\s+of\s+goods\s+or\s+services'], zone: head}
+    supporting:
+      - '\brule\s+59\(1\)'
+      - 'taxable\s+outward\s+supplies'
+      - '\bb2b\b'
+      - '{GSTIN}|\bgstin\b'
+      - '\barn\b'
+      - 'no\.\s+of\s+records'
+    contrary: ['statement\s+of\s+account', 'form\s+gstr[\s-]*3b']
+    instances:
+      start: 'form\s+gstr[\s-]*1\b'
+      keys: [tax_period, financial_year]
 
   # A declaration of nil facilities is a declaration of existing facilities that declares none.
   existing_facilities_declaration:

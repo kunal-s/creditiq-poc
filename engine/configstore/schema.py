@@ -175,6 +175,8 @@ class PartyList(BaseModel):
     din_key: str | None = None
     pan_key: str | None = None
     designation_key: str | None = None
+    din_field: str | None = None
+    """For a plain list of names: a parallel list of DINs, used only when it has one per name."""
     role: str | None = None
     """The party's role when the document does not say (director, partner, proprietor)."""
 
@@ -212,10 +214,25 @@ class DocumentAge(BaseModel):
     source: Source
 
 
+class DocumentValidity(BaseModel):
+    """A date printed on a document that must hold at the case's as_of date.
+
+    expires: the date is the last day the document is valid (ID expiry, validity end);
+    a date before as_of makes it expired. not_future: the date is when the document was
+    made; a date after as_of is suspect. An absent date is no finding.
+    """
+
+    type_id: str
+    field: str
+    kind: Literal["expires", "not_future"]
+    source: Source
+
+
 class DocumentAgesSection(BaseModel):
     """config/document_ages.yaml (F-13.2)."""
 
     ages: list[DocumentAge]
+    validity: list[DocumentValidity] = []
 
 
 class Tolerance(BaseModel):
@@ -411,6 +428,9 @@ def cross_check(sections: dict[str, BaseModel], ingestion: dict[str, dict] | Non
     for age in ages.ages:
         if age.type_id not in type_ids:
             problems.append(f"document_ages: unknown type {age.type_id!r}")
+    for rule in ages.validity:
+        if rule.type_id not in type_ids:
+            problems.append(f"document_ages: validity rule for unknown type {rule.type_id!r}")
     policy = sections["policy"]
     assert isinstance(policy, PolicySection)
     ratio_keys = {r.key for r in policy.ratios}

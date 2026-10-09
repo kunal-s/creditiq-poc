@@ -58,7 +58,7 @@ types:
       # The KYC summary sheet does not print an identity document's number or dates; the model is not asked for them.
       document_number: {llm: false}
       issue_date: {llm: false}
-      expiry_date: {llm: false}
+      expiry_date: {aliases: ['Date of Expiry', 'Expiry Date', 'Valid Until'], llm: false}
 
   board_resolution_borrowing:
     identity: {name: company_name}
@@ -70,6 +70,8 @@ types:
       resolution_date: {llm: false}   # only a date the resolution itself carries; never derived from the meeting date
       purpose_of_borrowing: {llm_hint: "The purpose of the borrowing exactly as the resolution states it (for example 'working capital'). A heading, or the bare words 'borrowing' or 'security', is not a purpose: report null when none is stated."}
       authorized_persons: {patterns: [{regex: '(?:Smt|Sri|Shri|Mr|Ms|Mrs)\.?\s+([A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)*),\s+(?:Managing\s+)?Director', flags: m, multi: true}]}
+      # The DIN printed after each authorised person, in the same order; used to tell the directors apart, never to correct a value.
+      authorized_person_dins: {patterns: [{regex: '(?:Smt|Sri|Shri|Mr|Ms|Mrs)\.?\s+[A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)*,\s+(?:Managing\s+)?Director\s*\(DIN\s+(\d{8})\)', flags: m, multi: true}], llm: false}
       authorized_signatories: {llm_hint: "The people the resolution authorises to sign or execute the loan documents: one entry per person, the name only (leave out Smt., Sri., titles, designations and DIN numbers). List every person named."}
 
   audited_financial_statements:
@@ -134,41 +136,111 @@ types:
     identity: {name: legal_name, gstin: gstin}
     fields:
       gstin: {identifier: gstin, validators: ['format:gstin']}
-      legal_name: {aliases: ['Legal Name']}
-      trade_name: {aliases: ['Trade Name']}
-      tax_period: {aliases: ['Tax Period']}
-      filing_date: {aliases: ['Date of Filing']}
-      return_status: {patterns: ['Return status:\s*([A-Za-z]+)']}
+      legal_name: {aliases: ['2\(a\)\.?\s*Legal name of the registered person', 'Legal Name'], llm_hint: 'the legal name of the registered person (table 2(a))'}
+      trade_name: {aliases: ['2\(b\)\.?\s*Trade name, if any', 'Trade Name']}
+      financial_year: {patterns: ['^\s*Year\s+(\d{4}-\d{2})\s*$']}
+      tax_period: {patterns: ['^\s*Period\s+([A-Za-z]{3}(?:-[A-Za-z]{3})?)\s*$', {regex: '(?:^|\s{2})Tax Period\s+(\S.*?)(?:\s{2}|$)', flags: m}]}
+      filing_date: {aliases: ['2\(d\)\.?\s*Date of ARN', 'Date of Filing']}
+      return_status: {patterns: ['Return status:\s*([A-Za-z]+)'], llm: false}
+    # Two layouts, tried in order: the portal's own printout, then the summary layout.
     tables:
       outward_supplies:
-        start: '^Nature of Supplies'
-        end: '^4\.'
-        row_start_col: description
-        row_start: '^\([a-z]\)\s'
-        columns:
-          - {name: description, header: '^Nature$'}
-          - {name: taxable_value, header: '^Taxable$', align: right}
-          - {name: igst, header: '^IGST$', align: right}
-          - {name: cgst, header: '^CGST$', align: right}
-          - {name: sgst, header: '^SGST$', align: right}
+        - start: '^Nature of Supplies\s+Total taxable\s+Integrated\s+Central'
+          end: '^3\.2'
+          row_start_col: description
+          row_start: '^\([a-z]\s?\)\s'
+          columns:
+            - {name: description, header: '^Nature$'}
+            - {name: taxable_value, header: '^Total$', align: right}
+            - {name: igst, header: '^Integrated$', align: right}
+            - {name: cgst, header: '^Central$', align: right}
+            - {name: sgst, header: '^State/UT$', align: right}
+            - {name: cess, header: '^Cess$', align: right, emit: false}
+        - start: '^Nature of Supplies'
+          end: '^4\.'
+          row_start_col: description
+          row_start: '^\([a-z]\)\s'
+          columns:
+            - {name: description, header: '^Nature$'}
+            - {name: taxable_value, header: '^Taxable$', align: right}
+            - {name: igst, header: '^IGST$', align: right}
+            - {name: cgst, header: '^CGST$', align: right}
+            - {name: sgst, header: '^SGST$', align: right}
       input_tax_credit:
-        start: '^Details\s+IGST'
-        end: '^5\.'
-        row_start_col: description
-        row_start: '^\([A-Z]\)\s'
-        columns:
-          - {name: description, header: '^Details$'}
-          - {name: igst, header: '^IGST$', align: right}
-          - {name: cgst, header: '^CGST$', align: right}
-          - {name: sgst, header: '^SGST$', align: right}
+        - start: '^Details\s+Integrated tax\s+Central tax\s+State/UT tax\s+Cess'
+          end: '^5\s'
+          row_start_col: description
+          row_start: '^(?:\(\d\)|\([A-D]\)|[A-D]\.)\s'
+          skip_rows: ['^[AB]\.\s']
+          columns:
+            - {name: description, header: '^Details$'}
+            - {name: igst, header: '^Integrated$', align: right}
+            - {name: cgst, header: '^Central$', align: right}
+            - {name: sgst, header: '^State/UT$', align: right}
+            - {name: cess, header: '^Cess$', align: right, emit: false}
+        - start: '^Details\s+IGST'
+          end: '^5\.'
+          row_start_col: description
+          row_start: '^\([A-Z]\)\s'
+          columns:
+            - {name: description, header: '^Details$'}
+            - {name: igst, header: '^IGST$', align: right}
+            - {name: cgst, header: '^CGST$', align: right}
+            - {name: sgst, header: '^SGST$', align: right}
       tax_payment:
-        start: '^Description\s+Tax Payable'
-        end: '^Verified and filed'
+        - start: '^Descripti\s+Tax'
+          header_lines: 8
+          end: '^\(B\)'
+          row_start_col: tax_type
+          row_start: '^(?:Integrated|Central|State/UT|Cess)\b'
+          columns:
+            - {name: tax_type, header: '^Descripti$'}
+            - {name: tax_amount, header: '^Tax$', align: right, join: ''}
+            - {name: adjustment, header: '^Adjustment$', align: right, emit: false}
+            - {name: net_payable, header: '^Net$', align: right, emit: false}
+            - {name: itc_igst, header: '^Integrated$', align: right, emit: false}
+            - {name: itc_cgst, header: '^Central$', align: right, emit: false}
+            - {name: itc_sgst, header: '^State/UT$', align: right, emit: false}
+            - {name: itc_cess, header: '^Cess$', align: right, emit: false}
+            - {name: cash, header: '^paid$', nth: 1, align: right, join: '', emit: false}
+            - {name: interest, header: '^Interest$', align: right, emit: false}
+            - {name: late_fee, header: '^Late$', align: right, emit: false}
+        - start: '^Description\s+Tax Payable'
+          end: '^Verified and filed'
+          columns:
+            - {name: tax_type, header: '^Description$'}
+            - {name: tax_amount, header: '^Tax$', align: right}
+            - {name: paid_itc, header: '^Paid$', nth: 0, align: right, emit: false}
+            - {name: paid_cash, header: '^Paid$', nth: 1, align: right, emit: false}
+
+  gstr_1:
+    identity: {name: legal_name, gstin: gstin}
+    fields:
+      gstin: {identifier: gstin, validators: ['format:gstin']}
+      legal_name: {aliases: ['Legal name of the registered person'], llm_hint: 'the legal name of the registered person (table 2(a))'}
+      trade_name: {aliases: ['Trade name if any']}
+      financial_year: {patterns: ['Financial year\s+(\d{4}-\d{2})\b']}
+      tax_period: {patterns: ['Tax period\s+([A-Za-z]{3}(?:-[A-Za-z]{3})?)\s*$']}
+      filing_date: {aliases: ['ARN date']}
+    # One row per section, from its Total line, headed by the section's own title (4A, 4B, 5, 6A to 6C, 7, 8).
+    tables:
+      outward_supplies:
+        start: '^Description\s+Value'
+        header_lines: 1
+        end: '^9A'
+        multi_page: true
+        attach: heading
+        row_start_col: description
+        row_start: '^Total\b'
         columns:
-          - {name: tax_type, header: '^Description$'}
-          - {name: tax_amount, header: '^Tax$', align: right}
-          - {name: paid_itc, header: '^Paid$', nth: 0, align: right, emit: false}
-          - {name: paid_cash, header: '^Paid$', nth: 1, align: right, emit: false}
+          - {name: description, header: '^Description$'}
+          - {name: records, header: '^records$', align: right}
+          - {name: doc_type, header: '^Type$', emit: false}
+          - {name: value, header: '^Value$', align: right}
+          - {name: igst, header: '^Integrated$', align: right}
+          - {name: cgst, header: '^Central$', align: right}
+          - {name: sgst, header: '^State/UT$', align: right}
+          - {name: cess, header: '^Cess$', align: right}
 
   bank_statement:
     identity: {name: account_holder_name}

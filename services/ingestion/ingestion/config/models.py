@@ -232,6 +232,7 @@ class TableRule(Strict):
     row_start: str | None = None
     row_start_col: str | None = None
     text_only: Literal["row", "continuation"] = "row"
+    attach: Literal["nearest", "heading"] = "nearest"   # heading: a label-only line heads the next row; any other line outside a row is dropped
     skip_rows: list[str] = Field(default_factory=list)
     max_attach: float = 24.0   # points; a line farther than this from every row is not part of the table
     multi_page: bool = False
@@ -245,7 +246,7 @@ IDENTITY_KEYS = {"name", "pan", "din", "dob", "gstin", "cin"}
 class TypeFields(Strict):
     fields: dict[str, FieldRule] = Field(default_factory=dict)
     identity: dict[str, str] = Field(default_factory=dict)  # identity key (name, pan, din, dob, gstin, cin) -> schema field
-    tables: dict[str, TableRule] = Field(default_factory=dict)
+    tables: dict[str, TableRule | list[TableRule]] = Field(default_factory=dict)   # a list is layout variants, tried in order
 
 
 class FieldsConfig(Strict):
@@ -430,17 +431,18 @@ class IngestionConfig(Strict):
                     _compile(p.regex, f"fields.{tid}.{fname}", problems, p.flags)
                 if rule.page_match:
                     _compile(rule.page_match, f"fields.{tid}.{fname}.page_match", problems)
-            for tname, tr in tf.tables.items():
+            for tname, trs in tf.tables.items():
                 if tname not in tnames:
                     problems.append(f"fields.{tid}.tables.{tname}: not in the type's schema")
                     continue
                 cols = {c.name for c in tnames[tname].columns}
-                emitted = {c.name for c in tr.columns if c.emit}
-                if emitted - cols:
-                    problems.append(f"fields.{tid}.tables.{tname}: unknown columns {sorted(emitted - cols)}")
-                for rx in [tr.start, tr.end, tr.row_start, tr.page_match, *tr.skip_rows, *[c.header for c in tr.columns]]:
-                    if rx:
-                        _compile(rx, f"fields.{tid}.tables.{tname}", problems)
+                for tr in trs if isinstance(trs, list) else [trs]:
+                    emitted = {c.name for c in tr.columns if c.emit}
+                    if emitted - cols:
+                        problems.append(f"fields.{tid}.tables.{tname}: unknown columns {sorted(emitted - cols)}")
+                    for rx in [tr.start, tr.end, tr.row_start, tr.page_match, *tr.skip_rows, *[c.header for c in tr.columns]]:
+                        if rx:
+                            _compile(rx, f"fields.{tid}.tables.{tname}", problems)
         for r in self.validators.rules:
             for t in r.types:
                 if t not in types:

@@ -32,7 +32,7 @@ variants, are configuration (`config/ingestion/quality.yaml`, `fields.yaml`).
 - Run the OpenAI adapter against the live API and confirm the model id (`config/ingestion/llm.yaml`); record the answers for the reference set.
 - Measure scanned and photographed documents and spreadsheets from RBL; the OCR and sheet paths are tested with constructed inputs only.
 - Near-duplicate detection (F-08.5): the service does not compare documents; the engine only drops a file with the same hash.
-- Document defects `unstamped` and `plain_paper` (F-13.2): `unsigned` is a validator; the others need a rule.
+- Document defects (F-13.2): `unsigned`, `unstamped` and `plain_paper` are validators (marker-based: a blank stamp or signature block, a missing letterhead line); the fixtures print none of the markers, so they are tested with constructed pages. Tune the label lists on RBL's documents.
 - Cross-check of the number of GSTR-3B returns against the cover page's own table.
 - Spot-check a trusted text layer against the rendered page (F-07.1).
 - Party attribution of identifiers beyond caption anchoring (F-15.5).

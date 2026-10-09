@@ -82,7 +82,7 @@ def extract_instance(cfg: IngestionConfig, doc_type: str, pages: list[Page], mod
         if tr is None:
             tables[t.name] = {"status": "missing", "reason": "no_rule", "columns": [c.name for c in t.columns], "rows": [], "source": None, "repairs": [], "unparsed": 0}
             continue
-        res = build_table(tr, t.columns, pages, cfg.routing.reading)
+        res = next((r for v in (tr if isinstance(tr, list) else [tr]) if (r := build_table(v, t.columns, pages, cfg.routing.reading))), None)
         if res is None:
             tables[t.name] = {"status": "missing", "reason": "table_not_found", "columns": [c.name for c in t.columns], "rows": [], "source": None, "repairs": [], "unparsed": 0}
             continue

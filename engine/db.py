@@ -192,7 +192,7 @@ MIGRATIONS: list[str] = [
     ALTER TABLE documents ADD COLUMN defects TEXT NOT NULL DEFAULT '[]';
     ALTER TABLE documents ADD COLUMN split_uncertain INTEGER NOT NULL DEFAULT 0;
     ALTER TABLE documents ADD COLUMN assigned_types TEXT;   -- JSON list: a person's type assignment (overlay)
-    ALTER TABLE documents ADD COLUMN party_flag TEXT;       -- refiled | no_party
+    ALTER TABLE documents ADD COLUMN party_flag TEXT;       -- refiled | conflict | no_party
     ALTER TABLE documents ADD COLUMN party_override TEXT;   -- a person's attribution (party id, or 'none')
     ALTER TABLE documents ADD COLUMN created_at TEXT;
     CREATE UNIQUE INDEX documents_key ON documents(case_id, file_id, doc_key);

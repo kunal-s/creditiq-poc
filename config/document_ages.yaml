@@ -4,3 +4,19 @@
 
 ages:
   - {type_id: bank_statement, max_age_days: 45, measured_from: period_end, source: provisional}
+  # Measured from the last day of the return's period, so a quarterly or monthly filer who has filed on
+  # time is current: the latest quarter ends at most 113 days before the quarterly due date.
+  - {type_id: gstr_3b, max_age_days: 120, measured_from: period_end, source: provisional}
+  - {type_id: board_resolution_borrowing, max_age_days: 365, measured_from: document_date, source: provisional}
+  - {type_id: income_tax_return, max_age_days: 730, measured_from: document_date, source: provisional}
+
+# Dates that must hold at the case's as_of date (no wall clock). expires: the date is the last
+# day of validity; not_future: the date is when the document was made. Absent date: no finding.
+validity:
+  - {type_id: director_kyc, field: expiry_date, kind: expires, source: provisional}
+  - {type_id: director_kyc, field: issue_date, kind: not_future, source: provisional}
+  - {type_id: certificate_of_incorporation, field: date_of_incorporation, kind: not_future, source: provisional}
+  - {type_id: board_resolution_borrowing, field: resolution_date, kind: not_future, source: provisional}
+  - {type_id: income_tax_return, field: filing_date, kind: not_future, source: provisional}
+  - {type_id: gstr_3b, field: filing_date, kind: not_future, source: provisional}
+  - {type_id: bank_statement, field: statement_period_end, kind: not_future, source: provisional}

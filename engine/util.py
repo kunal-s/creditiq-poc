@@ -81,6 +81,35 @@ def parse_period(value: object) -> tuple[int, int] | None:
     return (d.year, d.month) if d else None
 
 
+def period_months(value: object, financial_year: object = None) -> list[tuple[int, int]]:
+    """The calendar months a return covers, oldest first: one for a monthly period (see parse_period),
+    three for a quarterly one ("Jan-Mar" in financial year "2025-26", or "Jan-Mar 2026"). A range
+    without a year needs the financial year (the one beginning in April of its first year); without
+    it the months cannot be placed and the answer is empty."""
+    if value is None:
+        return []
+    text = str(value).split("|")[0].strip()
+    if financial_year is None and "|" in str(value):
+        financial_year = str(value).split("|", 1)[1].strip()
+    single = parse_period(text)
+    if single:
+        return [single]
+    m = re.fullmatch(r"([A-Za-z]+)\s*(?:-|to|–)\s*([A-Za-z]+)(?:[\s,'-]+(\d{4}))?", text, re.I)
+    if not m or m[1].lower() not in _MONTHS or m[2].lower() not in _MONTHS:
+        return []
+    first, last = _MONTHS[m[1].lower()], _MONTHS[m[2].lower()]
+    span = (last - first) % 12 + 1
+    if m[3]:
+        end_year = int(m[3])
+    else:
+        fy = re.match(r"\s*(\d{4})\s*[-/]\s*(\d{2}|\d{4})\s*$", str(financial_year or ""))
+        if not fy:
+            return []
+        end_year = int(fy[1]) + (1 if last < 4 else 0)
+    end = (end_year, last)
+    return [month_add(*end, -k) for k in range(span - 1, -1, -1)]
+
+
 def month_add(year: int, month: int, delta: int) -> tuple[int, int]:
     index = year * 12 + (month - 1) + delta
     return index // 12, index % 12 + 1

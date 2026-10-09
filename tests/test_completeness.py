@@ -162,3 +162,45 @@ def test_tc15_checklist_per_constitution_and_facility(client, published_data_roo
     assert readiness["provisional"] is False
     for item in items.values():
         assert item["why"] and item["basis"]
+
+
+# --- Date validity (expiry, validity end, future-dated), all measured from as_of ---
+
+
+def test_future_dated_documents_are_flagged_against_as_of(client, published_data_root):
+    """Moving as_of before the documents were made leaves them dated after it."""
+    rm, case_id = _case(client, published_data_root, [n for n, _ in case_files("complete")], "Kestrel Fabricators Pvt Ltd")
+    set_as_of(published_data_root, case_id, "2025-06-01")
+    _, items = _checklist(client, rm, case_id)
+    resolution = items["board_resolution"]
+    assert resolution["status"] == "insufficient" and "after 1 Jun 2025" in resolution["deficiency"]
+    redo = [q["text"] for q in client.get(f"/api/cases/{case_id}/queries", headers=rm).json()
+            if q["group"] == "documents_to_redo" and not q["resolved"]]
+    assert any("which is after 1 Jun 2025" in t for t in redo), redo
+
+
+def test_expired_id_document_is_insufficient_with_its_expiry_date(client, published_data_root):
+    from engine import db
+
+    rm, case_id = _case(client, published_data_root, [n for n, _ in case_files("complete")], "Kestrel Fabricators Pvt Ltd")
+    conn = db.connect(published_data_root)
+    try:
+        doc = conn.execute(
+            "SELECT id FROM documents WHERE case_id = ? AND classification LIKE '%director_kyc%' ORDER BY id LIMIT 1", (case_id,)
+        ).fetchone()
+        conn.execute(
+            """INSERT INTO field_values (id, case_id, document_id, field, value, method, status)
+               VALUES ('fv-expiry', ?, ?, 'expiry_date', '"2026-03-31"', 'manual', 'corrected')""",
+            (case_id, doc["id"]),
+        )
+    finally:
+        conn.close()
+    _, items = _checklist(client, rm, case_id)
+    kyc = items["kyc_promoters"]
+    assert kyc["status"] == "insufficient" and "Expired: valid until 31 Mar 2026" in kyc["deficiency"]
+
+
+def test_absent_validity_date_is_no_finding(client, published_data_root):
+    rm, case_id = _case(client, published_data_root, [n for n, _ in case_files("complete")], "Kestrel Fabricators Pvt Ltd")
+    _, items = _checklist(client, rm, case_id)
+    assert items["kyc_promoters"]["status"] == "satisfied"

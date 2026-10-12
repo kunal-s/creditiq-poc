@@ -108,6 +108,7 @@ label_keywords:
   audited_financial_statements: ['balance\s*sheet', 'audited', '\bfinancials?\b', '\bafs\b', '\bp\s*&?\s*l\b', 'profit\s*(and|&)?\s*loss']
   income_tax_return: ['\bitr\b', 'itr\s*-?\s*v', 'income\s*tax\s*return', 'computation']
   gstr_3b: ['gstr\s*-?\s*3b', '\b3b\b']
+  gstr_1: ['gstr\s*-?\s*1\b']
   company_pan: ['\bpan\b']
   director_kyc: ['\bpan\b', 'kyc', 'aadhaa?r', 'passport', 'voter', 'driving', 'licen[cs]e']
   certificate_of_incorporation: ['incorporation', '\bcoi\b']
@@ -127,6 +128,7 @@ query_phrasing:
   quality: "{document}: {request}"
   label: "The file \"{file}\" is named as {label} but contains {content}. Please confirm it was sent as intended."
   party_refiled: "The file \"{file}\" is named for {label_party} but carries the details of {party}. Please confirm whose document it is."
+  party_conflict: "The file \"{file}\" carries the identity number of {party} but the name of {label_party}. Please confirm whose document it is."
   party_unmatched: "The file \"{file}\" ({content}) does not match anyone on this application. Please confirm whose document it is and how they are connected to the borrower."
 
 # Sessions (F-03.3).

@@ -111,3 +111,43 @@ def test_a_break_with_one_explanation_names_it():
             {"debit": 200, "credit": None, "balance": 1799}])
     repair_running_balance(t, CFG, {})
     assert t.repairs[0]["column"] == "credit" and t.repairs[0]["to"] == 999  # the later row continues from 1999
+
+
+class _Line:
+    def __init__(self, text):
+        self.text = text
+
+
+class _Page:
+    def __init__(self, *texts):
+        self._lines = [_Line(t) for t in texts]
+
+    def content_lines(self):
+        return self._lines
+
+
+def _defects(cfg, doc_type, *page_lines):
+    checks = validate_instance(cfg, doc_type, [_Page(*page_lines)], {}, {})
+    codes = {r.id: r.defect for r in cfg.validators.rules if r.defect}
+    return sorted({codes[c["id"]] for c in checks if c["id"] in codes and c["outcome"] != "pass"})
+
+
+def test_blank_company_stamp_is_the_unstamped_defect(cfg):
+    assert _defects(cfg, "board_resolution_borrowing", "Signature: A Director", "Company seal:") == ["unstamped"]
+    assert _defects(cfg, "board_resolution_borrowing", "Signature: A Director", "Company seal: affixed") == []
+    assert _defects(cfg, "board_resolution_borrowing", "Signature: A Director") == []  # no stamp block printed
+
+
+def test_sanction_letter_without_a_lender_letterhead_is_plain_paper(cfg):
+    assert _defects(cfg, "sanction_letter", "SANCTION LETTER", "Borrower X", "Amount 10") == ["plain_paper"]
+    assert _defects(cfg, "sanction_letter", "TIDEWATER FINANCE LIMITED", "SANCTION LETTER") == []
+
+
+def test_unsigned_declaration_and_sanction_letter(cfg):
+    lines = ("Kestrel Fabricators Private Limited", "Signature:")
+    assert _defects(cfg, "existing_facilities_declaration", *lines) == ["unsigned"]
+    assert _defects(cfg, "existing_facilities_declaration", "Kestrel Fabricators Private Limited", "Signature: A Director") == []
+
+
+def test_borrower_name_on_the_second_line_is_not_a_letterhead(cfg):
+    assert _defects(cfg, "sanction_letter", "SANCTION LETTER", "Borrower Kestrel Fabricators Private Limited", "Amount 10") == ["plain_paper"]

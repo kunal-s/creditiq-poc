@@ -5,6 +5,7 @@ reading:
   x_tolerance: 1.5
   y_tolerance: 2.0
   line_y_tol: 3.0              # points; words within this vertical distance share a line
+  line_overlap: 0.5            # ...or whose boxes overlap vertically by this share of the shorter one (scales with the text)
   column_gap: 12.0             # points; a larger gap inside a line is a column break
   boilerplate:                 # lines matching are kept in the index but excluded from text
     - '^Page\s+\d+\s+of\s+\d+$'

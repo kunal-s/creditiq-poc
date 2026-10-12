@@ -105,17 +105,29 @@ class Page:
                           for l in self.lines]}
 
 
-def build_lines(page_no: int, words: list[Word], *, y_tol: float, column_gap: float, boilerplate: list[re.Pattern]) -> list[Line]:
+def _same_line(w: Word, g: list[Word], y_tol: float, min_overlap: float) -> bool:
+    """A word joins a line when its centre is within `y_tol` points of the line's, or when its box
+    overlaps the line's vertically by at least `min_overlap` of the shorter of the two. The second
+    test scales with the text, so OCR boxes that sit a few points apart on one row still join."""
+    n = len(g)
+    if abs(w.yc - sum(x.yc for x in g) / n) <= y_tol:
+        return True
+    if min_overlap <= 0:
+        return False
+    top, bottom = sum(x.y0 for x in g) / n, sum(x.y1 for x in g) / n
+    shorter = min(w.y1 - w.y0, bottom - top)
+    return shorter > 0 and min(w.y1, bottom) - max(w.y0, top) >= min_overlap * shorter
+
+
+def build_lines(page_no: int, words: list[Word], *, y_tol: float, column_gap: float, boilerplate: list[re.Pattern],
+                min_overlap: float = 0.0) -> list[Line]:
     """Group words into lines by vertical position; a wide gap inside a line becomes two spaces."""
     ws = sorted(words, key=lambda w: (w.yc, w.x0))
     groups: list[list[Word]] = []
     for w in ws:
-        if groups:
-            g = groups[-1]
-            mean = sum(x.yc for x in g) / len(g)
-            if abs(w.yc - mean) <= y_tol:
-                g.append(w)
-                continue
+        if groups and _same_line(w, groups[-1], y_tol, min_overlap):
+            groups[-1].append(w)
+            continue
         groups.append([w])
     lines: list[Line] = []
     for i, g in enumerate(groups):

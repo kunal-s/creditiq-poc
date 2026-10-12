@@ -119,10 +119,23 @@ def k_blank_after_label(r, td, fields, tables, pages):
     return _check(r.id, r.label or r.id, "pass", "No blank signature block found.", r.severity)
 
 
+def k_letterhead(r, td, fields, tables, pages):
+    """The first lines of the first page carry a letterhead: a line matching the configured pattern."""
+    if not pages:
+        return _check(r.id, r.label or r.id, "pass", "No page to check.", r.severity)
+    rx = re.compile(r.params["pattern"], re.I)
+    skip = re.compile(r.params["ignore"], re.I) if r.params.get("ignore") else None
+    # Lines that name the addressee or borrower are not the sender's letterhead.
+    top = [l.text for l in pages[0].content_lines()[: int(r.params.get("lines", 4))] if not (skip and skip.search(l.text))]
+    if any(rx.search(t) for t in top):
+        return _check(r.id, r.label or r.id, "pass", "Letterhead found.", r.severity)
+    return _check(r.id, r.label or r.id, _fail(r.severity), "No letterhead at the top of the first page.", r.severity)
+
+
 KINDS: dict[str, Callable] = {
     "required": k_required, "cin_year_matches_date": k_cin_year, "pan_entity_char": k_pan_char,
     "date_order": k_date_order, "balance_continuity": k_balance, "rows_equal": k_rows_equal,
-    "blank_after_label": k_blank_after_label,
+    "blank_after_label": k_blank_after_label, "letterhead": k_letterhead,
 }
 
 

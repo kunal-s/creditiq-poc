@@ -100,7 +100,7 @@ def test_parse_shows_what_the_extractor_will_read(tmp_path, dev_config):
 
 def test_types_are_listed_read_only(tmp_path, dev_config):
     r = client(tmp_path, dev_config).get("/v1/types").json()
-    assert len(r["types"]) == 12 and r["config"]["version"] == "dev"
+    assert len(r["types"]) == 13 and r["config"]["version"] == "dev"
 
 
 def test_stream_emits_stage_events_then_the_result(tmp_path, dev_config):

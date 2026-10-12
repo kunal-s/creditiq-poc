@@ -306,6 +306,14 @@
             }
           },
           {
+            "name": "authorized_person_dins",
+            "type": "array",
+            "required": false,
+            "items": {
+              "type": "string"
+            }
+          },
+          {
             "name": "authorized_signatories",
             "type": "array",
             "required": false,
@@ -511,6 +519,11 @@
             "required": false
           },
           {
+            "name": "financial_year",
+            "type": "string",
+            "required": false
+          },
+          {
             "name": "tax_period",
             "type": "string",
             "required": true
@@ -582,6 +595,81 @@
               },
               {
                 "name": "tax_amount",
+                "type": "number"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "document_type": "gstr_1",
+      "display_name": "GSTR-1",
+      "category": "financials",
+      "priority": "optional",
+      "schema": {
+        "fields": [
+          {
+            "name": "gstin",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "legal_name",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "trade_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "financial_year",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "tax_period",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "filing_date",
+            "type": "date",
+            "required": false
+          }
+        ],
+        "tables": [
+          {
+            "name": "outward_supplies",
+            "columns": [
+              {
+                "name": "description",
+                "type": "string"
+              },
+              {
+                "name": "records",
+                "type": "number"
+              },
+              {
+                "name": "value",
+                "type": "number"
+              },
+              {
+                "name": "igst",
+                "type": "number"
+              },
+              {
+                "name": "cgst",
+                "type": "number"
+              },
+              {
+                "name": "sgst",
+                "type": "number"
+              },
+              {
+                "name": "cess",
                 "type": "number"
               }
             ]

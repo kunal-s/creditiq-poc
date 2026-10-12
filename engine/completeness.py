@@ -44,6 +44,7 @@ from .util import (
     months_before,
     parse_date,
     parse_period,
+    period_months,
     ranges_label,
 )
 
@@ -189,7 +190,9 @@ class Evaluator:
         self.data = data
         self.as_of = data.as_of
         self.types = {t.id: t for t in reader.load_document_types(root).types}
-        self.ages = {a.type_id: a for a in reader.load_document_ages(root).ages}
+        ages = reader.load_document_ages(root)
+        self.ages = {a.type_id: a for a in ages.ages}
+        self.validity_rules = ages.validity
 
     def type_name(self, type_id: str) -> str:
         t = self.types.get(type_id)
@@ -267,6 +270,7 @@ class Evaluator:
                 defs += result
         defs += self.defects(item, docs)
         defs += self.outdated(item, docs, per_account=cov is not None and cov.kind == "account_months")
+        defs += self.validity(docs)
 
         if defs:
             return ItemResult(item, state("insufficient", "; ".join(d.text for d in defs), docs), defs)
@@ -354,9 +358,7 @@ class Evaluator:
                 missing = self._partner_missing_periods(d)
                 have |= set(window) - missing
                 continue
-            p = parse_period(d.value("tax_period") or d.row["instance_key"])
-            if p:
-                have.add(p)
+            have |= set(period_months(d.value("tax_period") or d.row["instance_key"], d.value("financial_year")))
         absent = [p for p in window if p not in have]
         if not absent:
             return []
@@ -513,7 +515,41 @@ class Evaluator:
     def _dated(self, d: Doc, type_id: str) -> tuple[date | None, str]:
         age = self.ages[type_id]
         names = AGE_FIELDS.get(age.measured_from, [])
-        return parse_date(d.value(*names)), names[0] if names else ""
+        when = parse_date(d.value(*names))
+        if when is None and age.measured_from == "period_end":
+            # A return has no period-end date of its own: it is the last day of its last month.
+            months = period_months(d.value("tax_period") or d.row["instance_key"], d.value("financial_year"))
+            if months:
+                return month_end(*months[-1]), "tax_period"
+        return when, names[0] if names else ""
+
+    def validity(self, docs: list[Doc]) -> list[Deficiency]:
+        """Printed dates that must hold at as_of: an expiry or validity end not yet passed,
+        a document date not after as_of. An absent or unreadable date is no finding."""
+        out = []
+        for d in docs:
+            for rule in self.validity_rules:
+                if rule.type_id not in d.types:
+                    continue
+                when = parse_date(d.value(rule.field))
+                if when is None:
+                    continue
+                name = self.type_name(rule.type_id)
+                if rule.kind == "expires" and when < self.as_of:
+                    out.append(Deficiency(
+                        "redo", f"expired:{d.id}:{rule.field}",
+                        f"Expired: valid until {display_date(when)}, before {display_date(self.as_of)} ({d.label})",
+                        f"expired on {display_date(when)}; a copy valid on {display_date(self.as_of)} is needed",
+                        [d.evidence(rule.field)], {"date": display_date(when)}, name=name,
+                    ))
+                elif rule.kind == "not_future" and when > self.as_of:
+                    out.append(Deficiency(
+                        "redo", f"future_dated:{d.id}:{rule.field}",
+                        f"Dated {display_date(when)}, after {display_date(self.as_of)} ({d.label})",
+                        f"dated {display_date(when)}, which is after {display_date(self.as_of)}; please check the date",
+                        [d.evidence(rule.field)], {"date": display_date(when)}, name=name,
+                    ))
+        return out
 
     def outdated(self, item: ChecklistItemDef, docs: list[Doc], *, per_account: bool) -> list[Deficiency]:
         """F-13.2: the newest document of each aged type (per account for bank

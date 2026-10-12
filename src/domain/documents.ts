@@ -279,5 +279,11 @@ export function summariseSignals(
 const GENERIC_INSTANCE_KEYS = new Set(["none", "person", "year", "property", "period", "account"]);
 
 export function instanceLabel(key: string | null | undefined): string | undefined {
-  return key && !GENERIC_INSTANCE_KEYS.has(key) ? key : undefined;
+  // A key made of several parts ("Jan-Mar | 2025-26") reads with a dot between them.
+  return key && !GENERIC_INSTANCE_KEYS.has(key)
+    ? key
+        .split("|")
+        .map((x) => x.trim())
+        .join(" · ")
+    : undefined;
 }

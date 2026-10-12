@@ -48,9 +48,28 @@ def _words_to_number(words: list[str]) -> int | None:
     return total + cur if seen else None
 
 
+_MON = "|".join(sorted((k for k in MONTHS), key=len, reverse=True))
+_DATE_TOKENS = (
+    r"\b\d{4}-\d{1,2}-\d{1,2}\b",
+    r"\b\d{1,2}[/-]\d{1,2}[/-]\d{4}\b",
+    rf"\b\d{{1,2}}(?:st|nd|rd|th)?[\s-]+(?:{_MON})\.?,?[\s-]+\d{{4}}\b",
+    rf"\b(?:{_MON})\s+\d{{1,2}}(?:st|nd|rd|th)?,?\s+\d{{4}}\b",
+)
+
+
 def to_date(raw: str) -> str | None:
+    """The whole text is a date, or it holds exactly one (a filing date followed by a time or a note).
+    Two different dates in one value is a range or a sentence, not a date: that is left unparsed."""
     s = collapse_ws(raw).strip(" .,;")
-    low = s.casefold()
+    v = _date_exact(s.casefold())
+    if v:
+        return v
+    found = {_date_exact(m.group(0)) for rx in _DATE_TOKENS for m in re.finditer(rx, s.casefold())}
+    found.discard(None)
+    return found.pop() if len(found) == 1 else None
+
+
+def _date_exact(low: str) -> str | None:
     m = re.fullmatch(r"(\d{4})-(\d{1,2})-(\d{1,2})", low)
     if m:
         return _valid(int(m[1]), int(m[2]), int(m[3]))
@@ -70,9 +89,20 @@ def to_date(raw: str) -> str | None:
     return None
 
 
+def _two_quantities(s: str) -> bool:
+    """Digits, then words, then more digits ("4,027,498 as on 31 March 2025"): joining them would
+    invent a number, so the value is left unparsed."""
+    body = re.sub(r"(?i)(?:₹|rs\.?|inr)", "", s)
+    body = re.sub(r"(?i)\b(?:cr|dr)\.?\s*$", "", body.strip())
+    return re.search(r"\d[\d,.\s]*[A-Za-z]{2,}[^\d]*\d", body) is not None
+
+
 def to_number(raw: str) -> int | float | None:
     s = collapse_ws(raw)
     if not s or s in ("-", "--", "—"):
+        return None
+    s = re.sub(r"(?<=\d)\s*\([^)]*[A-Za-z][^)]*\)\s*$", "", s)  # "4,027,498 (illustrative)": a trailing note
+    if _two_quantities(s):
         return None
     neg = s.startswith("(") and s.rstrip(" CrDr.").endswith(")") or bool(re.match(r"^[-−–]\s*", s)) or bool(re.search(r"(?<![A-Za-z])Dr\.?$", s))
     digits = re.sub(r"(?i)(?:₹|rs\.?|inr)", "", s)

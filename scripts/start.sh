@@ -15,6 +15,26 @@ FRONTEND_PORT="${FRONTEND_PORT:-4173}"
 export INGEST_PORT="${INGEST_PORT:-3102}"
 export CREDITIQ_INGEST_URL="${CREDITIQ_INGEST_URL:-http://127.0.0.1:${INGEST_PORT}}"
 
+# Model calls: "replay" (the default) answers only from recordings, so a document nobody has run
+# before has none and its model steps fail. "record" calls the model once, stores the answer, and
+# replays it from then on; "live" calls without storing. Both need a key, taken from the
+# environment, else .env.local, else workflow/private/openai.env.
+export INGEST_MODEL_MODE="${INGEST_MODEL_MODE:-replay}"
+case "$INGEST_MODEL_MODE" in
+  record|live)
+    for KEY_FILE in "$ROOT_DIR/.env.local" "$ROOT_DIR/workflow/private/openai.env"; do
+      if [ -z "${OPENAI_API_KEY:-}" ] && [ -f "$KEY_FILE" ]; then
+        set -a; . "$KEY_FILE"; set +a
+      fi
+    done
+    if [ -z "${OPENAI_API_KEY:-}" ]; then
+      echo "error: INGEST_MODEL_MODE=$INGEST_MODEL_MODE needs OPENAI_API_KEY (set it, or give it a value in .env.local)." >&2
+      exit 1
+    fi
+    export OPENAI_API_KEY
+    ;;
+esac
+
 for need in .venv node_modules services/ingestion/.venv; do
   if [ ! -d "$need" ]; then
     echo "error: $need not found. See README.md, one-time setup." >&2
@@ -44,7 +64,7 @@ wait_for() {
 }
 
 echo "Starting document-processing service on http://127.0.0.1:${INGEST_PORT}"
-# The model runs from recordings unless INGEST_MODEL_MODE is record or live (and OPENAI_API_KEY is set).
+# Model mode: see INGEST_MODEL_MODE above.
 (cd services/ingestion && PYTHONPATH=. exec .venv/bin/python -m ingestion.cli serve) &
 PIDS+=($!)
 wait_for "http://127.0.0.1:${INGEST_PORT}/v1/health" "the document-processing service"

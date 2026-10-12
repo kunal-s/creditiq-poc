@@ -84,6 +84,7 @@ types:
   - id: gstr_1
     name: GSTR-1
     group: tax
+    provenance: borrower_supplied
     description: Statement of outward supplies (GSTR-1), one per tax period.
     instance_key: period
 

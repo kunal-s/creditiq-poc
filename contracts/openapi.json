@@ -4494,6 +4494,17 @@
             ],
             "title": "Designation Key"
           },
+          "din_field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Din Field"
+          },
           "din_key": {
             "anyOf": [
               {

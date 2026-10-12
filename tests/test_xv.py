@@ -1284,6 +1284,7 @@ def test_every_check_short_of_documents_names_each_document_in_one_wording(clien
         "Audited financial statements": "the audited financial statements",
         "Income tax return": "the income tax return",
         "GSTR-3B": "the GSTR-3B",
+        "GSTR-1": "the GSTR-1",
         "Bank statement": "the bank statement",
         "Declaration of existing facilities": "the declaration of existing facilities",
         "Sanction letter": "the sanction letter",

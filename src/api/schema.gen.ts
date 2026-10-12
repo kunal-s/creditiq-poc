@@ -2373,6 +2373,8 @@ export interface components {
     PartyList: {
       /** Designation Key */
       designation_key?: string | null;
+      /** Din Field */
+      din_field?: string | null;
       /** Din Key */
       din_key?: string | null;
       /** Field */

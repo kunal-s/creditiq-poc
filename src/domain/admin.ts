@@ -1,5 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
-import { api } from "@/api/client";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { api, ApiError } from "@/api/client";
+import type { SettingsChanges, SettingsPublishRequest } from "@/api/types";
 import { t, tOr } from "@/config/terminology";
 
 export function useConfigVersions() {
@@ -12,6 +13,41 @@ export function useUsers() {
 
 export function usePolicyConfig() {
   return useQuery({ queryKey: ["config", "policy"], queryFn: api.policyConfig });
+}
+
+/** The settings an Administrator edits (F-00.6), as the version in force has them. */
+export function useAdminSettings() {
+  return useQuery({ queryKey: ["admin", "settings"], queryFn: api.adminSettings });
+}
+
+/** What the draft would change, and why it could not be published. Publishes nothing. */
+export function usePreviewSettings() {
+  return useMutation({ mutationFn: (changes: SettingsChanges) => api.previewSettings(changes) });
+}
+
+/** Publish the draft as a new version. Every case's checks run again under it, so everything read
+ * from the configuration or from a case is read again. */
+export function usePublishSettings() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (body: SettingsPublishRequest) => api.publishSettings(body),
+    onSuccess: () => {
+      for (const queryKey of [["admin"], ["config"], ["cases"], ["review"]]) {
+        void client.invalidateQueries({ queryKey });
+      }
+    },
+  });
+}
+
+/** The reasons a publish was refused (422 `detail.problems`), word for word; null otherwise. */
+export function publishProblems(error: unknown): string[] | null {
+  if (!(error instanceof ApiError) || error.status !== 422) return null;
+  const detail = error.detail;
+  if (detail && typeof detail === "object" && "problems" in detail) {
+    const problems = (detail as { problems: unknown }).problems;
+    if (Array.isArray(problems)) return problems.map(String);
+  }
+  return null;
 }
 
 export function useAudit(filters: { caseId?: string; actor?: string; action?: string }) {

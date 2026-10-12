@@ -193,7 +193,7 @@ def test_gst_and_bank_are_compared_over_the_months_both_cover(client, analyst, p
     [f] = found["TO-05"]
     assert f["outcome"] == "fail" and f["area"] == "turnover" and f["scope"] == "Sep 2025 to Aug 2026"
     assert [s["value"] for s in f["sides"]] == [48_000_000, 33_600_000] and all(s["differs"] for s in f["sides"])
-    assert "30.0%" in f["explanation"] and f["tolerance"] == "10%"
+    assert "30.0%" in f["explanation"] and f["tolerance"] == "1%"
     assert len(f["detail"]["rows"]) == 12 and all(r["flagged"] for r in f["detail"]["rows"])
 
 

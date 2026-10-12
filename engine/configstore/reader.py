@@ -13,7 +13,10 @@ import json
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import BaseModel
+
 from .schema import (
+    SECTION_MODELS,
     AlignmentSection,
     ApprovalMatrixSection,
     CamSectionConfig,
@@ -55,6 +58,18 @@ def _load_section_json(data_root_str: str, version: str, section: str) -> dict:
 def _load_section(data_root: Path, section: str) -> dict:
     version = published_version(data_root)["version"]
     return _load_section_json(str(data_root), version, section)
+
+
+def published_sections(data_root: Path) -> dict[str, BaseModel]:
+    """Every authored section of the version now published, validated (the Administration
+    screen's edits are checked against the rest of the version, F-00.6)."""
+    return {name: model.model_validate(_load_section(data_root, name)) for name, model in SECTION_MODELS.items()}
+
+
+def published_ingestion_sections(data_root: Path) -> dict[str, dict]:
+    version = published_version(data_root)
+    return {name.removeprefix("ingestion."): _load_section_json(str(data_root), version["version"], name)
+            for name in version["section_hashes"] if name.startswith("ingestion.")}
 
 
 def load_policy(data_root: Path) -> PolicySection:
@@ -140,6 +155,7 @@ def publish_history(data_root: Path) -> list[dict]:
                 "prior_version": e.get("prior_version"),
                 "sections_changed": changed,
                 "current": e["version"] == current,
+                "origin": e.get("origin", "cli"),
             }
         )
     return sorted(out, key=lambda v: v["published_at"], reverse=True)

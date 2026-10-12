@@ -1,4 +1,4 @@
-import type { StageKey } from "@/api/types";
+import type { SessionUser, StageKey } from "@/api/types";
 import { t } from "@/config/terminology";
 
 // Navigation (docs/functional-requirements.md §6). The side menu holds the
@@ -79,6 +79,13 @@ export function caseTabPath(caseId: string, tab: CaseTab): string {
   return tab.to ? `${base}/${tab.to}` : base;
 }
 
+/** Where a user starts after signing in: the workbench, or for a role without one (the
+ * Administrator), the Settings screen. */
+export function homePath(user: Pick<SessionUser, "navGroups" | "permissions">): string {
+  if (user.navGroups.includes("workbench")) return "/";
+  return user.permissions.includes("config.read") ? "/admin/settings" : "/help";
+}
+
 export function buildNav(): NavGroup[] {
   return [
     {
@@ -103,6 +110,7 @@ export function buildNav(): NavGroup[] {
       group: t("nav.group.administration"),
       items: [
         { label: t("nav.admin.configuration"), to: "/admin", permission: "config.read" },
+        { label: t("nav.admin.settings"), to: "/admin/settings", permission: "config.read" },
         { label: t("nav.admin.policy"), to: "/admin/policy", permission: "config.read" },
         { label: t("nav.admin.checklist"), to: "/admin/checklist", permission: "config.read" },
         {

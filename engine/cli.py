@@ -114,6 +114,13 @@ def _cmd_config_publish(args: argparse.Namespace) -> int:
     """Publish, then re-run every case's checks (FRD principle 3), so that its findings, review
     items, queries, CAM and PD note follow the new version at once (--no-rerun: on their next run)."""
     root = Path(args.data_root)
+    at_risk = writer.app_edits_at_risk(data_root=root, private_dir=_private(args))
+    if at_risk and not args.discard_app_edits:
+        print("The version now published was edited on the Administration screen, and the configuration files\n"
+              f"say otherwise for: {', '.join(at_risk)}. Publishing the files would undo those edits.\n"
+              "Carry the edits into the files first (`creditiq config diff` shows them), or publish with\n"
+              "--discard-app-edits to replace them.", file=sys.stderr)
+        return 1
     record = writer.publish(data_root=root, author=args.author, note=args.note or "", private_dir=_private(args))
     print(json.dumps(record, indent=2))
     if args.no_rerun:
@@ -131,18 +138,14 @@ def _rerun_cases(root: Path) -> int:
         print("re-ran the checks of 0 case(s): no case store yet")
         return 0
     conn = db.connect(root)
-    failed: list[str] = []
     try:
-        case_ids = [r["id"] for r in conn.execute("SELECT id FROM cases ORDER BY created_at, id")]
-        for case_id in case_ids:
-            try:
-                pipeline.refresh_case(conn, root, case_id)
-            except Exception as e:  # one case must not stop the others; reported below
-                print(f"{case_id}: could not be re-run: {e}", file=sys.stderr)
-                failed.append(case_id)
+        ran, errors = pipeline.refresh_all_cases(conn, root)
     finally:
         conn.close()
-    print(f"re-ran the checks of {len(case_ids) - len(failed)} case(s)")
+    for case_id, error in errors.items():
+        print(f"{case_id}: could not be re-run: {error}", file=sys.stderr)
+    failed = list(errors)
+    print(f"re-ran the checks of {len(ran)} case(s)")
     if failed:
         print(f"{len(failed)} case(s) not re-run: {', '.join(failed)}", file=sys.stderr)
         return 1
@@ -286,6 +289,8 @@ def build_parser() -> argparse.ArgumentParser:
     config_publish.add_argument("--private-config", help=private_help)
     config_publish.add_argument("--no-rerun", action="store_true",
                                 help="publish only; each case follows the new version on its next run")
+    config_publish.add_argument("--discard-app-edits", action="store_true",
+                                help="publish the files even where they undo edits made on the Administration screen")
     config_publish.set_defaults(func=_cmd_config_publish)
     config_version = config_sub.add_parser("version", help="show the currently published version")
     config_version.add_argument("--data-root", default=DEFAULT_DATA_ROOT)

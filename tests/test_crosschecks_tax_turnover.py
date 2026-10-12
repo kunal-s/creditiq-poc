@@ -71,7 +71,7 @@ def _audited_revenue(client: TestClient, headers: dict, case_id: str, fy: str) -
     return next(f["value"] for f in year["figures"] if f["source"] == "financials")
 
 
-@pytest.mark.parametrize("ratio,outcome", [(0.97, "pass"), (0.80, "fail")])
+@pytest.mark.parametrize("ratio,outcome", [(0.995, "pass"), (0.80, "fail")])
 def test_turnover_in_the_return_against_the_audited_revenue(client, analyst, published_data_root, ratio, outcome):
     root = published_data_root
     case_id = _case(client, analyst, root)
@@ -84,13 +84,13 @@ def test_turnover_in_the_return_against_the_audited_revenue(client, analyst, pub
     assert [s["label"] for s in f["sides"]] == ["Turnover in the income tax return", "Audited financial statements"]
     assert [s["value"] for s in f["sides"]] == [round(revenue * ratio), revenue]
     if outcome == "fail":
-        assert "a variance of 20.0% (tolerance 10%)" in f["explanation"]
+        assert "a variance of 20.0% (tolerance 1%)" in f["explanation"]
         assert f["query"].startswith("Please explain the difference between the turnover in the income tax return")
     else:
-        assert f["explanation"] == "Variance 3.0% within 10%."
+        assert f["explanation"] == "Variance 0.5% within 1%."
 
 
-@pytest.mark.parametrize("filed,outcome,variance", [(11_500_000, "pass", "4.2%"), (9_000_000, "fail", "25.0%")])
+@pytest.mark.parametrize("filed,outcome,variance", [(11_940_000, "pass", "0.5%"), (9_000_000, "fail", "25.0%")])
 def test_turnover_in_the_return_against_a_full_year_of_gst(client, analyst, published_data_root, filed, outcome,
                                                            variance):
     root = published_data_root
@@ -113,7 +113,7 @@ def test_a_part_year_of_gst_leaves_the_comparison_incomplete(client, analyst, pu
     assert f["explanation"] == "GST outward supplies covers 8 of 12 months (Dec 2025, Jan 2026, Feb 2026… absent)."
 
 
-@pytest.mark.parametrize("filed,outcome", [(11_800_000, "pass"), (15_000_000, "fail")])
+@pytest.mark.parametrize("filed,outcome", [(11_940_000, "pass"), (15_000_000, "fail")])
 def test_turnover_in_the_return_against_bank_credits(client, analyst, published_data_root, filed, outcome):
     root = published_data_root
     case_id = _case(client, analyst, root)
@@ -190,12 +190,12 @@ def test_the_card_puts_the_return_beside_the_other_source(client, analyst, publi
     assert gst["label"] == "GST outward supplies (GSTR-3B)" and gst["value"] == 12_000_000
     [leg] = f["gaps"]
     assert (leg["amount"], leg["pct"], leg["breached"]) == (3_000_000, 25.0, True)
-    assert f["gap_tolerance"] == "10%"
+    assert f["gap_tolerance"] == "1%"
     [line] = f["highlights"]
     assert line["label"] == "Tax return against GST · FY 2025-26"
     assert [(x["label"], x["value"], x["differs"]) for x in line["facts"]] == [
         ("Tax return", 9_000_000, True), ("GST outward supplies", 12_000_000, False)]
-    assert line["note"] == "25.0% apart · tolerance 10%"
+    assert line["note"] == "25.0% apart · tolerance 1%"
     assert item["finding"]["area"] == "turnover"
 
 

@@ -2,8 +2,10 @@
 
 Every data endpoint needs a session and a permission (F-03.1). Response
 models come from engine/contracts (AD-4), so the OpenAPI schema, and the
-TypeScript types generated from it, match exactly. This app must never
-import the configuration writer (CLAUDE.md rule 4; enforced by .importlinter).
+TypeScript types generated from it, match exactly. The configuration writer is
+reached only through engine.admin_config, for an Administrator's publish from
+the Administration screen (F-00.6); nothing that runs on a case may import it
+(CLAUDE.md rule 4; enforced by .importlinter).
 """
 
 from __future__ import annotations
@@ -19,6 +21,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from python_multipart.exceptions import MultipartParseError
 
 from . import (
+    admin_config,
     approval,
     auth,
     cam,
@@ -58,6 +61,11 @@ from .contracts import (
     AuditPage,
     ConfigVersion,
     DirectoryUser,
+    EditableSettings,
+    SettingsChanges,
+    SettingsPreview,
+    SettingsPublished,
+    SettingsPublishRequest,
     CaseCreate,
     CaseDeleteRequest,
     Cam,
@@ -727,6 +735,35 @@ def audit_trail(
         "actors": [r[0] for r in conn.execute("SELECT DISTINCT actor FROM decision_log ORDER BY actor")],
         "actions": [r[0] for r in conn.execute("SELECT DISTINCT action FROM decision_log ORDER BY action")],
     }
+
+
+@app.get("/api/admin/settings", response_model=EditableSettings)
+def admin_settings(_: dict = Depends(require("config.read"))):
+    """The tolerances, norm thresholds, cross-check rules and approval matrix an Administrator
+    edits (F-00.6), as the version now published has them."""
+    return _config(admin_config.editable)
+
+
+@app.post("/api/admin/settings/preview", response_model=SettingsPreview)
+def admin_settings_preview(body: SettingsChanges, _: dict = Depends(require("config.publish"))):
+    """What the changes would change and why they could not be published; nothing is published."""
+    return _config(lambda root: admin_config.preview(root, body))
+
+
+@app.post("/api/admin/settings/publish", response_model=SettingsPublished)
+def admin_settings_publish(
+    body: SettingsPublishRequest,
+    user: dict = Depends(require("config.publish")),
+    conn: sqlite3.Connection = Depends(get_conn),
+):
+    """Publish the changes as a new configuration version, with the Administrator's note, and
+    re-run every case's checks (F-00.6). 422 with the problems when they cannot be published."""
+    try:
+        return admin_config.publish(conn, data_root(), user, body.note, body.changes)
+    except admin_config.SettingsInvalid as e:
+        raise HTTPException(status_code=422, detail={"problems": e.problems}) from e
+    except configstore_reader.NoPublishedConfig as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
 
 
 @app.get("/api/config/policy", response_model=PolicySection)

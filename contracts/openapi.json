@@ -2187,6 +2187,15 @@
             "title": "Note",
             "type": "string"
           },
+          "origin": {
+            "default": "cli",
+            "enum": [
+              "cli",
+              "app"
+            ],
+            "title": "Origin",
+            "type": "string"
+          },
           "prior_version": {
             "anyOf": [
               {
@@ -2357,6 +2366,35 @@
           "label"
         ],
         "title": "DeviationCategory",
+        "type": "object"
+      },
+      "DeviationChange": {
+        "properties": {
+          "at_least": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At Least"
+          },
+          "levels_above": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Levels Above"
+          }
+        },
+        "title": "DeviationChange",
         "type": "object"
       },
       "DeviationRule": {
@@ -2556,6 +2594,433 @@
           "types"
         ],
         "title": "DocumentTypesSection",
+        "type": "object"
+      },
+      "EditableAuthority": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "level": {
+            "title": "Level",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "key",
+          "level",
+          "label"
+        ],
+        "title": "EditableAuthority",
+        "type": "object"
+      },
+      "EditableBand": {
+        "properties": {
+          "authority": {
+            "title": "Authority",
+            "type": "string"
+          },
+          "up_to_inr": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Up To Inr"
+          }
+        },
+        "required": [
+          "authority"
+        ],
+        "title": "EditableBand",
+        "type": "object"
+      },
+      "EditableDeviation": {
+        "properties": {
+          "at_least": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At Least"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "levels_above": {
+            "minimum": 0.0,
+            "title": "Levels Above",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "category",
+          "label",
+          "levels_above",
+          "at_least"
+        ],
+        "title": "EditableDeviation",
+        "type": "object"
+      },
+      "EditableMatrix": {
+        "properties": {
+          "authorities": {
+            "items": {
+              "$ref": "#/components/schemas/EditableAuthority"
+            },
+            "title": "Authorities",
+            "type": "array"
+          },
+          "deviations": {
+            "items": {
+              "$ref": "#/components/schemas/EditableDeviation"
+            },
+            "title": "Deviations",
+            "type": "array"
+          },
+          "products": {
+            "items": {
+              "$ref": "#/components/schemas/EditableProduct"
+            },
+            "title": "Products",
+            "type": "array"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "authorities",
+          "products",
+          "deviations"
+        ],
+        "title": "EditableMatrix",
+        "type": "object"
+      },
+      "EditableNorm": {
+        "description": "A norm with its own threshold (eligibility, documentation, security cover).",
+        "properties": {
+          "family": {
+            "enum": [
+              "eligibility",
+              "ratios",
+              "security_cover",
+              "documentation"
+            ],
+            "title": "Family",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "min",
+              "max"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "threshold": {
+            "title": "Threshold",
+            "type": "number"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "enum": [
+                  "x",
+                  "%",
+                  "days",
+                  "years",
+                  "inr",
+                  "count",
+                  "rank"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          }
+        },
+        "required": [
+          "id",
+          "family",
+          "label",
+          "unit",
+          "kind",
+          "threshold"
+        ],
+        "title": "EditableNorm",
+        "type": "object"
+      },
+      "EditableProduct": {
+        "properties": {
+          "bands": {
+            "items": {
+              "$ref": "#/components/schemas/EditableBand"
+            },
+            "title": "Bands",
+            "type": "array"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "bands"
+        ],
+        "title": "EditableProduct",
+        "type": "object"
+      },
+      "EditableRatio": {
+        "description": "A financial-ratio norm's thresholds: acceptable is the norm; marginal is shown beside it.",
+        "properties": {
+          "acceptable": {
+            "title": "Acceptable",
+            "type": "number"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "min",
+              "max"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "marginal": {
+            "title": "Marginal",
+            "type": "number"
+          },
+          "norms": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Norms",
+            "type": "array"
+          },
+          "unit": {
+            "enum": [
+              "x",
+              "%",
+              "days"
+            ],
+            "title": "Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "unit",
+          "kind",
+          "acceptable",
+          "marginal",
+          "norms"
+        ],
+        "title": "EditableRatio",
+        "type": "object"
+      },
+      "EditableRule": {
+        "properties": {
+          "area": {
+            "title": "Area",
+            "type": "string"
+          },
+          "blocking": {
+            "title": "Blocking",
+            "type": "boolean"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "serious",
+              "moderate",
+              "mild"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "area",
+          "severity",
+          "blocking",
+          "enabled"
+        ],
+        "title": "EditableRule",
+        "type": "object"
+      },
+      "EditableSettings": {
+        "description": "What the Administration screen edits, as the published version has it.",
+        "properties": {
+          "author": {
+            "title": "Author",
+            "type": "string"
+          },
+          "matrix": {
+            "$ref": "#/components/schemas/EditableMatrix"
+          },
+          "norms": {
+            "items": {
+              "$ref": "#/components/schemas/EditableNorm"
+            },
+            "title": "Norms",
+            "type": "array"
+          },
+          "origin": {
+            "enum": [
+              "cli",
+              "app"
+            ],
+            "title": "Origin",
+            "type": "string"
+          },
+          "published_at": {
+            "title": "Published At",
+            "type": "string"
+          },
+          "ratios": {
+            "items": {
+              "$ref": "#/components/schemas/EditableRatio"
+            },
+            "title": "Ratios",
+            "type": "array"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/EditableRule"
+            },
+            "title": "Rules",
+            "type": "array"
+          },
+          "tolerances": {
+            "items": {
+              "$ref": "#/components/schemas/EditableTolerance"
+            },
+            "title": "Tolerances",
+            "type": "array"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "published_at",
+          "author",
+          "origin",
+          "tolerances",
+          "ratios",
+          "norms",
+          "rules",
+          "matrix"
+        ],
+        "title": "EditableSettings",
+        "type": "object"
+      },
+      "EditableTolerance": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "rules": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Rules",
+            "type": "array"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "unit": {
+            "enum": [
+              "%",
+              "inr",
+              "days",
+              "ratio"
+            ],
+            "title": "Unit",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "value",
+          "unit",
+          "source",
+          "rules"
+        ],
+        "title": "EditableTolerance",
         "type": "object"
       },
       "Evidence": {
@@ -5425,6 +5890,34 @@
         "title": "QueryItem",
         "type": "object"
       },
+      "RatioChange": {
+        "properties": {
+          "acceptable": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acceptable"
+          },
+          "marginal": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Marginal"
+          }
+        },
+        "title": "RatioChange",
+        "type": "object"
+      },
       "Readiness": {
         "description": "F-13.4: weighted proportion satisfied, against the configured gate.",
         "properties": {
@@ -5946,6 +6439,50 @@
         "title": "ReviewItem",
         "type": "object"
       },
+      "RuleChange": {
+        "properties": {
+          "blocking": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blocking"
+          },
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          },
+          "severity": {
+            "anyOf": [
+              {
+                "enum": [
+                  "serious",
+                  "moderate",
+                  "mild"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Severity"
+          }
+        },
+        "title": "RuleChange",
+        "type": "object"
+      },
       "SessionUser": {
         "properties": {
           "branch": {
@@ -6003,6 +6540,226 @@
           "permissions"
         ],
         "title": "SessionUser",
+        "type": "object"
+      },
+      "SettingChange": {
+        "description": "One value that changes: where it is, its label, and before and after as raw values.",
+        "properties": {
+          "after": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "After"
+          },
+          "before": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Before"
+          },
+          "field": {
+            "title": "Field",
+            "type": "string"
+          },
+          "item": {
+            "title": "Item",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "section": {
+            "enum": [
+              "tolerances",
+              "policy",
+              "crosschecks",
+              "approval_matrix"
+            ],
+            "title": "Section",
+            "type": "string"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          }
+        },
+        "required": [
+          "section",
+          "item",
+          "label",
+          "field",
+          "before",
+          "after"
+        ],
+        "title": "SettingChange",
+        "type": "object"
+      },
+      "SettingsChanges": {
+        "description": "Only what changes; anything left out stays as published.",
+        "properties": {
+          "bands": {
+            "additionalProperties": {
+              "items": {
+                "$ref": "#/components/schemas/EditableBand"
+              },
+              "type": "array"
+            },
+            "title": "Bands",
+            "type": "object"
+          },
+          "deviations": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/DeviationChange"
+            },
+            "title": "Deviations",
+            "type": "object"
+          },
+          "norms": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Norms",
+            "type": "object"
+          },
+          "ratios": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/RatioChange"
+            },
+            "title": "Ratios",
+            "type": "object"
+          },
+          "rules": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/RuleChange"
+            },
+            "title": "Rules",
+            "type": "object"
+          },
+          "tolerances": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Tolerances",
+            "type": "object"
+          }
+        },
+        "title": "SettingsChanges",
+        "type": "object"
+      },
+      "SettingsPreview": {
+        "properties": {
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/SettingChange"
+            },
+            "title": "Changes",
+            "type": "array"
+          },
+          "problems": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Problems",
+            "type": "array"
+          }
+        },
+        "required": [
+          "changes",
+          "problems"
+        ],
+        "title": "SettingsPreview",
+        "type": "object"
+      },
+      "SettingsPublishRequest": {
+        "properties": {
+          "changes": {
+            "$ref": "#/components/schemas/SettingsChanges"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "note",
+          "changes"
+        ],
+        "title": "SettingsPublishRequest",
+        "type": "object"
+      },
+      "SettingsPublished": {
+        "properties": {
+          "cases_failed": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Cases Failed",
+            "type": "array"
+          },
+          "cases_rerun": {
+            "title": "Cases Rerun",
+            "type": "integer"
+          },
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/SettingChange"
+            },
+            "title": "Changes",
+            "type": "array"
+          },
+          "published_at": {
+            "title": "Published At",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "published_at",
+          "changes",
+          "cases_rerun",
+          "cases_failed"
+        ],
+        "title": "SettingsPublished",
         "type": "object"
       },
       "SourceColumn": {
@@ -7169,6 +7926,167 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/admin/settings": {
+      "get": {
+        "description": "The tolerances, norm thresholds, cross-check rules and approval matrix an Administrator\nedits (F-00.6), as the version now published has them.",
+        "operationId": "admin_settings_api_admin_settings_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EditableSettings"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Admin Settings"
+      }
+    },
+    "/api/admin/settings/preview": {
+      "post": {
+        "description": "What the changes would change and why they could not be published; nothing is published.",
+        "operationId": "admin_settings_preview_api_admin_settings_preview_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsChanges"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsPreview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Admin Settings Preview"
+      }
+    },
+    "/api/admin/settings/publish": {
+      "post": {
+        "description": "Publish the changes as a new configuration version, with the Administrator's note, and\nre-run every case's checks (F-00.6). 422 with the problems when they cannot be published.",
+        "operationId": "admin_settings_publish_api_admin_settings_publish_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsPublishRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsPublished"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Admin Settings Publish"
+      }
+    },
     "/api/audit": {
       "get": {
         "description": "The append-only decision log, newest first, filtered and paged. RBL's reference record\nand the reviewer's decisions on it are for the reviewer only (F-25): anyone else sees that\nthe import, confirmation or decision happened, never what it said.",

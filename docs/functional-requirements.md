@@ -127,7 +127,7 @@ These apply to every feature. A pull request that breaks one is not mergeable.
 | Relationship Manager (RM) | Creates the case, uploads documents, reads the checklist and the query list. Uses a phone as well as a desktop | Appraisals, New appraisal; in an appraisal: Overview, Documents, Completeness |
 | Credit Analyst | Resolves review items; reads extracted data, cross-checks and policy; produces outputs | Appraisals, New appraisal, Review queue; every appraisal tab except Comparison |
 | Credit Manager | Checker for maker-checker items; adjudicates in the comparison (the RBL credit reviewer signs in with this role) | Appraisals, Review queue, Scorecard; every appraisal tab |
-| Administrator | Authors and publishes configuration from the command line. No screen | None |
+| Administrator | Edits the tolerances, policy norm thresholds, cross-check rules and approval matrix on the Administration screen and publishes them as a new version (F-00.6); authors and publishes the rest of the configuration from the command line. No access to appraisals | Administration: Settings, Configuration, Policy, Checklist, Document types, Users |
 
 Role gating is enforced on the server, and a role sees only the screens listed for it.
 
@@ -237,6 +237,7 @@ flowchart TB
 | Comparison | `/appraisals/$caseId/comparison` | This case's outputs beside RBL's record, with adjudication | F-25 | Manager | No |
 | Review queue | `/review` | Everything waiting for a person, across cases | F-17 | Analyst, Manager | No |
 | Scorecard | `/scorecard` | The criteria per case and across the case set | F-26 | Manager | No |
+| Administration · Settings | `/admin/settings` | The tolerances, policy norm thresholds, cross-check rules and approval matrix in force; the Administrator edits them, reviews the changes and publishes them with a note | F-00.6 | Administrator (edits); Analyst, Manager (read) | No |
 
 **The case workspace.** Every tab shows:
 - a persistent case header: borrower, constitution, product and amount, PAN and GSTIN, case ID, RM, open review items;
@@ -383,12 +384,20 @@ stateDiagram-v2
   - bureau report;
   - declaration of existing facilities;
   - sanction letters of existing facilities (when facilities are declared).
+- **F-00.6** The Administrator edits these settings on the Administration screen:
+  - the cross-check tolerances;
+  - the policy norms' thresholds (a financial ratio's acceptable and marginal values; the threshold of every other norm). Changing the request-against-turnover norm moves the turnover method's working-capital requirement with it, keeping the margin;
+  - each cross-check rule: whether it runs, its severity and whether it blocks submission;
+  - the approval matrix: each product's amount bands and their authorities, and each deviation category's steps.
+
+  A change is previewed first, with each value before and after and any reason it cannot be published. It is validated as a publish from the files is, and published with the Administrator's name and a note of at least three characters. It becomes a new immutable version marked as edited on the screen, it is recorded in the audit trail, and every case's checks re-run. Analysts and Credit Managers see the same settings read-only. A later publish from the files refuses to undo a section edited on the screen unless asked to (`--discard-app-edits`).
 
 **Acceptance**
 
 - Every section validates and publishes.
 - Publishing unchanged configuration reuses the same version.
-- Runtime code cannot import the writer (the import-linter contract passes).
+- Runtime code cannot import the writer: only the command line and the Administrator's publish from the screen can (the import-linter contract passes).
+- A setting changed on the screen is in force for every case once published, and a publish from the files does not undo it unnoticed.
 
 **Configuration needed from RBL.** See C.3. Until each artefact arrives, the delivery team proposes an interim version, tagged `provisional`, except where C.3 or C.4 says otherwise. RBL's own artefacts are published from a git-ignored directory (`creditiq config publish --private-config DIR`), so they never enter the repository.
 
@@ -1140,7 +1149,7 @@ Turnover — audited, GST and banked turnover by year and by month
      ┌ GST outward supplies (GSTR-3B) ┐ ┌ Business credits in bank statements ┐
      │ INR 12.00 cr · Apr–Mar · 12/12 │ │ INR 9.00 cr · Apr–Mar · 2 accounts  │
      Gap against bank credits: INR 3.00 cr · 25.0% of GST outward supplies
-     RBL tolerance: 10% — breached on GST outward supplies against bank credits
+     RBL tolerance: 1% — breached on GST outward supplies against bank credits
      Period │ Filed │ 3.1(a)+(b)+(c)      Month │ Account │ Credits │ Excluded credits …
  …
 Bank accounts — …

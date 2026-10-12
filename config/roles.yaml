@@ -3,8 +3,9 @@
 # checked against the private excluded-terms list (CLAUDE.md rule 3).
 #
 # Authored config, not the published policy/checklist store: nothing here
-# changes without a new commit. Configuration publishing is done by an
-# Administrator from the command line, so there is no admin role in the UI.
+# changes without a new commit. The Administrator edits tolerances, norm
+# thresholds, cross-check rules and the approval matrix on the Administration
+# screen (F-00.6); the rest of the configuration is published from the command line.
 
 roles:
   - id: rm
@@ -13,6 +14,8 @@ roles:
     label: Credit Analyst
   - id: credit-manager
     label: Credit Manager
+  - id: administrator
+    label: Administrator
 
 # Nav groups each role may see (src/components/shell/nav.ts). Anything not
 # listed here is not rendered for that role; within a group, each item is
@@ -21,11 +24,13 @@ navByRole:
   rm: [workbench, help]
   analyst: [workbench, governance, administration, help]
   credit-manager: [workbench, governance, administration, help]
+  administrator: [administration, help]
 
 # What each role may do (F-03.1). The server denies anything not listed.
 # case.read.all: see every case (an RM sees only cases they created).
 # case.delete: delete a case and everything it owns (F-01.5; an RM only their own).
 # finding.escalation: decide a cross-check discrepancy an analyst escalated (the Credit Manager).
+# config.publish: edit settings on the Administration screen and publish them as a new version (F-00.6).
 permissions:
   rm: [case.create, case.read, case.delete, document.upload, checklist.read, query.read]
   analyst: [case.create, case.read, case.read.all, case.delete, document.upload, checklist.read, query.read,
@@ -34,6 +39,7 @@ permissions:
   credit-manager: [case.read, case.read.all, case.delete, checklist.read, query.read, data.read, review.read,
                    review.decide, finding.read, output.read, manual.check, comparison.adjudicate,
                    finding.escalation, scorecard.read, audit.read, config.read]
+  administrator: [config.read, config.publish, audit.read]
 
 # Every user signs in with this shared password until F-03 introduces named
 # credentials. Hash format: pbkdf2_sha256$<iterations>$<base64 salt>$<base64 digest>.
@@ -57,3 +63,8 @@ users:
     role: credit-manager
     email: meenal.kulkarni@rblbank.com
     branch: Mumbai hub
+  - id: nikhil-sawant
+    name: Nikhil Sawant
+    role: administrator
+    email: nikhil.sawant@rblbank.com
+    branch: Head office

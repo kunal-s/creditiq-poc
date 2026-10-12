@@ -76,7 +76,7 @@ def _span(message: str, text: str) -> dict:
 
 def _kestrel(client: TestClient, headers: dict, root: Path) -> str:
     """A case like the demo's Kestrel: the bureau gives another PAN and GSTIN and names a promoter the
-    KYC does not; GST INR 12.00 cr and audited INR 11.80 cr against bank credits of INR 9.00 cr, with
+    KYC does not; GST INR 11.82 cr and audited INR 11.80 cr against bank credits of INR 9.00 cr, with
     INR 18.00 cr declared; a declared account without a statement, a statement not declared and an
     account seen only in a transfer; Ashwood declared at INR 80.00 lakh against INR 95.00 lakh in the
     sanction letter and the bureau, Tidewater in the bureau only, and its instalments in the bank."""
@@ -90,7 +90,7 @@ def _kestrel(client: TestClient, headers: dict, root: Path) -> str:
     add_doc(root, case_id, "company_pan", {"pan": PAN, "company_name": CO})
     add_doc(root, case_id, "income_tax_return", {"pan": PAN, "taxpayer_name": CO})
     for period in PERIODS:
-        gstr(root, case_id, period, 10_000_000, gstin=GSTIN)
+        gstr(root, case_id, period, 9_850_000, gstin=GSTIN)
     audited(root, case_id, "2026-03-31")  # revenue INR 11.80 cr; long-term borrowings INR 1.50 cr
     add_doc(root, case_id, "director_kyc", {"person_name": TARUN, "din": "01234567", "pan": "ABCPV1234K"})
     add_doc(root, case_id, "director_kyc", {"person_name": ISHITA, "din": "07654321", "pan": "ABCPB5678M"})
@@ -132,11 +132,11 @@ def test_each_area_card_shows_the_key_figures_of_its_greatest_discrepancies(clie
     # The turnover figures in rupees (the screen writes them in crores), the smaller marked, how far apart.
     assert _lines(board, "turnover") == [
         ("TO-02", "GST against bank credits · FY 2025-26",
-         [("GST outward supplies", 120_000_000, False), ("Bank credits", 90_000_000, True)], "25.0% apart · tolerance 10%"),
+         [("GST outward supplies", 118_200_000, False), ("Bank credits", 90_000_000, True)], "23.9% apart · tolerance 1%"),
         ("TO-03", "Audited against bank credits · FY 2025-26",
-         [("Audited", 118_000_000, False), ("Bank credits", 90_000_000, True)], "23.7% apart · tolerance 10%"),
+         [("Audited", 118_000_000, False), ("Bank credits", 90_000_000, True)], "23.7% apart · tolerance 1%"),
         ("TO-04", "Declared against audited · FY 2025-26",
-         [("Declared", 180_000_000, False), ("Audited", 118_000_000, True)], "34.4% apart · tolerance 20%"),
+         [("Declared", 180_000_000, False), ("Audited", 118_000_000, True)], "34.4% apart · tolerance 2%"),
     ]
     assert [x["unit"] for a in board["areas"] if a["area"] == "turnover" for h in a["highlights"] for x in h["facts"]] == [
         "inr"] * 6
@@ -189,8 +189,8 @@ def test_without_a_discrepancy_an_area_shows_what_could_not_run_then_what_passed
     audited(root, case_id, "2026-03-31", set_rows={"(a) Long-term borrowings": 0})  # revenue INR 11.80 cr
     for period in PERIODS:
         gstr(root, case_id, period, 9_800_000, gstin=GSTIN)  # INR 11.76 cr
-    bank(root, case_id, [{"date": f"{ym}-15", "description": "NEFT CR CUSTOMER RECEIPT", "credit": 9_600_000}
-                         for ym in FY26], holder=CO)  # INR 11.52 cr
+    bank(root, case_id, [{"date": f"{ym}-15", "description": "NEFT CR CUSTOMER RECEIPT", "credit": 9_780_000}
+                         for ym in FY26], holder=CO)  # INR 11.74 cr
     _refresh(root, case_id)
     board = _board(client, analyst, case_id)
     outcomes = {i["finding"]["rule_id"]: i["finding"]["outcome"] for i in board["items"]}
@@ -204,9 +204,9 @@ def test_without_a_discrepancy_an_area_shows_what_could_not_run_then_what_passed
     # Every turnover check ran and passed: the figures, and how far apart within the tolerance.
     assert _lines(board, "turnover") == [
         ("TO-01", "Audited against GST · FY 2025-26",
-         [("Audited", 118_000_000, False), ("GST outward supplies", 117_600_000, False)], "0.3% apart · within 10%"),
+         [("Audited", 118_000_000, False), ("GST outward supplies", 117_600_000, False)], "0.3% apart · within 1%"),
         ("TO-02", "GST against bank credits · FY 2025-26",
-         [("GST outward supplies", 117_600_000, False), ("Bank credits", 115_200_000, False)], "2.0% apart · within 10%"),
+         [("GST outward supplies", 117_600_000, False), ("Bank credits", 117_360_000, False)], "0.2% apart · within 1%"),
         ("TO-03", "Audited against bank credits · FY 2025-26",
-         [("Audited", 118_000_000, False), ("Bank credits", 115_200_000, False)], "2.4% apart · within 10%"),
+         [("Audited", 118_000_000, False), ("Bank credits", 117_360_000, False)], "0.5% apart · within 1%"),
     ]

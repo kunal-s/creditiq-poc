@@ -367,16 +367,16 @@
      "rows": [
       {
        "cells": {
-        "balance": 14500000,
-        "credit": 9500000,
+        "balance": 14750000,
+        "credit": 9750000,
         "date": "2025-09-05",
         "debit": null,
         "description": "NEFT CR CUSTOMER RECEIPT",
         "reference_number": "NEFT/0000"
        },
        "raw": {
-        "balance": "14500000",
-        "credit": "9500000",
+        "balance": "14750000",
+        "credit": "9750000",
         "date": "2025-09-05",
         "description": "NEFT CR CUSTOMER RECEIPT",
         "reference_number": "NEFT/0000"
@@ -399,14 +399,14 @@
         "balance": 5200000,
         "credit": null,
         "date": "2025-09-07",
-        "debit": 9300000,
+        "debit": 9550000,
         "description": "NEFT DR SUPPLIER PAYMENT",
         "reference_number": "NEFT/P0000"
        },
        "raw": {
         "balance": "5200000",
         "date": "2025-09-07",
-        "debit": "9300000",
+        "debit": "9550000",
         "description": "NEFT DR SUPPLIER PAYMENT",
         "reference_number": "NEFT/P0000"
        },
@@ -454,16 +454,16 @@
       },
       {
        "cells": {
-        "balance": 14450000,
-        "credit": 9500000,
+        "balance": 14700000,
+        "credit": 9750000,
         "date": "2025-10-05",
         "debit": null,
         "description": "NEFT CR CUSTOMER RECEIPT",
         "reference_number": "NEFT/0001"
        },
        "raw": {
-        "balance": "14450000",
-        "credit": "9500000",
+        "balance": "14700000",
+        "credit": "9750000",
         "date": "2025-10-05",
         "description": "NEFT CR CUSTOMER RECEIPT",
         "reference_number": "NEFT/0001"
@@ -486,14 +486,14 @@
         "balance": 5150000,
         "credit": null,
         "date": "2025-10-07",
-        "debit": 9300000,
+        "debit": 9550000,
         "description": "NEFT DR SUPPLIER PAYMENT",
         "reference_number": "NEFT/P0001"
        },
        "raw": {
         "balance": "5150000",
         "date": "2025-10-07",
-        "debit": "9300000",
+        "debit": "9550000",
         "description": "NEFT DR SUPPLIER PAYMENT",
         "reference_number": "NEFT/P0001"
        },
@@ -541,16 +541,16 @@
       },
       {
        "cells": {
-        "balance": 14400000,
-        "credit": 9500000,
+        "balance": 14650000,
+        "credit": 9750000,
         "date": "2025-11-05",
         "debit": null,
         "description": "NEFT CR CUSTOMER RECEIPT",
         "reference_number": "NEFT/0002"
        },
        "raw": {
-        "balance": "14400000",
-        "credit": "9500000",
+        "balance": "14650000",
+        "credit": "9750000",
         "date": "2025-11-05",
         "description": "NEFT CR CUSTOMER RECEIPT",
         "reference_number": "NEFT/0002"
@@ -573,14 +573,14 @@
         "balance": 5100000,
         "credit": null,
         "date": "2025-11-07",
-        "debit": 9300000,
+        "debit": 9550000,
         "description": "NEFT DR SUPPLIER PAYMENT",
         "reference_number": "NEFT/P0002"
        },
        "raw": {
         "balance": "5100000",
         "date": "2025-11-07",
-        "debit": "9300000",
+        "debit": "9550000",
         "description": "NEFT DR SUPPLIER PAYMENT",
         "reference_number": "NEFT/P0002"
        },
@@ -628,16 +628,16 @@
       },
       {
        "cells": {
-        "balance": 14350000,
-        "credit": 9500000,
+        "balance": 14600000,
+        "credit": 9750000,
         "date": "2025-12-05",
         "debit": null,
         "description": "NEFT CR CUSTOMER RECEIPT",
         "reference_number": "NEFT/0003"
        },
        "raw": {
-        "balance": "14350000",
-        "credit": "9500000",
+        "balance": "14600000",
+        "credit": "9750000",
         "date": "2025-12-05",
         "description": "NEFT CR CUSTOMER RECEIPT",
         "reference_number": "NEFT/0003"
@@ -660,14 +660,14 @@
         "balance": 5050000,
         "credit": null,
         "date": "2025-12-07",
-        "debit": 9300000,
+        "debit": 9550000,
         "description": "NEFT DR SUPPLIER PAYMENT",
         "reference_number": "NEFT/P0003"
        },
        "raw": {
         "balance": "5050000",
         "date": "2025-12-07",
-        "debit": "9300000",
+        "debit": "9550000",
         "description": "NEFT DR SUPPLIER PAYMENT",
         "reference_number": "NEFT/P0003"
        },
@@ -715,16 +715,16 @@
       },
       {
        "cells": {
-        "balance": 14300000,
-        "credit": 9500000,
+        "balance": 14550000,
+        "credit": 9750000,
         "date": "2026-01-05",
         "debit": null,
         "description": "NEFT CR CUSTOMER RECEIPT",
         "reference_number": "NEFT/0004"
        },
        "raw": {
-        "balance": "14300000",
-        "credit": "9500000",
+        "balance": "14550000",
+        "credit": "9750000",
         "date": "2026-01-05",
         "description": "NEFT CR CUSTOMER RECEIPT",
         "reference_number": "NEFT/0004"
@@ -747,14 +747,14 @@
         "balance": 5000000,
         "credit": null,
         "date": "2026-01-07",
-        "debit": 9300000,
+        "debit": 9550000,
         "description": "NEFT DR SUPPLIER PAYMENT",
         "reference_number": "NEFT/P0004"
        },
        "raw": {
         "balance": "5000000",
         "date": "2026-01-07",
-        "debit": "9300000",
+        "debit": "9550000",
         "description": "NEFT DR SUPPLIER PAYMENT",
         "reference_number": "NEFT/P0004"
        },
@@ -802,16 +802,16 @@
       },
       {
        "cells": {
-        "balance": 14250000,
-        "credit": 9500000,
+        "balance": 14500000,
+        "credit": 9750000,
         "date": "2026-02-05",
         "debit": null,
         "description": "NEFT CR CUSTOMER RECEIPT",
         "reference_number": "NEFT/0005"
        },
        "raw": {
-        "balance": "14250000",
-        "credit": "9500000",
+        "balance": "14500000",
+        "credit": "9750000",
         "date": "2026-02-05",
         "description": "NEFT CR CUSTOMER RECEIPT",
         "reference_number": "NEFT/0005"
@@ -834,14 +834,14 @@
         "balance": 4950000,
         "credit": null,
         "date": "2026-02-07",
-        "debit": 9300000,
+        "debit": 9550000,
         "description": "NEFT DR SUPPLIER PAYMENT",
         "reference_number": "NEFT/P0005"
        },
        "raw": {
         "balance": "4950000",
         "date": "2026-02-07",
-        "debit": "9300000",
+        "debit": "9550000",
         "description": "NEFT DR SUPPLIER PAYMENT",
         "reference_number": "NEFT/P0005"
        },
@@ -889,16 +889,16 @@
       },
       {
        "cells": {
-        "balance": 14200000,
-        "credit": 9500000,
+        "balance": 14450000,
+        "credit": 9750000,
         "date": "2026-03-05",
         "debit": null,
         "description": "NEFT CR CUSTOMER RECEIPT",
         "reference_number": "NEFT/0006"
        },
        "raw": {
-        "balance": "14200000",
-        "credit": "9500000",
+        "balance": "14450000",
+        "credit": "9750000",
         "date": "2026-03-05",
         "description": "NEFT CR CUSTOMER RECEIPT",
         "reference_number": "NEFT/0006"
@@ -921,14 +921,14 @@
         "balance": 4900000,
         "credit": null,
         "date": "2026-03-07",
-        "debit": 9300000,
+        "debit": 9550000,
         "description": "NEFT DR SUPPLIER PAYMENT",
         "reference_number": "NEFT/P0006"
        },
        "raw": {
         "balance": "4900000",
         "date": "2026-03-07",
-        "debit": "9300000",
+        "debit": "9550000",
         "description": "NEFT DR SUPPLIER PAYMENT",
         "reference_number": "NEFT/P0006"
        },
@@ -947,16 +947,16 @@
       },
       {
        "cells": {
-        "balance": 14400000,
-        "credit": 9500000,
+        "balance": 14650000,
+        "credit": 9750000,
         "date": "2026-04-05",
         "debit": null,
         "description": "NEFT CR CUSTOMER RECEIPT",
         "reference_number": "NEFT/0007"
        },
        "raw": {
-        "balance": "14400000",
-        "credit": "9500000",
+        "balance": "14650000",
+        "credit": "9750000",
         "date": "2026-04-05",
         "description": "NEFT CR CUSTOMER RECEIPT",
         "reference_number": "NEFT/0007"
@@ -979,14 +979,14 @@
         "balance": 5100000,
         "credit": null,
         "date": "2026-04-07",
-        "debit": 9300000,
+        "debit": 9550000,
         "description": "NEFT DR SUPPLIER PAYMENT",
         "reference_number": "NEFT/P0007"
        },
        "raw": {
         "balance": "5100000",
         "date": "2026-04-07",
-        "debit": "9300000",
+        "debit": "9550000",
         "description": "NEFT DR SUPPLIER PAYMENT",
         "reference_number": "NEFT/P0007"
        },
@@ -1005,16 +1005,16 @@
       },
       {
        "cells": {
-        "balance": 14600000,
-        "credit": 9500000,
+        "balance": 14850000,
+        "credit": 9750000,
         "date": "2026-05-05",
         "debit": null,
         "description": "NEFT CR CUSTOMER RECEIPT",
         "reference_number": "NEFT/0008"
        },
        "raw": {
-        "balance": "14600000",
-        "credit": "9500000",
+        "balance": "14850000",
+        "credit": "9750000",
         "date": "2026-05-05",
         "description": "NEFT CR CUSTOMER RECEIPT",
         "reference_number": "NEFT/0008"
@@ -1037,14 +1037,14 @@
         "balance": 5300000,
         "credit": null,
         "date": "2026-05-07",
-        "debit": 9300000,
+        "debit": 9550000,
         "description": "NEFT DR SUPPLIER PAYMENT",
         "reference_number": "NEFT/P0008"
        },
        "raw": {
         "balance": "5300000",
         "date": "2026-05-07",
-        "debit": "9300000",
+        "debit": "9550000",
         "description": "NEFT DR SUPPLIER PAYMENT",
         "reference_number": "NEFT/P0008"
        },
@@ -1063,16 +1063,16 @@
       },
       {
        "cells": {
-        "balance": 14800000,
-        "credit": 9500000,
+        "balance": 15050000,
+        "credit": 9750000,
         "date": "2026-06-05",
         "debit": null,
         "description": "NEFT CR CUSTOMER RECEIPT",
         "reference_number": "NEFT/0009"
        },
        "raw": {
-        "balance": "14800000",
-        "credit": "9500000",
+        "balance": "15050000",
+        "credit": "9750000",
         "date": "2026-06-05",
         "description": "NEFT CR CUSTOMER RECEIPT",
         "reference_number": "NEFT/0009"
@@ -1095,14 +1095,14 @@
         "balance": 5500000,
         "credit": null,
         "date": "2026-06-07",
-        "debit": 9300000,
+        "debit": 9550000,
         "description": "NEFT DR SUPPLIER PAYMENT",
         "reference_number": "NEFT/P0009"
        },
        "raw": {
         "balance": "5500000",
         "date": "2026-06-07",
-        "debit": "9300000",
+        "debit": "9550000",
         "description": "NEFT DR SUPPLIER PAYMENT",
         "reference_number": "NEFT/P0009"
        },
@@ -1121,16 +1121,16 @@
       },
       {
        "cells": {
-        "balance": 15000000,
-        "credit": 9500000,
+        "balance": 15250000,
+        "credit": 9750000,
         "date": "2026-07-05",
         "debit": null,
         "description": "NEFT CR CUSTOMER RECEIPT",
         "reference_number": "NEFT/0010"
        },
        "raw": {
-        "balance": "15000000",
-        "credit": "9500000",
+        "balance": "15250000",
+        "credit": "9750000",
         "date": "2026-07-05",
         "description": "NEFT CR CUSTOMER RECEIPT",
         "reference_number": "NEFT/0010"
@@ -1153,14 +1153,14 @@
         "balance": 5700000,
         "credit": null,
         "date": "2026-07-07",
-        "debit": 9300000,
+        "debit": 9550000,
         "description": "NEFT DR SUPPLIER PAYMENT",
         "reference_number": "NEFT/P0010"
        },
        "raw": {
         "balance": "5700000",
         "date": "2026-07-07",
-        "debit": "9300000",
+        "debit": "9550000",
         "description": "NEFT DR SUPPLIER PAYMENT",
         "reference_number": "NEFT/P0010"
        },
@@ -1179,16 +1179,16 @@
       },
       {
        "cells": {
-        "balance": 15200000,
-        "credit": 9500000,
+        "balance": 15450000,
+        "credit": 9750000,
         "date": "2026-08-05",
         "debit": null,
         "description": "NEFT CR CUSTOMER RECEIPT",
         "reference_number": "NEFT/0011"
        },
        "raw": {
-        "balance": "15200000",
-        "credit": "9500000",
+        "balance": "15450000",
+        "credit": "9750000",
         "date": "2026-08-05",
         "description": "NEFT CR CUSTOMER RECEIPT",
         "reference_number": "NEFT/0011"
@@ -1211,14 +1211,14 @@
         "balance": 5900000,
         "credit": null,
         "date": "2026-08-07",
-        "debit": 9300000,
+        "debit": 9550000,
         "description": "NEFT DR SUPPLIER PAYMENT",
         "reference_number": "NEFT/P0011"
        },
        "raw": {
         "balance": "5900000",
         "date": "2026-08-07",
-        "debit": "9300000",
+        "debit": "9550000",
         "description": "NEFT DR SUPPLIER PAYMENT",
         "reference_number": "NEFT/P0011"
        },

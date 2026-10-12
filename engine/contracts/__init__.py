@@ -9,7 +9,18 @@ These pydantic models are the single source for:
 Change a model here, regenerate, and both sides see the change.
 """
 
-from .admin import AuditEntry, AuditPage, ConfigVersion, DirectoryUser
+from .admin import (
+    AuditEntry,
+    AuditPage,
+    ConfigVersion,
+    DirectoryUser,
+    EditableSettings,
+    SettingChange,
+    SettingsChanges,
+    SettingsPreview,
+    SettingsPublished,
+    SettingsPublishRequest,
+)
 from .approval import ApprovingAuthority, AuthorityRef, AuthorityStep
 from .comparison import (
     Adjudication,

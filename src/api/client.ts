@@ -16,6 +16,7 @@ import type {
   ConfigVersion,
   CrossVerificationView,
   DirectoryUser,
+  EditableSettings,
   AuditPage,
   PolicyConfig,
   DocumentTypes,
@@ -35,6 +36,10 @@ import type {
   ReviewDecisionRequest,
   ReviewItem,
   SessionUser,
+  SettingsChanges,
+  SettingsPreview,
+  SettingsPublished,
+  SettingsPublishRequest,
   Spread,
   UploadResult,
   XvDecisionRequest,
@@ -193,6 +198,20 @@ export const api = {
   policyConfig: () => request<PolicyConfig>("/api/config/policy"),
   approvalMatrixConfig: () => request<ApprovalMatrixConfig>("/api/config/approval-matrix"),
   configVersions: () => request<ConfigVersion[]>("/api/config/versions"),
+  /** The settings an Administrator edits, as the version in force has them (F-00.6). */
+  adminSettings: () => request<EditableSettings>("/api/admin/settings"),
+  /** What the changes would change and why they could not be published; publishes nothing. */
+  previewSettings: (changes: SettingsChanges) =>
+    request<SettingsPreview>("/api/admin/settings/preview", {
+      method: "POST",
+      body: JSON.stringify(changes),
+    }),
+  /** Publish the changes as a new version; 422 with `detail.problems` when they cannot be. */
+  publishSettings: (body: SettingsPublishRequest) =>
+    request<SettingsPublished>("/api/admin/settings/publish", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
   users: () => request<DirectoryUser[]>("/api/users"),
   audit: (params: { caseId?: string; actor?: string; action?: string; before?: number }) => {
     const q = new URLSearchParams();

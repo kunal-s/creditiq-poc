@@ -145,7 +145,7 @@ def test_tc23_gst_against_bank_beyond_tolerance_is_flagged_with_values(client, a
     case_id = _case(client, analyst, published_data_root)
     _turnover(published_data_root, case_id, gst_months=PERIODS, gst_each=4_000_000, bank_each=3_200_000)
     [f] = _findings(client, analyst, published_data_root, case_id)["TO-02"]
-    assert f["outcome"] == "fail" and f["tolerance"] == "10%"
+    assert f["outcome"] == "fail" and f["tolerance"] == "1%"
     assert [s["value"] for s in f["sides"]] == [48_000_000, 38_400_000]
     assert "20.0%" in f["explanation"] and "FY 2025-26" in f["title"]
     assert all(s["evidence"] for s in f["sides"])
@@ -153,7 +153,7 @@ def test_tc23_gst_against_bank_beyond_tolerance_is_flagged_with_values(client, a
 
 def test_tc23_within_tolerance_passes(client, analyst, published_data_root):
     case_id = _case(client, analyst, published_data_root)
-    _turnover(published_data_root, case_id, gst_months=PERIODS, gst_each=4_000_000, bank_each=3_800_000)
+    _turnover(published_data_root, case_id, gst_months=PERIODS, gst_each=4_000_000, bank_each=3_980_000)
     assert [f["outcome"] for f in _findings(client, analyst, published_data_root, case_id)["TO-02"]] == ["pass"]
 
 
@@ -170,10 +170,10 @@ def test_tc23_incomplete_coverage_is_stated(client, analyst, published_data_root
 
 def test_tc23_audited_turnover_is_read_from_the_printed_statement(client, analyst, published_data_root):
     case_id = _case(client, analyst, published_data_root)
-    _turnover(published_data_root, case_id, gst_months=PERIODS, gst_each=10_000_000, bank_each=9_800_000, audited_revenue=118_000_000)
+    _turnover(published_data_root, case_id, gst_months=PERIODS, gst_each=9_850_000, bank_each=9_800_000, audited_revenue=118_000_000)
     found = _findings(client, analyst, published_data_root, case_id)
-    assert [f["outcome"] for f in found["TO-01"]] == ["pass"] and [f["outcome"] for f in found["TO-03"]] == ["pass"]  # 11.8 cr, 12 cr, 11.76 cr
-    assert [s["value"] for s in found["TO-01"][0]["sides"]] == [118_000_000, 120_000_000]
+    assert [f["outcome"] for f in found["TO-01"]] == ["pass"] and [f["outcome"] for f in found["TO-03"]] == ["pass"]  # 11.8 cr, 11.82 cr, 11.76 cr
+    assert [s["value"] for s in found["TO-01"][0]["sides"]] == [118_000_000, 118_200_000]
 
 
 # --- F-19.4, F-19.5, F-19.6, F-17.4 ---

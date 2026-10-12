@@ -10,6 +10,7 @@ import type {
   CaseDetail,
   CaseFacts,
   CrossVerificationView,
+  EditableSettings,
   Evidence,
   EvidenceRow,
   FactValue,
@@ -128,6 +129,19 @@ export const MANAGER: SessionUser = {
     "audit.read",
     "config.read",
   ],
+};
+
+/** The Administrator: administration only, and the one role that publishes settings (roles.yaml). */
+export const ADMIN: SessionUser = {
+  id: "nikhil-sawant",
+  name: "Nikhil Sawant",
+  email: "nikhil.sawant@rblbank.com",
+  initials: "NS",
+  role: "administrator",
+  roleLabel: "Administrator",
+  branch: "Head office",
+  navGroups: ["administration", "help"],
+  permissions: ["config.read", "config.publish", "audit.read"],
 };
 
 export const META: Meta = {
@@ -2807,6 +2821,164 @@ export const CONFIG_VERSIONS = [
     current: false,
   },
 ];
+
+/** The settings an Administrator edits, as the version in force has them (GET /api/admin/settings). */
+export const SETTINGS: EditableSettings = {
+  version: "v2hash",
+  published_at: "2026-10-01T09:30:00+00:00",
+  author: "Config Admin",
+  origin: "cli",
+  tolerances: [
+    {
+      key: "turnover_variance",
+      label: "Turnover variance between sources",
+      value: 1,
+      unit: "%",
+      source: "provisional",
+      rules: ["TO-02"],
+    },
+    {
+      key: "declared_turnover_variance",
+      label: "RM-declared against evidenced turnover",
+      value: 2,
+      unit: "%",
+      source: "provisional",
+      rules: ["TO-04"],
+    },
+    {
+      key: "name_match",
+      label: "Minimum name similarity to treat two names as one",
+      value: 0.9,
+      unit: "ratio",
+      source: "provisional",
+      rules: ["ID-01"],
+    },
+    {
+      key: "itr_due_days",
+      label: "Days after a financial year ends before its income tax return is expected",
+      value: 214,
+      unit: "days",
+      source: "provisional",
+      rules: [],
+    },
+  ],
+  ratios: [
+    {
+      key: "current-ratio",
+      label: "Current ratio",
+      unit: "x",
+      kind: "min",
+      acceptable: 1.2,
+      marginal: 1.1,
+      norms: ["FR-01"],
+    },
+    {
+      key: "tol-tnw",
+      label: "TOL / TNW",
+      unit: "x",
+      kind: "max",
+      acceptable: 3,
+      marginal: 3.75,
+      norms: ["FR-02"],
+    },
+  ],
+  norms: [
+    {
+      id: "EL-01",
+      family: "eligibility",
+      label: "Business vintage",
+      unit: "years",
+      kind: "min",
+      threshold: 3,
+    },
+    {
+      id: "EL-05",
+      family: "eligibility",
+      label: "Total request against turnover",
+      unit: "%",
+      kind: "max",
+      threshold: 20,
+    },
+    {
+      id: "DOC-01",
+      family: "documentation",
+      label: "Blocking checklist items open",
+      unit: "count",
+      kind: "max",
+      threshold: 0,
+    },
+  ],
+  rules: [
+    {
+      id: "ID-01",
+      title: "Entity PAN consistent across documents",
+      area: "identity",
+      severity: "serious",
+      blocking: true,
+      enabled: true,
+    },
+    {
+      id: "BR-01",
+      title: "Board resolution covers the amount requested",
+      area: "authority",
+      severity: "serious",
+      blocking: true,
+      enabled: false,
+    },
+    {
+      id: "TO-02",
+      title: "GST outward supplies against cleansed bank credits",
+      area: "turnover",
+      severity: "moderate",
+      blocking: false,
+      enabled: true,
+    },
+    {
+      id: "TO-04",
+      title: "RM-declared turnover against evidenced turnover",
+      area: "turnover",
+      severity: "mild",
+      blocking: false,
+      enabled: true,
+    },
+  ],
+  matrix: {
+    status: "provisional",
+    authorities: [
+      { key: "credit_officer", level: 1, label: "Credit Officer" },
+      { key: "regional_credit_head", level: 2, label: "Regional Credit Head" },
+      { key: "zonal_credit_committee", level: 3, label: "Zonal Credit Committee" },
+    ],
+    products: [
+      {
+        key: "working_capital",
+        label: "Working capital",
+        bands: [
+          { up_to_inr: 20_000_000, authority: "credit_officer" },
+          { up_to_inr: 50_000_000, authority: "regional_credit_head" },
+          { up_to_inr: null, authority: "zonal_credit_committee" },
+        ],
+      },
+      {
+        key: "term",
+        label: "Term loan",
+        bands: [
+          { up_to_inr: 10_000_000, authority: "credit_officer" },
+          { up_to_inr: null, authority: "regional_credit_head" },
+        ],
+      },
+    ],
+    deviations: [
+      {
+        category: "eligibility",
+        label: "Eligibility",
+        levels_above: 1,
+        at_least: "regional_credit_head",
+      },
+      { category: "financial", label: "Financial norms", levels_above: 1, at_least: null },
+    ],
+  },
+};
 
 export const USERS = [ANALYST, RM].map((u) => ({
   id: u.id,

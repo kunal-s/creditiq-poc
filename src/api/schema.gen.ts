@@ -4,6 +4,68 @@
  */
 
 export interface paths {
+  "/api/admin/settings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Admin Settings
+     * @description The tolerances, norm thresholds, cross-check rules and approval matrix an Administrator
+     *     edits (F-00.6), as the version now published has them.
+     */
+    get: operations["admin_settings_api_admin_settings_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/admin/settings/preview": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Admin Settings Preview
+     * @description What the changes would change and why they could not be published; nothing is published.
+     */
+    post: operations["admin_settings_preview_api_admin_settings_preview_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/admin/settings/publish": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Admin Settings Publish
+     * @description Publish the changes as a new configuration version, with the Administrator's note, and
+     *     re-run every case's checks (F-00.6). 422 with the problems when they cannot be published.
+     */
+    post: operations["admin_settings_publish_api_admin_settings_publish_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/audit": {
     parameters: {
       query?: never;
@@ -1533,6 +1595,12 @@ export interface components {
       current: boolean;
       /** Note */
       note: string;
+      /**
+       * Origin
+       * @default cli
+       * @enum {string}
+       */
+      origin: "cli" | "app";
       /** Prior Version */
       prior_version: string | null;
       /** Published At */
@@ -1604,6 +1672,13 @@ export interface components {
       key: string;
       /** Label */
       label: string;
+    };
+    /** DeviationChange */
+    DeviationChange: {
+      /** At Least */
+      at_least?: string | null;
+      /** Levels Above */
+      levels_above?: number | null;
     };
     /** DeviationRule */
     DeviationRule: {
@@ -1692,6 +1767,165 @@ export interface components {
     DocumentTypesSection: {
       /** Types */
       types: components["schemas"]["DocumentTypeDef"][];
+    };
+    /** EditableAuthority */
+    EditableAuthority: {
+      /** Key */
+      key: string;
+      /** Label */
+      label: string;
+      /** Level */
+      level: number;
+    };
+    /** EditableBand */
+    EditableBand: {
+      /** Authority */
+      authority: string;
+      /** Up To Inr */
+      up_to_inr?: number | null;
+    };
+    /** EditableDeviation */
+    EditableDeviation: {
+      /** At Least */
+      at_least: string | null;
+      /** Category */
+      category: string;
+      /** Label */
+      label: string;
+      /** Levels Above */
+      levels_above: number;
+    };
+    /** EditableMatrix */
+    EditableMatrix: {
+      /** Authorities */
+      authorities: components["schemas"]["EditableAuthority"][];
+      /** Deviations */
+      deviations: components["schemas"]["EditableDeviation"][];
+      /** Products */
+      products: components["schemas"]["EditableProduct"][];
+      /** Status */
+      status: string;
+    };
+    /**
+     * EditableNorm
+     * @description A norm with its own threshold (eligibility, documentation, security cover).
+     */
+    EditableNorm: {
+      /**
+       * Family
+       * @enum {string}
+       */
+      family: "eligibility" | "ratios" | "security_cover" | "documentation";
+      /** Id */
+      id: string;
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: "min" | "max";
+      /** Label */
+      label: string;
+      /** Threshold */
+      threshold: number;
+      /** Unit */
+      unit: ("x" | "%" | "days" | "years" | "inr" | "count" | "rank") | null;
+    };
+    /** EditableProduct */
+    EditableProduct: {
+      /** Bands */
+      bands: components["schemas"]["EditableBand"][];
+      /** Key */
+      key: string;
+      /** Label */
+      label: string;
+    };
+    /**
+     * EditableRatio
+     * @description A financial-ratio norm's thresholds: acceptable is the norm; marginal is shown beside it.
+     */
+    EditableRatio: {
+      /** Acceptable */
+      acceptable: number;
+      /** Key */
+      key: string;
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: "min" | "max";
+      /** Label */
+      label: string;
+      /** Marginal */
+      marginal: number;
+      /** Norms */
+      norms: string[];
+      /**
+       * Unit
+       * @enum {string}
+       */
+      unit: "x" | "%" | "days";
+    };
+    /** EditableRule */
+    EditableRule: {
+      /** Area */
+      area: string;
+      /** Blocking */
+      blocking: boolean;
+      /** Enabled */
+      enabled: boolean;
+      /** Id */
+      id: string;
+      /**
+       * Severity
+       * @enum {string}
+       */
+      severity: "serious" | "moderate" | "mild";
+      /** Title */
+      title: string;
+    };
+    /**
+     * EditableSettings
+     * @description What the Administration screen edits, as the published version has it.
+     */
+    EditableSettings: {
+      /** Author */
+      author: string;
+      matrix: components["schemas"]["EditableMatrix"];
+      /** Norms */
+      norms: components["schemas"]["EditableNorm"][];
+      /**
+       * Origin
+       * @enum {string}
+       */
+      origin: "cli" | "app";
+      /** Published At */
+      published_at: string;
+      /** Ratios */
+      ratios: components["schemas"]["EditableRatio"][];
+      /** Rules */
+      rules: components["schemas"]["EditableRule"][];
+      /** Tolerances */
+      tolerances: components["schemas"]["EditableTolerance"][];
+      /** Version */
+      version: string;
+    };
+    /** EditableTolerance */
+    EditableTolerance: {
+      /** Key */
+      key: string;
+      /** Label */
+      label: string;
+      /** Rules */
+      rules: string[];
+      /** Source */
+      source: string;
+      /**
+       * Unit
+       * @enum {string}
+       */
+      unit: "%" | "inr" | "days" | "ratio";
+      /** Value */
+      value: number;
     };
     /**
      * Evidence
@@ -2724,6 +2958,13 @@ export interface components {
       /** Text */
       text: string;
     };
+    /** RatioChange */
+    RatioChange: {
+      /** Acceptable */
+      acceptable?: number | null;
+      /** Marginal */
+      marginal?: number | null;
+    };
     /**
      * Readiness
      * @description F-13.4: weighted proportion satisfied, against the configured gate.
@@ -2877,6 +3118,15 @@ export interface components {
       /** Summary */
       summary: string;
     };
+    /** RuleChange */
+    RuleChange: {
+      /** Blocking */
+      blocking?: boolean | null;
+      /** Enabled */
+      enabled?: boolean | null;
+      /** Severity */
+      severity?: ("serious" | "moderate" | "mild") | null;
+    };
     /** SessionUser */
     SessionUser: {
       /** Branch */
@@ -2897,6 +3147,85 @@ export interface components {
       role: string;
       /** Rolelabel */
       roleLabel: string;
+    };
+    /**
+     * SettingChange
+     * @description One value that changes: where it is, its label, and before and after as raw values.
+     */
+    SettingChange: {
+      /** After */
+      after: number | boolean | string | null;
+      /** Before */
+      before: number | boolean | string | null;
+      /** Field */
+      field: string;
+      /** Item */
+      item: string;
+      /** Label */
+      label: string;
+      /**
+       * Section
+       * @enum {string}
+       */
+      section: "tolerances" | "policy" | "crosschecks" | "approval_matrix";
+      /** Unit */
+      unit?: string | null;
+    };
+    /**
+     * SettingsChanges
+     * @description Only what changes; anything left out stays as published.
+     */
+    SettingsChanges: {
+      /** Bands */
+      bands?: {
+        [key: string]: components["schemas"]["EditableBand"][];
+      };
+      /** Deviations */
+      deviations?: {
+        [key: string]: components["schemas"]["DeviationChange"];
+      };
+      /** Norms */
+      norms?: {
+        [key: string]: number;
+      };
+      /** Ratios */
+      ratios?: {
+        [key: string]: components["schemas"]["RatioChange"];
+      };
+      /** Rules */
+      rules?: {
+        [key: string]: components["schemas"]["RuleChange"];
+      };
+      /** Tolerances */
+      tolerances?: {
+        [key: string]: number;
+      };
+    };
+    /** SettingsPreview */
+    SettingsPreview: {
+      /** Changes */
+      changes: components["schemas"]["SettingChange"][];
+      /** Problems */
+      problems: string[];
+    };
+    /** SettingsPublishRequest */
+    SettingsPublishRequest: {
+      changes: components["schemas"]["SettingsChanges"];
+      /** Note */
+      note: string;
+    };
+    /** SettingsPublished */
+    SettingsPublished: {
+      /** Cases Failed */
+      cases_failed: string[];
+      /** Cases Rerun */
+      cases_rerun: number;
+      /** Changes */
+      changes: components["schemas"]["SettingChange"][];
+      /** Published At */
+      published_at: string;
+      /** Version */
+      version: string;
     };
     /**
      * SourceColumn
@@ -3399,6 +3728,107 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  admin_settings_api_admin_settings_get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EditableSettings"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  admin_settings_preview_api_admin_settings_preview_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SettingsChanges"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SettingsPreview"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  admin_settings_publish_api_admin_settings_publish_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SettingsPublishRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SettingsPublished"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   audit_trail_api_audit_get: {
     parameters: {
       query?: {

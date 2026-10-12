@@ -10,8 +10,10 @@ import type {
   CaseCreate,
   CaseDetail,
   CaseFacts,
+  ConfigVersion,
   CrossVerificationView,
   DocumentTypes,
+  EditableSettings,
   Finding,
   PolicyAssessment,
   CaseProgress,
@@ -26,6 +28,9 @@ import type {
   ReviewDecisionRequest,
   ReviewItem,
   SessionUser,
+  SettingChange,
+  SettingsChanges,
+  SettingsPublishRequest,
   StageProgress,
   UploadResult,
   XvDecisionRequest,
@@ -64,6 +69,7 @@ import {
   SAFFRON,
   SPREAD,
   SAFFRON_CHECKLIST,
+  SETTINGS,
   TAXONOMY,
   XV_DECIDED_AT,
   XV_RULES,
@@ -92,6 +98,8 @@ const FINDING_COMMENT_MIN = 3;
 const FINDING_COMMENT = "a comment is required for every decision on a discrepancy";
 /** engine/xv.py: a discrepancy already with the Credit Manager is not escalated again. */
 const ALREADY_ESCALATED = "this discrepancy has already been escalated to the Credit Manager";
+/** engine/admin_config.py: a publish needs a note of at least 3 characters. */
+const NOTE_MIN = 3;
 
 export class MockApi {
   user: SessionUser = ANALYST;
@@ -130,6 +138,16 @@ export class MockApi {
   /** Document reads still to answer as "received" before the final state. */
   pendingReads = new Map<string, number>();
   proposal: CaseProposal = proposal();
+  /** The published configuration versions, newest first; a publish from Settings adds one. */
+  configVersions: ConfigVersion[] = CONFIG_VERSIONS.map((v) => ({ ...v, origin: "cli" }));
+  /** The settings an Administrator edits, as the version in force has them (F-00.6). */
+  settings: EditableSettings = structuredClone(SETTINGS);
+  /** Problems the engine finds in any change, for a test to set: a preview lists them and a
+   * publish is refused with them. */
+  settingsProblems: string[] = [];
+  /** What a publish reports: the cases re-checked and those that could not be. */
+  casesRerun = 3;
+  casesFailed: string[] = [];
   /** Requests received, as "METHOD /path" with the parsed JSON body if any. */
   calls: { key: string; body: unknown }[] = [];
   overrides: [string, RegExp, Handler][] = [];
@@ -228,7 +246,26 @@ export class MockApi {
       ["GET", /^\/api\/config\/document-types$/, () => ({ json: this.documentTypes })],
       ["GET", /^\/api\/config\/checklist-taxonomy$/, () => ({ json: TAXONOMY })],
       ["GET", /^\/api\/config\/policy$/, () => ({ json: POLICY_CONFIG })],
-      ["GET", /^\/api\/config\/versions$/, () => ({ json: CONFIG_VERSIONS })],
+      ["GET", /^\/api\/config\/versions$/, () => ({ json: this.configVersions })],
+      [
+        "GET",
+        /^\/api\/admin\/settings$/,
+        () => (this.can("config.read") ? { json: this.settings } : this.denied("config.read")),
+      ],
+      [
+        "POST",
+        /^\/api\/admin\/settings\/preview$/,
+        (req) => {
+          if (!this.can("config.publish")) return this.denied("config.publish");
+          const { changes, problems } = this.applySettings(req.postDataJSON() as SettingsChanges);
+          return { json: { changes, problems } };
+        },
+      ],
+      [
+        "POST",
+        /^\/api\/admin\/settings\/publish$/,
+        (req) => this.publishSettings(req.postDataJSON() as SettingsPublishRequest),
+      ],
       ["GET", /^\/api\/users$/, () => ({ json: USERS })],
       ["GET", /^\/api\/audit$/, () => ({ json: AUDIT })],
       ["GET", /^\/api\/cases$/, () => ({ json: this.cases })],
@@ -394,6 +431,163 @@ export class MockApi {
         (req, m) => this.decide(m[1]!, req.postDataJSON() as ReviewDecisionRequest),
       ],
     ];
+  }
+
+  /** F-00.6: the changes applied to the settings in force, as engine/admin_config.py applies
+   * them: each value that differs, in order, with its label and its value before and after; the
+   * problems the test set; "Nothing has changed." when nothing would. */
+  private applySettings(body: SettingsChanges) {
+    const next = structuredClone(this.settings);
+    const changes: SettingChange[] = [];
+    const problems: string[] = [];
+    const add = (
+      section: SettingChange["section"],
+      item: string,
+      label: string,
+      field: string,
+      before: SettingChange["before"],
+      after: SettingChange["after"],
+      unit: string | null = null,
+    ) => changes.push({ section, item, label, field, unit, before, after });
+    const authority = (key: string | null | undefined) =>
+      key ? (next.matrix.authorities.find((a) => a.key === key)?.label ?? key) : null;
+    for (const [key, value] of Object.entries(body.tolerances ?? {})) {
+      const x = next.tolerances.find((t) => t.key === key);
+      if (!x) problems.push(`There is no tolerance '${key}'.`);
+      else if (value !== x.value) {
+        add("tolerances", key, x.label, "value", x.value, value, x.unit);
+        x.value = value;
+      }
+    }
+    for (const [key, change] of Object.entries(body.ratios ?? {})) {
+      const r = next.ratios.find((x) => x.key === key);
+      if (!r) {
+        problems.push(`There is no financial ratio '${key}'.`);
+        continue;
+      }
+      for (const field of ["acceptable", "marginal"] as const) {
+        const after = change[field];
+        if (typeof after === "number" && after !== r[field]) {
+          add("policy", key, r.label, field, r[field], after, r.unit);
+          r[field] = after;
+        }
+      }
+    }
+    for (const [id, value] of Object.entries(body.norms ?? {})) {
+      const n = next.norms.find((x) => x.id === id);
+      if (!n) problems.push(`There is no policy norm '${id}'.`);
+      else if (value !== n.threshold) {
+        add("policy", id, `${n.id} ${n.label}`, "threshold", n.threshold, value, n.unit);
+        if (id === "EL-05") {
+          // The turnover method's requirement follows the norm: the norm plus the 5% margin.
+          const label = "Turnover method: working-capital requirement";
+          add("policy", "working_capital", label, "turnover_requirement_pct", 25, value + 5, "%");
+        }
+        n.threshold = value;
+      }
+    }
+    for (const [id, change] of Object.entries(body.rules ?? {})) {
+      const r = next.rules.find((x) => x.id === id);
+      if (!r) {
+        problems.push(`There is no cross-check '${id}'.`);
+        continue;
+      }
+      for (const field of ["enabled", "severity", "blocking"] as const) {
+        const after = change[field];
+        if (after !== undefined && after !== null && after !== r[field]) {
+          add("crosschecks", id, `${r.id} ${r.title}`, field, r[field], after);
+          Object.assign(r, { [field]: after });
+        }
+      }
+    }
+    for (const [key, bands] of Object.entries(body.bands ?? {})) {
+      const p = next.matrix.products.find((x) => x.key === key);
+      if (!p) {
+        problems.push(`There is no product '${key}' in the approval matrix.`);
+        continue;
+      }
+      if (bands.length !== p.bands.length) {
+        problems.push(`${p.label}: give all ${p.bands.length} amount bands.`);
+        continue;
+      }
+      p.bands.forEach((old, i) => {
+        const band = bands[i]!;
+        const label = `${p.label}, band ${i + 1}`;
+        const [before, after] = [old.up_to_inr ?? null, band.up_to_inr ?? null];
+        if (after !== before) add("approval_matrix", key, label, "up_to_inr", before, after, "inr");
+        if (band.authority !== old.authority) {
+          const [was, now] = [authority(old.authority), authority(band.authority)];
+          add("approval_matrix", key, label, "authority", was, now);
+        }
+      });
+      p.bands = bands;
+    }
+    for (const [category, change] of Object.entries(body.deviations ?? {})) {
+      const d = next.matrix.deviations.find((x) => x.category === category);
+      if (!d) {
+        problems.push(`There is no deviation step for '${category}'.`);
+        continue;
+      }
+      if (typeof change.levels_above === "number" && change.levels_above !== d.levels_above) {
+        const [before, after] = [d.levels_above, change.levels_above];
+        add("approval_matrix", category, d.label, "levels_above", before, after);
+        d.levels_above = after;
+      }
+      if (change.at_least !== undefined) {
+        const after = change.at_least || null;
+        if (after !== d.at_least) {
+          const [was, now] = [authority(d.at_least), authority(after)];
+          add("approval_matrix", category, d.label, "at_least", was, now);
+          d.at_least = after;
+        }
+      }
+    }
+    problems.push(...this.settingsProblems);
+    if (problems.length === 0 && changes.length === 0) problems.push("Nothing has changed.");
+    return { next, changes, problems };
+  }
+
+  /** F-00.6: publish the changes as a new version (origin "app") and re-run every case; 422 with
+   * the problems, a short note among them, when they cannot be published. */
+  private publishSettings(body: SettingsPublishRequest): Reply {
+    if (!this.can("config.publish")) return this.denied("config.publish");
+    const note = body.note.trim();
+    const { next, changes, problems } = this.applySettings(body.changes);
+    if (note.length < NOTE_MIN) {
+      problems.unshift(`A note of at least ${NOTE_MIN} characters is required.`);
+    }
+    if (problems.length > 0) return { status: 422, json: { detail: { problems } } };
+    const version = `v${this.configVersions.length + 1}hash`;
+    const publishedAt = "2026-10-12T11:00:00+00:00";
+    this.settings = {
+      ...next,
+      version,
+      published_at: publishedAt,
+      author: this.user.name,
+      origin: "app",
+    };
+    this.configVersions = [
+      {
+        version,
+        author: this.user.name,
+        note,
+        published_at: publishedAt,
+        prior_version: this.configVersions[0]?.version ?? null,
+        sections_changed: [...new Set(changes.map((c) => c.section))],
+        current: true,
+        origin: "app",
+      },
+      ...this.configVersions.map((v) => ({ ...v, current: false })),
+    ];
+    return {
+      json: {
+        version,
+        published_at: publishedAt,
+        changes,
+        cases_rerun: this.casesRerun,
+        cases_failed: this.casesFailed,
+      },
+    };
   }
 
   private create(body: CaseCreate): Reply {

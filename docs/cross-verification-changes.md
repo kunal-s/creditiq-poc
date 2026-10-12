@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Date | 7 October 2026, updated 8 October 2026 (section 10), 11 October 2026 (section 11) and 12 October 2026 (sections 11.11 to 11.13) |
+| Date | 7 October 2026, updated 8 October 2026 (section 10), 11 October 2026 (section 11) and 12 October 2026 (sections 11.11 to 11.14) |
 | Branch | `cross-validation-abhishek` (not yet committed) |
 | Feature | Stage 4 of the case workspace, **Cross-checks** (`/appraisals/$caseId/cross-verification`); FRD F-18, F-19, F-16.2 |
 | Plan | [cross-verification-plan.md](cross-verification-plan.md) |
@@ -387,3 +387,25 @@ Results:
 - **Python:** 609 passed, 2 skipped (the full suite less the known Windows-only `test_f05` cases).
 - **Screen tests:** 119 of 120 passed; the one failure is the known Windows-only `e2e/tc16-query-list.spec.ts`.
 - **New tests:** `tests/test_crosschecks_names.py` (17): name parts compared one by one (missing, initial, different, words in another order, honorifics), a middle name missing, an initial found where similarity misses it, a surname spelt differently, the sourcing message left out, a person in one document only, nine identity rules. A screen test marks the differing part in the table. Rule-count tests updated (29/23 to 30/24).
+
+### 11.14 Later on 12 October 2026: tighter tolerances
+
+| Tolerance | Before | Now | Rules |
+|---|---|---|---|
+| `turnover_variance` | 10% | 1% | TO-01, TO-02, TO-03, TO-05, TX-03, TX-04, TX-05 |
+| `declared_turnover_variance` | 20% | 2% | TO-04 |
+| `name_match` | 0.85 | 0.90 | Every name comparison, who a document belongs to, and the borrower on RBL's record |
+
+`profit_variance` (TX-02) stays at 10%. All values remain provisional (`config/tolerances.yaml`). Published to the local data root; every case re-ran.
+
+**On the test applications.**
+- **Kestrel:** TO-01 now fails (audited INR 11.80 cr against GST INR 12.00 cr, 1.7% apart), 16 discrepancies.
+- **Marigold:** TO-05 now fails (GST INR 5.04 cr against INR 4.80 cr banked over Sep 2025 to Aug 2026, 4.8% apart).
+- **Heronbay** stays the clean example: its customer receipts went from INR 96 lakh to INR 97.5 lakh a month (and its supplier payments by the same amount, so the balances are unchanged). The seed script and the live application were both changed. Its turnover figures are now 0.3% to 0.8% apart.
+- No outcome changed because of the name match.
+
+**Tests.** Test figures written for the old tolerances now sit within 1% where a check is meant to pass, and the expected tolerance text reads 1% or 2% (`tests/test_crosschecks.py`, `_areas`, `_tax_turnover`, `test_xv.py`, `test_xv_cards_numbers.py`, `test_xv_highlights.py`). The complete fixture case's bank credits moved within 1% of its GST (`tests/fixtures/build_fixtures.py`; one ingest fixture regenerated, no PDF changed).
+
+Results:
+- **Python:** 624 passed, 2 skipped (the full suite less the known Windows-only `test_f05` cases).
+- **Screen tests:** 119 of 120 passed; the one failure is the known Windows-only `e2e/tc16-query-list.spec.ts`.

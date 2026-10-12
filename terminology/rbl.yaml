@@ -32,6 +32,7 @@ nav:
   audit: Audit trail
   admin:
     configuration: Configuration
+    settings: Settings
     policy: Policy norms
     checklist: Checklist
     documentTypes: Document types
@@ -485,7 +486,7 @@ page:
   admin:
     eyebrow: Administration
     title: Administration
-    purpose: What the published configuration says and who may do what. It is read-only here; a change is published by an administrator as a new version.
+    purpose: What the published configuration says and who may do what. Tolerances, policy norms, cross-check rules and the approval matrix are changed under Settings by an Administrator; every change is published as a new version.
     sections: Administration sections
   audit:
     eyebrow: Governance
@@ -864,6 +865,7 @@ audit:
     comparison_adjudicated: Decided a comparison item
     finding_escalated: Escalated a discrepancy to the Credit Manager
     finding_query_added: Put a request on the query list
+    config_published: Published a configuration version
 
 admin:
   config:
@@ -871,13 +873,115 @@ admin:
     publishedOn: Published
     publishedBy: Published by
     versionNumber: Version
-    readOnly: Configuration is read-only here. An administrator publishes a change as a new version, and earlier versions are kept.
+    readOnly: Tolerances, policy norms, cross-check rules and the approval matrix are changed under Settings by an Administrator. The rest of the configuration is published from the command line. Every change is a new version, and earlier versions are kept.
     history: Version history
     historyHelp: Every version ever published, newest first.
     versionN: "Version {n}"
     inForce: In force
     first: First version.
     changed: "{n} section(s) changed: {sections}"
+    edited: Edited on screen
+  # Settings (F-00.6): what an Administrator changes on screen and publishes as a new version.
+  settings:
+    versionInForce: "Version {n} in force"
+    inForce: In force
+    publishedBy: "Published {when} by {author}"
+    editHelp: Changes stay in a draft on this screen until they are published. Each publish is a new version, and every appraisal's checks run again under it.
+    readOnly: These settings are read-only for your role. An Administrator changes them and publishes them as a new version.
+    published: "Version published · {n} cases re-checked"
+    publishedOne: "Version published · 1 case re-checked"
+    failed: "Could not be re-checked: {cases}"
+    was: "was {value}"
+    undo: "Undo the change to {label}"
+    invalid:
+      number: Enter a number
+      count: Enter a whole number, 0 or more
+      amount: Enter an amount above 0
+    unit:
+      inr: INR
+    tolerances:
+      title: Tolerances
+      subtitle: How far two sources may differ before a cross-check reports a difference.
+      setting: Tolerance
+      value: Value
+      usedBy: Used by
+      unused: Not used by a cross-check
+    policy:
+      title: Policy norms
+      subtitle: The thresholds an application is measured against.
+      ratios: Financial ratios
+      ratiosHelp: The acceptable value is the norm; the marginal value is shown beside it. The norms listed take their threshold from the ratio.
+      ratio: Ratio
+      acceptable: Acceptable
+      marginal: Marginal
+      norms: Norms
+      own: Norms with their own threshold
+      norm: Norm
+      threshold: Threshold
+      kind:
+        min: at least
+        max: at most
+    rules:
+      title: Cross-check rules
+      subtitle: Which checks run, how serious a difference is, and whether an open difference blocks submission.
+      rule: Rule
+      runs: Runs
+      enabled: Runs
+      disabled: "Off"
+      severity: Severity
+      blocks: Blocks submission
+    matrix:
+      title: Approval matrix
+      subtitle: The authority that approves an amount, per product, and how a deviation from policy raises it.
+      band: Band
+      bandN: "Band {n}"
+      upTo: Up to (INR crore)
+      crore: cr
+      above: "Above {amount}"
+      authority: Authority
+      deviations: Deviation steps
+      deviationsHelp: A deviation raises the approving authority by a number of levels above the authority for the amount, and to at least the authority given.
+      category: Deviation
+      levelsAbove: Levels above the amount authority
+      atLeast: At least
+      none: None
+    # What changes in a field, as listed for review.
+    field:
+      value: Value
+      acceptable: Acceptable
+      marginal: Marginal
+      threshold: Threshold
+      enabled: Runs
+      severity: Severity
+      blocking: Blocks submission
+      up_to_inr: Up to
+      authority: Authority
+      levels_above: Levels above the amount authority
+      at_least: At least
+      turnover_requirement_pct: Requirement
+    value:
+      flagOn: "on"
+      flagOff: "off"
+      flagYes: "yes"
+      flagNo: "no"
+      none: none
+      open: open
+    bar:
+      one: 1 change
+      many: "{n} changes"
+      discard: Discard
+      review: Review and publish
+      fixFirst: Correct the values marked in red first.
+    review:
+      title: Review and publish
+      description: These changes are published together as a new configuration version, and every appraisal's checks run again under it.
+      checking: Checking the changes…
+      problems: These changes cannot be published
+      note: Note
+      notePlaceholder: Why these changes are made
+      noteHelp: "Recorded with the version and in the audit trail; at least {n} characters."
+      publish: Publish
+      publishing: Publishing…
   section:
     approval_matrix: approval matrix
     policy: policy norms
@@ -957,6 +1061,7 @@ admin:
     scorecard_read: See the scorecard
     audit_read: See the audit trail
     config_read: See administration
+    config_publish: Change settings and publish them
 
 fileStatus:
   registered: Registered

@@ -160,7 +160,8 @@ def test_f17_waiving_a_non_mandatory_exception_waives_its_item(client, published
     authored = writer.load_authored_sections()
     taxonomy = authored["checklist_taxonomy"].model_copy(deep=True)
     next(i for i in taxonomy.items if i.id == "itr").blocking = False
-    monkeypatch.setattr(writer, "load_authored_sections", lambda: {**authored, "checklist_taxonomy": taxonomy})
+    monkeypatch.setattr(writer, "load_authored_sections",
+                        lambda private_dir=None: {**authored, "checklist_taxonomy": taxonomy})
     writer.publish(data_root=published_data_root, author="test", note="the ITR is optional")
     rm, analyst, case_id = _case(client, published_data_root, ["itr_blurred.pdf"])
     [item] = [i for i in _items(client, analyst, case_id, "quality") if "grade U" in i["summary"]]

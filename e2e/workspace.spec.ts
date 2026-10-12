@@ -101,45 +101,82 @@ test("when processing finishes, the rest of the appraisal refreshes", async ({ p
     .toBeGreaterThan(before);
 });
 
-test("Cross-verification shows each finding with both sides and its evidence", async ({ page }) => {
+test("Cross-verification shows each finding with its sources and their evidence", async ({
+  page,
+}) => {
   const api = new MockApi();
   api.review.push(structuredClone(FINDING_ITEM));
   await signedIn(page, api);
   await page.goto(`/appraisals/${KESTREL}/cross-verification`);
-  const findings = page.getByTestId("findings");
-  await expect(findings).toContainText("1 finding(s) · 1 incomplete · 1 passed");
-  const ob2 = page.locator('[data-testid="finding"][data-rule="OB-02"]');
+  await expect(page.getByTestId("xv-summary-line")).toContainText("7 discrepancies found");
+  const turnover = page.getByTestId("xv-area-turnover");
+  await expect(turnover.getByTestId("xv-incomplete").getByRole("heading")).toHaveText(
+    "Could not be checked (3)",
+  );
+  await expect(
+    page.getByTestId("xv-area-identity").getByTestId("xv-passed").locator("summary"),
+  ).toContainText("Passed (4)");
+  // The first card on the board is open; the greatest gap on the board (OB-02, further down) opens
+  // with its sources side by side.
+  await expect(page.getByTestId("xv-card-fnd-id1")).toHaveAttribute("data-expanded", "true");
+  const ob2 = page.getByTestId("xv-card-fnd-ob2");
+  await expect(ob2).toHaveAttribute("data-expanded", "false");
+  await ob2.getByTestId("xv-card-toggle").click();
+  await expect(ob2).toHaveAttribute("data-expanded", "true");
   await expect(ob2).toContainText("ASHWOOD FINSERV");
-  await expect(ob2.getByTestId("finding-side")).toHaveCount(2);
-  await ob2.getByTestId("finding-evidence").first().click();
+  await expect(ob2.locator('[data-testid^="xv-column-"][data-differs]')).toHaveCount(2);
+  await ob2.getByTestId("xv-column-instalments").getByTestId("xv-trace").click();
   await expect(page.getByTestId("evidence-viewer").getByTestId("viewer-page")).toContainText("7");
   await page.keyboard.press("Escape");
 
-  await page.getByTestId("findings-filter-incomplete").click();
-  await expect(page.locator('[data-testid="finding"][data-rule="TO-01"]')).toContainText(
-    "8 of 12 months",
-  );
-  await expect(page.getByTestId("facts-credits")).toContainText("Loan disbursal");
-  await expect(page.getByTestId("facts-obligations")).toContainText("ASHWOOD FINSERV");
+  await expect(
+    turnover.locator('[data-testid="xv-incomplete-row"][data-rule="TO-01"]'),
+  ).toContainText("8 of 12 months");
+  // Each area's facts behind its checks.
+  const accounts = page.getByTestId("xv-area-accounts").getByTestId("xv-facts");
+  await accounts.locator("summary").click();
+  await expect(accounts.getByTestId("facts-credits")).toContainText("Loan disbursal");
+  const obligations = page.getByTestId("xv-area-obligations").getByTestId("xv-facts");
+  await obligations.locator("summary").click();
+  await expect(obligations.getByTestId("facts-obligations")).toContainText("ASHWOOD FINSERV");
 });
 
-test("a finding is accepted as valid, or found not valid with a reason", async ({ page }) => {
+test("a finding is accepted as valid, or dismissed as not valid, each with a comment", async ({
+  page,
+}) => {
   const api = new MockApi();
   api.review.push(structuredClone(FINDING_ITEM));
   await signedIn(page, api);
   await page.goto(`/appraisals/${KESTREL}/cross-verification`);
-  const ob2 = page.locator('[data-testid="finding"][data-rule="OB-02"]');
-  await ob2.getByTestId("finding-not-valid").click();
-  await expect(ob2.getByTestId("finding-waive")).toBeDisabled();
-  await ob2.getByTestId("finding-reason").fill("Instalments are for an equipment lease");
-  await ob2.getByTestId("finding-waive").click();
+  const ob2 = page.getByTestId("xv-card-fnd-ob2");
+  await ob2.getByTestId("xv-card-toggle").click();
+  await ob2.getByTestId("xv-decision-dismiss").check();
+  await expect(ob2.getByTestId("xv-save-decision")).toBeDisabled();
+  await ob2.getByTestId("xv-comment").fill("Instalments are for an equipment lease");
+  await ob2.getByTestId("xv-save-decision").click();
   await expect(page.getByText("Decision recorded")).toBeVisible();
-  const [call] = api.called("POST", "/api/review/r-finding/decision");
+  const [call] = api.called(
+    "POST",
+    `/api/cases/${KESTREL}/cross-verification/findings/fnd-ob2/decision`,
+  );
   expect(call?.body).toEqual({
+    decision: "dismiss",
+    comment: "Instalments are for an equipment lease",
+  });
+  await expect(ob2.getByTestId("xv-recorded-decision")).toContainText("Dismissed");
+  // Its review item is decided with it: dismissed is waived, with the comment as the reason.
+  expect(api.review.find((r) => r.id === "r-finding")).toMatchObject({
+    status: "decided",
     decision: "waive",
-    value: null,
     reason: "Instalments are for an equipment lease",
   });
+
+  const ba1 = page.getByTestId("xv-card-fnd-ba1");
+  await ba1.getByTestId("xv-card-toggle").click();
+  await ba1.getByTestId("xv-decision-accept").check();
+  await ba1.getByTestId("xv-comment").fill("A valid finding: the statement is requested.");
+  await ba1.getByTestId("xv-save-decision").click();
+  await expect(ba1.getByTestId("xv-recorded-decision")).toContainText("Accepted");
 });
 
 test("a blocking cross-check finding shows on the Completeness summary", async ({ page }) => {
@@ -147,10 +184,11 @@ test("a blocking cross-check finding shows on the Completeness summary", async (
   await signedIn(page, api);
   await page.goto(`/appraisals/${KESTREL}/completeness`);
   await expect(page.getByTestId("blocking-findings")).toHaveText(
-    "1 blocking cross-check finding(s) to decide →",
+    "2 blocking cross-check finding(s) to decide →",
   );
   await page.getByTestId("blocking-findings").click();
   await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}/cross-verification$`));
+  await expect(page.getByTestId("xv-banner")).toContainText("2 serious discrepancies");
 });
 
 test("Policy lists every norm with its required and actual value, deviations first", async ({
@@ -159,10 +197,14 @@ test("Policy lists every norm with its required and actual value, deviations fir
   const api = new MockApi();
   await signedIn(page, api);
   await page.goto(`/appraisals/${KESTREL}/policy`);
-  await expect(page.getByTestId("deviation-summary")).toContainText("1 deviation(s) from policy");
-  await expect(page.getByTestId("deviation-summary")).toContainText(
-    "Financial norms: Debt / equity",
-  );
+  await expect(page.getByTestId("policy-summary-line")).toContainText("3 deviations");
+  // Each family's card leads with its deviations.
+  await expect(
+    page.getByTestId("policy-group-card-ratios").getByTestId("policy-highlight").first(),
+  ).toContainText("Debt / equity");
+  await expect(
+    page.getByTestId("policy-group-card-eligibility").getByTestId("policy-highlight").first(),
+  ).toContainText("Profit in the latest year");
   const de = page.locator('[data-testid="norm"][data-norm="FR-05"]');
   await expect(de).toContainText("at most 2.00x");
   await expect(de.getByTestId("norm-actual")).toHaveText("3.00x");
@@ -191,11 +233,14 @@ test("Outputs: the spread, the draft CAM and the PD note, each figure cited", as
   await expect(cam.locator('[data-section="financials"]').getByTestId("citation")).toHaveCount(1);
   await expect(cam.locator('[data-section="banking"]')).toContainText("Nothing on file yet.");
   await expect(page.getByTestId("cam-summary")).toContainText("Findings (1)");
+  await expect(page.getByTestId("cam-summary")).toContainText("Deviations from policy (1)");
+  // A norm that could not be assessed is listed, not left out (F-23).
+  await expect(page.getByTestId("cam-summary")).toContainText("Norms not assessed (1)");
   await expect(page.getByTestId("cam-recommendation")).toContainText("For credit to complete.");
 
   await page.getByTestId("view-pd").click();
   const questions = page.getByTestId("pd-question");
-  await expect(questions).toHaveCount(2);
+  await expect(questions).toHaveCount(3);
   await expect(questions.first()).toContainText("What are these payments for?");
   await expect(questions.first().getByRole("link")).toHaveAttribute(
     "href",
@@ -205,4 +250,8 @@ test("Outputs: the spread, the draft CAM and the PD note, each figure cited", as
     "href",
     `/appraisals/${KESTREL}/policy`,
   );
+  // A bureau cross-check's question goes to the Cross-checks tab, as the engine routes it.
+  await expect(
+    page.locator('[data-testid="pd-question"][data-rule="OB-01"]').getByRole("link"),
+  ).toHaveAttribute("href", `/appraisals/${KESTREL}/cross-verification`);
 });

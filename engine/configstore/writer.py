@@ -18,6 +18,7 @@ from pathlib import Path
 import yaml
 from pydantic import BaseModel
 
+from ..config import option_ids
 from .schema import SECTION_MODELS, cross_check
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -61,27 +62,39 @@ def load_ingestion_sections() -> dict[str, dict]:
     return out
 
 
-def load_authored_sections() -> dict[str, BaseModel]:
-    """Validate every authored config file under config/ against its schema."""
+def _section_path(name: str, private_dir: Path | None) -> Path:
+    """config/<name>.yaml, or <private_dir>/<name>.yaml when that file exists: RBL's own norms and
+    matrix are published from a git-ignored directory (workflow/private/config), never committed."""
+    if private_dir is not None and (Path(private_dir) / f"{name}.yaml").is_file():
+        return Path(private_dir) / f"{name}.yaml"
+    return CONFIG_DIR / f"{name}.yaml"
+
+
+def private_sections(private_dir: Path | None) -> list[str]:
+    return sorted(name for name in SECTION_MODELS if _section_path(name, private_dir).parent != CONFIG_DIR)
+
+
+def load_authored_sections(private_dir: Path | None = None) -> dict[str, BaseModel]:
+    """Validate every authored config file under config/ (or its private override) against its schema."""
     sections: dict[str, BaseModel] = {}
 
     for name, model in SECTION_MODELS.items():
-        path = CONFIG_DIR / f"{name}.yaml"
+        path = _section_path(name, private_dir)
         if not path.is_file():
             raise FileNotFoundError(f"missing authored config section: {path}")
         sections[name] = model.model_validate(_load_yaml(path))
 
-    problems = cross_check(sections, load_ingestion_sections())
+    problems = cross_check(sections, load_ingestion_sections(), facilities=option_ids("facilities"))
     if problems:
         raise ValueError("config cross-check failed:\n  " + "\n  ".join(problems))
     return sections
 
 
-def publish(*, data_root: Path, author: str, note: str = "") -> dict:
+def publish(*, data_root: Path, author: str, note: str = "", private_dir: Path | None = None) -> dict:
     """Validate every authored section, hash it, and — if the resulting
     version doesn't already exist — write it immutably and point
     published.json at it. Returns the version record."""
-    sections = load_authored_sections()
+    sections = load_authored_sections(private_dir)
     section_dumps = {name: model.model_dump(mode="json") for name, model in sections.items()}
     section_dumps.update({f"ingestion.{name}": data for name, data in load_ingestion_sections().items()})
     section_hashes = {name: section_hash(dump) for name, dump in section_dumps.items()}
@@ -115,6 +128,7 @@ def publish(*, data_root: Path, author: str, note: str = "") -> dict:
         "note": note,
         "section_hashes": section_hashes,
         "prior_version": prior["version"] if prior else None,
+        "private_sections": private_sections(private_dir),
     }
     store_dir.mkdir(parents=True, exist_ok=True)
     published_path.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")

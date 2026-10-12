@@ -28,3 +28,34 @@ export function errorKind(error: unknown): ErrorKind {
 export function isNotAvailable(error: unknown): boolean {
   return errorKind(error) === "notAvailable";
 }
+
+/** The engine's answer to a role without the permission (engine/deps.py), written for the log:
+ * the person is shown the designed state instead. */
+const MISSING_PERMISSION = /^role '[^']*' lacks '[^']*'$/;
+
+/** The engine's own words for a failed request (its `detail`, or the detail's message), if it
+ * gave any: not the browser's or the HTTP status text, nor a validation report. */
+export function engineWords(error: unknown): string | null {
+  if (!(error instanceof ApiError) || !error.message) return null;
+  const detail = error.detail;
+  const worded =
+    typeof detail === "string" ||
+    (detail !== null && typeof detail === "object" && "message" in detail);
+  return worded ? error.message : null;
+}
+
+/**
+ * The engine's refusal, word for word, when it is written for the person who made the request: a
+ * comment too short (422), an item decided or changed meanwhile (409), a decision that is someone
+ * else's to make (403). Null for anything else (the service unreachable or failing, a role
+ * without the permission, a refusal the engine did not word), which is shown as the designed
+ * state (ErrorState).
+ */
+export function refusal(error: unknown): string | null {
+  const words = engineWords(error);
+  if (words === null) return null;
+  const kind = errorKind(error);
+  if (kind === "invalid" || kind === "conflict") return words;
+  if (kind === "forbidden" && !MISSING_PERMISSION.test(words)) return words;
+  return null;
+}

@@ -254,6 +254,105 @@ MIGRATIONS: list[str] = [
     ALTER TABLE findings ADD COLUMN detail TEXT;            -- JSON FindingDetail
     ALTER TABLE findings ADD COLUMN missing TEXT NOT NULL DEFAULT '[]';  -- JSON list
     """,
+    # 6: RBL's reference record for a case, deviations and approving-authority areas (F-25.1,
+    # F-25.2), and the reviewer's adjudications of the comparison (F-25.4, F-25.5). Each table
+    # references only cases(id), so delete_case removes them in any order. No processing
+    # module reads them (.importlinter contract 2).
+    """
+    CREATE TABLE reference_records (
+        case_id TEXT PRIMARY KEY REFERENCES cases(id),
+        workbook_name TEXT NOT NULL,
+        workbook_sha256 TEXT NOT NULL,
+        record_date TEXT,
+        deviations_recorded INTEGER NOT NULL,
+        config_version TEXT,
+        imported_by TEXT NOT NULL,
+        imported_at TEXT NOT NULL,
+        confirmed_by TEXT,
+        confirmed_at TEXT,
+        CHECK (confirmed_by IS NULL OR confirmed_by <> imported_by)
+    );
+    CREATE TABLE reference_items (
+        case_id TEXT NOT NULL REFERENCES cases(id),
+        area TEXT NOT NULL,          -- deviations | approving_authority
+        item_key TEXT NOT NULL,      -- a norm id, REC-<row> for a row with no norm, or 'approval'
+        data TEXT NOT NULL,          -- JSON ReferenceDeviation | ReferenceApproval
+        source_ref TEXT NOT NULL,
+        ord INTEGER NOT NULL,
+        PRIMARY KEY (case_id, area, item_key)
+    );
+    CREATE TABLE comparison_adjudications (
+        case_id TEXT NOT NULL REFERENCES cases(id),
+        area TEXT NOT NULL,
+        item_key TEXT NOT NULL,
+        verdict TEXT NOT NULL CHECK (verdict IN ('valid', 'not_valid')),
+        reason TEXT NOT NULL,
+        snapshot TEXT NOT NULL,      -- JSON: status, both sides, config_version when decided
+        decided_by TEXT NOT NULL,
+        decided_at TEXT NOT NULL,
+        PRIMARY KEY (case_id, area, item_key)
+    );
+    """,
+    # 7: the cross-verification board (F-19). Each finding's card (its sources as columns, the
+    # gap per leg, what would complete it) is kept with the finding; references stay stable
+    # across runs; the latest run of each case is recorded; and a request a person adds to the
+    # query list from a check that could not run is kept until the check completes. Every
+    # table references only cases(id), so delete_case removes them in any order.
+    """
+    ALTER TABLE findings ADD COLUMN card TEXT;          -- JSON: the card fields of Finding
+    CREATE TABLE finding_refs (
+        case_id TEXT NOT NULL REFERENCES cases(id),
+        rule_id TEXT NOT NULL,
+        scope TEXT NOT NULL DEFAULT '',
+        seq INTEGER NOT NULL,
+        assigned_at TEXT NOT NULL,
+        PRIMARY KEY (case_id, rule_id, scope)
+    );
+    CREATE TABLE crosscheck_runs (
+        case_id TEXT PRIMARY KEY REFERENCES cases(id),
+        run_no INTEGER NOT NULL,
+        run_at TEXT NOT NULL,
+        rules INTEGER NOT NULL,
+        sources INTEGER NOT NULL
+    );
+    CREATE TABLE query_additions (
+        case_id TEXT NOT NULL REFERENCES cases(id),
+        rule_id TEXT NOT NULL,
+        scope TEXT NOT NULL DEFAULT '',
+        text TEXT NOT NULL,
+        added_by TEXT NOT NULL,
+        added_at TEXT NOT NULL,
+        PRIMARY KEY (case_id, rule_id, scope)
+    );
+    """,
+    # 8: an escalation to the Credit Manager is kept with the discrepancy's identity (case, rule,
+    # scope: the key of its XV reference), where a run of the checks cannot withdraw it. A run
+    # withdraws the open review item of a discrepancy that does not fail; when the discrepancy
+    # fails again, the item raised for it carries the escalation still unresolved. Accepting or
+    # dismissing the discrepancy resolves it. Escalations recorded before this migration are copied
+    # from the open review items that carry them. References only cases(id), so delete_case
+    # removes it in any order.
+    """
+    CREATE TABLE finding_escalations (
+        case_id TEXT NOT NULL REFERENCES cases(id),
+        rule_id TEXT NOT NULL,
+        scope TEXT NOT NULL DEFAULT '',
+        escalated_by TEXT NOT NULL,
+        escalated_at TEXT NOT NULL,
+        comment TEXT NOT NULL,
+        resolved_by TEXT,                  -- who accepted or dismissed the discrepancy
+        resolved_at TEXT,
+        PRIMARY KEY (case_id, rule_id, scope)
+    );
+    INSERT INTO finding_escalations (case_id, rule_id, scope, escalated_by, escalated_at, comment)
+    SELECT r.case_id, f.rule_id, COALESCE(f.scope, ''),
+           COALESCE(json_extract(r.detail, '$.escalation.by'), ''),
+           COALESCE(json_extract(r.detail, '$.escalation.at'), ''),
+           COALESCE(json_extract(r.detail, '$.escalation.comment'), '')
+    FROM review_items r JOIN findings f ON f.case_id = r.case_id AND r.ref = 'finding:' || f.id
+    WHERE r.kind = 'finding' AND r.status = 'open'
+      AND CASE WHEN json_valid(r.detail) THEN json_type(r.detail, '$.escalation') END = 'object';
+    """,
 ]
 
 

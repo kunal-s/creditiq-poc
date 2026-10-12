@@ -1,0 +1,55 @@
+# Approval and delegation matrix (docs/functional-requirements.md F-00.1, F-21; decision C.4-9).
+# Authored here, published as an immutable version by the config writer; runtime code reads
+# only the published copy through engine/configstore/reader.py.
+#
+# PROVISIONAL. RBL has not supplied its matrix (FRD C.3). Every authority, band and deviation
+# rule is a delivery-team interim proposal, replaced as a whole when RBL's matrix arrives
+# (published with `creditiq config publish --private-config DIR`, so it never enters git).
+# Authorities are generic roles and committees, never named people. While status is
+# provisional the screens say "Provisional matrix" and TC-27 (test plan TC-25) is not
+# included in C4.
+source: provisional
+status: provisional
+note: "Interim matrix proposed by the delivery team, awaiting RBL's approval and delegation matrix."
+amount_basis: amount_requested   # the case's total amount (CaseDetail.amount_inr)
+
+authorities:   # lowest to highest
+  - {key: credit_officer, level: 1, label: Credit Officer, status: provisional}
+  - {key: regional_credit_head, level: 2, label: Regional Credit Head, status: provisional}
+  - {key: zonal_credit_committee, level: 3, label: Zonal Credit Committee, status: provisional}
+  - {key: head_office_credit_committee, level: 4, label: Head Office Credit Committee, status: provisional}
+  - {key: management_credit_committee, level: 5, label: Management Credit Committee, status: provisional}
+
+products:      # every facility in config/app.yaml belongs to exactly one product
+  - {key: working_capital, label: Working capital, facilities: [cash_credit, overdraft, wcdl, packing_credit, post_shipment]}
+  - {key: term, label: Term loan, facilities: [term_loan]}
+  - {key: non_fund, label: Non-fund based, facilities: [bank_guarantee, letter_of_credit]}
+
+bands:         # per product, ascending; up_to_inr is inclusive; the last band is open
+  working_capital:
+    - {up_to_inr: 20000000, authority: credit_officer, status: provisional}
+    - {up_to_inr: 50000000, authority: regional_credit_head, status: provisional}
+    - {up_to_inr: 150000000, authority: zonal_credit_committee, status: provisional}
+    - {up_to_inr: 500000000, authority: head_office_credit_committee, status: provisional}
+    - {authority: management_credit_committee, status: provisional}
+  term:
+    - {up_to_inr: 10000000, authority: credit_officer, status: provisional}
+    - {up_to_inr: 30000000, authority: regional_credit_head, status: provisional}
+    - {up_to_inr: 100000000, authority: zonal_credit_committee, status: provisional}
+    - {up_to_inr: 350000000, authority: head_office_credit_committee, status: provisional}
+    - {authority: management_credit_committee, status: provisional}
+  non_fund:
+    - {up_to_inr: 30000000, authority: credit_officer, status: provisional}
+    - {up_to_inr: 75000000, authority: regional_credit_head, status: provisional}
+    - {up_to_inr: 200000000, authority: zonal_credit_committee, status: provisional}
+    - {up_to_inr: 600000000, authority: head_office_credit_committee, status: provisional}
+    - {authority: management_credit_committee, status: provisional}
+
+# A deviation (F-20) needs levels_above levels above the amount authority, and at least
+# at_least; capped at the highest. Rules never add up: the case takes the highest authority
+# any one rule needs. Every policy deviation category has exactly one rule.
+deviations:
+  - {category: eligibility, levels_above: 1, at_least: regional_credit_head, status: provisional}
+  - {category: financial, levels_above: 1, status: provisional}
+  - {category: security, levels_above: 1, at_least: zonal_credit_committee, status: provisional}
+  - {category: documentation, levels_above: 1, status: provisional}

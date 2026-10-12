@@ -11,6 +11,31 @@ ANALYST = "ananya.krishnan@rblbank.com"
 MANAGER = "meenal.kulkarni@rblbank.com"
 
 
+@pytest.fixture(autouse=True)
+def strict_cards(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A card builder's error fails the test (in service the card falls back to the sides)."""
+    from engine import xv_cards
+
+    monkeypatch.setattr(xv_cards, "STRICT", True)
+
+
+@pytest.fixture()
+def all_rules_enabled(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Every configured cross-check runs, those switched off in config/crosschecks.yaml (`enabled:
+    false`) too: for the tests of the switched-off rules, which stay configured so that they can be
+    switched back on. Every caller reads the published section through engine.configstore.reader,
+    so replacing it there reaches the checks, the board and the PD note alike."""
+    from engine.configstore import reader
+
+    published = reader.load_crosschecks
+
+    def every_rule_enabled(data_root: Path):
+        section = published(data_root)
+        return section.model_copy(update={"rules": [r.model_copy(update={"enabled": True}) for r in section.rules]})
+
+    monkeypatch.setattr(reader, "load_crosschecks", every_rule_enabled)
+
+
 @pytest.fixture()
 def published_data_root(tmp_path: Path) -> Path:
     """A data root with the current authored config published into it."""

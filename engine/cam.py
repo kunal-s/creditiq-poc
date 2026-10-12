@@ -87,8 +87,9 @@ class Draft:
         if ids:
             out.append(CamText(text=f"Its {_join(ids)} are as read from its registration documents.", citations=cites))
         vintage = self.policy_input("vintage_years")
-        if vintage:
-            out.append(CamText(text=f"It has been in business for {vintage.value:g} years.", citations=vintage.evidence))
+        if vintage and vintage.value is not None:
+            out.append(CamText(text=f"It has been in business for {policy_module.unit_text(vintage.value, 'years')}.",
+                               citations=vintage.evidence))
         return out
 
     def proposal(self) -> list[CamText]:
@@ -208,16 +209,18 @@ class Draft:
         norms = [n for n in self.policy.norms if n.outcome != "not_applicable"]
         deviations = [n for n in norms if n.outcome == "deviation"]
         unknown = [n for n in norms if n.outcome == "cannot_evaluate"]
-        out = [CamText(text=f"{len(norms)} norms were assessed"
+        passed = [n for n in norms if n.outcome == "pass"]
+        out = [CamText(text=f"{len(norms)} applicable norm(s)"
                             f"{' on the ' + self.policy.period + ' statements' if self.policy.period else ''}: "
-                            f"{len(deviations)} deviation(s), {len(unknown)} could not be assessed.")]
+                            f"{len(deviations)} deviation(s), {len(unknown)} could not be assessed, {len(passed)} passed.")]
+        provisional = [n for n in norms if n.provisional]
+        if provisional:
+            out.append(CamText(text="Every norm is an interim proposal awaiting RBL's policy norms." if len(provisional) == len(norms)
+                               else f"{len(provisional)} of {len(norms)} norms are interim proposals awaiting RBL's policy norms."))
         for n in deviations:
-            joiner = ":" if n.unit == "count" else " is"
-            out.append(CamText(text=f"{n.label}{joiner} {policy_module.unit_text(n.actual, n.unit)} against a norm of "
-                                    f"{n.required} ({n.category_label}).",
-                               citations=[e for i in n.inputs for e in i.evidence[:1]]))
+            out.append(CamText(text=_deviation_sentence(n), citations=[e for i in n.inputs for e in i.evidence[:1]]))
         for n in unknown:
-            out.append(CamText(text=f"{n.label} could not be assessed: {_join(n.missing)} not on file."))
+            out.append(CamText(text=_unassessed_sentence(n), citations=[e for i in n.inputs for e in i.evidence[:1]]))
         return out
 
     def documentation(self) -> list[CamText]:
@@ -251,13 +254,33 @@ class Draft:
         for n in self.policy.norms:
             if n.outcome == "deviation":
                 items.append(CamSummaryItem(kind="deviation", ref=n.id,
-                                            text=f"{n.category_label}: {n.label} {policy_module.unit_text(n.actual, n.unit)}"
-                                                 f" against {n.required}.",
+                                            text=f"{n.category_label}: {n.label} {n.actual_text} against {n.required}.",
+                                            citations=[e for i in n.inputs for e in i.evidence[:1]]))
+        for n in self.policy.norms:
+            if n.outcome == "cannot_evaluate":
+                items.append(CamSummaryItem(kind="unassessed", ref=n.id, text=_unassessed_sentence(n),
                                             citations=[e for i in n.inputs for e in i.evidence[:1]]))
         for q in reads.query_items(self.conn, self.case.id):
             if not q.resolved:
                 items.append(CamSummaryItem(kind="query", ref=q.id, text=q.text, citations=q.evidence[:1]))
         return items
+
+
+def _deviation_sentence(n) -> str:
+    joiner = ":" if n.unit == "count" else " is"
+    return f"{n.label}{joiner} {n.actual_text} against a norm of {n.required} ({n.category_label})."
+
+
+def _unassessed_sentence(n) -> str:
+    """Why a norm has no result: the inputs not on file, a zero divisor, or a figure in review."""
+    inputs = _join(n.reason_inputs)
+    if n.reason == "zero_denominator":
+        return f"{n.label} could not be computed: {inputs} is zero."
+    if n.reason == "denominator_not_positive":
+        return f"{n.label} could not be computed: {inputs} is zero or negative."
+    if n.reason == "awaiting_review":
+        return f"{n.label} could not be assessed: {inputs} awaits review."
+    return f"{n.label} could not be assessed: {_join(n.missing)} not on file."
 
 
 def build(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> Cam:

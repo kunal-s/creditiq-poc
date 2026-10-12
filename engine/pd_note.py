@@ -27,6 +27,21 @@ class _Fmt(dict):
         return ""
 
 
+def question_template(norm_config, policy_config, result) -> str | None:
+    """What to ask the promoter about a norm, or None: the norm's own question, then its family's for a
+    deviation; for a norm that could not be evaluated, the question for its reason. A figure awaiting
+    review is an internal step, and a norm marked pd_gap skip rests on an input the bank obtains."""
+    if result.outcome == "deviation":
+        return (norm_config.pd_question if norm_config else None) or policy_config.pd_questions.get(result.family)
+    if result.outcome != "cannot_evaluate" or result.reason == "awaiting_review":
+        return None
+    if norm_config is not None and norm_config.pd_gap == "skip":
+        return None
+    if result.reason in ("zero_denominator", "denominator_not_positive"):
+        return policy_config.pd_questions.get(result.reason)
+    return policy_config.pd_questions.get("cannot_evaluate")
+
+
 def build(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> PdNote:
     checks = reader.load_crosschecks(root)
     rules = {r.id: r for r in checks.rules}
@@ -45,12 +60,12 @@ def build(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> PdNote:
         if f.outcome == "fail" and f"finding:{f.id}" not in waived and rule and rule.pd_question:
             questions.append(PdQuestion(
                 id=stable_id("PDQ", case.id, f.id), severity=f.severity, source="finding", ref=f.id,
-                rule=f.rule_id, title=f.title, evidence=evidence,
+                rule=f.rule_id, title=f.title, evidence=evidence, target="cross_verification",
                 text=rule.pd_question.format_map(_Fmt(explanation=f.explanation)).strip()))
         elif f.outcome == "incomplete":
             questions.append(PdQuestion(
                 id=stable_id("PDQ", case.id, f.id), severity="mild", source="gap", ref=f.id, rule=f.rule_id,
-                title=f.title, evidence=evidence,
+                title=f.title, evidence=evidence, target="cross_verification",
                 text=checks.pd_incomplete.format_map(_Fmt(title=f.title, explanation=f.explanation)).strip()))
 
     assessment = policy_module.assess(conn, root, case)
@@ -58,19 +73,14 @@ def build(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> PdNote:
         evidence = [e for i in n.inputs for e in i.evidence[:1]]
         norm_config = next((c for c in policy_config.norms if c.id == n.id), None)
         values = _Fmt(label=n.label, required=n.required, period=assessment.period or "the latest year",
-                      missing=", ".join(n.missing),
-                      actual=policy_module.unit_text(n.actual, n.unit) if n.actual is not None else "")
-        if n.outcome == "deviation":
-            template = (norm_config.pd_question if norm_config else None) or policy_config.pd_questions.get(n.family)
-            if template:
-                questions.append(PdQuestion(
-                    id=stable_id("PDQ", case.id, n.id), severity="moderate", source="deviation", ref=n.id,
-                    rule=n.id, title=n.label, evidence=evidence, text=template.format_map(values).strip()))
-        elif n.outcome == "cannot_evaluate" and policy_config.pd_questions.get("cannot_evaluate"):
-            questions.append(PdQuestion(
-                id=stable_id("PDQ", case.id, n.id), severity="mild", source="gap", ref=n.id, rule=n.id,
-                title=n.label, evidence=evidence,
-                text=policy_config.pd_questions["cannot_evaluate"].format_map(values).strip()))
+                      missing=", ".join(n.missing), inputs=", ".join(n.reason_inputs), actual=n.actual_text or "")
+        template = question_template(norm_config, policy_config, n)
+        if template is None:
+            continue
+        questions.append(PdQuestion(
+            id=stable_id("PDQ", case.id, n.id), severity="moderate" if n.outcome == "deviation" else "mild",
+            source="deviation" if n.outcome == "deviation" else "gap", ref=n.id, rule=n.id, title=n.label,
+            evidence=evidence, target="policy", text=template.format_map(values).strip()))
 
     questions.sort(key=lambda q: (SEVERITY[q.severity], SOURCE[q.source]))
     return PdNote(case_id=case.id, questions=questions)

@@ -4,9 +4,14 @@
 // for the rest of that test.
 import type { Page, Request, Route } from "@playwright/test";
 import type {
+  AdjudicationRequest,
+  ApprovingAuthority,
+  CaseComparison,
   CaseCreate,
   CaseDetail,
   CaseFacts,
+  CrossVerificationView,
+  DocumentTypes,
   Finding,
   PolicyAssessment,
   CaseProgress,
@@ -23,8 +28,14 @@ import type {
   SessionUser,
   StageProgress,
   UploadResult,
+  XvDecisionRequest,
+  XvItem,
 } from "../../src/api/types";
 import {
+  APPROVAL,
+  APPROVAL_MATRIX,
+  NO_COMPARISON,
+  SAFFRON_POLICY,
   AUDIT,
   CONFIG_VERSIONS,
   POLICY_CONFIG,
@@ -54,15 +65,33 @@ import {
   SPREAD,
   SAFFRON_CHECKLIST,
   TAXONOMY,
+  XV_DECIDED_AT,
+  XV_RULES,
   ZIP_FILES,
   detail,
+  kestrelBoard,
   proposal,
+  xvDecision,
+  xvView,
 } from "../fixtures/data";
 
 type Reply = { status?: number; json?: unknown; body?: Buffer; contentType?: string };
 type Handler = (req: Request, match: RegExpMatchArray) => Reply | Promise<Reply>;
 
 export const NOT_YET: Reply = { status: 501, json: { detail: "not implemented yet" } };
+const FORBIDDEN: Reply = { status: 403, json: { detail: "role lacks 'comparison.adjudicate'" } };
+/** engine/xv.py: only the Credit Manager (finding.escalation) decides an escalated discrepancy. */
+const ESCALATED: Reply = {
+  status: 403,
+  json: { detail: "an escalated discrepancy is decided by the Credit Manager" },
+};
+const refused = (status: number, detail: string): Reply => ({ status, json: { detail } });
+/** engine/review.py: every decision on a discrepancy, confirmed or waived, escalated or not, is
+ * kept with a comment of at least 3 characters. */
+const FINDING_COMMENT_MIN = 3;
+const FINDING_COMMENT = "a comment is required for every decision on a discrepancy";
+/** engine/xv.py: a discrepancy already with the Credit Manager is not escalated again. */
+const ALREADY_ESCALATED = "this discrepancy has already been escalated to the Credit Manager";
 
 export class MockApi {
   user: SessionUser = ANALYST;
@@ -81,7 +110,23 @@ export class MockApi {
   review: ReviewItem[] = structuredClone(REVIEW);
   findings = new Map<string, Finding[]>([[KESTREL, FINDINGS]]);
   facts = new Map<string, CaseFacts>([[KESTREL, FACTS]]);
-  policy = new Map<string, PolicyAssessment>([[KESTREL, POLICY]]);
+  policy = new Map<string, PolicyAssessment>([
+    [KESTREL, POLICY],
+    [SAFFRON, SAFFRON_POLICY],
+  ]);
+  /** The approving authority per case; a case without one answers 503 (matrix not published). */
+  authority = new Map<string, ApprovingAuthority>([[KESTREL, APPROVAL]]);
+  /** RBL's record compared, per case; none means no record imported yet. */
+  comparisons = new Map<string, CaseComparison>();
+  /** The published document types (the board's tests add those of its documents). */
+  documentTypes: DocumentTypes = DOCUMENT_TYPES;
+  /** The cross-verification board per case (F-19). Decisions and query additions change it as
+   * engine/xv.py does; its order, ranks, counts, areas, blocked state, first open blocking
+   * discrepancy and top discrepancy are derived from its items on every read, under the enabled
+   * rules (`xvRules`, in configured order). A case without one answers an empty board, as a case
+   * whose checks have not run does. */
+  boards = new Map<string, CrossVerificationView>([[KESTREL, kestrelBoard()]]);
+  xvRules = XV_RULES;
   /** Document reads still to answer as "received" before the final state. */
   pendingReads = new Map<string, number>();
   proposal: CaseProposal = proposal();
@@ -180,7 +225,7 @@ export class MockApi {
       ],
       ["POST", /^\/api\/auth\/logout$/, () => ({ status: 204 })],
       ["GET", /^\/api\/meta$/, () => ({ json: META })],
-      ["GET", /^\/api\/config\/document-types$/, () => ({ json: DOCUMENT_TYPES })],
+      ["GET", /^\/api\/config\/document-types$/, () => ({ json: this.documentTypes })],
       ["GET", /^\/api\/config\/checklist-taxonomy$/, () => ({ json: TAXONOMY })],
       ["GET", /^\/api\/config\/policy$/, () => ({ json: POLICY_CONFIG })],
       ["GET", /^\/api\/config\/versions$/, () => ({ json: CONFIG_VERSIONS })],
@@ -251,6 +296,26 @@ export class MockApi {
       ["GET", new RegExp(`^/api/cases/${id}/fields$`), one(this.fields, [])],
       ["GET", new RegExp(`^/api/cases/${id}/parties$`), one(this.parties, [])],
       ["GET", new RegExp(`^/api/cases/${id}/findings$`), one(this.findings, [])],
+      [
+        "GET",
+        new RegExp(`^/api/cases/${id}/cross-verification$`),
+        (_req, m) => this.board(decodeURIComponent(m[1]!)),
+      ],
+      [
+        "POST",
+        new RegExp(`^/api/cases/${id}/cross-verification/findings/${id}/decision$`),
+        (req, m) =>
+          this.decideFinding(
+            decodeURIComponent(m[1]!),
+            decodeURIComponent(m[2]!),
+            req.postDataJSON() as XvDecisionRequest,
+          ),
+      ],
+      [
+        "POST",
+        new RegExp(`^/api/cases/${id}/cross-verification/findings/${id}/query$`),
+        (_req, m) => this.addFindingQuery(decodeURIComponent(m[1]!), decodeURIComponent(m[2]!)),
+      ],
       ["GET", new RegExp(`^/api/cases/${id}/spread$`), () => ({ json: SPREAD })],
       ["GET", new RegExp(`^/api/cases/${id}/cam$`), () => ({ json: CAM })],
       ["GET", new RegExp(`^/api/cases/${id}/pd-note$`), () => ({ json: PD_NOTE })],
@@ -261,6 +326,42 @@ export class MockApi {
           const caseId = decodeURIComponent(m[1]!);
           return { json: this.policy.get(caseId) ?? { case_id: caseId, period: null, norms: [] } };
         },
+      ],
+      [
+        "GET",
+        new RegExp(`^/api/cases/${id}/approving-authority$`),
+        (_req, m) => {
+          const found = this.authority.get(decodeURIComponent(m[1]!));
+          return found
+            ? { json: found }
+            : { status: 503, json: { detail: "approval matrix not published" } };
+        },
+      ],
+      ["GET", /^\/api\/config\/approval-matrix$/, () => ({ json: APPROVAL_MATRIX })],
+      [
+        "GET",
+        new RegExp(`^/api/cases/${id}/comparison$`),
+        (_req, m) => {
+          if (!this.user.permissions.includes("comparison.adjudicate")) return FORBIDDEN;
+          const caseId = decodeURIComponent(m[1]!);
+          return { json: this.comparisons.get(caseId) ?? { ...NO_COMPARISON, case_id: caseId } };
+        },
+      ],
+      [
+        "POST",
+        new RegExp(`^/api/cases/${id}/reference/confirm$`),
+        (_req, m) => this.confirm(decodeURIComponent(m[1]!)),
+      ],
+      [
+        "PUT",
+        new RegExp(`^/api/cases/${id}/comparison/${id}/${id}/adjudication$`),
+        (req, m) =>
+          this.adjudicate(
+            decodeURIComponent(m[1]!),
+            decodeURIComponent(m[2]!),
+            decodeURIComponent(m[3]!),
+            req.postDataJSON() as AdjudicationRequest,
+          ),
       ],
       [
         "GET",
@@ -355,16 +456,178 @@ export class MockApi {
     return { status: 202, json: result };
   }
 
+  /** F-25.1: the reviewer confirms RBL's record; never the person who imported it. */
+  private confirm(caseId: string): Reply {
+    if (!this.user.permissions.includes("comparison.adjudicate")) return FORBIDDEN;
+    const c = this.comparisons.get(caseId);
+    if (!c?.record) return { status: 404, json: { detail: "no reference record for this case" } };
+    if (c.record.confirmed_by) return { status: 409, json: { detail: "already confirmed" } };
+    if (c.record.imported_by === this.user.id)
+      return {
+        status: 409,
+        json: { detail: "the person who imported the record cannot confirm it" },
+      };
+    Object.assign(c.record, {
+      confirmed_by: this.user.id,
+      confirmed_by_name: this.user.name,
+      confirmed_at: "2026-10-02T09:00:00Z",
+    });
+    for (const item of c.items)
+      item.adjudicable = item.status === "differ" || item.status === "new";
+    c.counts.to_adjudicate = c.items.filter((i) => i.adjudicable && !i.adjudication).length;
+    return { json: c.record };
+  }
+
+  /** F-25.4: a verdict with a reason on a difference or a new deviation. */
+  private adjudicate(caseId: string, area: string, key: string, body: AdjudicationRequest): Reply {
+    if (!this.user.permissions.includes("comparison.adjudicate")) return FORBIDDEN;
+    const c = this.comparisons.get(caseId);
+    if (!c?.record?.confirmed_by)
+      return { status: 409, json: { detail: "the reference record must be confirmed first" } };
+    const item = c.items.find((i) => i.area === area && i.key === key);
+    if (!item) return { status: 404, json: { detail: "no comparison item" } };
+    if (item.status !== "differ" && item.status !== "new")
+      return { status: 409, json: { detail: `a ${item.status} item is not adjudicated` } };
+    if ((body.reason ?? "").trim().length < 3)
+      return { status: 422, json: { detail: "a reason is required" } };
+    item.adjudication = {
+      verdict: body.verdict,
+      reason: body.reason,
+      decided_by: this.user.id,
+      decided_by_name: this.user.name,
+      decided_at: "2026-10-02T10:00:00Z",
+      stale: false,
+    };
+    c.counts.to_adjudicate = c.items.filter(
+      (i) => i.adjudicable && (!i.adjudication || i.adjudication.stale),
+    ).length;
+    return { json: item };
+  }
+
+  private can(permission: string): boolean {
+    return this.user.permissions.includes(permission);
+  }
+
+  /** The engine's answer to a role without the permission (engine/deps.py). */
+  private denied(permission: string): Reply {
+    return refused(403, `role '${this.user.role}' lacks '${permission}'`);
+  }
+
+  private boardItem(caseId: string, findingId: string): XvItem | undefined {
+    return this.boards.get(caseId)?.items.find((i) => i.finding.id === findingId);
+  }
+
+  /** F-19: the board, assembled from its items as engine/xv.py does (xvView). */
+  private board(caseId: string): Reply {
+    if (!this.can("finding.read")) return this.denied("finding.read");
+    if (!this.details.has(caseId)) return refused(404, "no case");
+    const view = this.boards.get(caseId);
+    return {
+      json: view
+        ? xvView(caseId, view.items, view.run, this.xvRules)
+        : xvView(caseId, [], null, this.xvRules),
+    };
+  }
+
+  /** F-19: accept, dismiss or escalate a discrepancy, refused as engine/xv.py refuses it. Accept
+   * and dismiss close its review item; escalate keeps it open and blocking, with the Credit
+   * Manager. The request body is in `calls`, as every request's is. */
+  private decideFinding(caseId: string, findingId: string, body: XvDecisionRequest): Reply {
+    if (!this.can("review.decide")) return this.denied("review.decide");
+    const comment = (body.comment ?? "").trim();
+    if (comment.length < 3) return refused(422, "a comment is required for every decision");
+    const item = this.boardItem(caseId, findingId);
+    if (!item) return refused(404, `no finding '${findingId}' on this case`);
+    if (item.finding.outcome !== "fail") return refused(409, "only a discrepancy is adjudicated");
+    if (item.adjudicated) return refused(409, "this discrepancy has already been decided");
+    if (!item.review_item_id) return refused(409, "this discrepancy has no review item");
+    if (item.escalation && !this.can("finding.escalation")) return ESCALATED;
+    if (body.decision === "escalate" && item.escalation) return refused(409, ALREADY_ESCALATED);
+    const record = xvDecision(body.decision, comment, XV_DECIDED_AT, this.user);
+    const review = this.review.find(
+      (r) => r.id === item.review_item_id || r.ref === `finding:${findingId}`,
+    );
+    if (body.decision === "escalate") {
+      item.escalation = record;
+      if (review) review.escalated = true;
+    } else {
+      item.decision = record;
+      item.adjudicated = true;
+      if (review)
+        Object.assign(review, {
+          status: "decided",
+          decision: body.decision === "accept" ? "confirm" : "waive",
+          reason: comment,
+          decided_by: this.user.name,
+          decided_at: XV_DECIDED_AT,
+        });
+    }
+    return { json: item };
+  }
+
+  /** F-14: what would complete a check that could not run goes on the query list (once), until
+   * the check completes. */
+  private addFindingQuery(caseId: string, findingId: string): Reply {
+    if (!this.can("review.decide")) return this.denied("review.decide");
+    const item = this.boardItem(caseId, findingId);
+    if (!item) return refused(404, `no finding '${findingId}' on this case`);
+    const f = item.finding;
+    if (f.outcome !== "incomplete" || !f.request)
+      return refused(
+        409,
+        "only a check that could not run, with something to ask for, goes on the query list",
+      );
+    const ref = `${f.rule_id}:${f.scope ?? ""}:request`;
+    const queries = this.queries.get(caseId) ?? [];
+    if (!queries.some((q) => q.source_ref === ref)) {
+      const text = `Please provide ${f.request}, so that the check “${f.compares ?? f.title}” can be completed.`;
+      const added: QueryItem = {
+        id: `q-${f.id}`,
+        case_id: caseId,
+        group: "documents_needed",
+        text,
+        source_kind: "finding",
+        source_ref: ref,
+        resolved: false,
+        evidence: [],
+      };
+      this.queries.set(caseId, [...queries, added]);
+    }
+    item.in_query_list = true;
+    return { json: item };
+  }
+
+  /** F-17.5: a review decision, refused as engine/review.py refuses it. */
   private decide(rawId: string, body: ReviewDecisionRequest): Reply {
     const item = this.review.find((r) => r.id === decodeURIComponent(rawId));
     if (!item) return { status: 404, json: { detail: "no item" } };
+    if (item.status !== "open") return refused(409, "this item has already been decided");
+    const reason = (body.reason ?? "").trim() || null;
+    if (item.kind === "finding") {
+      // Escalated from the cross-verification board, the Credit Manager decides it; every
+      // decision on a discrepancy, confirmed or waived, has a comment.
+      if (item.escalated && !this.can("finding.escalation")) return ESCALATED;
+      if ((reason ?? "").length < FINDING_COMMENT_MIN) return refused(422, FINDING_COMMENT);
+    }
+    if ((body.decision === "correct" || body.decision === "waive") && !reason)
+      return refused(422, `a reason is required to ${body.decision}`);
     Object.assign(item, {
       status: "decided",
       decision: body.decision,
-      reason: body.reason ?? null,
+      reason,
       decided_by: this.user.name,
       decided_at: "2026-09-29T10:00:00Z",
     });
+    // A discrepancy decided in the queue is decided on the board too (confirm accepts it, waive
+    // dismisses it), as the engine reads the board from the review items.
+    const found = this.boards
+      .get(item.case_id)
+      ?.items.find((i) => i.review_item_id === item.id || item.ref === `finding:${i.finding.id}`);
+    if (found && !found.adjudicated && (body.decision === "confirm" || body.decision === "waive")) {
+      const decision = body.decision === "confirm" ? "accept" : "dismiss";
+      found.decision = xvDecision(decision, reason ?? "", item.decided_at ?? "", this.user);
+      found.adjudicated = true;
+    }
     return { json: item };
   }
 

@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+import pytest
+
 from fastapi.testclient import TestClient
 
 from engine import db, pipeline
@@ -57,3 +59,48 @@ def test_a_finding_found_not_valid_is_not_asked(client: TestClient, published_da
     client.post(f"/api/review/{item['id']}/decision",
                 json={"decision": "waive", "reason": "The second PAN is a typing error in the return"}, headers=analyst)
     assert not [q for q in _note(client, analyst, published_data_root, case_id) if q["rule"] == "ID-01"]
+
+
+@pytest.mark.parametrize("rule,check", [
+    ("EL-01", lambda t: t.endswith("What is the background, and what mitigates it?")),
+    ("FR-05", lambda t: t.startswith("Debt / equity is 2.67x")),
+    ("DOC-02", lambda t: t.endswith("When will the documents be available?")),
+])
+def test_each_deviation_family_has_its_question(client: TestClient, published_data_root: Path, rule, check):
+    analyst = sign_in(client, ANALYST)
+    case_id = _case(client, analyst, published_data_root)
+    add_doc(published_data_root, case_id, "certificate_of_incorporation", {"date_of_incorporation": "2024-06-01"})
+    q = next(q for q in _note(client, analyst, published_data_root, case_id) if q["rule"] == rule)
+    assert check(q["text"]), q["text"]
+    assert q["severity"] == "moderate" and q["source"] == "deviation" and q["evidence"] and q["target"] == "policy"
+
+
+def test_question_template_prefers_the_norms_own_question(published_data_root: Path):
+    from engine import pd_note
+    from engine.configstore import reader
+    from engine.contracts import NormResult
+
+    policy_config = reader.load_policy(published_data_root)
+    configured = {n.id: n for n in policy_config.norms}
+
+    def result(norm_id, outcome, reason=None):
+        n = configured[norm_id]
+        return NormResult(id=norm_id, family=n.family, label=norm_id, formula="", required="", outcome=outcome,
+                          category=n.category, category_label=n.category, reason=reason)
+
+    own = configured["FR-05"].model_copy(update={"pd_question": "Own question about {label}."})
+    assert pd_note.question_template(own, policy_config, result("FR-05", "deviation")) == "Own question about {label}."
+    assert pd_note.question_template(configured["EL-02"], policy_config, result("EL-02", "cannot_evaluate")) is None
+    assert pd_note.question_template(configured["FR-02"], policy_config, result("FR-02", "cannot_evaluate", "awaiting_review")) is None
+    assert pd_note.question_template(configured["FR-04"], policy_config, result("FR-04", "cannot_evaluate", "zero_denominator")) \
+        == policy_config.pd_questions["zero_denominator"]
+
+
+def test_questions_link_to_their_tab(client: TestClient, published_data_root: Path):
+    analyst = sign_in(client, ANALYST)
+    case_id = _case(client, analyst, published_data_root)
+    questions = _note(client, analyst, published_data_root, case_id)
+    assert next(q for q in questions if q["rule"] == "ID-01")["target"] == "cross_verification"
+    assert next(q for q in questions if q["rule"] == "FR-05")["target"] == "policy"
+    gaps = [q for q in questions if q["source"] == "gap" and not q["rule"].startswith(("EL", "FR", "DOC"))]
+    assert gaps and all(q["target"] == "cross_verification" for q in gaps)

@@ -8,6 +8,13 @@
             "title": "Account",
             "type": "string"
           },
+          "by_month": {
+            "items": {
+              "$ref": "#/components/schemas/AccountMonth"
+            },
+            "title": "By Month",
+            "type": "array"
+          },
           "excluded": {
             "title": "Excluded",
             "type": "number"
@@ -100,6 +107,407 @@
           "has_statement"
         ],
         "title": "AccountFact",
+        "type": "object"
+      },
+      "AccountMonth": {
+        "description": "One account's credits in one month, before and after cleansing.",
+        "properties": {
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "excluded": {
+            "title": "Excluded",
+            "type": "number"
+          },
+          "gross": {
+            "title": "Gross",
+            "type": "number"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "net": {
+            "title": "Net",
+            "type": "number"
+          }
+        },
+        "required": [
+          "month",
+          "label",
+          "gross",
+          "excluded",
+          "net"
+        ],
+        "title": "AccountMonth",
+        "type": "object"
+      },
+      "Adjudication": {
+        "properties": {
+          "decided_at": {
+            "title": "Decided At",
+            "type": "string"
+          },
+          "decided_by": {
+            "title": "Decided By",
+            "type": "string"
+          },
+          "decided_by_name": {
+            "title": "Decided By Name",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "stale": {
+            "default": false,
+            "title": "Stale",
+            "type": "boolean"
+          },
+          "verdict": {
+            "enum": [
+              "valid",
+              "not_valid"
+            ],
+            "title": "Verdict",
+            "type": "string"
+          }
+        },
+        "required": [
+          "verdict",
+          "reason",
+          "decided_by",
+          "decided_by_name",
+          "decided_at"
+        ],
+        "title": "Adjudication",
+        "type": "object"
+      },
+      "AdjudicationRequest": {
+        "properties": {
+          "reason": {
+            "minLength": 3,
+            "title": "Reason",
+            "type": "string"
+          },
+          "verdict": {
+            "enum": [
+              "valid",
+              "not_valid"
+            ],
+            "title": "Verdict",
+            "type": "string"
+          }
+        },
+        "required": [
+          "verdict",
+          "reason"
+        ],
+        "title": "AdjudicationRequest",
+        "type": "object"
+      },
+      "AmountBand": {
+        "properties": {
+          "authority": {
+            "title": "Authority",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "provisional"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "up_to_inr": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Up To Inr"
+          }
+        },
+        "required": [
+          "authority",
+          "status"
+        ],
+        "title": "AmountBand",
+        "type": "object"
+      },
+      "ApprovalMatrixSection": {
+        "description": "config/approval_matrix.yaml (F-00.1, F-21): who must approve a case, by amount, product\nand the categories of its policy deviations.",
+        "properties": {
+          "amount_basis": {
+            "const": "amount_requested",
+            "default": "amount_requested",
+            "title": "Amount Basis",
+            "type": "string"
+          },
+          "authorities": {
+            "items": {
+              "$ref": "#/components/schemas/MatrixAuthority"
+            },
+            "minItems": 1,
+            "title": "Authorities",
+            "type": "array"
+          },
+          "bands": {
+            "additionalProperties": {
+              "items": {
+                "$ref": "#/components/schemas/AmountBand"
+              },
+              "type": "array"
+            },
+            "title": "Bands",
+            "type": "object"
+          },
+          "deviations": {
+            "items": {
+              "$ref": "#/components/schemas/DeviationRule"
+            },
+            "title": "Deviations",
+            "type": "array"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "products": {
+            "items": {
+              "$ref": "#/components/schemas/ProductGroup"
+            },
+            "minItems": 1,
+            "title": "Products",
+            "type": "array"
+          },
+          "source": {
+            "enum": [
+              "published_policy",
+              "regulatory",
+              "industry_standard",
+              "provisional",
+              "rbl_supplied"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "provisional"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "status",
+          "note",
+          "authorities",
+          "products",
+          "bands",
+          "deviations"
+        ],
+        "title": "ApprovalMatrixSection",
+        "type": "object"
+      },
+      "ApprovingAuthority": {
+        "description": "The authority the case needs under the published matrix (F-21).",
+        "properties": {
+          "amount_basis": {
+            "const": "amount_requested",
+            "title": "Amount Basis",
+            "type": "string"
+          },
+          "amount_inr": {
+            "title": "Amount Inr",
+            "type": "integer"
+          },
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "config_version": {
+            "title": "Config Version",
+            "type": "string"
+          },
+          "could_rise_to": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuthorityRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lower_bound": {
+            "title": "Lower Bound",
+            "type": "boolean"
+          },
+          "outcome": {
+            "enum": [
+              "determined",
+              "cannot_determine"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "product_labels": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Product Labels",
+            "type": "array"
+          },
+          "products": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Products",
+            "type": "array"
+          },
+          "provisional": {
+            "title": "Provisional",
+            "type": "boolean"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "const": "no_product",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "required": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuthorityRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/AuthorityStep"
+            },
+            "title": "Steps",
+            "type": "array"
+          },
+          "unevaluated": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Unevaluated",
+            "type": "array"
+          },
+          "unevaluated_labels": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Unevaluated Labels",
+            "type": "array"
+          },
+          "unmapped_facilities": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Unmapped Facilities",
+            "type": "array"
+          }
+        },
+        "required": [
+          "case_id",
+          "outcome",
+          "required",
+          "amount_inr",
+          "amount_basis",
+          "products",
+          "product_labels",
+          "steps",
+          "lower_bound",
+          "unevaluated",
+          "unevaluated_labels",
+          "could_rise_to",
+          "provisional",
+          "source",
+          "config_version"
+        ],
+        "title": "ApprovingAuthority",
+        "type": "object"
+      },
+      "AreaScore": {
+        "description": "Inputs for the scorecard (F-26).",
+        "properties": {
+          "area": {
+            "enum": [
+              "deviations",
+              "approving_authority"
+            ],
+            "title": "Area",
+            "type": "string"
+          },
+          "flagged_total": {
+            "title": "Flagged Total",
+            "type": "integer"
+          },
+          "found_in_record": {
+            "title": "Found In Record",
+            "type": "integer"
+          },
+          "pending": {
+            "title": "Pending",
+            "type": "integer"
+          },
+          "recorded_total": {
+            "title": "Recorded Total",
+            "type": "integer"
+          },
+          "scored": {
+            "title": "Scored",
+            "type": "boolean"
+          },
+          "valid": {
+            "title": "Valid",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "area",
+          "scored",
+          "found_in_record",
+          "recorded_total",
+          "valid",
+          "flagged_total",
+          "pending"
+        ],
+        "title": "AreaScore",
         "type": "object"
       },
       "AuditEntry": {
@@ -253,6 +661,168 @@
         "title": "AuthorityFact",
         "type": "object"
       },
+      "AuthorityRef": {
+        "description": "An approving authority: a role or committee, never a person.",
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "level": {
+            "title": "Level",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "level"
+        ],
+        "title": "AuthorityRef",
+        "type": "object"
+      },
+      "AuthorityStep": {
+        "description": "One rule of the matrix that applied to the case, and the authority it needs.",
+        "properties": {
+          "at_least": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuthorityRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "authority": {
+            "$ref": "#/components/schemas/AuthorityRef"
+          },
+          "band_from_inr": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Band From Inr"
+          },
+          "band_to_inr": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Band To Inr"
+          },
+          "capped": {
+            "default": false,
+            "title": "Capped",
+            "type": "boolean"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "category_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Label"
+          },
+          "governs": {
+            "default": false,
+            "title": "Governs",
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "amount",
+              "deviation"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "levels_above": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Levels Above"
+          },
+          "norm_labels": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Norm Labels",
+            "type": "array"
+          },
+          "norms": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Norms",
+            "type": "array"
+          },
+          "product": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product"
+          },
+          "product_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Label"
+          },
+          "rule": {
+            "title": "Rule",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "rule",
+          "authority"
+        ],
+        "title": "AuthorityStep",
+        "type": "object"
+      },
       "BalanceFact": {
         "description": "One account's balance on a financial-year end, from its statement (FS-02).",
         "properties": {
@@ -393,6 +963,7 @@
             "enum": [
               "finding",
               "deviation",
+              "unassessed",
               "query"
             ],
             "title": "Kind",
@@ -495,6 +1066,72 @@
           "confidence"
         ],
         "title": "Candidate",
+        "type": "object"
+      },
+      "CaseComparison": {
+        "properties": {
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "config_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config Version"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/ComparisonCounts"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ComparisonItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "provisional_matrix": {
+            "title": "Provisional Matrix",
+            "type": "boolean"
+          },
+          "provisional_norms": {
+            "title": "Provisional Norms",
+            "type": "boolean"
+          },
+          "record": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReferenceRecord"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scores": {
+            "items": {
+              "$ref": "#/components/schemas/AreaScore"
+            },
+            "title": "Scores",
+            "type": "array"
+          }
+        },
+        "required": [
+          "case_id",
+          "config_version",
+          "record",
+          "provisional_norms",
+          "provisional_matrix",
+          "counts",
+          "items",
+          "scores"
+        ],
+        "title": "CaseComparison",
         "type": "object"
       },
       "CaseCreate": {
@@ -883,6 +1520,16 @@
             "title": "Persons",
             "type": "array"
           },
+          "proposed_emi": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FactValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "requested_amount": {
             "anyOf": [
               {
@@ -1142,7 +1789,8 @@
               "published_policy",
               "regulatory",
               "industry_standard",
-              "provisional"
+              "provisional",
+              "rbl_supplied"
             ],
             "title": "Source",
             "type": "string"
@@ -1335,6 +1983,196 @@
         "title": "Classification",
         "type": "object"
       },
+      "ComparisonCounts": {
+        "description": "agree, differ, new, missed and no_deviation_either_side count the deviations area;\nto_adjudicate counts every item in either area awaiting a current decision.",
+        "properties": {
+          "agree": {
+            "title": "Agree",
+            "type": "integer"
+          },
+          "differ": {
+            "title": "Differ",
+            "type": "integer"
+          },
+          "missed": {
+            "title": "Missed",
+            "type": "integer"
+          },
+          "new": {
+            "title": "New",
+            "type": "integer"
+          },
+          "no_deviation_either_side": {
+            "title": "No Deviation Either Side",
+            "type": "integer"
+          },
+          "to_adjudicate": {
+            "title": "To Adjudicate",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "agree",
+          "differ",
+          "new",
+          "missed",
+          "to_adjudicate",
+          "no_deviation_either_side"
+        ],
+        "title": "ComparisonCounts",
+        "type": "object"
+      },
+      "ComparisonItem": {
+        "properties": {
+          "adjudicable": {
+            "title": "Adjudicable",
+            "type": "boolean"
+          },
+          "adjudication": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Adjudication"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "area": {
+            "enum": [
+              "deviations",
+              "approving_authority"
+            ],
+            "title": "Area",
+            "type": "string"
+          },
+          "authority_on_record_deviations": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuthorityRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "creditiq_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Creditiq Text"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "norm": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NormResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "items": {
+              "enum": [
+                "value_differs",
+                "category_differs",
+                "pass",
+                "cannot_evaluate",
+                "not_applicable",
+                "no_norm",
+                "lower",
+                "higher",
+                "not_in_matrix",
+                "cannot_determine"
+              ],
+              "type": "string"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "record_approval": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReferenceApproval"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "record_deviation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReferenceDeviation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "record_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Record Text"
+          },
+          "required": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ApprovingAuthority"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scored": {
+            "title": "Scored",
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "agree",
+              "differ",
+              "new",
+              "missed"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "area",
+          "key",
+          "label",
+          "status",
+          "creditiq_text",
+          "record_text",
+          "adjudicable",
+          "scored"
+        ],
+        "title": "ComparisonItem",
+        "type": "object"
+      },
       "ConfigVersion": {
         "properties": {
           "author": {
@@ -1432,6 +2270,77 @@
         "title": "CoverageRule",
         "type": "object"
       },
+      "CrossVerificationView": {
+        "description": "The cross-verification board for one case (F-19): every finding of the latest run by area,\ndiscrepancies ranked by credit impact within each area, and whether submission is blocked.",
+        "properties": {
+          "areas": {
+            "items": {
+              "$ref": "#/components/schemas/XvArea"
+            },
+            "title": "Areas",
+            "type": "array"
+          },
+          "blocked": {
+            "title": "Blocked",
+            "type": "boolean"
+          },
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/XvCounts"
+          },
+          "first_blocking": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Blocking"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/XvItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "run": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/XvRun"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "top_finding_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Finding Id"
+          }
+        },
+        "required": [
+          "case_id",
+          "run",
+          "items",
+          "counts",
+          "blocked"
+        ],
+        "title": "CrossVerificationView",
+        "type": "object"
+      },
       "DeviationCategory": {
         "properties": {
           "key": {
@@ -1448,6 +2357,45 @@
           "label"
         ],
         "title": "DeviationCategory",
+        "type": "object"
+      },
+      "DeviationRule": {
+        "properties": {
+          "at_least": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At Least"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "levels_above": {
+            "default": 1,
+            "minimum": 0.0,
+            "title": "Levels Above",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "provisional"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "status"
+        ],
+        "title": "DeviationRule",
         "type": "object"
       },
       "DirectoryUser": {
@@ -1560,6 +2508,22 @@
             "title": "Personal",
             "type": "boolean"
           },
+          "provenance": {
+            "anyOf": [
+              {
+                "enum": [
+                  "declared",
+                  "borrower_supplied",
+                  "independent"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provenance"
+          },
           "satisfies": {
             "items": {
               "type": "string"
@@ -1639,6 +2603,50 @@
           "page"
         ],
         "title": "Evidence",
+        "type": "object"
+      },
+      "EvidenceRow": {
+        "description": "One extracted row behind a headline value, with the page it was read from.",
+        "properties": {
+          "cells": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Cells",
+            "type": "array"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "kind": {
+            "default": "row",
+            "enum": [
+              "row",
+              "total",
+              "excluded"
+            ],
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cells"
+        ],
+        "title": "EvidenceRow",
         "type": "object"
       },
       "Exclusion": {
@@ -2142,6 +3150,17 @@
       "Finding": {
         "description": "A cross-check or policy outcome (F-19, F-20).",
         "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
           "area": {
             "default": "identity",
             "enum": [
@@ -2163,6 +3182,24 @@
           "case_id": {
             "title": "Case Id",
             "type": "string"
+          },
+          "columns": {
+            "items": {
+              "$ref": "#/components/schemas/SourceColumn"
+            },
+            "title": "Columns",
+            "type": "array"
+          },
+          "compares": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compares"
           },
           "config_version": {
             "anyOf": [
@@ -2189,9 +3226,56 @@
             "title": "Explanation",
             "type": "string"
           },
+          "finding_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finding Title"
+          },
+          "gap_tolerance": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gap Tolerance"
+          },
+          "gaps": {
+            "items": {
+              "$ref": "#/components/schemas/GapLeg"
+            },
+            "title": "Gaps",
+            "type": "array"
+          },
+          "highlights": {
+            "items": {
+              "$ref": "#/components/schemas/XvHighlight"
+            },
+            "title": "Highlights",
+            "type": "array"
+          },
           "id": {
             "title": "Id",
             "type": "string"
+          },
+          "mismatch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mismatch"
           },
           "missing": {
             "items": {
@@ -2210,6 +3294,17 @@
             "title": "Outcome",
             "type": "string"
           },
+          "policy_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Policy Ref"
+          },
           "query": {
             "anyOf": [
               {
@@ -2220,6 +3315,39 @@
               }
             ],
             "title": "Query"
+          },
+          "ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ref"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          },
+          "request": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request"
           },
           "rule_id": {
             "title": "Rule Id",
@@ -2342,6 +3470,14 @@
             "title": "Flagged",
             "type": "boolean"
           },
+          "flagged_cells": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "title": "Flagged Cells",
+            "type": "array"
+          },
           "label": {
             "title": "Label",
             "type": "string"
@@ -2389,6 +3525,13 @@
             "title": "Relies On Manual",
             "type": "boolean"
           },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
           "value": {
             "anyOf": [
               {
@@ -2409,6 +3552,63 @@
           "value"
         ],
         "title": "FindingSide",
+        "type": "object"
+      },
+      "GapLeg": {
+        "description": "How far one source is from another: one leg of a comparison.",
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "base": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base"
+          },
+          "breached": {
+            "default": false,
+            "title": "Breached",
+            "type": "boolean"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "legs": {
+            "title": "Legs",
+            "type": "string"
+          },
+          "pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pct"
+          }
+        },
+        "required": [
+          "label",
+          "legs"
+        ],
+        "title": "GapLeg",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -2705,6 +3905,40 @@
         "title": "LoginResponse",
         "type": "object"
       },
+      "MatrixAuthority": {
+        "description": "An approving authority: a role or committee, never a person (F-21).",
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "level": {
+            "minimum": 1.0,
+            "title": "Level",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "provisional"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "level",
+          "label",
+          "status"
+        ],
+        "title": "MatrixAuthority",
+        "type": "object"
+      },
       "Meta": {
         "description": "Choice lists the screens need, from config/app.yaml.",
         "properties": {
@@ -2790,6 +4024,17 @@
             "title": "Gst Evidence",
             "type": "array"
           },
+          "gst_filed": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gst Filed"
+          },
           "label": {
             "title": "Label",
             "type": "string"
@@ -2809,6 +4054,23 @@
       "NormInput": {
         "description": "One source figure a norm used, with where it came from (F-20.2).",
         "properties": {
+          "awaiting_review": {
+            "default": false,
+            "title": "Awaiting Review",
+            "type": "boolean"
+          },
+          "basis": {
+            "default": "document",
+            "enum": [
+              "document",
+              "case",
+              "checklist",
+              "statements_coverage",
+              "not_requested"
+            ],
+            "title": "Basis",
+            "type": "string"
+          },
           "evidence": {
             "items": {
               "$ref": "#/components/schemas/Evidence"
@@ -2823,6 +4085,13 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "refs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Refs",
+            "type": "array"
           },
           "relies_on_manual": {
             "default": false,
@@ -2862,6 +4131,17 @@
             ],
             "title": "Actual"
           },
+          "actual_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actual Text"
+          },
           "category": {
             "title": "Category",
             "type": "string"
@@ -2869,6 +4149,17 @@
           "category_label": {
             "title": "Category Label",
             "type": "string"
+          },
+          "definition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition"
           },
           "family": {
             "enum": [
@@ -2932,9 +4223,43 @@
             "title": "Provisional",
             "type": "boolean"
           },
+          "reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "zero_denominator",
+                  "denominator_not_positive",
+                  "awaiting_review"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "reason_inputs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Reason Inputs",
+            "type": "array"
+          },
           "required": {
             "title": "Required",
             "type": "string"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
           },
           "unit": {
             "anyOf": [
@@ -3169,6 +4494,17 @@
             ],
             "title": "Designation Key"
           },
+          "din_field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Din Field"
+          },
           "din_key": {
             "anyOf": [
               {
@@ -3283,6 +4619,15 @@
               "gap"
             ],
             "title": "Source",
+            "type": "string"
+          },
+          "target": {
+            "default": "policy",
+            "enum": [
+              "cross_verification",
+              "policy"
+            ],
+            "title": "Target",
             "type": "string"
           },
           "text": {
@@ -3422,6 +4767,27 @@
             "title": "Case Id",
             "type": "string"
           },
+          "config_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config Version"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/PolicyCounts"
+          },
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/PolicyGroup"
+            },
+            "title": "Groups",
+            "type": "array"
+          },
           "norms": {
             "items": {
               "$ref": "#/components/schemas/NormResult"
@@ -3449,6 +4815,80 @@
         "title": "PolicyAssessment",
         "type": "object"
       },
+      "PolicyCounts": {
+        "description": "Norms by outcome.",
+        "properties": {
+          "cannot_evaluate": {
+            "default": 0,
+            "title": "Cannot Evaluate",
+            "type": "integer"
+          },
+          "deviations": {
+            "default": 0,
+            "title": "Deviations",
+            "type": "integer"
+          },
+          "not_applicable": {
+            "default": 0,
+            "title": "Not Applicable",
+            "type": "integer"
+          },
+          "passed": {
+            "default": 0,
+            "title": "Passed",
+            "type": "integer"
+          }
+        },
+        "title": "PolicyCounts",
+        "type": "object"
+      },
+      "PolicyGroup": {
+        "description": "One family of norms as the Policy page's overview shows it (F-20).",
+        "properties": {
+          "counts": {
+            "$ref": "#/components/schemas/PolicyCounts"
+          },
+          "family": {
+            "enum": [
+              "eligibility",
+              "ratios",
+              "security_cover",
+              "documentation"
+            ],
+            "title": "Family",
+            "type": "string"
+          },
+          "highlights": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Highlights",
+            "type": "array"
+          },
+          "norms": {
+            "title": "Norms",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "deviation",
+              "cannot_evaluate",
+              "clear",
+              "no_norms"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "family",
+          "norms",
+          "counts",
+          "status"
+        ],
+        "title": "PolicyGroup",
+        "type": "object"
+      },
       "PolicyNorm": {
         "description": "One norm (F-20.1): an expression over POLICY_INPUTS, a threshold, the\ndeviation category a breach falls under, and its source. A ratio norm\ntakes its label, unit, direction and threshold from `ratios`.",
         "properties": {
@@ -3457,6 +4897,7 @@
             "enum": [
               "always",
               "working_capital",
+              "turnover_method",
               "term_debt",
               "collateral"
             ],
@@ -3466,6 +4907,25 @@
           "category": {
             "title": "Category",
             "type": "string"
+          },
+          "constitutions": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "private_limited",
+                    "proprietorship",
+                    "partnership"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Constitutions"
           },
           "expression": {
             "title": "Expression",
@@ -3511,6 +4971,15 @@
             ],
             "title": "Label"
           },
+          "non_positive_denominator": {
+            "default": "cannot_evaluate",
+            "enum": [
+              "cannot_evaluate",
+              "deviation"
+            ],
+            "title": "Non Positive Denominator",
+            "type": "string"
+          },
           "note": {
             "anyOf": [
               {
@@ -3521,6 +4990,15 @@
               }
             ],
             "title": "Note"
+          },
+          "pd_gap": {
+            "default": "ask",
+            "enum": [
+              "ask",
+              "skip"
+            ],
+            "title": "Pd Gap",
+            "type": "string"
           },
           "pd_question": {
             "anyOf": [
@@ -3551,7 +5029,8 @@
                   "published_policy",
                   "regulatory",
                   "industry_standard",
-                  "provisional"
+                  "provisional",
+                  "rbl_supplied"
                 ],
                 "type": "string"
               },
@@ -3671,7 +5150,8 @@
               "published_policy",
               "regulatory",
               "industry_standard",
-              "provisional"
+              "provisional",
+              "rbl_supplied"
             ],
             "title": "Source",
             "type": "string"
@@ -3757,6 +5237,33 @@
           "ratios"
         ],
         "title": "PolicySection",
+        "type": "object"
+      },
+      "ProductGroup": {
+        "properties": {
+          "facilities": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Facilities",
+            "type": "array"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "facilities"
+        ],
+        "title": "ProductGroup",
         "type": "object"
       },
       "ProposalRequest": {
@@ -3965,6 +5472,277 @@
         "title": "Readiness",
         "type": "object"
       },
+      "ReferenceApproval": {
+        "description": "The approval as RBL's record states it: a role or committee, never a person.",
+        "properties": {
+          "authority_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authority Key"
+          },
+          "authority_text": {
+            "maxLength": 120,
+            "minLength": 2,
+            "title": "Authority Text",
+            "type": "string"
+          },
+          "decided_on": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided On"
+          },
+          "decision": {
+            "enum": [
+              "approved",
+              "declined",
+              "referred"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "source_ref": {
+            "minLength": 1,
+            "title": "Source Ref",
+            "type": "string"
+          }
+        },
+        "required": [
+          "authority_text",
+          "decision",
+          "source_ref"
+        ],
+        "title": "ReferenceApproval",
+        "type": "object"
+      },
+      "ReferenceDeviation": {
+        "description": "One deviation as RBL's record states it.",
+        "properties": {
+          "approved_by_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved By Text"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "description": {
+            "minLength": 1,
+            "title": "Description",
+            "type": "string"
+          },
+          "norm_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Norm Id"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "recorded_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recorded Value"
+          },
+          "row": {
+            "title": "Row",
+            "type": "integer"
+          },
+          "source_ref": {
+            "minLength": 1,
+            "title": "Source Ref",
+            "type": "string"
+          }
+        },
+        "required": [
+          "row",
+          "description",
+          "source_ref"
+        ],
+        "title": "ReferenceDeviation",
+        "type": "object"
+      },
+      "ReferenceRecord": {
+        "properties": {
+          "approval": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReferenceApproval"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "areas_not_compared": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Areas Not Compared",
+            "type": "array"
+          },
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "config_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config Version"
+          },
+          "confirmed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmed At"
+          },
+          "confirmed_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmed By"
+          },
+          "confirmed_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmed By Name"
+          },
+          "deviations": {
+            "items": {
+              "$ref": "#/components/schemas/ReferenceDeviation"
+            },
+            "title": "Deviations",
+            "type": "array"
+          },
+          "deviations_recorded": {
+            "title": "Deviations Recorded",
+            "type": "boolean"
+          },
+          "imported_at": {
+            "title": "Imported At",
+            "type": "string"
+          },
+          "imported_by": {
+            "title": "Imported By",
+            "type": "string"
+          },
+          "record_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Record Date"
+          },
+          "workbook_name": {
+            "title": "Workbook Name",
+            "type": "string"
+          },
+          "workbook_sha256": {
+            "title": "Workbook Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "case_id",
+          "workbook_name",
+          "workbook_sha256",
+          "record_date",
+          "deviations_recorded",
+          "imported_by",
+          "imported_at",
+          "confirmed_by",
+          "confirmed_by_name",
+          "confirmed_at",
+          "config_version",
+          "deviations",
+          "approval",
+          "areas_not_compared"
+        ],
+        "title": "ReferenceRecord",
+        "type": "object"
+      },
       "ReviewDecisionRequest": {
         "properties": {
           "decision": {
@@ -4095,6 +5873,11 @@
             ],
             "title": "Decision"
           },
+          "escalated": {
+            "default": false,
+            "title": "Escalated",
+            "type": "boolean"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -4220,6 +6003,123 @@
           "permissions"
         ],
         "title": "SessionUser",
+        "type": "object"
+      },
+      "SourceColumn": {
+        "description": "One source a finding compared, as a column of its card (F-19.3).",
+        "properties": {
+          "awaiting_review": {
+            "default": false,
+            "title": "Awaiting Review",
+            "type": "boolean"
+          },
+          "coverage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage"
+          },
+          "differs": {
+            "default": false,
+            "title": "Differs",
+            "type": "boolean"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "field_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Field Ids",
+            "type": "array"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "provenance": {
+            "items": {
+              "enum": [
+                "declared",
+                "borrower_supplied",
+                "independent"
+              ],
+              "type": "string"
+            },
+            "title": "Provenance",
+            "type": "array"
+          },
+          "relies_on_manual": {
+            "default": false,
+            "title": "Relies On Manual",
+            "type": "boolean"
+          },
+          "row_columns": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Row Columns",
+            "type": "array"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceRow"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "unit": {
+            "default": "text",
+            "enum": [
+              "inr",
+              "text",
+              "count",
+              "date"
+            ],
+            "title": "Unit",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "key",
+          "label"
+        ],
+        "title": "SourceColumn",
         "type": "object"
       },
       "Span": {
@@ -4577,7 +6477,8 @@
               "financials",
               "gst",
               "bank",
-              "declared"
+              "declared",
+              "itr"
             ],
             "title": "Source",
             "type": "string"
@@ -4829,7 +6730,8 @@
               "published_policy",
               "regulatory",
               "industry_standard",
-              "provisional"
+              "provisional",
+              "rbl_supplied"
             ],
             "title": "Source",
             "type": "string"
@@ -4860,6 +6762,404 @@
         ],
         "title": "WorkingCapitalPolicy",
         "type": "object"
+      },
+      "XvArea": {
+        "description": "One area of the board (identity, turnover, bank accounts, existing obligations) as its\noverview card shows it, counted from the area's findings of the latest run.",
+        "properties": {
+          "adjudicated": {
+            "title": "Adjudicated",
+            "type": "integer"
+          },
+          "area": {
+            "enum": [
+              "identity",
+              "authority",
+              "turnover",
+              "tax",
+              "financials",
+              "accounts",
+              "obligations"
+            ],
+            "title": "Area",
+            "type": "string"
+          },
+          "blocking_open": {
+            "title": "Blocking Open",
+            "type": "integer"
+          },
+          "discrepancies": {
+            "title": "Discrepancies",
+            "type": "integer"
+          },
+          "highlights": {
+            "items": {
+              "$ref": "#/components/schemas/XvHighlight"
+            },
+            "title": "Highlights",
+            "type": "array"
+          },
+          "incomplete": {
+            "title": "Incomplete",
+            "type": "integer"
+          },
+          "mild": {
+            "title": "Mild",
+            "type": "integer"
+          },
+          "moderate": {
+            "title": "Moderate",
+            "type": "integer"
+          },
+          "not_applicable": {
+            "title": "Not Applicable",
+            "type": "integer"
+          },
+          "open": {
+            "title": "Open",
+            "type": "integer"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "integer"
+          },
+          "rules": {
+            "title": "Rules",
+            "type": "integer"
+          },
+          "serious": {
+            "title": "Serious",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "open",
+              "decided",
+              "incomplete",
+              "clear"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "top_finding_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Finding Id"
+          }
+        },
+        "required": [
+          "area",
+          "rules",
+          "discrepancies",
+          "open",
+          "serious",
+          "moderate",
+          "mild",
+          "blocking_open",
+          "adjudicated",
+          "incomplete",
+          "passed",
+          "not_applicable",
+          "status"
+        ],
+        "title": "XvArea",
+        "type": "object"
+      },
+      "XvCounts": {
+        "properties": {
+          "adjudicated": {
+            "title": "Adjudicated",
+            "type": "integer"
+          },
+          "blocking_open": {
+            "title": "Blocking Open",
+            "type": "integer"
+          },
+          "mild": {
+            "title": "Mild",
+            "type": "integer"
+          },
+          "moderate": {
+            "title": "Moderate",
+            "type": "integer"
+          },
+          "serious": {
+            "title": "Serious",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "serious",
+          "moderate",
+          "mild",
+          "adjudicated",
+          "total",
+          "blocking_open"
+        ],
+        "title": "XvCounts",
+        "type": "object"
+      },
+      "XvDecision": {
+        "description": "A person's decision on a discrepancy, with the comment every decision needs.",
+        "properties": {
+          "at": {
+            "title": "At",
+            "type": "string"
+          },
+          "by": {
+            "title": "By",
+            "type": "string"
+          },
+          "by_name": {
+            "title": "By Name",
+            "type": "string"
+          },
+          "comment": {
+            "title": "Comment",
+            "type": "string"
+          },
+          "decision": {
+            "enum": [
+              "accept",
+              "dismiss",
+              "escalate"
+            ],
+            "title": "Decision",
+            "type": "string"
+          }
+        },
+        "required": [
+          "decision",
+          "comment",
+          "by",
+          "by_name",
+          "at"
+        ],
+        "title": "XvDecision",
+        "type": "object"
+      },
+      "XvDecisionRequest": {
+        "properties": {
+          "comment": {
+            "minLength": 3,
+            "title": "Comment",
+            "type": "string"
+          },
+          "decision": {
+            "enum": [
+              "accept",
+              "dismiss",
+              "escalate"
+            ],
+            "title": "Decision",
+            "type": "string"
+          }
+        },
+        "required": [
+          "decision",
+          "comment"
+        ],
+        "title": "XvDecisionRequest",
+        "type": "object"
+      },
+      "XvFact": {
+        "description": "One figure on an area's overview card: a short source label and its value.",
+        "properties": {
+          "differs": {
+            "default": false,
+            "title": "Differs",
+            "type": "boolean"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "unit": {
+            "default": "text",
+            "enum": [
+              "inr",
+              "text",
+              "count",
+              "date"
+            ],
+            "title": "Unit",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "label"
+        ],
+        "title": "XvFact",
+        "type": "object"
+      },
+      "XvHighlight": {
+        "description": "A key-figure line on an area's overview card, from one finding: what it compares, the\nfigures side by side, and a short note (\"25.0% apart \u00b7 tolerance 10%\", \"declared, no statement\").",
+        "properties": {
+          "facts": {
+            "items": {
+              "$ref": "#/components/schemas/XvFact"
+            },
+            "title": "Facts",
+            "type": "array"
+          },
+          "finding_id": {
+            "title": "Finding Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "outcome": {
+            "enum": [
+              "pass",
+              "fail",
+              "incomplete",
+              "not_applicable"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "rule_id": {
+            "title": "Rule Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "finding_id",
+          "rule_id",
+          "outcome",
+          "label"
+        ],
+        "title": "XvHighlight",
+        "type": "object"
+      },
+      "XvItem": {
+        "description": "One finding of the latest run, with its review state, as the board shows it.",
+        "properties": {
+          "adjudicated": {
+            "default": false,
+            "title": "Adjudicated",
+            "type": "boolean"
+          },
+          "decision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/XvDecision"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "escalation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/XvDecision"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "finding": {
+            "$ref": "#/components/schemas/Finding"
+          },
+          "in_query_list": {
+            "default": false,
+            "title": "In Query List",
+            "type": "boolean"
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank"
+          },
+          "review_item_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review Item Id"
+          }
+        },
+        "required": [
+          "finding"
+        ],
+        "title": "XvItem",
+        "type": "object"
+      },
+      "XvRun": {
+        "properties": {
+          "at": {
+            "title": "At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "rules": {
+            "title": "Rules",
+            "type": "integer"
+          },
+          "sources": {
+            "title": "Sources",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "at",
+          "rules",
+          "sources"
+        ],
+        "title": "XvRun",
+        "type": "object"
       }
     }
   },
@@ -4871,7 +7171,7 @@
   "paths": {
     "/api/audit": {
       "get": {
-        "description": "The append-only decision log, newest first, filtered and paged.",
+        "description": "The append-only decision log, newest first, filtered and paged. RBL's reference record\nand the reviewer's decisions on it are for the reviewer only (F-25): anyone else sees that\nthe import, confirmation or decision happened, never what it said.",
         "operationId": "audit_trail_api_audit_get",
         "parameters": [
           {
@@ -5386,6 +7686,62 @@
         "summary": "Get Case"
       }
     },
+    "/api/cases/{case_id}/approving-authority": {
+      "get": {
+        "description": "F-21: the authority the case needs under the published matrix, and the rules that set it.",
+        "operationId": "case_approving_authority_api_cases__case_id__approving_authority_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovingAuthority"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Approving Authority"
+      }
+    },
     "/api/cases/{case_id}/cam": {
       "get": {
         "description": "F-23: the draft CAM, every figure cited, ending in the structured summary.",
@@ -5495,6 +7851,346 @@
           }
         },
         "summary": "Case Checklist"
+      }
+    },
+    "/api/cases/{case_id}/comparison": {
+      "get": {
+        "description": "F-25: CreditIQ against RBL's confirmed reference record, deviations and approving authority.",
+        "operationId": "case_comparison_api_cases__case_id__comparison_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseComparison"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Comparison"
+      }
+    },
+    "/api/cases/{case_id}/comparison/{area}/{key}/adjudication": {
+      "put": {
+        "description": "F-25.4: the reviewer's verdict on a difference or a new deviation, with a reason.",
+        "operationId": "adjudicate_comparison_item_api_cases__case_id__comparison__area___key__adjudication_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "area",
+            "required": true,
+            "schema": {
+              "enum": [
+                "deviations",
+                "approving_authority"
+              ],
+              "title": "Area",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "key",
+            "required": true,
+            "schema": {
+              "title": "Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdjudicationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComparisonItem"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Adjudicate Comparison Item"
+      }
+    },
+    "/api/cases/{case_id}/cross-verification": {
+      "get": {
+        "description": "F-19: the cross-verification board: every finding of the latest run, the discrepancies ranked\nby credit impact with their sources side by side, and whether submission is blocked.",
+        "operationId": "case_cross_verification_api_cases__case_id__cross_verification_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrossVerificationView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Cross Verification"
+      }
+    },
+    "/api/cases/{case_id}/cross-verification/findings/{finding_id}/decision": {
+      "post": {
+        "description": "F-19, F-17.4: accept, dismiss or escalate a discrepancy, with a comment.",
+        "operationId": "decide_cross_verification_api_cases__case_id__cross_verification_findings__finding_id__decision_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "finding_id",
+            "required": true,
+            "schema": {
+              "title": "Finding Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/XvDecisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/XvItem"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Decide Cross Verification"
+      }
+    },
+    "/api/cases/{case_id}/cross-verification/findings/{finding_id}/query": {
+      "post": {
+        "description": "F-14: put what would complete a check that could not run on the pre-login query list.",
+        "operationId": "query_cross_verification_api_cases__case_id__cross_verification_findings__finding_id__query_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "finding_id",
+            "required": true,
+            "schema": {
+              "title": "Finding Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/XvItem"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Query Cross Verification"
       }
     },
     "/api/cases/{case_id}/documents": {
@@ -6238,6 +8934,62 @@
         "summary": "Case Queries"
       }
     },
+    "/api/cases/{case_id}/reference/confirm": {
+      "post": {
+        "description": "F-25.1: the RBL reviewer confirms the imported record (never the person who imported it).",
+        "operationId": "confirm_reference_api_cases__case_id__reference_confirm_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferenceRecord"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Confirm Reference"
+      }
+    },
     "/api/cases/{case_id}/spread": {
       "get": {
         "description": "F-22: the spread (interim layout) with ratios and the working-capital assessment.",
@@ -6292,6 +9044,52 @@
           }
         },
         "summary": "Case Spread"
+      }
+    },
+    "/api/config/approval-matrix": {
+      "get": {
+        "operationId": "config_approval_matrix_api_config_approval_matrix_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalMatrixSection"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Config Approval Matrix"
       }
     },
     "/api/config/checklist-taxonomy": {

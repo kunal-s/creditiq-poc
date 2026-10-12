@@ -43,7 +43,7 @@ function PolicyNorms() {
                           <tr key={n.id} className="align-top" data-testid="admin-norm">
                             <td className="px-4 py-2">
                               {n.label ?? r?.label ?? n.id}
-                              {n.status === "provisional" && (
+                              {(n.status ?? r?.status) === "provisional" && (
                                 <Chip tone="muted" className="ml-2">
                                   {t("policy.provisional")}
                                 </Chip>

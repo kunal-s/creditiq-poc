@@ -129,7 +129,7 @@ Severity and blocking are proposals for D-7. Field names are the extraction sche
 | ID-06 | Director identifiers agree | Per person, matched by name: MOA `directors[].din` against `director_kyc.din`; `director_kyc.pan` is an individual PAN (fourth character P) and is not the entity PAN | exact, per person | moderate | New | P2 |
 | ID-07 | Incorporation particulars agree | CIN parts (year, `PTC`/`PLC`/`OPC` class, listed `L` or unlisted `U`) against `certificate_of_incorporation.date_of_incorporation` and `company_type` and the case constitution | exact | mild | New | P2 |
 | ID-08 | Memorandum directors accounted for | MOA `directors[]` contained in the KYC received plus the case promoters (only if D-3 takes MOA out of ID-04) | containment | mild | New | P2 |
-| ID-09 | State of registration | State in the CoI `registered_address` against the GSTIN state code (configured code table) | exact | mild, informational | New | P3 |
+| ID-09 | State of registration | State in the CoI `registered_address` against the GSTIN state code (configured code table) | exact | mild, informational | New | P3 (not built; on 12 October 2026 the ID went to names of people in full, see the register, section 11.13) |
 
 ### 4.2 Borrowing authority (board resolution)
 
@@ -416,7 +416,7 @@ Built on 7 October 2026, on the recommendations in §11 (D-1 to D-8 taken as rec
 | P2 rules: ID-06, ID-07, ID-08, BR-01 to BR-04, TX-01, TX-02, FS-01, FS-02, OB-03 | Done | same |
 | OB-01, and BA-02 widened to statement accounts that were not declared | Done 8 October | [config/crosschecks.yaml](../config/crosschecks.yaml), [engine/crosschecks.py](../engine/crosschecks.py) |
 | Document types: declaration of existing facilities, sanction letter, commercial bureau report, each with signals, read rules and a schema; no checklist item (the cross-checks reconcile them, and the bureau report is obtained by the bank) | Done 8 October | [config/document_types.yaml](../config/document_types.yaml), [config/ingestion/](../config/ingestion/) |
-| P3 rules: ID-09, TX-03, BA-03 | Open | — |
+| P3 rules: ID-09, TX-03, BA-03 | State of registration (ID-09) and BA-03 not built. On 12 October 2026, ID-09 was used for names of people in full and TX-03 was built as the tax return's turnover against audited revenue | [config/crosschecks.yaml](../config/crosschecks.yaml) |
 | E-1 review gating, E-2 outcome semantics, E-3 one evaluator per variable, E-4 facts, E-5 area and scope | Done | [engine/facts.py](../engine/facts.py), [engine/crosschecks.py](../engine/crosschecks.py), [engine/contracts](../engine/contracts) |
 | Contracts: `Finding.area`, `scope`, `detail`, `missing`; `FindingSide.awaiting_review`, `differs`, `field_ids`; new facts | Done (migration 5 adds the finding columns) | [engine/db.py](../engine/db.py) |
 | Configuration: `area`, `bound` and `order` comparisons; tolerances `turnover_window_min_months`, `itr_due_days`, `profit_variance`, `comparatives_variance`, `balance_variance`; `own_bank_names`; GST rows (a), (b) and (c); `itr_lines` | Done (provisional values) | [config/](../config/) |

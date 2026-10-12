@@ -17,6 +17,14 @@ configuration (principle 4).
 - party:        confirm the attribution, or correct it (value: party id,
                 or "none") with a reason (F-10.5).
 - split:        confirm.
+- finding:      confirm as valid, or waive (F-17.4), with a comment of at
+                least three characters either way, as on the
+                cross-verification board. One escalated from the board is
+                decided by the Credit Manager only, and the decision resolves
+                the escalation (engine/review_items.py).
+
+An item is read again under the write lock before it is decided, so a
+decision or an escalation recorded meanwhile is never overridden.
 """
 
 from __future__ import annotations
@@ -30,8 +38,10 @@ from .configstore import reader
 from .contracts import ReviewDecisionRequest, ReviewItem
 from .db import log_decision, transaction
 from .pipeline import effective_types, refresh_case
-from .review_items import close_item, reopen_item
+from .review_items import close_item, reopen_item, resolve_escalation
 from .util import dumps, now_iso, stable_id
+
+FINDING_COMMENT = "a comment is required for every decision on a discrepancy"
 
 
 class ReviewError(Exception):
@@ -79,21 +89,31 @@ def _items_served(conn: sqlite3.Connection, root: Path, case_id: str, types: lis
 def decide(
     conn: sqlite3.Connection, root: Path, item_id: str, body: ReviewDecisionRequest, user: dict
 ) -> ReviewItem:
-    item = _item(conn, item_id)
-    _require(item["status"] == "open", "this item has already been decided", 409)
-    kind, decision = item["kind"], body.decision
     reason = (body.reason or "").strip() or None
-    detail = json.loads(item["detail"] or "{}")
-    case_id = item["case_id"]
     permissions = set(user["permissions"])
-    log: dict = {"item_id": item_id, "kind": kind, "ref": item["ref"], "decision": decision, "reason": reason}
     decided_by = user["id"]
     queue_reextract: str | None = None
 
-    if decision in ("correct", "waive"):
-        _require(reason is not None, f"a reason is required to {decision}")
-
     with transaction(conn):
+        # Read under the write lock: a decision, or an escalation from the cross-verification board,
+        # recorded since the queue was read is seen here and never overridden.
+        item = _item(conn, item_id)
+        _require(item["status"] == "open", "this item has already been decided", 409)
+        kind, decision = item["kind"], body.decision
+        detail = json.loads(item["detail"] or "{}")
+        case_id = item["case_id"]
+        log: dict = {"item_id": item_id, "kind": kind, "ref": item["ref"], "decision": decision, "reason": reason}
+
+        if kind == "finding":
+            # Escalated from the cross-verification board (engine/xv.py): only the Credit Manager
+            # decides it. Every decision on a discrepancy, a confirmation as well as a waiver, is kept
+            # with a comment, as the board asks for one.
+            if detail.get("escalation") and "finding.escalation" not in permissions:
+                raise ReviewError(403, "an escalated discrepancy is decided by the Credit Manager")
+            _require(reason is not None and len(reason) >= 3, FINDING_COMMENT)
+        if decision in ("correct", "waive"):
+            _require(reason is not None, f"a reason is required to {decision}")
+
         if kind == "field":
             fv = conn.execute("SELECT * FROM field_values WHERE id = ?", (detail.get("field_value_id"),)).fetchone()
             _require(fv is not None, "the field value no longer exists", 409)
@@ -187,6 +207,8 @@ def decide(
             # F-17.4, C5: a person accepts the flag as valid (confirm) or finds
             # it not valid (waive, with the reason). The finding itself stays.
             _require(decision in ("confirm", "waive"), "a finding is confirmed as valid or waived with a reason")
+            finding_id = detail.get("finding_id") or item["ref"].removeprefix("finding:")
+            resolve_escalation(conn, case_id=case_id, finding_id=finding_id, resolved_by=decided_by)
         else:
             raise ReviewError(422, f"{kind} items are decided elsewhere")
 
@@ -200,7 +222,9 @@ def decide(
 
     refresh_case(conn, root, case_id)
     row = conn.execute("SELECT * FROM review_items WHERE id = ?", (item_id,)).fetchone()
-    return ReviewItem(**dict(row))
+    from .reads import review_item
+
+    return review_item(row)
 
 
 def _manual_entry(

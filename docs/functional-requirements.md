@@ -231,7 +231,7 @@ flowchart TB
 | 1. Documents | `/appraisals/$caseId/documents` | Upload (files, ZIP, camera). One row per document with its live status (received, graded, split, classified); quality grade, split, label mismatch, party attribution and unclassified documents shown on the row, with the type assignment there | F-05, F-07 to F-11 | All | Yes |
 | 2. Extraction | `/appraisals/$caseId/extraction` | Key fields grouped as entity and parties, financials, GST and banking; each with its confidence and page; confirm or correct in place | F-15, F-16, F-17 | Analyst, Manager | No |
 | 3. Completeness | `/appraisals/$caseId/completeness` | Each document's required fields and format; the checklist with each item's status and deficiency; readiness against the gates; the pre-login query list | F-12, F-13, F-14 | All | Yes |
-| 4. Cross-verification | `/appraisals/$caseId/cross-verification` | Identity, turnover, bank accounts and obligations, the sources side by side with each finding | F-18, F-19 | Analyst, Manager | No |
+| 4. Cross-verification | `/appraisals/$caseId/cross-verification` | An overview of the four areas (identity consistency, turnover, bank accounts, existing obligations), then each area's discrepancies ranked by credit impact, with the sources side by side and a decision on each | F-18, F-19 | Analyst, Manager | No |
 | 5. Policy | `/appraisals/$caseId/policy` | Each norm with its limit, the actual value and source; deviations; the approving authority | F-20, F-21 | Analyst, Manager | No |
 | 6. Outputs | `/appraisals/$caseId/outputs` | The spread, the draft CAM and the PD note, each a view within the tab, with citations and export | F-22, F-23, F-24 | Analyst, Manager | No |
 | Comparison | `/appraisals/$caseId/comparison` | This case's outputs beside RBL's record, with adjudication | F-25 | Manager | No |
@@ -357,7 +357,7 @@ stateDiagram-v2
   | Document ages | `config/document_ages.yaml` | Permitted age per type (for example stock statement, bank statement, valuation) | F-13 |
   | Tolerances | `config/tolerances.yaml` | Turnover variance and matching thresholds for names and amounts | F-19 |
   | Policy norms | `config/policy.yaml` (exists, ratios only) | Eligibility, ratios, security cover, documentation, deviation categories | F-20 |
-  | Approval matrix | `config/approval_matrix.yaml` | Authority by amount, product and deviation | F-21 |
+  | Approval matrix | `config/approval_matrix.yaml` (provisional until RBL supplies it; C.4-9) | Authority by amount, product and deviation | F-21 |
   | Output templates | `config/templates/` | Spread layout, CAM sections, PD note layout | F-22 to F-24 |
   | Confidence | `config/confidence.yaml` | Weights, caps and review thresholds | F-17 |
 
@@ -390,7 +390,7 @@ stateDiagram-v2
 - Publishing unchanged configuration reuses the same version.
 - Runtime code cannot import the writer (the import-linter contract passes).
 
-**Configuration needed from RBL.** See C.3. Until each artefact arrives, the delivery team proposes an interim version, tagged `provisional`.
+**Configuration needed from RBL.** See C.3. Until each artefact arrives, the delivery team proposes an interim version, tagged `provisional`, except where C.3 or C.4 says otherwise. RBL's own artefacts are published from a git-ignored directory (`creditiq config publish --private-config DIR`), so they never enter the repository.
 
 ### F-01. Case record and workbench
 
@@ -1109,23 +1109,47 @@ flowchart TD
 **Screen mock: Cross-verification tab**
 
 ```text
-┌ Cross-checks · 11 rules · 3 findings · 1 incomplete ──────────────────────┐
-│ ● Serious     Undeclared lender EMI                                 OB-02 │
-│      ₹1,45,000/month to Lender X in bank stmt ·1234 (12 debits)    → p7 … │
-│      Declaration of existing facilities: nil for Lender X           → p1  │
-│ ● Moderate    Turnover: GST vs bank credits FY25                    TO-02 │
-│      GST ₹4.82 cr (→ GSTR-3B ×12)   Bank ₹3.91 cr (→ stmt ·1234)          │
-│      Variance 18.9% · tolerance 15%                                       │
-│ ◐ Incomplete  Turnover: audited vs GST FY25                         TO-01 │
-│      GST covers 8 of 12 months (Apr–Jul absent)                           │
-│ ✓ Pass        PAN consistent across 6 documents                     ID-01 │
-│ [Show passes (8)]                                                         │
-└───────────────────────────────────────────────────────────────────────────┘
+APPRAISAL BBG-2026-000123 · CROSS-VERIFICATION
+Cross-verification and discrepancy      [← Spread] [Exception queue] [🔒 Continue to draft →]
+7 discrepancies found for this borrower, ranked by credit impact · 1 of 7 adjudicated
+XR-000123-004 · 18 rules across 11 sources · 11 Oct 2026, 13:58
+┌ ⚠ Submission blocked — 1 serious discrepancy unadjudicated          [Adjudicate now] ┐
+│ XV-000123-02 · The entity PAN differs between documents: … · policy reference         │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+┌ Identity consistency ┐ ┌ Turnover ───────────┐ ┌ Bank accounts ──────┐ ┌ Existing obligations ┐
+│ 2 open      Blocking │ │ 2 open              │ │ 1 open              │ │ 1 open               │
+│ 1 serious·1 moderate │ │ 2 moderate          │ │ 1 moderate          │ │ 1 serious            │
+│ 1 could not check    │ │ 1 of 3 decided      │ │ 1 passed            │ │ 2 passed             │
+│ Entity PAN differs…  │ │ GST turnover not…   │ │ Declared account…   │ │ Instalments to a…    │
+└──────────────────────┘ └─────────────────────┘ └─────────────────────┘ └──────────────────────┘
+
+Identity consistency — PAN, GSTIN, CIN, the company name, directors and promoters
+ 1 ▾ Serious · Blocks submission · XV-000123-02 · ID-01   Entity PAN differs between documents
+     Rule ID-01 — Entity PAN consistent across documents · owner not yet assigned
+     ┌ Company PAN ──────┐ ┌ Income tax return ┐ ┌ GSTR-3B ──────────┐ ┌ Bureau report ─┐
+     │ Borrower-supplied │ │ Borrower-supplied │ │ Borrower-supplied │ │ Independent    │
+     │ AAACK1234F        │ │ AAACK1234F        │ │ AAACK1234F        │ │ AAACK9999Z     │
+     │ Page 1 · Open the evidence · Trace to the source ↗                              │
+     Commercial bureau report gives AAACK9999Z; the other 3 sources give AAACK1234F.
+     ( ) Accept  ( ) Dismiss  ( ) Escalate    [comment, required ………]   [Record decision]
+ 2 ▸ Moderate · XV-000123-05 · ID-03   Company name differs between documents
+     Could not be checked (1) · ▸ Passed (5) · ▸ Facts behind these checks
+
+Turnover — audited, GST and banked turnover by year and by month
+ 1 ▾ Moderate · XV-000123-01 · TO-02 · FY 2025-26   GST turnover not supported by bank credits
+     ┌ GST outward supplies (GSTR-3B) ┐ ┌ Business credits in bank statements ┐
+     │ INR 12.00 cr · Apr–Mar · 12/12 │ │ INR 9.00 cr · Apr–Mar · 2 accounts  │
+     Gap against bank credits: INR 3.00 cr · 25.0% of GST outward supplies
+     RBL tolerance: 10% — breached on GST outward supplies against bank credits
+     Period │ Filed │ 3.1(a)+(b)+(c)      Month │ Account │ Credits │ Excluded credits …
+ …
+Bank accounts — …
+Existing obligations — …
 ```
 
 **Requirements**
 
-- **F-19.1** Each rule is configuration: a variable, the sources it compares, the comparison type, a tolerance key, a severity, whether it blocks, and a plain-language explanation template. Comparison types are exact, within tolerance, set equality, set containment, and presence.
+- **F-19.1** Each rule is configuration: a variable, the sources it compares, the comparison type, a tolerance key, a severity, whether it blocks, and a plain-language explanation template. Comparison types are exact, within tolerance, set equality, set containment, and presence. A rule can be switched off: it stays in configuration, and is still validated, but is not run, so it gives no finding. The board-resolution and financial-statement rules (BR-01 to BR-04, FS-01, FS-02) are switched off, so the board covers this minimum set's four areas; the income-tax rules (TX-01 to TX-05, including the turnover in the tax return against audited, GST and bank turnover) run under turnover.
 - **F-19.2** Minimum rule set:
 
   | ID | Check | Sources | Comparison | Test |
@@ -1134,6 +1158,7 @@ flowchart TD
   | ID-02 | GSTIN | Registration, returns, partner GST report | Exact | TC-22 |
   | ID-03 | Legal name | All identity-bearing documents | Normalised match | TC-22 |
   | ID-04 | Promoter set | Constitution documents, KYC received, application, bureau | Set equality | TC-22 |
+  | ID-09 | Names of people in full: first, middle and last name; a part missing, an initial or a different spelling is flagged as a partial match (mild) | KYC, constitution documents, bureau | Exact, part by part | TC-22 |
   | TO-01 | Audited turnover vs GST outward supplies, same year | Financials, GST | Within tolerance | TC-23 |
   | TO-02 | GST vs cleansed bank credits, same period | GST, bank | Within tolerance | TC-23 |
   | TO-03 | Audited turnover vs cleansed bank credits | Financials, bank | Within tolerance | TC-23 |
@@ -1145,8 +1170,11 @@ flowchart TD
 
 - **F-19.3** Every rule outcome is one of pass, fail, incomplete (with the missing coverage named) or not applicable. A failure records both sides' values, each with evidence, plus the tolerance and the explanation.
 - **F-19.4** A finding that relies on a manually entered or corrected value says so.
-- **F-19.5** Findings needing the customer's explanation feed the query list (F-14). Blocking findings are shown on the checklist.
+- **F-19.5** Findings needing the customer's explanation feed the query list (F-14). Blocking findings are shown on the checklist and block submission until accepted or dismissed (F-19.8).
 - **F-19.6** Changing one tolerance and re-running changes exactly the findings that depend on it.
+- **F-19.7** The Cross-checks tab is a board of four areas (identity consistency, turnover, bank accounts, existing obligations): an overview card per area (open discrepancies by severity, whether one blocks, checks that could not run or passed, the top finding, and up to three key-figure lines such as the differing PANs, the turnover figures in crores, the accounts or lenders concerned), then a section per area with its discrepancies ranked by credit impact (severity, then the size of the gap in rupees), its checks that could not run, its passed checks and its facts. Each discrepancy shows the sources it compared side by side (two to four), each with its provenance (declared, borrower-supplied or independent), headline value, coverage, and the rows extracted behind it with the page each came from; the gap on each leg against the configured tolerance, or for a check without amounts the difference in words. Each discrepancy keeps a reference (XV-<case number>-<sequence>) across re-runs. Everything shown comes from the rule results; the screen recomputes nothing.
+- **F-19.8** A person accepts a discrepancy (valid; it stays on the query list), dismisses it (not valid) or escalates it to the Credit Manager, who alone then decides it; an escalation stays with the discrepancy across re-runs. A comment is required for every decision, on the board and in the review queue, and the user, time, decision and comment are kept. While a blocking discrepancy is not accepted or dismissed, submission is blocked: the board says so, and the draft memo cannot be started from it.
+- **F-19.9** A check that could not run says what would complete it (a document, months of returns or statements), and a person can put that request on the query list (F-14) until the check completes.
 
 **Acceptance**
 - **TC-22:** mismatches in PAN, GSTIN, names or the promoter set are flagged with their sources.
@@ -1165,7 +1193,7 @@ flowchart TD
 
 **Tests.** TC-26 (C4, C5).
 
-**Depends on.** F-18. Financial ratios need the normalised financials used by F-22.
+**Depends on.** F-18. Financial ratios need the normalised financials used by F-22. F-25.1 and F-25.2 for the acceptance check against RBL's deviation record.
 
 **Requirements**
 
@@ -1187,7 +1215,7 @@ flowchart TD
 
 **Goal.** Identify the authority the case requires and compare it with the recorded approval.
 
-**Tests.** TC-27 (C4). **Built only if RBL provides its approval matrix.**
+**Tests.** TC-27 (C4). Built against a provisional matrix (C.4-9); TC-27 is not included in C4 until RBL provides its matrix.
 
 **Depends on.** F-20, F-25 (for the recorded approval).
 
@@ -1331,6 +1359,8 @@ flowchart TD
 - **F-25.4** For each difference and new finding, the reviewer records valid or not valid, with a reason. Under the test plan's rule, a valid finding the record is silent on counts as valid.
 - **F-25.5** Adjudications are recorded overlays. They never change the processed output.
 
+**Status (8 Oct 2026).** The deviations and approving-authority areas are built: `creditiq reference template | import | show` writes, validates and stores the workbook (or its JSON form), and the Comparison tab marks each item and takes the reviewer's decisions. The record is confirmed by the RBL reviewer, never by the person who imported it, before anything is adjudicated. The other five areas' sheets are accepted and reported as not compared yet. No processing module can read the record or the decisions (import-linter contract 2).
+
 **Acceptance (TC-30)**
 - For every case, the comparison is complete, with agreement, differences and new findings marked.
 
@@ -1351,7 +1381,7 @@ flowchart TD
   | C1 Classification | At least 90% (routed documents reported separately) | F-09 vs baseline |
   | C2 Completeness | At least 90% | F-13 vs reviewer |
   | C3 Key fields | At least 90% digital, at least 80% scanned | F-15 vs baseline, split by grade |
-  | C4 Discrepancy identification | At least 85% | F-19, F-20 vs record |
+  | C4 Discrepancy identification | At least 85% | F-19, F-20 and F-21 vs record |
   | C5 Flag validity | At least 85% | Adjudications |
   | C6 Query coverage | At least 80% | F-14 vs record |
   | C7 Traceability | 90% | F-16 click test |
@@ -1458,7 +1488,7 @@ flowchart TD
 | CAM template (blank) and two or three completed examples | F-23 | Interim section list |
 | Spread template (Excel) | F-22 | Interim spread on screen, no export (decision C.4-8) |
 | Key BBG policy norms: eligibility, ratios, security cover, documentation, deviation categories | F-20 | Published-policy ratios (exist, provisional) |
-| Approval and delegation matrix | F-21 | F-21 not built without it |
+| Approval and delegation matrix | F-21 | Delivery-team provisional matrix (C.4-9); TC-27 not scored |
 | Credit tolerances (for example turnover variance) | F-19 | Delivery-team proposal, marked provisional |
 | Permitted document ages | F-13 | Delivery-team proposal, marked provisional |
 | Samples of partner GST, bank-statement analysis and bureau outputs | F-11 | None: F-11 waits |
@@ -1477,6 +1507,7 @@ flowchart TD
 | 6 | Evidence region: page is mandatory (C7). Should the region on the page be shown too? | F-16 | Page for every value; region where cheaply available |
 | 7 | Screen structure: the prototype's two case workspaces and 12 case screens, or one workspace in processing order | Screens | **Decided 30 Sep 2026:** one case workspace whose tabs follow §5; the prototype's visual style is kept; the DocReady and Appraisal workspace names are dropped; screens call the record an appraisal (§6) |
 | 8 | Spread before RBL's template arrives | F-22 | **Decided 30 Sep 2026:** an interim spread on screen (statement lines, ratios and the working-capital assessment with workings, every figure cited), marked interim; re-mapped to RBL's rows and exported to Excel (F-22.4) when the template arrives |
+| 9 | Approving authority before RBL's approval and delegation matrix arrives | F-21 | **Decided 8 Oct 2026:** F-21 is built against an interim matrix proposed by the delivery team (`config/approval_matrix.yaml`). Every authority, band and deviation rule is tagged provisional and the screens show "Provisional matrix". Authorities are generic roles and committees, never people. TC-27 (test plan TC-25) is not included in C4 while the matrix is provisional. The recorded approval comes from the F-25 approving-authority sheet. The matrix is replaced as a whole when RBL supplies its own (source `rbl_supplied`, status active), published with `--private-config` |
 
 ## C.5 The base this build starts from
 

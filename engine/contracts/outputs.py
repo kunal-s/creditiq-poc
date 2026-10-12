@@ -81,6 +81,8 @@ class PdQuestion(BaseModel):
     """The rule or norm id, e.g. OB-02, FR-05."""
     title: str
     evidence: list[Evidence] = Field(default_factory=list)
+    target: Literal["cross_verification", "policy"] = "policy"
+    """The tab the question links to."""
 
 
 class PdNote(BaseModel):
@@ -110,7 +112,7 @@ class CamSection(BaseModel):
 
 
 class CamSummaryItem(BaseModel):
-    kind: Literal["finding", "deviation", "query"]
+    kind: Literal["finding", "deviation", "unassessed", "query"]
     text: str
     severity: Literal["serious", "moderate", "mild"] | None = None
     ref: str

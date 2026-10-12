@@ -46,11 +46,14 @@ test("technical detail stays closed until asked for", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api);
   await page.goto(`/appraisals/${KESTREL}/cross-verification`);
-  const finding = page.getByTestId("finding-details").first();
-  await expect(finding).not.toHaveAttribute("open", "");
-  await expect(finding.getByText("Check reference")).toBeHidden();
-  await finding.getByText("How was this decided").click();
-  await expect(finding.getByText("Check reference")).toBeVisible();
+  const ob2 = page.getByTestId("xv-card-fnd-ob2");
+  await ob2.getByTestId("xv-card-toggle").click();
+  await expect(ob2).toHaveAttribute("data-expanded", "true");
+  const lines = ob2.getByTestId("xv-line-by-line");
+  await expect(lines).not.toHaveAttribute("open", "");
+  await expect(lines.getByTestId("xv-detail-table")).toBeHidden();
+  await lines.getByText("Line by line (2)").click();
+  await expect(lines.getByTestId("xv-detail-table")).toBeVisible();
 
   await page.goto(`/appraisals/${KESTREL}/policy`);
   const norm = page.getByTestId("norm-details").first();

@@ -12,10 +12,12 @@ name = Runtime code must not import the config writer
 type = forbidden
 source_modules =
     engine.api
+    engine.approval
     engine.auth
     engine.cam
     engine.cases
     engine.checklist
+    engine.comparison
     engine.completeness
     engine.config
     engine.crosschecks
@@ -37,6 +39,7 @@ source_modules =
     engine.proposal
     engine.queries
     engine.reads
+    engine.reference
     engine.review
     engine.review_items
     engine.spread
@@ -44,6 +47,35 @@ source_modules =
     engine.store
     engine.uploads
     engine.util
+    engine.xlsx
+    engine.xv
+    engine.xv_cards
     engine.configstore.reader
 forbidden_modules =
     engine.configstore.writer
+
+# F-25.5: RBL's reference record and the reviewer's adjudications are for comparison only.
+# Nothing that produces the appraisal may read them, so a decision on the comparison can
+# never change the policy, the approving authority, the memo or the PD note.
+[importlinter:contract:2]
+name = Processing never reads RBL's reference record or adjudications (F-25.5)
+type = forbidden
+source_modules =
+    engine.approval
+    engine.cam
+    engine.checklist
+    engine.completeness
+    engine.crosschecks
+    engine.facts
+    engine.pd_note
+    engine.pipeline
+    engine.policy
+    engine.progress
+    engine.review
+    engine.spread
+    engine.statements
+    engine.xv
+    engine.xv_cards
+forbidden_modules =
+    engine.comparison
+    engine.reference

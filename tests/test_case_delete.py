@@ -83,3 +83,29 @@ def test_delete_is_refused_while_the_case_is_processing(client: TestClient, publ
     finally:
         conn.close()
     assert _delete(client, case_id, analyst).status_code == 409
+
+
+def test_delete_removes_the_reference_record_and_adjudications(client: TestClient, published_data_root, tmp_path):
+    from engine.store import cases_dir
+    from tests.test_comparison import _case, _decide, _import
+
+    manager = sign_in(client, MANAGER)
+    case_id = _case(client, published_data_root)
+    _import(published_data_root, case_id, tmp_path)
+    assert client.post(f"/api/cases/{case_id}/reference/confirm", headers=manager).status_code == 200
+    assert _decide(client, manager, case_id, "FR-06").status_code == 200
+    reference_dir = cases_dir(published_data_root) / case_id / "reference"
+    assert reference_dir.is_dir()
+
+    assert _delete(client, case_id, sign_in(client, ANALYST)).status_code == 204
+    conn = db.connect(published_data_root)
+    try:
+        for table in ("reference_records", "reference_items", "comparison_adjudications"):
+            assert conn.execute(f"SELECT COUNT(*) FROM {table} WHERE case_id = ?", (case_id,)).fetchone()[0] == 0
+        rows = json.loads(conn.execute(
+            "SELECT detail FROM decision_log WHERE case_id = ? AND action = 'case.deleted'", (case_id,)
+        ).fetchone()["detail"])["rows"]
+    finally:
+        conn.close()
+    assert rows["reference_items"] == 5 + 1 and rows["reference_records"] == 1 and rows["comparison_adjudications"] == 1
+    assert not reference_dir.exists()

@@ -32,7 +32,9 @@ def add_doc(root: Path, case_id: str, type_id: str, fields: dict, *, page: int =
             corrected: dict | None = None, pending: set[str] | None = None) -> str:
     """File one accepted document of `type_id` with these field values.
     Table fields are lists of row dicts. `corrected` maps a field to a
-    person's correction of it; fields in `pending` still wait for review."""
+    person's correction of it; fields in `pending` still wait for review.
+    Documents are read in filing order (created_at): the stamp has a fixed
+    width, so it sorts in that order however many a session files."""
     global _count
     _count += 1
     file_id = stable_id("F", case_id, type_id, _count)
@@ -50,7 +52,7 @@ def add_doc(root: Path, case_id: str, type_id: str, fields: dict, *, page: int =
         conn.execute(
             """INSERT INTO documents (id, case_id, file_id, page_from, page_to, pages, grade, classification, status,
                created_at) VALUES (?, ?, ?, ?, ?, '[]', 'A', ?, 'accepted', ?)""",
-            (doc_id, case_id, file_id, page, page, json.dumps(classification), f"2026-09-29T00:00:{_count:02d}Z"),
+            (doc_id, case_id, file_id, page, page, json.dumps(classification), f"2026-09-29T00:00:00.{_count:06d}Z"),
         )
         for name, value in _flatten(fields).items():
             fix = (corrected or {}).get(name)
@@ -105,10 +107,20 @@ def gstr(root: Path, case_id: str, period: str, taxable: int, *, gstin: str = "2
     })
 
 
+def row_index(table: str, label: str, year_end: str = "2026-03-31") -> int:
+    """The index of a printed row in the audited statements `audited` files, to name its cells:
+    f"balance_sheet[{row_index('balance_sheet', '(a) Long-term borrowings')}].current_period"."""
+    from tests.fixtures.build_fixtures import statement_tables
+
+    rows = statement_tables(year_end)[table]["rows"]
+    return next(i for i, r in enumerate(rows) if r["cells"]["particulars"] == label)
+
+
 def audited(root: Path, case_id: str, year_end: str = "2026-03-31", *, scale: float = 1.0, set_rows: dict[str, int | None] | None = None,
-            page: int = 1, **fields) -> str:
+            page: int = 1, pending: set[str] | None = None, **fields) -> str:
     """Audited statements with the balance sheet and profit and loss rows as printed. `scale` scales every
-    figure; `set_rows` replaces a printed row's current-year figure by its label (None: the row is not printed)."""
+    figure; `set_rows` replaces a printed row's current-year figure by its label (None: the row is not printed);
+    cells named in `pending` still wait for review."""
     from tests.fixtures.build_fixtures import statement_tables
 
     tables = statement_tables(year_end, scale=scale)
@@ -121,4 +133,4 @@ def audited(root: Path, case_id: str, year_end: str = "2026-03-31", *, scale: fl
                 if r["particulars"] == label:
                     r["current_period"] = value
         doc[name] = rows
-    return add_doc(root, case_id, "audited_financial_statements", {**doc, **fields}, page=page)
+    return add_doc(root, case_id, "audited_financial_statements", {**doc, **fields}, page=page, pending=pending)

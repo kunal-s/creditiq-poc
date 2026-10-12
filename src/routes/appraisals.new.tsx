@@ -606,7 +606,8 @@ function FieldEditor({
       </div>
     );
   }
-  const numeric = field === "amount_inr" || field === "declared_turnover_inr";
+  const numeric =
+    field === "amount_inr" || field === "declared_turnover_inr" || field === "proposed_emi_inr";
   const upper = field === "pan" || field === "gstin" || field === "cin" || field === "udyam";
   return (
     <input

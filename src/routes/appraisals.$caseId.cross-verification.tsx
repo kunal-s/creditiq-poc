@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { FactsPanels, FindingsPanel } from "@/components/case/CrossVerification";
-import { TabSection } from "@/components/case/TabSection";
+import { CrossVerificationBoard } from "@/components/case/xv/Board";
 import { t } from "@/config/terminology";
 
-// Stage 4, cross-verification (FRD §5, §6, F-18, F-19): the checks' outcomes,
-// then the aligned facts they compared.
+// Stage 4, cross-verification (FRD §5, §6, F-18, F-19): the board by area (identity, turnover,
+// bank accounts, existing obligations), an overview card for each; in each area its discrepancies
+// ranked by credit impact, each with its sources side by side and a decision, then what could not
+// be checked, what passed, and the facts the checks compared.
 
 export const Route = createFileRoute("/appraisals/$caseId/cross-verification")({
   head: () => ({
@@ -15,22 +16,5 @@ export const Route = createFileRoute("/appraisals/$caseId/cross-verification")({
 
 function CrossVerificationTab() {
   const { caseId } = Route.useParams();
-  return (
-    <div className="pb-10">
-      <TabSection
-        id="findings"
-        title={t("page.crossVerification.title")}
-        purpose={t("page.crossVerification.purpose")}
-      >
-        <div className="px-4 py-4 sm:px-6">
-          <FindingsPanel caseId={caseId} />
-        </div>
-      </TabSection>
-      <TabSection id="facts" title={t("facts.title")} purpose={t("facts.purpose")}>
-        <div className="px-4 py-4 sm:px-6">
-          <FactsPanels caseId={caseId} />
-        </div>
-      </TabSection>
-    </div>
-  );
+  return <CrossVerificationBoard caseId={caseId} />;
 }

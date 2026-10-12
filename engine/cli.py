@@ -1,7 +1,10 @@
 """creditiq CLI: case inspection, the configuration store (validate,
-publish, version, diff) and the excluded-terms check. Processing, baseline
-and scorecard commands land with their features in
+publish, version, diff), RBL's reference record (template, import, show;
+F-25.1) and the excluded-terms check. Scorecard commands land with F-26 in
 docs/functional-requirements.md.
+
+Publishing re-runs every case's checks afterwards (FRD principle 3), unless
+--no-rerun is given.
 """
 
 from __future__ import annotations
@@ -97,15 +100,52 @@ def _cmd_jobs_list(args: argparse.Namespace) -> int:
     return 0
 
 
-def _cmd_config_validate(_args: argparse.Namespace) -> int:
-    sections = writer.load_authored_sections()
+def _private(args: argparse.Namespace) -> Path | None:
+    return Path(args.private_config) if getattr(args, "private_config", None) else None
+
+
+def _cmd_config_validate(args: argparse.Namespace) -> int:
+    sections = writer.load_authored_sections(_private(args))
     print(f"OK — {len(sections)} section(s) validate: {', '.join(sorted(sections))}")
     return 0
 
 
 def _cmd_config_publish(args: argparse.Namespace) -> int:
-    record = writer.publish(data_root=Path(args.data_root), author=args.author, note=args.note or "")
+    """Publish, then re-run every case's checks (FRD principle 3), so that its findings, review
+    items, queries, CAM and PD note follow the new version at once (--no-rerun: on their next run)."""
+    root = Path(args.data_root)
+    record = writer.publish(data_root=root, author=args.author, note=args.note or "", private_dir=_private(args))
     print(json.dumps(record, indent=2))
+    if args.no_rerun:
+        print("cases not re-run (--no-rerun): each follows the new version on its next run")
+        return 0
+    return _rerun_cases(root)
+
+
+def _rerun_cases(root: Path) -> int:
+    """Re-run the checks of every case in the store (as an upload or a decision does). A case that
+    fails is reported and the others still run."""
+    from . import db, pipeline
+
+    if not db.db_path(root).is_file():
+        print("re-ran the checks of 0 case(s): no case store yet")
+        return 0
+    conn = db.connect(root)
+    failed: list[str] = []
+    try:
+        case_ids = [r["id"] for r in conn.execute("SELECT id FROM cases ORDER BY created_at, id")]
+        for case_id in case_ids:
+            try:
+                pipeline.refresh_case(conn, root, case_id)
+            except Exception as e:  # one case must not stop the others; reported below
+                print(f"{case_id}: could not be re-run: {e}", file=sys.stderr)
+                failed.append(case_id)
+    finally:
+        conn.close()
+    print(f"re-ran the checks of {len(case_ids) - len(failed)} case(s)")
+    if failed:
+        print(f"{len(failed)} case(s) not re-run: {', '.join(failed)}", file=sys.stderr)
+        return 1
     return 0
 
 
@@ -120,7 +160,7 @@ def _cmd_config_version(args: argparse.Namespace) -> int:
 
 
 def _cmd_config_diff(args: argparse.Namespace) -> int:
-    sections = writer.load_authored_sections()
+    sections = writer.load_authored_sections(_private(args))
     dumps = {name: model.model_dump(mode="json") for name, model in sections.items()}
     authored_hashes = {name: writer.section_hash(dump) for name, dump in dumps.items()}
     try:
@@ -146,6 +186,48 @@ def _cmd_config_diff(args: argparse.Namespace) -> int:
             print(f"  ~ {name} (changed)")
     if not changed:
         print("no changes since the published version")
+    return 0
+
+
+def _cmd_reference_template(args: argparse.Namespace) -> int:
+    from . import reference
+
+    Path(args.out).write_bytes(reference.template(Path(args.data_root)))
+    print(f"wrote {args.out}")
+    return 0
+
+
+def _cmd_reference_import(args: argparse.Namespace) -> int:
+    from . import db, reference
+
+    conn = db.connect(Path(args.data_root))
+    try:
+        record, problems = reference.import_record(conn, Path(args.data_root), args.case_id, Path(args.file), args.author)
+    finally:
+        conn.close()
+    for line in reference.problem_lines(problems):
+        print(line, file=sys.stderr)
+    if record is None:
+        print("refused: nothing was stored", file=sys.stderr)
+        return 1
+    approval = 1 if record.approval else 0
+    print(f"imported {record.workbook_name} for {record.case_id}: {len(record.deviations)} deviation row(s), "
+          f"{approval} approval row(s); awaiting confirmation by an RBL reviewer")
+    return 0
+
+
+def _cmd_reference_show(args: argparse.Namespace) -> int:
+    from . import db, reference
+
+    conn = db.connect(Path(args.data_root))
+    try:
+        record = reference.load(conn, args.case_id)
+    finally:
+        conn.close()
+    if record is None:
+        print(f"no reference record for {args.case_id}")
+        return 1
+    print(record.model_dump_json(indent=2))
     return 0
 
 
@@ -192,20 +274,43 @@ def build_parser() -> argparse.ArgumentParser:
 
     config = sub.add_parser("config", help="the config store (policy, checklist taxonomy)")
     config_sub = config.add_subparsers(dest="config_command", required=True)
-    config_sub.add_parser("validate", help="validate every authored config/*.yaml section").set_defaults(
-        func=_cmd_config_validate
-    )
-    config_publish = config_sub.add_parser("publish", help="publish an immutable config version")
+    private_help = "a git-ignored directory whose <section>.yaml files replace config/'s (RBL's own norms and matrix)"
+    config_validate = config_sub.add_parser("validate", help="validate every authored config/*.yaml section")
+    config_validate.add_argument("--private-config", help=private_help)
+    config_validate.set_defaults(func=_cmd_config_validate)
+    config_publish = config_sub.add_parser(
+        "publish", help="publish an immutable config version, then re-run every case's checks")
     config_publish.add_argument("--author", required=True)
     config_publish.add_argument("--note")
     config_publish.add_argument("--data-root", default=DEFAULT_DATA_ROOT)
+    config_publish.add_argument("--private-config", help=private_help)
+    config_publish.add_argument("--no-rerun", action="store_true",
+                                help="publish only; each case follows the new version on its next run")
     config_publish.set_defaults(func=_cmd_config_publish)
     config_version = config_sub.add_parser("version", help="show the currently published version")
     config_version.add_argument("--data-root", default=DEFAULT_DATA_ROOT)
     config_version.set_defaults(func=_cmd_config_version)
     config_diff = config_sub.add_parser("diff", help="diff authored config against the published version")
     config_diff.add_argument("--data-root", default=DEFAULT_DATA_ROOT)
+    config_diff.add_argument("--private-config", help=private_help)
     config_diff.set_defaults(func=_cmd_config_diff)
+
+    ref = sub.add_parser("reference", help="RBL's reference record for a case (F-25.1)")
+    ref_sub = ref.add_subparsers(dest="reference_command", required=True)
+    ref_template = ref_sub.add_parser("template", help="write the baseline workbook to fill from RBL's record")
+    ref_template.add_argument("--out", required=True)
+    ref_template.add_argument("--data-root", default=DEFAULT_DATA_ROOT)
+    ref_template.set_defaults(func=_cmd_reference_template)
+    ref_import = ref_sub.add_parser("import", help="validate and store a filled workbook (.xlsx) or its JSON form")
+    ref_import.add_argument("case_id")
+    ref_import.add_argument("file")
+    ref_import.add_argument("--author", required=True, help="the user id of the person importing it")
+    ref_import.add_argument("--data-root", default=DEFAULT_DATA_ROOT)
+    ref_import.set_defaults(func=_cmd_reference_import)
+    ref_show = ref_sub.add_parser("show", help="print a case's reference record as JSON")
+    ref_show.add_argument("case_id")
+    ref_show.add_argument("--data-root", default=DEFAULT_DATA_ROOT)
+    ref_show.set_defaults(func=_cmd_reference_show)
 
     check = sub.add_parser("check", help="static checks")
     check_sub = check.add_subparsers(dest="check_command", required=True)

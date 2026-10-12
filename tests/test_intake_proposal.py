@@ -245,3 +245,19 @@ def test_tc01_proposal_permissions(client: TestClient):
     assert client.post("/api/cases/proposals", json=body, headers=sign_in(client, ANALYST)).status_code == 200
     bad = client.post("/api/cases/proposals", json={"channel": "fax", "text": "x"}, headers=sign_in(client, RM))
     assert bad.status_code == 422
+
+
+def test_the_proposed_instalment_is_asked_of_the_rm(client: TestClient, published_data_root: Path):
+    rm = sign_in(client, RM)
+    f = _propose(client, rm, CLEAN_EMAIL)["fields"]
+    # Messages rarely state it: the RM enters it on the form (DSCR, FR-03).
+    assert f["proposed_emi_inr"]["status"] == "not_found"
+    body = {"borrower": "Kestrel Fabricators Pvt Ltd", "constitution": "private_limited",
+            "facilities": ["cash_credit", "term_loan"], "amount_inr": 20000000, "channel": "email",
+            "message_text": CLEAN_EMAIL,
+            "header": {"proposed_emi_inr": {"value": "320000", "proposed": None, "source": "person"}}}
+    created = client.post("/api/cases", json=body, headers=rm)
+    assert created.status_code == 201, created.text
+    analyst = sign_in(client, ANALYST)
+    facts = client.get(f"/api/cases/{created.json()['id']}/facts", headers=analyst).json()
+    assert facts["proposed_emi"]["value"] == 320000.0 and facts["proposed_emi"]["relies_on_manual"] is True

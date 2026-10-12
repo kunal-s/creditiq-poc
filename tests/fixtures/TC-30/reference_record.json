@@ -1,0 +1,21 @@
+{
+  "case_id": "CASE",
+  "record_date": "2026-09-30",
+  "deviations_recorded": true,
+  "deviations": [
+    {"row": 2, "norm_id": "FR-05", "description": "Debt equity above norm", "category": "financial",
+     "recorded_value": "2.67x", "approved_by_text": "Zonal Credit Committee", "source_ref": "CAM p.14, deviation table row 1"},
+    {"row": 3, "norm_id": "FR-06", "description": "Working capital cycle stretched", "category": "financial",
+     "recorded_value": "92 days", "approved_by_text": "Zonal Credit Committee", "source_ref": "CAM p.14, deviation table row 2"},
+    {"row": 4, "norm_id": "EL-02", "description": "Bureau rank weaker than norm", "category": "eligibility",
+     "recorded_value": "rank 7", "approved_by_text": "Zonal Credit Committee", "source_ref": "CAM p.15, deviation table row 3"},
+    {"row": 5, "description": "Pricing below card rate", "recorded_value": "25 bps below card",
+     "approved_by_text": "Zonal Credit Committee", "source_ref": "CAM p.15, deviation table row 4"},
+    {"row": 6, "norm_id": "FR-01", "description": "Current ratio below norm", "category": "financial",
+     "recorded_value": "1.10x", "approved_by_text": "Zonal Credit Committee", "source_ref": "CAM p.15, deviation table row 5"}
+  ],
+  "approval": {
+    "authority_text": "Zonal Credit Committee", "authority_key": "zonal_credit_committee",
+    "decision": "approved", "decided_on": "2026-10-02", "source_ref": "Sanction note p.1"
+  }
+}

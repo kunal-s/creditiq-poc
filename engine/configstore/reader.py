@@ -15,6 +15,7 @@ from pathlib import Path
 
 from .schema import (
     AlignmentSection,
+    ApprovalMatrixSection,
     CamSectionConfig,
     ChecklistTaxonomySection,
     CrossChecksSection,
@@ -58,6 +59,11 @@ def _load_section(data_root: Path, section: str) -> dict:
 
 def load_policy(data_root: Path) -> PolicySection:
     return PolicySection.model_validate(_load_section(data_root, "policy"))
+
+
+def load_approval_matrix(data_root: Path) -> ApprovalMatrixSection:
+    """The published approval matrix (F-21). A version published before the section existed raises NoPublishedConfig."""
+    return ApprovalMatrixSection.model_validate(_load_section(data_root, "approval_matrix"))
 
 
 def load_checklist_taxonomy(data_root: Path) -> ChecklistTaxonomySection:

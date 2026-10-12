@@ -77,3 +77,16 @@ def test_the_spread_needs_the_outputs_permission(client: TestClient, published_d
     rm = sign_in(client, RM)
     case_id = make_case(client, rm, published_data_root)
     assert client.get(f"/api/cases/{case_id}/spread", headers=rm).status_code == 403
+
+
+def test_a_zero_divisor_leaves_the_ratio_blank(client: TestClient, published_data_root: Path):
+    analyst = sign_in(client, ANALYST)
+    no_finance_costs = make_case(client, analyst, published_data_root)
+    audited(published_data_root, no_finance_costs, set_rows={"Finance costs": 0})
+    assert _row(_spread(client, analyst, no_finance_costs), "interest-coverage")["cells"][0]["value"] is None
+
+    zero_net_worth = make_case(client, analyst, published_data_root, borrower="Larkspur Castings Pvt Ltd")
+    audited(published_data_root, zero_net_worth, set_rows={"(b) Reserves and surplus": -10_000_000})
+    spread = _spread(client, analyst, zero_net_worth)
+    assert _row(spread, "debt-equity")["cells"][0]["value"] is None
+    assert _row(spread, "tol-tnw")["cells"][0]["value"] is None

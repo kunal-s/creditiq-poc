@@ -32,14 +32,6 @@ export function countOutcomes(findings: Finding[]): Record<FindingOutcome, numbe
   return counts;
 }
 
-/** Every policy norm for the case, with its outcome (F-20). */
-export function usePolicy(caseId: string) {
-  return useQuery({
-    queryKey: ["cases", caseId, "policy"],
-    queryFn: () => api.casePolicy(caseId),
-  });
-}
-
 /** The spread, interim layout (F-22). */
 export function useSpread(caseId: string) {
   return useQuery({ queryKey: ["cases", caseId, "spread"], queryFn: () => api.caseSpread(caseId) });

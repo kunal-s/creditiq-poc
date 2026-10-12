@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PolicyPanel } from "@/components/case/PolicyNorms";
-import { TabSection } from "@/components/case/TabSection";
+import { PolicyPage } from "@/components/case/policy/PolicyPage";
 import { t } from "@/config/terminology";
 
-// Stage 5, policy checks (FRD §5, §6, F-20): every norm, and the deviations.
+// Stage 5, policy checks (FRD §5, §6, F-20, F-21): an overview card per family of norms and one
+// for the approving authority; then each family's norms, every one with its required and actual
+// value and the figures it used, and the authority with the steps of the matrix that applied.
 
 export const Route = createFileRoute("/appraisals/$caseId/policy")({
   head: () => ({
@@ -14,13 +15,5 @@ export const Route = createFileRoute("/appraisals/$caseId/policy")({
 
 function PolicyTab() {
   const { caseId } = Route.useParams();
-  return (
-    <div className="pb-10">
-      <TabSection id="policy" title={t("page.policy.title")} purpose={t("page.policy.purpose")}>
-        <div className="px-4 py-4 sm:px-6">
-          <PolicyPanel caseId={caseId} />
-        </div>
-      </TabSection>
-    </div>
-  );
+  return <PolicyPage caseId={caseId} />;
 }

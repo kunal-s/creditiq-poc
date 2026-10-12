@@ -38,6 +38,7 @@ from .configstore.schema import AlignmentSection
 from .contracts import (
     AccountCredits,
     AccountFact,
+    AccountMonth,
     AuthorityFact,
     BalanceFact,
     CaseDetail,
@@ -197,6 +198,15 @@ def same_entity(a: str, b: str, noise: list[str], threshold: float) -> bool:
     return ra == rb or similarity(ra, rb) >= threshold
 
 
+def same_lender(a: str, b: str, noise: list[str], threshold: float) -> bool:
+    """One lender under two printings ("Tidewater Finance Limited", "TIDEWATER FIN"): the same
+    resolved name, or the same leading significant word."""
+    if same_entity(a, b, noise, threshold):
+        return True
+    ra, rb = resolve_name(a, noise).split(), resolve_name(b, noise).split()
+    return bool(ra and rb) and ra[0] == rb[0] and len(ra[0]) >= 4
+
+
 def cluster(names: list[str], noise: list[str], threshold: float) -> list[list[str]]:
     """Group variant names for one entity; the first seen names the group."""
     groups: list[list[str]] = []
@@ -312,14 +322,23 @@ class Build:
         h = self.header.get(name) or {}
         if not h.get("value"):
             return None
-        evidence = [Evidence(document_id=self.message_doc, page=1)] if self.message_doc else []
         return FactValue(
             source="application_message",
             label="Sourcing message",
             value=h["value"],
-            evidence=evidence,
+            evidence=self.header_evidence(h.get("source")),
             relies_on_manual=h.get("source") == "person" or (h.get("proposed") not in (None, h["value"])),
         )
+
+    def header_evidence(self, source: str | None) -> list[Evidence]:
+        """Where a header value came from (HeaderField.source): a span in the sourcing message, a
+        document page, or a person, who has no page to cite."""
+        found = re.fullmatch(r"document:(.+):p(\d+)", source or "")
+        if found:
+            return [Evidence(document_id=found[1], page=int(found[2]))]
+        if source == "person" or not self.message_doc:
+            return []
+        return [Evidence(document_id=self.message_doc, page=1)]
 
 
 def _ident(value: object) -> str:
@@ -497,6 +516,19 @@ def _requested(b: Build) -> FactValue | None:
     evidence = v.evidence if v else ([Evidence(document_id=b.message_doc, page=1)] if b.message_doc else [])
     return FactValue(source="application_message", label="Amount requested", value=float(b.case.amount_inr),
                      evidence=evidence, relies_on_manual=bool(v and v.relies_on_manual))
+
+
+def _proposed_emi(b: Build) -> FactValue | None:
+    """The proposed term loan's monthly instalment, as the RM entered it on the case (FR-03)."""
+    v = b.message_value("proposed_emi_inr")
+    if v is None:
+        return None
+    try:
+        v.value = float(str(v.value).replace(",", ""))
+    except ValueError:
+        return None
+    v.label = "Proposed monthly instalment"
+    return v
 
 
 def _incorporation(b: Build) -> IncorporationFact:
@@ -692,6 +724,8 @@ def _cleanse(b: Build, txns: list[Txn], accounts: list[AccountFact]) -> tuple[li
     per_account: dict[str, AccountCredits] = {}
     net_by_month: dict[tuple[int, int], float] = defaultdict(float)
     evidence_by_month: dict[tuple[int, int], list[Evidence]] = defaultdict(list)
+    # Each account's credits month by month, for the evidence behind a bank figure.
+    account_months: dict[str, dict[tuple[int, int], dict]] = defaultdict(dict)
     for t in txns:
         if not t.credit:
             continue
@@ -699,6 +733,12 @@ def _cleanse(b: Build, txns: list[Txn], accounts: list[AccountFact]) -> tuple[li
             t.account, AccountCredits(account=t.account, gross=0, excluded=0, net=0, months=[], exclusions=[])
         )
         acct.gross += t.credit
+        slot = None
+        if t.date:
+            slot = account_months[t.account].setdefault(
+                (t.date.year, t.date.month), {"gross": 0.0, "excluded": 0.0, "net": 0.0, "evidence": []})
+            slot["gross"] += t.credit
+            slot["evidence"] = slot["evidence"] or t.evidence[:1]
         rule = None
         for ex in b.align.bank_credit_exclusions:
             cue = _phrase(t.narration, ex.narration_any)
@@ -713,6 +753,8 @@ def _cleanse(b: Build, txns: list[Txn], accounts: list[AccountFact]) -> tuple[li
                 break
         if rule:
             acct.excluded += t.credit
+            if slot is not None:
+                slot["excluded"] += t.credit
             acct.exclusions.append(
                 Exclusion(rule=rule.id, label=rule.label, account=t.account,
                           date=t.date.isoformat() if t.date else None, narration=t.narration, amount=t.credit,
@@ -720,6 +762,8 @@ def _cleanse(b: Build, txns: list[Txn], accounts: list[AccountFact]) -> tuple[li
             )
             continue
         acct.net += t.credit
+        if slot is not None:
+            slot["net"] += t.credit
         if t.date:
             ym = (t.date.year, t.date.month)
             net_by_month[ym] += t.credit
@@ -727,6 +771,12 @@ def _cleanse(b: Build, txns: list[Txn], accounts: list[AccountFact]) -> tuple[li
             label = month_label(ym)
             if label not in acct.months:
                 acct.months.append(label)
+    for acct in per_account.values():
+        acct.by_month = [
+            AccountMonth(month=f"{y}-{m:02d}", label=month_label((y, m)), gross=s["gross"], excluded=s["excluded"],
+                         net=s["net"], evidence=s["evidence"])
+            for (y, m), s in sorted(account_months[acct.account].items())
+        ]
     return list(per_account.values()), {"net": net_by_month, "evidence": evidence_by_month}
 
 
@@ -798,11 +848,13 @@ def _months(b: Build, credits_by_month: dict, coverage: dict[str, set[tuple[int,
             gst=g[0] if g else None, bank=credits_by_month["net"].get(ym, 0.0) if ym in covered else None,
             gst_evidence=g[2].evidence[:1] if g else [],
             bank_evidence=credits_by_month["evidence"].get(ym, [])[:1] if ym in covered else [],
-            awaiting_review=bool(g and g[2].pending)))
+            awaiting_review=bool(g and g[2].pending),
+            gst_filed=str(g[1].get("filing_date").value) if g and g[1].get("filing_date") else None))
     return out
 
 
-def _turnover(b: Build, credits_by_month: dict, coverage: dict[str, set[tuple[int, int]]]) -> list[TurnoverYear]:
+def _turnover(b: Build, credits_by_month: dict, coverage: dict[str, set[tuple[int, int]]],
+              tax_years: list[TaxYear]) -> list[TurnoverYear]:
     years: dict[int, list[TurnoverFigure]] = defaultdict(list)
     start = b.start
 
@@ -856,6 +908,21 @@ def _turnover(b: Build, credits_by_month: dict, coverage: dict[str, set[tuple[in
                                             value=value, evidence=declared.evidence,
                                             relies_on_manual=declared.relies_on_manual))
 
+    # The income tax return: the turnover its computation shows (statements.itr_lines), for the
+    # financial year the return covers (TX-03 to TX-05).
+    for t in tax_years:
+        line = t.lines.get("turnover")
+        end = parse_date(t.fy_end)
+        if line is None or end is None:
+            continue
+        try:
+            value = float(str(line.value).replace(",", ""))
+        except (TypeError, ValueError):
+            continue
+        years[fy_of(end.year, end.month, start)].append(TurnoverFigure(
+            source="itr", label="Turnover in the income tax return", value=value, evidence=line.evidence,
+            field_ids=line.field_ids, relies_on_manual=line.relies_on_manual, awaiting_review=line.awaiting_review))
+
     return [
         TurnoverYear(fy=fy_name(fy, start), fy_end=fy_end_date(fy, start).isoformat(), figures=figs)
         for fy, figs in sorted(years.items(), reverse=True)
@@ -884,11 +951,12 @@ def compute(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> CaseFacts
     accounts, declared = _accounts(b, txns)
     credits, by_month = _cleanse(b, txns, accounts)
     years = _financial_years(b)
+    tax_years = _tax_years(b)
     return CaseFacts(
         case_id=case.id,
         identities=_identities(b),
         persons=_persons(b),
-        turnover=_turnover(b, by_month, coverage),
+        turnover=_turnover(b, by_month, coverage, tax_years),
         credits=credits,
         obligations=_obligations(b, txns),
         accounts=accounts,
@@ -897,9 +965,10 @@ def compute(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> CaseFacts
         declaration=_declaration(b),
         declared_banking=b.message_value("existing_banking"),
         requested_amount=_requested(b),
+        proposed_emi=_proposed_emi(b),
         incorporation=_incorporation(b),
         authority=_authority(b),
-        tax_years=_tax_years(b),
+        tax_years=tax_years,
         financial_years=years,
         months=_months(b, by_month, coverage),
         balances=_balances(b, txns, years),

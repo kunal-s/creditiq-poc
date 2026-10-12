@@ -13,7 +13,9 @@ export interface paths {
     };
     /**
      * Audit Trail
-     * @description The append-only decision log, newest first, filtered and paged.
+     * @description The append-only decision log, newest first, filtered and paged. RBL's reference record
+     *     and the reviewer's decisions on it are for the reviewer only (F-25): anyone else sees that
+     *     the import, confirmation or decision happened, never what it said.
      */
     get: operations["audit_trail_api_audit_get"];
     put?: never;
@@ -136,6 +138,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/cases/{case_id}/approving-authority": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Case Approving Authority
+     * @description F-21: the authority the case needs under the published matrix, and the rules that set it.
+     */
+    get: operations["case_approving_authority_api_cases__case_id__approving_authority_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/cases/{case_id}/cam": {
     parameters: {
       query?: never;
@@ -167,6 +189,107 @@ export interface paths {
     get: operations["case_checklist_api_cases__case_id__checklist_get"];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/cases/{case_id}/comparison": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Case Comparison
+     * @description F-25: CreditIQ against RBL's confirmed reference record, deviations and approving authority.
+     */
+    get: operations["case_comparison_api_cases__case_id__comparison_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/cases/{case_id}/comparison/{area}/{key}/adjudication": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Adjudicate Comparison Item
+     * @description F-25.4: the reviewer's verdict on a difference or a new deviation, with a reason.
+     */
+    put: operations["adjudicate_comparison_item_api_cases__case_id__comparison__area___key__adjudication_put"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/cases/{case_id}/cross-verification": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Case Cross Verification
+     * @description F-19: the cross-verification board: every finding of the latest run, the discrepancies ranked
+     *     by credit impact with their sources side by side, and whether submission is blocked.
+     */
+    get: operations["case_cross_verification_api_cases__case_id__cross_verification_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/cases/{case_id}/cross-verification/findings/{finding_id}/decision": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Decide Cross Verification
+     * @description F-19, F-17.4: accept, dismiss or escalate a discrepancy, with a comment.
+     */
+    post: operations["decide_cross_verification_api_cases__case_id__cross_verification_findings__finding_id__decision_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/cases/{case_id}/cross-verification/findings/{finding_id}/query": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Query Cross Verification
+     * @description F-14: put what would complete a check that could not run on the pre-login query list.
+     */
+    post: operations["query_cross_verification_api_cases__case_id__cross_verification_findings__finding_id__query_post"];
     delete?: never;
     options?: never;
     head?: never;
@@ -387,6 +510,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/cases/{case_id}/reference/confirm": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Confirm Reference
+     * @description F-25.1: the RBL reviewer confirms the imported record (never the person who imported it).
+     */
+    post: operations["confirm_reference_api_cases__case_id__reference_confirm_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/cases/{case_id}/spread": {
     parameters: {
       query?: never;
@@ -399,6 +542,23 @@ export interface paths {
      * @description F-22: the spread (interim layout) with ratios and the working-capital assessment.
      */
     get: operations["case_spread_api_cases__case_id__spread_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/config/approval-matrix": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Config Approval Matrix */
+    get: operations["config_approval_matrix_api_config_approval_matrix_get"];
     put?: never;
     post?: never;
     delete?: never;
@@ -592,6 +752,8 @@ export interface components {
     AccountCredits: {
       /** Account */
       account: string;
+      /** By Month */
+      by_month?: components["schemas"]["AccountMonth"][];
       /** Excluded */
       excluded: number;
       /** Exclusions */
@@ -622,6 +784,170 @@ export interface components {
       last4: string | null;
       /** Sources */
       sources: string[];
+    };
+    /**
+     * AccountMonth
+     * @description One account's credits in one month, before and after cleansing.
+     */
+    AccountMonth: {
+      /** Evidence */
+      evidence?: components["schemas"]["Evidence"][];
+      /** Excluded */
+      excluded: number;
+      /** Gross */
+      gross: number;
+      /** Label */
+      label: string;
+      /** Month */
+      month: string;
+      /** Net */
+      net: number;
+    };
+    /** Adjudication */
+    Adjudication: {
+      /** Decided At */
+      decided_at: string;
+      /** Decided By */
+      decided_by: string;
+      /** Decided By Name */
+      decided_by_name: string;
+      /** Reason */
+      reason: string;
+      /**
+       * Stale
+       * @default false
+       */
+      stale: boolean;
+      /**
+       * Verdict
+       * @enum {string}
+       */
+      verdict: "valid" | "not_valid";
+    };
+    /** AdjudicationRequest */
+    AdjudicationRequest: {
+      /** Reason */
+      reason: string;
+      /**
+       * Verdict
+       * @enum {string}
+       */
+      verdict: "valid" | "not_valid";
+    };
+    /** AmountBand */
+    AmountBand: {
+      /** Authority */
+      authority: string;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "active" | "provisional";
+      /** Up To Inr */
+      up_to_inr?: number | null;
+    };
+    /**
+     * ApprovalMatrixSection
+     * @description config/approval_matrix.yaml (F-00.1, F-21): who must approve a case, by amount, product
+     *     and the categories of its policy deviations.
+     */
+    ApprovalMatrixSection: {
+      /**
+       * Amount Basis
+       * @default amount_requested
+       * @constant
+       */
+      amount_basis: "amount_requested";
+      /** Authorities */
+      authorities: components["schemas"]["MatrixAuthority"][];
+      /** Bands */
+      bands: {
+        [key: string]: components["schemas"]["AmountBand"][];
+      };
+      /** Deviations */
+      deviations: components["schemas"]["DeviationRule"][];
+      /** Note */
+      note: string;
+      /** Products */
+      products: components["schemas"]["ProductGroup"][];
+      /**
+       * Source
+       * @enum {string}
+       */
+      source:
+        "published_policy" | "regulatory" | "industry_standard" | "provisional" | "rbl_supplied";
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "active" | "provisional";
+    };
+    /**
+     * ApprovingAuthority
+     * @description The authority the case needs under the published matrix (F-21).
+     */
+    ApprovingAuthority: {
+      /**
+       * Amount Basis
+       * @constant
+       */
+      amount_basis: "amount_requested";
+      /** Amount Inr */
+      amount_inr: number;
+      /** Case Id */
+      case_id: string;
+      /** Config Version */
+      config_version: string;
+      could_rise_to: components["schemas"]["AuthorityRef"] | null;
+      /** Lower Bound */
+      lower_bound: boolean;
+      /**
+       * Outcome
+       * @enum {string}
+       */
+      outcome: "determined" | "cannot_determine";
+      /** Product Labels */
+      product_labels: string[];
+      /** Products */
+      products: string[];
+      /** Provisional */
+      provisional: boolean;
+      /** Reason */
+      reason?: "no_product" | null;
+      required: components["schemas"]["AuthorityRef"] | null;
+      /** Source */
+      source: string;
+      /** Steps */
+      steps: components["schemas"]["AuthorityStep"][];
+      /** Unevaluated */
+      unevaluated: string[];
+      /** Unevaluated Labels */
+      unevaluated_labels: string[];
+      /** Unmapped Facilities */
+      unmapped_facilities?: string[];
+    };
+    /**
+     * AreaScore
+     * @description Inputs for the scorecard (F-26).
+     */
+    AreaScore: {
+      /**
+       * Area
+       * @enum {string}
+       */
+      area: "deviations" | "approving_authority";
+      /** Flagged Total */
+      flagged_total: number;
+      /** Found In Record */
+      found_in_record: number;
+      /** Pending */
+      pending: number;
+      /** Recorded Total */
+      recorded_total: number;
+      /** Scored */
+      scored: boolean;
+      /** Valid */
+      valid: number;
     };
     /** AuditEntry */
     AuditEntry: {
@@ -667,6 +993,61 @@ export interface components {
       resolution_date?: components["schemas"]["FactValue"] | null;
       /** Signatories */
       signatories?: components["schemas"]["PersonEntry"][];
+    };
+    /**
+     * AuthorityRef
+     * @description An approving authority: a role or committee, never a person.
+     */
+    AuthorityRef: {
+      /** Key */
+      key: string;
+      /** Label */
+      label: string;
+      /** Level */
+      level: number;
+    };
+    /**
+     * AuthorityStep
+     * @description One rule of the matrix that applied to the case, and the authority it needs.
+     */
+    AuthorityStep: {
+      at_least?: components["schemas"]["AuthorityRef"] | null;
+      authority: components["schemas"]["AuthorityRef"];
+      /** Band From Inr */
+      band_from_inr?: number | null;
+      /** Band To Inr */
+      band_to_inr?: number | null;
+      /**
+       * Capped
+       * @default false
+       */
+      capped: boolean;
+      /** Category */
+      category?: string | null;
+      /** Category Label */
+      category_label?: string | null;
+      /**
+       * Governs
+       * @default false
+       */
+      governs: boolean;
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: "amount" | "deviation";
+      /** Levels Above */
+      levels_above?: number | null;
+      /** Norm Labels */
+      norm_labels?: string[];
+      /** Norms */
+      norms?: string[];
+      /** Product */
+      product?: string | null;
+      /** Product Label */
+      product_label?: string | null;
+      /** Rule */
+      rule: string;
     };
     /**
      * BalanceFact
@@ -725,7 +1106,7 @@ export interface components {
        * Kind
        * @enum {string}
        */
-      kind: "finding" | "deviation" | "query";
+      kind: "finding" | "deviation" | "unassessed" | "query";
       /** Ref */
       ref: string;
       /** Severity */
@@ -756,6 +1137,23 @@ export interface components {
       confidence: number;
       /** Type Id */
       type_id: string;
+    };
+    /** CaseComparison */
+    CaseComparison: {
+      /** Case Id */
+      case_id: string;
+      /** Config Version */
+      config_version: string | null;
+      counts: components["schemas"]["ComparisonCounts"];
+      /** Items */
+      items: components["schemas"]["ComparisonItem"][];
+      /** Provisional Matrix */
+      provisional_matrix: boolean;
+      /** Provisional Norms */
+      provisional_norms: boolean;
+      record: components["schemas"]["ReferenceRecord"] | null;
+      /** Scores */
+      scores: components["schemas"]["AreaScore"][];
     };
     /**
      * CaseCreate
@@ -888,6 +1286,7 @@ export interface components {
       obligations: components["schemas"]["Obligation"][];
       /** Persons */
       persons: components["schemas"]["PersonSet"][];
+      proposed_emi?: components["schemas"]["FactValue"] | null;
       requested_amount?: components["schemas"]["FactValue"] | null;
       /** Tax Years */
       tax_years?: components["schemas"]["TaxYear"][];
@@ -993,7 +1392,8 @@ export interface components {
        * Source
        * @enum {string}
        */
-      source: "published_policy" | "regulatory" | "industry_standard" | "provisional";
+      source:
+        "published_policy" | "regulatory" | "industry_standard" | "provisional" | "rbl_supplied";
       /** Weight */
       weight: number;
       /** Why */
@@ -1062,6 +1462,69 @@ export interface components {
       /** Types */
       types: string[];
     };
+    /**
+     * ComparisonCounts
+     * @description agree, differ, new, missed and no_deviation_either_side count the deviations area;
+     *     to_adjudicate counts every item in either area awaiting a current decision.
+     */
+    ComparisonCounts: {
+      /** Agree */
+      agree: number;
+      /** Differ */
+      differ: number;
+      /** Missed */
+      missed: number;
+      /** New */
+      new: number;
+      /** No Deviation Either Side */
+      no_deviation_either_side: number;
+      /** To Adjudicate */
+      to_adjudicate: number;
+    };
+    /** ComparisonItem */
+    ComparisonItem: {
+      /** Adjudicable */
+      adjudicable: boolean;
+      adjudication?: components["schemas"]["Adjudication"] | null;
+      /**
+       * Area
+       * @enum {string}
+       */
+      area: "deviations" | "approving_authority";
+      authority_on_record_deviations?: components["schemas"]["AuthorityRef"] | null;
+      /** Creditiq Text */
+      creditiq_text: string | null;
+      /** Key */
+      key: string;
+      /** Label */
+      label: string;
+      norm?: components["schemas"]["NormResult"] | null;
+      /** Notes */
+      notes?: (
+        | "value_differs"
+        | "category_differs"
+        | "pass"
+        | "cannot_evaluate"
+        | "not_applicable"
+        | "no_norm"
+        | "lower"
+        | "higher"
+        | "not_in_matrix"
+        | "cannot_determine"
+      )[];
+      record_approval?: components["schemas"]["ReferenceApproval"] | null;
+      record_deviation?: components["schemas"]["ReferenceDeviation"] | null;
+      /** Record Text */
+      record_text: string | null;
+      required?: components["schemas"]["ApprovingAuthority"] | null;
+      /** Scored */
+      scored: boolean;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "agree" | "differ" | "new" | "missed";
+    };
     /** ConfigVersion */
     ConfigVersion: {
       /** Author */
@@ -1114,12 +1577,50 @@ export interface components {
       /** Statements */
       statements?: string[];
     };
+    /**
+     * CrossVerificationView
+     * @description The cross-verification board for one case (F-19): every finding of the latest run by area,
+     *     discrepancies ranked by credit impact within each area, and whether submission is blocked.
+     */
+    CrossVerificationView: {
+      /** Areas */
+      areas?: components["schemas"]["XvArea"][];
+      /** Blocked */
+      blocked: boolean;
+      /** Case Id */
+      case_id: string;
+      counts: components["schemas"]["XvCounts"];
+      /** First Blocking */
+      first_blocking?: string | null;
+      /** Items */
+      items: components["schemas"]["XvItem"][];
+      run: components["schemas"]["XvRun"] | null;
+      /** Top Finding Id */
+      top_finding_id?: string | null;
+    };
     /** DeviationCategory */
     DeviationCategory: {
       /** Key */
       key: string;
       /** Label */
       label: string;
+    };
+    /** DeviationRule */
+    DeviationRule: {
+      /** At Least */
+      at_least?: string | null;
+      /** Category */
+      category: string;
+      /**
+       * Levels Above
+       * @default 1
+       */
+      levels_above: number;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "active" | "provisional";
     };
     /** DirectoryUser */
     DirectoryUser: {
@@ -1179,6 +1680,8 @@ export interface components {
        * @default false
        */
       personal: boolean;
+      /** Provenance */
+      provenance?: ("declared" | "borrower_supplied" | "independent") | null;
       /** Satisfies */
       satisfies?: string[];
     };
@@ -1203,6 +1706,22 @@ export interface components {
       document_id: string;
       /** Page */
       page: number;
+    };
+    /**
+     * EvidenceRow
+     * @description One extracted row behind a headline value, with the page it was read from.
+     */
+    EvidenceRow: {
+      /** Cells */
+      cells: (string | number | null)[];
+      /** Evidence */
+      evidence?: components["schemas"]["Evidence"][];
+      /**
+       * Kind
+       * @default row
+       * @enum {string}
+       */
+      kind: "row" | "total" | "excluded";
     };
     /**
      * Exclusion
@@ -1386,6 +1905,8 @@ export interface components {
      * @description A cross-check or policy outcome (F-19, F-20).
      */
     Finding: {
+      /** Amount */
+      amount?: number | null;
       /**
        * Area
        * @default identity
@@ -1397,13 +1918,27 @@ export interface components {
       blocking: boolean;
       /** Case Id */
       case_id: string;
+      /** Columns */
+      columns?: components["schemas"]["SourceColumn"][];
+      /** Compares */
+      compares?: string | null;
       /** Config Version */
       config_version?: string | null;
       detail?: components["schemas"]["FindingDetail"] | null;
       /** Explanation */
       explanation: string;
+      /** Finding Title */
+      finding_title?: string | null;
+      /** Gap Tolerance */
+      gap_tolerance?: string | null;
+      /** Gaps */
+      gaps?: components["schemas"]["GapLeg"][];
+      /** Highlights */
+      highlights?: components["schemas"]["XvHighlight"][];
       /** Id */
       id: string;
+      /** Mismatch */
+      mismatch?: string | null;
       /** Missing */
       missing?: string[];
       /**
@@ -1411,8 +1946,16 @@ export interface components {
        * @enum {string}
        */
       outcome: "pass" | "fail" | "incomplete" | "not_applicable";
+      /** Policy Ref */
+      policy_ref?: string | null;
       /** Query */
       query?: string | null;
+      /** Ref */
+      ref?: string | null;
+      /** Reference */
+      reference?: string | null;
+      /** Request */
+      request?: string | null;
       /** Rule Id */
       rule_id: string;
       /** Run Id */
@@ -1450,6 +1993,11 @@ export interface components {
        * @default false
        */
       flagged: boolean;
+      /**
+       * Flagged Cells
+       * @default []
+       */
+      flagged_cells: number[];
       /** Label */
       label: string;
     };
@@ -1476,8 +2024,31 @@ export interface components {
        * @default false
        */
       relies_on_manual: boolean;
+      /** Sources */
+      sources?: string[];
       /** Value */
       value: string | number | null;
+    };
+    /**
+     * GapLeg
+     * @description How far one source is from another: one leg of a comparison.
+     */
+    GapLeg: {
+      /** Amount */
+      amount?: number | null;
+      /** Base */
+      base?: string | null;
+      /**
+       * Breached
+       * @default false
+       */
+      breached: boolean;
+      /** Label */
+      label: string;
+      /** Legs */
+      legs: string;
+      /** Pct */
+      pct?: number | null;
     };
     /** HTTPValidationError */
     HTTPValidationError: {
@@ -1585,6 +2156,23 @@ export interface components {
       user: components["schemas"]["SessionUser"];
     };
     /**
+     * MatrixAuthority
+     * @description An approving authority: a role or committee, never a person (F-21).
+     */
+    MatrixAuthority: {
+      /** Key */
+      key: string;
+      /** Label */
+      label: string;
+      /** Level */
+      level: number;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "active" | "provisional";
+    };
+    /**
      * Meta
      * @description Choice lists the screens need, from config/app.yaml.
      */
@@ -1616,6 +2204,8 @@ export interface components {
       gst?: number | null;
       /** Gst Evidence */
       gst_evidence?: components["schemas"]["Evidence"][];
+      /** Gst Filed */
+      gst_filed?: string | null;
       /** Label */
       label: string;
       /** Month */
@@ -1626,12 +2216,25 @@ export interface components {
      * @description One source figure a norm used, with where it came from (F-20.2).
      */
     NormInput: {
+      /**
+       * Awaiting Review
+       * @default false
+       */
+      awaiting_review: boolean;
+      /**
+       * Basis
+       * @default document
+       * @enum {string}
+       */
+      basis: "document" | "case" | "checklist" | "statements_coverage" | "not_requested";
       /** Evidence */
       evidence?: components["schemas"]["Evidence"][];
       /** Label */
       label: string;
       /** Name */
       name: string;
+      /** Refs */
+      refs?: string[];
       /**
        * Relies On Manual
        * @default false
@@ -1644,10 +2247,14 @@ export interface components {
     NormResult: {
       /** Actual */
       actual?: number | null;
+      /** Actual Text */
+      actual_text?: string | null;
       /** Category */
       category: string;
       /** Category Label */
       category_label: string;
+      /** Definition */
+      definition?: string | null;
       /**
        * Family
        * @enum {string}
@@ -1675,8 +2282,14 @@ export interface components {
        * @default false
        */
       provisional: boolean;
+      /** Reason */
+      reason?: ("zero_denominator" | "denominator_not_positive" | "awaiting_review") | null;
+      /** Reason Inputs */
+      reason_inputs?: string[];
       /** Required */
       required: string;
+      /** Source */
+      source?: string | null;
       /** Unit */
       unit?: string | null;
     };
@@ -1801,6 +2414,12 @@ export interface components {
        * @enum {string}
        */
       source: "finding" | "deviation" | "gap";
+      /**
+       * Target
+       * @default policy
+       * @enum {string}
+       */
+      target: "cross_verification" | "policy";
       /** Text */
       text: string;
       /** Title */
@@ -1857,10 +2476,62 @@ export interface components {
     PolicyAssessment: {
       /** Case Id */
       case_id: string;
+      /** Config Version */
+      config_version?: string | null;
+      counts?: components["schemas"]["PolicyCounts"];
+      /** Groups */
+      groups?: components["schemas"]["PolicyGroup"][];
       /** Norms */
       norms: components["schemas"]["NormResult"][];
       /** Period */
       period: string | null;
+    };
+    /**
+     * PolicyCounts
+     * @description Norms by outcome.
+     */
+    PolicyCounts: {
+      /**
+       * Cannot Evaluate
+       * @default 0
+       */
+      cannot_evaluate: number;
+      /**
+       * Deviations
+       * @default 0
+       */
+      deviations: number;
+      /**
+       * Not Applicable
+       * @default 0
+       */
+      not_applicable: number;
+      /**
+       * Passed
+       * @default 0
+       */
+      passed: number;
+    };
+    /**
+     * PolicyGroup
+     * @description One family of norms as the Policy page's overview shows it (F-20).
+     */
+    PolicyGroup: {
+      counts: components["schemas"]["PolicyCounts"];
+      /**
+       * Family
+       * @enum {string}
+       */
+      family: "eligibility" | "ratios" | "security_cover" | "documentation";
+      /** Highlights */
+      highlights?: string[];
+      /** Norms */
+      norms: number;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "deviation" | "cannot_evaluate" | "clear" | "no_norms";
     };
     /**
      * PolicyNorm
@@ -1874,9 +2545,11 @@ export interface components {
        * @default always
        * @enum {string}
        */
-      applies_when: "always" | "working_capital" | "term_debt" | "collateral";
+      applies_when: "always" | "working_capital" | "turnover_method" | "term_debt" | "collateral";
       /** Category */
       category: string;
+      /** Constitutions */
+      constitutions?: ("private_limited" | "proprietorship" | "partnership")[] | null;
       /** Expression */
       expression: string;
       /**
@@ -1890,14 +2563,28 @@ export interface components {
       kind?: ("min" | "max") | null;
       /** Label */
       label?: string | null;
+      /**
+       * Non Positive Denominator
+       * @default cannot_evaluate
+       * @enum {string}
+       */
+      non_positive_denominator: "cannot_evaluate" | "deviation";
       /** Note */
       note?: string | null;
+      /**
+       * Pd Gap
+       * @default ask
+       * @enum {string}
+       */
+      pd_gap: "ask" | "skip";
       /** Pd Question */
       pd_question?: string | null;
       /** Ratio */
       ratio?: string | null;
       /** Source */
-      source?: ("published_policy" | "regulatory" | "industry_standard" | "provisional") | null;
+      source?:
+        | ("published_policy" | "regulatory" | "industry_standard" | "provisional" | "rbl_supplied")
+        | null;
       /** Status */
       status?: ("active" | "provisional") | null;
       /** Threshold */
@@ -1932,7 +2619,8 @@ export interface components {
        * Source
        * @enum {string}
        */
-      source: "published_policy" | "regulatory" | "industry_standard" | "provisional";
+      source:
+        "published_policy" | "regulatory" | "industry_standard" | "provisional" | "rbl_supplied";
       /**
        * Status
        * @enum {string}
@@ -1962,6 +2650,15 @@ export interface components {
       /** Ratios */
       ratios: components["schemas"]["PolicyRatio"][];
       working_capital: components["schemas"]["WorkingCapitalPolicy"];
+    };
+    /** ProductGroup */
+    ProductGroup: {
+      /** Facilities */
+      facilities: string[];
+      /** Key */
+      key: string;
+      /** Label */
+      label: string;
     };
     /** ProposalRequest */
     ProposalRequest: {
@@ -2048,6 +2745,79 @@ export interface components {
       /** Score Pct */
       score_pct: number;
     };
+    /**
+     * ReferenceApproval
+     * @description The approval as RBL's record states it: a role or committee, never a person.
+     */
+    ReferenceApproval: {
+      /** Authority Key */
+      authority_key?: string | null;
+      /** Authority Text */
+      authority_text: string;
+      /** Decided On */
+      decided_on?: string | null;
+      /**
+       * Decision
+       * @enum {string}
+       */
+      decision: "approved" | "declined" | "referred";
+      /** Notes */
+      notes?: string | null;
+      /** Source Ref */
+      source_ref: string;
+    };
+    /**
+     * ReferenceDeviation
+     * @description One deviation as RBL's record states it.
+     */
+    ReferenceDeviation: {
+      /** Approved By Text */
+      approved_by_text?: string | null;
+      /** Category */
+      category?: string | null;
+      /** Description */
+      description: string;
+      /** Norm Id */
+      norm_id?: string | null;
+      /** Notes */
+      notes?: string | null;
+      /** Recorded Value */
+      recorded_value?: string | null;
+      /** Row */
+      row: number;
+      /** Source Ref */
+      source_ref: string;
+    };
+    /** ReferenceRecord */
+    ReferenceRecord: {
+      approval: components["schemas"]["ReferenceApproval"] | null;
+      /** Areas Not Compared */
+      areas_not_compared: string[];
+      /** Case Id */
+      case_id: string;
+      /** Config Version */
+      config_version: string | null;
+      /** Confirmed At */
+      confirmed_at: string | null;
+      /** Confirmed By */
+      confirmed_by: string | null;
+      /** Confirmed By Name */
+      confirmed_by_name: string | null;
+      /** Deviations */
+      deviations: components["schemas"]["ReferenceDeviation"][];
+      /** Deviations Recorded */
+      deviations_recorded: boolean;
+      /** Imported At */
+      imported_at: string;
+      /** Imported By */
+      imported_by: string;
+      /** Record Date */
+      record_date: string | null;
+      /** Workbook Name */
+      workbook_name: string;
+      /** Workbook Sha256 */
+      workbook_sha256: string;
+    };
     /** ReviewDecisionRequest */
     ReviewDecisionRequest: {
       /**
@@ -2079,6 +2849,11 @@ export interface components {
       decided_by?: string | null;
       /** Decision */
       decision?: ("confirm" | "correct" | "waive" | "assign") | null;
+      /**
+       * Escalated
+       * @default false
+       */
+      escalated: boolean;
       /** Id */
       id: string;
       /**
@@ -2120,6 +2895,53 @@ export interface components {
       role: string;
       /** Rolelabel */
       roleLabel: string;
+    };
+    /**
+     * SourceColumn
+     * @description One source a finding compared, as a column of its card (F-19.3).
+     */
+    SourceColumn: {
+      /**
+       * Awaiting Review
+       * @default false
+       */
+      awaiting_review: boolean;
+      /** Coverage */
+      coverage?: string | null;
+      /**
+       * Differs
+       * @default false
+       */
+      differs: boolean;
+      /** Evidence */
+      evidence?: components["schemas"]["Evidence"][];
+      /** Field Ids */
+      field_ids?: string[];
+      /** Key */
+      key: string;
+      /** Label */
+      label: string;
+      /** Provenance */
+      provenance?: ("declared" | "borrower_supplied" | "independent")[];
+      /**
+       * Relies On Manual
+       * @default false
+       */
+      relies_on_manual: boolean;
+      /** Row Columns */
+      row_columns?: string[];
+      /** Rows */
+      rows?: components["schemas"]["EvidenceRow"][];
+      /** Sources */
+      sources?: string[];
+      /**
+       * Unit
+       * @default text
+       * @enum {string}
+       */
+      unit: "inr" | "text" | "count" | "date";
+      /** Value */
+      value?: string | number | null;
     };
     /**
      * Span
@@ -2294,7 +3116,7 @@ export interface components {
        * Source
        * @enum {string}
        */
-      source: "financials" | "gst" | "bank" | "declared";
+      source: "financials" | "gst" | "bank" | "declared" | "itr";
       /** Value */
       value: number | null;
     };
@@ -2383,7 +3205,8 @@ export interface components {
        * Source
        * @enum {string}
        */
-      source: "published_policy" | "regulatory" | "industry_standard" | "provisional";
+      source:
+        "published_policy" | "regulatory" | "industry_standard" | "provisional" | "rbl_supplied";
       /**
        * Status
        * @enum {string}
@@ -2399,6 +3222,171 @@ export interface components {
        * @default 25
        */
       turnover_requirement_pct: number;
+    };
+    /**
+     * XvArea
+     * @description One area of the board (identity, turnover, bank accounts, existing obligations) as its
+     *     overview card shows it, counted from the area's findings of the latest run.
+     */
+    XvArea: {
+      /** Adjudicated */
+      adjudicated: number;
+      /**
+       * Area
+       * @enum {string}
+       */
+      area:
+        "identity" | "authority" | "turnover" | "tax" | "financials" | "accounts" | "obligations";
+      /** Blocking Open */
+      blocking_open: number;
+      /** Discrepancies */
+      discrepancies: number;
+      /** Highlights */
+      highlights?: components["schemas"]["XvHighlight"][];
+      /** Incomplete */
+      incomplete: number;
+      /** Mild */
+      mild: number;
+      /** Moderate */
+      moderate: number;
+      /** Not Applicable */
+      not_applicable: number;
+      /** Open */
+      open: number;
+      /** Passed */
+      passed: number;
+      /** Rules */
+      rules: number;
+      /** Serious */
+      serious: number;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "open" | "decided" | "incomplete" | "clear";
+      /** Top Finding Id */
+      top_finding_id?: string | null;
+    };
+    /** XvCounts */
+    XvCounts: {
+      /** Adjudicated */
+      adjudicated: number;
+      /** Blocking Open */
+      blocking_open: number;
+      /** Mild */
+      mild: number;
+      /** Moderate */
+      moderate: number;
+      /** Serious */
+      serious: number;
+      /** Total */
+      total: number;
+    };
+    /**
+     * XvDecision
+     * @description A person's decision on a discrepancy, with the comment every decision needs.
+     */
+    XvDecision: {
+      /** At */
+      at: string;
+      /** By */
+      by: string;
+      /** By Name */
+      by_name: string;
+      /** Comment */
+      comment: string;
+      /**
+       * Decision
+       * @enum {string}
+       */
+      decision: "accept" | "dismiss" | "escalate";
+    };
+    /** XvDecisionRequest */
+    XvDecisionRequest: {
+      /** Comment */
+      comment: string;
+      /**
+       * Decision
+       * @enum {string}
+       */
+      decision: "accept" | "dismiss" | "escalate";
+    };
+    /**
+     * XvFact
+     * @description One figure on an area's overview card: a short source label and its value.
+     */
+    XvFact: {
+      /**
+       * Differs
+       * @default false
+       */
+      differs: boolean;
+      /** Label */
+      label: string;
+      /**
+       * Unit
+       * @default text
+       * @enum {string}
+       */
+      unit: "inr" | "text" | "count" | "date";
+      /** Value */
+      value?: string | number | null;
+    };
+    /**
+     * XvHighlight
+     * @description A key-figure line on an area's overview card, from one finding: what it compares, the
+     *     figures side by side, and a short note ("25.0% apart · tolerance 10%", "declared, no statement").
+     */
+    XvHighlight: {
+      /** Facts */
+      facts?: components["schemas"]["XvFact"][];
+      /** Finding Id */
+      finding_id: string;
+      /** Label */
+      label: string;
+      /** Note */
+      note?: string | null;
+      /**
+       * Outcome
+       * @enum {string}
+       */
+      outcome: "pass" | "fail" | "incomplete" | "not_applicable";
+      /** Rule Id */
+      rule_id: string;
+    };
+    /**
+     * XvItem
+     * @description One finding of the latest run, with its review state, as the board shows it.
+     */
+    XvItem: {
+      /**
+       * Adjudicated
+       * @default false
+       */
+      adjudicated: boolean;
+      decision?: components["schemas"]["XvDecision"] | null;
+      escalation?: components["schemas"]["XvDecision"] | null;
+      finding: components["schemas"]["Finding"];
+      /**
+       * In Query List
+       * @default false
+       */
+      in_query_list: boolean;
+      /** Rank */
+      rank?: number | null;
+      /** Review Item Id */
+      review_item_id?: string | null;
+    };
+    /** XvRun */
+    XvRun: {
+      /** At */
+      at: string;
+      /** Id */
+      id: string;
+      /** Rules */
+      rules: number;
+      /** Sources */
+      sources: number;
     };
   };
   responses: never;
@@ -2708,6 +3696,39 @@ export interface operations {
       };
     };
   };
+  case_approving_authority_api_cases__case_id__approving_authority_get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ApprovingAuthority"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   case_cam_api_cases__case_id__cam_get: {
     parameters: {
       query?: never;
@@ -2761,6 +3782,183 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Readiness"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  case_comparison_api_cases__case_id__comparison_get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CaseComparison"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  adjudicate_comparison_item_api_cases__case_id__comparison__area___key__adjudication_put: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+        area: "deviations" | "approving_authority";
+        key: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AdjudicationRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ComparisonItem"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  case_cross_verification_api_cases__case_id__cross_verification_get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CrossVerificationView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  decide_cross_verification_api_cases__case_id__cross_verification_findings__finding_id__decision_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+        finding_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["XvDecisionRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["XvItem"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  query_cross_verification_api_cases__case_id__cross_verification_findings__finding_id__query_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+        finding_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["XvItem"];
         };
       };
       /** @description Validation Error */
@@ -3179,6 +4377,39 @@ export interface operations {
       };
     };
   };
+  confirm_reference_api_cases__case_id__reference_confirm_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReferenceRecord"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   case_spread_api_cases__case_id__spread_get: {
     parameters: {
       query?: never;
@@ -3199,6 +4430,37 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Spread"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  config_approval_matrix_api_config_approval_matrix_get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ApprovalMatrixSection"];
         };
       };
       /** @description Validation Error */

@@ -1,16 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ComparisonPanel } from "@/components/case/Comparison";
 import { TabSection } from "@/components/case/TabSection";
-import { ScreenPending } from "@/components/shell/ScreenPending";
 import { t } from "@/config/terminology";
+
+// RBL's record beside CreditIQ's output, for adjudication (FRD F-25): the
+// deviations and approving-authority areas.
 
 export const Route = createFileRoute("/appraisals/$caseId/comparison")({
   head: () => ({
     meta: [{ title: `${t("caseTab.comparison")} — ${t("tenant.product.name")}` }],
   }),
-  component: PendingTab,
+  component: ComparisonTab,
 });
 
-function PendingTab() {
+function ComparisonTab() {
+  const { caseId } = Route.useParams();
   return (
     <div className="pb-10">
       <TabSection
@@ -18,7 +22,9 @@ function PendingTab() {
         title={t("page.comparison.title")}
         purpose={t("page.comparison.purpose")}
       >
-        <ScreenPending feature="F-25" />
+        <div className="px-4 py-4 sm:px-6">
+          <ComparisonPanel caseId={caseId} />
+        </div>
       </TabSection>
     </div>
   );

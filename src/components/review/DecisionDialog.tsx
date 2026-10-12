@@ -13,8 +13,9 @@ import {
 import { ErrorState } from "@/components/common/States";
 import { t } from "@/config/terminology";
 import { useDocumentTypes } from "@/domain/documents";
+import { refusal } from "@/domain/errors";
 import { formatValue, useParties } from "@/domain/extraction";
-import { DECISIONS_BY_KIND, needsReason, useDecideReview } from "@/domain/review";
+import { DECISIONS_BY_KIND, reasonMin, useDecideReview } from "@/domain/review";
 import { cn } from "@/lib/utils";
 
 const inputClass =
@@ -34,7 +35,11 @@ function asScalar(raw: string, like?: Scalar): Scalar {
 
 /** Confirm, correct, waive or assign, with a reason where required (F-17.5).
  * "Correct" means: a new value (field), another party (party), or manual
- * entry of the document's values by a maker (quality, F-07.5). */
+ * entry of the document's values by a maker (quality, F-07.5). A
+ * discrepancy (a cross-check finding, also on the cross-verification board)
+ * is decided with a comment, whether it is confirmed or waived; the
+ * engine's refusal, a comment too short or an item escalated or decided
+ * meanwhile, shows in the dialog word for word. */
 export function DecisionDialog({
   item,
   borrower,
@@ -60,11 +65,16 @@ export function DecisionDialog({
 
   const entries = rows.filter((r) => r.name.trim() !== "");
   const valueNeeded = decision === "assign" || (decision === "correct" && !manual);
-  const reasonNeeded = needsReason(decision);
+  const discrepancy = item.kind === "finding";
+  const minReason = reasonMin(item, decision);
   const ready =
     (!valueNeeded || value.trim() !== "") &&
     (!manual || entries.length > 0) &&
-    (!reasonNeeded || reason.trim() !== "");
+    reason.trim().length >= minReason;
+  const refused = decide.isError ? refusal(decide.error) : null;
+  const clearError = () => {
+    if (decide.isError) decide.reset();
+  };
 
   const submit = () => {
     const body: ReviewDecisionRequest = { decision, reason: reason.trim() || null, value: null };
@@ -145,6 +155,7 @@ export function DecisionDialog({
                   onChange={() => {
                     setDecision(d);
                     setValue("");
+                    clearError();
                   }}
                   className="sr-only"
                 />
@@ -241,19 +252,43 @@ export function DecisionDialog({
 
         <label className="block">
           <span className="field-label">
-            {reasonNeeded ? t("review.reasonRequired") : t("review.reasonOptional")}
+            {discrepancy
+              ? t("review.commentFinding")
+              : minReason > 0
+                ? t("review.reasonRequired")
+                : t("review.reasonOptional")}
           </span>
           <textarea
             rows={2}
             className="mt-1 w-full resize-none rounded border border-border bg-surface p-2.5 text-[13px] outline-none focus:ring-1 focus:ring-ring"
             value={reason}
-            onChange={(e) => setReason(e.target.value)}
+            required={minReason > 0}
+            aria-invalid={refused ? true : undefined}
+            aria-describedby={discrepancy ? "decision-reason-hint" : undefined}
+            onChange={(e) => {
+              setReason(e.target.value);
+              clearError();
+            }}
             data-testid="decision-reason"
           />
         </label>
+        {discrepancy && (
+          <p
+            id="decision-reason-hint"
+            className="text-[11.5px] text-muted-foreground"
+            data-testid="decision-reason-hint"
+          >
+            {t("review.commentFindingHint")}
+          </p>
+        )}
+        {refused && (
+          <p role="alert" className="text-[12px] text-destructive" data-testid="decision-error">
+            {refused}
+          </p>
+        )}
         <p className="text-[11.5px] text-muted-foreground">{t("review.overlayNote")}</p>
 
-        {decide.isError && <ErrorState error={decide.error} compact />}
+        {decide.isError && !refused && <ErrorState error={decide.error} compact />}
 
         <DialogFooter>
           <button

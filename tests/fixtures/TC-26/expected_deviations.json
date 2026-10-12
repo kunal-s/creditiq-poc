@@ -1,0 +1,49 @@
+{
+  "case": "tests/test_pd_note.py _case, with a certificate of incorporation dated 1 June 2024; as_of 29 September 2026",
+  "note": "Hand-computed from tests/fixtures/build_fixtures.py statement_tables (long-term borrowings 10 cr): the deviations RBL's record would show under the provisional norms. DOC-01 counts the blocking checklist items still open for this case's documents.",
+  "deviations": [
+    {
+      "id": "EL-01",
+      "category": "eligibility",
+      "actual": 2.25,
+      "source": "certificate_of_incorporation"
+    },
+    {
+      "id": "EL-05",
+      "category": "eligibility",
+      "actual": 33.9,
+      "source": "audited_financial_statements"
+    },
+    {
+      "id": "FR-02",
+      "category": "financial",
+      "actual": 3.26,
+      "source": "audited_financial_statements"
+    },
+    {
+      "id": "FR-05",
+      "category": "financial",
+      "actual": 2.67,
+      "source": "audited_financial_statements"
+    },
+    {
+      "id": "FR-06",
+      "category": "financial",
+      "actual": 89.7,
+      "source": "audited_financial_statements"
+    },
+    {
+      "id": "DOC-01",
+      "category": "documentation",
+      "actual": 7,
+      "source": "checklist",
+      "open_items": ["moa_aoa", "board_resolution", "kyc_promoters", "fs_fy_minus2", "itr", "bank_statements", "gst_returns"]
+    },
+    {
+      "id": "DOC-02",
+      "category": "documentation",
+      "actual": 1,
+      "source": "audited_financial_statements"
+    }
+  ]
+}

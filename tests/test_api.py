@@ -125,3 +125,20 @@ def test_maker_cannot_check_their_own_entry(published_data_root):
             )
     finally:
         conn.close()
+
+
+def test_store_migrates_to_version_8(published_data_root):
+    from engine import db
+
+    conn = db.connect(published_data_root)
+    try:
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == len(db.MIGRATIONS) == 8
+        tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
+        finding_columns = {r["name"] for r in conn.execute("PRAGMA table_info(findings)")}
+    finally:
+        conn.close()
+    assert {"reference_records", "reference_items", "comparison_adjudications"} <= tables
+    # 7: the cross-verification board.
+    assert {"finding_refs", "crosscheck_runs", "query_additions"} <= tables and "card" in finding_columns
+    # 8: escalations kept with their discrepancies.
+    assert "finding_escalations" in tables

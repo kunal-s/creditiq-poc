@@ -3,6 +3,9 @@
 # (fields, tables), how it is recognised (signals) and how it is read are in config/ingestion/,
 # published in the same version; the ids here must match config/ingestion/document_types.json.
 # `satisfies`: checklist item ids (config/checklist_taxonomy.yaml).
+# `provenance`: where the document comes from, as the cross-verification board tags it:
+# declared (the RM's message, the borrower's own declaration), borrower_supplied (documents the
+# borrower hands over) or independent (the bureau, RBL's GST and bank-statement analysis partners).
 # application_message is the RM's sourcing message, stored with the case (F-04); the
 # document-processing service does not read it.
 
@@ -10,17 +13,20 @@ types:
   - id: application_message
     name: Sourcing message
     group: origination
+    provenance: declared
     description: The RM's sourcing email, WhatsApp message or notes, pasted when the application was created.
 
   - id: certificate_of_incorporation
     name: Certificate of incorporation
     group: constitution
+    provenance: borrower_supplied
     description: Registrar of Companies certificate that a company is incorporated, with its CIN.
     satisfies: [coi]
 
   - id: memorandum_articles_of_association
     name: Memorandum and articles of association
     group: constitution
+    provenance: borrower_supplied
     description: The company's memorandum and articles of association, including its objects, capital and borrowing powers.
     satisfies: [moa_aoa]
     party_list: {field: directors, name_key: name, din_key: din, role: director}
@@ -28,6 +34,7 @@ types:
   - id: board_resolution_borrowing
     name: Board resolution for borrowing
     group: constitution
+    provenance: borrower_supplied
     description: Certified extract of a board resolution authorising the borrowing and the signatories.
     satisfies: [board_resolution]
     party_list: {field: authorized_persons, role: director}
@@ -35,12 +42,14 @@ types:
   - id: company_pan
     name: Company PAN
     group: registration
+    provenance: borrower_supplied
     description: Income Tax Department intimation of the company's permanent account number.
     satisfies: [pan_entity]
 
   - id: director_kyc
     name: Director KYC
     group: kyc
+    provenance: borrower_supplied
     description: A director's or promoter's identity details and identity document.
     satisfies: [kyc_promoters]
     instance_key: person
@@ -49,6 +58,7 @@ types:
   - id: audited_financial_statements
     name: Audited financial statements
     group: financials
+    provenance: borrower_supplied
     description: Audited balance sheet, statement of profit and loss and cash flow statement for a financial year.
     satisfies: [fs_fy_minus2, fs_fy_minus1]
     instance_key: year
@@ -56,6 +66,7 @@ types:
   - id: income_tax_return
     name: Income tax return
     group: tax
+    provenance: borrower_supplied
     description: Income tax return acknowledgement with the computation of total income, for an assessment year.
     satisfies: [itr]
     instance_key: year
@@ -63,6 +74,7 @@ types:
   - id: gstr_3b
     name: GSTR-3B
     group: tax
+    provenance: borrower_supplied
     description: Monthly GST summary return (GSTR-3B), one per tax period.
     satisfies: [gst_returns]
     instance_key: period
@@ -70,6 +82,7 @@ types:
   - id: bank_statement
     name: Bank statement
     group: banking
+    provenance: borrower_supplied
     description: Statement of a current or cash credit account, with its transactions and balances.
     satisfies: [bank_statements]
     instance_key: account
@@ -81,16 +94,19 @@ types:
   - id: existing_facilities_declaration
     name: Declaration of existing facilities
     group: banking
+    provenance: declared
     description: The borrower's declaration of its existing credit facilities and bank accounts, or that it has none.
 
   - id: sanction_letter
     name: Sanction letter
     group: banking
+    provenance: borrower_supplied
     description: A lender's letter sanctioning a credit facility to the borrower, with the amount and terms.
 
   - id: commercial_bureau_report
     name: Commercial bureau report
     group: bureau
+    provenance: independent
     description: A credit information company's report on the borrower, with its credit facilities, credit rank and related parties.
     partner_output: true
     party_list: {field: related_parties, name_key: name, pan_key: pan, designation_key: relationship, role: director}

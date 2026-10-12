@@ -106,6 +106,8 @@ class MonthFigure(BaseModel):
     gst_evidence: list[Evidence] = Field(default_factory=list)
     bank_evidence: list[Evidence] = Field(default_factory=list)
     awaiting_review: bool = False
+    gst_filed: str | None = None
+    """The return's filing date, as printed."""
 
 
 class BalanceFact(BaseModel):
@@ -117,7 +119,7 @@ class BalanceFact(BaseModel):
     evidence: list[Evidence] = Field(default_factory=list)
 
 
-TurnoverSource = Literal["financials", "gst", "bank", "declared"]
+TurnoverSource = Literal["financials", "gst", "bank", "declared", "itr"]
 
 
 class TurnoverFigure(BaseModel):
@@ -154,6 +156,18 @@ class Exclusion(BaseModel):
     evidence: list[Evidence] = Field(default_factory=list)
 
 
+class AccountMonth(BaseModel):
+    """One account's credits in one month, before and after cleansing."""
+
+    month: str
+    """"2025-09"."""
+    label: str
+    gross: float
+    excluded: float
+    net: float
+    evidence: list[Evidence] = Field(default_factory=list)
+
+
 class AccountCredits(BaseModel):
     """One account's credits, before and after cleansing (F-18.2)."""
 
@@ -163,6 +177,7 @@ class AccountCredits(BaseModel):
     net: float
     months: list[str]
     exclusions: list[Exclusion]
+    by_month: list[AccountMonth] = Field(default_factory=list)
 
 
 class Obligation(BaseModel):
@@ -224,6 +239,8 @@ class CaseFacts(BaseModel):
     """The declaration of existing facilities, when one is on file: the lenders it declares, or "None declared"."""
     requested_amount: FactValue | None = None
     """The amount the case requests (BR-01)."""
+    proposed_emi: FactValue | None = None
+    """The monthly instalment on the proposed term loan, as the case header records it (FR-03)."""
     incorporation: IncorporationFact = Field(default_factory=IncorporationFact)
     authority: list[AuthorityFact] = Field(default_factory=list)
     tax_years: list[TaxYear] = Field(default_factory=list)

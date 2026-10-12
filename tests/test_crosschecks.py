@@ -116,8 +116,10 @@ def test_tc22_a_promoter_missing_from_one_source_is_flagged(client, analyst, pub
     assert [s["differs"] for s in f["sides"]] == [True, False]  # the KYC received is short of a person
 
 
+@pytest.mark.usefixtures("all_rules_enabled")
 def test_tc22_the_board_resolutions_signatories_are_not_the_promoter_set(client, analyst, published_data_root):
-    # A resolution authorising some of the directors is not a promoter mismatch (BR-02 checks it).
+    # A resolution authorising some of the directors is not a promoter mismatch (BR-02 checks it, when
+    # switched on).
     case_id = make_case(client, analyst, published_data_root, borrower="Kestrel Tools Pvt Ltd",
                         header={"promoters": {"value": "Tarun Velankar; Ishita Barve", "source": "person"}})
     add_doc(published_data_root, case_id, "board_resolution_borrowing", {"authorized_persons": ["Tarun Velankar"]})
@@ -219,7 +221,7 @@ def test_changing_one_tolerance_changes_exactly_its_findings(client, analyst, pu
     authored = writer.load_authored_sections()
     tolerances = authored["tolerances"].model_copy(deep=True)
     next(t for t in tolerances.tolerances if t.key == "turnover_variance").value = 25
-    monkeypatch.setattr(writer, "load_authored_sections", lambda: {**authored, "tolerances": tolerances})
+    monkeypatch.setattr(writer, "load_authored_sections", lambda private_dir=None: {**authored, "tolerances": tolerances})
     writer.publish(data_root=published_data_root, author="test", note="turnover tolerance 25%")
 
     after = {f["id"]: f for fs in _findings(client, analyst, published_data_root, case_id).values() for f in fs}

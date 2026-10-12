@@ -747,6 +747,8 @@ def parse(text: str) -> tuple[dict[str, ProposedField], list[StrippedSpan]]:
         "constitution": _constitution_field(masked, companies, pan_hit, borrower),
         "facilities": _facilities_field(facilities, zones),
         "amount_inr": _amount_field(amounts),
+        # The proposed term loan's monthly instalment (FR-03): never inferred from the message; the RM types it.
+        "proposed_emi_inr": _not_found(),
         "pan": pan_field,
         "gstin": _identifier_field(ids["gstin"], "GSTIN"),
         "cin": _identifier_field(ids["cin"], "CIN"),

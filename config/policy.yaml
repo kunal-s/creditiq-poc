@@ -50,7 +50,7 @@ ratios:
     kind: min
     acceptable: 1.5
     marginal: 1.25
-    formula: "(PAT + depreciation + interest on term debt) ÷ (interest + principal repayments)"
+    formula: "(PAT + depreciation + interest on term debt) ÷ (interest + principal repayments on term debt)"
     applies: Term exposures and any borrower with instalment obligations
     source: provisional
     status: provisional
@@ -121,6 +121,9 @@ pd_questions:
   documentation: "{label}: {actual} against a norm of {required}. When will the documents be available?"
   # A norm that could not be evaluated: {missing} names the figures not on file.
   cannot_evaluate: "{label} could not be assessed: {missing} not on file. Can the promoter provide it?"
+  # A norm whose divisor is zero or negative: {inputs} names the divisor.
+  zero_denominator: "{label} could not be computed because {inputs} is zero. What explains it?"
+  denominator_not_positive: "{label} could not be computed because {inputs} is negative. What explains it?"
 
 # Norms evaluated for every case (F-20). `expression` is arithmetic (+ - * /
 # and brackets) over the inputs listed in engine/configstore/schema.py
@@ -138,9 +141,22 @@ norms:
     kind: min
     threshold: 3
     category: eligibility
+    constitutions: [private_limited]
     source: provisional
     status: provisional
-    note: "Years since incorporation or registration, to the case's as-of date."
+    note: "Completed months since incorporation to the case's as-of date, in years. Partnerships and proprietorships: no registration-date document is in scope yet, so the norm does not apply to them."
+  - id: EL-02
+    family: eligibility
+    label: Commercial bureau rank
+    expression: bureau_rank
+    unit: rank
+    kind: max
+    threshold: 6
+    category: eligibility
+    pd_gap: skip
+    source: provisional
+    status: provisional
+    note: "Rank 1 is the lowest risk. From the latest commercial bureau report; a report without a numeric rank cannot be evaluated. The bank obtains the report, so a missing report is not asked of the promoter."
   - id: EL-03
     family: eligibility
     label: Positive net worth
@@ -163,16 +179,16 @@ norms:
     status: provisional
   - id: EL-05
     family: eligibility
-    label: Working-capital request against turnover
+    label: Total request against turnover
     expression: amount_requested / revenue_from_operations * 100
     unit: "%"
     kind: max
     threshold: 20
     category: eligibility
-    applies_when: working_capital
+    applies_when: turnover_method
     source: provisional
     status: provisional
-    note: "Turnover method: the limit is up to 20% of annual turnover."
+    note: "Turnover method (requests up to INR 5.00 cr): the bank finances up to 20% of annual turnover. The whole amount requested is used, including any term loan, until per-facility amounts are captured."
 
   # --- Financial ratios ---
   - id: FR-01
@@ -186,13 +202,15 @@ norms:
     ratio: tol-tnw
     expression: (long_term_borrowings + current_liabilities) / net_worth
     category: financial
+    non_positive_denominator: deviation
+    note: "Net worth is share capital plus reserves and surplus; intangible assets are not deducted, and only long-term borrowings are counted among non-current liabilities, until RBL defines tangible net worth."
   - id: FR-03
     family: ratios
     ratio: dscr
-    expression: (profit_after_tax + depreciation + finance_costs) / (finance_costs + annual_instalments)
+    expression: (profit_after_tax + depreciation) / (annual_instalments + proposed_instalments)
     category: financial
     applies_when: term_debt
-    note: "Instalments are the existing and inferred monthly instalments, annualised."
+    note: "Interim and conservative until RBL's DSCR definition: annual instalments (interest and principal) on existing facilities, declared, sanctioned or inferred from bank statements, and on the proposed term loan; interest on term debt is not added back."
   - id: FR-04
     family: ratios
     ratio: interest-coverage
@@ -203,6 +221,8 @@ norms:
     ratio: debt-equity
     expression: total_borrowings / net_worth
     category: financial
+    non_positive_denominator: deviation
+    note: "Net worth is share capital plus reserves and surplus; intangible assets are not deducted, until RBL defines tangible net worth."
   - id: FR-06
     family: ratios
     ratio: wc-cycle

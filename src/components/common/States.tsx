@@ -1,11 +1,10 @@
 import type { UseQueryResult } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { Clock, Lock, SearchX, ServerCrash, Settings2, TriangleAlert, WifiOff } from "lucide-react";
-import { ApiError } from "@/api/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/shell/EmptyState";
 import { t } from "@/config/terminology";
-import { errorKind, type ErrorKind } from "@/domain/errors";
+import { engineWords, errorKind, type ErrorKind } from "@/domain/errors";
 import { cn } from "@/lib/utils";
 
 /** Designed loading state: skeleton rows in the shape of a panel. */
@@ -48,6 +47,8 @@ export function ErrorState({
 }) {
   const kind = errorKind(error);
   const Icon = ICON[kind];
+  // The engine's own words, never the HTTP status text.
+  const detail = kind === "invalid" || kind === "conflict" ? engineWords(error) : null;
   const tone =
     kind === "notAvailable" || kind === "forbidden" || kind === "noConfig"
       ? "border-border bg-surface"
@@ -67,13 +68,11 @@ export function ErrorState({
       <p className="max-w-md text-[12.5px] text-muted-foreground">
         {t(`state.${kind}.description`)}
       </p>
-      {(kind === "invalid" || kind === "conflict") &&
-        error instanceof ApiError &&
-        error.message && (
-          <p className="max-w-md text-[12.5px] text-foreground" data-testid="error-detail">
-            {error.message}
-          </p>
-        )}
+      {detail && (
+        <p className="max-w-md text-[12.5px] text-foreground" data-testid="error-detail">
+          {detail}
+        </p>
+      )}
       {onRetry && kind !== "forbidden" && kind !== "notFound" && (
         <button
           type="button"

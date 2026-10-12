@@ -4,7 +4,7 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from engine import db
+from engine import db, pipeline
 from tests.conftest import ANALYST, RM, fixture_file, make_case, run_jobs, sign_in, upload
 
 KEYS = ["documents", "extraction", "completeness", "cross_verification", "policy", "outputs"]
@@ -156,3 +156,27 @@ def test_the_outputs_stage_needs_financial_statements(client: TestClient, publis
     audited(published_data_root, case_id)
     outputs = _progress(client, analyst, case_id)["stages"][5]
     assert outputs["status"] == "done" and outputs["done"] == 3
+
+
+def test_the_policy_stage_is_done_with_deviations_listed(client: TestClient, published_data_root: Path):
+    from tests.conftest import ANALYST
+    from tests.triangulation import add_doc, audited
+
+    analyst = sign_in(client, ANALYST)
+    case_id = make_case(client, analyst, published_data_root, facilities=["cash_credit"], amount_inr=40_000_000)
+    add_doc(published_data_root, case_id, "certificate_of_incorporation", {"date_of_incorporation": "2015-06-12"})
+    audited(published_data_root, case_id, "2026-03-31", set_rows={"(a) Long-term borrowings": 100_000_000})
+    audited(published_data_root, case_id, "2025-03-31", scale=0.85)
+    add_doc(published_data_root, case_id, "commercial_bureau_report", {"company_name": "Kestrel", "credit_rank": "4"})
+    add_doc(published_data_root, case_id, "company_pan", {"pan": "AAACK1234F"})
+    add_doc(published_data_root, case_id, "income_tax_return", {"pan": "AAACK1234F"})
+    conn = db.connect(published_data_root)
+    try:
+        pipeline.refresh_case(conn, published_data_root, case_id)
+    finally:
+        conn.close()
+    stage = next(s for s in _progress(client, analyst, case_id)["stages"] if s["key"] == "policy")
+    norms = [n for n in client.get(f"/api/cases/{case_id}/policy", headers=analyst).json()["norms"] if n["outcome"] != "not_applicable"]
+    # Every applicable norm evaluated: deviations are listed, they do not hold the stage.
+    assert stage["status"] == "done" and stage["attention"] == 0
+    assert stage["total"] == len(norms) and stage["done"] == sum(1 for n in norms if n["outcome"] == "pass") < stage["total"]

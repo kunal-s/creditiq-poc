@@ -15,8 +15,8 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 # Provenance tag: where a value comes from. "provisional" marks an interim
-# value awaiting RBL's own artefact.
-Source = Literal["published_policy", "regulatory", "industry_standard", "provisional"]
+# value awaiting RBL's own artefact; "rbl_supplied" a value RBL supplied.
+Source = Literal["published_policy", "regulatory", "industry_standard", "provisional", "rbl_supplied"]
 Status = Literal["active", "provisional"]
 
 
@@ -59,8 +59,24 @@ POLICY_INPUTS = {
     "current_assets", "current_liabilities",
     # The case, the documents and the other stages.
     "amount_requested", "vintage_years", "bureau_rank", "market_value", "realisable_value",
-    "annual_instalments", "blocking_items_open", "audited_years",
+    "annual_instalments", "proposed_instalments", "blocking_items_open", "audited_years",
 }
+
+# The only expression nodes a norm may use (F-20.1): arithmetic over inputs and numbers.
+ALLOWED_NODES = (ast.Expression, ast.BinOp, ast.UnaryOp, ast.Add, ast.Sub, ast.Mult, ast.Div, ast.USub,
+                 ast.Constant, ast.Name, ast.Load)
+
+
+def unsupported_nodes(tree: ast.AST) -> list[str]:
+    """The node types in a parsed expression that a norm may not use."""
+    bad = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ALLOWED_NODES) or (
+            isinstance(node, ast.Constant)
+            and (isinstance(node.value, bool) or not isinstance(node.value, (int, float)))
+        ):
+            bad.append(type(node).__name__)
+    return bad
 
 
 class DeviationCategory(BaseModel):
@@ -82,7 +98,15 @@ class PolicyNorm(BaseModel):
     kind: Literal["min", "max"] | None = None
     threshold: float | None = None
     category: str
-    applies_when: Literal["always", "working_capital", "term_debt", "collateral"] = "always"
+    applies_when: Literal["always", "working_capital", "turnover_method", "term_debt", "collateral"] = "always"
+    """turnover_method: a working-capital request at or below working_capital.mpbf_above_limit_inr."""
+    constitutions: list[Literal["private_limited", "proprietorship", "partnership"]] | None = None
+    """When set, the norm does not apply to a case of another known constitution."""
+    non_positive_denominator: Literal["cannot_evaluate", "deviation"] = "cannot_evaluate"
+    """A divisor that is zero or negative: the norm cannot be evaluated, or is a deviation
+    (leverage on a non-positive net worth is never a pass)."""
+    pd_gap: Literal["ask", "skip"] = "ask"
+    """skip: when the norm cannot be evaluated, the promoter is not asked (the bank obtains the input)."""
     source: Source | None = None
     status: Status | None = None
     note: str | None = None
@@ -193,6 +217,11 @@ class DocumentTypeDef(BaseModel):
     """Belongs to a person and is attributed to a party (F-10)."""
     partner_output: bool = False
     """A report from RBL's GST, bank-statement analysis or bureau partner (F-11)."""
+    provenance: Literal["declared", "borrower_supplied", "independent"] | None = None
+    """Where the document comes from, as the cross-verification board tags it: declared (the
+    RM's message, the borrower's declaration), borrower-supplied (uploaded financials, returns,
+    statements) or independent (bureau, partner GST and bank-statement analysis reports).
+    Required when publishing (cross_check); a version published before it existed reads as None."""
     party_list: PartyList | None = None
     """People this document names, for the case's party set (F-10.2)."""
 
@@ -262,6 +291,7 @@ CrossCheckVariable = Literal[
     "director_identifiers",
     "incorporation_particulars",
     "memorandum_directors",
+    "person_names",
     "borrowing_limit",
     "signatories_are_directors",
     "resolution_lender",
@@ -270,6 +300,9 @@ CrossCheckVariable = Literal[
     "turnover_gst_vs_bank",
     "turnover_audited_vs_bank",
     "turnover_declared_vs_evidenced",
+    "turnover_itr_vs_audited",
+    "turnover_itr_vs_gst",
+    "turnover_itr_vs_bank",
     "turnover_gst_vs_bank_window",
     "itr_years",
     "itr_profit",
@@ -291,6 +324,12 @@ class CrossCheckRule(BaseModel):
 
     id: str
     title: str
+    """What the rule compares, in words ("Audited turnover against GST outward supplies")."""
+    finding_title: str | None = None
+    """The finding in plain English when the rule fails ("Audited turnover not supported by bank credits").
+    Required when publishing (cross_check); a version published before it existed reads as None."""
+    policy_ref: str | None = None
+    """The credit policy clause the rule enforces, when RBL supplies one."""
     area: CheckArea
     variable: CrossCheckVariable
     sources: list[str]
@@ -300,11 +339,16 @@ class CrossCheckRule(BaseModel):
     tolerance: str | None = None
     severity: Literal["serious", "moderate", "mild"]
     blocking: bool
+    """Blocks submission: the memo cannot be drafted while a failure is not accepted or dismissed."""
     explanation: str
     query: str | None = None
     pd_question: str | None = None
     """What to ask the promoter in the personal discussion when the rule
     fails (F-24.1); may use {explanation}."""
+    enabled: bool = True
+    """A switched-off rule stays in configuration, and is still validated, but is not run: it gives
+    no finding, so no review item, query, CAM or PD-note entry, and blocks nothing. A version
+    published before the switch existed reads every rule as enabled."""
 
 
 class CrossChecksSection(BaseModel):
@@ -313,6 +357,11 @@ class CrossChecksSection(BaseModel):
     rules: list[CrossCheckRule]
     pd_incomplete: str = "{title}: {explanation}"
     """The personal-discussion question for a check left incomplete (F-24.1)."""
+
+    @property
+    def enabled_rules(self) -> list[CrossCheckRule]:
+        """The rules that run, in their configured order."""
+        return [r for r in self.rules if r.enabled]
 
 
 class CamSectionDef(BaseModel):
@@ -370,6 +419,110 @@ class StatementsSection(BaseModel):
     """Lines of an income tax return's computation, compared with the books (TX-02, TX-03)."""
 
 
+class MatrixAuthority(BaseModel):
+    """An approving authority: a role or committee, never a person (F-21)."""
+
+    key: str
+    level: int = Field(ge=1)
+    label: str
+    status: Status
+
+
+class ProductGroup(BaseModel):
+    key: str
+    label: str
+    facilities: list[str] = Field(min_length=1)
+
+
+class AmountBand(BaseModel):
+    up_to_inr: int | None = Field(default=None, gt=0)
+    """Inclusive upper bound; None for the last, open band."""
+    authority: str
+    status: Status
+
+
+class DeviationRule(BaseModel):
+    category: str
+    levels_above: int = Field(default=1, ge=0)
+    at_least: str | None = None
+    status: Status
+
+
+class ApprovalMatrixSection(BaseModel):
+    """config/approval_matrix.yaml (F-00.1, F-21): who must approve a case, by amount, product
+    and the categories of its policy deviations."""
+
+    source: Source
+    status: Status
+    note: str
+    amount_basis: Literal["amount_requested"] = "amount_requested"
+    authorities: list[MatrixAuthority] = Field(min_length=1)
+    products: list[ProductGroup] = Field(min_length=1)
+    bands: dict[str, list[AmountBand]]
+    deviations: list[DeviationRule]
+
+
+def matrix_problems(matrix: ApprovalMatrixSection, categories: set[str], facilities: set[str] | None = None) -> list[str]:
+    """What is wrong with an approval matrix, one problem per line."""
+    problems: list[str] = []
+    where = "approval_matrix"
+    keys = [a.key for a in matrix.authorities]
+    levels = [a.level for a in matrix.authorities]
+    if len(keys) != len(set(keys)):
+        problems.append(f"{where}: duplicate authority keys")
+    if len(levels) != len(set(levels)):
+        problems.append(f"{where}: duplicate authority levels")
+    elif sorted(levels) != list(range(1, len(levels) + 1)):
+        # Escalation counts levels ("one level above the amount authority"): a gap would name no authority.
+        problems.append(f"{where}: authority levels must be consecutive from 1")
+    if levels != sorted(levels):
+        problems.append(f"{where}: authority levels must ascend in list order")
+    level_of = {a.key: a.level for a in matrix.authorities}
+    product_keys = [p.key for p in matrix.products]
+    if len(product_keys) != len(set(product_keys)):
+        problems.append(f"{where}: duplicate product keys")
+    if set(matrix.bands) != set(product_keys):
+        problems.append(f"{where}: bands must be given for exactly the products {sorted(product_keys)}")
+    for product, bands in matrix.bands.items():
+        bounds = [b.up_to_inr for b in bands]
+        if bounds.count(None) != 1 or bounds[-1] is not None:
+            problems.append(f"{where}.bands.{product}: exactly one open band, and it last")
+        closed = [b for b in bounds if b is not None]
+        if closed != sorted(set(closed)) or len(closed) != len(set(closed)):
+            problems.append(f"{where}.bands.{product}: up_to_inr must strictly ascend")
+        for band in bands:
+            if band.authority not in level_of:
+                problems.append(f"{where}.bands.{product}: unknown authority {band.authority!r}")
+        band_levels = [level_of.get(b.authority, 0) for b in bands]
+        if band_levels != sorted(band_levels):
+            problems.append(f"{where}.bands.{product}: the authority must not fall as the amount rises")
+    rule_categories = [r.category for r in matrix.deviations]
+    if len(rule_categories) != len(set(rule_categories)):
+        problems.append(f"{where}: duplicate deviation rule category")
+    for rule in matrix.deviations:
+        if rule.category not in categories:
+            problems.append(f"{where}: deviation rule for unknown category {rule.category!r}")
+        if rule.at_least and rule.at_least not in level_of:
+            problems.append(f"{where}: deviation rule {rule.category!r} names unknown authority {rule.at_least!r}")
+    for category in sorted(categories - set(rule_categories)):
+        problems.append(f"{where}: deviation category {category!r} has no rule")
+    if facilities is not None:
+        seen: dict[str, int] = {}
+        for p in matrix.products:
+            for f in p.facilities:
+                seen[f] = seen.get(f, 0) + 1
+                if f not in facilities:
+                    problems.append(f"{where}.products.{p.key}: unknown facility {f!r}")
+        for f in sorted(facilities):
+            if seen.get(f, 0) != 1:
+                problems.append(f"{where}: facility {f!r} must belong to exactly one product")
+    if matrix.status == "active":
+        rows = [*matrix.authorities, *[b for bands in matrix.bands.values() for b in bands], *matrix.deviations]
+        if any(r.status == "provisional" for r in rows):
+            problems.append(f"{where}: an active matrix may not keep provisional rows")
+    return problems
+
+
 SECTION_MODELS: dict[str, type[BaseModel]] = {
     "policy": PolicySection,
     "checklist_taxonomy": ChecklistTaxonomySection,
@@ -380,10 +533,12 @@ SECTION_MODELS: dict[str, type[BaseModel]] = {
     "crosschecks": CrossChecksSection,
     "cam": CamSectionConfig,
     "statements": StatementsSection,
+    "approval_matrix": ApprovalMatrixSection,
 }
 
 
-def cross_check(sections: dict[str, BaseModel], ingestion: dict[str, dict] | None = None) -> list[str]:
+def cross_check(sections: dict[str, BaseModel], ingestion: dict[str, dict] | None = None,
+                facilities: set[str] | None = None) -> list[str]:
     """References between sections that must resolve. Returns problems."""
     problems: list[str] = []
     checklist = sections["checklist_taxonomy"]
@@ -397,6 +552,8 @@ def cross_check(sections: dict[str, BaseModel], ingestion: dict[str, dict] | Non
         for item in t.satisfies:
             if item not in item_ids:
                 problems.append(f"document_types.{t.id}: satisfies unknown checklist item {item!r}")
+        if t.provenance is None:
+            problems.append(f"document_types.{t.id}: needs a provenance")
     if ingestion is not None:
         ingest_ids = [d["document_type"] for d in ingestion["document_types"]["documents"]]
         engine_only = {t.id for t in types.types if t.group == "origination"}
@@ -426,13 +583,30 @@ def cross_check(sections: dict[str, BaseModel], ingestion: dict[str, dict] | Non
             problems.append(f"{where}: a norm without a ratio needs label, kind and threshold")
         if norm.category not in categories:
             problems.append(f"{where}: unknown deviation category {norm.category!r}")
+        if not norm.ratio and (norm.source is None or norm.status is None):
+            problems.append(f"{where}: needs a source and status")
         try:
-            names = {n.id for n in ast.walk(ast.parse(norm.expression, mode="eval")) if isinstance(n, ast.Name)}
+            tree = ast.parse(norm.expression, mode="eval")
         except SyntaxError as e:
             problems.append(f"{where}: expression does not parse ({e.msg})")
             continue
+        if unsupported_nodes(tree):
+            problems.append(f"{where}: unsupported expression ({', '.join(sorted(set(unsupported_nodes(tree))))})")
+            continue
+        names = {n.id for n in ast.walk(tree) if isinstance(n, ast.Name)}
         for name in sorted(names - POLICY_INPUTS):
             problems.append(f"{where}: unknown input {name!r}")
+        if norm.non_positive_denominator == "deviation" and not any(
+                isinstance(n, ast.BinOp) and isinstance(n.op, ast.Div) for n in ast.walk(tree)):
+            problems.append(f"{where}: non_positive_denominator needs a division")
+        if norm.applies_when == "turnover_method":
+            expected = policy.working_capital.turnover_requirement_pct - policy.working_capital.turnover_margin_pct
+            if norm.unit != "%" or norm.threshold != expected:
+                problems.append(f"{where}: threshold differs from the turnover method ({expected:g}%)")
+    matrix = sections.get("approval_matrix")
+    if matrix is not None:
+        assert isinstance(matrix, ApprovalMatrixSection)
+        problems += matrix_problems(matrix, categories, facilities)
     tolerances = sections["tolerances"]
     checks = sections["crosschecks"]
     assert isinstance(tolerances, TolerancesSection) and isinstance(checks, CrossChecksSection)
@@ -441,6 +615,8 @@ def cross_check(sections: dict[str, BaseModel], ingestion: dict[str, dict] | Non
     if len(rule_ids) != len(set(rule_ids)):
         problems.append("crosschecks: duplicate rule ids")
     for rule in checks.rules:
+        if not (rule.finding_title or "").strip():
+            problems.append(f"crosschecks.{rule.id}: needs a finding_title")
         if rule.tolerance and rule.tolerance not in tolerance_keys:
             problems.append(f"crosschecks.{rule.id}: unknown tolerance {rule.tolerance!r}")
         if rule.comparison == "tolerance" and not rule.tolerance:

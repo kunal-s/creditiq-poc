@@ -90,7 +90,8 @@ def findings(conn: sqlite3.Connection, case_id: str) -> list[Finding]:
         d["sides"] = [FindingSide(**s) for s in json.loads(d["sides"])]
         d["detail"] = json.loads(d["detail"]) if d.get("detail") else None
         d["missing"] = json.loads(d.get("missing") or "[]")
-        out.append(Finding(**d))
+        card = json.loads(d.pop("card", None) or "{}")
+        out.append(Finding(**d, **card))
     return out
 
 
@@ -120,7 +121,13 @@ def review_items(conn: sqlite3.Connection, *, case_id: str | None = None, open_o
     if open_only:
         sql += " AND status = 'open'"
     sql += " ORDER BY created_at"
-    return [ReviewItem(**dict(row)) for row in conn.execute(sql, args)]
+    return [review_item(row) for row in conn.execute(sql, args)]
+
+
+def review_item(row: sqlite3.Row) -> ReviewItem:
+    d = dict(row)
+    detail = json.loads(d.get("detail") or "{}")
+    return ReviewItem(**d, escalated=bool(detail.get("escalation")))
 
 
 def readiness(conn: sqlite3.Connection, data_root: Path, case: CaseDetail) -> Readiness:

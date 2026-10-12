@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Lock } from "lucide-react";
 import type { ReviewItem, ReviewKind } from "@/api/types";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { Chip, Kpi } from "@/components/common/Panel";
@@ -24,6 +24,8 @@ export const Route = createFileRoute("/review")({
 function ExceptionQueue() {
   const session = useSession();
   const canDecide = session?.user.permissions.includes("review.decide") ?? false;
+  // A discrepancy escalated from the cross-verification board is decided by the Credit Manager.
+  const canDecideEscalated = session?.user.permissions.includes("finding.escalation") ?? false;
   const [kind, setKind] = useState<ReviewKind | "all">("all");
   const [caseFilter, setCaseFilter] = useState<string>("all");
   const [showDecided, setShowDecided] = useState(false);
@@ -164,15 +166,24 @@ function ExceptionQueue() {
                         data-status={item.status}
                       >
                         <td className="px-4 py-2.5">
-                          <Chip
-                            tone={
-                              item.kind === "quality" || item.kind === "finding"
-                                ? "critical"
-                                : "info"
-                            }
-                          >
-                            {t(`reviewKind.${item.kind}`)}
-                          </Chip>
+                          <span className="flex flex-wrap items-center gap-1">
+                            <Chip
+                              tone={
+                                item.kind === "quality" || item.kind === "finding"
+                                  ? "critical"
+                                  : "info"
+                              }
+                            >
+                              {t(`reviewKind.${item.kind}`)}
+                            </Chip>
+                            {item.escalated && (
+                              <Chip tone="flag">
+                                <span data-testid="review-escalated">
+                                  {t("exceptions.escalated")}
+                                </span>
+                              </Chip>
+                            )}
+                          </span>
                         </td>
                         <td className="px-3 py-2.5">
                           <Link
@@ -199,25 +210,12 @@ function ExceptionQueue() {
                           )}
                         </td>
                         <td className="px-3 py-2.5 text-right">
-                          {item.status === "open" &&
-                          canDecide &&
-                          DECISIONS_BY_KIND[item.kind].length > 0 ? (
-                            <button
-                              type="button"
-                              onClick={() => setDeciding(item)}
-                              data-testid="decide"
-                              className="inline-flex items-center gap-1 rounded border border-border bg-surface px-2.5 py-1.5 text-[12px] font-medium hover:bg-muted"
-                            >
-                              {t("exceptions.decide")} <ArrowUpRight className="h-3 w-3" />
-                            </button>
-                          ) : (
-                            <Link
-                              to={reviewItemPath(item.kind, item.case_id)}
-                              className="inline-flex items-center gap-1 rounded border border-border bg-surface px-2.5 py-1.5 text-[12px] font-medium hover:bg-muted"
-                            >
-                              {t("exceptions.view")} <ArrowUpRight className="h-3 w-3" />
-                            </Link>
-                          )}
+                          <RowAction
+                            item={item}
+                            canDecide={canDecide}
+                            canDecideEscalated={canDecideEscalated}
+                            onDecide={() => setDeciding(item)}
+                          />
                         </td>
                       </tr>
                     ))}
@@ -246,6 +244,60 @@ function ExceptionQueue() {
         />
       )}
     </div>
+  );
+}
+
+/** Decide an open item, or view it where its evidence is read. A discrepancy escalated from the
+ * cross-verification board waits for the Credit Manager (finding.escalation). */
+function RowAction({
+  item,
+  canDecide,
+  canDecideEscalated,
+  onDecide,
+}: {
+  item: ReviewItem;
+  canDecide: boolean;
+  canDecideEscalated: boolean;
+  onDecide: () => void;
+}) {
+  const decidable = item.status === "open" && canDecide && DECISIONS_BY_KIND[item.kind].length > 0;
+  if (decidable && item.escalated && !canDecideEscalated) {
+    return (
+      <span className="inline-flex flex-col items-end gap-1">
+        <button
+          type="button"
+          disabled
+          title={t("exceptions.waitingForManager")}
+          data-testid="decide-waiting"
+          className="inline-flex cursor-not-allowed items-center gap-1 rounded border border-border bg-surface px-2.5 py-1.5 text-[12px] font-medium text-muted-foreground opacity-60"
+        >
+          <Lock className="h-3 w-3" aria-hidden /> {t("exceptions.decide")}
+        </button>
+        <span className="text-[11px] text-muted-foreground">
+          {t("exceptions.waitingForManager")}
+        </span>
+      </span>
+    );
+  }
+  if (decidable) {
+    return (
+      <button
+        type="button"
+        onClick={onDecide}
+        data-testid="decide"
+        className="inline-flex items-center gap-1 rounded border border-border bg-surface px-2.5 py-1.5 text-[12px] font-medium hover:bg-muted"
+      >
+        {t("exceptions.decide")} <ArrowUpRight className="h-3 w-3" />
+      </button>
+    );
+  }
+  return (
+    <Link
+      to={reviewItemPath(item.kind, item.case_id)}
+      className="inline-flex items-center gap-1 rounded border border-border bg-surface px-2.5 py-1.5 text-[12px] font-medium hover:bg-muted"
+    >
+      {t("exceptions.view")} <ArrowUpRight className="h-3 w-3" />
+    </Link>
   );
 }
 

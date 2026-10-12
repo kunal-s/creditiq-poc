@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Date | 7 October 2026, updated 8 October 2026 (section 10) |
+| Date | 7 October 2026, updated 8 October 2026 (section 10), 11 October 2026 (section 11) and 12 October 2026 (sections 11.11 to 11.13) |
 | Branch | `cross-validation-abhishek` (not yet committed) |
 | Feature | Stage 4 of the case workspace, **Cross-checks** (`/appraisals/$caseId/cross-verification`); FRD F-18, F-19, F-16.2 |
 | Plan | [cross-verification-plan.md](cross-verification-plan.md) |
@@ -17,8 +17,11 @@
 - **Evidence:** a side-by-side evidence viewer, comparing two documents' pages at once.
 - **Gating:** a check now waits for a value that is still under review, instead of relying on it.
 - **Missing documents:** a check that cannot run because a document is missing names the document.
+- **Since 11 October:** the tab is the cross-verification board, over four areas, and eight rules are switched off (section 11).
 
 ## 2. What users see
+
+As built on 7 October. The board replaced this screen on 11 October (section 11.2).
 
 | Part of the screen | What it does |
 |---|---|
@@ -185,3 +188,202 @@ The gaps found when checking the test plan's TC-20 to TC-23 (FRD TC-22 to TC-25)
 
 - **Plan traceability.** FS-02 is no longer listed under TC-24 (bank accounts): it compares balances and does not identify an account.
 - **Recorded classification answers.** The four recorded classification answers for the reference samples no longer replay, because the classification prompt now lists twelve types. No automated test uses them; re-record with the live key.
+
+## 11. The cross-verification board (9 to 11 October 2026)
+
+The Cross-checks tab became the cross-verification board, from the redesign brief, and on 11 October it was narrowed to the test plan's four areas.
+
+### 11.1 Summary
+
+- **Screen:** an overview of four areas (identity consistency, turnover, bank accounts, existing obligations), then a section per area with its discrepancies ranked by credit impact, each with its sources side by side, its evidence and a decision.
+- **Decisions:** accept, dismiss or escalate, always with a comment. Submission stays blocked while a blocking discrepancy is not accepted or dismissed.
+- **Rules switched off:** BR-01 to BR-04, TX-01, TX-02, FS-01 and FS-02 no longer run (they stay in configuration, section 11.3). 18 rules run.
+- **No rule logic or tolerance changed.** The 18 rules that run give exactly the outcomes they gave before the redesign: outcome, explanation, sides, detail and missing documents were compared for all six cases in the local store, before and after.
+
+### 11.2 What users see
+
+This replaces the screen in section 2.
+
+| Part of the screen | What it does |
+|---|---|
+| Header | "Appraisal <case> · Cross-verification", the title "Cross-verification and discrepancy", one line summarising the discrepancies, and a line with the decided count, the run (XR-<case>-<run>), the rules and sources compared and when. Buttons: **← Spread**, **Exception queue**, **Continue to draft** (locked while a blocking discrepancy is open) |
+| Blocking banner | "Submission blocked — n serious discrepancies unadjudicated", with the most important blocking discrepancy's reference and sentence. **Adjudicate now** opens it |
+| Overview | Four area cards. Each shows its open discrepancies by severity, a **Blocking** badge when one blocks, how many are decided, how many checks could not run or passed, and the top finding. A click goes to the area's section |
+| Area sections | The area's discrepancies ranked by credit impact (severity, then the size of the gap in rupees), the checks that could not run (each says what would complete it, with **Add to query list**), the passed checks (collapsed, with those that did not apply), and **Facts behind these checks** (collapsed) |
+| Discrepancy card | Rank, severity, **Blocks submission**, the reference (XV-<case>-<nn>) and rule, the finding in plain English and its sentence. Opened: the rule line (what is compared, the tolerance, the owner); one column per source (2 to 4) with its provenance (Declared, Borrower-supplied, Independent), headline value, what it covers, **Open the evidence** and **Trace to the source**; the gap on each leg against the tolerance, or the difference in words; the evidence panel (the extracted rows with their pages: GST returns by month with filing dates, bank credits by month and account, each excluded credit on its own line); line by line; compare side by side |
+| Decision | **Accept** (a valid finding; it stays on the query list), **Dismiss** (not valid) or **Escalate** (to the Credit Manager; it stays open and blocking). A comment is required. The decision is shown with who, when and the comment |
+| Review queue | An escalated finding is marked **Escalated**; only the Credit Manager can decide it, with a comment |
+
+### 11.3 Rules switched off
+
+| ID | Area | Effect while off |
+|---|---|---|
+| BR-01 to BR-04 | Borrowing authority (the board resolution) | No finding, query, CAM or PD-note entry. BR-01 no longer blocks submission |
+| TX-01, TX-02 | Income tax | As above |
+| FS-01, FS-02 | Financial statements | As above |
+
+- **How:** `enabled: false` on each rule in `config/crosschecks.yaml`. The rules are still validated, and their evaluators, cards and tests remain (the tests run them switched on). Removing the line and publishing switches a rule back on.
+- **On the next run** a switched-off rule's open review items are withdrawn; decided ones stay as the record.
+- **References:** findings keep their references, so on cases checked before 11 October the sequence has gaps where switched-off rules' findings were.
+
+### 11.4 Decisions
+
+| Decision | Recorded as | Effect |
+|---|---|---|
+| Accept | The review item confirmed, with the comment as its reason | Decided; stays on the query list, in the CAM and the PD note |
+| Dismiss | The review item waived, with the comment | Decided; leaves the query list, the CAM summary and the PD note |
+| Escalate | The comment, user and time on the review item; the decision log | Stays open and blocking. Only a holder of `finding.escalation` (the Credit Manager) can then accept or dismiss it, on the board or in the review queue, with a comment |
+
+Every decision needs a comment of at least three characters. Each is kept with the user and the time, and in the decision log (`finding.escalated`, `review.decided`, `finding.query_added`).
+
+### 11.5 References, runs and ranking
+
+- **Reference:** XV-<case number>-<sequence>, given to a finding the first time it fails, in ranked order, and kept on every later run whatever its outcome.
+- **Run:** XR-<case number>-<run number>, with the rules that ran and the document types compared.
+- **Ranking:** severity, then the size of the gap in rupees (findings without an amount after those with one), then the configured order; within each area.
+
+### 11.6 Configuration changes
+
+| File | Change |
+|---|---|
+| `config/crosschecks.yaml` | `finding_title` on every rule (the finding in plain English); optional `policy_ref` (none yet); `enabled: false` on the eight rules above |
+| `config/document_types.yaml` | `provenance` on every type: declared (the RM's sourcing message, the declaration of existing facilities), independent (the commercial bureau report), borrower-supplied (the rest) |
+| `config/roles.yaml` | `finding.escalation` for the Credit Manager |
+| `engine/configstore/schema.py` | The three rule fields and `provenance`. Publishing requires `finding_title` and `provenance`; a version published earlier still reads (as none, and every rule enabled) |
+
+Published to the local data root on 9 October (titles and provenance; it also made the paused policy and approval-matrix configuration live) and on 11 October (the switch), each time followed by a re-run of every case.
+
+### 11.7 API and data
+
+| Item | Change |
+|---|---|
+| Endpoints | `GET /api/cases/{id}/cross-verification` (the board); `POST /api/cases/{id}/cross-verification/findings/{finding_id}/decision` (accept, dismiss, escalate); `POST /api/cases/{id}/cross-verification/findings/{finding_id}/query` (put an incomplete check's request on the query list) |
+| `Finding` | The card: `ref`, `finding_title`, `compares`, `policy_ref`, `columns` (`SourceColumn`, with `EvidenceRow` rows), `gaps` (`GapLeg`), `gap_tolerance`, `mismatch`, `reference`, `amount`, `request`. `FindingSide.sources` |
+| The board | `CrossVerificationView` (`run`, `areas`, `items`, `counts`, `blocked`, `first_blocking`, `top_finding_id`), `XvArea`, `XvItem`, `XvCounts`, `XvRun`, `XvDecision`, `XvDecisionRequest` |
+| `ReviewItem` | `escalated` |
+| Facts | `MonthFigure.gst_filed` (the return's filing date); `AccountCredits.by_month` (`AccountMonth`: credits, excluded and net by month) |
+| Database | Migration 7: `findings.card`, and the tables `finding_refs`, `crosscheck_runs` and `query_additions` (applied automatically; case delete removes their rows) |
+
+### 11.8 Code changes
+
+| Area | Files |
+|---|---|
+| The board | `engine/xv.py` (new: references, runs, the view, decisions, query additions) |
+| Cards | `engine/xv_cards/` (new: `identity.py`, `numbers.py`, `accounts.py`, `obligations.py`, `authority.py`). A card is built after the rule decides; a builder that fails leaves the plain sides and never stops the checks |
+| Checks | `engine/crosschecks.py`: the sources on every side, the card after each outcome, only enabled rules, references and the run recorded with the findings |
+| Elsewhere in the engine | `engine/facts.py` (filing dates, credits by month), `engine/queries.py` (requests from the board), `engine/review.py` (escalated findings), `engine/reads.py`, `engine/db.py`, `engine/api.py`, `engine/configstore/schema.py` |
+| Screen | `src/components/case/xv/` (new), `src/domain/crossVerification.ts` (new), `src/routes/appraisals.$caseId.cross-verification.tsx`, `src/routes/review.tsx`, `src/components/review/DecisionDialog.tsx` and `src/domain/review.ts` (the escalated finding's comment), `src/components/case/CrossVerification.tsx` (now the facts panels only), `src/api/client.ts`, `src/api/types.ts`, `terminology/rbl.yaml` |
+
+### 11.9 Tests
+
+| Test | What it covers |
+|---|---|
+| `tests/test_xv.py` (new) | References and runs; the view (areas, ranks within an area, the banner's target, the first card); decisions (comments, escalation, the Credit Manager); query additions; case delete; the card stored with the finding |
+| `tests/test_xv_cards_identity.py` (new) | Identity cards: one column per document or per group, the majority value and the difference in words, people and CIN particulars, same-type documents told apart |
+| `tests/test_xv_cards_numbers.py` (new) | Turnover cards: GST months with filing dates, bank credits by month and account with excluded credits, totals that reconcile with the figure, gaps that agree with the outcome, requests |
+| `tests/test_xv_cards_others.py` (new) | Bank-account, obligation and board-resolution cards: per-lender gaps, the difference in words, every row's page |
+| `tests/test_crosschecks_switch.py` (new) | A switched-off rule leaves no finding, review item, query, CAM or PD-note entry and blocks nothing; switching it back on restores all of it; a version published before the switch reads every rule as enabled |
+| Updated | `tests/conftest.py` (card errors fail tests; `all_rules_enabled` for the switched-off rules' own tests), `tests/test_api.py` (migration 7), `tests/test_config_catalogue.py` (26 rules, 18 enabled), the cross-check tests, `tests/triangulation.py` (documents filed in order past 100) |
+| `e2e/cross-verification-board.spec.ts` (new) | The header and the locked Continue, the banner and Adjudicate now, the overview cards, the sections, the card (columns, evidence, trace, gaps, the difference in words), decisions with comments, escalation, query additions, passed lists, facts, 1366 and 375 px without sideways scroll |
+| Updated screen tests | `e2e/cross-verification.spec.ts`, `e2e/workspace.spec.ts`, `e2e/navigation.spec.ts`, `e2e/admin.spec.ts`; the review queue's escalated finding needs a comment |
+
+Results on 11 October 2026:
+- **Python:** 533 passed, 2 skipped. One Windows-only failure: a folder-permissions test.
+- **Screen tests:** 96 of 97 passed. One Windows-only failure: the clipboard line-ending test.
+- **Typecheck, lint, build and import rules:** pass.
+- **Outcomes:** the 18 rules that run gave the same results as before the redesign on all six local cases.
+
+### 11.10 Known limits
+
+- **Same-type documents without a period.** Two documents of one type on a card are told apart by the period each covers; where extraction read none (as on two of the local cases), by page or position ("· 1 of 2").
+- **Owner.** Cases have no assigned analyst, so a card's owner is whoever decided or escalated it, else "not yet assigned".
+- **Policy references.** None configured until RBL supplies its policy.
+- **GST heading.** "3.1(a)+(b)+(c) outward supplies" is worded in the card builder; a test ties it to the configured rows.
+- **Copilot panel.** Not built; the layout leaves room for it.
+
+### 11.11 Changes on 12 October 2026
+
+**Key figures on the overview cards.** Each area card now shows up to three lines under its counts, from its findings: open discrepancies first, then decided ones, then checks that could not run, then passed ones. On Kestrel: the PAN AAACK1234F against the bureau's AAACK9999Z (marked); GST INR 12.00 cr against bank credits INR 9.00 cr, 25.0% apart (tolerance 10%); account ·5678 declared with no statement; Ashwood Finserv declared at INR 80.00 lakh against INR 95.00 lakh sanctioned, and Tidewater Finance not declared. A clean area shows what was confirmed ("same across 18 sources"); an incomplete one, what is missing. A line opens its check. Built by the card builders (`Finding.highlights`, `XvArea.highlights`); the screen computes nothing.
+
+**Fixes from the adversarial review** (four reviewers, each finding checked by a second agent trying to refute it):
+
+| Fix | Before | After |
+|---|---|---|
+| Escalations kept | An escalation was lost when its discrepancy stopped failing for one run (a value waiting for review), and the analyst could then decide it alone | Kept with the discrepancy (rule and scope, as its reference); it returns with the review item when the check fails again. Migration 8 adds `finding_escalations` |
+| A comment for every decision | The review queue accepted or dismissed a discrepancy without a comment unless it was escalated | Every decision on a discrepancy needs a comment of at least three characters, on the board and in the queue |
+| The query list follows the check | A request on the query list kept its first wording after the check's need narrowed | It asks for what the check needs now, and is resolved when the check completes or only waits for a review |
+| Escalation re-checked | Escalating could overwrite an escalation, or land on a discrepancy decided a moment before | Refused (409) when already escalated or decided, checked inside the write |
+| Requests for future periods | A turnover check of a year still running asked for returns and statements of months not yet passed | A check of a year not yet ended asks for nothing ("the year ends on 31 Mar 2027") |
+| Wording | A value a person typed on the case read "In the sourcing message"; a name ending in a full stop gave ".." | "Entered on the case"; one full stop |
+| OB-01 tolerance line | "Tolerance 5% — breached on … and Tidewater Finance Limited", though Tidewater was never measured against it | Lists only the legs measured as a percentage; the undeclared lender stays in the gap row |
+| Passed list | A screen-built "variance x%", without the tolerance | The engine's sentence ("Variance 1.7% within 10%.") |
+| Errors | Raw HTTP text; a refused decision left the board stale | Designed messages; the board reloads after any refusal |
+| Decision log | A repeated query addition logged twice; the two new actions had no wording | Logged once; worded in terminology |
+
+**Publishing re-runs every case.** `creditiq config publish` now re-runs every case's checks after publishing, so findings, review items, queries, the CAM and the PD note follow the new configuration at once (`--no-rerun` skips it).
+
+**Local store.** Migration 8 applied; every case re-run. The 18 rules' outcomes on the six local cases are unchanged.
+
+Results on 12 October 2026:
+- **Python:** 551 passed, 2 skipped. One Windows-only failure: a folder-permissions test.
+- **Screen tests:** 106 of 107 passed. One Windows-only failure: the clipboard line-ending test.
+- **Typecheck, lint, build and import rules:** pass.
+
+### 11.12 Later on 12 October 2026: the tax return, and the turnover figures
+
+**The income tax return's turnover against the other sources.** Three new rules, under Turnover:
+
+| ID | Check | Tolerance | Severity |
+|---|---|---|---|
+| TX-03 | Turnover in the income tax return against audited revenue | `turnover_variance` 10% | Moderate |
+| TX-04 | Turnover in the income tax return against GST outward supplies (all 12 returns needed) | 10% | Moderate |
+| TX-05 | Turnover in the income tax return against cleansed bank credits (all 12 months needed) | 10% | Moderate |
+
+- **How:** the turnover the return's computation shows (`config/statements.yaml` `itr_lines`) becomes a fifth turnover figure (`itr`) for the year the return covers, and each rule compares it with one other figure for that year exactly as TO-01 to TO-04 compare theirs.
+- **The returns set the years:** a return is filed after its year ends, so the latest year's figures usually have no return yet.
+- **Nothing to compare:** a return that shows no turnover, or another source that does not reach the return's year, is not applicable. A missing return is asked for only when the checklist expects one. Today no live case's return shows its turnover, so these rules are not applicable on them.
+
+**TX-01 and TX-02 back on**, shown under Turnover (`area: turnover`), so the board keeps its four areas. 29 rules are configured and 23 run; BR-01 to BR-04, FS-01 and FS-02 stay off.
+
+**Turnover figures stand out.** A closed card with amounts (the turnover checks, a lender's sanctioned amounts) shows its figures large under its title, the lower one in red, with how far apart they are; the overview cards show amounts larger.
+
+**Data and code.** `TurnoverSource` gains `itr` (contracts regenerated). `engine/facts.py` (the return's turnover figure), `engine/crosschecks.py` (`_itr_turnover`; the year comparison shared with TO-01 to TO-04, unchanged), `engine/configstore/schema.py` (three variables), `engine/xv_cards/numbers.py` (the return's column and key figures, and key figures for TX-01 and TX-02), `config/crosschecks.yaml`. Published to the local data root; every case re-ran.
+
+**Test applications.** The seed script now files an FY 2025-26 return showing its turnover for Kestrel (INR 11.90 cr: TX-03 and TX-04 pass, TX-05 fails at 24.4% against INR 9.00 cr banked) and Heronbay (matching figures: all pass); both were filed into the live applications. The rules that ran before give the same outcomes on all six cases; on Heronbay the identity checks count the new return as one more source.
+
+Results:
+- **Python:** 599 passed, 2 skipped. One Windows-only failure: a folder-permissions test.
+- **Screen tests:** 118 of 119 passed. One Windows-only failure: the clipboard line-ending test.
+- **New tests:** `tests/test_crosschecks_tax_turnover.py` (13): each new rule against its source, pass and fail; a part year incomplete; a return without turnover and a source not reaching its year not applicable; a missing return asked for; each year on its own; the card and its key figure; TX-01 and TX-02 under Turnover. Rule-count, area and switch tests updated (26/18 to 29/23).
+
+### 11.13 Later on 12 October 2026: names of people in full (ID-09)
+
+**Why.** The identity checks match people by similarity, so a name missing a part passes: "Tarun S. Velankar" and "Tarun Velankar" are about 93% alike, above `name_match` (0.85). That stays as it is. A new check shows the parts.
+
+| ID | Check | Documents | Severity |
+|---|---|---|---|
+| ID-09 | Names of people agree in full across documents | Director KYC, memorandum and articles, commercial bureau report | Mild, does not block |
+
+- **How:** each person named in two or more of those documents (grouped as ID-04 groups them, or by the same surname with the same first name or its initial) has each document's name split into first, middle and last name. Each split is compared with the fullest form of the name. A part is same, missing, only an initial, or different; the order of the words is not a difference, and honorifics are ignored. Any part not the same fails, and the query asks for each person's full name as on their PAN. The sourcing message is left out, as RMs often shorten names.
+- **People only.** Company names stay with ID-03.
+- **On the board:** the card shows each document's people split into first, middle and last name. The overview line names the person and what differs. In the line-by-line table, the part that differs is marked in red, and a part neither name has is a plain dash.
+- **ID-04, ID-06 and ID-08 are unchanged.** 30 rules are configured and 24 run (identity 9).
+- **ID-09 in the plan** was the state of registration (CoI address against the GSTIN state code). That was never built, and the ID is now this check.
+
+**Data and code.**
+- `engine/names.py` (`name_parts`, `compare_name_parts`, `same_by_parts`)
+- `engine/crosschecks.py` (`_person_names`; `_rows` takes the cells a row is flagged for)
+- `engine/contracts/appraisal.py`: `FindingDetailRow.flagged_cells`, default empty. Contracts were regenerated.
+- `engine/configstore/schema.py`: the variable `person_names`.
+- `engine/xv_cards/identity.py`: the card and the overview line.
+- `src/components/case/xv/LineByLine.tsx`: a flagged cell in red.
+- `config/crosschecks.yaml`.
+
+Published to the local data root; every case re-ran.
+
+**Test applications.** The seed script now has Kestrel's bureau report name its first director "Tarun S. Velankar"; the live application was changed the same way. ID-09 fails on Kestrel ("middle name missing in KYC received and Memorandum and articles of association") and passes on Heronbay. The other rules give the same outcomes on all six cases; on Kestrel, ID-04's bureau column shows the name as written.
+
+Results:
+- **Python:** 609 passed, 2 skipped (the full suite less the known Windows-only `test_f05` cases).
+- **Screen tests:** 119 of 120 passed; the one failure is the known Windows-only `e2e/tc16-query-list.spec.ts`.
+- **New tests:** `tests/test_crosschecks_names.py` (17): name parts compared one by one (missing, initial, different, words in another order, honorifics), a middle name missing, an initial found where similarity misses it, a surname spelt differently, the sourcing message left out, a person in one document only, nine identity rules. A screen test marks the differing part in the table. Rule-count tests updated (29/23 to 30/24).

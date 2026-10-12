@@ -7,6 +7,7 @@
 tenant:
   bank:
     name: RBL Bank
+    short: RBL
     unit: Business Banking Group
     emailDomain: rblbank.com
   brand:
@@ -94,6 +95,7 @@ outputs:
     summary:
       finding: "Findings ({n})"
       deviation: "Deviations from policy ({n})"
+      unassessed: "Norms not assessed ({n})"
       query: "Open queries ({n})"
   pd:
     title: Questions for the personal discussion
@@ -111,79 +113,160 @@ severity:
   moderate: Moderate
   mild: Mild
 
-# Cross-checks (F-19) and the facts behind them (F-18).
+# Shared by the aligned facts (F-18) and the policy norms (F-20).
 crossCheck:
-  title: Cross-checks
-  summary: "{rules} rules · {fail} finding(s) · {incomplete} incomplete · {pass} passed"
-  filter:
-    fail: "Findings ({n})"
-    incomplete: "Incomplete ({n})"
-    pass: "Passed ({n})"
-    not_applicable: "Not applicable ({n})"
-  noneHere: Nothing in this group.
-  emptyTitle: No checks yet
-  emptyDescription: The cross-checks run once documents have been read and their values extracted.
   morePages: "+{n} more"
   manual: Relies on a person's entry
-  tolerance: "Tolerance {tolerance}"
-  check: Check reference
-  allowedDifference: Allowed difference
-  valid: Valid
-  notValid: Not valid…
-  reason: Why the flag is not valid
-  saveNotValid: Record as not valid
-  decidedValid: "Accepted as valid by {who}."
-  decidedNotValid: "Found not valid by {who}: {reason}"
-  tile:
-    fail: Discrepancies
-    incomplete: Incomplete
-    pass: Sources agree
-    not_applicable: Not applicable
-  tileNote:
-    fail: "{blocking} blocking · {open} to decide"
-    incomplete: Waiting for a document or a review
-    pass: Checked and consistent
-    not_applicable: Nothing on file to compare
-  areasTitle: Where the file stands
-  areasHelp: Each area of the file, with what the checks found. Choose one to see only its checks.
+
+# The cross-verification board (F-19; the Cross-checks tab): an overview card per area checked,
+# then a section per area with its discrepancies ranked by credit impact, each with its sources
+# side by side, the gap on each leg and a decision; what could not be checked, what passed, and
+# the facts the checks compared.
+crossVerification:
+  kicker: "Appraisal {id} · Cross-verification"
+  summary:
+    none: Every source lined up against every other. No discrepancy found for this borrower.
+    one: Every source lined up against every other. One discrepancy found for this borrower, with its evidence attached and a decision required from you.
+    many: "Every source lined up against every other. {n} discrepancies found for this borrower, ranked by credit impact, each with its evidence attached and a decision required from you."
+    decidedOne: Every source lined up against every other. One discrepancy found for this borrower, decided and recorded.
+    decidedMany: "Every source lined up against every other. {n} discrepancies found for this borrower, each decided and recorded."
+    notRun: No checks have run yet for this borrower.
+  meta:
+    adjudicated: "{adjudicated} of {total} adjudicated"
+    run: "{id} · {rules} rules across {sources} sources · {at}"
+  # Keyed by the area the engine sends. The board shows the areas the enabled rules cover
+  # (identity, turnover, bank accounts, existing obligations); the others are worded for the day
+  # their rules are switched back on in configuration.
   area:
-    identity: Identity
-    authority: Borrowing authority
-    turnover: Turnover
-    tax: Income tax
-    financials: Financial statements
-    accounts: Bank accounts
-    obligations: Obligations
-  areaHelp:
-    identity: PAN, GSTIN, CIN, legal name and directors
-    authority: The board resolution against the request
-    turnover: Audited, GST and banked turnover
-    tax: Income tax returns against the books
-    financials: Year against year, and year-end bank balances
-    accounts: Declared and seen accounts have statements
-    obligations: Instalments and borrowings
-  areaState:
-    failOne: 1 discrepancy
-    fail: "{n} discrepancies"
-    incomplete: "{n} incomplete"
-    pass: "{n} agree"
-    none: No checks apply yet
-  showingArea: "Showing {area} only."
-  allAreas: Show all areas
-  source: Source
-  value: Value
-  pages: Pages
-  differs: Differs
-  awaitingReview: Waiting for review
-  reviewValue: Review
-  notOnFile: Not on file
-  addDocuments: Add documents
-  compare: Compare side by side
+    identity:
+      title: Identity consistency
+      purpose: PAN, GSTIN, CIN, name and directors agree across every document.
+    turnover:
+      title: Turnover
+      purpose: Audited, GST, banked and declared turnover agree within tolerance.
+    accounts:
+      title: Bank accounts
+      purpose: Every declared account has a statement; every account on file was declared.
+    obligations:
+      title: Existing obligations
+      purpose: Declared facilities agree with sanction letters, the bureau and the bank.
+    authority:
+      title: Borrowing authority
+      purpose: The board resolution covers the borrowing, from this bank, by its directors.
+    tax:
+      title: Income tax
+      purpose: Each audited year has its income tax return, and its profit agrees with the books.
+    financials:
+      title: Financial statements
+      purpose: Each year's statements agree with the previous audit and the bank balances.
+  overview:
+    label: The areas checked
+  status:
+    open: Open discrepancies
+    decided: Every discrepancy decided
+    incomplete: Some checks could not run
+    clear: Everything checked agrees
+  areaCard:
+    openOne: open discrepancy
+    openMany: open discrepancies
+    blocking: Blocking
+    decided: "{adjudicated} of {total} decided"
+    noDiscrepancy: No discrepancy
+    allDecided: Every discrepancy decided
+    keyFigures: Key figures
+  count:
+    serious: "{n} serious"
+    moderate: "{n} moderate"
+    mild: "{n} mild"
+    ruleOne: 1 rule
+    ruleMany: "{n} rules"
+    discrepancyOne: 1 discrepancy
+    discrepancyMany: "{n} discrepancies"
+    incomplete: "{n} could not be checked"
+    passed: "{n} passed"
+    notApplicable: "{n} not applicable"
+  section:
+    none: No discrepancy in this area.
+  emptyTitle: No checks yet
+  emptyDescription: The cross-checks run once documents have been read and their values extracted.
+  header:
+    spread: Spread
+    queue: Exception queue
+    continue: Continue to draft
+    continueBlocked: Submission is blocked until every blocking discrepancy is accepted or dismissed.
+  banner:
+    seriousOne: Submission blocked — 1 serious discrepancy unadjudicated
+    seriousMany: "Submission blocked — {n} serious discrepancies unadjudicated"
+    blockingOne: Submission blocked — 1 blocking discrepancy unadjudicated
+    blockingMany: "Submission blocked — {n} blocking discrepancies unadjudicated"
+    adjudicateNow: Adjudicate now
+  card:
+    blocksSubmission: Blocks submission
+    ruleLine: "Rule {rule} — {compares}, tolerance {tolerance} · owner {owner}"
+    ruleLineNoTolerance: "Rule {rule} — {compares} · owner {owner}"
+    compare: Compare the pages side by side
+  ownerUnassigned: not yet assigned
+  decided:
+    accept: Accepted
+    dismiss: Dismissed
+    escalate: Escalated
+  column:
+    openEvidence: Open the evidence
+    hideEvidence: Hide the evidence
+    trace: Trace to the source
+    differs: Differs
+    manual: Relies on a person's entry
+    awaitingReview: Waiting for review
+    reviewHint: Open the value at its page, to confirm or correct it.
+  provenance:
+    declared: Declared
+    borrower_supplied: Borrower-supplied
+    independent: Independent
+  gap:
+    pctOf: "{pct}% of {base}"
+    pct: "{pct}%"
+    tolerance: "{bank} tolerance"
+    breachedOn: "{tolerance} — breached on {legs}"
+  join: "{head} and {last}"
+  evidence:
+    excluded: Excluded from the count
+    page: "p{page}"
+    pageLabel: Page
+    openPage: "Open page {page}"
+    close: Close
   lineByLine: "Line by line ({n})"
-  sources: "Sources compared ({n})"
+  decision:
+    title: Adjudicate — a decision is required on every discrepancy
+    accept: Accept
+    acceptHelp: A valid finding; it stays on the query list
+    dismiss: Dismiss
+    dismissHelp: Not a valid finding
+    escalate: Escalate
+    escalateHelp: Hand to the Credit Manager; stays open and blocking
+    comment: Comment, recorded with the appraisal
+    commentPlaceholder: What you concluded, and on what evidence
+    commentHint: A comment of at least 3 characters is required.
+    save: Record decision
+    by: "{name} · {at}"
+    escalatedBy: "Escalated to the Credit Manager by {name} · {at}"
+    waitingForManager: Waiting for the Credit Manager
+    readOnly: Waiting for a reviewer's decision.
+    noComment: No comment was recorded with this decision.
+  incomplete:
+    title: "Could not be checked ({n})"
+    note: Each check says what would complete it
+    request: "To complete it, provide {request}."
+    addToQueryList: Add to query list
+    onQueryList: On the query list
+    addDocuments: Add documents
+  passed:
+    title: "Passed ({n})"
+    notApplicableCount: "Not applicable ({n})"
+    notApplicable: Not applicable
+  facts:
+    title: Facts behind these checks
 
 facts:
-  title: Aligned facts
   purpose: What the checks compared, each with the pages it came from.
   turnover: Turnover by financial year
   turnoverHelp: Audited statements, GST returns, business credits in the bank and the declared figure.
@@ -214,49 +297,140 @@ facts:
   person: Person
   din: DIN
   pan: PAN
-  authority: Board resolution
-  authorityHelp: What the board resolution authorises, against the request.
-  borrowingLimit: Borrowing limit
-  amountRequested: Amount requested
-  lender: Lender
-  resolutionDate: Dated
-  signatories: Authorised signatories
-  noResolution: No board resolution on file yet.
-  tax: Income tax and the books
-  taxHelp: Each financial year with its audited figures and its income tax return.
-  year: Year
-  revenue: Revenue
-  profitBeforeTax: Profit before tax
-  returnProfit: Profit in the return
-  returnFiled: Return
 
-# Policy norms and deviations (F-20).
+# Policy norms and deviations (F-20): the Policy checks tab, an overview card per family of norms
+# and one for the approving authority, then a section per family with its norms, then the
+# authority with the matrix's steps.
 policy:
-  title: Norms
-  summary: "{n} norms · {deviation} deviation(s) · {cannot} cannot be evaluated · {pass} passed"
-  deviations: "{n} deviation(s) from policy"
-  noDeviations: No deviation from the norms assessed.
-  period: "Financial figures from the audited statements for {period}."
+  kicker: "Appraisal {id} · Policy checks"
+  provisionalNorms: provisional norms
   required: Required
   actual: Actual
   rank: "rank {n}"
+  unit:
+    dayOne: 1 day
+    days: "{n} days"
+    yearOne: 1 year
+    years: "{n} years"
   provisional: Provisional norm
   missing: "Cannot evaluate: {inputs} not on file."
   howCalculated: How it is calculated
+  unbounded: Unbounded
+  awaitingReview: Awaiting review
+  definition: Definition
+  note: Note
+  interimNotice: These norms are interim proposals until RBL's own policy norms are supplied.
+  emptyTitle: No norms evaluated yet
+  emptyDescription: The policy norms are evaluated once the documents have been read and their values extracted.
+  count:
+    deviationOne: 1 deviation
+    deviationMany: "{n} deviations"
+    cannotEvaluate: "{n} cannot be evaluated"
+    passed: "{n} passed"
+    notApplicable: "{n} not applicable"
+    normOne: 1 norm
+    normMany: "{n} norms"
+  overview:
+    label: Policy checks at a glance
+  # Where a family stands, as the engine sends it.
+  status:
+    deviation: A norm deviates
+    cannot_evaluate: A norm cannot be evaluated
+    clear: Every norm met
+    no_norms: No norm yet
+  card:
+    deviationOne: deviation
+    deviationMany: deviations
+    noNorms: No norm yet
+    keyFigures: Key norms
+    missing: "{inputs} not on file"
+    reason:
+      zero_denominator: "{inputs} is zero"
+      denominator_not_positive: "{inputs} is zero or negative"
+      awaiting_review: "Waiting for review of {inputs}"
+  # The approving authority's card on the overview.
+  authorityCard:
+    purpose: Who must approve the case under the approval matrix.
+    named: "{authority} (level {level})"
+    atLeast: At least
+    couldRise: "Would rise to {authority} (level {level}) if {norms} deviated"
+    wouldNotRise: "Would not rise even if {norms} deviated"
+    amount: "Amount: {authorities}"
+    deviations: "Deviations: {steps}"
+    noDeviation: No deviation raises it
+    step: "{category} {effect}"
+    levelOne: +1 level
+    levelMany: "+{n} levels"
+    atLeastStep: "at least {authority}"
+    capped: capped
+    notPublished: No approval matrix published yet
+    cannotDetermine: Cannot be determined
+    failed: Could not be loaded
+  authorityPurpose: The amount band for each product requested, raised by the categories of the deviations; the step that decides is marked.
+  reason:
+    zero_denominator: "Cannot evaluate: {inputs} is zero."
+    denominator_not_positive: "{inputs} is zero or negative: the ratio has no meaningful value."
+    awaiting_review: "Cannot evaluate until {inputs} is reviewed."
+  basis:
+    case: From the case header
+    checklist: Open blocking checklist items
+    statements_coverage: No instalment debits in the bank statements on file
+    not_requested: No term loan requested
+  # A family with no norm: on its card, and in its section.
+  noNorms:
+    eligibility: No eligibility norm can be evaluated yet.
+    ratios: No financial-ratio norm can be evaluated yet.
+    documentation: No documentation norm can be evaluated yet.
+    security_cover: No security-cover norm can be evaluated yet.
+  familyPending:
+    eligibility: No eligibility norm is configured.
+    ratios: No financial-ratio norm is configured.
+    documentation: No documentation norm is configured.
+    security_cover: "No security-cover norm can be evaluated: no valuation report is among the document types in scope."
   outcome:
+    pass: Passed
+    deviation: Deviation
     cannot_evaluate: Cannot evaluate
     not_applicable: Not applicable
-  filter:
-    all: "All ({n})"
-    deviation: "Deviations ({n})"
-    cannot_evaluate: "Cannot evaluate ({n})"
-    pass: "Passed ({n})"
-    not_applicable: "Not applicable ({n})"
   family:
     eligibility: Eligibility
     ratios: Financial ratios
     security_cover: Security cover
     documentation: Documentation
+  familyPurpose:
+    eligibility: Whether the borrower qualifies for the loan at all.
+    ratios: Liquidity, leverage, debt service and the working-capital cycle.
+    documentation: The documents the policy requires on file.
+    security_cover: Collateral cover against the amount requested.
+
+# Who must approve the case under the approval and delegation matrix (FRD F-21).
+approvingAuthority:
+  title: Approving authority
+  required: "Required: {authority}"
+  level: "Level {n}"
+  provisional: Provisional matrix
+  basis: "{amount} requested · {products}"
+  how: How this was decided
+  step:
+    amount: "{product}: {amount} is {band}, so {authority}"
+    deviation: "{category} deviation ({norms}): {effect}, so {authority}"
+  band:
+    upTo: "up to {to}"
+    between: "above {from} and up to {to}"
+    above: "above {from}"
+  effect:
+    levels: "{n} level(s) above the amount authority"
+    atLeast: "at least {authority}"
+    levelsAtLeast: "{n} level(s) above the amount authority, and at least {authority}"
+  capped: capped at the highest authority
+  governs: Decides
+  lowerBound: "{n} norm(s) could not be evaluated ({norms}). If they are deviations, the matrix would require {authority}."
+  lowerBoundSame: "{n} norm(s) could not be evaluated ({norms}); as deviations they would not change the authority."
+  cannotDetermine:
+    no_product: "The authority cannot be determined: no product in the matrix covers {facilities}."
+  notPublished: The approval matrix is not part of the published configuration.
+  awaitingMatrix: Waiting for RBL's approval and delegation matrix.
+  compare: Compared with RBL's record on the Comparison tab
 
 # Extracted data by kind of document (FRD §6).
 fieldSection:
@@ -407,10 +581,8 @@ page:
     purpose: The financial statements laid out by year, with ratios and the working-capital assessment, every figure traceable to its page.
   crossVerification:
     title: Cross-verification and discrepancy
-    purpose: Every source lined up against every other, with the evidence on both sides of each finding.
   policy:
-    title: Policy norms and deviations
-    purpose: RBL's norms evaluated for this case, and each deviation with the norm, the actual value and its source.
+    title: Policy norms and approving authority
   draft:
     title: CAM draft and PD note
     purpose: The draft Credit Approval Memo, and the questions for the personal discussion, every statement traceable to its page.
@@ -600,6 +772,7 @@ proposalField:
   declared_turnover_inr: Declared turnover (INR)
   existing_banking: Existing banking
   contact: Contact
+  proposed_emi_inr: Proposed monthly instalment on the term loan (INR)
 
 proposedStatus:
   found: Found
@@ -686,6 +859,11 @@ audit:
     processing_run: Ran document processing
     processing_reextract: Read a document again
     review_decided: Decided a review item
+    reference_imported: Imported RBL's record
+    reference_confirmed: Confirmed RBL's record
+    comparison_adjudicated: Decided a comparison item
+    finding_escalated: Escalated a discrepancy to the Credit Manager
+    finding_query_added: Put a request on the query list
 
 admin:
   config:
@@ -701,6 +879,7 @@ admin:
     first: First version.
     changed: "{n} section(s) changed: {sections}"
   section:
+    approval_matrix: approval matrix
     policy: policy norms
     checklist_taxonomy: checklist
     document_types: document types
@@ -774,6 +953,7 @@ admin:
     manual_make: Enter values by hand
     manual_check: Check values entered by hand
     comparison_adjudicate: Decide comparisons
+    finding_escalation: Decide escalated cross-check discrepancies
     scorecard_read: See the scorecard
     audit_read: See the audit trail
     config_read: See administration
@@ -1151,6 +1331,8 @@ review:
   correctValue: Corrected value
   reasonRequired: Reason (required)
   reasonOptional: Reason (optional)
+  commentFinding: Comment (required)
+  commentFindingHint: Every decision on a discrepancy is recorded with a comment of at least 3 characters, whether it is confirmed or waived.
   overlayNote: The decision is recorded with your name and reason. The system value is kept beside it.
   record: Record decision
   manualEntry: Enter manually
@@ -1188,6 +1370,8 @@ exceptions:
   decide: Decide
   view: View
   none: Nothing is waiting here. Every item has a decision.
+  escalated: Escalated
+  waitingForManager: Waiting for the Credit Manager
 
 # Comparison with RBL's record (FRD F-25).
 comparisonStatus:
@@ -1199,3 +1383,60 @@ comparisonStatus:
 adjudication:
   valid: Valid
   notValid: Not valid
+
+comparison:
+  counts: "Agree {agree} · Differ {differ} · New {new} · Missed {missed}"
+  countsDeviations: "Deviations: Agree {agree} · Differ {differ} · New {new} · Missed {missed}"
+  area:
+    deviations: Deviations
+    approving_authority: Approving authority
+  column:
+    item: Item
+    creditiq: CreditIQ
+    record: RBL record
+    status: Status
+  record:
+    waiting: RBL's record for this appraisal has not been imported yet.
+    imported: "Record imported from {workbook} on {date}"
+    confirm: Confirm the record
+    confirmed: "Confirmed by {name} on {date}"
+    unconfirmed: Not yet confirmed by the reviewer
+    selfConfirm: The record must be confirmed by someone other than who imported it.
+    where: Where in the record
+    noneRecorded: RBL's record shows no deviations
+  reason: Reason
+  reasonRequired: A reason is required.
+  save: Save decision
+  cancel: Cancel
+  change: Change decision
+  decided: "{verdict} · {name} · {date}"
+  stale: "CreditIQ's result or the record has changed since this decision; decide again."
+  overlayNote: Decisions are recorded beside the output and never change it.
+  provisionalNorms: "Norms are interim proposals: agreement is indicative until RBL's norms are published."
+  notScored: Not scored while the approval matrix is provisional.
+  score:
+    found: "{found} of {total} deviations in RBL's record found"
+    upheld: "{valid} of {total} CreditIQ deviations upheld ({pending} awaiting a decision)"
+    authority: "Recorded approval agrees with the matrix: {valid} of {total} ({pending} awaiting a decision)"
+  note:
+    value_differs: "Value differs: {creditiq} against {record}"
+    category_differs: "Category differs: {creditiq} against {record}"
+    pass: "CreditIQ assessed it as passed: {actual} against {required}"
+    cannot_evaluate: "CreditIQ could not evaluate it: {inputs}"
+    not_applicable: The norm does not apply to the facilities requested.
+    no_norm: No norm in the policy covers this deviation.
+    lower: The recorded approval is below the required authority.
+    higher: The recorded approval is above the required authority.
+    not_in_matrix: The recorded authority is not in the approval matrix.
+    cannot_determine: The required authority could not be determined.
+  authority:
+    ruleApplied: "Rule applied: {rule}"
+    onRecord: "On RBL's recorded deviations, the matrix requires {authority}."
+  otherAreas: Classification, key fields, discrepancies, queries and decision are compared once their sheets are imported.
+  filter:
+    all: "All ({n})"
+    toAdjudicate: "To decide ({n})"
+    agree: "Agree ({n})"
+    differ: "Differ ({n})"
+    new: "New ({n})"
+    missed: "Missed ({n})"

@@ -1,0 +1,117 @@
+import type { UseQueryResult } from "@tanstack/react-query";
+import type { ApprovingAuthority, PolicyAssessment } from "@/api/types";
+import { QueryView } from "@/components/common/States";
+import { EmptyState } from "@/components/shell/EmptyState";
+import { t } from "@/config/terminology";
+import {
+  AUTHORITY_HEADING_ID,
+  AUTHORITY_SECTION_ID,
+  familyNorms,
+  groupHeadingId,
+  groupSectionId,
+  groupsOf,
+  openNorm,
+  openSection,
+  useApprovingAuthority,
+  usePolicy,
+} from "@/domain/policy";
+import { AuthoritySection } from "./AuthoritySection";
+import { GroupSection } from "./GroupSection";
+import { PolicyHeader } from "./PolicyHeader";
+import { PolicyOverview } from "./PolicyOverview";
+
+// The Policy checks tab (FRD §6, F-20, F-21): every norm with the required and the actual value,
+// the figures it used with their pages, and whether it passed, deviated or cannot be evaluated;
+// and the approving authority those deviations call for. An overview card per family of norms
+// (eligibility, financial ratios, documentation, security cover: the engine's groups, in its
+// order) says where it stands, with its counts and up to three norms the engine picked; one more
+// card says who must approve. A section per family holds its norms; the last holds the authority
+// with every step of the matrix that applied. The engine evaluates, counts and groups; the page
+// shows its assessment as given and never recounts it. The deviations, by category, are what the
+// CAM summarises (F-20.4).
+//
+// Test ids (data-testid):
+//   policy-page                 the tab
+//   policy-header               the tab's header: policy-summary-line (the engine's counts, the
+//                               period, provisional norms) and policy-interim (the norms are
+//                               interim proposals)
+//   policy-overview             the cards: policy-group-card-<family> each (data-status
+//                               deviation|cannot_evaluate|clear|no_norms), opening its section from
+//                               policy-group-open-section (a button whose surface covers the card),
+//                               with policy-group-deviations, policy-group-others (cannot be
+//                               evaluated, passed, not applicable), policy-group-none and
+//                               policy-group-pending (a family with no norm), and the engine's key
+//                               norms policy-group-highlights: a policy-highlight button each
+//                               (data-norm, data-outcome; opens the norm's row) with
+//                               policy-highlight-label, policy-highlight-fact (its
+//                               policy-highlight-value and policy-highlight-required) and
+//                               policy-highlight-note (what is missing)
+//   policy-authority-card       the authority's card (data-status determined|cannot_determine|
+//                               not_published|error|loading), opening its section from
+//                               policy-authority-open-section, with policy-authority-provisional,
+//                               policy-authority-required, policy-authority-level,
+//                               policy-authority-at-least, policy-authority-rise (data-rises),
+//                               policy-authority-amount, policy-authority-deviations and
+//                               policy-authority-unavailable
+//   policy-group-<family>       a family's section (also its element id; data-status), headed by
+//                               the family's title (focused when its card is clicked) and
+//                               policy-group-counts; then policy-norms (or family-pending)
+//   norm                        a norm's row (data-norm, data-outcome; element id
+//                               policy-norm-<id>): norm-actual, norm-reason, norm-missing,
+//                               norm-input (norm-input-checklist, norm-input-basis,
+//                               norm-input-awaiting), norm-details (norm-definition, norm-note)
+//   policy-authority            the authority's section: approving-authority (authority-required,
+//                               authority-provisional, authority-lower-bound, authority-how with an
+//                               authority-step each and its authority-norm links,
+//                               authority-compare) or authority-not-published
+
+export function PolicyPage({ caseId }: { caseId: string }) {
+  const policy = usePolicy(caseId);
+  const authority = useApprovingAuthority(caseId);
+  return (
+    <div className="min-w-0 pb-10" data-testid="policy-page">
+      <PolicyHeader caseId={caseId} policy={policy.data} />
+      <div className="min-w-0 space-y-6 px-4 py-5 sm:px-6">
+        <QueryView query={policy}>
+          {(p) => <PolicyBody caseId={caseId} policy={p} authority={authority} />}
+        </QueryView>
+      </div>
+    </div>
+  );
+}
+
+function PolicyBody({
+  caseId,
+  policy,
+  authority,
+}: {
+  caseId: string;
+  policy: PolicyAssessment;
+  authority: UseQueryResult<ApprovingAuthority>;
+}) {
+  if (policy.norms.length === 0) {
+    return <EmptyState title={t("policy.emptyTitle")} description={t("policy.emptyDescription")} />;
+  }
+  return (
+    <>
+      <PolicyOverview
+        policy={policy}
+        authority={authority}
+        onOpenGroup={(group) =>
+          openSection(groupSectionId(group.family), groupHeadingId(group.family))
+        }
+        onOpenAuthority={() => openSection(AUTHORITY_SECTION_ID, AUTHORITY_HEADING_ID)}
+        onOpenNorm={openNorm}
+      />
+      {groupsOf(policy).map((group) => (
+        <GroupSection
+          key={group.family}
+          caseId={caseId}
+          group={group}
+          norms={familyNorms(policy, group.family)}
+        />
+      ))}
+      <AuthoritySection caseId={caseId} query={authority} />
+    </>
+  );
+}

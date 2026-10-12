@@ -19,9 +19,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from python_multipart.exceptions import MultipartParseError
 
 from . import (
+    approval,
     auth,
     cam,
     cases,
+    comparison,
     db,
     facts,
     jobs,
@@ -34,14 +36,25 @@ from . import (
     proposal,
     queries,
     reads,
+    reference,
     review,
     spread,
     uploads,
+    xv,
 )
 from .config import load_app_config, load_roles_config, option_ids, role_label, find_user_by_id
 from .configstore import reader as configstore_reader
-from .configstore.schema import ChecklistTaxonomySection, DocumentTypesSection, PolicySection
+from .configstore.schema import ApprovalMatrixSection, ChecklistTaxonomySection, DocumentTypesSection, PolicySection
 from .contracts import (
+    CrossVerificationView,
+    XvDecisionRequest,
+    XvItem,
+    AdjudicationRequest,
+    ApprovingAuthority,
+    CaseComparison,
+    ComparisonArea,
+    ComparisonItem,
+    ReferenceRecord,
     AuditPage,
     ConfigVersion,
     DirectoryUser,
@@ -323,6 +336,115 @@ def case_policy(
         raise HTTPException(status_code=503, detail=str(e)) from e
 
 
+@app.get("/api/cases/{case_id}/cross-verification", response_model=CrossVerificationView)
+def case_cross_verification(
+    case_id: str, user: dict = Depends(require("finding.read")), conn: sqlite3.Connection = Depends(get_conn)
+):
+    """F-19: the cross-verification board: every finding of the latest run, the discrepancies ranked
+    by credit impact with their sources side by side, and whether submission is blocked."""
+    case = _case_for(conn, case_id, user)
+    try:
+        return xv.view(conn, data_root(), case)
+    except configstore_reader.NoPublishedConfig as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+
+
+@app.post("/api/cases/{case_id}/cross-verification/findings/{finding_id}/decision", response_model=XvItem)
+def decide_cross_verification(
+    case_id: str,
+    finding_id: str,
+    body: XvDecisionRequest,
+    user: dict = Depends(require("review.decide")),
+    conn: sqlite3.Connection = Depends(get_conn),
+):
+    """F-19, F-17.4: accept, dismiss or escalate a discrepancy, with a comment."""
+    case = _case_for(conn, case_id, user)
+    try:
+        return xv.decide(conn, data_root(), case, finding_id, body, user)
+    except xv.XvError as e:
+        raise HTTPException(status_code=e.status, detail=str(e)) from e
+    except configstore_reader.NoPublishedConfig as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+
+
+@app.post("/api/cases/{case_id}/cross-verification/findings/{finding_id}/query", response_model=XvItem)
+def query_cross_verification(
+    case_id: str,
+    finding_id: str,
+    user: dict = Depends(require("review.decide")),
+    conn: sqlite3.Connection = Depends(get_conn),
+):
+    """F-14: put what would complete a check that could not run on the pre-login query list."""
+    case = _case_for(conn, case_id, user)
+    try:
+        return xv.add_query(conn, data_root(), case, finding_id, user)
+    except xv.XvError as e:
+        raise HTTPException(status_code=e.status, detail=str(e)) from e
+    except configstore_reader.NoPublishedConfig as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+
+
+@app.get("/api/cases/{case_id}/approving-authority", response_model=ApprovingAuthority)
+def case_approving_authority(
+    case_id: str, user: dict = Depends(require("finding.read")), conn: sqlite3.Connection = Depends(get_conn)
+):
+    """F-21: the authority the case needs under the published matrix, and the rules that set it."""
+    case = _case_for(conn, case_id, user)
+    try:
+        return approval.required(conn, data_root(), case)
+    except configstore_reader.NoPublishedConfig as e:
+        raise HTTPException(status_code=503, detail="approval matrix not published") from e
+
+
+@app.get("/api/cases/{case_id}/comparison", response_model=CaseComparison)
+def case_comparison(
+    case_id: str, user: dict = Depends(require("comparison.adjudicate")), conn: sqlite3.Connection = Depends(get_conn)
+):
+    """F-25: CreditIQ against RBL's confirmed reference record, deviations and approving authority."""
+    case = _case_for(conn, case_id, user)
+    try:
+        return comparison.compare(conn, data_root(), case)
+    except configstore_reader.NoPublishedConfig as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+
+
+@app.post("/api/cases/{case_id}/reference/confirm", response_model=ReferenceRecord)
+def confirm_reference(
+    case_id: str, user: dict = Depends(require("comparison.adjudicate")), conn: sqlite3.Connection = Depends(get_conn)
+):
+    """F-25.1: the RBL reviewer confirms the imported record (never the person who imported it)."""
+    _case_for(conn, case_id, user)
+    try:
+        return reference.confirm(conn, case_id, user)
+    except reference.NotFound as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except reference.Conflict as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+
+
+@app.put("/api/cases/{case_id}/comparison/{area}/{key}/adjudication", response_model=ComparisonItem)
+def adjudicate_comparison_item(
+    case_id: str,
+    area: ComparisonArea,
+    key: str,
+    body: AdjudicationRequest,
+    user: dict = Depends(require("comparison.adjudicate")),
+    conn: sqlite3.Connection = Depends(get_conn),
+):
+    """F-25.4: the reviewer's verdict on a difference or a new deviation, with a reason."""
+    case = _case_for(conn, case_id, user)
+    try:
+        return comparison.adjudicate(conn, data_root(), case, area, key, body, user)
+    except comparison.Invalid as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    except comparison.NotFound as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except comparison.Conflict as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    except configstore_reader.NoPublishedConfig as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+
+
 @app.get("/api/cases/{case_id}/spread", response_model=Spread)
 def case_spread(
     case_id: str, user: dict = Depends(require("output.read")), conn: sqlite3.Connection = Depends(get_conn)
@@ -551,10 +673,12 @@ def audit_trail(
     action: str | None = None,
     before: int | None = None,
     limit: int = 100,
-    _: dict = Depends(require("audit.read")),
+    user: dict = Depends(require("audit.read")),
     conn: sqlite3.Connection = Depends(get_conn),
 ):
-    """The append-only decision log, newest first, filtered and paged."""
+    """The append-only decision log, newest first, filtered and paged. RBL's reference record
+    and the reviewer's decisions on it are for the reviewer only (F-25): anyone else sees that
+    the import, confirmation or decision happened, never what it said."""
     limit = max(1, min(limit, 500))
     where, args = [], []
     for column, value in (("case_id", case_id), ("actor", actor), ("action", action)):
@@ -575,7 +699,11 @@ def audit_trail(
         user = find_user_by_id(actor_id)
         return user["name"] if user else actor_id
 
-    def detail(raw: str) -> dict:
+    reviewer = "comparison.adjudicate" in user["permissions"]
+
+    def detail(raw: str, action: str) -> dict:
+        if not reviewer and action.startswith(("reference.", "comparison.")):
+            return {}
         try:
             value = json.loads(raw)
         except ValueError:
@@ -591,7 +719,7 @@ def audit_trail(
                 "actor_name": name(r["actor"]),
                 "case_id": r["case_id"],
                 "action": r["action"],
-                "detail": detail(r["detail"]),
+                "detail": detail(r["detail"], r["action"]),
             }
             for r in page
         ],
@@ -604,6 +732,11 @@ def audit_trail(
 @app.get("/api/config/policy", response_model=PolicySection)
 def config_policy(_: dict = Depends(current_user)):
     return _config(configstore_reader.load_policy)
+
+
+@app.get("/api/config/approval-matrix", response_model=ApprovalMatrixSection)
+def config_approval_matrix(_: dict = Depends(require("config.read"))):
+    return _config(configstore_reader.load_approval_matrix)
 
 
 @app.get("/api/config/checklist-taxonomy", response_model=ChecklistTaxonomySection)

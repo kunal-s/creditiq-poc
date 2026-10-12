@@ -27,6 +27,33 @@ variants, are configuration (`config/ingestion/quality.yaml`, `fields.yaml`).
 - Case reset and purge (F-01.5).
 - Whether RBL wants the declaration of existing facilities and the sanction letters on the checklist when existing facilities are declared: the `existing_facilities_declared` attribute exists but is never set. Today the cross-checks reconcile them (OB-01) without asking for them.
 
+Policy norms, approving authority and the comparison (F-20, F-21, F-25), deferred on 8 October 2026:
+
+- Security-cover norms (F-20.1): need valuation-report and stock-statement document types. Until then the Policy tab says no security-cover norm can be evaluated, and a test pins that state.
+- Business vintage for partnerships and proprietorships: a registration-date source (Udyam or GST registration). EL-01 applies to companies only today.
+- TNW and TOL composition: intangibles, deferred tax, other non-current liabilities, and a configurable deferred-tax treatment, once RBL defines its TNW.
+- The working-capital cycle on a cost-of-sales basis (FR-06 uses revenue; its note says so on screen).
+- Per-facility amounts on the case, for EL-05, the spread and the approval matrix (both use the total requested today).
+- An MPBF norm for requests above INR 5 cr (EL-05 applies under the turnover method only).
+- RBL's DSCR definition, for example adding back interest on term debt (FR-03 uses a conservative interim expression).
+- Disagreeing copies of the same year's statements (F-08.5): a finding rather than the first copy read.
+- A proposed norm on overdue facilities in the bureau report.
+- A snapshot of the deviations for each processing run (the assessment, authority and comparison carry the configuration version today).
+- The other five F-25.1 areas: classification, key fields, discrepancies, queries and decision (their sheets are accepted and reported as not compared yet).
+- The F-26 scorecard and test log (the comparison already returns the area scores it needs).
+- RBL's approval and delegation matrix and policy norms: publish them with `creditiq config publish --private-config workflow/private/config`, re-run every case, and score TC-27.
+- OB-02 (undeclared instalments) still matches a bank narration to a declared lender on the first significant word, so debits to "Indian Overseas Bank" pass as the declared "Indian Bank". FR-03 now matches on the resolved name, or on an abbreviation only when the instalment agrees (`engine/policy.py` `_pays`); give OB-02 the same rule.
+- `creditiq config diff` lists the published document-processing sections as removed, because it compares the engine's authored sections only.
+
+The cross-verification board (F-19.7 to F-19.9), deferred on 11 October 2026:
+
+- Policy references for each rule (`policy_ref` in `config/crosschecks.yaml`) from RBL's credit policy; the card and the banner show them once set.
+- An assigned analyst per case, so a card's owner is the case's analyst rather than whoever decided or escalated it ("not yet assigned" until then).
+- The Copilot panel beside the board; the layout leaves room for it.
+- Periods for documents whose period extraction could not read, so two documents of one type show their years on a card rather than "· 1 of 2".
+- The GST rows' heading derived from the configured rows of table 3.1 (worded today, "3.1(a)+(b)+(c) outward supplies"; a test ties the wording to the configuration).
+- The switched-off rules (BR-01 to BR-04, TX-01, TX-02, FS-01, FS-02): switch them back on if RBL wants them, and decide which board area shows them.
+
 ## Document-processing service (`services/ingestion`)
 
 - Run the OpenAI adapter against the live API and confirm the model id (`config/ingestion/llm.yaml`); record the answers for the reference set.

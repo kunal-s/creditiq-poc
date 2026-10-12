@@ -6,6 +6,7 @@ export const PROPOSAL_FIELDS = [
   "constitution",
   "facilities",
   "amount_inr",
+  "proposed_emi_inr",
   "pan",
   "gstin",
   "cin",
@@ -42,7 +43,7 @@ export function normalise(field: string, raw: string | null, meta: Meta | undefi
       .filter((id): id is string => Boolean(id));
     return Array.from(new Set(ids)).join(",");
   }
-  if (field === "amount_inr" || field === "declared_turnover_inr") {
+  if (field === "amount_inr" || field === "declared_turnover_inr" || field === "proposed_emi_inr") {
     const digits = raw.replace(/[^\d]/g, "");
     return digits;
   }

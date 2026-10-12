@@ -274,7 +274,7 @@ export function CamView({ caseId }: { caseId: string }) {
             <h3 className="text-[14px] font-semibold">
               {m.sections.length + 1}. {m.summary_title}
             </h3>
-            {(["finding", "deviation", "query"] as const).map((kind) => {
+            {(["finding", "deviation", "unassessed", "query"] as const).map((kind) => {
               const items = m.summary.filter((i) => i.kind === kind);
               if (items.length === 0) return null;
               return (
@@ -315,10 +315,10 @@ export function CamView({ caseId }: { caseId: string }) {
 
 // --- PD note ---
 
-/** Where a question's source is decided: a cross-check, else a policy norm. */
+/** Where a question's source is decided: the tab the engine names for it. */
 function sourceLink(caseId: string, q: PdQuestion): string {
   const base = `/appraisals/${encodeURIComponent(caseId)}`;
-  return /^(ID|TO|BA|OB)-\d/.test(q.rule) ? `${base}/cross-verification` : `${base}/policy`;
+  return q.target === "cross_verification" ? `${base}/cross-verification` : `${base}/policy`;
 }
 
 export function PdNoteView({ caseId }: { caseId: string }) {

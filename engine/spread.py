@@ -91,11 +91,9 @@ def _derived(expression: str, lines: dict[str, SpreadCell]) -> SpreadCell:
     names = [n.id for n in ast.walk(tree) if isinstance(n, ast.Name)]
     values = {k: c.value for k, c in lines.items() if c.value is not None}
     missing: list[str] = []
-    try:
-        value = policy_module.evaluate_expression(tree, values, missing)
-    except ZeroDivisionError:
-        return SpreadCell()
-    if missing:
+    divisors: list[tuple[str, float]] = []
+    value = policy_module.evaluate_expression(tree, values, missing, divisors)
+    if missing or any(d == 0 for _, d in divisors):
         return SpreadCell()
     evidence: list[Evidence] = []
     for n in dict.fromkeys(names):

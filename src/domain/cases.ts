@@ -80,10 +80,12 @@ export function stageKey(stage: Stage): StageKey | undefined {
   return keys[stage];
 }
 
-/** INR amount in the Indian convention: crore above 1 crore, lakh above 1 lakh. */
+/** INR amount in the Indian convention: crore above 1 crore, lakh above 1 lakh.
+ * A negative amount (a net loss, negative net worth) keeps its sign. */
 export function formatInr(amount: number): string {
-  if (amount >= 1e7) return `INR ${(amount / 1e7).toFixed(2)} cr`;
-  if (amount >= 1e5) return `INR ${(amount / 1e5).toFixed(2)} lakh`;
+  const size = Math.abs(amount);
+  if (size >= 1e7) return `INR ${(amount / 1e7).toFixed(2)} cr`;
+  if (size >= 1e5) return `INR ${(amount / 1e5).toFixed(2)} lakh`;
   return `INR ${amount.toLocaleString("en-IN")}`;
 }
 

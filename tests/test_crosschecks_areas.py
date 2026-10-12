@@ -1,7 +1,8 @@
 """Cross-checks across the nine document types (docs/cross-verification-plan.md): the
 identity, borrowing-authority, turnover-window, tax, statement, account and obligation
-rules; values waiting for review (F-17.2) and documents not on file (F-19.3). Every
-name is fictional."""
+rules; values waiting for review (F-17.2) and documents not on file (F-19.3). The
+borrowing-authority, tax and statement rules are switched off in configuration: their tests
+switch every rule on (all_rules_enabled). Every name is fictional."""
 
 from pathlib import Path
 
@@ -123,9 +124,10 @@ def test_a_director_in_the_memorandum_without_kyc_is_asked_about(client, analyst
     assert f["explanation"].startswith("Leela Varghese named as director(s) in the memorandum")
 
 
-# --- Borrowing authority ---
+# --- Borrowing authority (switched off in configuration) ---
 
 
+@pytest.mark.usefixtures("all_rules_enabled")
 def test_a_resolution_below_the_amount_requested_blocks(client, analyst, published_data_root):
     case_id = _case(client, analyst, published_data_root, amount_inr=65_000_000)
     add_doc(published_data_root, case_id, "board_resolution_borrowing", {"borrowing_limit": 20_000_000})
@@ -136,12 +138,14 @@ def test_a_resolution_below_the_amount_requested_blocks(client, analyst, publish
     assert [s["differs"] for s in f["sides"]] == [True, False]
 
 
+@pytest.mark.usefixtures("all_rules_enabled")
 def test_a_resolution_covering_the_request_passes(client, analyst, published_data_root):
     case_id = _case(client, analyst, published_data_root, amount_inr=65_000_000)
     add_doc(published_data_root, case_id, "board_resolution_borrowing", {"borrowing_limit": 100_000_000})
     assert _outcomes(_findings(client, analyst, published_data_root, case_id), "BR-01") == ["pass"]
 
 
+@pytest.mark.usefixtures("all_rules_enabled")
 def test_a_signatory_who_is_not_a_director_is_flagged(client, analyst, published_data_root):
     case_id = _case(client, analyst, published_data_root)
     add_doc(published_data_root, case_id, "board_resolution_borrowing",
@@ -152,6 +156,7 @@ def test_a_signatory_who_is_not_a_director_is_flagged(client, analyst, published
     assert {r["label"]: r["flagged"] for r in f["detail"]["rows"]} == {"Tarun Velankar": False, "Rohan Mistry": True}
 
 
+@pytest.mark.usefixtures("all_rules_enabled")
 @pytest.mark.parametrize("lender,outcome", [("Lotuscrest Bank Limited", "fail"), ("RBL Bank Ltd", "pass")])
 def test_the_resolution_names_this_bank(client, analyst, published_data_root, lender, outcome):
     case_id = _case(client, analyst, published_data_root)
@@ -159,6 +164,7 @@ def test_the_resolution_names_this_bank(client, analyst, published_data_root, le
     assert _outcomes(_findings(client, analyst, published_data_root, case_id), "BR-03") == [outcome]
 
 
+@pytest.mark.usefixtures("all_rules_enabled")
 def test_a_resolution_dated_before_incorporation_or_after_the_appraisal_date_is_flagged(client, analyst, published_data_root):
     case_id = _case(client, analyst, published_data_root)
     add_doc(published_data_root, case_id, "certificate_of_incorporation", {"date_of_incorporation": "2015-06-01"})
@@ -201,9 +207,10 @@ def test_too_few_shared_months_leave_the_window_incomplete(client, analyst, publ
     assert f["outcome"] == "incomplete" and "share 1 month(s)" in f["explanation"]
 
 
-# --- Tax ---
+# --- Tax (switched off in configuration) ---
 
 
+@pytest.mark.usefixtures("all_rules_enabled")
 def test_an_audited_year_whose_return_is_due_but_absent_is_flagged(client, analyst, published_data_root):
     case_id = _case(client, analyst, published_data_root)
     audited(published_data_root, case_id, "2024-03-31")
@@ -218,6 +225,7 @@ def test_an_audited_year_whose_return_is_due_but_absent_is_flagged(client, analy
     assert rows["FY 2024-25"]["cells"] == ["✓"] and rows["FY 2023-24"]["flagged"]
 
 
+@pytest.mark.usefixtures("all_rules_enabled")
 def test_book_profit_against_the_return(client, analyst, published_data_root):
     case_id = _case(client, analyst, published_data_root)
     audited(published_data_root, case_id, "2025-03-31")  # profit before tax 75 lakh
@@ -232,9 +240,10 @@ def test_book_profit_against_the_return(client, analyst, published_data_root):
     assert "20.0%" in f["explanation"]
 
 
-# --- Statements against each other and the bank ---
+# --- Statements against each other and the bank (switched off in configuration) ---
 
 
+@pytest.mark.usefixtures("all_rules_enabled")
 @pytest.mark.parametrize("scale,outcome", [(0.85, "pass"), (0.70, "fail")])
 def test_previous_year_figures_against_that_years_statements(client, analyst, published_data_root, scale, outcome):
     case_id = _case(client, analyst, published_data_root)
@@ -246,6 +255,7 @@ def test_previous_year_figures_against_that_years_statements(client, analyst, pu
     assert any(r["flagged"] for r in f["detail"]["rows"]) == (outcome == "fail")
 
 
+@pytest.mark.usefixtures("all_rules_enabled")
 def test_year_end_bank_balances_above_the_audited_figure_are_flagged(client, analyst, published_data_root):
     case_id = _case(client, analyst, published_data_root)
     audited(published_data_root, case_id, "2026-03-31")  # cash and bank balances 60 lakh
@@ -361,6 +371,7 @@ def test_a_check_waits_for_a_value_under_review(client, analyst, published_data_
     assert f["outcome"] == "fail"
 
 
+@pytest.mark.usefixtures("all_rules_enabled")
 def test_missing_documents_are_named_rather_than_not_applicable(client, analyst, published_data_root):
     case_id = _case(client, analyst, published_data_root)
     add_doc(published_data_root, case_id, "company_pan", {"pan": "AAACK1234F"})
@@ -371,4 +382,4 @@ def test_missing_documents_are_named_rather_than_not_applicable(client, analyst,
     assert _outcomes(found, "TO-04") == ["not_applicable"]
     # Every finding carries its area.
     assert {f["area"] for fs in found.values() for f in fs} == {
-        "identity", "authority", "turnover", "tax", "financials", "accounts", "obligations"}
+        "identity", "authority", "turnover", "financials", "accounts", "obligations"}

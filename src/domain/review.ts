@@ -54,9 +54,17 @@ export function reviewTarget(ref: string): { kind: string; id: string } {
   return at < 0 ? { kind: "", id: ref } : { kind: ref.slice(0, at), id: ref.slice(at + 1) };
 }
 
-/** Correct and waive need a reason (F-17.5). */
-export function needsReason(decision: ReviewDecision): boolean {
-  return decision === "correct" || decision === "waive";
+/** A comment of at least this many characters decides a discrepancy, as on the cross-verification
+ * board. */
+export const FINDING_COMMENT_MIN = 3;
+
+/** The shortest reason the engine accepts for this decision (engine/review.py), spaces aside: 0
+ * when none is needed. Correct and waive need a reason (F-17.5); a discrepancy (a cross-check
+ * finding) is decided, confirmed as well as waived, escalated or not, with a comment of at least
+ * 3 characters (F-19). */
+export function reasonMin(item: ReviewItem, decision: ReviewDecision): number {
+  if (item.kind === "finding") return FINDING_COMMENT_MIN;
+  return decision === "correct" || decision === "waive" ? 1 : 0;
 }
 
 export const REVIEW_KINDS: ReviewKind[] = [

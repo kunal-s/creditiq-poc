@@ -152,6 +152,12 @@ def build(conn: sqlite3.Connection, root: Path, case_id: str) -> list[dict]:
         sides = json.loads(f["sides"] or "[]")
         evidence = [e for s in sides for e in (s.get("evidence") or [])[:1]]
         add("clarifications", f["query"], "finding", f["rule_id"] + ":" + f["id"], evidence)
+
+    # What a reviewer asked for, from a check that could not run, until the check completes.
+    from . import xv
+
+    for ref, text in xv.requests_for_queries(conn, case_id):
+        add("documents_needed", text, "finding", ref)
     return out
 
 

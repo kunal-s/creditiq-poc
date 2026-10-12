@@ -3,12 +3,26 @@
 // contract (src/api/types.ts). Every name here is fictional and was checked
 // against the excluded-terms list.
 import type {
+  ApprovalMatrixConfig,
+  ApprovingAuthority,
   Cam,
+  CaseComparison,
   CaseDetail,
   CaseFacts,
+  CrossVerificationView,
+  Evidence,
+  EvidenceRow,
+  FactValue,
   Finding,
+  FindingArea,
+  FindingSide,
   PdNote,
+  NormInput,
+  NormResult,
   PolicyAssessment,
+  PolicyCounts,
+  PolicyGroup,
+  PolicyConfig,
   CaseProposal,
   CaseSummary,
   ChecklistItemState,
@@ -19,12 +33,21 @@ import type {
   LogicalDocument,
   Meta,
   Party,
+  PersonEntry,
   QueryItem,
   Readiness,
   ReviewItem,
   SessionUser,
+  SourceColumn,
   Spread,
   Span,
+  XvArea,
+  XvCounts,
+  XvDecision,
+  XvFact,
+  XvHighlight,
+  XvItem,
+  XvRun,
 } from "../../src/api/types";
 
 export const API = "http://localhost:8201";
@@ -73,6 +96,37 @@ export const RM: SessionUser = {
     "document.upload",
     "checklist.read",
     "query.read",
+  ],
+};
+
+/** The RBL reviewer: the Credit Manager, who alone adjudicates the comparison and decides an
+ * escalated cross-check discrepancy (roles.yaml). */
+export const MANAGER: SessionUser = {
+  id: "meenal-kulkarni",
+  name: "Meenal Kulkarni",
+  email: "meenal.kulkarni@rblbank.com",
+  initials: "MK",
+  role: "credit-manager",
+  roleLabel: "Credit Manager",
+  branch: "Mumbai hub",
+  navGroups: ["workbench", "governance", "administration", "help"],
+  permissions: [
+    "case.read",
+    "case.read.all",
+    "case.delete",
+    "checklist.read",
+    "query.read",
+    "data.read",
+    "review.read",
+    "review.decide",
+    "finding.read",
+    "output.read",
+    "manual.check",
+    "comparison.adjudicate",
+    "finding.escalation",
+    "scorecard.read",
+    "audit.read",
+    "config.read",
   ],
 };
 
@@ -451,25 +505,64 @@ export const DOCUMENTS: LogicalDocument[] = [
   }),
 ];
 
-export const DOCUMENT_TYPES: DocumentTypes = {
-  types: [
-    ["pan_individual", "PAN (individual)", "kyc"],
-    ["gst_registration", "GST registration", "registration"],
-    ["bank_statement", "Bank statement", "banking"],
-    ["balance_sheet", "Balance sheet", "financials"],
-    ["board_resolution", "Board resolution", "constitution"],
-    ["itr_ack", "ITR acknowledgement", "tax"],
-    ["utility_bill", "Utility bill", "other_known"],
-  ].map(([id, name, group]) => ({
-    id: id!,
-    name: name!,
-    group: group as DocumentTypes["types"][number]["group"],
+type DocumentType = DocumentTypes["types"][number];
+
+function docType(id: string, name: string, group: DocumentType["group"]): DocumentType {
+  return {
+    id,
+    name,
+    group,
     description: `${name}.`,
-    instance_key: "none" as const,
+    instance_key: "none",
     partner_output: false,
     personal: group === "kyc",
     satisfies: [],
-  })),
+  };
+}
+
+export const DOCUMENT_TYPES: DocumentTypes = {
+  types: [
+    docType("pan_individual", "PAN (individual)", "kyc"),
+    docType("gst_registration", "GST registration", "registration"),
+    docType("bank_statement", "Bank statement", "banking"),
+    docType("balance_sheet", "Balance sheet", "financials"),
+    docType("board_resolution", "Board resolution", "constitution"),
+    docType("itr_ack", "ITR acknowledgement", "tax"),
+    docType("utility_bill", "Utility bill", "other_known"),
+  ],
+};
+
+/** The documents the cross-verification board's evidence points to beyond the case's own
+ * fixture documents, each with its configured type (config/document_types.yaml). The board's
+ * screen tests add them, so that every source and every row opens its own document. */
+export const XV_DOCUMENTS: LogicalDocument[] = [
+  doc("doc-cpan", "f-cpan", 1, 1, ["company_pan"], "accepted"),
+  doc("doc-gstr3b", "f-gstr3b", 1, 2, ["gstr_3b"], "accepted"),
+  doc("doc-itr", "f-itr", 1, 3, ["income_tax_return"], "accepted"),
+  doc("doc-decl", "f-decl", 1, 1, ["existing_facilities_declaration"], "accepted"),
+  doc("doc-sanction", "f-sanction", 1, 2, ["sanction_letter"], "accepted"),
+  doc("doc-bureau", "f-bureau", 1, 4, ["commercial_bureau_report"], "accepted"),
+  doc("doc-coi", "f-coi", 1, 1, ["certificate_of_incorporation"], "accepted"),
+  doc("doc-moa", "f-moa", 1, 12, ["memorandum_articles_of_association"], "accepted"),
+];
+
+/** The published document types, with those of the board's documents. */
+export const XV_DOCUMENT_TYPES: DocumentTypes = {
+  types: [
+    ...DOCUMENT_TYPES.types,
+    docType("company_pan", "Company PAN", "registration"),
+    docType("gstr_3b", "GSTR-3B", "tax"),
+    docType("income_tax_return", "Income tax return", "tax"),
+    docType("existing_facilities_declaration", "Declaration of existing facilities", "banking"),
+    docType("sanction_letter", "Sanction letter", "banking"),
+    docType("commercial_bureau_report", "Commercial bureau report", "bureau"),
+    docType("certificate_of_incorporation", "Certificate of incorporation", "constitution"),
+    docType(
+      "memorandum_articles_of_association",
+      "Memorandum and articles of association",
+      "constitution",
+    ),
+  ],
 };
 
 // --- Extracted fields (F-15 to F-17) ---
@@ -561,6 +654,7 @@ export const REVIEW: ReviewItem[] = [
     ref: "document:doc-unc",
     summary: "merged_docs.pdf p10: no type fits (utility bill 0.41)",
     status: "open",
+    escalated: false,
     created_at: "2026-09-21T09:05:00Z",
   },
   {
@@ -570,6 +664,7 @@ export const REVIEW: ReviewItem[] = [
     ref: "field:fv-credits-jun",
     summary: "Bank statement ·1234 Jun 25: credits (0.62)",
     status: "open",
+    escalated: false,
     created_at: "2026-09-21T09:06:00Z",
   },
   {
@@ -583,6 +678,7 @@ export const REVIEW: ReviewItem[] = [
     reason: "Misread 8 as 9",
     decided_by: "Ananya Krishnan",
     decided_at: "2026-09-21T10:00:00Z",
+    escalated: false,
     created_at: "2026-09-21T09:06:00Z",
   },
 ];
@@ -660,76 +756,1179 @@ export const PAGE_PNG = Buffer.from(
 );
 
 // --- Cross-checks and aligned facts (F-18, F-19) ---
+//
+// Kestrel's cross-verification board as GET /api/cases/{id}/cross-verification returns it: the
+// findings of the 18 enabled rules by area (identity, turnover, bank accounts, existing
+// obligations); in each area its discrepancies ranked by credit impact (severity, then the size
+// of the gap in rupees, findings without an amount after those with one, then the rules' order),
+// then the checks that could not run, those that passed and those that did not apply. Seven
+// discrepancies across the four areas: two blocking identity discrepancies, one escalated to the
+// Credit Manager, one dismissed. The rules switched off in configuration (BR-01 to BR-04, TX-01,
+// TX-02, FS-01, FS-02) give no finding. xvView assembles a board as engine/xv.py does; GET
+// /findings answers the same findings (FINDINGS).
 
-export const FINDINGS: Finding[] = [
-  {
-    id: "fnd-ob2",
+/** When the latest run was made, and when the mock records a decision. */
+export const XV_RUN_AT = "2026-10-09T08:30:00+00:00";
+export const XV_DECIDED_AT = "2026-10-09T09:45:00+00:00";
+
+export const XV_RUN: XvRun = { id: "XR-000021-003", at: XV_RUN_AT, rules: 18, sources: 9 };
+
+/** The enabled rules in their configured order, each with its area (config/crosschecks.yaml).
+ * The board's areas follow the order in which they first appear here. */
+export const XV_RULES: [string, FindingArea][] = [
+  ["ID-01", "identity"],
+  ["ID-02", "identity"],
+  ["ID-03", "identity"],
+  ["ID-04", "identity"],
+  ["ID-05", "identity"],
+  ["ID-06", "identity"],
+  ["ID-07", "identity"],
+  ["ID-08", "identity"],
+  ["TO-01", "turnover"],
+  ["TO-02", "turnover"],
+  ["TO-03", "turnover"],
+  ["TO-04", "turnover"],
+  ["TO-05", "turnover"],
+  ["BA-01", "accounts"],
+  ["BA-02", "accounts"],
+  ["OB-01", "obligations"],
+  ["OB-02", "obligations"],
+  ["OB-03", "obligations"],
+];
+
+const at = (document_id: string, page: number): Evidence[] => [{ document_id, page }];
+
+/** One source a finding compared, as a column of its card. */
+export function xvColumn(
+  key: string,
+  label: string,
+  value: string | number | null,
+  extra: Partial<SourceColumn> = {},
+): SourceColumn {
+  return {
+    key,
+    label,
+    value,
+    sources: [],
+    provenance: ["borrower_supplied"],
+    unit: "text",
+    coverage: null,
+    differs: false,
+    relies_on_manual: false,
+    awaiting_review: false,
+    field_ids: [],
+    evidence: [],
+    row_columns: [],
+    rows: [],
+    ...extra,
+  };
+}
+
+/** One row behind a column's value, with the page it was read from. */
+export function xvRow(
+  cells: EvidenceRow["cells"],
+  evidence: Evidence[] = [],
+  kind: EvidenceRow["kind"] = "row",
+): EvidenceRow {
+  return { cells, evidence, kind };
+}
+
+/** One side of a comparison, as the rule recorded it (F-19.3). */
+export function xvSide(
+  label: string,
+  value: FindingSide["value"],
+  evidence: Evidence[],
+  extra: Partial<FindingSide> = {},
+): FindingSide {
+  return {
+    label,
+    value,
+    evidence,
+    sources: [],
+    differs: false,
+    relies_on_manual: false,
+    awaiting_review: false,
+    field_ids: [],
+    ...extra,
+  };
+}
+
+/** A key figure for an area's overview card, as a card builder writes it (engine/xv_cards):
+ * what is compared, the figures side by side, a short note. xvFinding gives it the finding's id,
+ * rule and outcome. */
+export function xvLine(
+  label: string,
+  facts: XvFact[] = [],
+  note: string | null = null,
+): XvHighlight {
+  return { finding_id: "", rule_id: "", outcome: "pass", label, facts, note };
+}
+
+/** One figure of a key figure: its source, its value and unit, and whether it differs. */
+export function xvFact(
+  label: string,
+  value: string | number | null,
+  unit: XvFact["unit"] = "text",
+  differs = false,
+): XvFact {
+  return { label, value, unit, differs };
+}
+
+/** A finding of the latest run with the card fields the board shows. */
+export function xvFinding(
+  f: Pick<
+    Finding,
+    "id" | "rule_id" | "title" | "area" | "outcome" | "severity" | "blocking" | "explanation"
+  > &
+    Partial<Finding>,
+): Finding {
+  return {
     case_id: KESTREL,
-    rule_id: "OB-02",
-    title: "Instalments in bank statements go to declared lenders",
-    area: "obligations",
-    outcome: "fail",
-    severity: "serious",
-    blocking: true,
-    explanation:
-      "Regular debits to lender(s) not declared: ASHWOOD FINSERV (₹1,45,000 a month in 6 months, Lotuscrest Bank ·1234).",
-    sides: [
+    sides: [],
+    detail: null,
+    missing: [],
+    scope: null,
+    tolerance: null,
+    config_version: "v3",
+    run_id: XV_RUN.id,
+    query: null,
+    ref: null,
+    finding_title: null,
+    compares: f.title,
+    policy_ref: null,
+    columns: [],
+    gaps: [],
+    gap_tolerance: null,
+    mismatch: null,
+    reference: null,
+    amount: null,
+    request: null,
+    ...f,
+    highlights: (f.highlights ?? []).map((line) => ({
+      ...line,
+      finding_id: f.id,
+      rule_id: f.rule_id,
+      outcome: f.outcome,
+    })),
+  };
+}
+
+/** A finding with its review state, as the board lists it. */
+export function xvItem(finding: Finding, extra: Partial<XvItem> = {}): XvItem {
+  return {
+    finding,
+    rank: null,
+    review_item_id: null,
+    decision: null,
+    escalation: null,
+    adjudicated: false,
+    in_query_list: false,
+    ...extra,
+  };
+}
+
+/** A person's decision on a discrepancy, with its comment. */
+export function xvDecision(
+  decision: XvDecision["decision"],
+  comment: string,
+  when: string,
+  by: SessionUser = ANALYST,
+): XvDecision {
+  return { decision, comment, by: by.id, by_name: by.name, at: when };
+}
+
+/** The open discrepancies by severity and how many are decided, as engine/xv.py counts them. */
+export function xvCounts(items: XvItem[]): XvCounts {
+  const discrepancies = items.filter((i) => i.finding.outcome === "fail");
+  const open = discrepancies.filter((i) => !i.adjudicated);
+  const of = (severity: Finding["severity"]) =>
+    open.filter((i) => i.finding.severity === severity).length;
+  return {
+    serious: of("serious"),
+    moderate: of("moderate"),
+    mild: of("mild"),
+    adjudicated: discrepancies.length - open.length,
+    total: discrepancies.length,
+    blocking_open: open.filter((i) => i.finding.blocking).length,
+  };
+}
+
+const SEVERITY_ORDER: Record<Finding["severity"], number> = { serious: 0, moderate: 1, mild: 2 };
+const OUTCOME_ORDER: Record<Finding["outcome"], number> = {
+  fail: 0,
+  incomplete: 1,
+  pass: 2,
+  not_applicable: 3,
+};
+
+/** The key figures on an area's card. */
+const XV_HIGHLIGHTS = 3;
+
+/** One area's overview card, counted from its discrepancies (ranked) and its other findings, as
+ * engine/xv.py `_area` counts it; its key figures picked as `_area` picks them: the open
+ * discrepancies' lines by rank, then the decided ones', then those of the checks that could not
+ * run and of the passed ones (`rest` is in that order), the first three. */
+function xvArea(area: FindingArea, rules: number, ranked: XvItem[], rest: XvItem[]): XvArea {
+  const open = ranked.filter((i) => !i.adjudicated);
+  const outcomes = rest.map((i) => i.finding.outcome);
+  const sources = [
+    ...open,
+    ...ranked.filter((i) => i.adjudicated),
+    ...rest.filter((i) => i.finding.outcome !== "not_applicable"),
+  ];
+  const count = (outcome: Finding["outcome"]) => outcomes.filter((o) => o === outcome).length;
+  const of = (severity: Finding["severity"]) =>
+    open.filter((i) => i.finding.severity === severity).length;
+  return {
+    area,
+    rules,
+    discrepancies: ranked.length,
+    open: open.length,
+    serious: of("serious"),
+    moderate: of("moderate"),
+    mild: of("mild"),
+    blocking_open: open.filter((i) => i.finding.blocking).length,
+    adjudicated: ranked.length - open.length,
+    incomplete: count("incomplete"),
+    passed: count("pass"),
+    not_applicable: count("not_applicable"),
+    top_finding_id: (open[0] ?? ranked[0])?.finding.id ?? null,
+    highlights: sources.flatMap((i) => i.finding.highlights ?? []).slice(0, XV_HIGHLIGHTS),
+    status:
+      open.length > 0
+        ? "open"
+        : ranked.length > 0
+          ? "decided"
+          : outcomes.includes("incomplete")
+            ? "incomplete"
+            : "clear",
+  };
+}
+
+/**
+ * The board of these items, assembled as engine/xv.py `view` does: only the enabled rules'
+ * findings (`rules`, in configured order), by area in the order the areas first appear; within
+ * an area its discrepancies by credit impact, each given its rank within the area, then the
+ * checks that could not run, those that passed and those that did not apply. The counts, the
+ * areas, the first open blocking discrepancy and the top one are derived from the items, so a
+ * decision recorded on an item shows on the next read. Each item's `rank` is set in place.
+ */
+export function xvView(
+  caseId: string,
+  items: XvItem[],
+  run: XvRun | null = XV_RUN,
+  rules: [string, FindingArea][] = XV_RULES,
+): CrossVerificationView {
+  const order = new Map(rules.map(([id], i) => [id, i]));
+  const areaOf = new Map(rules);
+  const shown = items.filter((i) => order.has(i.finding.rule_id));
+  const ruleOrder = (i: XvItem) => order.get(i.finding.rule_id) ?? 999;
+  const scope = (a: XvItem, b: XvItem) =>
+    (a.finding.scope ?? "").localeCompare(b.finding.scope ?? "");
+  // Credit impact: severity, then the gap in rupees (none after any), then the rules' order.
+  const failed = shown
+    .filter((i) => i.finding.outcome === "fail")
+    .sort((a, b) => {
+      const x = a.finding;
+      const y = b.finding;
+      return (
+        SEVERITY_ORDER[x.severity] - SEVERITY_ORDER[y.severity] ||
+        Number(x.amount == null) - Number(y.amount == null) ||
+        (y.amount ?? 0) - (x.amount ?? 0) ||
+        ruleOrder(a) - ruleOrder(b) ||
+        scope(a, b)
+      );
+    });
+  const others = shown
+    .filter((i) => i.finding.outcome !== "fail")
+    .sort(
+      (a, b) =>
+        OUTCOME_ORDER[a.finding.outcome] - OUTCOME_ORDER[b.finding.outcome] ||
+        ruleOrder(a) - ruleOrder(b) ||
+        scope(a, b),
+    );
+  const ordered: XvItem[] = [];
+  const areas: XvArea[] = [];
+  for (const area of new Set(rules.map(([, a]) => a))) {
+    const inArea = (i: XvItem) => areaOf.get(i.finding.rule_id) === area;
+    const ranked = failed.filter(inArea);
+    ranked.forEach((item, n) => {
+      item.rank = n + 1;
+    });
+    const rest = others.filter(inArea);
+    ordered.push(...ranked, ...rest);
+    areas.push(xvArea(area, rules.filter(([, a]) => a === area).length, ranked, rest));
+  }
+  const open = failed.filter((i) => !i.adjudicated);
+  const counts = xvCounts(failed);
+  return {
+    case_id: caseId,
+    run,
+    areas,
+    items: ordered,
+    counts,
+    blocked: counts.blocking_open > 0,
+    first_blocking: open.find((i) => i.finding.blocking)?.finding.id ?? null,
+    // The first card on the board: the top of the first area with an open discrepancy, else with any.
+    top_finding_id:
+      areas.find((a) => a.open > 0)?.top_finding_id ??
+      areas.find((a) => a.top_finding_id)?.top_finding_id ??
+      null,
+  };
+}
+
+const ACCOUNT = "Lotuscrest Bank ·1234";
+const CIN = "U28999MH2015PTC123456";
+const CIN_MOA = "U28999MH2015PTC123465";
+
+// GST returns against the bank credits over the months both cover, Aug 2025 to Mar 2026 (the
+// April to July 2025 returns are not on file): GST is INR 2.39 cr short of the cleansed credits.
+// Each month: its return's filing date, outward supplies and page; the account's credits, the
+// credits excluded and the statement page.
+const WINDOW = (
+  [
+    ["Aug 2025", "20 Sep 2025", 17_800_000, 1, 21_200_000, 0, 5],
+    ["Sep 2025", "20 Oct 2025", 19_200_000, 1, 23_100_000, 2_000_000, 5],
+    ["Oct 2025", "20 Nov 2025", 18_100_000, 1, 22_000_000, 0, 6],
+    ["Nov 2025", "19 Dec 2025", 18_600_000, 1, 21_700_000, 0, 7],
+    ["Dec 2025", "24 Jan 2026", 19_000_000, 2, 22_600_000, 0, 7],
+    ["Jan 2026", "20 Feb 2026", 17_900_000, 2, 21_400_000, 1_500_000, 8],
+    ["Feb 2026", "20 Mar 2026", 18_800_000, 2, 22_300_000, 0, 8],
+    ["Mar 2026", "20 Apr 2026", 18_600_000, 2, 21_100_000, 0, 9],
+  ] as const
+).map(([label, filed, gst, gstPage, credits, excluded, bankPage]) => ({
+  label,
+  filed,
+  gst,
+  gstPage,
+  credits,
+  excluded,
+  bankPage,
+}));
+
+const OB2 = xvFinding({
+  id: "fnd-ob2",
+  rule_id: "OB-02",
+  title: "Instalments in bank statements go to declared lenders",
+  finding_title: "Instalments to a lender that was not declared",
+  area: "obligations",
+  outcome: "fail",
+  severity: "serious",
+  blocking: false,
+  ref: "XV-000021-01",
+  explanation:
+    "Regular debits to lender(s) not declared: ASHWOOD FINSERV (₹1,45,000 a month in 6 months, Lotuscrest Bank ·1234).",
+  sides: [
+    xvSide("Instalments in bank statements", "ASHWOOD FINSERV (₹1,45,000 × 6)", at("doc-bank", 7), {
+      sources: ["bank_statement"],
+      differs: true,
+    }),
+    xvSide("Declaration of existing facilities", "Tidewater Finance", at("doc-decl", 1), {
+      sources: ["existing_facilities_declaration"],
+    }),
+  ],
+  columns: [
+    xvColumn(
+      "instalments",
+      "Instalments in bank statements",
+      "ASHWOOD FINSERV, Tidewater Finance",
       {
-        label: "Instalments in bank statements",
-        value: "ASHWOOD FINSERV (₹1,45,000 × 6)",
-        evidence: [{ document_id: "doc-bank", page: 7 }],
-        relies_on_manual: false,
-        awaiting_review: false,
+        sources: ["bank_statement"],
         differs: true,
+        coverage: `Apr 2025 to Mar 2026 · ${ACCOUNT}`,
+        evidence: at("doc-bank", 7),
+        row_columns: ["Lender", "Account", "Monthly instalment", "Months"],
+        rows: [
+          xvRow(["ASHWOOD FINSERV", ACCOUNT, 145_000, "Apr 2025 to Sep 2025"], at("doc-bank", 7)),
+          xvRow(["Tidewater Finance", ACCOUNT, 92_000, "Apr 2025 to Mar 2026"], at("doc-bank", 4)),
+        ],
+      },
+    ),
+    xvColumn("declaration", "Declaration of existing facilities", "Tidewater Finance", {
+      sources: ["existing_facilities_declaration"],
+      provenance: ["declared"],
+      coverage: "Page 1",
+      evidence: at("doc-decl", 1),
+      row_columns: ["Lender", "Facility", "EMI"],
+      rows: [xvRow(["Tidewater Finance", "Term loan", 92_000], at("doc-decl", 1))],
+    }),
+  ],
+  gaps: [
+    {
+      label: "Annual outflow to ASHWOOD FINSERV (INR 1.45 lakh a month), not declared",
+      amount: 1_740_000,
+      pct: null,
+      base: null,
+      legs: "ASHWOOD FINSERV",
+      breached: true,
+    },
+  ],
+  amount: 1_740_000,
+  mismatch:
+    "Instalments to ASHWOOD FINSERV appear in the bank statements but no declaration names them.",
+  highlights: [
+    xvLine("ASHWOOD FINSERV", [], "INR 1.45 lakh a month in the bank statements, not declared"),
+  ],
+  detail: {
+    columns: ["Account", "Monthly instalment", "Months", "Declared"],
+    rows: [
+      {
+        label: "ASHWOOD FINSERV",
+        cells: [ACCOUNT, 145_000, 6, "—"],
+        flagged: true,
+        flagged_cells: [],
       },
       {
-        label: "Declared facilities",
-        value: "none",
-        evidence: [{ document_id: "doc-bs", page: 4 }],
-        relies_on_manual: false,
-        awaiting_review: false,
-        differs: false,
+        label: "Tidewater Finance",
+        cells: [ACCOUNT, 92_000, 12, "✓"],
+        flagged: false,
+        flagged_cells: [],
       },
     ],
-    tolerance: "5%",
-    config_version: "v1",
-    run_id: null,
-    query: "Please explain the regular debits to ASHWOOD FINSERV.",
   },
-  {
+  query:
+    "Please give details of the facility with ASHWOOD FINSERV: the amount, the outstanding and the instalment.",
+});
+
+const TIDEWATER = (sanctioned: number, ...more: number[]) => [
+  "Tidewater Finance",
+  "Term loan",
+  sanctioned,
+  ...more,
+];
+
+const OB1 = xvFinding({
+  id: "fnd-ob1",
+  rule_id: "OB-01",
+  title: "Declared facilities reconcile with sanction letters and the bureau",
+  finding_title: "Existing facilities do not reconcile",
+  area: "obligations",
+  outcome: "fail",
+  severity: "serious",
+  blocking: false,
+  ref: "XV-000021-02",
+  tolerance: "5%",
+  explanation:
+    "The existing facilities do not reconcile: Tidewater Finance: sanctioned amounts differ: declared INR 40.00 lakh, sanction letter INR 55.00 lakh, bureau INR 55.00 lakh; Lotuscrest Bank: not declared.",
+  sides: [
+    xvSide(
+      "Declaration of existing facilities",
+      "Tidewater Finance INR 40.00 lakh",
+      at("doc-decl", 1),
+      {
+        sources: ["existing_facilities_declaration"],
+        differs: true,
+      },
+    ),
+    xvSide("Sanction letters", "Tidewater Finance INR 55.00 lakh", at("doc-sanction", 1), {
+      sources: ["sanction_letter"],
+    }),
+    xvSide(
+      "Commercial bureau report",
+      "Tidewater Finance INR 55.00 lakh; Lotuscrest Bank INR 12.00 lakh",
+      at("doc-bureau", 2),
+      { sources: ["commercial_bureau_report"] },
+    ),
+  ],
+  columns: [
+    xvColumn(
+      "declaration",
+      "Declaration of existing facilities",
+      "Tidewater Finance INR 40.00 lakh",
+      {
+        sources: ["existing_facilities_declaration"],
+        provenance: ["declared"],
+        differs: true,
+        coverage: "Page 1",
+        evidence: at("doc-decl", 1),
+        row_columns: ["Lender", "Facility", "Sanctioned", "EMI"],
+        rows: [xvRow(TIDEWATER(4_000_000, 92_000), at("doc-decl", 1))],
+      },
+    ),
+    xvColumn("sanction", "Sanction letters", "Tidewater Finance INR 55.00 lakh", {
+      sources: ["sanction_letter"],
+      coverage: "1 letter · Page 1",
+      evidence: at("doc-sanction", 1),
+      row_columns: ["Lender", "Facility", "Sanctioned", "EMI"],
+      rows: [xvRow(TIDEWATER(5_500_000, 92_000), at("doc-sanction", 1))],
+    }),
+    xvColumn(
+      "bureau",
+      "Commercial bureau report",
+      "Tidewater Finance INR 55.00 lakh; Lotuscrest Bank INR 12.00 lakh",
+      {
+        sources: ["commercial_bureau_report"],
+        provenance: ["independent"],
+        coverage: "Pages 2 to 3",
+        evidence: at("doc-bureau", 2),
+        row_columns: ["Lender", "Facility", "Sanctioned", "Outstanding", "Overdue"],
+        rows: [
+          xvRow(TIDEWATER(5_500_000, 3_850_000, 0), at("doc-bureau", 2)),
+          xvRow(["Lotuscrest Bank", "Overdraft", 1_200_000, 800_000, 0], at("doc-bureau", 3)),
+        ],
+      },
+    ),
+  ],
+  gaps: [
+    {
+      label: "Tidewater Finance: declared against sanction letter",
+      amount: 1_500_000,
+      pct: 27.3,
+      base: "sanction letter",
+      legs: "Tidewater Finance declared against sanction letter",
+      breached: true,
+    },
+    {
+      label: "Tidewater Finance: declared against bureau",
+      amount: 1_500_000,
+      pct: 27.3,
+      base: "bureau",
+      legs: "Tidewater Finance declared against bureau",
+      breached: true,
+    },
+    {
+      label: "Lotuscrest Bank: not declared",
+      amount: 1_200_000,
+      pct: null,
+      base: null,
+      legs: "Lotuscrest Bank",
+      breached: true,
+    },
+  ],
+  gap_tolerance: "5%",
+  amount: 1_500_000,
+  detail: {
+    columns: ["Declared", "Sanction letter", "Bureau", "Outstanding (bureau)"],
+    rows: [
+      {
+        label: "Tidewater Finance",
+        cells: [4_000_000, 5_500_000, 5_500_000, 3_850_000],
+        flagged: true,
+        flagged_cells: [],
+      },
+      {
+        label: "Lotuscrest Bank",
+        cells: ["—", "—", 1_200_000, 800_000],
+        flagged: true,
+        flagged_cells: [],
+      },
+    ],
+  },
+  query:
+    "Please reconcile the existing facilities (Tidewater Finance and Lotuscrest Bank): give each facility's lender, sanctioned amount and outstanding, with its sanction letter.",
+  highlights: [
+    xvLine(
+      "Tidewater Finance",
+      [
+        xvFact("Declared", 4_000_000, "inr", true),
+        xvFact("Sanction letter", 5_500_000, "inr"),
+        xvFact("Bureau", 5_500_000, "inr"),
+      ],
+      "27.3% apart · tolerance 5%",
+    ),
+    xvLine("Lotuscrest Bank", [], "not declared · INR 12.00 lakh in the bureau report"),
+  ],
+});
+
+// More than four documents state the PAN: one column per group of documents agreeing, each
+// document a row of its own.
+const PAN = "AAACK1234K";
+const PAN_BUREAU = "AAACK1243K";
+const PAN_GROUP =
+  "Company PAN, GSTR-3B (PAN within the GSTIN), Income tax return, Declaration of existing facilities, Sourcing message";
+
+const ID1 = xvFinding({
+  id: "fnd-id1",
+  rule_id: "ID-01",
+  title: "Entity PAN consistent across documents",
+  finding_title: "Entity PAN differs between documents",
+  area: "identity",
+  outcome: "fail",
+  severity: "serious",
+  blocking: true,
+  ref: "XV-000021-03",
+  policy_ref: "Credit policy 3.2: identity of the borrower",
+  explanation: `The entity PAN differs between documents: ${PAN} (${PAN_GROUP}) · ${PAN_BUREAU} (Commercial bureau report).`,
+  sides: [
+    xvSide(PAN_GROUP, PAN, at("doc-cpan", 1), {
+      sources: [
+        "company_pan",
+        "gstr_3b",
+        "income_tax_return",
+        "existing_facilities_declaration",
+        "application_message",
+      ],
+    }),
+    xvSide("Commercial bureau report", PAN_BUREAU, at("doc-bureau", 1), {
+      sources: ["commercial_bureau_report"],
+      differs: true,
+    }),
+  ],
+  columns: [
+    xvColumn("group-0", PAN_GROUP, PAN, {
+      sources: [
+        "company_pan",
+        "gstr_3b",
+        "income_tax_return",
+        "existing_facilities_declaration",
+        "application_message",
+      ],
+      provenance: ["borrower_supplied", "declared"],
+      coverage: "4 documents and the sourcing message",
+      evidence: [
+        ...at("doc-cpan", 1),
+        ...at("doc-gstr3b", 1),
+        ...at("doc-itr", 1),
+        ...at("doc-decl", 1),
+      ],
+      row_columns: ["Document", "PAN"],
+      rows: [
+        xvRow(["Company PAN", PAN], at("doc-cpan", 1)),
+        xvRow(["GSTR-3B (PAN within the GSTIN)", PAN], at("doc-gstr3b", 1)),
+        xvRow(["Income tax return", PAN], at("doc-itr", 1)),
+        xvRow(["Declaration of existing facilities", PAN], at("doc-decl", 1)),
+        xvRow(["Sourcing message", PAN]),
+      ],
+    }),
+    xvColumn("group-1", "Commercial bureau report", PAN_BUREAU, {
+      sources: ["commercial_bureau_report"],
+      provenance: ["independent"],
+      differs: true,
+      coverage: "Page 1",
+      evidence: at("doc-bureau", 1),
+      row_columns: ["Document", "PAN"],
+      rows: [xvRow(["Commercial bureau report", PAN_BUREAU], at("doc-bureau", 1))],
+    }),
+  ],
+  reference: PAN,
+  mismatch: `Commercial bureau report gives ${PAN_BUREAU}; the other 5 sources give ${PAN}.`,
+  highlights: [
+    xvLine("PAN", [
+      xvFact("4 documents and the sourcing message", PAN),
+      xvFact("Commercial bureau report", PAN_BUREAU, "text", true),
+    ]),
+  ],
+  query: `Please confirm the company's PAN; the documents show ${PAN} (${PAN_GROUP}) · ${PAN_BUREAU} (Commercial bureau report).`,
+});
+
+const ID5 = xvFinding({
+  id: "fnd-id5",
+  rule_id: "ID-05",
+  title: "CIN consistent across documents",
+  finding_title: "CIN differs between documents",
+  area: "identity",
+  outcome: "fail",
+  severity: "serious",
+  blocking: true,
+  ref: "XV-000021-04",
+  explanation: `The CIN differs between documents: ${CIN} (Certificate of incorporation, Commercial bureau report, Declaration of existing facilities) · ${CIN_MOA} (Memorandum and articles of association).`,
+  sides: [
+    xvSide(
+      "Certificate of incorporation, Commercial bureau report, Declaration of existing facilities",
+      CIN,
+      at("doc-coi", 1),
+      {
+        sources: [
+          "certificate_of_incorporation",
+          "commercial_bureau_report",
+          "existing_facilities_declaration",
+        ],
+      },
+    ),
+    xvSide("Memorandum and articles of association", CIN_MOA, at("doc-moa", 2), {
+      sources: ["memorandum_articles_of_association"],
+      differs: true,
+    }),
+  ],
+  columns: [
+    xvColumn("statement-0", "Certificate of incorporation", CIN, {
+      sources: ["certificate_of_incorporation"],
+      coverage: "Page 1",
+      evidence: at("doc-coi", 1),
+      row_columns: ["Field", "Value"],
+      rows: [xvRow(["CIN", CIN], at("doc-coi", 1))],
+    }),
+    xvColumn("statement-1", "Memorandum and articles of association", CIN_MOA, {
+      sources: ["memorandum_articles_of_association"],
+      differs: true,
+      coverage: "Page 2",
+      evidence: at("doc-moa", 2),
+      row_columns: ["Field", "Value"],
+      rows: [xvRow(["CIN", CIN_MOA], at("doc-moa", 2))],
+    }),
+    xvColumn("statement-2", "Commercial bureau report", CIN, {
+      sources: ["commercial_bureau_report"],
+      provenance: ["independent"],
+      coverage: "Page 1",
+      evidence: at("doc-bureau", 1),
+      row_columns: ["Field", "Value"],
+      rows: [xvRow(["CIN", CIN], at("doc-bureau", 1))],
+    }),
+    xvColumn("statement-3", "Declaration of existing facilities", CIN, {
+      sources: ["existing_facilities_declaration"],
+      provenance: ["declared"],
+      coverage: "Page 1",
+      evidence: at("doc-decl", 1),
+      row_columns: ["Field", "Value"],
+      rows: [xvRow(["CIN", CIN], at("doc-decl", 1))],
+    }),
+  ],
+  reference: CIN,
+  mismatch: `Memorandum and articles of association gives ${CIN_MOA}; the other 3 sources give ${CIN}.`,
+  highlights: [
+    xvLine("CIN", [
+      xvFact("3 documents", CIN),
+      xvFact("Memorandum and articles of association", CIN_MOA, "text", true),
+    ]),
+  ],
+  query: `Please confirm the company's CIN; the documents show ${CIN} (Certificate of incorporation, Commercial bureau report, Declaration of existing facilities) · ${CIN_MOA} (Memorandum and articles of association).`,
+});
+
+const TO5 = xvFinding({
+  id: "fnd-to5",
+  rule_id: "TO-05",
+  title: "GST outward supplies against bank credits, months both cover · Aug 2025 to Mar 2026",
+  compares: "GST outward supplies against bank credits, months both cover",
+  finding_title: "GST and bank credits diverge over the months both cover",
+  area: "turnover",
+  outcome: "fail",
+  severity: "moderate",
+  blocking: false,
+  scope: "Aug 2025 to Mar 2026",
+  ref: "XV-000021-05",
+  tolerance: "10%",
+  explanation:
+    "Aug 2025 to Mar 2026: GST outward supplies INR 14.80 cr against business credits INR 17.19 cr, a variance of 13.9% (tolerance 10%).",
+  sides: [
+    xvSide("GST outward supplies (8 returns)", 148_000_000, at("doc-gstr3b", 1), {
+      sources: ["gstr_3b"],
+      differs: true,
+    }),
+    xvSide("Business credits in bank statements", 171_900_000, at("doc-bank", 5), {
+      sources: ["bank_statement"],
+      differs: true,
+    }),
+  ],
+  columns: [
+    xvColumn("gst", "GST outward supplies (GSTR-3B)", 148_000_000, {
+      sources: ["gstr_3b"],
+      unit: "inr",
+      differs: true,
+      coverage: "Aug 2025 to Mar 2026 · 8 returns",
+      evidence: [...at("doc-gstr3b", 1), ...at("doc-gstr3b", 2)],
+      row_columns: ["Period", "Filed", "3.1(a)+(b)+(c) outward supplies"],
+      rows: [
+        ...WINDOW.map((m) => xvRow([m.label, m.filed, m.gst], at("doc-gstr3b", m.gstPage))),
+        xvRow(["Aggregate Aug 2025 to Mar 2026", "", 148_000_000], [], "total"),
+      ],
+    }),
+    xvColumn("bank", "Business credits in bank statements", 171_900_000, {
+      sources: ["bank_statement"],
+      unit: "inr",
+      differs: true,
+      coverage: `Aug 2025 to Mar 2026 · 1 account: ${ACCOUNT}`,
+      evidence: at("doc-bank", 5),
+      row_columns: ["Month", "Account", "Credits", "Excluded credits"],
+      rows: [
+        ...WINDOW.map((m) =>
+          xvRow([m.label, ACCOUNT, m.credits, m.excluded], at("doc-bank", m.bankPage)),
+        ),
+        xvRow(["Total Aug 2025 to Mar 2026", "", 175_400_000, 3_500_000], [], "total"),
+        xvRow(
+          [
+            "12 Sep 2025",
+            ACCOUNT,
+            "Transfer between the borrower's own accounts: NEFT CR OWN ACCOUNT TRANSFER",
+            2_000_000,
+          ],
+          at("doc-bank", 5),
+          "excluded",
+        ),
+        xvRow(
+          ["18 Jan 2026", ACCOUNT, "Reversal or refund: NEFT CR REFUND OF ADVANCE", 1_500_000],
+          at("doc-bank", 8),
+          "excluded",
+        ),
+      ],
+    }),
+  ],
+  gaps: [
+    {
+      label: "Gap against GST outward supplies",
+      amount: 23_900_000,
+      pct: 13.9,
+      base: "bank credits",
+      legs: "GST outward supplies against bank credits",
+      breached: true,
+    },
+  ],
+  gap_tolerance: "10%",
+  amount: 23_900_000,
+  highlights: [
+    xvLine(
+      "GST against bank credits · Aug 2025 to Mar 2026",
+      [
+        xvFact("GST outward supplies", 148_000_000, "inr", true),
+        xvFact("Bank credits", 171_900_000, "inr"),
+      ],
+      "13.9% apart · tolerance 10%",
+    ),
+  ],
+  detail: {
+    columns: ["GST outward supplies", "Business credits", "Difference"],
+    rows: WINDOW.map((m) => {
+      const net = m.credits - m.excluded;
+      const pct = (Math.abs(net - m.gst) / Math.max(net, m.gst)) * 100;
+      return {
+        label: m.label,
+        cells: [m.gst, net, `${pct.toFixed(1)}%`],
+        flagged: pct > 10,
+        flagged_cells: [],
+      };
+    }),
+  },
+});
+
+const BA1 = xvFinding({
+  id: "fnd-ba1",
+  rule_id: "BA-01",
+  title: "Declared accounts have statements",
+  finding_title: "Declared account without a statement",
+  area: "accounts",
+  outcome: "fail",
+  severity: "moderate",
+  blocking: false,
+  ref: "XV-000021-06",
+  explanation: "Declared account(s) without a statement: Lotuscrest Bank ·5678.",
+  sides: [
+    xvSide("Declared in the sourcing message", `${ACCOUNT}, Lotuscrest Bank ·5678`, [], {
+      sources: ["application_message"],
+      differs: true,
+    }),
+    xvSide("Statements on file", ACCOUNT, at("doc-bank", 3), { sources: ["bank_statement"] }),
+  ],
+  columns: [
+    xvColumn("declared", "Declared in the sourcing message", `${ACCOUNT}, Lotuscrest Bank ·5678`, {
+      sources: ["application_message"],
+      provenance: ["declared"],
+      differs: true,
+      coverage: "In the sourcing message",
+      row_columns: ["Account", "Where it appears"],
+      rows: [
+        xvRow([ACCOUNT, "Sourcing message"]),
+        xvRow(["Lotuscrest Bank ·5678", "Sourcing message"]),
+      ],
+    }),
+    xvColumn("statements", "Statements on file", ACCOUNT, {
+      sources: ["bank_statement"],
+      coverage: "1 statement · Apr 2025 to Mar 2026",
+      evidence: at("doc-bank", 3),
+      row_columns: ["Account", "Where it appears"],
+      rows: [xvRow([ACCOUNT, "Bank statement, pages 3 to 9"], at("doc-bank", 3))],
+    }),
+  ],
+  mismatch: "Lotuscrest Bank ·5678 was declared but has no statement.",
+  highlights: [xvLine("Lotuscrest Bank ·5678", [], "declared, no statement")],
+  detail: {
+    columns: ["Statement on file"],
+    rows: [
+      { label: ACCOUNT, cells: ["✓"], flagged: false, flagged_cells: [] },
+      { label: "Lotuscrest Bank ·5678", cells: ["—"], flagged: true, flagged_cells: [] },
+    ],
+  },
+  query: "Please provide the statements of Lotuscrest Bank ·5678 for the last 12 months.",
+});
+
+const TO4 = xvFinding({
+  id: "fnd-to4",
+  rule_id: "TO-04",
+  title: "RM-declared turnover against evidenced turnover · FY 2025-26",
+  compares: "RM-declared turnover against evidenced turnover",
+  finding_title: "Declared turnover differs from the evidence",
+  area: "turnover",
+  outcome: "fail",
+  severity: "mild",
+  blocking: false,
+  scope: "FY 2025-26",
+  ref: "XV-000021-07",
+  tolerance: "20%",
+  explanation:
+    "FY 2025-26: declared turnover INR 3.00 cr against audited turnover INR 30.00 cr, a variance of 90.0% (tolerance 20%).",
+  sides: [
+    xvSide("Declared turnover", 30_000_000, [], {
+      sources: ["application_message"],
+      differs: true,
+    }),
+    xvSide("Audited turnover", 300_000_000, at("doc-bs", 4), {
+      sources: ["audited_financial_statements"],
+    }),
+  ],
+  columns: [
+    xvColumn("declared", "Turnover declared in the sourcing message", 30_000_000, {
+      sources: ["application_message"],
+      provenance: ["declared"],
+      unit: "inr",
+      differs: true,
+      coverage: "Declared for FY 2025-26",
+      row_columns: ["Line", "Year", "Amount"],
+      rows: [xvRow(["Declared turnover", "FY 2025-26", 30_000_000])],
+    }),
+    xvColumn("audited", "Audited financial statements", 300_000_000, {
+      sources: ["audited_financial_statements"],
+      unit: "inr",
+      coverage: "Year ended 31 Mar 2026 · audited",
+      evidence: at("doc-bs", 4),
+      row_columns: ["Line", "Year", "Amount"],
+      rows: [xvRow(["Revenue from operations", "FY 2025-26", 300_000_000], at("doc-bs", 4))],
+    }),
+  ],
+  gaps: [
+    {
+      label: "Gap against declared",
+      amount: 270_000_000,
+      pct: 90,
+      base: "audited",
+      legs: "declared against audited",
+      breached: true,
+    },
+  ],
+  gap_tolerance: "20%",
+  amount: 270_000_000,
+  highlights: [
+    xvLine(
+      "Declared against audited · FY 2025-26",
+      [xvFact("Declared", 30_000_000, "inr", true), xvFact("Audited", 300_000_000, "inr")],
+      "90.0% apart · tolerance 20%",
+    ),
+  ],
+});
+
+const GST_MONTHS_MISSING = {
+  explanation: "GST outward supplies covers 8 of 12 months (Apr 2025, May 2025, Jun 2025… absent).",
+  request: "GSTR-3B returns for Apr 2025 to Jul 2025",
+  tolerance: "10%",
+  scope: "FY 2025-26",
+};
+
+const COULD_NOT_CHECK = [
+  xvFinding({
+    id: "fnd-id4",
+    rule_id: "ID-04",
+    title: "Promoters match the KYC received",
+    finding_title: "Promoter missing from a source",
+    area: "identity",
+    outcome: "incomplete",
+    severity: "serious",
+    blocking: true,
+    explanation: "Director KYC not on file.",
+    missing: ["Director KYC"],
+    request: "the director KYC",
+  }),
+  xvFinding({
     id: "fnd-to1",
-    case_id: KESTREL,
     rule_id: "TO-01",
     title: "Audited turnover against GST outward supplies · FY 2025-26",
+    compares: "Audited turnover against GST outward supplies",
+    finding_title: "Audited turnover differs from GST returns",
     area: "turnover",
     outcome: "incomplete",
     severity: "moderate",
     blocking: false,
-    explanation:
-      "GST outward supplies covers 8 of 12 months (Apr 2025, May 2025, Jun 2025… absent).",
-    sides: [],
+    ...GST_MONTHS_MISSING,
+    highlights: [
+      xvLine(
+        "Audited against GST · FY 2025-26",
+        [],
+        "GSTR-3B returns for Apr 2025 to Jul 2025 needed",
+      ),
+    ],
+  }),
+  xvFinding({
+    id: "fnd-to2",
+    rule_id: "TO-02",
+    title: "GST outward supplies against cleansed bank credits · FY 2025-26",
+    compares: "GST outward supplies against cleansed bank credits",
+    finding_title: "GST turnover not supported by bank credits",
+    area: "turnover",
+    outcome: "incomplete",
+    severity: "moderate",
+    blocking: false,
+    ...GST_MONTHS_MISSING,
+    highlights: [
+      xvLine(
+        "GST against bank credits · FY 2025-26",
+        [],
+        "GSTR-3B returns for Apr 2025 to Jul 2025 needed",
+      ),
+    ],
+  }),
+  xvFinding({
+    id: "fnd-to3",
+    rule_id: "TO-03",
+    title: "Audited turnover against cleansed bank credits · FY 2025-26",
+    compares: "Audited turnover against cleansed bank credits",
+    finding_title: "Audited turnover not supported by bank credits",
+    area: "turnover",
+    outcome: "incomplete",
+    severity: "moderate",
+    blocking: false,
+    scope: "FY 2025-26",
     tolerance: "10%",
-    config_version: "v1",
-    run_id: null,
-    query: null,
-  },
-  {
-    id: "fnd-id1",
-    case_id: KESTREL,
-    rule_id: "ID-01",
-    title: "Entity PAN consistent across documents",
+    explanation:
+      "Waiting for review of the bank statement credits for Jun 2025; confirm or correct the value to complete this check.",
+    sides: [
+      xvSide("Business credits in bank statements", null, at("doc-bank", 7), {
+        sources: ["bank_statement"],
+        awaiting_review: true,
+        field_ids: ["fv-credits-jun"],
+      }),
+    ],
+    columns: [
+      xvColumn("bank", "Business credits in bank statements", null, {
+        sources: ["bank_statement"],
+        unit: "inr",
+        coverage: `Apr 2025 to Mar 2026 · 1 account: ${ACCOUNT}`,
+        awaiting_review: true,
+        field_ids: ["fv-credits-jun"],
+        evidence: at("doc-bank", 7),
+      }),
+    ],
+  }),
+];
+
+const PASSED = [
+  xvFinding({
+    id: "fnd-id2",
+    rule_id: "ID-02",
+    title: "GSTIN consistent across documents",
+    finding_title: "GSTIN differs between documents",
     area: "identity",
     outcome: "pass",
     severity: "serious",
     blocking: true,
-    explanation: "Consistent across 4 sources.",
-    sides: [],
-    tolerance: null,
-    config_version: "v1",
-    run_id: null,
-    query: null,
-  },
+    explanation: "Consistent across 3 sources.",
+    highlights: [
+      xvLine("GSTIN", [xvFact("3 sources", "27AAACK1234K1Z5")], "same across 3 sources"),
+    ],
+  }),
+  xvFinding({
+    id: "fnd-id3",
+    rule_id: "ID-03",
+    title: "Legal name consistent across documents",
+    finding_title: "Company name differs between documents",
+    area: "identity",
+    outcome: "pass",
+    severity: "moderate",
+    blocking: false,
+    explanation: "Consistent across 6 sources.",
+    highlights: [
+      xvLine(
+        "Company name",
+        [xvFact("6 sources", "Kestrel Polymers Pvt Ltd")],
+        "same across 6 sources",
+      ),
+    ],
+  }),
+  xvFinding({
+    id: "fnd-id6",
+    rule_id: "ID-06",
+    title: "Director identifiers agree",
+    finding_title: "Director identifiers disagree",
+    area: "identity",
+    outcome: "pass",
+    severity: "moderate",
+    blocking: false,
+    explanation: "Identifiers agree for 2 director(s).",
+  }),
+  xvFinding({
+    id: "fnd-id7",
+    rule_id: "ID-07",
+    title: "CIN agrees with the incorporation particulars",
+    finding_title: "CIN does not match the incorporation details",
+    area: "identity",
+    outcome: "pass",
+    severity: "mild",
+    blocking: false,
+    explanation: "The CIN agrees with 3 particular(s) on file.",
+  }),
+  xvFinding({
+    id: "fnd-ba2",
+    rule_id: "BA-02",
+    title: "Accounts on file are declared",
+    finding_title: "Account on file that was not declared",
+    area: "accounts",
+    outcome: "pass",
+    severity: "moderate",
+    blocking: false,
+    explanation: "Every account on file is declared.",
+    highlights: [xvLine("Accounts on file", [], "1 account · each declared and with a statement")],
+  }),
+  xvFinding({
+    id: "fnd-ob3",
+    rule_id: "OB-03",
+    title: "Borrowings in the books are serviced in the bank · FY 2025-26",
+    compares: "Borrowings in the books are serviced in the bank",
+    finding_title: "Borrowings and instalments do not match",
+    area: "obligations",
+    outcome: "pass",
+    severity: "moderate",
+    blocking: false,
+    scope: "FY 2025-26",
+    explanation: "The borrowings in the books are serviced in the bank statements.",
+    highlights: [
+      xvLine("Long-term borrowings · FY 2025-26", [], "serviced in the bank statements"),
+    ],
+  }),
 ];
+
+const NOT_APPLICABLE = [
+  xvFinding({
+    id: "fnd-id8",
+    rule_id: "ID-08",
+    title: "Directors in the memorandum are accounted for",
+    finding_title: "Director in the memorandum not accounted for",
+    area: "identity",
+    outcome: "not_applicable",
+    severity: "mild",
+    blocking: false,
+    explanation: "No director is named in the memorandum.",
+  }),
+];
+
+/** Kestrel's board, a fresh copy each call: decisions in a test change only that test's copy. */
+export function kestrelBoard(): CrossVerificationView {
+  const discrepancies = [
+    xvItem(OB2, { review_item_id: "r-finding" }),
+    xvItem(OB1, {
+      review_item_id: "r-ob1",
+      escalation: xvDecision(
+        "escalate",
+        "The sanction letter and the bureau agree against the declaration; the Credit Manager should decide.",
+        "2026-10-08T11:20:00+00:00",
+      ),
+    }),
+    xvItem(ID1, { review_item_id: "r-id1" }),
+    xvItem(ID5, { review_item_id: "r-id5" }),
+    xvItem(TO5, { review_item_id: "r-to5" }),
+    xvItem(BA1, { review_item_id: "r-ba1" }),
+    xvItem(TO4, {
+      review_item_id: "r-to4",
+      adjudicated: true,
+      decision: xvDecision(
+        "dismiss",
+        "The sourcing message meant INR 30 cr; the RM confirmed the typing slip.",
+        "2026-10-08T10:05:00+00:00",
+      ),
+    }),
+  ];
+  const rest = [...COULD_NOT_CHECK, ...PASSED, ...NOT_APPLICABLE].map((f) =>
+    xvItem(f, { in_query_list: f.id === "fnd-to2" }),
+  );
+  return xvView(KESTREL, structuredClone([...discrepancies, ...rest]));
+}
+
+/** The same findings, as GET /findings answers them. */
+export const FINDINGS: Finding[] = kestrelBoard().items.map((i) => i.finding);
 
 export const FINDING_ITEM: ReviewItem = {
   id: "r-finding",
@@ -738,13 +1937,69 @@ export const FINDING_ITEM: ReviewItem = {
   ref: "finding:fnd-ob2",
   summary: "OB-02 Instalments in bank statements go to declared lenders",
   status: "open",
+  escalated: false,
   created_at: "2026-09-21T09:07:00Z",
 };
 
+/** The escalated discrepancy's review item: open, and decided by the Credit Manager only. */
+export const ESCALATED_ITEM: ReviewItem = {
+  id: "r-ob1",
+  case_id: KESTREL,
+  kind: "finding",
+  ref: "finding:fnd-ob1",
+  summary: "OB-01 Declared facilities reconcile with sanction letters and the bureau",
+  status: "open",
+  escalated: true,
+  created_at: "2026-09-21T09:08:00Z",
+};
+
+/** A value a document states, as the aligned facts carry it. */
+function stated(label: string, source: string, value: string, evidence: Evidence[]): FactValue {
+  return { label, source, value, evidence, awaiting_review: false, relies_on_manual: false };
+}
+
+/** A person as a source names them. */
+function person(
+  name: string,
+  din: string | null,
+  pan: string | null,
+  evidence: Evidence[] = [],
+): PersonEntry {
+  return { name, din, pan, evidence, awaiting_review: false, relies_on_manual: false };
+}
+
 export const FACTS: CaseFacts = {
   case_id: KESTREL,
-  identities: { entity_pan: [], gstin: [], legal_name: [] },
-  persons: [],
+  identities: {
+    entity_pan: [
+      stated("Company PAN", "company_pan", PAN, at("doc-cpan", 1)),
+      stated("GSTR-3B (PAN within the GSTIN)", "gstr_3b", PAN, at("doc-gstr3b", 1)),
+      stated(
+        "Commercial bureau report",
+        "commercial_bureau_report",
+        PAN_BUREAU,
+        at("doc-bureau", 1),
+      ),
+    ],
+    gstin: [stated("GSTR-3B", "gstr_3b", "27AAACK1234K1Z5", at("doc-gstr3b", 1))],
+    legal_name: [],
+  },
+  persons: [
+    {
+      label: "KYC received",
+      source: "director_kyc",
+      names: ["Kabir Rao"],
+      entries: [person("Kabir Rao", "08812345", "ABCPR1234F", at("doc-pan", 1))],
+      relies_on_manual: false,
+    },
+    {
+      label: "Sourcing message",
+      source: "application_message",
+      names: ["Kabir Rao", "Leela Varghese"],
+      entries: [person("Kabir Rao", null, null), person("Leela Varghese", null, null)],
+      relies_on_manual: false,
+    },
+  ],
   turnover: [
     {
       fy: "FY 2025-26",
@@ -756,7 +2011,7 @@ export const FACTS: CaseFacts = {
           value: 80_000_000,
           months_covered: 8,
           months_missing: ["Apr 2025", "May 2025", "Jun 2025", "Jul 2025"],
-          evidence: [{ document_id: "doc-gst", page: 1 }],
+          evidence: [{ document_id: "doc-gstr3b", page: 1 }],
           field_ids: [],
           relies_on_manual: false,
           awaiting_review: false,
@@ -806,81 +2061,588 @@ export const FACTS: CaseFacts = {
       evidence: [{ document_id: "doc-bank", page: 7 }],
     },
   ],
-  facilities: [],
+  facilities: [
+    {
+      label: "Declaration of existing facilities",
+      source: "existing_facilities_declaration",
+      lender: "Tidewater Finance",
+      facility: "Term loan",
+      amount: 4_000_000,
+      emi: 92_000,
+      evidence: at("doc-decl", 1),
+      awaiting_review: false,
+      relies_on_manual: false,
+    },
+  ],
   declaration_received: true,
 };
 
 // --- Policy norms (F-20) ---
 
-export const POLICY: PolicyAssessment = {
+const bs = (page: number) => [{ document_id: "doc-bs", page }];
+
+function norm(
+  n: Partial<NormResult> & Pick<NormResult, "id" | "family" | "label" | "outcome">,
+): NormResult {
+  return {
+    formula: "",
+    required: "",
+    actual: null,
+    unit: null,
+    category: "financial",
+    category_label: "Financial norms",
+    inputs: [],
+    missing: [],
+    reason: null,
+    reason_inputs: [],
+    actual_text: null,
+    definition: null,
+    source: "provisional",
+    note: null,
+    provisional: true,
+    ...n,
+  };
+}
+
+function input(
+  name: string,
+  label: string,
+  value: number | null,
+  page: number | null,
+  extra: Partial<NormInput> = {},
+): NormInput {
+  return {
+    name,
+    label,
+    value,
+    evidence: page === null ? [] : bs(page),
+    relies_on_manual: false,
+    awaiting_review: false,
+    basis: "document",
+    refs: [],
+    ...extra,
+  };
+}
+
+const ELIGIBILITY = { category: "eligibility", category_label: "Eligibility" } as const;
+const DOCUMENTATION = { category: "documentation", category_label: "Documentation" } as const;
+
+/** Norms by outcome, as the engine counts them. */
+function policyCounts(
+  deviations: number,
+  cannot_evaluate: number,
+  passed: number,
+  not_applicable = 0,
+): PolicyCounts {
+  return { deviations, cannot_evaluate, passed, not_applicable };
+}
+
+/** A family's overview card, as engine/policy.py (_group) sends it. */
+function policyGroup(
+  family: PolicyGroup["family"],
+  norms: number,
+  counts: PolicyCounts,
+  status: PolicyGroup["status"],
+  highlights: string[] = [],
+): PolicyGroup {
+  return { family, norms, counts, status, highlights };
+}
+
+/** Kestrel: a loss-making year, a debt / equity deviation, open blocking items, figures still under review. */
+export const POLICY = {
   case_id: KESTREL,
   period: "FY 2025-26",
+  config_version: "v3",
   norms: [
-    {
+    norm({
       id: "FR-05",
       family: "ratios",
       label: "Debt / equity",
-      formula: "Total debt ÷ Tangible net worth",
+      formula: "Total borrowings / Net worth",
+      definition: "Total debt ÷ Tangible net worth",
+      note: "Interim threshold proposed by the delivery team.",
       required: "at most 2.00x",
       actual: 3,
+      actual_text: "3.00x",
       unit: "x",
       outcome: "deviation",
-      category: "financial",
-      category_label: "Financial norms",
       inputs: [
-        {
-          name: "total_borrowings",
-          label: "Total borrowings",
-          value: 120_000_000,
-          evidence: [{ document_id: "doc-bs", page: 4 }],
-          relies_on_manual: false,
-        },
-        {
-          name: "net_worth",
-          label: "Net worth",
-          value: 40_000_000,
-          evidence: [{ document_id: "doc-bs", page: 4 }],
-          relies_on_manual: false,
-        },
+        input("total_borrowings", "Total borrowings", 120_000_000, 4),
+        input("net_worth", "Net worth", 40_000_000, 4),
       ],
-      missing: [],
-      note: null,
-      provisional: true,
-    },
-    {
+    }),
+    norm({
       id: "EL-02",
       family: "eligibility",
       label: "Commercial bureau rank",
       formula: "Commercial bureau rank",
       required: "at most rank 6",
-      actual: null,
       unit: "rank",
       outcome: "cannot_evaluate",
-      category: "eligibility",
-      category_label: "Eligibility",
-      inputs: [],
+      ...ELIGIBILITY,
       missing: ["Commercial bureau rank"],
-      note: null,
-      provisional: true,
-    },
-    {
+    }),
+    norm({
+      id: "EL-04",
+      family: "eligibility",
+      label: "Profit in the latest year",
+      formula: "Profit after tax",
+      required: "at least INR 0",
+      actual: -4_000_000,
+      actual_text: "INR -40.00 lakh",
+      unit: "inr",
+      outcome: "deviation",
+      ...ELIGIBILITY,
+      inputs: [input("profit_after_tax", "Profit after tax", -4_000_000, 5)],
+    }),
+    norm({
       id: "FR-01",
       family: "ratios",
       label: "Current ratio",
-      formula: "Current assets ÷ Current liabilities",
+      formula: "Current assets / Current liabilities",
       required: "at least 1.20x",
       actual: 1.5,
+      actual_text: "1.50x",
       unit: "x",
       outcome: "pass",
+      inputs: [
+        input("current_assets", "Current assets", 90_000_000, 4),
+        input("current_liabilities", "Current liabilities", 60_000_000, 4),
+      ],
+    }),
+    norm({
+      id: "FR-04",
+      family: "ratios",
+      label: "Interest coverage",
+      formula: "(Profit before tax + Finance costs) / Finance costs",
+      required: "at least 2.50x",
+      unit: "x",
+      outcome: "cannot_evaluate",
+      reason: "zero_denominator",
+      reason_inputs: ["Finance costs"],
+      inputs: [
+        input("profit_before_tax", "Profit before tax", -3_000_000, 5),
+        input("finance_costs", "Finance costs", 0, 5),
+      ],
+    }),
+    norm({
+      id: "FR-06",
+      family: "ratios",
+      label: "Working-capital cycle",
+      formula: "(Inventories + Trade receivables - Trade payables) / Revenue from operations * 365",
+      required: "at most 75 days",
+      unit: "days",
+      outcome: "cannot_evaluate",
+      reason: "awaiting_review",
+      reason_inputs: ["Trade receivables"],
+      inputs: [
+        input("inventories", "Inventories", 25_000_000, 4),
+        input("trade_receivables", "Trade receivables", 24_000_000, 4, { awaiting_review: true }),
+        input("trade_payables", "Trade payables", 20_000_000, 4),
+        input("revenue_from_operations", "Revenue from operations", 300_000_000, 5),
+      ],
+    }),
+    norm({
+      id: "DOC-01",
+      family: "documentation",
+      label: "Blocking checklist items open",
+      formula: "Blocking checklist items open",
+      required: "at most 0",
+      actual: 2,
+      actual_text: "2",
+      unit: "count",
+      outcome: "deviation",
+      ...DOCUMENTATION,
+      inputs: [
+        input("blocking_items_open", "Blocking checklist items open", 2, null, {
+          basis: "checklist",
+          refs: ["kyc_directors", "valuation_report"],
+        }),
+      ],
+    }),
+  ],
+  counts: policyCounts(3, 3, 1),
+  // In the page's order; each card's norms: deviations, then those that cannot be evaluated,
+  // then passed ones, three at most.
+  groups: [
+    policyGroup("eligibility", 2, policyCounts(1, 1, 0), "deviation", ["EL-04", "EL-02"]),
+    policyGroup("ratios", 4, policyCounts(1, 2, 1), "deviation", ["FR-05", "FR-04", "FR-06"]),
+    policyGroup("documentation", 1, policyCounts(1, 0, 0), "deviation", ["DOC-01"]),
+    policyGroup("security_cover", 0, policyCounts(0, 0, 0), "no_norms"),
+  ],
+} satisfies PolicyAssessment;
+
+/** Saffron: negative net worth, so the leverage norms have no meaningful value. */
+export const SAFFRON_POLICY = {
+  case_id: SAFFRON,
+  period: "FY 2025-26",
+  config_version: "v3",
+  norms: [
+    norm({
+      id: "EL-03",
+      family: "eligibility",
+      label: "Positive net worth",
+      formula: "Net worth",
+      required: "at least INR 1",
+      actual: -40_000_000,
+      actual_text: "INR -4.00 cr",
+      unit: "inr",
+      outcome: "deviation",
+      ...ELIGIBILITY,
+      inputs: [input("net_worth", "Net worth", -40_000_000, 4)],
+    }),
+    norm({
+      id: "FR-02",
+      family: "ratios",
+      label: "TOL / TNW",
+      formula: "(Long-term borrowings + Current liabilities) / Net worth",
+      required: "at most 3.00x",
+      unit: "x",
+      outcome: "deviation",
+      reason: "denominator_not_positive",
+      reason_inputs: ["Net worth"],
+      actual_text: "unbounded (Net worth zero or negative)",
+      inputs: [
+        input("long_term_borrowings", "Long-term borrowings", 80_000_000, 4),
+        input("current_liabilities", "Current liabilities", 60_000_000, 4),
+        input("net_worth", "Net worth", -40_000_000, 4),
+      ],
+    }),
+  ],
+  counts: policyCounts(2, 0, 0),
+  groups: [
+    policyGroup("eligibility", 1, policyCounts(1, 0, 0), "deviation", ["EL-03"]),
+    policyGroup("ratios", 1, policyCounts(1, 0, 0), "deviation", ["FR-02"]),
+    policyGroup("documentation", 0, policyCounts(0, 0, 0), "no_norms"),
+    policyGroup("security_cover", 0, policyCounts(0, 0, 0), "no_norms"),
+  ],
+} satisfies PolicyAssessment;
+
+const authority = (key: string, label: string, level: number) => ({ key, label, level });
+const REGIONAL = authority("regional_credit_head", "Regional Credit Head", 2);
+const CREDIT_OFFICER = authority("credit_officer", "Credit Officer", 1);
+
+/** Kestrel, INR 50 lakh of cash credit and term loan: both bands need the Credit Officer; each
+ * deviation category asks one level more, and eligibility (first in policy order) decides. */
+export const APPROVAL = {
+  case_id: KESTREL,
+  outcome: "determined",
+  required: REGIONAL,
+  reason: null,
+  unmapped_facilities: [],
+  amount_inr: 5_000_000,
+  amount_basis: "amount_requested",
+  products: ["working_capital", "term"],
+  product_labels: ["Working capital", "Term loan"],
+  steps: [
+    {
+      kind: "amount",
+      rule: "bands.working_capital[0]",
+      product: "working_capital",
+      product_label: "Working capital",
+      band_from_inr: null,
+      band_to_inr: 20_000_000,
+      capped: false,
+      authority: CREDIT_OFFICER,
+      governs: false,
+    },
+    {
+      kind: "amount",
+      rule: "bands.term[0]",
+      product: "term",
+      product_label: "Term loan",
+      band_from_inr: null,
+      band_to_inr: 10_000_000,
+      capped: false,
+      authority: CREDIT_OFFICER,
+      governs: false,
+    },
+    {
+      kind: "deviation",
+      rule: "deviations.eligibility",
+      category: "eligibility",
+      category_label: "Eligibility",
+      norms: ["EL-04"],
+      norm_labels: ["Profit in the latest year"],
+      levels_above: 1,
+      at_least: REGIONAL,
+      capped: false,
+      authority: REGIONAL,
+      governs: true,
+    },
+    {
+      kind: "deviation",
+      rule: "deviations.financial",
       category: "financial",
       category_label: "Financial norms",
-      inputs: [],
-      missing: [],
-      note: null,
-      provisional: true,
+      norms: ["FR-05"],
+      norm_labels: ["Debt / equity"],
+      levels_above: 1,
+      at_least: null,
+      capped: false,
+      authority: REGIONAL,
+      governs: false,
+    },
+    {
+      kind: "deviation",
+      rule: "deviations.documentation",
+      category: "documentation",
+      category_label: "Documentation",
+      norms: ["DOC-01"],
+      norm_labels: ["Blocking checklist items open"],
+      levels_above: 1,
+      at_least: null,
+      capped: false,
+      authority: REGIONAL,
+      governs: false,
     },
   ],
+  lower_bound: true,
+  unevaluated: ["EL-02", "FR-04", "FR-06"],
+  unevaluated_labels: ["Commercial bureau rank", "Interest coverage", "Working-capital cycle"],
+  could_rise_to: REGIONAL,
+  provisional: true,
+  source: "provisional",
+  config_version: "v3",
+} satisfies ApprovingAuthority;
+
+export const APPROVAL_MATRIX = {
+  source: "provisional",
+  status: "provisional",
+  note: "Interim matrix proposed by the delivery team, awaiting RBL's approval and delegation matrix.",
+  amount_basis: "amount_requested",
+  authorities: [
+    { ...CREDIT_OFFICER, status: "provisional" },
+    { ...REGIONAL, status: "provisional" },
+  ],
+  products: [{ key: "working_capital", label: "Working capital", facilities: ["cash_credit"] }],
+  bands: {
+    working_capital: [
+      { up_to_inr: 20_000_000, authority: "credit_officer", status: "provisional" },
+      { up_to_inr: null, authority: "regional_credit_head", status: "provisional" },
+    ],
+  },
+  deviations: [{ category: "financial", levels_above: 1, at_least: null, status: "provisional" }],
+} satisfies ApprovalMatrixConfig;
+
+// --- Comparison with RBL's record (F-25) ---
+
+const byId = (id: string) => POLICY.norms.find((n) => n.id === id)!;
+
+function record(confirmed: boolean, importedBy = "ananya-krishnan") {
+  return {
+    case_id: KESTREL,
+    workbook_name: "kestrel-record.xlsx",
+    workbook_sha256: "4f1c0de5",
+    record_date: "2026-09-25",
+    deviations_recorded: true,
+    imported_by: importedBy,
+    imported_at: "2026-10-01T09:00:00Z",
+    confirmed_by: confirmed ? "meenal-kulkarni" : null,
+    confirmed_by_name: confirmed ? "Meenal Kulkarni" : null,
+    confirmed_at: confirmed ? "2026-10-02T09:00:00Z" : null,
+    config_version: "v3",
+    deviations: [],
+    approval: null,
+    areas_not_compared: ["classification", "key_fields", "discrepancies", "queries", "decision"],
+  };
+}
+
+const deviationRow = (
+  row: number,
+  norm_id: string | null,
+  description: string,
+  value: string,
+  category: string | null,
+) => ({
+  row,
+  norm_id,
+  description,
+  category,
+  recorded_value: value,
+  approved_by_text: "Zonal Credit Committee",
+  source_ref: `CAM p.14, deviation table row ${row - 1}`,
+  notes: null,
+});
+
+/** Kestrel compared with its confirmed record: one agreement, one difference, one new
+ * deviation, three missed, and an authority recorded one level above the matrix. */
+export function comparison(confirmed = true, importedBy = "ananya-krishnan"): CaseComparison {
+  const items: CaseComparison["items"] = [
+    {
+      area: "deviations",
+      key: "FR-05",
+      label: "Debt / equity",
+      status: "agree",
+      creditiq_text: "3.00x",
+      record_text: "3.00x",
+      norm: byId("FR-05"),
+      record_deviation: deviationRow(2, "FR-05", "Debt equity above norm", "3.00x", "financial"),
+      notes: [],
+      adjudicable: false,
+      adjudication: null,
+      scored: true,
+    },
+    {
+      area: "deviations",
+      key: "EL-04",
+      label: "Profit in the latest year",
+      status: "new",
+      creditiq_text: "INR -40.00 lakh",
+      record_text: null,
+      norm: byId("EL-04"),
+      record_deviation: null,
+      notes: [],
+      adjudicable: confirmed,
+      adjudication: null,
+      scored: true,
+    },
+    {
+      area: "deviations",
+      key: "DOC-01",
+      label: "Blocking checklist items open",
+      status: "differ",
+      creditiq_text: "2",
+      record_text: "3 items",
+      norm: byId("DOC-01"),
+      record_deviation: deviationRow(
+        3,
+        "DOC-01",
+        "Documents pending at sanction",
+        "3 items",
+        "documentation",
+      ),
+      notes: ["value_differs"],
+      adjudicable: confirmed,
+      adjudication: null,
+      scored: true,
+    },
+    {
+      area: "deviations",
+      key: "EL-02",
+      label: "Commercial bureau rank",
+      status: "missed",
+      creditiq_text: null,
+      record_text: "rank 7",
+      norm: byId("EL-02"),
+      record_deviation: deviationRow(
+        4,
+        "EL-02",
+        "Bureau rank weaker than norm",
+        "rank 7",
+        "eligibility",
+      ),
+      notes: ["cannot_evaluate"],
+      adjudicable: false,
+      adjudication: null,
+      scored: true,
+    },
+    {
+      area: "deviations",
+      key: "FR-01",
+      label: "Current ratio",
+      status: "missed",
+      creditiq_text: "1.50x",
+      record_text: "1.10x",
+      norm: byId("FR-01"),
+      record_deviation: deviationRow(5, "FR-01", "Current ratio below norm", "1.10x", "financial"),
+      notes: ["pass"],
+      adjudicable: false,
+      adjudication: null,
+      scored: true,
+    },
+    {
+      area: "deviations",
+      key: "REC-6",
+      label: "Pricing below card rate",
+      status: "missed",
+      creditiq_text: null,
+      record_text: "25 bps below card",
+      norm: null,
+      record_deviation: deviationRow(6, null, "Pricing below card rate", "25 bps below card", null),
+      notes: ["no_norm"],
+      adjudicable: false,
+      adjudication: null,
+      scored: true,
+    },
+    {
+      area: "approving_authority",
+      key: "approval",
+      label: "Approving authority",
+      status: "differ",
+      creditiq_text: "Regional Credit Head",
+      record_text: "Zonal Credit Committee",
+      required: APPROVAL,
+      record_approval: {
+        authority_text: "Zonal Credit Committee",
+        authority_key: "zonal_credit_committee",
+        decision: "approved",
+        decided_on: "2026-09-26",
+        source_ref: "Sanction note p.1",
+        notes: null,
+      },
+      authority_on_record_deviations: REGIONAL,
+      notes: ["higher"],
+      adjudicable: confirmed,
+      adjudication: null,
+      scored: false,
+    },
+  ];
+  return {
+    case_id: KESTREL,
+    config_version: "v3",
+    record: record(confirmed, importedBy),
+    provisional_norms: true,
+    provisional_matrix: true,
+    counts: {
+      agree: 1,
+      differ: 1,
+      new: 1,
+      missed: 3,
+      to_adjudicate: confirmed ? 3 : 0,
+      no_deviation_either_side: 4,
+    },
+    items,
+    scores: [
+      {
+        area: "deviations",
+        scored: true,
+        found_in_record: 2,
+        recorded_total: 5,
+        valid: 1,
+        flagged_total: 3,
+        pending: 2,
+      },
+    ],
+  };
+}
+
+/** No record imported yet. */
+export const NO_COMPARISON: CaseComparison = {
+  case_id: KESTREL,
+  config_version: "v3",
+  record: null,
+  provisional_norms: true,
+  provisional_matrix: true,
+  counts: { agree: 0, differ: 0, new: 0, missed: 0, to_adjudicate: 0, no_deviation_either_side: 0 },
+  items: [],
+  scores: [],
 };
+
+/** A decision whose item has changed since: shown stale, not counted. */
+export function staleComparison(): CaseComparison {
+  const c = comparison();
+  const doc = c.items.find((i) => i.key === "DOC-01")!;
+  doc.adjudication = {
+    verdict: "valid",
+    reason: "Record counted the CA certificate twice",
+    decided_by: "meenal-kulkarni",
+    decided_by_name: "Meenal Kulkarni",
+    decided_at: "2026-10-03T09:00:00Z",
+    stale: true,
+  };
+  return c;
+}
 
 // --- Outputs (F-22 to F-24) ---
 
@@ -966,6 +2728,20 @@ export const CAM: Cam = {
       text: "Regular debits to lender(s) not declared: ASHWOOD FINSERV.",
       citations: [{ document_id: "doc-bank", page: 7 }],
     },
+    {
+      kind: "deviation",
+      severity: null,
+      ref: "FR-05",
+      text: "Financial norms: Debt / equity is 3.00x against at most 2.00x.",
+      citations: cite(4),
+    },
+    {
+      kind: "unassessed",
+      severity: null,
+      ref: "EL-02",
+      text: "Commercial bureau rank could not be assessed: Commercial bureau rank not on file.",
+      citations: [],
+    },
     { kind: "query", severity: null, ref: "q1", text: "KYC of Leela Varghese.", citations: [] },
   ],
   recommendation_title: "Recommendation",
@@ -984,6 +2760,7 @@ export const PD_NOTE: PdNote = {
       rule: "OB-02",
       title: "Instalments in bank statements go to declared lenders",
       evidence: [{ document_id: "doc-bank", page: 7 }],
+      target: "cross_verification",
     },
     {
       id: "pdq-2",
@@ -994,6 +2771,18 @@ export const PD_NOTE: PdNote = {
       rule: "FR-05",
       title: "Debt / equity",
       evidence: cite(4),
+      target: "policy",
+    },
+    {
+      id: "pdq-3",
+      text: "The declaration shows Tidewater Finance at INR 40.00 lakh; the sanction letter and the bureau report show INR 55.00 lakh. Which is right?",
+      severity: "serious",
+      source: "finding",
+      ref: "fnd-ob1",
+      rule: "OB-01",
+      title: "Declared facilities reconcile with sanction letters and the bureau",
+      evidence: [{ document_id: "doc-bureau", page: 2 }],
+      target: "cross_verification",
     },
   ],
 };
@@ -1056,7 +2845,14 @@ export const AUDIT = {
 };
 
 export const POLICY_CONFIG = {
-  working_capital: {},
+  working_capital: {
+    mpbf_above_limit_inr: 50_000_000,
+    source: "provisional",
+    status: "provisional",
+    turnover_requirement_pct: 25,
+    turnover_margin_pct: 5,
+    mpbf_margin_pct: 25,
+  },
   ratios: [
     {
       key: "dscr",
@@ -1065,17 +2861,25 @@ export const POLICY_CONFIG = {
       kind: "min",
       acceptable: 1.25,
       marginal: 1.1,
+      formula: "(PAT + depreciation) / instalments",
+      applies: "term debt",
+      source: "provisional",
+      status: "provisional",
+      note: "Interim threshold.",
+      hard_floor: null,
     },
   ],
-  deviation_categories: [{ key: "credit", label: "Credit" }],
+  deviation_categories: [{ key: "financial", label: "Financial norms" }],
   norms: [
     {
       id: "FR-01",
       family: "ratios",
       expression: "x",
       ratio: "dscr",
-      category: "credit",
-      status: "confirmed",
+      category: "financial",
+      applies_when: "always",
+      non_positive_denominator: "cannot_evaluate",
+      pd_gap: "ask",
     },
     {
       id: "EL-01",
@@ -1085,7 +2889,11 @@ export const POLICY_CONFIG = {
       unit: "years",
       kind: "min",
       threshold: 3,
-      category: "credit",
+      category: "financial",
+      applies_when: "always",
+      non_positive_denominator: "cannot_evaluate",
+      pd_gap: "ask",
+      status: "active",
     },
   ],
-};
+} satisfies PolicyConfig;

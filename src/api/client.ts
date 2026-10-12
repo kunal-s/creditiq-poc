@@ -1,5 +1,9 @@
 import type {
+  AdjudicationRequest,
+  ApprovalMatrixConfig,
+  ApprovingAuthority,
   Cam,
+  CaseComparison,
   CaseCreate,
   CaseDetail,
   CaseFacts,
@@ -7,7 +11,10 @@ import type {
   CaseProposal,
   CaseSummary,
   ChecklistTaxonomy,
+  ComparisonArea,
+  ComparisonItem,
   ConfigVersion,
+  CrossVerificationView,
   DirectoryUser,
   AuditPage,
   PolicyConfig,
@@ -24,11 +31,14 @@ import type {
   ProposalRequest,
   QueryItem,
   Readiness,
+  ReferenceRecord,
   ReviewDecisionRequest,
   ReviewItem,
   SessionUser,
   Spread,
   UploadResult,
+  XvDecisionRequest,
+  XvItem,
 } from "./types";
 
 const BASE_URL = import.meta.env["VITE_API_BASE_URL"] ?? "http://localhost:8010";
@@ -137,8 +147,31 @@ export const api = {
   caseChecklist: (id: string) => request<Readiness>(`/api/cases/${q(id)}/checklist`),
   caseQueries: (id: string) => request<QueryItem[]>(`/api/cases/${q(id)}/queries`),
   caseFindings: (id: string) => request<Finding[]>(`/api/cases/${q(id)}/findings`),
+  caseCrossVerification: (id: string) =>
+    request<CrossVerificationView>(`/api/cases/${q(id)}/cross-verification`),
+  /** Accept, dismiss or escalate a discrepancy; every decision needs a comment (F-19). */
+  decideCrossVerification: (id: string, findingId: string, body: XvDecisionRequest) =>
+    request<XvItem>(`/api/cases/${q(id)}/cross-verification/findings/${q(findingId)}/decision`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  /** Put what would complete a check that could not run on the query list (F-14). */
+  queryCrossVerification: (id: string, findingId: string) =>
+    request<XvItem>(`/api/cases/${q(id)}/cross-verification/findings/${q(findingId)}/query`, {
+      method: "POST",
+    }),
   caseFacts: (id: string) => request<CaseFacts>(`/api/cases/${q(id)}/facts`),
   casePolicy: (id: string) => request<PolicyAssessment>(`/api/cases/${q(id)}/policy`),
+  caseApprovingAuthority: (id: string) =>
+    request<ApprovingAuthority>(`/api/cases/${q(id)}/approving-authority`),
+  caseComparison: (id: string) => request<CaseComparison>(`/api/cases/${q(id)}/comparison`),
+  confirmReference: (id: string) =>
+    request<ReferenceRecord>(`/api/cases/${q(id)}/reference/confirm`, { method: "POST" }),
+  adjudicate: (id: string, area: ComparisonArea, key: string, body: AdjudicationRequest) =>
+    request<ComparisonItem>(`/api/cases/${q(id)}/comparison/${q(area)}/${q(key)}/adjudication`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
   caseSpread: (id: string) => request<Spread>(`/api/cases/${q(id)}/spread`),
   caseCam: (id: string) => request<Cam>(`/api/cases/${q(id)}/cam`),
   casePdNote: (id: string) => request<PdNote>(`/api/cases/${q(id)}/pd-note`),
@@ -158,6 +191,7 @@ export const api = {
   documentTypes: () => request<DocumentTypes>("/api/config/document-types"),
   checklistTaxonomy: () => request<ChecklistTaxonomy>("/api/config/checklist-taxonomy"),
   policyConfig: () => request<PolicyConfig>("/api/config/policy"),
+  approvalMatrixConfig: () => request<ApprovalMatrixConfig>("/api/config/approval-matrix"),
   configVersions: () => request<ConfigVersion[]>("/api/config/versions"),
   users: () => request<DirectoryUser[]>("/api/users"),
   audit: (params: { caseId?: string; actor?: string; action?: string; before?: number }) => {

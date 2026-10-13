@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import type { CrossVerificationView, FindingArea } from "@/api/types";
 import { QueryView } from "@/components/common/States";
@@ -12,6 +12,7 @@ import {
   cardElementId,
   checkElementId,
   itemById,
+  itemByLink,
   scrollBehavior,
   useCrossVerification,
 } from "@/domain/crossVerification";
@@ -84,24 +85,73 @@ import { BoardHeader } from "./BoardHeader";
 //   xv-facts                 the facts behind an area's checks (a closed details element; the
 //                            panels facts-identity, facts-people, facts-turnover,
 //                            facts-accounts, facts-credits, facts-obligations)
+//
+// A link from the draft CAM or the PD note (?finding=, a finding id or its XV reference) opens
+// the board at that finding once it has loaded: a discrepancy's card open and focused, as
+// Adjudicate now leaves it, or any other check's row, as a key figure leaves it.
 
-export function CrossVerificationBoard({ caseId }: { caseId: string }) {
+export function CrossVerificationBoard({
+  caseId,
+  finding,
+}: {
+  caseId: string;
+  /** The finding a link names, to open the board at. */
+  finding?: string | undefined;
+}) {
   const board = useCrossVerification(caseId);
   return (
     <div className="min-w-0 pb-10" data-testid="xv-board">
       <BoardHeader caseId={caseId} view={board.data} />
       <div className="min-w-0 space-y-6 px-4 py-5 sm:px-6">
-        <QueryView query={board}>{(view) => <BoardBody caseId={caseId} view={view} />}</QueryView>
+        <QueryView query={board}>
+          {(view) => <BoardBody caseId={caseId} view={view} linkedTo={finding} />}
+        </QueryView>
       </div>
     </div>
   );
 }
 
-function BoardBody({ caseId, view }: { caseId: string; view: CrossVerificationView }) {
-  // The first card on the board (the engine's top_finding_id) is open when the board loads.
-  const [expanded, setExpanded] = useState<ReadonlySet<string>>(
-    () => new Set(view.top_finding_id ? [view.top_finding_id] : []),
-  );
+/** Scroll a discrepancy's card to the top and focus its toggle. */
+function focusCard(id: string) {
+  const card = document.getElementById(cardElementId(id));
+  card?.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
+  card
+    ?.querySelector<HTMLElement>('[data-testid="xv-card-toggle"]')
+    ?.focus({ preventScroll: true });
+}
+
+/** Scroll to the row of a check that could not run, passed or did not apply, opening the passed
+ * checks if it is among them, and focus it. */
+function focusRow(id: string) {
+  const row = document.getElementById(checkElementId(id));
+  if (!row) return;
+  const list = row.closest("details");
+  if (list && !list.open) list.open = true;
+  row.scrollIntoView({ behavior: scrollBehavior(), block: "center" });
+  // Marked as the row opened until the reader moves on.
+  row.setAttribute("data-target", "true");
+  row.addEventListener("blur", () => row.removeAttribute("data-target"), { once: true });
+  row.focus({ preventScroll: true });
+}
+
+function BoardBody({
+  caseId,
+  view,
+  linkedTo,
+}: {
+  caseId: string;
+  view: CrossVerificationView;
+  linkedTo?: string | undefined;
+}) {
+  const linked = itemByLink(view, linkedTo);
+  const linkedId = linked?.finding.id ?? null;
+  const linkedFails = linked?.finding.outcome === "fail";
+  // The first card on the board (the engine's top_finding_id) is open when the board loads; a
+  // link opens it at the card it names instead, or with every card closed at a check's row.
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => {
+    const open = linked ? (linkedFails ? linkedId : null) : view.top_finding_id;
+    return new Set(open ? [open] : []);
+  });
   const toggle = (id: string) =>
     setExpanded((current) => {
       const next = new Set(current);
@@ -111,11 +161,7 @@ function BoardBody({ caseId, view }: { caseId: string; view: CrossVerificationVi
     });
   const adjudicateNow = (id: string) => {
     flushSync(() => setExpanded((current) => new Set(current).add(id)));
-    const card = document.getElementById(cardElementId(id));
-    card?.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
-    card
-      ?.querySelector<HTMLElement>('[data-testid="xv-card-toggle"]')
-      ?.focus({ preventScroll: true });
+    focusCard(id);
   };
   const openArea = (area: FindingArea) => {
     document
@@ -124,24 +170,31 @@ function BoardBody({ caseId, view }: { caseId: string; view: CrossVerificationVi
     document.getElementById(areaHeadingId(area))?.focus({ preventScroll: true });
   };
   // A key figure opens its finding: a discrepancy's card, as Adjudicate now does; any other
-  // finding's row, opening the passed checks if it is among them.
+  // finding's row.
   const openFinding = (id: string) => {
     const item = itemById(view, id);
     if (!item) return;
-    if (item.finding.outcome === "fail") {
-      adjudicateNow(id);
+    if (item.finding.outcome === "fail") adjudicateNow(id);
+    else focusRow(id);
+  };
+
+  // The linked finding is shown once, when its card is open (the card the board opened with, or
+  // one opened for a link followed while the board is open), and a frame later: once the router
+  // has scrolled the page it rendered to the top.
+  const shown = useRef<string | null>(null);
+  useEffect(() => {
+    if (!linkedId || shown.current === linkedId) return;
+    if (linkedFails && !expanded.has(linkedId)) {
+      setExpanded((current) => new Set(current).add(linkedId));
       return;
     }
-    const row = document.getElementById(checkElementId(id));
-    if (!row) return;
-    const list = row.closest("details");
-    if (list && !list.open) list.open = true;
-    row.scrollIntoView({ behavior: scrollBehavior(), block: "center" });
-    // Marked as the row the key figure opened until the reader moves on.
-    row.setAttribute("data-target", "true");
-    row.addEventListener("blur", () => row.removeAttribute("data-target"), { once: true });
-    row.focus({ preventScroll: true });
-  };
+    const frame = requestAnimationFrame(() => {
+      shown.current = linkedId;
+      if (linkedFails) focusCard(linkedId);
+      else focusRow(linkedId);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [linkedId, linkedFails, expanded]);
 
   if (view.items.length === 0) {
     return (

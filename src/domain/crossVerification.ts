@@ -125,6 +125,24 @@ export function itemById(view: CrossVerificationView, findingId: string | null |
   return findingId ? view.items.find((i) => i.finding.id === findingId) : undefined;
 }
 
+/** The item a link to the board names (?finding=, from the draft CAM or the PD note): by its
+ * finding id, else by its board reference (XV-…), else the first check of that rule that did not
+ * pass (a check that could not be completed has no reference). */
+export function itemByLink(view: CrossVerificationView, key: string | null | undefined) {
+  if (!key) return undefined;
+  const items = view.items;
+  return (
+    items.find((i) => i.finding.id === key) ??
+    items.find((i) => i.finding.ref === key) ??
+    items.find(
+      (i) =>
+        i.finding.rule_id === key &&
+        (i.finding.outcome === "fail" || i.finding.outcome === "incomplete"),
+    ) ??
+    items.find((i) => i.finding.rule_id === key)
+  );
+}
+
 /** A discrepancy not yet accepted or dismissed; an escalated one stays open. */
 export function isOpen(item: XvItem): boolean {
   return item.finding.outcome === "fail" && !item.adjudicated;

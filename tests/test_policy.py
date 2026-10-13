@@ -190,7 +190,10 @@ def test_a_zero_denominator_is_named_and_never_a_pass(client: TestClient, analys
     assert not any("is zero not on file" in t for t in texts + [q["text"] for q in questions])
     if norm_id == "FR-04":
         q = next(q for q in questions if q["rule"] == "FR-04")
-        assert q["text"] == "Interest coverage could not be computed because Finance costs is zero. What explains it?"
+        # The divisor named inside the sentence, in the configured wording.
+        template = reader.load_policy(published_data_root).pd_questions["zero_denominator"]
+        assert q["text"] == template.replace("{label}", "Interest coverage").replace("{inputs}", "finance costs")
+        assert "explains it?" not in q["text"]
 
 
 def test_a_missing_denominator_is_still_named_missing(client: TestClient, analyst, published_data_root: Path):
@@ -248,7 +251,7 @@ def test_a_deviation_never_displays_equal_to_its_norm(client: TestClient, analys
     assert n["outcome"] == "deviation" and round(n["actual"], 1) == 75.4 and n["actual_text"] == "75.4 days"
     _refresh(published_data_root, case_id)
     texts = [i["text"] for i in client.get(f"/api/cases/{case_id}/cam", headers=analyst).json()["summary"]]
-    assert any("75.4 days against at most 75 days" in t for t in texts)
+    assert any("75.4 days against a norm of at most 75 days" in t for t in texts)
 
 
 @pytest.mark.parametrize("value,unit,threshold,text", [
@@ -278,6 +281,27 @@ def test_values_are_worded_with_their_unit(value, unit, text):
     assert policy.unit_text(value, unit) == text
 
 
+@pytest.mark.parametrize("kind,threshold,unit,text", [
+    ("min", 1, "inr", "positive"), ("min", 0, "inr", "no loss"), ("max", 0, "count", "none"),
+    ("min", 2, "years", "at least 2 years"), ("max", 6, "rank", "at most rank 6"), ("min", 1.2, "x", "at least 1.20x"),
+    ("max", 2, "count", "at most 2"), ("min", 5_000_000, "inr", "at least INR 50.00 lakh"), ("max", 0, "inr", "at most INR 0"),
+])
+def test_a_norm_of_a_positive_figure_no_loss_or_nothing_open_reads_in_words(kind, threshold, unit, text):
+    """Never "at least INR 1" for positive net worth, "at least INR 0" for a profit or "at most 0" open items."""
+    assert policy.required_text(kind, threshold, unit) == text
+
+
+def test_the_policy_states_positive_net_worth_a_profit_and_no_blocking_item_in_words(client: TestClient, analyst,
+                                                                                    published_data_root: Path):
+    case_id = make_case(client, analyst, published_data_root, facilities=["cash_credit"], amount_inr=40_000_000)
+    audited(published_data_root, case_id)
+    norms = _policy(client, analyst, case_id)
+    assert (norms["EL-03"]["required"], norms["EL-04"]["required"], norms["DOC-01"]["required"]) == (
+        "positive", "no loss", "none")
+    assert norms["FR-01"]["required"] == "at least 1.20x" and norms["DOC-02"]["required"] == "at least 2 years"
+    assert norms["DOC-01"]["outcome"] == "deviation" and norms["EL-03"]["outcome"] == "pass"
+
+
 def test_one_year_of_statements_reads_one_year(client: TestClient, analyst, published_data_root: Path):
     case_id = make_case(client, analyst, published_data_root, facilities=["cash_credit"], amount_inr=40_000_000)
     audited(published_data_root, case_id)
@@ -286,7 +310,7 @@ def test_one_year_of_statements_reads_one_year(client: TestClient, analyst, publ
     _refresh(published_data_root, case_id)
     texts = [i["text"] for i in client.get(f"/api/cases/{case_id}/cam", headers=analyst).json()["summary"]]
     questions = [q["text"] for q in client.get(f"/api/cases/{case_id}/pd-note", headers=analyst).json()["questions"]]
-    assert any("1 year against at least 2 years" in t for t in texts)
+    assert any("1 year against a norm of at least 2 years" in t for t in texts)
     assert not any("1 years" in t for t in texts + questions)
 
 
@@ -356,7 +380,7 @@ def test_a_request_just_over_the_turnover_norm_reads_over_it(client: TestClient,
     _refresh(published_data_root, case_id)
     texts = [i["text"] for i in client.get(f"/api/cases/{case_id}/cam", headers=analyst).json()["summary"]]
     questions = [q["text"] for q in client.get(f"/api/cases/{case_id}/pd-note", headers=analyst).json()["questions"]]
-    assert any("20.04% against at most 20%" in t for t in texts)
+    assert any("20.04% against a norm of at most 20%" in t for t in texts)
     assert not any("20.0% against" in t for t in texts + questions)
 
 

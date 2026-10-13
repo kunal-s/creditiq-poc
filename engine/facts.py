@@ -82,6 +82,20 @@ KYC_TYPES = {"director_kyc"}
 # The statement lines the year-on-year and bank checks read (FS-01, FS-02, OB-03).
 YEAR_LINES = ("revenue_from_operations", "profit_before_tax", "profit_after_tax", "net_worth", "total_borrowings",
               "long_term_borrowings", "finance_costs", "cash_and_bank_balances")
+MESSAGE = "application_message"
+# What the sourcing message may say an account or a facility is, as in "cash credit with Lotuscrest
+# Bank a/c 90100005678"; a short form stands for its full name.
+BANKING_KINDS = {"current account": None, "savings account": None, "escrow account": None, "cash credit": None,
+                 "overdraft": None, "working capital demand loan": None, "working capital loan": None,
+                 "term loan": None, "packing credit": None, "bill discounting": None, "letter of credit": None,
+                 "bank guarantee": None, "equipment loan": None, "vehicle loan": None, "loan against property": None,
+                 "cc": "cash credit", "od": "overdraft", "tl": "term loan"}
+DEPOSIT_KINDS = {"current account", "savings account", "escrow account"}
+_KINDS = "|".join(re.escape(k) for k in sorted(BANKING_KINDS, key=len, reverse=True))
+_BANKING = re.compile(rf"\b(?P<kind>{_KINDS})\b(?:\s+(?:with|from|at)\s+(?P<bank>[A-Za-z][\w&.'\- ]*?))?"
+                      rf"(?:[.,]?\s+(?:a/?c|acct|account)\.?\s*(?:no\.?\s*)?(?P<number>\d{{4,}}))?"
+                      rf"(?=\s*(?:$|[;,]|\band\s+(?:an?\s+|the\s+)?(?:{_KINDS})\b|\.(?:\s|$)))", re.I)
+MESSAGE_ACCOUNT = re.compile(r"(?:a/?c|account)[^\d]{0,12}(\d{4,})", re.I)
 
 
 # --- Loading ---
@@ -276,6 +290,16 @@ def _last4(value: object) -> str | None:
 
 def _account_label(bank: str, last4: str | None) -> str:
     return f"{bank} ·{last4}" if last4 else bank
+
+
+def banking_named(text: str | None) -> list[tuple[str, str, str | None]]:
+    """What the sourcing message says of the existing banking, clause by clause: (kind, bank, last four
+    digits) for "cash credit with Lotuscrest Bank a/c 90100005678"; the bank or the number may be absent."""
+    out = []
+    for m in _BANKING.finditer(text or ""):
+        kind = m["kind"].lower()
+        out.append((BANKING_KINDS[kind] or kind, (m["bank"] or "").strip(), _last4(m["number"])))
+    return out
 
 
 def _phrase(text: str, cues: list[str]) -> str | None:
@@ -492,6 +516,17 @@ def _facilities(b: Build) -> list[FacilityFact]:
             lender = r.get("lender")
             if lender and lender.value:
                 out.append(_facility(d, str(lender.value).strip(), r, lender))
+    # A facility the sourcing message names with its lender ("cash credit with Lotuscrest Bank"); its
+    # limit is not stated there. The checks compare the documents only (OB-01 reads the message as text).
+    message = b.message_value("existing_banking")
+    if message and isinstance(message.value, str):
+        seen: set[tuple[str, str]] = set()
+        for kind, bank, _ in banking_named(message.value):
+            if kind in DEPOSIT_KINDS or not bank or (bank.casefold(), kind) in seen:
+                continue
+            seen.add((bank.casefold(), kind))
+            out.append(FacilityFact(source=MESSAGE, label=message.label, lender=bank, facility=kind[:1].upper() + kind[1:],
+                                    evidence=message.evidence, relies_on_manual=message.relies_on_manual))
     return out
 
 
@@ -674,7 +709,9 @@ def _accounts(b: Build, txns: list[Txn]) -> tuple[list[AccountFact], bool]:
     found: dict[tuple[str, str | None], AccountFact] = {}
 
     def add(bank: str, last4: str | None, source: str, evidence: list[Evidence], *, declared: bool = False,
-            statement: bool = False) -> None:
+            statement: bool = False, named: str = "", kind: str = "") -> None:
+        # `named` and `kind`: the bank and what the account is, as the sourcing message says; they
+        # describe an account only the message gives, and are not used to match one.
         key = next(
             (k for k in found if (last4 and k[1] == last4 and (not bank or same_entity(bank, k[0], b.noise, b.name_threshold)))
              or (not last4 and not k[1] and same_entity(bank, k[0], b.noise, b.name_threshold))),
@@ -682,8 +719,9 @@ def _accounts(b: Build, txns: list[Txn]) -> tuple[list[AccountFact], bool]:
         )
         if key is None:
             key = (bank, last4)
-            found[key] = AccountFact(bank=bank, last4=last4, label=_account_label(bank or "Account", last4),
-                                     sources=[], declared=False, has_statement=False, evidence=[])
+            label = _account_label(bank or named or "Account", last4) + (f" ({kind})" if kind else "")
+            found[key] = AccountFact(bank=bank or named, last4=last4, label=label, sources=[], declared=False,
+                                     has_statement=False, evidence=[])
         fact = found[key]
         if source not in fact.sources:
             fact.sources.append(source)
@@ -703,11 +741,12 @@ def _accounts(b: Build, txns: list[Txn]) -> tuple[list[AccountFact], bool]:
             if last4:
                 bank = str(r["bank"].value).strip() if r.get("bank") and r["bank"].value else ""
                 add(bank, last4, d.label, d.evidence(number), declared=True)
-    for field_name in ("existing_banking",):
-        v = b.message_value(field_name)
-        if v and isinstance(v.value, str):
-            for m in re.finditer(r"(?:a/?c|account)[^\d]{0,12}(\d{4,})", v.value, re.I):
-                add("", _last4(m[1]), "Sourcing message", v.evidence, declared=True)
+    v = b.message_value("existing_banking")
+    if v and isinstance(v.value, str):
+        named = {last4: (kind, bank) for kind, bank, last4 in banking_named(v.value) if last4}
+        for m in MESSAGE_ACCOUNT.finditer(v.value):
+            kind, bank = named.get(_last4(m[1]) or "", ("", ""))
+            add("", _last4(m[1]), "Sourcing message", v.evidence, declared=True, named=bank, kind=kind)
     own = {k[1] for k in found if k[1]}
     for t in txns:
         for m in re.finditer(r"(?:a/?c|acct|account|x{2,})[^\d]{0,6}(\d{4,})", t.narration, re.I):

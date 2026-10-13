@@ -230,28 +230,30 @@ test("Outputs: the spread, the draft CAM and the PD note, each figure cited", as
 
   await page.getByTestId("view-cam").click();
   const cam = page.getByTestId("cam");
-  await expect(cam.locator('[data-section="financials"]').getByTestId("citation")).toHaveCount(1);
-  await expect(cam.locator('[data-section="banking"]')).toContainText("Nothing on file yet.");
-  await expect(page.getByTestId("cam-summary")).toContainText("Findings (1)");
-  await expect(page.getByTestId("cam-summary")).toContainText("Deviations from policy (1)");
+  const financials = cam.locator('[data-section="financials"]');
+  await expect(financials.getByTestId("cam-section-title")).toHaveText("5. Financial performance");
+  await financials.getByTestId("cam-paragraph").first().getByTestId("citation").first().click();
+  await expect(page.getByTestId("evidence-viewer").getByTestId("viewer-page")).toContainText("3");
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("cam-summary")).toContainText("Findings (6)");
+  await expect(page.getByTestId("cam-summary")).toContainText("Deviations from policy (3)");
   // A norm that could not be assessed is listed, not left out (F-23).
-  await expect(page.getByTestId("cam-summary")).toContainText("Norms not assessed (1)");
+  await expect(page.getByTestId("cam-summary")).toContainText("Norms not assessed (3)");
   await expect(page.getByTestId("cam-recommendation")).toContainText("For credit to complete.");
 
   await page.getByTestId("view-pd").click();
   const questions = page.getByTestId("pd-question");
-  await expect(questions).toHaveCount(3);
-  await expect(questions.first()).toContainText("What are these payments for?");
+  await expect(questions).toHaveCount(10);
+  await expect(questions.first()).toContainText("Which PAN is the company's");
   await expect(questions.first().getByRole("link")).toHaveAttribute(
     "href",
-    `/appraisals/${KESTREL}/cross-verification`,
+    `/appraisals/${KESTREL}/cross-verification?finding=fnd-id1`,
   );
-  await expect(questions.nth(1).getByRole("link")).toHaveAttribute(
-    "href",
-    `/appraisals/${KESTREL}/policy`,
-  );
+  await expect(
+    page.locator('[data-testid="pd-question"][data-rule="FR-05"]').getByRole("link"),
+  ).toHaveAttribute("href", `/appraisals/${KESTREL}/policy?norm=FR-05`);
   // A bureau cross-check's question goes to the Cross-checks tab, as the engine routes it.
   await expect(
     page.locator('[data-testid="pd-question"][data-rule="OB-01"]').getByRole("link"),
-  ).toHaveAttribute("href", `/appraisals/${KESTREL}/cross-verification`);
+  ).toHaveAttribute("href", `/appraisals/${KESTREL}/cross-verification?finding=fnd-ob1`);
 });

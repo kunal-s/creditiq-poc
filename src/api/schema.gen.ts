@@ -240,6 +240,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/cases/{case_id}/cam/download": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Case Cam Download
+     * @description F-23.5: the draft CAM as a Word or PDF file, the same content as the screen, with numbered
+     *     citations and the sources; the recommendation is left blank for credit.
+     */
+    get: operations["case_cam_download_api_cases__case_id__cam_download_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/cases/{case_id}/checklist": {
     parameters: {
       query?: never;
@@ -506,6 +527,27 @@ export interface paths {
      * @description F-24: questions for the personal discussion, ranked, each tied to its source.
      */
     get: operations["case_pd_note_api_cases__case_id__pd_note_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/cases/{case_id}/pd-note/download": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Case Pd Note Download
+     * @description F-24.3: the PD question note as a Word or PDF file, the same content as the screen, with room
+     *     under each question for the response and the follow-up.
+     */
+    get: operations["case_pd_note_download_api_cases__case_id__pd_note_download_get"];
     put?: never;
     post?: never;
     delete?: never;
@@ -1130,58 +1172,145 @@ export interface components {
      * @description The draft Credit Approval Memo (F-23).
      */
     Cam: {
+      /** As Of */
+      as_of: string;
+      /** Borrower */
+      borrower: string;
       /** Case Id */
       case_id: string;
+      /**
+       * Config Label
+       * @default
+       */
+      config_label: string;
+      /** Config Version */
+      config_version: string;
       /** Interim Template */
       interim_template: boolean;
+      /** Labels */
+      labels?: {
+        [key: string]: string;
+      };
       /**
        * Recommendation
        * @default
        */
       recommendation: string;
+      /** Recommendation Number */
+      recommendation_number: number;
+      /** Recommendation Prompts */
+      recommendation_prompts?: string[];
       /** Recommendation Title */
       recommendation_title: string;
+      /** Run Id */
+      run_id?: string | null;
       /** Sections */
       sections: components["schemas"]["CamSection"][];
+      /** Sign Off */
+      sign_off?: components["schemas"]["CamSignOff"][];
+      /** Sources */
+      sources?: components["schemas"]["OutputSource"][];
       /** Summary */
       summary: components["schemas"]["CamSummaryItem"][];
+      /** Summary Number */
+      summary_number: number;
       /** Summary Title */
       summary_title: string;
-    };
-    /** CamSection */
-    CamSection: {
-      /** Empty */
-      empty?: string | null;
-      /** Id */
-      id: string;
-      /** Paragraphs */
-      paragraphs?: components["schemas"]["CamText"][];
-      table?: components["schemas"]["CamTable"] | null;
+      /** Template Note */
+      template_note?: string | null;
       /** Title */
       title: string;
     };
-    /** CamSummaryItem */
-    CamSummaryItem: {
-      /** Citations */
-      citations?: components["schemas"]["Evidence"][];
+    /**
+     * CamBlock
+     * @description One block of a section, in reading order.
+     */
+    CamBlock: {
+      /** Facts */
+      facts?: components["schemas"]["CamFact"][];
       /**
        * Kind
        * @enum {string}
        */
-      kind: "finding" | "deviation" | "unassessed" | "query";
+      kind: "paragraph" | "facts" | "table" | "subheading" | "note";
+      paragraph?: components["schemas"]["CamText"] | null;
+      table?: components["schemas"]["CamTable"] | null;
+      /** Text */
+      text?: string | null;
+    };
+    /**
+     * CamFact
+     * @description One labelled value in a block of key facts.
+     */
+    CamFact: {
+      /** Label */
+      label: string;
+      value: components["schemas"]["CamText"];
+    };
+    /** CamSection */
+    CamSection: {
+      /** Blocks */
+      blocks?: components["schemas"]["CamBlock"][];
+      /** Empty */
+      empty?: string | null;
+      /** Id */
+      id: string;
+      /** Number */
+      number: number;
+      /** Title */
+      title: string;
+    };
+    /**
+     * CamSignOff
+     * @description A line of the sign-off block, left for the people who sign.
+     */
+    CamSignOff: {
+      /** Role */
+      role: string;
+    };
+    /** CamSummaryItem */
+    CamSummaryItem: {
+      /**
+       * Blocking
+       * @default false
+       */
+      blocking: boolean;
+      /** Citations */
+      citations?: components["schemas"]["Evidence"][];
+      /** Group */
+      group?: ("documents_needed" | "documents_to_redo" | "clarifications") | null;
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: "finding" | "incomplete" | "deviation" | "unassessed" | "query";
       /** Ref */
       ref: string;
+      /** Request */
+      request?: string | null;
+      /** Rule */
+      rule?: string | null;
       /** Severity */
       severity?: ("serious" | "moderate" | "mild") | null;
+      /** Status */
+      status?: string | null;
       /** Text */
       text: string;
+      /** Title */
+      title?: string | null;
     };
     /** CamTable */
     CamTable: {
       /** Columns */
       columns: string[];
+      /** Note */
+      note?: string | null;
+      /** Numeric */
+      numeric?: number[];
       /** Rows */
       rows: components["schemas"]["CamText"][][];
+      /** Title */
+      title?: string | null;
     };
     /**
      * CamText
@@ -2554,6 +2683,23 @@ export interface components {
       /** Label */
       label: string;
     };
+    /**
+     * OutputSource
+     * @description A document the memo or the note cites, numbered in the order it is first cited, so the screen
+     *     and the downloads refer to it the same way (F-23.2, F-24.2).
+     */
+    OutputSource: {
+      /** Document Id */
+      document_id: string;
+      /** File Name */
+      file_name?: string | null;
+      /** Label */
+      label: string;
+      /** Number */
+      number: number;
+      /** Pages */
+      pages: number[];
+    };
     /** PageInfo */
     PageInfo: {
       /**
@@ -2620,22 +2766,85 @@ export interface components {
       /** Role */
       role?: string | null;
     };
-    /** PdNote */
+    /**
+     * PdNote
+     * @description The PD question note (F-24): ranked questions, each tied to its finding and evidence.
+     */
     PdNote: {
+      /** As Of */
+      as_of: string;
+      /** Borrower */
+      borrower: string;
       /** Case Id */
       case_id: string;
+      /**
+       * Config Label
+       * @default
+       */
+      config_label: string;
+      /** Config Version */
+      config_version: string;
+      /** Documents To Collect */
+      documents_to_collect?: components["schemas"]["CamText"][];
+      /** Header */
+      header?: components["schemas"]["CamFact"][];
+      /** Labels */
+      labels?: {
+        [key: string]: string;
+      };
+      /** People */
+      people?: components["schemas"]["PdPerson"][];
       /** Questions */
       questions: components["schemas"]["PdQuestion"][];
+      /** Record Fields */
+      record_fields?: string[];
+      /** Sign Off */
+      sign_off?: components["schemas"]["CamSignOff"][];
+      /** Sources */
+      sources?: components["schemas"]["OutputSource"][];
+      /** Title */
+      title: string;
+      /** Topics */
+      topics?: components["schemas"]["PdTopic"][];
+    };
+    /**
+     * PdPerson
+     * @description Someone to meet: a promoter or director the documents name.
+     */
+    PdPerson: {
+      /** Din */
+      din?: string | null;
+      /** Evidence */
+      evidence?: components["schemas"]["Evidence"][];
+      /** Name */
+      name: string;
+      /** Role */
+      role?: string | null;
+      /** Sources */
+      sources?: string[];
     };
     /**
      * PdQuestion
      * @description One question for the personal discussion (F-24).
      */
     PdQuestion: {
+      /** Also */
+      also?: components["schemas"]["PdRef"][];
+      /**
+       * Area
+       * @enum {string}
+       */
+      area: "identity" | "turnover" | "accounts" | "obligations" | "policy";
+      /** Context */
+      context: string;
       /** Evidence */
       evidence?: components["schemas"]["Evidence"][];
       /** Id */
       id: string;
+      /** Number */
+      number: number;
+      /** Question */
+      question: string;
       /** Ref */
       ref: string;
       /** Rule */
@@ -2650,6 +2859,8 @@ export interface components {
        * @enum {string}
        */
       source: "finding" | "deviation" | "gap";
+      /** Status */
+      status?: string | null;
       /**
        * Target
        * @default policy
@@ -2658,6 +2869,41 @@ export interface components {
       target: "cross_verification" | "policy";
       /** Text */
       text: string;
+      /** Title */
+      title: string;
+      /** Xv Ref */
+      xv_ref?: string | null;
+    };
+    /**
+     * PdRef
+     * @description Another finding a merged question also rests on (F-24.2).
+     */
+    PdRef: {
+      /** Evidence */
+      evidence?: components["schemas"]["Evidence"][];
+      /** Ref */
+      ref: string;
+      /** Rule */
+      rule: string;
+      /** Status */
+      status?: string | null;
+      /** Title */
+      title: string;
+      /** Xv Ref */
+      xv_ref?: string | null;
+    };
+    /**
+     * PdTopic
+     * @description The questions asked under one topic, in order.
+     */
+    PdTopic: {
+      /**
+       * Area
+       * @enum {string}
+       */
+      area: "identity" | "turnover" | "accounts" | "obligations" | "policy";
+      /** Question Ids */
+      question_ids: string[];
       /** Title */
       title: string;
     };
@@ -2813,6 +3059,8 @@ export interface components {
        * @enum {string}
        */
       pd_gap: "ask" | "skip";
+      /** Pd Gap Question */
+      pd_gap_question?: string | null;
       /** Pd Question */
       pd_question?: string | null;
       /** Ratio */
@@ -4194,6 +4442,42 @@ export interface operations {
       };
     };
   };
+  case_cam_download_api_cases__case_id__cam_download_get: {
+    parameters: {
+      query: {
+        format: "docx" | "pdf";
+      };
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The file, as an attachment. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/pdf": string;
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document": string;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   case_checklist_api_cases__case_id__checklist_get: {
     parameters: {
       query?: never;
@@ -4697,6 +4981,42 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["PdNote"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  case_pd_note_download_api_cases__case_id__pd_note_download_get: {
+    parameters: {
+      query: {
+        format: "docx" | "pdf";
+      };
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The file, as an attachment. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/pdf": string;
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document": string;
         };
       };
       /** @description Validation Error */

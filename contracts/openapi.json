@@ -857,28 +857,88 @@
       "Cam": {
         "description": "The draft Credit Approval Memo (F-23).",
         "properties": {
+          "as_of": {
+            "title": "As Of",
+            "type": "string"
+          },
+          "borrower": {
+            "title": "Borrower",
+            "type": "string"
+          },
           "case_id": {
             "title": "Case Id",
+            "type": "string"
+          },
+          "config_label": {
+            "default": "",
+            "title": "Config Label",
+            "type": "string"
+          },
+          "config_version": {
+            "title": "Config Version",
             "type": "string"
           },
           "interim_template": {
             "title": "Interim Template",
             "type": "boolean"
           },
+          "labels": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Labels",
+            "type": "object"
+          },
           "recommendation": {
             "default": "",
             "title": "Recommendation",
             "type": "string"
           },
+          "recommendation_number": {
+            "title": "Recommendation Number",
+            "type": "integer"
+          },
+          "recommendation_prompts": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Recommendation Prompts",
+            "type": "array"
+          },
           "recommendation_title": {
             "title": "Recommendation Title",
             "type": "string"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
           },
           "sections": {
             "items": {
               "$ref": "#/components/schemas/CamSection"
             },
             "title": "Sections",
+            "type": "array"
+          },
+          "sign_off": {
+            "items": {
+              "$ref": "#/components/schemas/CamSignOff"
+            },
+            "title": "Sign Off",
+            "type": "array"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/OutputSource"
+            },
+            "title": "Sources",
             "type": "array"
           },
           "summary": {
@@ -888,24 +948,133 @@
             "title": "Summary",
             "type": "array"
           },
+          "summary_number": {
+            "title": "Summary Number",
+            "type": "integer"
+          },
           "summary_title": {
             "title": "Summary Title",
+            "type": "string"
+          },
+          "template_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Note"
+          },
+          "title": {
+            "title": "Title",
             "type": "string"
           }
         },
         "required": [
           "case_id",
+          "title",
+          "borrower",
+          "as_of",
+          "config_version",
           "interim_template",
           "sections",
+          "summary_number",
           "summary_title",
           "summary",
+          "recommendation_number",
           "recommendation_title"
         ],
         "title": "Cam",
         "type": "object"
       },
+      "CamBlock": {
+        "description": "One block of a section, in reading order.",
+        "properties": {
+          "facts": {
+            "items": {
+              "$ref": "#/components/schemas/CamFact"
+            },
+            "title": "Facts",
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "paragraph",
+              "facts",
+              "table",
+              "subheading",
+              "note"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "paragraph": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CamText"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "table": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CamTable"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "CamBlock",
+        "type": "object"
+      },
+      "CamFact": {
+        "description": "One labelled value in a block of key facts.",
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "value": {
+            "$ref": "#/components/schemas/CamText"
+          }
+        },
+        "required": [
+          "label",
+          "value"
+        ],
+        "title": "CamFact",
+        "type": "object"
+      },
       "CamSection": {
         "properties": {
+          "blocks": {
+            "items": {
+              "$ref": "#/components/schemas/CamBlock"
+            },
+            "title": "Blocks",
+            "type": "array"
+          },
           "empty": {
             "anyOf": [
               {
@@ -921,22 +1090,9 @@
             "title": "Id",
             "type": "string"
           },
-          "paragraphs": {
-            "items": {
-              "$ref": "#/components/schemas/CamText"
-            },
-            "title": "Paragraphs",
-            "type": "array"
-          },
-          "table": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/CamTable"
-              },
-              {
-                "type": "null"
-              }
-            ]
+          "number": {
+            "title": "Number",
+            "type": "integer"
           },
           "title": {
             "title": "Title",
@@ -945,13 +1101,33 @@
         },
         "required": [
           "id",
+          "number",
           "title"
         ],
         "title": "CamSection",
         "type": "object"
       },
+      "CamSignOff": {
+        "description": "A line of the sign-off block, left for the people who sign.",
+        "properties": {
+          "role": {
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role"
+        ],
+        "title": "CamSignOff",
+        "type": "object"
+      },
       "CamSummaryItem": {
         "properties": {
+          "blocking": {
+            "default": false,
+            "title": "Blocking",
+            "type": "boolean"
+          },
           "citations": {
             "items": {
               "$ref": "#/components/schemas/Evidence"
@@ -959,9 +1135,26 @@
             "title": "Citations",
             "type": "array"
           },
+          "group": {
+            "anyOf": [
+              {
+                "enum": [
+                  "documents_needed",
+                  "documents_to_redo",
+                  "clarifications"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group"
+          },
           "kind": {
             "enum": [
               "finding",
+              "incomplete",
               "deviation",
               "unassessed",
               "query"
@@ -972,6 +1165,28 @@
           "ref": {
             "title": "Ref",
             "type": "string"
+          },
+          "request": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request"
+          },
+          "rule": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule"
           },
           "severity": {
             "anyOf": [
@@ -989,9 +1204,31 @@
             ],
             "title": "Severity"
           },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
           "text": {
             "title": "Text",
             "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
           }
         },
         "required": [
@@ -1011,6 +1248,24 @@
             "title": "Columns",
             "type": "array"
           },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "numeric": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Numeric",
+            "type": "array"
+          },
           "rows": {
             "items": {
               "items": {
@@ -1020,6 +1275,17 @@
             },
             "title": "Rows",
             "type": "array"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
           }
         },
         "required": [
@@ -4821,6 +5087,49 @@
         "title": "Option",
         "type": "object"
       },
+      "OutputSource": {
+        "description": "A document the memo or the note cites, numbered in the order it is first cited, so the screen\nand the downloads refer to it the same way (F-23.2, F-24.2).",
+        "properties": {
+          "document_id": {
+            "title": "Document Id",
+            "type": "string"
+          },
+          "file_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Name"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "pages": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Pages",
+            "type": "array"
+          }
+        },
+        "required": [
+          "number",
+          "document_id",
+          "label",
+          "pages"
+        ],
+        "title": "OutputSource",
+        "type": "object"
+      },
       "PageInfo": {
         "properties": {
           "grade": {
@@ -5026,10 +5335,56 @@
         "type": "object"
       },
       "PdNote": {
+        "description": "The PD question note (F-24): ranked questions, each tied to its finding and evidence.",
         "properties": {
+          "as_of": {
+            "title": "As Of",
+            "type": "string"
+          },
+          "borrower": {
+            "title": "Borrower",
+            "type": "string"
+          },
           "case_id": {
             "title": "Case Id",
             "type": "string"
+          },
+          "config_label": {
+            "default": "",
+            "title": "Config Label",
+            "type": "string"
+          },
+          "config_version": {
+            "title": "Config Version",
+            "type": "string"
+          },
+          "documents_to_collect": {
+            "items": {
+              "$ref": "#/components/schemas/CamText"
+            },
+            "title": "Documents To Collect",
+            "type": "array"
+          },
+          "header": {
+            "items": {
+              "$ref": "#/components/schemas/CamFact"
+            },
+            "title": "Header",
+            "type": "array"
+          },
+          "labels": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Labels",
+            "type": "object"
+          },
+          "people": {
+            "items": {
+              "$ref": "#/components/schemas/PdPerson"
+            },
+            "title": "People",
+            "type": "array"
           },
           "questions": {
             "items": {
@@ -5037,18 +5392,126 @@
             },
             "title": "Questions",
             "type": "array"
+          },
+          "record_fields": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Record Fields",
+            "type": "array"
+          },
+          "sign_off": {
+            "items": {
+              "$ref": "#/components/schemas/CamSignOff"
+            },
+            "title": "Sign Off",
+            "type": "array"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/OutputSource"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "topics": {
+            "items": {
+              "$ref": "#/components/schemas/PdTopic"
+            },
+            "title": "Topics",
+            "type": "array"
           }
         },
         "required": [
           "case_id",
+          "title",
+          "borrower",
+          "as_of",
+          "config_version",
           "questions"
         ],
         "title": "PdNote",
         "type": "object"
       },
+      "PdPerson": {
+        "description": "Someone to meet: a promoter or director the documents name.",
+        "properties": {
+          "din": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Din"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "PdPerson",
+        "type": "object"
+      },
       "PdQuestion": {
         "description": "One question for the personal discussion (F-24).",
         "properties": {
+          "also": {
+            "items": {
+              "$ref": "#/components/schemas/PdRef"
+            },
+            "title": "Also",
+            "type": "array"
+          },
+          "area": {
+            "enum": [
+              "identity",
+              "turnover",
+              "accounts",
+              "obligations",
+              "policy"
+            ],
+            "title": "Area",
+            "type": "string"
+          },
+          "context": {
+            "title": "Context",
+            "type": "string"
+          },
           "evidence": {
             "items": {
               "$ref": "#/components/schemas/Evidence"
@@ -5058,6 +5521,14 @@
           },
           "id": {
             "title": "Id",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "question": {
+            "title": "Question",
             "type": "string"
           },
           "ref": {
@@ -5086,6 +5557,17 @@
             "title": "Source",
             "type": "string"
           },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
           "target": {
             "default": "policy",
             "enum": [
@@ -5102,18 +5584,120 @@
           "title": {
             "title": "Title",
             "type": "string"
+          },
+          "xv_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Xv Ref"
           }
         },
         "required": [
           "id",
+          "number",
+          "question",
+          "context",
           "text",
           "severity",
           "source",
           "ref",
           "rule",
-          "title"
+          "title",
+          "area"
         ],
         "title": "PdQuestion",
+        "type": "object"
+      },
+      "PdRef": {
+        "description": "Another finding a merged question also rests on (F-24.2).",
+        "properties": {
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "ref": {
+            "title": "Ref",
+            "type": "string"
+          },
+          "rule": {
+            "title": "Rule",
+            "type": "string"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "xv_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Xv Ref"
+          }
+        },
+        "required": [
+          "ref",
+          "rule",
+          "title"
+        ],
+        "title": "PdRef",
+        "type": "object"
+      },
+      "PdTopic": {
+        "description": "The questions asked under one topic, in order.",
+        "properties": {
+          "area": {
+            "enum": [
+              "identity",
+              "turnover",
+              "accounts",
+              "obligations",
+              "policy"
+            ],
+            "title": "Area",
+            "type": "string"
+          },
+          "question_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Question Ids",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "area",
+          "title",
+          "question_ids"
+        ],
+        "title": "PdTopic",
         "type": "object"
       },
       "PersonEntry": {
@@ -5464,6 +6048,17 @@
             ],
             "title": "Pd Gap",
             "type": "string"
+          },
+          "pd_gap_question": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pd Gap Question"
           },
           "pd_question": {
             "anyOf": [
@@ -8716,6 +9311,82 @@
         "summary": "Case Cam"
       }
     },
+    "/api/cases/{case_id}/cam/download": {
+      "get": {
+        "description": "F-23.5: the draft CAM as a Word or PDF file, the same content as the screen, with numbered\ncitations and the sources; the recommendation is left blank for credit.",
+        "operationId": "case_cam_download_api_cases__case_id__cam_download_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "required": true,
+            "schema": {
+              "enum": [
+                "docx",
+                "pdf"
+              ],
+              "title": "Format",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              },
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "The file, as an attachment."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Cam Download"
+      }
+    },
     "/api/cases/{case_id}/checklist": {
       "get": {
         "operationId": "case_checklist_api_cases__case_id__checklist_get",
@@ -9679,6 +10350,82 @@
           }
         },
         "summary": "Case Pd Note"
+      }
+    },
+    "/api/cases/{case_id}/pd-note/download": {
+      "get": {
+        "description": "F-24.3: the PD question note as a Word or PDF file, the same content as the screen, with room\nunder each question for the response and the follow-up.",
+        "operationId": "case_pd_note_download_api_cases__case_id__pd_note_download_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "required": true,
+            "schema": {
+              "enum": [
+                "docx",
+                "pdf"
+              ],
+              "title": "Format",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              },
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "The file, as an attachment."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Pd Note Download"
       }
     },
     "/api/cases/{case_id}/policy": {

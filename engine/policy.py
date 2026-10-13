@@ -109,8 +109,8 @@ def _document(f: FacilityFact) -> str | None:
     return f.evidence[0].document_id if f.evidence else None
 
 
-def _counted_facilities(facilities: list[FacilityFact], noise: list[str], threshold: float, emi_pct: float
-                        ) -> tuple[list[FacilityFact], list[FacilityFact]]:
+def counted_facilities(facilities: list[FacilityFact], noise: list[str], threshold: float, emi_pct: float
+                       ) -> tuple[list[FacilityFact], list[FacilityFact]]:
     """The declared and sanctioned facilities with an instalment, each counted once (FR-03).
 
     A lender matches on its resolved name only (same_entity): "Indian Bank" and "Indian Overseas
@@ -205,7 +205,7 @@ def gather(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> Inputs:
     # Annual instalments on existing facilities: declared, then sanctioned, then inferred from the
     # bank statements, each facility counted once.
     emi_pct = tolerances.get("emi_amount_match", 5)
-    declared, sanctioned = _counted_facilities(facts.facilities, noise, threshold, emi_pct)
+    declared, sanctioned = counted_facilities(facts.facilities, noise, threshold, emi_pct)
     inferred = [o for o in facts.obligations
                 if not any(_pays(o, f, noise, threshold, emi_pct) for f in declared + sanctioned)]
     if declared or sanctioned or inferred:
@@ -326,6 +326,16 @@ def actual_text(value: float, unit: str | None, threshold: float, outcome: str) 
     return unit_text(value, unit, extra)
 
 
+def required_text(kind: str, threshold: float, unit: str | None) -> str:
+    """The norm as written: "at least 1.20x". A rupee figure that must be positive, a profit that must
+    not be a loss and a count that must be nil read in words, never "at least INR 1" or "at most 0"."""
+    if unit == "inr" and kind == "min" and threshold in (0, 1):
+        return "positive" if threshold == 1 else "no loss"
+    if unit == "count" and kind == "max" and threshold == 0:
+        return "none"
+    return f"{'at least' if kind == 'min' else 'at most'} {unit_text(threshold, unit)}"
+
+
 def _applies(norm: PolicyNorm, case: CaseDetail, inputs: Inputs, wc_limit: float) -> bool:
     if norm.constitutions and case.constitution in KNOWN_CONSTITUTIONS and case.constitution not in norm.constitutions:
         return False
@@ -347,7 +357,7 @@ def evaluate(norm: PolicyNorm, ratio: PolicyRatio | None, case: CaseDetail, inpu
     unit = norm.unit or (ratio.unit if ratio else None)
     kind = norm.kind or (ratio.kind if ratio else "min")
     threshold = norm.threshold if norm.threshold is not None else (ratio.acceptable if ratio else 0.0)
-    required = f"{'at least' if kind == 'min' else 'at most'} {unit_text(threshold, unit)}"
+    required = required_text(kind, threshold, unit)
     status = norm.status or (ratio.status if ratio else None)
     result = NormResult(
         id=norm.id, family=norm.family, label=label, formula=words(norm.expression),

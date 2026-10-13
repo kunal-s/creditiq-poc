@@ -26,6 +26,7 @@ import type {
   LoginResponse,
   LogicalDocument,
   Meta,
+  OutputFormat,
   Party,
   PdNote,
   PolicyAssessment,
@@ -104,6 +105,33 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
+/** A file the engine composed, with the name its Content-Disposition gives it, when the browser
+ * lets the page read that header (another origin must expose it). */
+export type DownloadedFile = { blob: Blob; filename: string | null };
+
+/** The file name in a Content-Disposition header: the encoded `filename*` first, then `filename`. */
+function attachmentName(header: string | null): string | null {
+  if (!header) return null;
+  const encoded = /filename\*\s*=\s*[^']*'[^']*'([^;]+)/i.exec(header);
+  if (encoded) {
+    try {
+      return decodeURIComponent(encoded[1]!.trim());
+    } catch {
+      // A malformed encoding: the plain name, if any, still serves.
+    }
+  }
+  const plain = /filename\s*=\s*(?:"([^"]*)"|([^;]+))/i.exec(header);
+  return (plain?.[1] ?? plain?.[2] ?? "").trim() || null;
+}
+
+async function download(path: string): Promise<DownloadedFile> {
+  const response = await send(path);
+  return {
+    blob: await response.blob(),
+    filename: attachmentName(response.headers.get("Content-Disposition")),
+  };
+}
+
 const q = encodeURIComponent;
 
 export const api = {
@@ -180,6 +208,12 @@ export const api = {
   caseSpread: (id: string) => request<Spread>(`/api/cases/${q(id)}/spread`),
   caseCam: (id: string) => request<Cam>(`/api/cases/${q(id)}/cam`),
   casePdNote: (id: string) => request<PdNote>(`/api/cases/${q(id)}/pd-note`),
+  /** The draft CAM as a file: Word, for credit to complete, or PDF (F-23.5). */
+  camFile: (id: string, format: OutputFormat) =>
+    download(`/api/cases/${q(id)}/cam/download?format=${q(format)}`),
+  /** The PD question note as a file, with space to record each answer (F-24.3). */
+  pdNoteFile: (id: string, format: OutputFormat) =>
+    download(`/api/cases/${q(id)}/pd-note/download?format=${q(format)}`),
   reviewQueue: (options: { caseId?: string; includeDecided?: boolean } = {}) => {
     const params = new URLSearchParams();
     if (options.caseId) params.set("case_id", options.caseId);

@@ -112,18 +112,25 @@ deviation_categories:
   - {key: security, label: Security cover}
   - {key: documentation, label: Documentation}
 
-# What to ask the promoter about a deviation, by norm family (F-24.1). A
-# norm's own `pd_question` overrides its family's.
+# What to ask the promoter about a deviation, by norm family, and about a norm
+# that could not be evaluated, by the reason (F-24.1). A norm's own
+# `pd_question` overrides its family's, and its `pd_gap_question` the
+# cannot_evaluate question. The note prints the question on its own, above the
+# sentence that leads into it here, so the question names what it asks about:
+# {subject} is the norm's label as it reads inside a sentence (DSCR,
+# working-capital cycle). A norm written in words (positive, no loss, none)
+# reads "where the norm is ...", as the memo writes it.
 pd_questions:
-  eligibility: "{label} is {actual} against a norm of {required}. What is the background, and what mitigates it?"
-  ratios: "{label} is {actual} in {period} against a norm of {required}. What explains it, and how is it expected to move?"
-  security_cover: "{label} is {actual} against a norm of {required}. What further security can be offered?"
-  documentation: "{label}: {actual} against a norm of {required}. When will the documents be available?"
-  # A norm that could not be evaluated: {missing} names the figures not on file.
-  cannot_evaluate: "{label} could not be assessed: {missing} not on file. Can the promoter provide it?"
+  eligibility: "{label} is {actual} against a norm of {required}. What is the background to the deviation on the {subject}, and what mitigates the risk?"
+  ratios: "{label} is {actual} in {period} against a norm of {required}. What explains the deviation on the {subject}, and what is the outlook for the current year?"
+  security_cover: "{label} is {actual} against a norm of {required}. What further security can be offered to meet the norm for the {subject}?"
+  documentation: "{label}: {actual} against a norm of {required}. When can the documentation shortfall be made good?"
+  # A norm that could not be evaluated: {reason} is the memo's sentence saying why, and
+  # {missing} names the figures not on file.
+  cannot_evaluate: "{reason} Can the figures for {missing} be provided, with supporting documents?"
   # A norm whose divisor is zero or negative: {inputs} names the divisor.
-  zero_denominator: "{label} could not be computed because {inputs} is zero. What explains it?"
-  denominator_not_positive: "{label} could not be computed because {inputs} is negative. What explains it?"
+  zero_denominator: "{label} could not be computed because {inputs} is zero. What explains the nil {inputs}?"
+  denominator_not_positive: "{label} could not be computed because {inputs} is negative. What explains the negative {inputs}?"
 
 # Norms evaluated for every case (F-20). `expression` is arithmetic (+ - * /
 # and brackets) over the inputs listed in engine/configstore/schema.py
@@ -145,6 +152,7 @@ norms:
     source: provisional
     status: provisional
     note: "Completed months since incorporation to the case's as-of date, in years. Partnerships and proprietorships: no registration-date document is in scope yet, so the norm does not apply to them."
+    pd_gap_question: "{reason} Can the certificate of incorporation, showing the date of incorporation, be provided?"
   - id: EL-02
     family: eligibility
     label: Commercial bureau rank
@@ -167,6 +175,7 @@ norms:
     category: eligibility
     source: provisional
     status: provisional
+    pd_question: "Net worth is {actual} in {period}, where the norm is {required}. What has eroded the net worth, and how will it be restored?"
   - id: EL-04
     family: eligibility
     label: Profit in the latest year
@@ -177,6 +186,7 @@ norms:
     category: eligibility
     source: provisional
     status: provisional
+    pd_question: "Profit after tax is {actual} in {period}, where the norm is {required}. What caused the loss, and what is the outlook for the current year?"
   - id: EL-05
     family: eligibility
     label: Total request against turnover
@@ -211,6 +221,9 @@ norms:
     category: financial
     applies_when: term_debt
     note: "Interim and conservative until RBL's DSCR definition: annual instalments (interest and principal) on existing facilities, declared, sanctioned or inferred from bank statements, and on the proposed term loan; interest on term debt is not added back."
+    # The proposed instalment is entered by the RM once the bank sets the rate and tenor: the
+    # promoter is asked what sets them.
+    pd_gap_question: "{reason} What will the term loan finance, at what cost and promoter contribution, and what tenor and moratorium are sought?"
   - id: FR-04
     family: ratios
     ratio: interest-coverage
@@ -241,6 +254,7 @@ norms:
     category: documentation
     source: provisional
     status: provisional
+    pd_question: "{label}: {actual}, where the norm is {required}. Which of the blocking documents listed under Documents to collect can be provided, and by when?"
   - id: DOC-02
     family: documentation
     label: Years of audited financial statements
@@ -251,3 +265,4 @@ norms:
     category: documentation
     source: provisional
     status: provisional
+    pd_question: "{label}: {actual} against a norm of {required}. When will the audited financial statements for the years not on file be provided?"

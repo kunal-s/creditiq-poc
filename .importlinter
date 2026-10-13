@@ -26,12 +26,14 @@ source_modules =
     engine.contracts
     engine.db
     engine.deps
+    engine.exports
     engine.facts
     engine.filetypes
     engine.identifiers
     engine.ingest_client
     engine.jobs
     engine.names
+    engine.output_sources
     engine.pages
     engine.pd_note
     engine.parties
@@ -68,7 +70,9 @@ source_modules =
     engine.checklist
     engine.completeness
     engine.crosschecks
+    engine.exports
     engine.facts
+    engine.output_sources
     engine.pd_note
     engine.pipeline
     engine.policy

@@ -11,11 +11,13 @@ the Administration screen (F-00.6); nothing that runs on a case may import it
 from __future__ import annotations
 
 import json
+import logging
 import os
 import sqlite3
 from contextlib import asynccontextmanager
+from typing import Literal
 
-from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from python_multipart.exceptions import MultipartParseError
@@ -28,6 +30,7 @@ from . import (
     cases,
     comparison,
     db,
+    exports,
     facts,
     jobs,
     pages,
@@ -95,6 +98,7 @@ from .contracts import (
 )
 from .deps import bearer_token, current_user, get_conn, require
 from .store import data_root
+from .util import now_iso
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
@@ -487,6 +491,69 @@ def case_cam(
         return cam.build(conn, data_root(), case)
     except configstore_reader.NoPublishedConfig as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
+
+
+_DOWNLOAD = {200: {"description": "The file, as an attachment.",
+                   "content": {media: {"schema": {"type": "string", "format": "binary"}}
+                               for media in exports.MEDIA_TYPES.values()}}}
+_OUTPUTS = {"cam": "draft CAM", "pd_note": "PD note"}
+_FORMATS = {"docx": "Word", "pdf": "PDF"}
+_log = logging.getLogger("creditiq.api")
+
+
+def _download(conn: sqlite3.Connection, user: dict, case: CaseDetail, output: str, fmt: str,
+              draft: Cam | PdNote) -> Response:
+    """The file as an attachment; the decision log records the download. A file that cannot be written
+    is a 500 with its reason in words, which reaches the screens as any error does."""
+    try:
+        document = exports.cam_document(draft) if output == "cam" else exports.pd_note_document(draft)
+        content = exports.render(document, fmt)
+    except Exception as e:  # any writer's fault: logged, and answered rather than left to the server
+        _log.exception("%s %s file for %s failed", output, fmt, case.id)
+        raise HTTPException(status_code=500, detail=f"The {_OUTPUTS[output]} could not be written as a "
+                                                    f"{_FORMATS[fmt]} file ({type(e).__name__}).") from e
+    db.log_decision(conn, at=now_iso(), actor=user["id"], case_id=case.id, action="output.downloaded",
+                    detail=json.dumps({"output": output, "format": fmt}))
+    return Response(content=content, media_type=exports.MEDIA_TYPES[fmt], headers={
+        "Content-Disposition": f'attachment; filename="{exports.file_name(output, case.id, fmt)}"',
+        # The screens call from another origin and name the saved file from this header.
+        "Access-Control-Expose-Headers": "Content-Disposition",
+        "Cache-Control": "no-store",
+    })
+
+
+@app.get("/api/cases/{case_id}/pd-note/download", response_class=Response, responses=_DOWNLOAD)
+def case_pd_note_download(
+    case_id: str,
+    fmt: Literal["docx", "pdf"] = Query(alias="format"),
+    user: dict = Depends(require("output.read")),
+    conn: sqlite3.Connection = Depends(get_conn),
+):
+    """F-24.3: the PD question note as a Word or PDF file, the same content as the screen, with room
+    under each question for the response and the follow-up."""
+    case = _case_for(conn, case_id, user)
+    try:
+        note = pd_note.build(conn, data_root(), case)
+    except configstore_reader.NoPublishedConfig as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+    return _download(conn, user, case, "pd_note", fmt, note)
+
+
+@app.get("/api/cases/{case_id}/cam/download", response_class=Response, responses=_DOWNLOAD)
+def case_cam_download(
+    case_id: str,
+    fmt: Literal["docx", "pdf"] = Query(alias="format"),
+    user: dict = Depends(require("output.read")),
+    conn: sqlite3.Connection = Depends(get_conn),
+):
+    """F-23.5: the draft CAM as a Word or PDF file, the same content as the screen, with numbered
+    citations and the sources; the recommendation is left blank for credit."""
+    case = _case_for(conn, case_id, user)
+    try:
+        draft = cam.build(conn, data_root(), case)
+    except configstore_reader.NoPublishedConfig as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+    return _download(conn, user, case, "cam", fmt, draft)
 
 
 @app.get("/api/cases/{case_id}/findings", response_model=list[Finding])

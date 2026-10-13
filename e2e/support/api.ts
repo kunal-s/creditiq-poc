@@ -2,10 +2,11 @@
 // The engine API, answered in the browser with page.route (no engine runs
 // during screen tests). State is per test: created cases and uploads persist
 // for the rest of that test.
-import type { Page, Request, Route } from "@playwright/test";
+import type { Locator, Page, Request, Route } from "@playwright/test";
 import type {
   AdjudicationRequest,
   ApprovingAuthority,
+  Cam,
   CaseComparison,
   CaseCreate,
   CaseDetail,
@@ -22,7 +23,10 @@ import type {
   FieldValue,
   FileRecord,
   LogicalDocument,
+  OutputFormat,
+  OutputKind,
   Party,
+  PdNote,
   QueryItem,
   Readiness,
   ReviewDecisionRequest,
@@ -50,6 +54,7 @@ import {
   CAM,
   CASES,
   DOCUMENTS,
+  DOWNLOAD_BYTES,
   FACTS,
   FINDINGS,
   DOCUMENT_TYPES,
@@ -81,8 +86,34 @@ import {
   xvView,
 } from "../fixtures/data";
 
-type Reply = { status?: number; json?: unknown; body?: Buffer; contentType?: string };
+type Reply = {
+  status?: number;
+  json?: unknown;
+  body?: Buffer;
+  contentType?: string;
+  headers?: Record<string, string>;
+};
 type Handler = (req: Request, match: RegExpMatchArray) => Reply | Promise<Reply>;
+
+/** engine/api.py: the media type of each download format. */
+const DOWNLOAD_TYPES: Record<OutputFormat, string> = {
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  pdf: "application/pdf",
+};
+const DOWNLOAD_STEM: Record<OutputKind, string> = { cam: "CAM-draft", pd_note: "PD-note" };
+
+/** A download as engine/api.py answers it: the file as an attachment, named for the case. The
+ * header is exposed to the page, which runs on another origin. */
+export function attachment(output: OutputKind, caseId: string, format: OutputFormat): Reply {
+  return {
+    body: DOWNLOAD_BYTES[format],
+    contentType: DOWNLOAD_TYPES[format],
+    headers: {
+      "content-disposition": `attachment; filename="${DOWNLOAD_STEM[output]}-${caseId}.${format}"`,
+      "access-control-expose-headers": "content-disposition",
+    },
+  };
+}
 
 export const NOT_YET: Reply = { status: 501, json: { detail: "not implemented yet" } };
 const FORBIDDEN: Reply = { status: 403, json: { detail: "role lacks 'comparison.adjudicate'" } };
@@ -126,6 +157,11 @@ export class MockApi {
   authority = new Map<string, ApprovingAuthority>([[KESTREL, APPROVAL]]);
   /** RBL's record compared, per case; none means no record imported yet. */
   comparisons = new Map<string, CaseComparison>();
+  /** The draft CAM and the PD note every case answers (F-23, F-24). */
+  cam: Cam = structuredClone(CAM);
+  pdNote: PdNote = structuredClone(PD_NOTE);
+  /** The files downloaded, in order, with the Authorization header each request carried. */
+  downloads: { output: OutputKind; format: string; authorization: string | null }[] = [];
   /** The published document types (the board's tests add those of its documents). */
   documentTypes: DocumentTypes = DOCUMENT_TYPES;
   /** The cross-verification board per case (F-19). Decisions and query additions change it as
@@ -354,8 +390,14 @@ export class MockApi {
         (_req, m) => this.addFindingQuery(decodeURIComponent(m[1]!), decodeURIComponent(m[2]!)),
       ],
       ["GET", new RegExp(`^/api/cases/${id}/spread$`), () => ({ json: SPREAD })],
-      ["GET", new RegExp(`^/api/cases/${id}/cam$`), () => ({ json: CAM })],
-      ["GET", new RegExp(`^/api/cases/${id}/pd-note$`), () => ({ json: PD_NOTE })],
+      ["GET", new RegExp(`^/api/cases/${id}/cam$`), () => ({ json: this.cam })],
+      ["GET", new RegExp(`^/api/cases/${id}/pd-note$`), () => ({ json: this.pdNote })],
+      [
+        "GET",
+        new RegExp(`^/api/cases/${id}/(cam|pd-note)/download$`),
+        (req, m) =>
+          this.download(req, decodeURIComponent(m[1]!), m[2] === "cam" ? "cam" : "pd_note"),
+      ],
       [
         "GET",
         new RegExp(`^/api/cases/${id}/policy$`),
@@ -707,6 +749,18 @@ export class MockApi {
     return refused(403, `role '${this.user.role}' lacks '${permission}'`);
   }
 
+  /** F-23.5, F-24.3: the memo or the note as a Word or PDF file, refused as engine/api.py refuses
+   * it. */
+  private async download(req: Request, caseId: string, output: OutputKind): Promise<Reply> {
+    if (!this.can("output.read")) return this.denied("output.read");
+    if (!this.details.has(caseId)) return refused(404, "no case");
+    const format = new URL(req.url()).searchParams.get("format");
+    if (format !== "docx" && format !== "pdf") return refused(422, "format must be docx or pdf");
+    const authorization = await req.headerValue("authorization");
+    this.downloads.push({ output, format, authorization });
+    return attachment(output, caseId, format);
+  }
+
   private boardItem(caseId: string, findingId: string): XvItem | undefined {
     return this.boards.get(caseId)?.items.find((i) => i.finding.id === findingId);
   }
@@ -847,7 +901,7 @@ export class MockApi {
         const reply = await handler(req, match);
         return route.fulfill({
           status: reply.status ?? 200,
-          headers: cors(),
+          headers: { ...cors(), ...reply.headers },
           contentType: reply.contentType ?? "application/json",
           body: reply.body ?? (reply.json === undefined ? "" : JSON.stringify(reply.json)),
         });
@@ -886,5 +940,26 @@ export async function scrollsSideways(page: Page): Promise<boolean> {
     [document.documentElement, document.querySelector("main")]
       .filter((el): el is HTMLElement => el !== null)
       .some((el) => el.scrollWidth > el.clientWidth + 1),
+  );
+}
+
+/** The boxes within `scope` whose content is wider than they are, so that the reader would have
+ * to scroll them sideways: each named by its own or its nearest test id, with its widths. The
+ * page not scrolling is not enough: a table can scroll inside its own box. */
+export async function scrollingBoxes(scope: Locator): Promise<string[]> {
+  return scope.evaluate((root) =>
+    [root, ...Array.from(root.querySelectorAll("*"))]
+      .filter((el): el is HTMLElement => el instanceof HTMLElement)
+      .filter((el) => {
+        const overflow = getComputedStyle(el).overflowX;
+        return (
+          (overflow === "auto" || overflow === "scroll") && el.scrollWidth > el.clientWidth + 1
+        );
+      })
+      .map((el) => {
+        const named = el.closest("[data-testid]");
+        const section = el.closest("[data-section]")?.getAttribute("data-section");
+        return `${named?.getAttribute("data-testid") ?? el.tagName}${section ? ` in ${section}` : ""}: ${el.scrollWidth} in ${el.clientWidth}`;
+      }),
   );
 }

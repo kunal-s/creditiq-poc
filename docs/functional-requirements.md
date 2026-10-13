@@ -1286,7 +1286,7 @@ flowchart LR
 - **F-23.2** Every quantitative statement carries a citation to its source page. Narrative is written in a neutral analyst register, from facts only.
 - **F-23.3** The memo ends with a structured summary of findings (F-19), deviations against policy (F-20) and open queries (F-14).
 - **F-23.4** The recommendation section is present and empty, for credit to complete.
-- **F-23.5** The memo is viewable on screen with working citations, and exportable. The export format is decision C.4-5.
+- **F-23.5** The memo is viewable on screen with working citations, and downloads as Word (.docx) and PDF with numbered citations and a sources list (decision C.4-5).
 - **F-23.6** Model-drafted text is recorded and replayed (principle 6).
 
 **Acceptance (TC-28)**
@@ -1305,7 +1305,7 @@ flowchart LR
 
 - **F-24.1** Questions are generated from findings, deviations and unresolved gaps, and ranked by severity.
 - **F-24.2** Each question links to its finding and evidence.
-- **F-24.3** The note is viewable and exportable alongside the CAM.
+- **F-24.3** The note is viewable and downloads alongside the CAM, as Word (.docx) and PDF, with space to record each answer.
 
 **Acceptance (TC-29)**
 - The reviewer confirms the questions are relevant.
@@ -1512,7 +1512,7 @@ flowchart TD
 | 2 | Constitutions: the checklist covers private limited, partnership and proprietorship. Add LLP and public limited? | F-12 | Open. Add them if the case set includes either |
 | 3 | Development data before RBL's cases arrive | Phase 2 | **Decided 29 Sep 2026:** controlled test documents under `tests/fixtures/TC-xx/`, each with its expected result (AD-6) |
 | 4 | Where the model runs for RBL data, and which provider | Phase 2 | Open for RBL data. For development, no model key yet: a stub provider plus recorded responses (AD-5) |
-| 5 | CAM export format (Word, PDF, or both) | F-23 | Match RBL's template's native format. **Decided 30 Sep 2026:** on screen only until the template arrives |
+| 5 | CAM export format (Word, PDF, or both) | F-23 | Match RBL's template's native format. **Decided 30 Sep 2026:** on screen only until the template arrives. **Revised 13 Oct 2026:** the draft CAM and the PD note download as Word (.docx, editable) and PDF in an assumed layout (`docs/outputs-cam-pd.md`) until RBL's template arrives; the layout then follows the template |
 | 6 | Evidence region: page is mandatory (C7). Should the region on the page be shown too? | F-16 | Page for every value; region where cheaply available |
 | 7 | Screen structure: the prototype's two case workspaces and 12 case screens, or one workspace in processing order | Screens | **Decided 30 Sep 2026:** one case workspace whose tabs follow §5; the prototype's visual style is kept; the DocReady and Appraisal workspace names are dropped; screens call the record an appraisal (§6) |
 | 8 | Spread before RBL's template arrives | F-22 | **Decided 30 Sep 2026:** an interim spread on screen (statement lines, ratios and the working-capital assessment with workings, every figure cited), marked interim; re-mapped to RBL's rows and exported to Excel (F-22.4) when the template arrives |

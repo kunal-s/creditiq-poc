@@ -93,7 +93,7 @@ def test_tc22_a_legal_name_mismatch_is_flagged_with_its_sources(client, analyst,
     # The two documents that agree are one side, each with its page.
     agree = next(s for s in f["sides"] if not s["differs"])
     assert {e["document_id"] for e in agree["evidence"]} == {pan_doc, itr}
-    assert "Orchid Castings Private Limited" in f["explanation"] and "Company PAN" in f["explanation"]
+    assert "Orchid Castings Private Limited" in f["explanation"] and "company PAN" in f["explanation"]
 
 
 def test_tc22_two_gstins_across_returns_are_flagged(client, analyst, published_data_root):
@@ -110,7 +110,7 @@ def test_tc22_a_promoter_missing_from_one_source_is_flagged(client, analyst, pub
     add_doc(published_data_root, case_id, "director_kyc", {"person_name": "Tarun Velankar", "din": "01234567"})
     [f] = _findings(client, analyst, published_data_root, case_id)["ID-04"]
     assert f["outcome"] == "fail" and f["area"] == "identity"
-    assert "Leela Varghese is not in KYC received" in f["explanation"]
+    assert "Leela Varghese has no KYC on file" in f["explanation"]
     rows = {r["label"]: r for r in f["detail"]["rows"]}
     assert rows["Leela Varghese"]["flagged"] and not rows["Tarun Velankar"]["flagged"]
     assert [s["differs"] for s in f["sides"]] == [True, False]  # the KYC received is short of a person
@@ -148,6 +148,8 @@ def test_tc23_gst_against_bank_beyond_tolerance_is_flagged_with_values(client, a
     assert f["outcome"] == "fail" and f["tolerance"] == "1%"
     assert [s["value"] for s in f["sides"]] == [48_000_000, 38_400_000]
     assert "20.0%" in f["explanation"] and "FY 2025-26" in f["title"]
+    # The right-hand source reads inside the sentence; an acronym keeps its capitals.
+    assert "against business credits in bank statements INR 3.84 cr" in f["explanation"]
     assert all(s["evidence"] for s in f["sides"])
 
 

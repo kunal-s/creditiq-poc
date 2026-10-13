@@ -102,10 +102,21 @@ def _left(client: TestClient, headers: dict, root: Path, case_id: str, rule_id: 
                    if i["kind"] == "finding" and i["summary"].startswith(f"{rule_id} ")],
         "queries": [q for q in get("queries") if q["source_ref"].startswith(f"{rule_id}:") and not q["resolved"]],
         "cam": [i for i in cam["summary"] if i["kind"] == "finding" and i["text"] == explanation]
-               + [p for s in cam["sections"] for p in s["paragraphs"] if explanation in p["text"]],
+               + [t for t in _cam_texts(cam) if explanation in t],
         "pd_note": [q for q in get("pd-note")["questions"] if q["rule"] == rule_id],
         "board": [i for i in get("cross-verification")["items"] if i["finding"]["rule_id"] == rule_id],
     }
+
+
+def _cam_texts(cam: dict) -> list[str]:
+    """Every statement in the memo's sections: paragraphs, key facts and table cells."""
+    out = []
+    for s in cam["sections"]:
+        for b in s["blocks"]:
+            out += [b["paragraph"]["text"]] if b["paragraph"] else []
+            out += [f["value"]["text"] for f in b["facts"]]
+            out += [c["text"] for row in (b["table"]["rows"] if b["table"] else []) for c in row]
+    return out
 
 
 def _attention(client: TestClient, headers: dict, case_id: str) -> int:

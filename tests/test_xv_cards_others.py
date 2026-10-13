@@ -638,7 +638,7 @@ def test_a_check_waiting_for_review_asks_for_nothing(client, analyst, published_
     case_id = _case(client, analyst, root)
     resolution(root, case_id, borrowing_limit=20_000_000, pending={"borrowing_limit"})
     f = _one(_board(client, analyst, root, case_id), "BR-01")
-    assert f["outcome"] == "incomplete" and f["explanation"].startswith("Waiting for review of Board resolution limit")
+    assert f["outcome"] == "incomplete" and f["explanation"].startswith("Waiting for review of board resolution limit")
     # The board links to the review: no request, and the column says it is waiting.
     assert f["request"] is None
     assert [c["awaiting_review"] for c in f["columns"]] == [True, False]

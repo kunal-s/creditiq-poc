@@ -277,6 +277,7 @@ def test_a_declared_account_without_a_statement_is_flagged(client, analyst, publ
     bank(published_data_root, case_id, [], last4="1234")
     [f] = _findings(client, analyst, published_data_root, case_id)["BA-01"]
     assert f["outcome"] == "fail" and "·5678" in f["explanation"] and f["area"] == "accounts"
+    assert f["explanation"].startswith("No statement is on file for these declared accounts: ")
 
 
 def test_an_account_seen_in_transfers_without_a_statement_is_flagged(client, analyst, published_data_root):
@@ -356,7 +357,7 @@ def test_a_check_waits_for_a_value_under_review(client, analyst, published_data_
     doc = add_doc(published_data_root, case_id, "company_pan", {"pan": "AAACK1234F"}, pending={"pan"})
     add_doc(published_data_root, case_id, "income_tax_return", {"pan": "AAACK9876Q"})
     [f] = _findings(client, analyst, published_data_root, case_id)["ID-01"]
-    assert f["outcome"] == "incomplete" and f["explanation"].startswith("Waiting for review of Company PAN")
+    assert f["outcome"] == "incomplete" and f["explanation"].startswith("Waiting for review of company PAN")
     assert next(s for s in f["sides"] if s["value"] == "AAACK1234F")["awaiting_review"]
     # Not raised to the review queue as a finding while it waits.
     review = client.get(f"/api/review?case_id={case_id}", headers=analyst).json()

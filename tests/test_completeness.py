@@ -81,7 +81,7 @@ def test_tc13_incomplete_documents_are_insufficient_with_their_deficiency(client
     _, items = _checklist(client, rm, case_id)
     gst = items["gst_returns"]
     assert gst["status"] == "insufficient"
-    assert gst["deficiency"] == "Sep 2025 to Dec 2025 absent (8 of 12 months)"
+    assert gst["deficiency"] == "Sep 2025 to Dec 2025 absent (8 of 12 months on file)"
     assert len(gst["document_ids"]) == 8
     resolution = items["board_resolution"]
     assert resolution["status"] == "insufficient" and resolution["deficiency"].startswith("not signed")
@@ -99,10 +99,27 @@ def test_tc14_outdated_document_states_its_date_and_permitted_age(client, publis
     _, items = _checklist(client, rm, case_id)
     bank = items["bank_statements"]
     assert bank["status"] == "insufficient"
-    assert "Outdated" in bank["deficiency"] and "dated 31 Aug 2026, permitted age 45 days from 30 Nov 2026" in bank["deficiency"]
+    assert "Outdated: statement for ·1234 dated 31 Aug 2026, older than the 45 days allowed at 30 Nov 2026" in bank["deficiency"]
     queries = client.get(f"/api/cases/{case_id}/queries", headers=rm).json()
     redo = [q["text"] for q in queries if q["group"] == "documents_to_redo"]
     assert any("dated within the last 45 days" in t and "31 Aug 2026" in t for t in redo), redo
+
+
+def test_a_declared_account_without_a_statement_is_named_in_the_bank_statement_item(client, published_data_root):
+    """The sourcing message declares a cash credit account with no statement on file; the statement
+    received is for the current account."""
+    from tests.triangulation import bank
+
+    rm = sign_in(client, RM)
+    banking = "current account with Lotuscrest Bank a/c 90100001234 and cash credit with Lotuscrest Bank a/c 90100005678"
+    case_id = make_case(client, rm, published_data_root, header={"existing_banking": {"value": banking, "source": "person"}})
+    bank(published_data_root, case_id, [{"date": "2025-10-15", "description": "NEFT CR CUSTOMER RECEIPT", "credit": 100_000}],
+         start="2025-09-01", end="2026-08-31")
+    _, items = _checklist(client, rm, case_id)
+    statements = items["bank_statements"]
+    assert statements["status"] == "insufficient"
+    assert "statement not received for declared account Lotuscrest Bank ·5678 (1 of 2 accounts on file)" in statements["deficiency"]
+    assert "·1234" not in statements["deficiency"]
 
 
 def test_tc16_one_consolidated_query_list(client: TestClient, published_data_root: Path):

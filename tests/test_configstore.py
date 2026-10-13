@@ -3,10 +3,12 @@ principle 3). These tests cover the "store unchanged after a full run of
 reads" half of that contract; the other half (review decisions never change
 configuration) is added with FRD F-17."""
 
+import json
 from pathlib import Path
 
 from engine.checklist import CaseAttributes, derive_checklist
 from engine.configstore import reader, writer
+from engine.configstore.schema import CamSectionConfig, CrossChecksSection, PolicySection
 
 
 def _published_json_snapshot(data_root: Path) -> dict:
@@ -79,3 +81,28 @@ def test_reading_the_matrix_never_changes_the_store(published_data_root: Path):
     before = _published_json_snapshot(published_data_root)
     reader.load_approval_matrix(published_data_root)
     assert _published_json_snapshot(published_data_root) == before
+
+
+def test_a_version_published_before_the_note_wording_and_the_download_labels_still_reads(published_data_root: Path):
+    version = reader.published_version(published_data_root)["version"]
+    folder = published_data_root / "config_store" / "versions" / version
+    cam, checks, policy = (json.loads((folder / f"{name}.json").read_text(encoding="utf-8"))
+                           for name in ("cam", "crosschecks", "policy"))
+    # As a version published before them has these sections.
+    del cam["labels"], cam["pd_note"]["labels"], cam["pd_note"]["sign_off"], checks["pd_finding"]
+    for norm in policy["norms"]:
+        del norm["pd_gap_question"]
+
+    older = CamSectionConfig.model_validate(cam)
+    assert (older.labels, older.pd_note.labels, older.pd_note.sign_off) == ({}, {}, ["Discussion held by"])
+    assert CrossChecksSection.model_validate(checks).pd_finding == (
+        "{explanation} What is the position, and what will be provided?")
+    assert all(n.pd_gap_question is None for n in PolicySection.model_validate(policy).norms)
+
+    # The current files set them: the labels in today's words, and FR-03's question for its gap.
+    published = reader.load_cam(published_data_root)
+    assert published.labels["sources"] == "Sources" and published.pd_note.labels["why_we_ask"] == "Why we ask"
+    assert published.pd_note.sign_off == ["Discussion held by"]
+    dscr = next(n for n in reader.load_policy(published_data_root).norms if n.id == "FR-03")
+    assert dscr.pd_gap_question and "{reason}" in dscr.pd_gap_question
+    assert "{request}" in reader.load_crosschecks(published_data_root).pd_incomplete

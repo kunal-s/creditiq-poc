@@ -1,15 +1,20 @@
-# The draft Credit Approval Memo (docs/functional-requirements.md F-23).
-# Interim section list until RBL's CAM template and completed examples
-# arrive (FRD C.3); then the sections follow RBL's template. Each section's
-# `kind` says what it is drafted from; titles are RBL-facing text.
+# The draft Credit Approval Memo (docs/functional-requirements.md F-23) and the PD question note
+# (F-24). Until RBL's CAM template and completed examples arrive (FRD C.3) the memo follows an
+# assumed layout, modelled on a business-banking credit approval memo, and says so on its face;
+# then the sections follow RBL's template. Each section's `kind` says what it is drafted from;
+# titles, prompts, roles and the PD note's wording are RBL-facing text.
 
 interim_template: true
+title: Credit Approval Memo
+template_note: "Draft — layout assumed until RBL's CAM template is received."
 sections:
+  - {id: snapshot, kind: snapshot, title: Proposal at a glance}
   - {id: borrower, kind: borrower_profile, title: Borrower profile}
-  - {id: proposal, kind: proposal, title: Proposal}
   - {id: promoters, kind: promoters, title: Promoters and management}
+  - {id: proposal, kind: proposal, title: Proposal and facilities}
   - {id: financials, kind: financial_performance, title: Financial performance}
   - {id: working_capital, kind: working_capital, title: Assessment of working-capital requirement}
+  - {id: turnover, kind: turnover, title: "Turnover across sources (GST, income tax and banking)"}
   - {id: banking, kind: banking, title: Banking and account conduct}
   - {id: obligations, kind: existing_facilities, title: Existing facilities and obligations}
   - {id: verification, kind: cross_verification, title: Cross-verification of sources}
@@ -17,3 +22,73 @@ sections:
   - {id: documentation, kind: documentation, title: Documentation status}
 summary_title: Summary of findings, deviations and open queries
 recommendation_title: Recommendation
+# Left blank under the recommendation, for credit to complete (F-23.4).
+recommendation_prompts:
+  - Recommendation
+  - Terms and conditions
+  - Deviations recommended for approval
+  - Decision of the approving authority
+sign_off: [Prepared by, Recommended by, Approved by]
+# The labels inside the downloaded memo (Word and PDF), by key; the screen takes its own from
+# terminology/rbl.yaml. A key left out keeps the download's own wording.
+labels:
+  borrower: Borrower
+  case_id: Case ID
+  drafted_as_of: Drafted from the data on file as of
+  configuration: Configuration version
+  run: Cross-check run
+  summary_findings: Findings
+  # {run} is the cross-check run.
+  summary_no_findings: "No discrepancy in cross-check run {run}."
+  summary_incomplete: Checks not completed
+  summary_deviations: Deviations from policy norms
+  summary_unassessed: Norms not assessed
+  summary_queries: Open queries
+  sign_name: Name
+  sign_designation: Designation
+  sign_signature: Signature
+  sign_date: Date
+  sources: Sources
+  source_no: "No."
+  source_document: Document
+  source_file: File
+  source_pages: Pages
+
+pd_note:
+  title: Personal discussion — question note
+  # Blank lines for the record of the discussion.
+  record_fields: [Date of discussion, Place, Bank officials present, Promoters or representatives present]
+  # The title of each topic the questions are asked under (identity first, policy norms last); a
+  # topic with no question is left out.
+  topics:
+    identity: Identity and KYC
+    turnover: Turnover, tax and sales
+    accounts: Bank accounts
+    obligations: Existing borrowings
+    policy: Policy norms
+  sign_off: [Discussion held by]
+  # The labels inside the downloaded note, by key, as for the memo.
+  labels:
+    borrower: Borrower
+    case_id: Case ID
+    constitution: Constitution
+    proposal: Proposal
+    data_as_of: Data as of
+    configuration: Configuration version
+    people_to_meet: People to meet
+    record: Record of the discussion
+    why_we_ask: Why we ask
+    evidence: Evidence
+    also_covers: Also covers
+    response: Response
+    follow_up: Follow-up
+    documents_to_collect: Documents to collect at the discussion
+    sign_name: Name
+    sign_designation: Designation
+    sign_signature: Signature
+    sign_date: Date
+    sources: Sources
+    source_no: "No."
+    source_document: Document
+    source_file: File
+    source_pages: Pages

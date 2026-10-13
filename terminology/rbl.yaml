@@ -88,21 +88,81 @@ outputs:
       profit_and_loss: Profit and loss
       balance_sheet: Balance sheet
       ratios: Ratios
+  # The draft CAM and the PD note: their header lines, downloads, citations and sources.
+  header:
+    case: "Appraisal {id}"
+    asOf: "Drafted from the data on file as of {date}"
+    config: "Configuration: {version}"
+    run: "Cross-check run {id}"
+  download:
+    docx: Download Word
+    pdf: Download PDF
+    preparing: Preparing…
+    failed: The file could not be downloaded
+  # The pages a statement rests on, marked as the downloads mark them: "5 p.1", "11 pp.3-5", and
+  # "13-23 p.1" for three or more sources in a row cited at the same pages.
+  citation:
+    page: "p{page}"
+    onePage: "p.{pages}"
+    manyPages: "pp.{pages}"
+    source: "{n} {at}"
+    range: "{first}-{last} {at}"
+    title: "Source {n}: {label}, page {pages}"
+    titlePages: "Source {n}: {label}, pages {pages}"
+    rangeTitle: "Sources {first} to {last}, {at}"
+  sources:
+    title: Sources
+    number: "No."
+    document: Document
+    file: File
+    pages: Pages
+  # A cross-check finding's status in the memo and the note.
+  status:
+    open: Open
+    accepted_as_valid: Accepted as valid
+    accepted: Accepted as valid
+    escalated: Escalated
+    not_valid: Not valid
   cam:
     eyebrow: Draft for credit
-    title: Credit Approval Memo
     interim: Sections follow an interim list until RBL's CAM template is available. Every figure links to the page it comes from.
     recommendationEmpty: For credit to complete.
     summary:
       finding: "Findings ({n})"
+      findingNone: "Findings (0): no discrepancy in cross-check run {run}"
+      findingNoRun: "Findings (0): the cross-checks have not run on this case yet"
+      incomplete: "Checks not completed ({n})"
+      request: "What would complete it:"
       deviation: "Deviations from policy ({n})"
       unassessed: "Norms not assessed ({n})"
       query: "Open queries ({n})"
+      queryList: Open the query list
+    signOff:
+      name: Name
+      designation: Designation
+      signature: Signature
+      date: Date
   pd:
-    title: Questions for the personal discussion
-    subtitle: "{n} question(s), most serious first, each tied to its finding and pages."
+    eyebrow: For the personal discussion
+    subtitleOne: "1 question, tied to the finding, norm or gap it comes from."
+    subtitleMany: "{n} questions by topic, the most serious first in each, each tied to the finding, norm or gap it comes from."
     emptyTitle: No questions yet
     emptyDescription: Questions come from cross-check findings, policy deviations and open gaps.
+    header:
+      borrower: Borrower
+      case: Case ID
+      asOf: Data as of
+      config: Configuration
+    people: People to meet
+    person:
+      name: Name
+      role: Role
+      din: DIN
+      namedIn: Named in
+    record: Record of the discussion
+    why: "Why we ask:"
+    also: "Also covers:"
+    documents: Documents to collect at the discussion
     source:
       finding: Cross-check finding
       deviation: Policy deviation
@@ -866,6 +926,7 @@ audit:
     finding_escalated: Escalated a discrepancy to the Credit Manager
     finding_query_added: Put a request on the query list
     config_published: Published a configuration version
+    output_downloaded: Downloaded the draft CAM or the PD note
 
 admin:
   config:

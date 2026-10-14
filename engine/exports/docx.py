@@ -353,8 +353,15 @@ class _Writer:
         if isinstance(b, layout.Space):
             return self.space(b)
         if isinstance(b, layout.Group):
-            rows = [row for inner in b.blocks for row in self.block(inner)]
-            _keep(rows[:-1])
+            # Every row kept with the next but the last, and, in a group the page may turn inside, the
+            # ruled lines from a space's `hold` on.
+            rows, turns = [], set()
+            for inner in b.blocks:
+                made = self.block(inner)
+                if b.turns and isinstance(inner, layout.Space) and inner.hold is not None and not inner.box:
+                    turns.update(len(rows) + k for k in range(inner.hold - 1, len(made)))
+                rows += made
+            _keep([row for k, row in enumerate(rows[:-1]) if k not in turns])
             return rows
         return []
 
@@ -405,9 +412,13 @@ class _Writer:
             rows.append([self.cell(cell, spans, right=j in t.numeric,
                                    fill=LABEL_FILL if t.kind in ("facts", "form") and j == 0 else None)
                          for j, (cell, spans) in enumerate(zip(row.cells, data))])
-        # A short table is kept on one page, as in the PDF; the lines under a table stay with its last row.
-        if layout.table_height(t) <= t.whole:
+        # A short table is kept on one page, as in the PDF, and so is one too few rows to run over; a longer
+        # one keeps its first and its last rows together, so many at each end. The lines under a table stay
+        # with its last row.
+        if layout.table_height(t) <= t.whole or len(rows) < 2 * t.least:
             _keep(rows[:-1])
+        elif t.least > 1:
+            _keep(rows[:t.least - 1] + rows[-t.least:-1])
         under = []
         if t.note:
             self.after_table = False

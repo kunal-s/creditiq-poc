@@ -13,12 +13,13 @@ import pytest
 from fastapi.testclient import TestClient
 
 from engine import db, pipeline
+from engine.cam import plain
 from engine.configstore import reader
 from tests.conftest import ANALYST, make_case, sign_in
 from tests.triangulation import add_doc, audited, bank, gstr, months
 
 SEVERITY = {"serious": 0, "moderate": 1, "mild": 2}
-SOURCE = {"finding": 0, "deviation": 1, "gap": 2}
+SOURCE = {"finding": 0, "deviation": 1, "observation": 2, "gap": 3}
 TOPICS = ["identity", "turnover", "accounts", "obligations", "policy"]
 TOPIC = {"identity": "identity", "authority": "identity", "turnover": "turnover", "tax": "turnover",
          "financials": "turnover", "accounts": "accounts", "obligations": "obligations"}
@@ -83,7 +84,11 @@ def test_tc27_questions_come_from_findings_deviations_and_gaps(client: TestClien
         "finding", "serious", "identity", "Open", "cross_verification")
     assert (pan["ref"], pan["xv_ref"], pan["title"]) == (finding["id"], finding["ref"], "Entity PAN differs between documents")
     # The bare question; why it is asked is the finding's explanation (the reference is beside it).
-    assert pan["question"] == "Which PAN is the entity's, and why does the other document show a different one?"
+    # It names the values its sides give, in side order, where the configured wording asks for them.
+    values = " and ".join(dict.fromkeys(str(side["value"]) for side in finding["sides"]))
+    worded = next(r for r in reader.load_crosschecks(published_data_root).rules if r.id == "ID-01").pd_question
+    assert pan["question"] == worded.replace("{explanation}", "").replace("{values}", values).strip()
+    assert "{values}" not in worded or ("AAACK1234F" in pan["question"] and "AAACK9876Q" in pan["question"])
     assert pan["context"] == finding["explanation"]
     assert "AAACK9876Q" in pan["context"] and pan["text"] == f"{pan['context']} {pan['question']}"
     assert pan["evidence"] and pan["also"] == []
@@ -205,7 +210,9 @@ def test_the_gaps_of_a_topic_are_asked_together_naming_what_would_complete_them(
         for f in turnover:
             assert f["request"] in gap["question"] or any(
                 f["request"] in other["request"] for other in turnover if other is not f), f["rule_id"]
-    assert all(f["title"] in gap["context"] for f in asked)
+    # Named as the memo names them: business credits, never cleansed bank credits.
+    assert all(plain(f["title"]) in gap["context"] for f in asked)
+    assert "cleansed" not in gap["context"]
 
 
 def test_a_gap_whose_documents_are_to_be_collected_is_not_asked_again(client, published_data_root):
@@ -256,8 +263,8 @@ def test_a_norm_in_words_is_asked_as_the_memo_states_it(client: TestClient, publ
     assert norms["EL-03"]["outcome"] == norms["DOC-01"]["outcome"] == "deviation"
     assert questions["EL-03"]["context"] == (f"Net worth is {norms['EL-03']['actual_text']} in FY 2025-26, where the "
                                              "norm is positive.")
-    assert questions["DOC-01"]["context"] == (f"Blocking checklist items open: {norms['DOC-01']['actual_text']}, "
-                                              "where the norm is none.")
+    assert questions["DOC-01"]["context"] == (f"Blocking checklist items open: {norms['DOC-01']['actual_text']}; "
+                                              "the norm allows none.")
     assert not any(re.search(r"a norm of (?:positive|no loss|none)\b", q["text"]) for q in questions.values())
 
 
@@ -275,9 +282,13 @@ def test_each_deviation_family_has_its_question(client: TestClient, published_da
     n = next(n for n in client.get(f"/api/cases/{case_id}/policy", headers=analyst).json()["norms"] if n["id"] == rule)
     config = next(c for c in policy.norms if c.id == rule)
     template = config.pd_question or policy.pd_questions[n["family"]]
+    # {s}: the plural ending for how far the actual is from the norm ("the year not on file").
+    ratio = next((r for r in policy.ratios if r.key == config.ratio), None)
+    shortfall = abs((config.threshold if config.threshold is not None else ratio.acceptable) - n["actual"])
     worded = template
     for key, value in (("label", n["label"]), ("subject", n["label"][:1].lower() + n["label"][1:]),
-                       ("actual", n["actual_text"]), ("required", n["required"]), ("period", "FY 2025-26")):
+                       ("actual", n["actual_text"]), ("required", n["required"]), ("period", "FY 2025-26"),
+                       ("s", "" if shortfall == 1 else "s")):
         worded = worded.replace("{" + key + "}", value)
     assert q["question"] == pd_note.split(worded)[1] and not UNRESOLVED.search(q["question"])
 
@@ -445,17 +456,26 @@ def test_a_failed_finding_whose_rule_asks_nothing_is_put_the_general_question(cl
 
 
 def test_findings_of_a_topic_that_ask_the_same_are_asked_once(client, published_data_root):
-    from tests.test_cam import _full_case
+    """GST returns and the books well above the business credits for FY 2025-26: the checks that come to
+    the same question for the year are asked once."""
+    from tests.test_cam import FY26, PERIODS
 
     analyst = sign_in(client, ANALYST)
     root = published_data_root
-    case_id, _ = _full_case(client, analyst, root)
+    case_id = make_case(client, analyst, root, facilities=["cash_credit"], amount_inr=40_000_000)
+    audited(root, case_id)
+    for period in PERIODS:
+        gstr(root, case_id, period, 10_000_000)
+    bank(root, case_id, [{"date": f"{ym}-15", "description": "NEFT CR CUSTOMER RECEIPT", "credit": 7_500_000}
+                         for ym in FY26])
     questions = _note(client, analyst, root, case_id)
     failed = [i["finding"] for i in _board(client, analyst, case_id)["items"] if i["finding"]["outcome"] == "fail"]
     rules = {r.id: r for r in reader.load_crosschecks(root).rules}
     alike: dict[tuple[str, str], list[dict]] = {}
     for f in failed:
-        asked = (rules[f["rule_id"]].pd_question or "").replace("{explanation}", "").strip()
+        # The question as worded for the finding: its year or months where the wording names them.
+        asked = (rules[f["rule_id"]].pd_question or "").replace("{explanation}", "").replace(
+            "{period}", f["scope"] or "").strip()
         if asked and "{" not in asked:
             alike.setdefault((TOPIC[f["area"]], asked), []).append(f)
     shared = [found for found in alike.values() if len(found) > 1]
@@ -490,7 +510,8 @@ def test_sources_are_numbered_by_first_citation(client: TestClient, published_da
     assert order and [(s["number"], s["document_id"]) for s in note["sources"]] == list(enumerate(order, start=1))
     for s in note["sources"]:
         assert s["pages"] == sorted({e["page"] for e in cited if e["document_id"] == s["document_id"]})
-    statements = next(s for s in note["sources"] if s["label"] == "Audited financial statements")
+    # Statements are named by their year even where the case has one set.
+    statements = next(s for s in note["sources"] if s["label"] == "Audited financial statements · FY 2025-26")
     assert statements["pages"] == [4] and statements["file_name"].startswith("audited_financial_statements-")
 
 
@@ -501,3 +522,300 @@ def test_the_same_case_gives_the_same_note(client: TestClient, published_data_ro
     first = _pd(client, analyst, published_data_root, case_id)
     again = client.get(f"/api/cases/{case_id}/pd-note", headers=analyst).json()
     assert json.dumps(first, sort_keys=True) == json.dumps(again, sort_keys=True)
+
+
+# --- Observations: material facts the memo states that need the promoter's answer ---
+
+CO = "Kestrel Tools Private Limited"
+TIDEWATER = {"lender": "Tidewater Finance Limited", "facility": "Term loan", "sanctioned_amount": 12_000_000,
+             "outstanding": 7_500_000, "emi": 250_000}
+
+
+def _observed(note: dict) -> dict[str, dict]:
+    """The note's observations by their key."""
+    return {q["ref"]: q for q in note["questions"] if q["source"] == "observation"}
+
+
+def _memo(client: TestClient, headers: dict, case_id: str, section_id: str) -> list[str]:
+    cam = client.get(f"/api/cases/{case_id}/cam", headers=headers).json()
+    section = next(s for s in cam["sections"] if s["id"] == section_id)
+    return [b["paragraph"]["text"] for b in section["blocks"] if b["kind"] == "paragraph"]
+
+
+def _asked_as_observation(q: dict, *, area: str, section: int, severity: str = "moderate") -> None:
+    assert (q["source"], q["rule"], q["target"], q["area"], q["severity"]) == ("observation", "OBS", "cam", area, severity)
+    # Its status names the memo section that states it; the question asks, the context is the memo's sentence.
+    assert q["status"] == f"section {section}" and q["xv_ref"] is None and q["also"] == []
+    assert q["question"].endswith("?") and q["text"] == f"{q['context']} {q['question']}" and q["title"]
+
+
+def test_only_what_the_data_shows_is_observed(client: TestClient, published_data_root: Path):
+    """Revenue up, no bureau or declaration to hold borrowings against, no year-end balances, no loan
+    paid in, no facility only the message names: of the observations, only the collateral offered at
+    intake with nothing on file about it."""
+    analyst = sign_in(client, ANALYST)
+    case_id = _case(client, analyst, published_data_root)
+    assert set(_observed(_pd(client, analyst, published_data_root, case_id))) == {"proposal:collateral"}
+    assert not any(p.startswith("Net worth fell") for p in _memo(client, analyst, case_id, "financials"))
+
+
+def test_a_fall_in_revenue_and_net_worth_is_asked_in_the_memos_words(client: TestClient, published_data_root: Path):
+    analyst = sign_in(client, ANALYST)
+    root = published_data_root
+    case_id = make_case(client, analyst, root, facilities=["cash_credit"], amount_inr=30_000_000)
+    statements = audited(root, case_id, scale=0.42)  # the comparatives print the earlier, larger year
+    note = _pd(client, analyst, root, case_id)
+    revenue = ("Revenue from operations fell 50.6% to INR 4.96 cr in FY 2025-26, from INR 10.03 cr in FY 2024-25 "
+               "(the comparatives in the FY 2025-26 statements).")
+    worth = ("Net worth fell from INR 3.57 cr to INR 1.76 cr despite a profit of INR 26.88 lakh; share capital fell from "
+             "INR 85.00 lakh to INR 42.00 lakh and reserves and surplus from INR 2.72 cr to INR 1.34 cr.")
+    assert _memo(client, analyst, case_id, "financials")[:2] == [revenue, worth]
+    q = _observed(note)["financials:fall"]
+    # Half the revenue gone is serious, and asked first in its topic.
+    _asked_as_observation(q, area="turnover", section=5, severity="serious")
+    assert q["title"] == "Revenue and net worth fell" and q["context"] == f"{revenue} {worth}"
+    assert q["question"] == ("Why did revenue and net worth fall, what turnover is expected for the current year, and why "
+                             "did the share capital and reserves fall (a capital reduction, a buy-back or a write-off)?")
+    assert {e["document_id"] for e in q["evidence"]} == {statements}
+    turnover = next(t for t in note["topics"] if t["area"] == "turnover")
+    assert turnover["question_ids"][0] == q["id"]
+
+
+def test_a_smaller_fall_in_revenue_alone_is_moderate(client: TestClient, published_data_root: Path):
+    analyst = sign_in(client, ANALYST)
+    root = published_data_root
+    case_id = make_case(client, analyst, root, facilities=["cash_credit"], amount_inr=30_000_000)
+    audited(root, case_id, set_rows={"I. Revenue from operations": 60_000_000})  # 40.2% down; net worth up
+    q = _observed(_pd(client, analyst, root, case_id))["financials:fall"]
+    _asked_as_observation(q, area="turnover", section=5)
+    assert q["title"] == "Revenue fell" and q["context"].startswith("Revenue from operations fell 40.2% to INR 6.00 cr")
+    assert q["question"] == "Why did revenue fall, and what turnover is expected for the current year?"
+    assert not any(p.startswith("Net worth fell") for p in _memo(client, analyst, case_id, "financials"))
+
+
+def _borrowings(client: TestClient, analyst: dict, root: Path, *, outstanding: int = 7_500_000, **case) -> tuple[str, str]:
+    """Statements with borrowings of 2.70 cr; a declaration and the bureau with one facility."""
+    case_id = make_case(client, analyst, root, **case)
+    audited(root, case_id)
+    tidewater = {**TIDEWATER, "outstanding": outstanding}
+    add_doc(root, case_id, "existing_facilities_declaration", {"company_name": CO, "declaration_date": "2026-09-15",
+                                                               "facilities": [tidewater]})
+    bureau = add_doc(root, case_id, "commercial_bureau_report", {
+        "company_name": CO, "report_date": "2026-09-20", "credit_rank": "3",
+        "credit_facilities": [{**tidewater, "overdue": 0, "status": "Standard"}]})
+    return case_id, bureau
+
+
+def test_borrowings_no_facility_on_file_explains_are_asked(client: TestClient, published_data_root: Path):
+    analyst = sign_in(client, ANALYST)
+    root = published_data_root
+    case_id, bureau = _borrowings(client, analyst, root)
+    q = _observed(_pd(client, analyst, root, case_id))["obligations:borrowings"]
+    memo = _memo(client, analyst, case_id, "obligations")
+    assert any(p.endswith("Borrowings of INR 2.70 cr against INR 75.00 lakh outstanding on the facilities on file; "
+                          "INR 1.95 cr is not explained.") for p in memo)
+    # One lender: said in the singular.
+    assert ("Existing sanctioned facilities with Tidewater Finance Limited total INR 1.20 cr; the commercial bureau "
+            "report shows INR 75.00 lakh outstanding." in memo)
+    _asked_as_observation(q, area="obligations", section=9)
+    assert q["context"] == ("The FY 2025-26 balance sheet shows borrowings of INR 2.70 cr against INR 75.00 lakh "
+                            "outstanding on the facilities on file; INR 1.95 cr is not explained.")
+    assert q["question"].startswith("Who are the lenders for the INR 1.95 cr of borrowings")
+    assert bureau in {e["document_id"] for e in q["evidence"]}
+
+
+def test_borrowings_are_not_asked_about_when_the_facilities_on_file_explain_them_or_cannot(client, published_data_root):
+    """Outstanding within INR 25 lakh of the borrowings; a facility named only in the sourcing message,
+    whose outstanding nobody states; no declaration or bureau report to say what is outstanding."""
+    analyst = sign_in(client, ANALYST)
+    root = published_data_root
+    near, _ = _borrowings(client, analyst, root, outstanding=26_000_000, borrower="Kestrel Tools Pvt Ltd")
+    banking = "cash credit with Lotuscrest Bank a/c 90100005678"
+    unknown, _ = _borrowings(client, analyst, root, borrower="Heronbay Moulds Pvt Ltd",
+                             header={"existing_banking": {"value": banking, "source": "person"}})
+    bare = make_case(client, analyst, root, borrower="Marigold Presses Pvt Ltd")
+    audited(root, bare)
+    add_doc(root, bare, "sanction_letter", {"lender_name": "Tidewater Finance Limited", "facilities": [
+        {"facility": "Term loan", "sanctioned_amount": 12_000_000, "emi": 250_000}]})
+    for case_id in (near, unknown, bare):
+        assert "obligations:borrowings" not in _observed(_pd(client, analyst, root, case_id))
+        assert not any("is not explained" in p for p in _memo(client, analyst, case_id, "obligations"))
+
+
+def test_a_loan_no_facility_matches_and_a_facility_without_a_limit_are_asked(client, published_data_root):
+    analyst = sign_in(client, ANALYST)
+    root = published_data_root
+    banking = ("current account with Lotuscrest Bank a/c 90100001234 and cash credit with Lotuscrest Bank a/c "
+               "90100005678")
+    case_id = make_case(client, analyst, root, header={"existing_banking": {"value": banking, "source": "person"}})
+    ashwood = {"lender": "Ashwood Finserv Limited", "facility": "Term loan", "sanctioned_amount": 9_500_000,
+               "emi": 145_000, "outstanding": 6_000_000}
+    add_doc(root, case_id, "existing_facilities_declaration", {"company_name": CO, "facilities": [ashwood]})
+    add_doc(root, case_id, "commercial_bureau_report", {"company_name": CO, "credit_facilities": [ashwood]})
+    statement = bank(root, case_id, [{"date": "2025-06-20", "description": "TL DISBURSAL LN 778812", "credit": 5_000_000}]
+                     + [{"date": f"{ym}-05", "description": "NACH DR ASHWOOD FINSERV", "debit": 145_000}
+                        for ym in months((2025, 4), 12)])
+    observed = _observed(_pd(client, analyst, root, case_id))
+    memo = _memo(client, analyst, case_id, "obligations")
+    loan = observed["obligations:disbursal-2025-06-20-5000000"]
+    _asked_as_observation(loan, area="obligations", section=9)
+    assert loan["context"] == ("A loan of INR 50.00 lakh was disbursed into Lotuscrest Bank ·1234 on 20 Jun 2025 "
+                               "(TL DISBURSAL LN 778812); no facility on file matches it and no instalment for it "
+                               "appears in the statements.") and loan["context"] in memo
+    assert loan["question"] == ("Which lender disbursed this loan, on what terms, and why is no instalment for it seen "
+                                "in the statements?")
+    assert [e["document_id"] for e in loan["evidence"]] == [statement]
+    facility = observed["obligations:facility-lotuscrest-bank-cash-credit"]
+    _asked_as_observation(facility, area="obligations", section=9)
+    assert facility["context"] in memo and facility["context"].endswith("its limit is not on file.")
+    assert facility["question"] == ("What are the limit and the outstanding of the cash credit with Lotuscrest Bank, and "
+                                    "can the lender's sanction letter be provided?")
+
+
+def test_a_loan_a_facility_on_file_accounts_for_and_a_facility_with_its_limit_are_not_asked(client, published_data_root):
+    """A loan whose narration names a lender on file, one of the amount of a facility on file, and a
+    facility the sourcing message names whose sanction letter states its limit."""
+    analyst = sign_in(client, ANALYST)
+    root = published_data_root
+    banking = "cash credit with Lotuscrest Bank a/c 90100005678"
+    case_id = make_case(client, analyst, root, header={"existing_banking": {"value": banking, "source": "person"}})
+    for lender, amount in (("Tidewater Finance Limited", 12_000_000), ("Ironleaf Capital Limited", 5_000_000),
+                           ("Lotuscrest Bank", 20_000_000)):
+        add_doc(root, case_id, "sanction_letter", {"lender_name": lender, "facilities": [
+            {"facility": "Cash credit" if lender == "Lotuscrest Bank" else "Term loan", "sanctioned_amount": amount}]})
+    bank(root, case_id, [{"date": "2025-06-20", "description": "TL DISBURSAL LN 778812", "credit": 5_000_000},
+                         {"date": "2025-07-10", "description": "LOAN DISB TIDEWATER", "credit": 3_000_000}])
+    observed = _observed(_pd(client, analyst, root, case_id))
+    assert not [k for k in observed if k.startswith(("obligations:disbursal", "obligations:facility"))]
+    memo = _memo(client, analyst, case_id, "obligations")
+    assert any(p.endswith("(TL DISBURSAL LN 778812); a facility of that amount with Ironleaf Capital Limited is on file.")
+               for p in memo)
+    assert any(p.endswith("the narration names Tidewater Finance Limited, a lender on file.") for p in memo)
+
+
+@pytest.mark.parametrize("balances,ending,question", [
+    # The statements hold more than the balance sheet says: asked why.
+    ([9_000_000, 1_100_000], "; the statements' balances exceed the audited figure by INR 41.00 lakh.",
+     "Why do the year-end statement balances exceed the audited cash and bank balance by INR 41.00 lakh"),
+    # Part of the audited balance is in no statement: asked where it is held.
+    ([3_000_000], "; INR 30.00 lakh of the audited balance is not in any statement on file.",
+     "Where is the INR 30.00 lakh of the audited cash and bank balance that is in no statement on file held"),
+    # Stated, but too small to ask about.
+    ([5_800_000], "; INR 2.00 lakh of the audited balance is not in any statement on file.", None),
+])
+def test_year_end_balances_apart_from_the_audited_figure_are_asked_either_way(client, published_data_root, balances,
+                                                                              ending, question):
+    analyst = sign_in(client, ANALYST)
+    root = published_data_root
+    case_id = make_case(client, analyst, root)
+    audited(root, case_id)  # cash and bank balances of 60 lakh
+    for (last4, name), balance in zip((("1234", "Lotuscrest Bank"), ("7777", "Ironleaf Bank")), balances):
+        bank(root, case_id, [{"date": "2026-03-20", "description": "NEFT CR CUSTOMER RECEIPT", "credit": 50_000,
+                              "balance": balance}], last4=last4, bank_name=name)
+    stated = next(p for p in _memo(client, analyst, case_id, "banking") if p.startswith("At 31 Mar 2026"))
+    assert stated.endswith(ending)
+    q = _observed(_pd(client, analyst, root, case_id)).get("banking:cash")
+    if question is None:
+        assert q is None
+        return
+    _asked_as_observation(q, area="accounts", section=8)
+    assert q["context"] == stated and q["question"].startswith(question)
+
+
+@pytest.mark.parametrize("offered", [True, False])
+def test_collateral_offered_with_nothing_on_file_is_asked(client: TestClient, published_data_root: Path, offered):
+    analyst = sign_in(client, ANALYST)
+    case_id = make_case(client, analyst, published_data_root, collateral_present=offered)
+    q = _observed(_pd(client, analyst, published_data_root, case_id)).get("proposal:collateral")
+    if not offered:
+        assert q is None
+        return
+    _asked_as_observation(q, area="policy", section=4)
+    assert q["context"] == "Collateral is offered, as recorded on the case at intake; its nature and value are not on file."
+    assert q["question"].startswith("What collateral is offered (the asset, its owner and its value)")
+    assert q["evidence"] == []
+
+
+def test_a_return_not_yet_due_is_asked_only_when_nothing_else_asks_for_it(client: TestClient, published_data_root: Path):
+    """The FY 2025-26 return falls due on 31 Oct 2026. The checklist asks for it, and the documents to
+    collect with it; with the checklist item waived, the note asks when it will be filed."""
+    analyst = sign_in(client, ANALYST)
+    root = published_data_root
+    case_id = make_case(client, analyst, root, facilities=["cash_credit"], amount_inr=30_000_000)
+    audited(root, case_id)
+    note = _pd(client, analyst, root, case_id)
+    assert not [k for k in _observed(note) if k.startswith("turnover:return")]
+    assert any("AY 2026-27" in d["text"] for d in note["documents_to_collect"])
+    filing = next(p for p in _memo(client, analyst, case_id, "turnover") if p.startswith(("GST returns", "No GST")))
+    assert filing.endswith("The return for AY 2026-27 is due by 31 Oct 2026 (not yet due); the checklist asks for it.")
+    conn = db.connect(root)
+    try:
+        conn.execute("""INSERT INTO checklist_waivers (case_id, item_id, reason, decided_by, decided_at)
+                        VALUES (?, 'itr', 'Returns to follow after the due date', 'test', '2026-09-29T00:00:00Z')""",
+                     (case_id,))
+    finally:
+        conn.close()
+    q = _observed(_pd(client, analyst, root, case_id))["turnover:return-ay-2026-27"]
+    _asked_as_observation(q, area="turnover", section=7, severity="mild")
+    assert q["context"] == "The return for AY 2026-27 is due by 31 Oct 2026 (not yet due)."
+    assert q["question"] == "When will the income tax return for AY 2026-27 be filed?"
+    filing = next(p for p in _memo(client, analyst, case_id, "turnover") if p.startswith(("GST returns", "No GST")))
+    assert filing.endswith("The return for AY 2026-27 is due by 31 Oct 2026 (not yet due).")
+
+
+def test_an_observation_is_asked_after_the_findings_and_deviations_of_its_severity(client, published_data_root):
+    analyst = sign_in(client, ANALYST)
+    case_id = _case(client, analyst, published_data_root)
+    policy = [q for q in _pd(client, analyst, published_data_root, case_id)["questions"] if q["area"] == "policy"]
+    collateral = next(i for i, q in enumerate(policy) if q["ref"] == "proposal:collateral")
+    assert any(q["source"] == "deviation" for q in policy[:collateral])
+    assert all(q["source"] == "deviation" for q in policy[:collateral])
+    assert all(q["severity"] == "mild" for q in policy[collateral + 1:])
+
+
+# --- What a question's wording may name ---
+
+
+def test_a_findings_question_may_name_its_values_rows_and_figures():
+    from engine.contracts import Finding, FindingDetail, FindingDetailRow, FindingSide
+    from engine.pd_note import finding_values
+
+    pans = Finding(id="F1", case_id="C", rule_id="ID-01", title="t", outcome="fail", severity="serious", blocking=True,
+                   explanation="e", sides=[FindingSide(label="Company PAN", value="AAACK1234F"),
+                                           FindingSide(label="Income tax return", value="AAACK9876Q")])
+    values = finding_values(pans)
+    assert (values["values"], values["left"], values["right"], values["items"], values["s"]) == (
+        "AAACK1234F and AAACK9876Q", "AAACK1234F", "AAACK9876Q", "", "s")
+    rows = [FindingDetailRow(label="ASHWOOD FINSERV", cells=["Lotuscrest Bank ·1234", 145_000.0, 12.0, "✓"]),
+            FindingDetailRow(label="TIDEWATER FIN", cells=["Lotuscrest Bank ·1234", 250_000.0, 12.0, "—"], flagged=True)]
+    lenders = Finding(id="F2", case_id="C", rule_id="OB-02", title="t", outcome="fail", severity="serious",
+                      blocking=False, explanation="e", sides=[], scope="FY 2025-26",
+                      detail=FindingDetail(columns=["Account", "Monthly instalment", "Months", "Declared"], rows=rows))
+    values = finding_values(lenders)
+    # One lender flagged: "lender", not "lenders"; its figures as the detail gives them, months as a count.
+    assert (values["items"], values["lenders"], values["count"], values["s"], values["period"]) == (
+        "TIDEWATER FIN", "TIDEWATER FIN", "1", "", "FY 2025-26")
+    assert values["detail"] == "TIDEWATER FIN (account Lotuscrest Bank ·1234, monthly instalment INR 2.50 lakh, months 12)"
+    assert values["anything else"] == ""
+
+
+def test_a_norms_question_may_name_its_figures_and_the_shortfall(published_data_root: Path):
+    from engine.contracts import NormInput, NormResult
+    from engine.pd_note import norm_values
+
+    policy = reader.load_policy(published_data_root)
+    configured = {n.id: n for n in policy.norms}
+    years = NormResult(id="DOC-02", family="documentation", label="Years of audited financial statements", formula="",
+                       required="at least 2 years", unit="years", outcome="deviation", category="documentation",
+                       category_label="Documentation", actual=1, actual_text="1 year")
+    values = norm_values(years, configured["DOC-02"], policy, "FY 2025-26", set())
+    assert (values["shortfall"], values["s"]) == ("1 year", "")
+    assert values["statement"] == "Audited financial statements cover 1 year against a norm of at least 2 years."
+    inputs = [NormInput(name="amount_requested", label="Amount requested", value=30_000_000),
+              NormInput(name="revenue_from_operations", label="Revenue from operations", value=49_560_000)]
+    request = NormResult(id="EL-05", family="eligibility", label="Total request against turnover", formula="",
+                         required="at most 20%", unit="%", outcome="deviation", category="eligibility",
+                         category_label="Eligibility", actual=60.5, actual_text="60.5%", inputs=inputs)
+    values = norm_values(request, configured["EL-05"], policy, "FY 2025-26", set())
+    assert (values["amount_requested"], values["revenue_from_operations"]) == ("INR 3.00 cr", "INR 4.96 cr")
+    assert values["figures"] == "amount requested INR 3.00 cr and revenue from operations INR 4.96 cr"

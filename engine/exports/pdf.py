@@ -108,17 +108,19 @@ def _paragraph(spans: layout.Spans, style: str, indent: bool = False) -> Paragra
 
 
 class _Space(Flowable):
-    """Ruled lines, or a box, left blank to write in."""
+    """Ruled lines, or a box, left blank to write in: so many of the space's lines (all of them unless
+    given), with `foot` points under the last."""
 
-    def __init__(self, space: layout.Space) -> None:
+    def __init__(self, space: layout.Space, lines: int | None = None, foot: float = 6) -> None:
         super().__init__()
-        self.space = space
+        self.space, self.foot = space, foot
+        self.lines = space.lines if lines is None else lines
         self.left = INDENT if space.indent else 0
 
     def wrap(self, available_width: float, available_height: float) -> tuple[float, float]:
         self.width = available_width
-        self.height = self.space.lines * LINE
-        return self.width, self.height + 6
+        self.height = self.lines * LINE
+        return self.width, self.height + self.foot
 
     def draw(self) -> None:
         c = self.canv
@@ -126,26 +128,57 @@ class _Space(Flowable):
         c.setStrokeColor(RULE)
         c.setLineWidth(0.5)
         if self.space.box:
-            c.rect(self.left, 6, self.width - self.left, self.height)
+            c.rect(self.left, self.foot, self.width - self.left, self.height)
         else:
-            for i in range(self.space.lines):
-                y = 6 + i * LINE
+            for i in range(self.lines):
+                y = self.foot + i * LINE
                 c.line(self.left, y, self.width, y)
         c.restoreState()
+
+
+class _Turning(KeepTogether):
+    """A group the page may turn inside, after the flowables at its breaks (ruled lines): kept on one
+    page where it fits; where it does not, as much of it as fits up to a break stays on the page, and
+    the rest goes over to the next together."""
+
+    def __init__(self, content: list[Flowable], breaks: set[int]) -> None:
+        super().__init__(content)
+        self.breaks = sorted(breaks)
+
+    def split(self, aW, aH):
+        if getattr(self, "_wrapInfo", None) != (aW, aH):
+            self.wrap(aW, aH)
+        if self._H > aH:
+            for b in reversed(self.breaks):
+                head = self._content[:b + 1]
+                if _listWrapOn(head, aW, self.canv)[1] <= aH:
+                    rest = _Turning(self._content[b + 1:], {k - b - 1 for k in self.breaks if k > b})
+                    return [NullActionFlowable(), *head, FrameBreak(), rest]
+        return super().split(aW, aH)
 
 
 class _Table(Table):
     """A table whose rest, once split at the foot of a page, starts on the next page: offered the space
     left under the part before it, reportlab would split it again inside a row and repeat the header
-    row mid-page."""
+    row mid-page. Where it runs over, at least `least` body rows go over to the next page; too short to
+    leave as many on this one, it goes over whole."""
 
     rest = False
+    least = 1
 
     def split(self, availWidth, availHeight):
         frame = getattr(self, "_frame", None)
         if self.rest and frame is not None and not frame._atTop:
             return []
         parts = super().split(availWidth, availHeight)
+        if len(parts) == 2 and len(parts[1]._cellvalues) - parts[1].repeatRows < self.least:
+            body = self._rowHeights[self.repeatRows:]
+            keep = len(body) - self.least
+            again = Table.split(self, availWidth, sum(self._rowHeights[:self.repeatRows] + body[:keep]) + 0.01) \
+                if keep >= self.least else []
+            parts = again if len(again) == 2 else [] if frame is not None and not frame._atTop else parts
+        for part in parts:
+            part.least = self.least
         for part in parts[1:]:
             part.rest = True
         return parts
@@ -176,9 +209,9 @@ class _Tail(Flowable):
             return [NullActionFlowable(), table, *tail]
         if height <= aH:
             body = table._rowHeights[table.repeatRows:]
-            if len(body) > 1:
-                # Between rows (not inside one): every row but the last on this page.
-                parts = Table.split(table, aW, height - body[-1] + 0.01)
+            if len(body) >= 2 * table.least:
+                # Between rows (not inside one): every row but the last (or the last few) on this page.
+                parts = Table.split(table, aW, height - sum(body[-table.least:]) + 0.01)
                 if len(parts) == 2:
                     parts[1].rest = True
                     return [NullActionFlowable(), parts[0], FrameBreak(), parts[1], *tail]
@@ -206,11 +239,11 @@ class _TableBlock(KeepTogether):
         if self._H <= aH:
             return [NullActionFlowable(), *self._content]
         table = self.table
-        if sum(table._rowHeights) <= self.whole:
-            return [here(), *self._content]
         heads, body = table._rowHeights[:table.repeatRows], table._rowHeights[table.repeatRows:]
-        kept = body[:1]
-        for height in body[1:]:
+        if sum(table._rowHeights) <= self.whole or len(body) < 2 * table.least:
+            return [here(), *self._content]
+        kept = body[:max(table.least, 1)]
+        for height in body[len(kept):]:
             if sum(kept) + height > START:
                 break
             kept.append(height)
@@ -234,6 +267,7 @@ def _table(t: layout.Table) -> tuple[list[Flowable], _Table, list[Flowable]]:
     table = _Table(data, colWidths=[w * WIDTH for w in t.widths], repeatRows=header, splitInRow=1, hAlign="LEFT",
                    minRowHeights=[0] * header + [t.row_height] * len(t.rows) if t.row_height else None,
                    spaceAfter=0 if t.note else 6)
+    table.least = t.least
     style = [
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
         ("GRID", (0, 0), (-1, -1), 0.5, RULE),
@@ -301,11 +335,32 @@ def _flowables(blocks: tuple[layout.Block, ...], grouped: bool = False) -> list[
             out.append(_Space(b))
         elif isinstance(b, layout.Group):
             # Reportlab keeps a heading with the next flowable but not with a group: the group takes it in.
-            content = _flowables(b.blocks, grouped=True)
+            content, breaks = _group(b)
             while out and isinstance(out[-1], Paragraph) and out[-1].getKeepWithNext():
                 content.insert(0, out.pop())
-            out.append(KeepTogether(content))
+                breaks = {k + 1 for k in breaks}
+            out.append(_Turning(content, breaks) if breaks else KeepTogether(content))
     return out
+
+
+def _group(g: layout.Group) -> tuple[list[Flowable], set[int]]:
+    """The group's flowables, and where the page may turn inside it: after each of its ruled lines from a
+    space's `hold` on, each line then drawn on its own."""
+    content: list[Flowable] = []
+    breaks: set[int] = set()
+    for b in g.blocks:
+        if isinstance(b, layout.Group):
+            # A group within a group is kept with the rest of it: reportlab cannot measure one inside another.
+            content += _group(b)[0]
+        elif g.turns and isinstance(b, layout.Space) and b.hold is not None and not b.box:
+            for k in range(1, b.lines + 1):
+                content.append(_Space(b, lines=1, foot=6 if k == b.lines else 0))
+                if k >= b.hold:
+                    breaks.add(len(content) - 1)
+        else:
+            content += _flowables((b,), grouped=True)
+    breaks.discard(len(content) - 1)
+    return content, breaks
 
 
 class _PagedCanvas(Canvas):

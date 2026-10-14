@@ -118,8 +118,12 @@ deviation_categories:
 # cannot_evaluate question. The note prints the question on its own, above the
 # sentence that leads into it here, so the question names what it asks about:
 # {subject} is the norm's label as it reads inside a sentence (DSCR,
-# working-capital cycle). A norm written in words (positive, no loss, none)
-# reads "where the norm is ...", as the memo writes it.
+# working-capital cycle). A norm written in words (positive, no loss) reads
+# "where the norm is ...", as the memo writes it; a count of open items, "the norm allows
+# none". {actual} may be one or several (1 year, 2 years): the wording around it reads
+# right either way. A question may also name each figure the norm rests on by its input
+# ({amount_requested}, {revenue_from_operations}) and, after a shortfall, {s} its plural ending
+# (engine/pd_note.py lists the rest).
 pd_questions:
   eligibility: "{label} is {actual} against a norm of {required}. What is the background to the deviation on the {subject}, and what mitigates the risk?"
   ratios: "{label} is {actual} in {period} against a norm of {required}. What explains the deviation on the {subject}, and what is the outlook for the current year?"
@@ -199,6 +203,7 @@ norms:
     source: provisional
     status: provisional
     note: "Turnover method (requests up to INR 5.00 cr): the bank finances up to 20% of annual turnover. The whole amount requested is used, including any term loan, until per-facility amounts are captured."
+    pd_question: "{label} is {actual} against a norm of {required}. Why is the total request of {amount_requested} {actual} of the turnover of {revenue_from_operations} in {period}, and what supports a request of that size?"
 
   # --- Financial ratios ---
   - id: FR-01
@@ -254,7 +259,7 @@ norms:
     category: documentation
     source: provisional
     status: provisional
-    pd_question: "{label}: {actual}, where the norm is {required}. Which of the blocking documents listed under Documents to collect can be provided, and by when?"
+    pd_question: "{label}: {actual}; the norm allows {required}. Which of the blocking documents listed under Documents to collect can be provided, and by when?"
   - id: DOC-02
     family: documentation
     label: Years of audited financial statements
@@ -265,4 +270,4 @@ norms:
     category: documentation
     source: provisional
     status: provisional
-    pd_question: "{label}: {actual} against a norm of {required}. When will the audited financial statements for the years not on file be provided?"
+    pd_question: "Audited financial statements are on file for {actual}, against a norm of {required}. When will the audited financial statements for the year{s} not on file be provided?"

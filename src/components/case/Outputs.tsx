@@ -27,14 +27,17 @@ import { Chip, Panel, type Tone } from "@/components/common/Panel";
 import { QueryView } from "@/components/common/States";
 import { useDocViewer } from "@/components/docviewer/DocViewer";
 import { t, tOr } from "@/config/terminology";
+import { useAnchor } from "@/domain/anchor";
 import { formatInr } from "@/domain/cases";
 import { useCam, usePdNote, useSpread } from "@/domain/findings";
 import {
   OUTPUT_FORMATS,
+  camSectionAnchor,
   citationRuns,
   configLabel,
   formatDay,
   leadingFigure,
+  observationSection,
   pageRuns,
   sourcesById,
   unbrokenParts,
@@ -54,7 +57,8 @@ import { cn } from "@/lib/utils";
 //   cam                  the memo: cam-header (cam-title, cam-borrower, cam-meta with
 //                        cam-config, whose title is the full version, cam-template-note) with
 //                        cam-downloads (cam-download-docx, cam-download-pdf); a cam-section per
-//                        section (data-section) headed cam-section-title, holding
+//                        section (data-section; its id, cam-section-<id>, the anchor the note's
+//                        observations open) headed cam-section-title, holding
 //                        cam-section-empty or its blocks: cam-paragraph, cam-facts (a cam-fact
 //                        each, data-label), cam-table (data-stacks="true" when its rows read as
 //                        cards in a narrow box; cam-table-title, a cam-table-row each with its
@@ -73,9 +77,11 @@ import { cn } from "@/lib/utils";
 //                        pd-download-pdf); pd-people (a pd-person each); pd-record (a
 //                        pd-record-field each, left blank); a pd-topic per topic (data-area)
 //                        headed pd-topic-title, with a pd-question each (data-question,
-//                        data-rule): pd-question-number, pd-question-text, pd-question-context,
-//                        pd-question-link, pd-question-status, and pd-question-also with a
-//                        pd-also each (data-ref: pd-also-link, pd-also-status); pd-no-questions
+//                        data-rule, data-source): pd-question-number, pd-question-text,
+//                        pd-question-context, pd-question-source, pd-question-link (an
+//                        observation's opens the CAM view at the section its key names),
+//                        pd-question-status, and pd-question-also with a pd-also each
+//                        (data-ref: pd-also-link, pd-also-status); pd-no-questions
 //                        instead when there are none; pd-documents (a pd-document each);
 //                        pd-sign-off (a pd-sign-off-role each)
 //   output-sources       either one's numbered sources: an output-source row each (data-number,
@@ -793,8 +799,16 @@ function Block({ caseId, block }: { caseId: string; block: CamBlock }) {
 
 function MemoSection({ caseId, section }: { caseId: string; section: CamSection }) {
   const blocks = section.blocks ?? [];
+  const anchor = camSectionAnchor(section.id);
+  const ref = useAnchor<HTMLElement>(anchor);
   return (
-    <section className="min-w-0" data-testid="cam-section" data-section={section.id}>
+    <section
+      ref={ref}
+      id={anchor}
+      className="min-w-0 scroll-mt-4"
+      data-testid="cam-section"
+      data-section={section.id}
+    >
       <h3 className={heading} data-testid="cam-section-title">
         {section.number}. {section.title}
       </h3>
@@ -1228,13 +1242,15 @@ function RecordFields({ fields }: { fields: string[] }) {
 }
 
 /** Where a question's source is decided, opened at it: the board for a finding or a check that
- * could not run, the policy tab for a norm. */
+ * could not run, the policy tab for a norm; for an observation, the CAM view at the section that
+ * states it, or at its top where no one section does. */
 function SourceLink({
   caseId,
   target,
   id,
   label,
   testId,
+  section = null,
 }: {
   caseId: string;
   target: PdQuestion["target"];
@@ -1242,8 +1258,24 @@ function SourceLink({
   id: string;
   label: string;
   testId: string;
+  /** For an observation: the id of the memo section that states it. */
+  section?: string | null;
 }) {
   const className = "font-medium text-primary hover:underline";
+  if (target === "cam") {
+    return (
+      <Link
+        to="/appraisals/$caseId/outputs"
+        params={{ caseId }}
+        search={{ view: "cam" }}
+        {...(section ? { hash: camSectionAnchor(section) } : {})}
+        className={className}
+        data-testid={testId}
+      >
+        <Words text={label} />
+      </Link>
+    );
+  }
   return target === "cross_verification" ? (
     <Link
       to="/appraisals/$caseId/cross-verification"
@@ -1269,12 +1301,17 @@ function SourceLink({
 
 function Question({ caseId, q }: { caseId: string; q: PdQuestion }) {
   const also = q.also ?? [];
+  // An observation's link names the draft CAM (its rule, OBS, means nothing to a reader) and opens
+  // it at the section that states it, which the observation's status names ("section 9").
+  const observed = q.target === "cam";
+  const source = <span data-testid="pd-question-source">{t(`outputs.pd.source.${q.source}`)}</span>;
   return (
     <li
       className="flex gap-3 px-3 py-3"
       data-testid="pd-question"
       data-question={q.id}
       data-rule={q.rule}
+      data-source={q.source}
     >
       <span
         className="tabular w-6 shrink-0 text-[13px] font-semibold"
@@ -1296,13 +1333,15 @@ function Question({ caseId, q }: { caseId: string; q: PdQuestion }) {
         </p>
         <p className="flex flex-wrap items-center gap-2 text-[11.5px] text-muted-foreground">
           <Chip tone={SEVERITY_TONE[q.severity]}>{t(`severity.${q.severity}`)}</Chip>
-          <span>{t(`outputs.pd.source.${q.source}`)}</span>
+          {/* An observation is a fact the memo states, not a check's result: marked apart. */}
+          {q.source === "observation" ? <Chip tone="info">{source}</Chip> : source}
           <SourceLink
             caseId={caseId}
             target={q.target}
             id={q.ref}
-            label={`${q.xv_ref ?? q.rule} · ${q.title}`}
+            label={`${observed ? t("outputs.pd.cam") : (q.xv_ref ?? q.rule)} · ${q.title}`}
             testId="pd-question-link"
+            section={observed ? observationSection(q.ref) : null}
           />
           {q.status && <StatusChip status={q.status} testId="pd-question-status" />}
         </p>

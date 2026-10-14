@@ -35,6 +35,7 @@ LABELS = {
     "summary_unassessed": "Norms not assessed", "summary_queries": "Open queries",
     "people_to_meet": "People to meet", "record": "Record of the discussion", "why_we_ask": "Why we ask",
     "evidence": "Evidence", "also_covers": "Also covers", "response": "Response", "follow_up": "Follow-up",
+    "observation": "Observation",
     "documents_to_collect": "Documents to collect at the discussion",
     "sign_name": "Name", "sign_designation": "Designation", "sign_signature": "Signature", "sign_date": "Date",
     "sources": "Sources", "source_no": "No.", "source_document": "Document", "source_file": "File",
@@ -52,6 +53,15 @@ BODY_HEIGHT = 720.0
 """Points down the text: A4 less a top margin of 2.3 cm and a bottom margin of 2 cm, in both files."""
 WHOLE = BODY_HEIGHT / 6
 """Points: a table this short, with the headings over it, is kept on one page."""
+FACTS_WHOLE = 12
+"""Rows: a table of facts this long or shorter is kept on one page, with the headings over it."""
+RESPONSE_LINES, FOLLOW_UP_LINES = 4, 2
+"""Ruled lines under each question of the note, for the response and the follow-up."""
+HOLD = 2
+"""Response lines kept with their question: the page may turn after these, rather than the question
+move whole to the next page."""
+SOURCE_ROWS = 3
+"""Rows of a list of sources kept together at either end where it runs over a page."""
 INDENT = 18.4
 """Points: the indent under a question's number (0.65 cm)."""
 BODY_SIZE = 9.5
@@ -122,6 +132,9 @@ class Table:
     """A short paragraph straight after the table, kept with its last rows."""
     whole: float = WHOLE
     """Points: a table this short is kept on one page with the headings over it and the lines under it."""
+    least: int = 1
+    """Body rows kept together at either end where the table runs over a page: a table with fewer than
+    twice as many goes to the next page whole."""
 
 
 @dataclass(frozen=True)
@@ -131,6 +144,9 @@ class Space:
     lines: int
     box: bool = False
     indent: bool = False
+    hold: int | None = None
+    """In a group that may turn: the lines kept with what is above them; the page may turn after any
+    line from this one on. None keeps every line with the rest of the group."""
 
 
 @dataclass(frozen=True)
@@ -138,6 +154,9 @@ class Group:
     """Blocks kept on one page where they fit."""
 
     blocks: tuple[Block, ...]
+    turns: bool = False
+    """Where the group does not fit whole, the page may turn between its ruled lines (after a Space's
+    `hold` lines) rather than the group move to the next page."""
 
 
 Block = Title | Heading | Paragraph | Table | Space | Group
@@ -418,8 +437,11 @@ def _table(columns: Iterable[str], rows: Iterable[Iterable[Spans]], *, numeric: 
 
 def _facts(pairs: Iterable[tuple[str, Spans]], kind: Literal["facts", "form"] = "facts",
            row_height: float = 0) -> Table:
-    return Table(columns=(), rows=tuple(((Span(clean(label)),), value) for label, value in pairs), widths=FACTS,
-                 kind=kind, row_height=row_height)
+    """Label and value, row by row; up to FACTS_WHOLE rows are kept on one page, rather than leave a
+    few of them alone at the top of the next."""
+    rows = tuple(((Span(clean(label)),), value) for label, value in pairs)
+    return Table(columns=(), rows=rows, widths=FACTS, kind=kind, row_height=row_height,
+                 whole=BODY_HEIGHT if len(rows) <= FACTS_WHOLE else WHOLE)
 
 
 def _sign_off(roles: Iterable[str], words: Callable[[str], str]) -> Table:
@@ -433,13 +455,13 @@ def _sources_appendix(sources: _Sources, words: Callable[[str], str], new_page: 
     rows = sources.all()
     if not rows:
         return [heading, Paragraph(_spans("No document is cited.", italic=True), "note")]
-    # A list of sources that takes up to half a page is kept whole, rather than leave its last rows alone
-    # on the last page.
-    return [heading, _table(
+    # The list starts under what is before it, rather than go alone onto a page of its own; where it
+    # runs over, its first and its last rows go in threes, so that none is left alone on a page.
+    return [heading, replace(_table(
         (words("source_no"), words("source_document"), words("source_file"), words("source_pages")),
         [((Span(str(s.number)),), _spans(s.label), _spans(s.file_name or "—"), _spans(_runs(s.pages) or "—"))
          for s in rows],
-        numeric=(0,), whole=BODY_HEIGHT / 2)]
+        numeric=(0,), whole=0), least=SOURCE_ROWS)]
 
 
 # --- Keeping lines with their tables (F-22) ---
@@ -623,16 +645,19 @@ def cam_document(cam: Cam) -> Document:
     blocks.append(Heading(f"{cam.summary_number}. {clean(cam.summary_title)}"))
     blocks += _summary_blocks(cam, sources, words)
 
-    blocks.append(Heading(f"{cam.recommendation_number}. {clean(cam.recommendation_title)}", new_page=True))
+    recommendation: list[Block] = [Heading(f"{cam.recommendation_number}. {clean(cam.recommendation_title)}")]
     if clean(cam.recommendation):
-        blocks.append(Paragraph(_spans(cam.recommendation)))
+        recommendation.append(Paragraph(_spans(cam.recommendation)))
     for prompt in cam.recommendation_prompts:
-        blocks.append(Group((Paragraph(_spans(prompt, bold=True), "label"), Space(lines=5, box=True))))
+        recommendation.append(Group((Paragraph(_spans(prompt, bold=True), "label"), Space(lines=5, box=True))))
     if not cam.recommendation_prompts and not clean(cam.recommendation):
-        blocks.append(Space(lines=8, box=True))
+        recommendation.append(Space(lines=8, box=True))
     if cam.sign_off:
-        blocks.append(Group((_sign_off((s.role for s in cam.sign_off), words),)))
-    # The recommendation's page is left to credit: the sources start on the next.
+        recommendation.append(Group((_sign_off((s.role for s in cam.sign_off), words),)))
+    # The recommendation is left to credit on one page with its sign-off: a page of its own, or under the
+    # last lines of the summary where it fits whole there, rather than leave those lines alone on a page.
+    # The sources start on the next.
+    blocks.append(Group(tuple(recommendation)))
     blocks += _sources_appendix(sources, words, new_page=True)
     return _document(cam.title, cam.borrower, cam.case_id, cam.as_of, blocks, cam.config_version)
 
@@ -644,13 +669,17 @@ def _at(xv_ref: str | None, rule: str | None, ref: str) -> str:
 
 
 def _about(q: PdQuestion, words: Callable[[str], str]) -> str:
-    """What the question comes from, in a line: its severity, the finding or norm and its status; then
-    the other findings it also covers, each with its status."""
+    """What the question comes from, in a line: its severity, the finding, norm or observation and its
+    status; then the other findings it also covers, each with its status. An observation, a fact the
+    memo states, goes by its word alone and its status, the memo section that states it ("section 9"):
+    its key and its rule (OBS) mean nothing to a reader."""
     ref = _at(q.xv_ref, q.rule, q.ref)
     if q.source == "finding":
         what = f"Finding {ref}"
     elif q.source == "deviation":
         what = f"Deviation from {ref}"
+    elif q.source == "observation":
+        what = words("observation")
     else:
         what = f"{'Check not completed' if q.target == 'cross_verification' else 'Norm not assessed'}: {ref}"
     line = " · ".join(p for p in (SEVERITY.get(q.severity, ""), clean(what), clean(q.status)) if p)
@@ -670,9 +699,13 @@ def _question(q: PdQuestion, sources: _Sources, words: Callable[[str], str]) -> 
     marker = sources.marker([*q.evidence, *(e for a in q.also for e in a.evidence)])
     if marker:
         blocks.append(Paragraph((Span(_lead_in(words("evidence")), bold=True), Span(marker)), indent=True))
-    blocks += [Paragraph(_spans(words("response"), bold=True), "label", indent=True), Space(lines=3, indent=True),
-               Paragraph(_spans(words("follow_up"), bold=True), "label", indent=True), Space(lines=2, indent=True)]
-    return Group(tuple(blocks))
+    # Kept on one page where it fits; where it nearly does, the page turns between the response lines
+    # (after the first two) or before the follow-up, rather than the question leave a page part blank.
+    blocks += [Paragraph(_spans(words("response"), bold=True), "label", indent=True),
+               Space(lines=RESPONSE_LINES, indent=True, hold=HOLD),
+               Paragraph(_spans(words("follow_up"), bold=True), "label", indent=True),
+               Space(lines=FOLLOW_UP_LINES, indent=True)]
+    return Group(tuple(blocks), turns=True)
 
 
 def pd_note_document(note: PdNote) -> Document:

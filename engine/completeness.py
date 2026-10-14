@@ -276,8 +276,9 @@ class Evaluator:
                         {fy_end_of(d.value("financial_year") or d.row["instance_key"]) for d in usable} - {None}
                     )
                     missing = self.missing_request(item)
+                    # The years received, by the financial year alone, so the brackets do not nest.
                     received = (
-                        " (received: " + ", ".join(fy_label(o) for o in others) + ")" if others else ""
+                        "; received: " + ", ".join(fy_label(o).split(" (")[0] for o in others) if others else ""
                     )
                     return ItemResult(item, state("missing", f"Not received: {missing}{received}", []), [], missing)
                 defs += self.sections(docs, cov.statements)

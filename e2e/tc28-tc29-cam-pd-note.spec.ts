@@ -5,11 +5,19 @@
 // its page; it ends in a summary of findings, checks not completed, deviations and open queries,
 // each opening the tab that decides it at the item, and leaves the recommendation and the
 // sign-off for credit. The note asks its questions by topic, each tied to the finding, norm or
-// gap it comes from. Both number the documents they cite, mark the pages as the downloads mark
-// them, and download as Word and as PDF.
+// gap it comes from, or to the memo section that states an observation it asks about. Both
+// number the documents they cite, mark the pages as the downloads mark them, and download as
+// Word and as PDF.
 import { readFile } from "node:fs/promises";
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { CAM, KESTREL, OUTPUT_CONFIG_LABEL, OUTPUT_CONFIG_VERSION, PD_NOTE } from "./fixtures/data";
+import {
+  CAM,
+  DISBURSAL_TEXT,
+  KESTREL,
+  OUTPUT_CONFIG_LABEL,
+  OUTPUT_CONFIG_VERSION,
+  PD_NOTE,
+} from "./fixtures/data";
 import { MockApi, attachment, scrollingBoxes, scrollsSideways, signedIn } from "./support/api";
 
 const viewer = (page: Page) => page.getByTestId("evidence-viewer");
@@ -407,14 +415,14 @@ test("the sources are numbered as the citations number them, each opening its fi
   expect([...new Set(numbers)]).toEqual(Array.from({ length: 18 }, (_, i) => i + 1));
 });
 
-test("the PD note: whom to meet, the record left blank, and the questions by topic, each tied to its finding, norm or gap", async ({
+test("the PD note: whom to meet, the record left blank, and the questions by topic, each tied to its finding, norm, gap or observation", async ({
   page,
 }) => {
   await openView(page, "pd");
   const header = page.getByTestId("pd-header");
   await expect(header.getByTestId("pd-title")).toHaveText("Personal discussion — question note");
   await expect(header.getByTestId("pd-subtitle")).toHaveText(
-    "10 questions by topic, the most serious first in each, each tied to the finding, norm or gap it comes from.",
+    "11 questions by topic, the most serious first in each, each tied to the finding, norm, gap or CAM observation it comes from.",
   );
   // The header facts as the engine composes them.
   const facts = header.getByTestId("pd-fact");
@@ -472,10 +480,10 @@ test("the PD note: whom to meet, the record left blank, and the questions by top
     "obligations",
     "policy",
   ]);
-  await expect(topics.nth(3).getByTestId("pd-question")).toHaveCount(2);
+  await expect(topics.nth(3).getByTestId("pd-question")).toHaveCount(3);
   // Numbered across the note, in the order it asks them.
   await expect(page.getByTestId("pd-question-number")).toHaveText(
-    Array.from({ length: 10 }, (_, i) => `${i + 1}.`),
+    Array.from({ length: 11 }, (_, i) => `${i + 1}.`),
   );
 
   const pan = question(page, "pdq-id1");
@@ -522,6 +530,32 @@ test("the PD note: whom to meet, the record left blank, and the questions by top
   );
   await expect(gap.getByTestId("citation")).toHaveCount(0);
   await expect(gap.getByTestId("pd-question-also")).toHaveCount(0);
+
+  // An observation: a fact the memo states, marked apart from the checks' results, after the
+  // findings of its topic; its link opens the draft CAM at the section its key names, and its
+  // status names that section. Its key and its rule (OBS) are not shown.
+  const observation = question(page, "pdq-obs1");
+  await expect(observation).toHaveAttribute("data-source", "observation");
+  await expect(observation.getByTestId("pd-question-number")).toHaveText("9.");
+  await expect(observation.getByTestId("pd-question-source")).toHaveText("Observation in the CAM");
+  await expect(observation.getByTestId("pd-question-context")).toContainText(
+    `Why we ask: ${DISBURSAL_TEXT}`,
+  );
+  await expect(observation.getByTestId("pd-question-context").getByTestId("citation")).toHaveText(
+    "6 p.7",
+  );
+  await expect(observation.getByTestId("pd-question-link")).toHaveText(
+    "Draft CAM · Loan disbursal no facility explains",
+  );
+  await expect(observation.getByTestId("pd-question-link")).toHaveAttribute(
+    "href",
+    `/appraisals/${KESTREL}/outputs?view=cam#cam-section-banking`,
+  );
+  await expect(observation).not.toContainText("OBS");
+  await expect(observation.getByTestId("pd-question-status")).toHaveText("section 8");
+  await expect(question(page, "pdq-ob1").getByTestId("pd-question-source")).toHaveText(
+    "Cross-check finding",
+  );
 
   // One question asked for several checks names each of them, each opening its own.
   const merged = question(page, "pdq-to1");
@@ -579,6 +613,35 @@ test("a question's link opens the board at its finding, or the policy tab at its
   await expect(norm).toHaveAttribute("data-target", "true");
 });
 
+test("an observation's link opens the draft CAM at the section that states it, or at its top where none does", async ({
+  page,
+}) => {
+  await openView(page, "pd");
+  await question(page, "pdq-obs1").getByTestId("pd-question-link").click();
+  await expect(page).toHaveURL(
+    new RegExp(`/appraisals/${KESTREL}/outputs\\?view=cam#cam-section-banking$`),
+  );
+  const banking = page.locator("#cam-section-banking");
+  await expect(banking.getByTestId("cam-section-title")).toHaveText(
+    "8. Banking and account conduct",
+  );
+  await expect(banking).toBeInViewport();
+  await expect(banking.getByTestId("cam-paragraph").last()).toContainText(DISBURSAL_TEXT);
+
+  // A key that names no section: the link opens the draft CAM at its top.
+  const api = new MockApi();
+  api.pdNote = {
+    ...structuredClone(PD_NOTE),
+    questions: PD_NOTE.questions.map((q) =>
+      q.id === "pdq-obs1" ? { ...q, ref: "collateral", status: null } : q,
+    ),
+  };
+  await openView(page, "pd", api);
+  const link = question(page, "pdq-obs1").getByTestId("pd-question-link");
+  await expect(link).toHaveText("Draft CAM · Loan disbursal no facility explains");
+  await expect(link).toHaveAttribute("href", `/appraisals/${KESTREL}/outputs?view=cam`);
+});
+
 test("a note with one question says so in the singular", async ({ page }) => {
   const api = new MockApi();
   const only = PD_NOTE.questions[0]!;
@@ -589,7 +652,7 @@ test("a note with one question says so in the singular", async ({ page }) => {
   };
   await openView(page, "pd", api);
   await expect(page.getByTestId("pd-subtitle")).toHaveText(
-    "1 question, tied to the finding, norm or gap it comes from.",
+    "1 question, tied to the finding, norm, gap or CAM observation it comes from.",
   );
 });
 

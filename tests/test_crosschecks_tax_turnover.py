@@ -110,7 +110,7 @@ def test_a_part_year_of_gst_leaves_the_comparison_incomplete(client, analyst, pu
     _itr(root, case_id, "2026-27", 12_000_000)
     [f] = _findings(client, analyst, root, case_id)["TX-04"]
     assert f["outcome"] == "incomplete"
-    assert f["explanation"] == "GST outward supplies covers 8 of 12 months (Dec 2025, Jan 2026, Feb 2026… absent)."
+    assert f["explanation"] == "GST outward supplies cover 8 of 12 months (Dec 2025 to Mar 2026 not on file)."
 
 
 @pytest.mark.parametrize("filed,outcome", [(11_940_000, "pass"), (15_000_000, "fail")])

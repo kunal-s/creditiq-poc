@@ -97,8 +97,8 @@ def test_vintage_comes_from_the_certificate_of_incorporation(client: TestClient,
     case_id = make_case(client, analyst, published_data_root, amount_inr=40_000_000)
     coi = add_doc(published_data_root, case_id, "certificate_of_incorporation", {"date_of_incorporation": "2024-06-01"})
     el01 = _policy(client, analyst, case_id)["EL-01"]
-    # 27 completed months to 29 Sep 2026: 2.25 years, written truncated.
-    assert el01["outcome"] == "deviation" and el01["actual"] == 2.25 and el01["actual_text"] == "2.2 years"
+    # 27 completed months to 29 Sep 2026: 2.25 years, written in years and completed months as the memo writes them.
+    assert el01["outcome"] == "deviation" and el01["actual"] == 2.25 and el01["actual_text"] == "2 years 3 months"
     assert el01["category_label"] == "Eligibility"
     assert el01["inputs"][0]["evidence"][0]["document_id"] == coi
 
@@ -222,7 +222,7 @@ def test_vintage_is_compared_on_completed_months(client: TestClient, analyst, pu
     n = _policy(client, analyst, case_id)["EL-01"]
     assert n["outcome"] == outcome and n["actual"] == actual
     if outcome == "deviation":
-        assert n["actual_text"] == "2.9 years"  # truncated, never rounded up to the norm
+        assert n["actual_text"] == "2 years 11 months"  # completed months, never rounded up to the norm
 
 
 def test_vintage_applies_to_companies_only(client: TestClient, analyst, published_data_root: Path):
@@ -272,7 +272,10 @@ def test_a_deviation_reads_as_a_different_number_from_its_norm(value, unit, thre
 
 @pytest.mark.parametrize("value,unit,text", [
     (1, "years", "1 year"), (1.05, "years", "1 year"), (2, "years", "2 years"), (0, "years", "0 years"),
-    (1.5, "years", "1.5 years"), (1, "days", "1 day"), (0.6, "days", "1 day"), (90, "days", "90 days"),
+    (1.5, "years", "1 year 6 months"), (11.25, "years", "11 years 3 months"), (0.5, "years", "6 months"),
+    # A count of months over 12 to four places keeps its last month: 100 months is 8.3333 years.
+    (8.3333, "years", "8 years 4 months"), (2.9999, "years", "2 years 11 months"),
+    (1, "days", "1 day"), (0.6, "days", "1 day"), (90, "days", "90 days"),
     (-1, "days", "-1 day"),
     # A value that rounds to zero is never written with a minus sign.
     (-0.4, "days", "0 days"), (-0.04, "%", "0.0%"), (-0.004, "x", "0.00x"),

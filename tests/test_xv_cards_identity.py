@@ -173,7 +173,7 @@ def test_a_pan_waiting_for_review_asks_for_the_review_and_not_for_a_document(cli
     card = add_doc(root, case_id, "company_pan", {"pan": PAN}, pending={"pan"})
     add_doc(root, case_id, "income_tax_return", {"pan": ITR_PAN})
     f = _card(client, analyst, root, case_id, "ID-01")
-    assert f["outcome"] == "incomplete" and f["explanation"].startswith("Waiting for review of company PAN")
+    assert f["outcome"] == "incomplete" and f["explanation"].startswith("Waiting for review of the company PAN")
     # The columns keep the rule's sides: two values, neither the majority.
     assert _columns(f) == [("Company PAN", PAN, True), ("Income tax return", ITR_PAN, True)]
     assert [c["awaiting_review"] for c in f["columns"]] == [True, False]

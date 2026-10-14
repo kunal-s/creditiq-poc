@@ -5552,7 +5552,8 @@
             "enum": [
               "finding",
               "deviation",
-              "gap"
+              "gap",
+              "observation"
             ],
             "title": "Source",
             "type": "string"
@@ -5572,7 +5573,8 @@
             "default": "policy",
             "enum": [
               "cross_verification",
-              "policy"
+              "policy",
+              "cam"
             ],
             "title": "Target",
             "type": "string"

@@ -13,7 +13,7 @@ from engine import cam as cam_module, db, pipeline
 from engine.configstore import reader
 from engine.configstore.schema import CamSectionConfig
 from engine.contracts import CaseFacts, Evidence, IdentityFacts, PersonEntry, PersonSet
-from tests.conftest import ANALYST, RM, case_files, make_case, run_jobs, sign_in, upload
+from tests.conftest import ANALYST, RM, TEST_AS_OF, case_files, make_case, run_jobs, sign_in, upload
 from tests.test_pd_note import _case
 from tests.triangulation import add_doc, audited, bank, gstr, months
 
@@ -163,6 +163,17 @@ def _decide(client: TestClient, headers: dict, case_id: str, rule_id: str, decis
     return item["finding"]
 
 
+def _incomplete(board: dict) -> list[dict]:
+    """The checks the memo lists as not completed: not one for a year still in progress that has
+    nothing to ask for."""
+    def in_progress(scope: str | None) -> bool:
+        found = re.fullmatch(r"FY (\d{4})-\d{2}", scope or "")
+        return bool(found) and f"{int(found[1]) + 1}-03-31" > TEST_AS_OF
+
+    return [i["finding"] for i in board["items"] if i["finding"]["outcome"] == "incomplete"
+            and (i["finding"]["request"] or not in_progress(i["finding"]["scope"]))]
+
+
 def _summary_finding(cam: dict, rule_id: str) -> dict:
     return next(i for i in cam["summary"] if i["kind"] == "finding" and i["rule"] == rule_id)
 
@@ -282,7 +293,8 @@ def test_the_snapshot_states_the_proposal_at_a_glance(client: TestClient, publis
     [block] = _section(cam, "snapshot")["blocks"]
     facts = _facts(block)
     assert list(facts) == ["Borrower", "Constitution", "PAN", "GSTIN", "CIN", "Incorporated", "Facilities proposed",
-                           "Amount requested", "Board resolution limit", "Collateral offered",
+                           "Amount requested", "Eligible bank finance (working capital)", "Board resolution limit",
+                           "Collateral offered",
                            "Turnover declared in the sourcing message", "Relationship manager and branch",
                            "Approving authority", "Cross-checks", "Policy norms", "Documentation", "Case ID"]
     assert facts["Borrower"]["text"] == "Kestrel Tools Pvt Ltd" and _cited(facts["Borrower"]) == {docs["message"]}
@@ -295,6 +307,12 @@ def test_the_snapshot_states_the_proposal_at_a_glance(client: TestClient, publis
     assert _cited(facts["Incorporated"]) == {docs["certificate"]}
     assert facts["Facilities proposed"]["text"] == "Cash credit and term loan"
     assert facts["Amount requested"]["text"] == "INR 6.50 cr" and _cited(facts["Amount requested"]) == {docs["message"]}
+    # What the working-capital method allows, against the request: the total, while amounts per facility are not
+    # captured.
+    eligible = facts["Eligible bank finance (working capital)"]
+    assert re.fullmatch(r"INR [\d.]+ (cr|lakh) \(MPBF method, on the FY 2025-26 audited figures\); the request of "
+                        r"INR 6\.50 cr, the total including the term loan, is above it", eligible["text"])
+    assert _cited(eligible) == {docs["fy26"]}
     # The resolution on file states no limit.
     assert facts["Board resolution limit"]["text"] == "Not stated in the resolution"
     # Collateral is a flag set on the case at intake; no document backs it.
@@ -306,7 +324,7 @@ def test_the_snapshot_states_the_proposal_at_a_glance(client: TestClient, publis
     assert facts["Approving authority"]["text"] == f"At least {authority['required']['label']} (provisional matrix)"
     board = _get(client, analyst, case_id, "cross-verification")
     counts = board["counts"]
-    incomplete = sum(a["incomplete"] for a in board["areas"])
+    incomplete = len(_incomplete(board))
     assert counts["total"] > 1 and counts["adjudicated"] == 0 and counts["blocking_open"]
     assert facts["Cross-checks"]["text"] == (
         f"{board['run']['rules']} run; {counts['total']} discrepancies (all open, {counts['blocking_open']} blocking "
@@ -329,7 +347,7 @@ def test_the_snapshot_says_where_the_checks_stand_accepted_meaning_a_valid_findi
     cam = _get(client, analyst, case_id, "cam")
     board = _get(client, analyst, case_id, "cross-verification")
     counts = board["counts"]
-    incomplete = sum(a["incomplete"] for a in board["areas"])
+    incomplete = len(_incomplete(board))
     open_ = counts["total"] - counts["adjudicated"]
     facts = _facts(_section(cam, "snapshot")["blocks"][0])
     assert facts["Cross-checks"]["text"] == (
@@ -354,7 +372,8 @@ def test_the_borrower_profile_reads_the_certificate_and_points_to_the_identity_d
     assert _cited(facts["Legal name"]) == {docs["certificate"]}
     pan = next(i for i in _get(client, analyst, case_id, "cross-verification")["items"] if i["finding"]["rule_id"] == "ID-01")
     [note] = _blocks(profile, "note")
-    assert note["text"] == (f"Identity checks found discrepancies: Entity PAN differs between documents "
+    # A title inside a sentence is in lower case, its acronyms kept.
+    assert note["text"] == (f"Identity checks found a discrepancy: entity PAN differs between documents "
                             f"({pan['finding']['ref']}). See section 10.")
 
 
@@ -385,7 +404,7 @@ def test_promoters_are_grouped_as_the_cross_checks_group_people_with_each_kyc_ga
     assert [b["paragraph"]["text"] for b in gaps] == ["No KYC has been received for Sunil Karve."]
     assert _cited(gaps[0]["paragraph"]) == {docs["memorandum"], docs["bureau"], docs["message"]}
     [note] = _blocks(promoters, "note")
-    assert "Promoter missing from a source (XV-" in note["text"] and "Director identifiers disagree (XV-" in note["text"]
+    assert "promoter missing from a source (XV-" in note["text"] and "director identifiers disagree (XV-" in note["text"]
 
 
 def _named(source: str, *names: str, one_document: bool = True, typed: bool = False) -> PersonSet:
@@ -503,7 +522,8 @@ def test_the_board_resolution_limit_is_set_against_the_amount_requested(client: 
     stated = next(b["paragraph"] for b in _blocks(_section(cam, "proposal"), "paragraph")
                   if b["paragraph"]["text"].startswith("The board resolution"))
     assert stated["text"] == ("The board resolution of 1 Sep 2026 authorises borrowing from RBL Bank up to INR 5.00 cr "
-                              "for working capital and term loan; signatories: Tarun Velankar and Ishita Barve. It covers "
+                              "for working capital and term loan; authorised signatories: Tarun Velankar and Ishita Barve. "
+                              "It covers "
                               "INR 5.00 cr of the INR 6.50 cr requested; a fresh resolution is needed.")
     assert _cited(stated) == {resolution}
     limit = _facts(_section(cam, "snapshot")["blocks"][0])["Board resolution limit"]
@@ -530,20 +550,21 @@ def test_financial_performance_tabulates_the_spread_and_sets_each_figure_against
                 assert _cited(cell) <= {docs["fy25"], docs["fy26"]} and cell["citations"], row[0]["text"]
     revenue, profit, leverage, liquidity, restated = _paragraphs(financials)
     assert revenue == "Revenue from operations rose 25.0% to INR 11.80 cr in FY 2025-26, from INR 9.44 cr in FY 2024-25."
-    assert "Interest coverage was 3.14x, within the norm of at least 2.50x." in profit
-    assert "Debt / equity was 0.64x, within the norm of at most 2.00x" in leverage
+    assert "Interest coverage was 3.14x, above the minimum of 2.50x." in profit
+    assert "Debt / equity was 0.64x, below the maximum of 2.00x, and TOL / TNW 1.24x, below the maximum of 3.00x." in leverage
     # A norm in rupees is named rather than quoted ("positive").
     assert "meeting the norm for profit in the latest year." in profit
     assert "meeting the norm for positive net worth, against total borrowings of" in leverage
     assert "at least INR" not in profit + leverage
-    assert liquidity.endswith("The working-capital cycle was 90 days, a deviation from the norm of at most 75 days "
-                              "(see section 11).")
+    assert liquidity.endswith("The working-capital cycle was 90 days, above the maximum of 75 days (a deviation; see "
+                              "section 11).")
     # The FY 2025-26 statements print other figures for FY 2024-25 than its own statements.
     assert restated == ("The FY 2025-26 statements give different figures for FY 2024-25: revenue from operations "
                         "INR 10.03 cr against INR 9.44 cr, profit after tax INR 54.40 lakh against INR 51.20 lakh and "
                         "net worth INR 3.57 cr against INR 3.36 cr in the FY 2024-25 statements.")
     assert _cited(_blocks(financials, "paragraph")[4]["paragraph"]) == {docs["fy26"], docs["fy25"]}
-    assert [b["text"] for b in _blocks(financials, "note")] == ["Figures as on the spread (interim layout)."]
+    # No DSCR in the table (it could not be assessed), so no note.
+    assert _blocks(financials, "note") == []
 
 
 def test_without_the_previous_years_statements_their_comparatives_give_the_trend(client, published_data_root):
@@ -577,7 +598,16 @@ def test_statements_in_another_name_are_noted_beside_the_figures_and_the_years_c
                 if i["finding"]["rule_id"] == "ID-03")
     assert name["outcome"] == "fail"
     caveat = f"The FY 2024-25 statements are in the name of Kestrel Engineering Works Private Limited ({name['ref']})."
-    assert caveat in [b["text"] for b in _blocks(_section(cam, "financials"), "note")]
+    financials = _section(cam, "financials")
+    assert caveat in [b["text"] for b in _blocks(financials, "note")]
+    assert _table(financials)["columns"] == [
+        "Particulars", "FY 2024-25 (audited; in the name of Kestrel Engineering Works Private Limited)",
+        "FY 2025-26 (audited)"]
+    # Growth on the comparatives first; then on the statements in another name.
+    assert _paragraphs(financials)[0] == (
+        "Revenue from operations was INR 11.80 cr in FY 2025-26: up 17.6% on the comparatives in the FY 2025-26 "
+        "statements (INR 10.03 cr for FY 2024-25), and up 25.0% on the FY 2024-25 statements (INR 9.44 cr), which are "
+        "in another entity's name.")
     assert _table(_section(cam, "policy"))["note"] == (
         f"DOC-02 counts the FY 2024-25 statements, which are in the name of Kestrel Engineering Works Private Limited "
         f"({name['ref']}).")
@@ -619,13 +649,15 @@ def test_turnover_across_sources_by_year_with_partial_months_and_the_filing_posi
     assert {"TO-03", "TO-05"} <= {f["rule_id"] for f in failed}
     listed, filing = _paragraphs(turnover)
     # Each finding is named here and explained once, in section 10.
-    titles = "; ".join(f"{f['finding_title']}{' · ' + f['scope'] if f['scope'] else ''} ({f['ref']})" for f in failed)
+    titles = "; ".join(f"{cam_module._lower(cam_module.plain(f['finding_title']))}"
+                       f"{' · ' + f['scope'] if f['scope'] else ''} ({f['ref']})" for f in failed)
     assert listed == f"The cross-checks found {len(failed)} discrepancies on turnover and tax, set out in section 10: {titles}."
     assert not any(f["explanation"] in p for f in failed for p in _paragraphs(turnover))
     returns = next(i["finding"] for i in board["items"] if i["finding"]["rule_id"] == "TX-01")
-    # The FY 2025-26 return falls due on 31 Oct 2026, after the case's as-of date.
+    # The FY 2025-26 return falls due on 31 Oct 2026, after the case's as-of date; the checklist asks for it.
     assert filing == ("GST returns (GSTR-3B) are on file for 8 months, Apr 2025 to Nov 2025; an income tax return for "
-                      f"AY 2025-26. {returns['explanation']} The return for AY 2026-27 is not yet due.")
+                      f"AY 2025-26. {returns['explanation']} The return for AY 2026-27 is due by 31 Oct 2026 (not yet "
+                      "due); the checklist asks for it.")
 
 
 def test_business_credits_over_two_accounts_cite_both_statements(client: TestClient, published_data_root: Path):
@@ -659,8 +691,8 @@ def test_banking_tabulates_each_account_with_its_exclusions_and_the_accounts_wit
         "In Lotuscrest Bank ·1234, INR 50.00 lakh of credits is excluded from business credits: loan disbursal "
         "INR 50.00 lakh (1 credit).",
         # What the sourcing message says the account is.
-        "No statement has been received for Account ·5678 (cash credit), which was declared and appears in the sourcing "
-        "message."]
+        "No statement has been received for account ·5678 (cash credit), named in the sourcing message but not in the "
+        "declaration."]
 
 
 def test_year_end_balances_are_set_against_the_audited_cash_and_bank_balance(client, published_data_root):
@@ -675,7 +707,7 @@ def test_year_end_balances_are_set_against_the_audited_cash_and_bank_balance(cli
     paragraph = next(b["paragraph"] for b in _blocks(_section(_cam(client, analyst, root, case_id), "banking"), "paragraph")
                      if b["paragraph"]["text"].startswith("At 31 Mar 2026"))
     assert paragraph["text"] == ("At 31 Mar 2026 the statements show INR 90.00 lakh in Lotuscrest Bank ·1234 and "
-                                 "INR 11.00 lakh in Ironleaf Bank ·7777, INR 1.01 cr in all, against cash and bank "
+                                 "INR 11.00 lakh in Ironleaf Bank ·7777, INR 101.00 lakh in all, against cash and bank "
                                  "balances of INR 60.00 lakh in the FY 2025-26 balance sheet; the statements' balances "
                                  "exceed the audited figure by INR 41.00 lakh.")
     assert _cited(paragraph) == {first, second, fy26}
@@ -689,14 +721,15 @@ def test_existing_facilities_by_lender_as_obligations_reconcile_them(client: Tes
     assert table["columns"] == ["Lender", "Facility", "Declared", "Sanction letter", "Bureau", "Instalment",
                                 "Seen in the bank (a month)"]
     assert _rows(table) == [
-        ["Lotuscrest Bank", "Cash credit", "INR 2.00 cr", "—", "INR 2.00 cr; outstanding INR 1.85 cr", "—", "—"],
+        ["Lotuscrest Bank", "Cash credit", "INR 2.00 cr; outstanding INR 1.85 cr", "—",
+         "INR 2.00 cr; outstanding INR 1.85 cr", "—", "—"],
         ["Tidewater Finance Limited", "Term loan", "Not declared", "INR 1.20 cr",
          "INR 1.20 cr; outstanding INR 75.00 lakh", "INR 2.50 lakh", "INR 2.50 lakh (12 months)"],
     ]
     tidewater = table["rows"][1]
     assert [_cited(c) for c in tidewater[3:7]] == [{docs["sanction"]}, {docs["bureau"]}, {docs["sanction"]}, {docs["bank"]}]
     assert _paragraphs(obligations) == [
-        "The commercial bureau report gives the borrower rank 4, within the norm of at most rank 6.",
+        "The commercial bureau report gives the borrower rank 4, below the maximum of rank 6.",
         "Existing sanctioned facilities total INR 3.20 cr across 2 lenders; the commercial bureau report shows "
         "INR 2.60 cr outstanding.",
         "The FY 2025-26 balance sheet shows borrowings of INR 2.70 cr: INR 1.50 cr long-term and INR 1.20 cr short-term.",
@@ -752,8 +785,8 @@ def test_a_facility_only_the_sourcing_message_declares_and_a_loan_no_facility_ex
                                  "(TL DISBURSAL LN 778812); no facility on file matches it and no instalment for it "
                                  "appears in the statements.")
     assert _cited(disbursal) == {statement}
-    assert ("No statement has been received for Lotuscrest Bank ·5678 (cash credit), which was declared and appears in "
-            "the sourcing message." in _paragraphs(_section(cam, "banking")))
+    assert ("No statement has been received for Lotuscrest Bank ·5678 (cash credit), named in the sourcing message but "
+            "not in the declaration." in _paragraphs(_section(cam, "banking")))
 
 
 def test_short_term_borrowings_without_a_working_capital_facility_on_file_are_noted(client, published_data_root):
@@ -818,15 +851,18 @@ def test_the_checks_not_completed_are_listed_with_what_would_complete_them(clien
                          for ym in FY26[:7]], end="2025-10-31")
     cam = _cam(client, analyst, root, case_id)
     board = _get(client, analyst, case_id, "cross-verification")
-    incomplete = [i["finding"] for i in board["items"] if i["finding"]["outcome"] == "incomplete"]
+    incomplete = _incomplete(board)
     assert any(f["request"] for f in incomplete)
     table = _table(_section(cam, "verification"), "Checks not completed")
     assert table["columns"] == ["Check", "Why", "What would complete it"]
-    assert _rows(table) == [[f["title"], f["explanation"],
+    assert _rows(table) == [[cam_module.plain(f["title"]), f["explanation"],
                              (f["request"][:1].upper() + f["request"][1:]) if f["request"] else "—"] for f in incomplete]
+    assert not any("cleansed" in r[0] for r in _rows(table))
+    # Why each check could not be completed is said once, in the table; the summary names the check and what
+    # would complete it.
     items = [i for i in cam["summary"] if i["kind"] == "incomplete"]
     assert [(i["ref"], i["title"], i["request"], i["text"], i["severity"]) for i in items] == [
-        (f["rule_id"], f["title"], f["request"], f["explanation"], f["severity"]) for f in incomplete]
+        (f["rule_id"], cam_module.plain(f["title"]), f["request"], "", f["severity"]) for f in incomplete]
     facts = _facts(_section(cam, "snapshot")["blocks"][0])
     assert facts["Cross-checks"]["text"].endswith(f"; {len(incomplete)} could not be completed")
 
@@ -842,9 +878,13 @@ def test_the_summary_lists_findings_not_dismissed_as_a_register(client, publishe
     cam = _get(client, analyst, case_id, "cam")
     board = _get(client, analyst, case_id, "cross-verification")
     findings = {i["ref"]: i for i in cam["summary"] if i["kind"] == "finding"}
-    expected = [i["finding"]["ref"] for i in board["items"] if i["finding"]["outcome"] == "fail"
-                and i["finding"]["ref"] != dismissed["ref"]]
-    assert list(findings) == expected
+    listed = [i for i in board["items"] if i["finding"]["outcome"] == "fail" and i["finding"]["ref"] != dismissed["ref"]]
+    blocking = [i["finding"]["ref"] for i in listed if i["finding"]["blocking"] and not i["adjudicated"]]
+    serious = [i["finding"]["ref"] for i in listed if i["finding"]["severity"] == "serious"
+               and i["finding"]["ref"] not in blocking]
+    assert blocking and serious
+    assert list(findings) == blocking + serious + [i["finding"]["ref"] for i in listed
+                                                   if i["finding"]["ref"] not in blocking + serious]
     pan = findings[escalated["ref"]]
     assert (pan["rule"], pan["title"], pan["severity"], pan["status"], pan["blocking"]) == (
         "ID-01", "Entity PAN differs between documents", "serious", "Escalated", True)
@@ -924,14 +964,17 @@ def test_the_summary_lists_exactly_the_policy_deviations(client: TestClient, pub
     assert {i["ref"] for i in items} == set(deviations)
     for i in items:
         n = deviations[i["ref"]]
-        assert i["text"].startswith(n["category_label"]) and n["actual_text"] in i["text"] and n["required"] in i["text"]
+        assert i["text"].startswith(n["category_label"] + ": ") and n["required"] in i["text"]
+        assert i["ref"] == "DOC-01" or n["actual_text"] in i["text"]
         assert (i["rule"], i["title"]) == (n["id"], n["label"])
         if i["ref"] != "DOC-01":
             assert i["citations"], i["ref"]
     texts = {i["ref"]: i["text"] for i in items}
-    assert texts["DOC-02"] == "Documentation: Audited financial statements cover 1 year against a norm of at least 2 years."
-    assert texts["DOC-01"].startswith("Documentation: Blocking checklist items open: ")
-    assert texts["DOC-01"].endswith(", where the norm is none.")
+    assert texts["DOC-02"] == "Documentation: audited financial statements cover 1 year against a norm of at least 2 years."
+    open_items = int(deviations["DOC-01"]["actual"])
+    words = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine"}
+    assert texts["DOC-01"] == (f"Documentation: {words.get(open_items, str(open_items))} blocking checklist "
+                               f"item{'s are' if open_items != 1 else ' is'} open; the norm allows none.")
     applicable = [n for n in norms if n["outcome"] != "not_applicable"]
     counts = {o: sum(1 for n in applicable if n["outcome"] == o) for o in ("deviation", "cannot_evaluate", "pass")}
     policy = _section(cam, "policy")
@@ -965,8 +1008,11 @@ def test_the_policy_table_and_the_approving_authority(client: TestClient, publis
             required["Blocking checklist items open (DOC-01)"]) == ("positive", "no loss", "none")
     assert table["note"] is None
     paragraphs = _paragraphs(policy)
-    assert "Working-capital cycle is 90 days against a norm of at most 75 days (Financial norms)." in paragraphs
-    assert "DSCR could not be assessed: the proposed term loan's instalment is not on file." in paragraphs
+    assert not any(p.startswith("Working-capital cycle is") for p in paragraphs)
+    assert "DSCR could not be assessed: the proposed term loan's instalment is not on file." not in paragraphs
+    cam = _get(client, analyst, case_id, "cam")
+    stated = [t for t in _texts(cam) if t == "DSCR could not be assessed: the proposed term loan's instalment is not on file."]
+    assert len(stated) == 2  # under the term loan, and in the summary's register
     assert [b["text"] for b in _blocks(policy, "note")] == ["Every norm is an interim proposal awaiting RBL's policy norms."]
     assert [b["text"] for b in _blocks(policy, "subheading")] == ["Approving authority"]
     authority = _facts(_blocks(policy, "facts")[0])
@@ -980,7 +1026,7 @@ def test_the_policy_table_and_the_approving_authority(client: TestClient, publis
         "Deviation, documentation": "Head Office Credit Committee (one level above the amount authority; "
                                     "DOC-01 Blocking checklist items open)",
         "Authority required": "At least Head Office Credit Committee",
-        "Could rise to": "No change if DSCR proves a deviation",
+        "If DSCR is a deviation": "No change",
         "Matrix": "Provisional matrix",
     }
 
@@ -997,7 +1043,8 @@ def test_documentation_states_readiness_and_each_open_item_with_what_is_missing(
     assert table["columns"] == ["Item", "Status", "What is missing"]
     labels = {"missing": "Missing", "insufficient": "Insufficient", "in_review": "In review"}
     open_items = [i for i in readiness["items"] if i["status"] in labels]
-    assert open_items and [r[:2] for r in _rows(table)] == [[i["name"], labels[i["status"]]] for i in open_items]
+    assert open_items and [r[:2] for r in _rows(table)] == [[cam_module.sentence_case(i["name"]), labels[i["status"]]]
+                                                            for i in open_items]
     kyc = next(r for r in _rows(table) if r[0] == "KYC of directors, partners or proprietor")
     assert "Sunil Karve" in kyc[2]
     statements = next(r for r in _rows(table) if r[0].startswith("Bank statements"))
@@ -1057,12 +1104,16 @@ def test_sources_are_numbered_by_first_citation_and_named_as_the_case_lists_them
     # The borrower, cited to the sourcing message, comes first.
     assert cam["sources"][0]["document_id"] == docs["message"]
     assert (by_id[docs["message"]]["label"], by_id[docs["message"]]["file_name"]) == ("Sourcing message", "application-message.txt")
-    # Several of a type are told apart by year, period or person; a type the case has once is not qualified.
+    # Several of a type are told apart by year, period or person; GST returns and KYC the case has once are not
+    # qualified, statements, returns and sanction letters always are.
     assert by_id[docs["fy26"]]["label"] == "Audited financial statements · FY 2025-26"
     assert by_id[docs["fy25"]]["label"] == "Audited financial statements · FY 2024-25"
     assert by_id[docs["gst"]]["label"] == "GSTR-3B · Apr 2025"
     assert by_id[docs["kyc_tarun"]]["label"] == "Director KYC · Tarun Velankar"
-    assert by_id[docs["bank"]]["label"] == "Bank statement"
+    assert by_id[docs["bank"]]["label"] == "Bank statement · Lotuscrest Bank ·1234"
+    assert by_id[docs["sanction"]]["label"] == "Sanction letter · Tidewater Finance Limited"
+    assert by_id[docs["itr"]]["label"] == "Income tax return · AY 2025-26"
+    assert by_id[docs["certificate"]]["label"] == "Certificate of incorporation"
     assert by_id[docs["certificate"]]["file_name"].startswith("certificate_of_incorporation-")
 
 
@@ -1109,3 +1160,159 @@ def test_the_complete_file_drafts_every_section(client: TestClient, published_da
     files = {s["file_name"] for s in cam["sources"]}
     assert {"kestrel certificate of incorporation.pdf", "kestrel audited fy2026.pdf"} <= files
     assert "Collateral: none offered, as recorded on the case at intake." in _paragraphs(_section(cam, "proposal"))
+
+
+# --- Round 3: what the credit review asked for ---
+
+
+def test_the_resolution_names_its_signatories_and_the_persons_authorised_to_borrow_apart(client, published_data_root):
+    analyst = sign_in(client, ANALYST)
+    root = published_data_root
+    case_id = make_case(client, analyst, root)
+    resolution = add_doc(root, case_id, "board_resolution_borrowing", {
+        "company_name": CO, "resolution_date": "2026-09-01", "borrowing_limit": 80_000_000, "lender_name": "RBL Bank",
+        "authorized_signatories": ["Tarun Velankar"], "authorized_persons": ["Tarun Velankar", "Ishita Barve"]})
+    stated = next(b["paragraph"] for b in _blocks(_section(_cam(client, analyst, root, case_id), "proposal"), "paragraph")
+                  if b["paragraph"]["text"].startswith("The board resolution"))
+    assert stated["text"] == ("The board resolution of 1 Sep 2026 authorises borrowing from RBL Bank up to INR 8.00 cr; "
+                              "authorised signatory: Tarun Velankar; persons authorised to borrow: Tarun Velankar and "
+                              "Ishita Barve. It covers the INR 6.50 cr requested.")
+    assert _cited(stated) == {resolution}
+
+
+def test_without_the_previous_years_statements_the_turnover_table_takes_their_comparatives(client, published_data_root):
+    """The FY 2025-26 statements only: their comparatives give FY 2024-25 a row, and the profit in that
+    year's income tax return is set against the comparatives' (no cross-check compares them)."""
+    analyst = sign_in(client, ANALYST)
+    root = published_data_root
+    case_id = make_case(client, analyst, root, facilities=["cash_credit"], amount_inr=40_000_000)
+    statements = audited(root, case_id)
+    itr = add_doc(root, case_id, "income_tax_return", {"pan": "AAACK1234F", "assessment_year": "2025-26",
+                                                       "income_computation": [{"particulars": "Profit as per profit and "
+                                                                               "loss account", "amount": 2_700_000}]})
+    cam = _cam(client, analyst, root, case_id)
+    turnover = _section(cam, "turnover")
+    table = _table(turnover)
+    earlier = next(r for r in table["rows"] if r[0]["text"] == "FY 2024-25")
+    assert [c["text"] for c in earlier] == ["FY 2024-25", "INR 10.03 cr (comparatives)", "—", "—", "—", "—"]
+    assert _cited(earlier[1]) == {statements}
+    assert table["note"] == ("The FY 2024-25 audited figure is the comparative printed in the FY 2025-26 statements; the "
+                             "FY 2024-25 statements are not on file.")
+    profit = next(b["paragraph"] for b in _blocks(turnover, "paragraph")
+                  if b["paragraph"]["text"].startswith("The income tax return for AY 2025-26"))
+    assert profit["text"] == ("The income tax return for AY 2025-26 shows profit before tax of INR 27.00 lakh, against "
+                              "INR 63.75 lakh for FY 2024-25 in the comparatives in the FY 2025-26 statements.")
+    assert _cited(profit) == {itr, statements}
+    # One facility, worked out on the turnover method.
+    eligible = _facts(_section(cam, "snapshot")["blocks"][0])["Eligible bank finance (working capital)"]["text"]
+    assert re.fullmatch(r"INR [\d.]+ (cr|lakh) \(turnover method, on the FY 2025-26 audited figures\); the request of "
+                        r"INR 4\.00 cr is above it", eligible)
+
+
+def test_turnover_sources_that_agree_are_said_to_with_each_figure(client: TestClient, published_data_root: Path):
+    analyst = sign_in(client, ANALYST)
+    root = published_data_root
+    case_id = make_case(client, analyst, root, facilities=["cash_credit"], amount_inr=40_000_000)
+    audited(root, case_id)  # revenue of 11.80 cr, profit before tax of 75.00 lakh
+    for period in PERIODS:
+        gstr(root, case_id, period, 9_800_000)
+    bank(root, case_id, [{"date": f"{ym}-15", "description": "NEFT CR CUSTOMER RECEIPT", "credit": 9_750_000} for ym in FY26])
+    add_doc(root, case_id, "income_tax_return", {"pan": "AAACK1234F", "assessment_year": "2026-27", "income_computation": [
+        {"particulars": "Turnover", "amount": 118_000_000},
+        {"particulars": "Profit as per profit and loss account", "amount": 7_500_000}]})
+    turnover = _section(_cam(client, analyst, root, case_id), "turnover")
+    board = _get(client, analyst, case_id, "cross-verification")
+    assert not [i for i in board["items"] if i["finding"]["area"] in ("turnover", "tax") and i["finding"]["outcome"] == "fail"]
+    assert ("All sources agree within tolerance: audited INR 11.80 cr, GST INR 11.76 cr, income tax return INR 11.80 cr, "
+            "business credits INR 11.70 cr." in _paragraphs(turnover))
+
+
+def test_turnover_sources_apart_are_not_said_to_agree(client: TestClient, published_data_root: Path):
+    analyst = sign_in(client, ANALYST)
+    case_id, _ = _full_case(client, analyst, published_data_root)
+    paragraphs = _paragraphs(_section(_cam(client, analyst, published_data_root, case_id), "turnover"))
+    assert not any(p.startswith("All sources agree") for p in paragraphs)
+
+
+def test_a_check_for_a_year_still_in_progress_with_nothing_to_ask_is_left_out(client, published_data_root):
+    """GST returns and statements for April to August 2026: the FY 2026-27 checks wait for months still
+    to come, and the memo neither lists nor counts them."""
+    analyst = sign_in(client, ANALYST)
+    root = published_data_root
+    case_id = make_case(client, analyst, root, facilities=["cash_credit"], amount_inr=40_000_000)
+    audited(root, case_id)
+    for period in ("April 2026", "May 2026", "June 2026", "July 2026", "August 2026"):
+        gstr(root, case_id, period, 9_800_000)
+    bank(root, case_id, [{"date": f"{ym}-15", "description": "NEFT CR CUSTOMER RECEIPT", "credit": 9_750_000}
+                         for ym in months((2026, 4), 5)], start="2026-04-01", end="2026-08-31")
+    cam = _cam(client, analyst, root, case_id)
+    board = _get(client, analyst, case_id, "cross-verification")
+    waiting = [i["finding"] for i in board["items"] if i["finding"]["outcome"] == "incomplete"
+               and i["finding"]["scope"] == "FY 2026-27" and not i["finding"]["request"]]
+    assert waiting
+    titles = {cam_module.plain(f["title"]) for f in waiting}
+    listed = [r[0] for r in _rows(_table(_section(cam, "verification"), "Checks not completed"))] if any(
+        b["table"]["title"] == "Checks not completed" for b in _blocks(_section(cam, "verification"), "table")) else []
+    assert not titles & set(listed)
+    assert not titles & {i["title"] for i in cam["summary"] if i["kind"] == "incomplete"}
+    counted = len(_incomplete(board))
+    snapshot = _facts(_section(cam, "snapshot")["blocks"][0])["Cross-checks"]["text"]
+    assert snapshot.endswith(f"; {counted} could not be completed") if counted else "could not be completed" not in snapshot
+
+
+def test_a_check_waiting_for_review_names_the_value_in_review(client: TestClient, published_data_root: Path):
+    analyst = sign_in(client, ANALYST)
+    root = published_data_root
+    case_id = make_case(client, analyst, root)
+    add_doc(root, case_id, "company_pan", {"pan": "AAACK1234F"}, pending={"pan"})
+    add_doc(root, case_id, "income_tax_return", {"pan": "AAACK9876Q"})
+    table = _table(_section(_cam(client, analyst, root, case_id), "verification"), "Checks not completed")
+    row = next(r for r in _rows(table) if r[0] == "Entity PAN consistent across documents")
+    assert row[1:] == ["The PAN read from the company PAN awaits internal review.", "—"]
+
+
+def test_an_account_seen_only_in_a_transfer_is_named_with_the_transfer(client: TestClient, published_data_root: Path):
+    analyst = sign_in(client, ANALYST)
+    root = published_data_root
+    case_id = make_case(client, analyst, root, header={
+        "existing_banking": {"value": "current account with Lotuscrest Bank a/c 90100001234", "source": "person"}})
+    statement = bank(root, case_id, [{"date": "2025-05-02", "description": "NEFT TRANSFER TO A/C 778899001122",
+                                      "debit": 500_000},
+                                     {"date": "2025-05-15", "description": "NEFT CR CUSTOMER RECEIPT", "credit": 900_000}])
+    banking = _section(_cam(client, analyst, root, case_id), "banking")
+    stated = next(b["paragraph"] for b in _blocks(banking, "paragraph") if "·1122" in b["paragraph"]["text"])
+    assert stated["text"] == ("No statement has been received for account ·1122, which was not declared; Lotuscrest Bank "
+                              "·1234 shows a transfer of INR 5.00 lakh to it on 2 May 2025.")
+    assert _cited(stated) == {statement}
+
+
+def test_people_the_sourcing_message_alone_names_are_stated_once(client: TestClient, published_data_root: Path):
+    """No KYC and no memorandum: one sentence for the KYC not received, one for the roles no document
+    states; the open checklist items in sentence case, the year received without nested brackets."""
+    analyst = sign_in(client, ANALYST)
+    root = published_data_root
+    case_id = make_case(client, analyst, root, header={
+        "promoters": {"value": "Sunil Karve; Leela Varghese", "source": "person"}})
+    audited(root, case_id)
+    cam = _cam(client, analyst, root, case_id)
+    promoters = _section(cam, "promoters")
+    assert [r[:2] for r in _rows(_table(promoters))] == [["Sunil Karve", "—"], ["Leela Varghese", "—"]]
+    assert _paragraphs(promoters) == [
+        "No KYC has been received for Sunil Karve and Leela Varghese.",
+        "No document on file states the role of Sunil Karve and Leela Varghese; the memorandum and articles of "
+        "association is not on file."]
+    rows = {r[0]: r for r in _rows(_table(_section(cam, "documentation")))}
+    assert rows["Memorandum and articles of association"][2].startswith("Memorandum and articles of association")
+    assert rows["Audited financial statements, second-latest year"][2] == (
+        "Audited financial statements for FY 2024-25 (year ended 31 Mar 2025); received: FY 2025-26")
+    assert "Income tax return with computation, latest assessment year" in rows
+
+
+def test_a_person_missing_from_a_source_is_cited_where_they_are_named(client: TestClient, published_data_root: Path):
+    """Sunil Karve has no KYC: the finding cites the documents that name him, never another director's KYC."""
+    analyst = sign_in(client, ANALYST)
+    case_id, docs = _full_case(client, analyst, published_data_root)
+    cited = {e["document_id"] for e in _summary_finding(_cam(client, analyst, published_data_root, case_id),
+                                                       "ID-04")["citations"]}
+    assert {docs["memorandum"], docs["message"], docs["bureau"]} <= cited
+    assert not cited & {docs["kyc_tarun"], docs["kyc_ishita"]}

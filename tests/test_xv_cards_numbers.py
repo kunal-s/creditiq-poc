@@ -439,7 +439,7 @@ def test_a_figure_waiting_for_review_asks_the_customer_for_nothing(client, analy
     assert _lines(f) == [("GST against bank credits · Aug 2025 to Mar 2026", [], "waiting for review")]
     # Short of months as well as waiting: the review comes first, so nothing is asked for yet.
     to2 = _card(found, "TO-02", "FY 2025-26")
-    assert to2["outcome"] == "incomplete" and "covers 8 of 12 months" in to2["explanation"]
+    assert to2["outcome"] == "incomplete" and "cover 8 of 12 months (Apr 2025 to Jul 2025 not on file)" in to2["explanation"]
     assert to2["columns"][0]["awaiting_review"] and to2["request"] is None
 
 
@@ -516,7 +516,9 @@ def test_a_year_not_yet_ended_asks_for_nothing_and_its_months_to_come_are_not_mi
     # FY 2026-27 runs to 31 Mar 2027: nothing is asked for, though the explanation names what it lacks.
     running = _card(found, "TO-02", "FY 2026-27")
     assert running["outcome"] == "incomplete" and running["request"] is None
-    assert "GST outward supplies covers 4 of 12 months" in running["explanation"]
+    # The months to come are named as such, not as missing.
+    assert running["explanation"].startswith(
+        "GST outward supplies cover 4 of 12 months (Aug 2026 not on file, Sep 2026 to Mar 2027 not yet ended)")
     # Missing are the months that ended before the appraisal date: August, not September onwards.
     assert running["columns"][0]["coverage"] == "Apr 2026 to Jul 2026 · 4 of 12 returns filed; Aug 2026 missing"
     assert _lines(running) == [("GST against bank credits · FY 2026-27", [], "the year ends on 31 Mar 2027")]

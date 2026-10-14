@@ -50,7 +50,7 @@ from .contracts import (
 from .db import transaction
 from .names import compare_name_parts, name_parts, same_by_parts, normalise_name, similarity
 from .review_items import raise_item
-from .util import display_date, dumps, parse_date, ranges_label, stable_id
+from .util import display_date, dumps, parse_date, parse_period, ranges_label, stable_id
 
 inr = facts_module.inr
 
@@ -143,13 +143,16 @@ class Context:
 
 def _finding(ctx: Context, rule: CrossCheckRule, outcome: str, sides: list[FindingSide], scope: str = "", *,
              note: str = "", detail: FindingDetail | None = None, missing: list[str] | None = None,
-             **fmt: str) -> Finding:
+             review: list[str] | None = None, **fmt: str) -> Finding:
+    """`review` names the values waiting for review where a side's label says more (a side of agreeing
+    sources, only one of them waiting)."""
     waiting = list(dict.fromkeys(s.label for s in sides if s.awaiting_review))
     if waiting and outcome in ("pass", "fail"):
         # F-17.2: a value below its threshold is reviewed before a check relies on it.
         outcome = "incomplete"
         # A side's label may itself list several sources ("Company PAN, Income tax return").
-        named = ", ".join(_lower(part) for label in waiting for part in label.split(", "))
+        named = _join(review) if review else ", ".join(
+            _lower(part) for label in waiting for part in label.split(", "))
         note = f"Waiting for review of {named}; confirm or correct the value to complete this check."
     values = _Fmt(fmt)
     values.setdefault("tolerance", ctx.tol_text(rule.tolerance) or "")
@@ -286,11 +289,112 @@ def _identity(ctx: Context, rule: CrossCheckRule) -> list[Finding]:
     ]
     if len({(v.source, v.label, str(v.value)) for v in values}) < 2:
         return [_absent(ctx, rule, sides)]
+    statements = _Statements(ctx, rule, values)
+    review = statements.awaiting()
     if len(groups) == 1:
-        return [_finding(ctx, rule, "pass", sides, note=f"Consistent across {len(values)} sources.")]
-    items = " · ".join(f"{s.value} ({', '.join(dict.fromkeys(_lower(v.label) for v in g))})"
-                       for s, g in zip(sides, groups))
-    return [_finding(ctx, rule, "fail", sides, items=items)]
+        return [_finding(ctx, rule, "pass", sides, note=f"Consistent across {len(values)} sources.", review=review)]
+    names = statements.names(groups)
+    first = _reference_group(rule, sides, groups)
+    order = [first] + [k for k in range(len(groups)) if k != first]
+    others = order[1:]
+    # "X in the company PAN and income tax return; Y in the commercial bureau report": the reference first.
+    items = "; ".join(f"{sides[k].value} in the {_join(names[k])}" for k in order)
+    return [_finding(ctx, rule, "fail", sides, items=items, review=review, reference=str(sides[first].value),
+                     differing="the " + _join([n for k in others for n in names[k]]),
+                     others=_join([str(sides[k].value) for k in others]))]
+
+
+IDENTITY_FIELDS = {"entity_pan": "PAN", "gstin": "GSTIN", "cin": "CIN", "legal_name": "name"}
+YEARLY = ("audited_financial_statements", ITR)
+"""Documents that cover a year: named with it where one type gives two values."""
+
+
+class _Statements:
+    """One value's statements (ID-01, ID-02, ID-03, ID-05), as an explanation names them. A PAN read from
+    within a GSTIN is named only for a document that prints no PAN of its own, so a document that prints
+    a PAN and a GSTIN carrying another is named once, for the PAN it prints. Where one document type
+    gives two values (the audited statements of two years), each is named with its year."""
+
+    def __init__(self, ctx: Context, rule: CrossCheckRule, values: list[FactValue]) -> None:
+        self.ctx, self.rule, self.values = ctx, rule, values
+        self.gstins = {tuple(v.field_ids): v for v in ctx.facts.identities.gstin if v.field_ids}
+        self.printing = {self.document(v) for v in values if not self.derived(v)} - {None}
+
+    def derived(self, v: FactValue) -> FactValue | None:
+        """The GSTIN statement a PAN was read from, or None for a PAN the document prints."""
+        return self.gstins.get(tuple(v.field_ids)) if self.rule.variable == "entity_pan" and v.field_ids else None
+
+    @staticmethod
+    def document(v: FactValue) -> str | None:
+        return v.evidence[0].document_id if v.evidence else None
+
+    def awaiting(self) -> list[str]:
+        """The values waiting for review, each as read: "the PAN read from the income tax return"."""
+        field = IDENTITY_FIELDS.get(self.rule.variable, "value")
+        out = []
+        for v in self.values:
+            if not v.awaiting_review:
+                continue
+            gstin = self.derived(v)
+            label = _lower(gstin.label if gstin else v.label)
+            if gstin:
+                out.append(f"the GSTIN read from the {label}")
+            elif field.lower() in label.lower().split():
+                out.append(f"the {label}")
+            else:
+                out.append(f"the {field} read from the {label}")
+        return list(dict.fromkeys(out))
+
+    def names(self, groups: list[list[FactValue]]) -> list[list[str]]:
+        """Each group's documents in words, each once."""
+        kept = [[v for v in g if not (self.derived(v) and self.document(v) in self.printing)] or g for g in groups]
+        where: dict[str, set[int]] = {}
+        for k, g in enumerate(kept):
+            for v in g:
+                where.setdefault(v.label, set()).add(k)
+        years = _years(self.ctx)
+        out = []
+        for g in kept:
+            named: dict[str, list[str]] = {}
+            for v in g:
+                year = years.get(self.document(v) or "") if v.source in YEARLY and len(where[v.label]) > 1 else None
+                covered = named.setdefault(v.label, [])
+                if year and year not in covered:
+                    covered.append(year)
+            out.append([_documents(label, covered) for label, covered in named.items()])
+        return out
+
+
+def _documents(label: str, years: list[str]) -> str:
+    """A document type inside a sentence, with the years its documents cover: "audited financial
+    statements for FY 2024-25", "income tax returns for AY 2025-26 and AY 2026-27"."""
+    if not years:
+        return _lower(label)
+    many = label if len(years) == 1 or label.endswith("s") else f"{label}s"
+    return f"{_lower(many)} for {_join(sorted(years))}"
+
+
+def _years(ctx: Context) -> dict[str, str]:
+    """The year each audited statement and income tax return covers, by its document: "FY 2024-25",
+    "AY 2025-26"."""
+    found: dict[str, str] = {}
+    for y in ctx.facts.financial_years:
+        for e in (e for v in y.current.values() for e in v.evidence[:1]):
+            found.setdefault(e.document_id, y.fy)
+    for t in ctx.facts.tax_years:
+        for e in t.evidence[:1] + [e for v in t.lines.values() for e in v.evidence[:1]]:
+            found.setdefault(e.document_id, f"AY {t.assessment_year}")
+    return found
+
+
+def _reference_group(rule: CrossCheckRule, sides: list[FindingSide], groups: list[list[FactValue]]) -> int:
+    """The group the others are held against: the clear majority, else the group of the source the
+    rule lists first (the certificate of incorporation for a name, the company PAN for a PAN)."""
+    agree = [k for k, s in enumerate(sides) if not s.differs]
+    if len(agree) == 1:
+        return agree[0]
+    rank = {s: i for i, s in enumerate(rule.sources)}
+    return min(range(len(groups)), key=lambda k: min(rank.get(v.source, len(rank)) for v in groups[k]))
 
 
 # --- People (ID-04, ID-06, ID-08; ID-09 below) ---
@@ -682,12 +786,9 @@ def _compare_year(ctx: Context, rule: CrossCheckRule, y: TurnoverYear, lf: Turno
     """One financial year's two turnover figures: incomplete while a monthly figure lacks months of
     the year, else within the tolerance or not."""
     short = [f for f in (lf, rf) if f.months_covered is not None and f.months_covered < 12]
-    gaps = [f"{f.label if i == 0 else _lower(f.label)} covers {f.months_covered} of 12 months "
-            f"({', '.join(f.months_missing[:3])}{'…' if len(f.months_missing) > 3 else ''} absent)"
-            for i, f in enumerate(short)]
-    if gaps:
+    if short:
         return _finding(ctx, rule, "incomplete", [_figure_side(lf), _figure_side(rf)], y.fy,
-                        note="; ".join(gaps) + ".")
+                        note=_months_short(ctx, short) + ".")
     a, b = float(lf.value or 0), float(rf.value or 0)
     variance = abs(a - b) / max(a, b) * 100 if max(a, b) else 0.0
     failed = variance > tol
@@ -699,6 +800,22 @@ def _compare_year(ctx: Context, rule: CrossCheckRule, y: TurnoverYear, lf: Turno
         return _finding(ctx, rule, "pass", sides, y.fy,
                         note=f"Variance {variance:.1f}% within {ctx.tol_text(rule.tolerance)}.", **fmt)
     return _finding(ctx, rule, "fail", sides, y.fy, **fmt)
+
+
+def _months_short(ctx: Context, short: list[TurnoverFigure]) -> str:
+    """The months monthly figures lack, as runs: "GST outward supplies cover 7 of 12 months (Apr 2025
+    to Aug 2025 not on file)". A month that has not ended by the appraisal date is not missing: it
+    has not happened yet."""
+    now = (ctx.as_of.year, ctx.as_of.month)
+    gaps = []
+    for i, f in enumerate(short):
+        months = [m for m in (parse_period(label) for label in f.months_missing) if m]
+        past = ranges_label([m for m in months if m < now])
+        future = ranges_label([m for m in months if m >= now])
+        absent = ", ".join(t for t in (past and f"{past} not on file", future and f"{future} not yet ended") if t)
+        gaps.append(f"{f.label if i == 0 else _lower(f.label)} cover {f.months_covered} of 12 months"
+                    + (f" ({absent})" if absent else ""))
+    return "; ".join(gaps)
 
 
 def _itr_turnover(ctx: Context, rule: CrossCheckRule) -> list[Finding]:
@@ -1015,9 +1132,13 @@ def _emis_declared(ctx: Context, rule: CrossCheckRule) -> list[Finding]:
     emi_side = _side("Instalments in bank statements", "; ".join(f"{o.lender} ({inr(o.typical_amount)} × {o.debits})" for o in obligations),
                      [e for o in obligations for e in o.evidence[:1]], sources=["bank_statement"])
     if not text and declaration is None:
-        return [_finding(ctx, rule, "incomplete", [emi_side],
-                         note=f"No declaration of existing facilities is on file and the sourcing message declares none; "
-                              f"confirm the facility behind {_join([line(o) for o in obligations])}.")]
+        # A lender whose sanction letter is on file needs no confirmation of its facility, only the declaration.
+        sanctioned = [f.lender for f in ctx.facts.facilities if f.source == SANCTION]
+        unconfirmed = [o for o in obligations if not any(_same_lender(o.lender, s, ctx) for s in sanctioned)]
+        none = "No declaration of existing facilities is on file and the sourcing message declares none"
+        note = (f"{none}; confirm the facility behind {_join([line(o) for o in unconfirmed])}." if unconfirmed else
+                f"{none}, so the instalments to {_join([line(o) for o in obligations])} cannot be held against one.")
+        return [_finding(ctx, rule, "incomplete", [emi_side], note=note)]
     rows, undeclared = [], []
     for o in obligations:
         ok = (any(_same_lender(o.lender, lender, ctx) for lender in declared_lenders)
@@ -1122,7 +1243,7 @@ def _facilities_reconcile(ctx: Context, rule: CrossCheckRule) -> list[Finding]:
         sides.append(_facility_side("Sanction letters", sanctioned, differs=SANCTION in odd and bool(issues), source=SANCTION))
     if BUREAU in ctx.on_file:
         sides.append(_facility_side(ctx.type_names[BUREAU], reported, differs=BUREAU in odd and bool(issues), source=BUREAU))
-    detail = _rows(["Declared", "Sanction letter", "Bureau", "Outstanding (bureau)"], rows)
+    detail = _rows(["Declared", "Sanction letter", "Bureau", "Bureau outstanding"], rows)
     if issues:
         flagged = [r[0] for r in rows if r[2]]
         return [_finding(ctx, rule, "fail", sides, detail=detail, items="; ".join(issues), lenders=_join(flagged))]

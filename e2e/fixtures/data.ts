@@ -2814,6 +2814,10 @@ const LENDER_TEXT = `Regular debits to lender(s) not declared: ASHWOOD FINSERV (
 const FACILITIES_TEXT =
   "The existing facilities do not reconcile: Tidewater Finance: sanctioned amounts differ: declared INR 40.00 lakh, sanction letter INR 55.00 lakh, bureau INR 55.00 lakh; Lotuscrest Bank: not declared.";
 
+/** An observation: a fact the memo states (section 8) that the note asks the promoter about. */
+export const DISBURSAL_TEXT =
+  "The loan disbursal of INR 25.00 lakh on 06 Apr 2025 (TL 7781) matches no facility on file.";
+
 export const CAM: Cam = {
   case_id: KESTREL,
   title: "Credit Approval Memo",
@@ -3026,6 +3030,10 @@ export const CAM: Cam = {
       ),
       paragraph(
         "No statements have been received for Lotuscrest Bank ·5678, declared in the sourcing message: see XV-000021-06.",
+      ),
+      paragraph(
+        `${DISBURSAL_TEXT} No instalment of that loan is seen in the statements.`,
+        ...at("doc-bank", 7),
       ),
     ]),
     memoSection(9, "obligations", "Existing facilities and obligations", [
@@ -3457,8 +3465,8 @@ export const CAM: Cam = {
 };
 
 // The PD question note for Kestrel, as engine/pd_note.py composes it: the questions by topic,
-// most serious first within each, numbered across the note; each with the finding, deviation or
-// gap it comes from and its pages.
+// most serious first within each, numbered across the note; each with the finding, deviation,
+// gap or memo observation it comes from and its pages.
 
 const pdQuestion = (
   q: Pick<
@@ -3479,7 +3487,8 @@ const pdQuestion = (
   xv_ref: null,
   status: null,
   evidence: [],
-  target: q.source === "deviation" ? "policy" : "cross_verification",
+  target:
+    q.source === "deviation" ? "policy" : q.source === "observation" ? "cam" : "cross_verification",
   text: `${q.context} ${q.question}`,
   ...q,
 });
@@ -3649,8 +3658,24 @@ export const PD_NOTE: PdNote = {
       evidence: [...at("doc-decl", 1), ...at("doc-sanction", 1), ...at("doc-bureau", 2)],
     }),
     pdQuestion({
-      id: "pdq-el04",
+      id: "pdq-obs1",
       number: 9,
+      area: "obligations",
+      severity: "moderate",
+      source: "observation",
+      ref: "banking:loan-disbursal",
+      rule: "OBS",
+      title: "Loan disbursal no facility explains",
+      // The memo section that states it, as the engine names it.
+      status: "section 8",
+      question:
+        "Which lender disbursed the INR 25.00 lakh on 06 Apr 2025, on what terms, and why is no instalment seen?",
+      context: DISBURSAL_TEXT,
+      evidence: at("doc-bank", 7),
+    }),
+    pdQuestion({
+      id: "pdq-el04",
+      number: 10,
       area: "policy",
       severity: "serious",
       source: "deviation",
@@ -3665,7 +3690,7 @@ export const PD_NOTE: PdNote = {
     }),
     pdQuestion({
       id: "pdq-fr05",
-      number: 10,
+      number: 11,
       area: "policy",
       severity: "moderate",
       source: "deviation",
@@ -3685,7 +3710,11 @@ export const PD_NOTE: PdNote = {
     },
     { area: "turnover", title: "Turnover, tax and sales", question_ids: ["pdq-to5", "pdq-to1"] },
     { area: "accounts", title: "Bank accounts", question_ids: ["pdq-ba1"] },
-    { area: "obligations", title: "Existing borrowings", question_ids: ["pdq-ob2", "pdq-ob1"] },
+    {
+      area: "obligations",
+      title: "Existing borrowings",
+      question_ids: ["pdq-ob2", "pdq-ob1", "pdq-obs1"],
+    },
     { area: "policy", title: "Policy norms", question_ids: ["pdq-el04", "pdq-fr05"] },
   ],
   documents_to_collect: [

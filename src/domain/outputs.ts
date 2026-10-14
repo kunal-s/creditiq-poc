@@ -161,3 +161,13 @@ export function formatDay(day: string): string {
   if (!m || !month) return day;
   return `${Number(m[3])} ${month} ${m[1]}`;
 }
+
+/** The anchor of a memo section on the CAM view, which the note's observations open. */
+export const camSectionAnchor = (sectionId: string) => `cam-section-${sectionId}`;
+
+/** The memo section that states an observation the note asks about (F-24): the id before the ":"
+ * of the observation's key ("financials:fall"); null for a key that names none. */
+export function observationSection(ref: string): string | null {
+  const at = ref.indexOf(":");
+  return at > 0 ? ref.slice(0, at) : null;
+}

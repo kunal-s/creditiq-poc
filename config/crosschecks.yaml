@@ -30,11 +30,16 @@
 #   order         dates in sequence
 #
 # Templates may use {left}, {right}, {left_label}, {right_label}, {period},
-# {variance}, {tolerance}, {items}, {lenders} and {accounts}. `query` is the plain request
-# added to the pre-login query list when the rule fails (F-19.5);
+# {variance}, {tolerance}, {items}, {lenders} and {accounts}; a check of one value across
+# documents (ID-01, ID-02, ID-03, ID-05) also {reference} (the value the others are held
+# against), {others} (the other values) and {differing} (the documents that give them). `query`
+# is the plain request added to the pre-login query list when the rule fails (F-19.5);
 # `pd_question` is what to ask the promoter in the personal discussion
 # (F-24.1): {explanation}, then the question. The note prints the question on its own, above
-# the explanation, so the question says what it asks about.
+# the explanation, so the question names what it asks about: there {items} is the people,
+# accounts, lenders or years the finding flags, {detail} each of them with its figures, {values}
+# the values the sources give and {period} its year or months (engine/pd_note.py lists the rest).
+# Write it so that it reads right for one of them or several.
 
 # The personal-discussion question for a check that could not be completed: {title} is the
 # check, {explanation} why it could not be completed and {request} what would complete it.
@@ -55,7 +60,7 @@ rules:
     blocking: true
     explanation: "The entity PAN differs between documents: {items}."
     query: "Please confirm the entity's PAN; the documents show {items}."
-    pd_question: "{explanation} Which PAN is the entity's, and why does the other document show a different one?"
+    pd_question: "{explanation} Which of {values} is the entity's PAN, and why does another document show a different one?"
 
   - id: ID-02
     title: GSTIN consistent across documents
@@ -68,7 +73,7 @@ rules:
     blocking: true
     explanation: "The GSTIN differs between documents: {items}."
     query: "Please confirm the GSTIN; the documents show {items}."
-    pd_question: "{explanation} Which GSTIN is current, and are there other registrations?"
+    pd_question: "{explanation} Which of {values} is the current GSTIN, and are there other registrations?"
 
   - id: ID-03
     title: Legal name consistent across documents
@@ -81,7 +86,8 @@ rules:
     severity: moderate
     blocking: false
     explanation: "The legal name reads differently across documents: {items}."
-    pd_question: "{explanation} Has the entity changed its name, or is any document for another entity?"
+    query: "Please provide {differing} in the name of {reference}, not {others}, or, if the entity has changed its name, the fresh certificate of incorporation issued on the change of name."
+    pd_question: "{explanation} The documents read {values}: has the entity changed its name, or is any document for another entity?"
 
   - id: ID-04
     title: Promoters match the KYC received
@@ -95,7 +101,7 @@ rules:
     blocking: true
     explanation: "The promoters named differ between sources: {items}."
     query: "Please confirm the full list of directors, partners or the proprietor; {items}."
-    pd_question: "{explanation} Who are the directors, partners or proprietor today, and has anyone joined or left?"
+    pd_question: "{explanation} What is the position of {items} in the company today, and has any other director, partner or proprietor joined or left?"
 
   - id: ID-05
     title: CIN consistent across documents
@@ -108,7 +114,7 @@ rules:
     blocking: true
     explanation: "The CIN differs between documents: {items}."
     query: "Please confirm the company's CIN; the documents show {items}."
-    pd_question: "{explanation} Which CIN is the company's?"
+    pd_question: "{explanation} Which of {values} is the company's CIN?"
 
   - id: ID-06
     title: Director identifiers agree
@@ -121,7 +127,7 @@ rules:
     blocking: false
     explanation: "Director identifiers disagree: {items}."
     query: "Please confirm the directors' DIN and PAN; {items}."
-    pd_question: "{explanation} Do the DIN and PAN on each director's KYC belong to that director?"
+    pd_question: "{explanation} Which DIN and PAN are correct for {detail}?"
 
   - id: ID-07
     title: CIN agrees with the incorporation particulars
@@ -164,7 +170,7 @@ rules:
     blocking: false
     explanation: "Names differ in part: {items}."
     query: "Please confirm each person's full name as on their PAN, as the documents differ: {items}."
-    pd_question: "{explanation} What is each person's full name as on their PAN?"
+    pd_question: "{explanation} What is the full name of {items} as on the PAN?"
 
   # --- Borrowing authority: the board resolution (switched off) ---
   - id: BR-01
@@ -236,7 +242,7 @@ rules:
     blocking: false
     explanation: "{period}: {left_label} {left} against {right_label} {right}, a variance of {variance} (tolerance {tolerance})."
     query: "Please explain the difference between audited turnover ({left}) and GST outward supplies ({right}) for {period}."
-    pd_question: "{explanation} Why does the audited turnover differ from the GST outward supplies?"
+    pd_question: "{explanation} Why does the audited turnover for {period} differ from the GST outward supplies?"
 
   - id: TO-02
     title: GST outward supplies against cleansed bank credits
@@ -250,7 +256,7 @@ rules:
     blocking: false
     explanation: "{period}: {left_label} {left} against {right_label} {right}, a variance of {variance} (tolerance {tolerance})."
     query: "Please explain the difference between GST outward supplies ({left}) and business credits in the bank statements ({right}) for {period}."
-    pd_question: "{explanation} Where are the rest of the sales receipts banked, or are they received in cash?"
+    pd_question: "{explanation} Where are the rest of the sales receipts for {period} banked, or are they received in cash?"
 
   - id: TO-03
     title: Audited turnover against cleansed bank credits
@@ -263,7 +269,8 @@ rules:
     severity: moderate
     blocking: false
     explanation: "{period}: {left_label} {left} against {right_label} {right}, a variance of {variance} (tolerance {tolerance})."
-    pd_question: "{explanation} Where are the rest of the sales receipts banked, or are they received in cash?"
+    query: "Please explain the difference between audited turnover ({left}) and business credits in the bank statements ({right}) for {period}."
+    pd_question: "{explanation} Where are the rest of the sales receipts for {period} banked, or are they received in cash?"
 
   - id: TO-04
     title: RM-declared turnover against evidenced turnover
@@ -276,7 +283,8 @@ rules:
     severity: mild
     blocking: false
     explanation: "{left_label} {left} against {right_label} {right} for {period}, a variance of {variance} (tolerance {tolerance})."
-    pd_question: "{explanation} Which turnover figure should be relied on, and why does the declared turnover differ from the evidenced turnover?"
+    query: "Please explain the difference between the turnover declared in the sourcing message ({left}) and the turnover evidenced by the {right_label} ({right}) for {period}, and confirm the turnover to be relied on."
+    pd_question: "{explanation} Which turnover figure for {period} should be relied on, and why does the declared turnover differ from the evidenced turnover?"
 
   - id: TO-05
     title: GST outward supplies against bank credits, months both cover
@@ -290,7 +298,7 @@ rules:
     blocking: false
     explanation: "{period}: GST outward supplies {left} against business credits {right}, a variance of {variance} (tolerance {tolerance})."
     query: "Please explain the difference between GST outward supplies ({left}) and business credits in the bank statements ({right}) for {period}."
-    pd_question: "{explanation} Where are the rest of the sales receipts banked, or are they received in cash?"
+    pd_question: "{explanation} Where are the rest of the sales receipts for {period} banked, or are they received in cash?"
 
   # --- Tax: the income tax return against the books and the other turnover sources (shown under turnover) ---
   - id: TX-01
@@ -304,7 +312,7 @@ rules:
     blocking: false
     explanation: "No income tax return is on file for {items}, though it is due."
     query: "Please provide the income tax return, with computation and acknowledgement, for {items}."
-    pd_question: "{explanation} When will each income tax return that is due be filed or provided?"
+    pd_question: "{explanation} When will the income tax return for {items} be filed or provided?"
 
   - id: TX-02
     title: Profit in the income tax return agrees with the books
@@ -318,7 +326,7 @@ rules:
     blocking: false
     explanation: "{period}: profit before tax of {left} in the audited statements against {right} in the income tax return, a variance of {variance} (tolerance {tolerance})."
     query: "Please explain the difference between the book profit ({left}) and the profit in the income tax return ({right}) for {period}."
-    pd_question: "{explanation} Which adjustments account for the profit in the income tax return differing from the book profit?"
+    pd_question: "{explanation} Which adjustments account for the profit in the income tax return for {period} differing from the book profit?"
 
   # The turnover the return shows, for the year it covers, against each other source. A return
   # that shows no turnover leaves nothing to compare (not applicable).
@@ -334,7 +342,7 @@ rules:
     blocking: false
     explanation: "{period}: {left_label} {left} against the audited revenue {right}, a variance of {variance} (tolerance {tolerance})."
     query: "Please explain the difference between the turnover in the income tax return ({left}) and the audited revenue ({right}) for {period}."
-    pd_question: "{explanation} Why does the turnover in the income tax return differ from the audited revenue?"
+    pd_question: "{explanation} Why does the turnover in the income tax return for {period} differ from the audited revenue?"
 
   - id: TX-04
     title: Turnover in the income tax return against GST outward supplies
@@ -348,7 +356,7 @@ rules:
     blocking: false
     explanation: "{period}: {left_label} {left} against GST outward supplies {right}, a variance of {variance} (tolerance {tolerance})."
     query: "Please explain the difference between the turnover in the income tax return ({left}) and GST outward supplies ({right}) for {period}."
-    pd_question: "{explanation} Were any sales outside GST, or reported under GST in a different period from the income tax return?"
+    pd_question: "{explanation} Were any sales for {period} outside GST, or reported under GST in a different period from the income tax return?"
 
   - id: TX-05
     title: Turnover in the income tax return against cleansed bank credits
@@ -362,7 +370,7 @@ rules:
     blocking: false
     explanation: "{period}: {left_label} {left} against business credits {right}, a variance of {variance} (tolerance {tolerance})."
     query: "Please explain the difference between the turnover in the income tax return ({left}) and business credits in the bank statements ({right}) for {period}."
-    pd_question: "{explanation} Where are the rest of the sales receipts banked, or are they received in cash?"
+    pd_question: "{explanation} Where are the rest of the sales receipts for {period} banked, or are they received in cash?"
 
   # --- Audited statements against each other and the bank (switched off) ---
   - id: FS-01
@@ -404,9 +412,9 @@ rules:
     comparison: set_contains
     severity: moderate
     blocking: false
-    explanation: "No statement is on file for these declared accounts: {items}."
+    explanation: "Declared, but with no statement on file: {items}."
     query: "Please provide 12 months' statements for {items}."
-    pd_question: "{explanation} Are the declared accounts without statements still operated, which facilities run in them, and when will 12 months' statements be provided?"
+    pd_question: "{explanation} Which facilities run in {items}, with what limits, and when will 12 months' statements be provided?"
 
   - id: BA-02
     title: Accounts on file are declared
@@ -419,7 +427,7 @@ rules:
     blocking: false
     explanation: "{items}."
     query: "Please confirm whose account each of these is and why it was not declared, and provide 12 months' statements where missing: {accounts}."
-    pd_question: "{explanation} Whose are the accounts that were not declared, and what are they used for?"
+    pd_question: "{explanation} Who holds {items}, for what business purpose, and why was no declaration made?"
 
   # --- Obligations (TC-25) ---
   - id: OB-01
@@ -434,7 +442,7 @@ rules:
     blocking: false
     explanation: "The existing facilities do not reconcile: {items}."
     query: "Please reconcile the existing facilities ({lenders}): give each facility's lender, sanctioned amount and outstanding, with its sanction letter."
-    pd_question: "{explanation} Which facilities does the company have today, and with whom?"
+    pd_question: "{explanation} What are the sanctioned amount and outstanding today of each facility, and why do the documents differ: {detail}?"
 
   - id: OB-02
     title: Instalments in bank statements go to declared lenders
@@ -445,9 +453,9 @@ rules:
     comparison: set_contains
     severity: serious
     blocking: false
-    explanation: "Regular debits to lender(s) not declared: {items}."
-    query: "Please give details of the facility with {lenders}: the amount, the outstanding and the instalment."
-    pd_question: "{explanation} What are the regular debits to the undeclared lenders for, and why were those facilities not declared?"
+    explanation: "Regular debits that match no declared facility: {items}."
+    query: "Please give details of each facility with {lenders}: the amount, the outstanding and the instalment."
+    pd_question: "{explanation} What are the regular debits to {items} for, and why were they not declared?"
 
   - id: OB-03
     title: Borrowings in the books are serviced in the bank

@@ -2,8 +2,10 @@
 
 Each document is numbered in the order the output first cites it, read from the top, so the screen
 and the downloads give it the same number: one source per document, with the distinct pages cited.
-A document is named by its type and, where the case has several of that type, by the year, period,
-account or person it is for, when the document states it; the file it was read from is named too.
+A document is named by its type and by the year, period, account, person or lender it is for, when
+the document states it: always for audited statements, income tax returns, bank statements and
+sanction letters, and for the other types where the case has several; the file it was read from is
+named too.
 """
 
 from __future__ import annotations
@@ -29,6 +31,8 @@ QUALIFIER_FIELDS = {
     "director_kyc": ("person_name",),
     "sanction_letter": ("lender_name",),
 }
+# The types named by year, account or lender even where the case has one of them.
+ALWAYS_QUALIFIED = {"audited_financial_statements", "income_tax_return", "bank_statement", "sanction_letter"}
 
 
 def cam_citations(cam: Cam) -> list[Evidence]:
@@ -76,7 +80,7 @@ def documents(conn: sqlite3.Connection, root: Path, case_id: str) -> dict[str, t
     ).fetchall()
     types = {r["id"]: effective_types(r) for r in rows}
     several = {t for t in QUALIFIER_FIELDS
-               if sum(1 for r in rows if r["status"] not in INACTIVE and t in types[r["id"]]) > 1}
+               if t in ALWAYS_QUALIFIED or sum(1 for r in rows if r["status"] not in INACTIVE and t in types[r["id"]]) > 1}
     fields = _fields(conn, case_id, sorted({f for t in several for f in QUALIFIER_FIELDS[t]}))
     out = {}
     for r in rows:

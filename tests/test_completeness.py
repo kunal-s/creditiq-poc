@@ -64,8 +64,7 @@ def test_tc12_missing_items_each_with_a_specific_request(client: TestClient, pub
     missing = {k for k, v in items.items() if v["status"] == "missing"}
     assert missing == {"moa_aoa", "pan_entity", "fs_fy_minus2", "itr"}
     assert items["fs_fy_minus2"]["deficiency"] == (
-        "Not received: Audited financial statements for FY 2024-25 (year ended 31 Mar 2025)"
-        " (received: FY 2025-26 (year ended 31 Mar 2026))"
+        "Not received: Audited financial statements for FY 2024-25 (year ended 31 Mar 2025); received: FY 2025-26"
     )
     assert "AY 2026-27 and AY 2025-26" in items["itr"]["deficiency"]
     assert items["moa_aoa"]["deficiency"].startswith("Not received: Memorandum and Articles")

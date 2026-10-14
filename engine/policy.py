@@ -301,9 +301,12 @@ def unit_text(value: float, unit: str | None, extra: int = 0) -> str:
     if unit == "days":
         return _counted(_fixed(value, extra), "day")
     if unit == "years":
-        # Truncated, never rounded up to a threshold: 2.99 years is "2.9 years".
-        scale = 10 ** (1 + extra)
-        return _counted(f"{math.floor(value * scale + 1e-9) / scale:g}", "year")
+        # Years and completed months, as the memo states the time in business; never rounded up to a
+        # threshold: 2.99 years is "2 years 11 months". A value is a count of months over 12 to four
+        # places, so a whole month is never lost to the rounding.
+        years, months = divmod(math.floor(value * 12 + 1e-3), 12)
+        parts = ([_counted(str(years), "year")] if years else []) + ([_counted(str(months), "month")] if months else [])
+        return " ".join(parts) or "0 years"
     if unit == "inr":
         return facts_module.inr(value)
     if unit == "rank":

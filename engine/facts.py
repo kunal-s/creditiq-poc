@@ -96,6 +96,8 @@ _BANKING = re.compile(rf"\b(?P<kind>{_KINDS})\b(?:\s+(?:with|from|at)\s+(?P<bank
                       rf"(?:[.,]?\s+(?:a/?c|acct|account)\.?\s*(?:no\.?\s*)?(?P<number>\d{{4,}}))?"
                       rf"(?=\s*(?:$|[;,]|\band\s+(?:an?\s+|the\s+)?(?:{_KINDS})\b|\.(?:\s|$)))", re.I)
 MESSAGE_ACCOUNT = re.compile(r"(?:a/?c|account)[^\d]{0,12}(\d{4,})", re.I)
+# An account a statement narration names: "NEFT TRANSFER TO A/C 778899001122".
+NARRATION_ACCOUNT = re.compile(r"(?:a/?c|acct|account|x{2,})[^\d]{0,6}(\d{4,})", re.I)
 
 
 # --- Loading ---
@@ -749,7 +751,7 @@ def _accounts(b: Build, txns: list[Txn]) -> tuple[list[AccountFact], bool]:
             add("", _last4(m[1]), "Sourcing message", v.evidence, declared=True, named=bank, kind=kind)
     own = {k[1] for k in found if k[1]}
     for t in txns:
-        for m in re.finditer(r"(?:a/?c|acct|account|x{2,})[^\d]{0,6}(\d{4,})", t.narration, re.I):
+        for m in NARRATION_ACCOUNT.finditer(t.narration):
             last4 = _last4(m[1])
             if last4 and last4 not in own and _phrase(t.narration, ["transfer", "trf", "neft", "rtgs", "imps", "self"]):
                 add("", last4, f"Transfer in {t.account}", t.evidence)

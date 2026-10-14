@@ -243,7 +243,7 @@ test("Outputs: the spread, the draft CAM and the PD note, each figure cited", as
 
   await page.getByTestId("view-pd").click();
   const questions = page.getByTestId("pd-question");
-  await expect(questions).toHaveCount(10);
+  await expect(questions).toHaveCount(11);
   await expect(questions.first()).toContainText("Which PAN is the company's");
   await expect(questions.first().getByRole("link")).toHaveAttribute(
     "href",

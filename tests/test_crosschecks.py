@@ -165,9 +165,12 @@ def test_tc23_incomplete_coverage_is_stated(client, analyst, published_data_root
     found = _findings(client, analyst, published_data_root, case_id)
     [to1] = found["TO-01"]
     assert to1["outcome"] == "incomplete"
-    assert "GST outward supplies covers 8 of 12 months (Apr 2025, May 2025, Jun 2025… absent)" in to1["explanation"]
+    # The months missing as runs.
+    assert to1["explanation"] == "GST outward supplies cover 8 of 12 months (Apr 2025 to Jul 2025 not on file)."
     [to3] = found["TO-03"]
     assert to3["outcome"] == "fail"  # 4.8 cr audited against 3.6 cr banked, 25%
+    assert to3["query"] == ("Please explain the difference between audited turnover (INR 4.80 cr) and business credits "
+                            "in the bank statements (INR 3.60 cr) for FY 2025-26.")
 
 
 def test_tc23_audited_turnover_is_read_from_the_printed_statement(client, analyst, published_data_root):
@@ -246,3 +249,16 @@ def test_declared_turnover_check_does_not_apply_without_a_declaration(client, an
     case_id = _case(client, analyst, published_data_root)
     audited(published_data_root, case_id, "2026-03-31", scale=50_000_000 / 118_000_000)
     assert [f["outcome"] for f in _findings(client, analyst, published_data_root, case_id)["TO-04"]] == ["not_applicable"]
+
+
+def test_declared_turnover_apart_from_the_evidence_is_put_on_the_query_list(client, analyst, published_data_root):
+    case_id = make_case(client, analyst, published_data_root, borrower="Kestrel Tools Pvt Ltd",
+                        header={"declared_turnover_inr": {"value": "60000000", "source": "person"}})
+    audited(published_data_root, case_id, "2026-03-31", scale=50_000_000 / 118_000_000)
+    [f] = _findings(client, analyst, published_data_root, case_id)["TO-04"]
+    assert f["outcome"] == "fail"
+    assert f["query"] == ("Please explain the difference between the turnover declared in the sourcing message "
+                          "(INR 6.00 cr) and the turnover evidenced by the audited financial statements (INR 5.00 cr) "
+                          "for FY 2025-26, and confirm the turnover to be relied on.")
+    texts = [q["text"] for q in client.get(f"/api/cases/{case_id}/queries", headers=analyst).json()]
+    assert f["query"] in texts

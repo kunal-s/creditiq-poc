@@ -18,6 +18,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.ns import qn
 from docx.table import Table as DocxTable
 from fastapi.testclient import TestClient
+from PIL import ImageOps
 from reportlab.pdfbase.pdfmetrics import stringWidth
 
 from engine import auth, db, exports, pipeline
@@ -51,6 +52,8 @@ PROMPTS = ["Recommendation", "Terms and conditions", "Deviations recommended for
            "Decision of the approving authority"]
 ROLES = ["Prepared by", "Recommended by", "Approved by"]
 RECORD = ["Date of discussion", "Place", "Bank officials present", "Promoters or representatives present"]
+TOP, FOOT = 2.3 / 2.54 * 72, 2 / 2.54 * 72
+"""Points above and below the text of a page: the margins, the running header and the footer outside them."""
 
 
 def _t(text: str, *cited: tuple[str, int]) -> CamText:
@@ -139,7 +142,15 @@ def _note(**changes) -> PdNote:
                   also=[PdRef(ref="F-5", xv_ref="XV-05", rule="TX-05", status="Open",
                               title="Turnover in the tax return not supported by bank credits",
                               evidence=[Evidence(document_id=BANK, page=2)])]),
-        _question(3, "policy", "What is the plan to bring the current ratio up to the norm?",
+        # An observation: a fact the memo states that needs the promoter's answer, asked after the
+        # findings and deviations of its severity.
+        _question(3, "obligations", "Which lender disbursed the INR 50.00 lakh on 20 Jun 2025, on what terms, and "
+                                    "why is no instalment seen?",
+                  "A credit of INR 50.00 lakh on 20 Jun 2025 (TL DISBURSAL LN 778812) matches no facility on file.",
+                  severity="moderate", source="observation", ref="obligations:loan-disbursal", rule="OBS",
+                  title="Loan disbursal no facility explains", status="section 9", target="cam",
+                  evidence=[Evidence(document_id=BANK, page=2)]),
+        _question(4, "policy", "What is the plan to bring the current ratio up to the norm?",
                   "Current ratio is 1.19x in FY 2025-26 against a norm of at least 1.20x.",
                   severity="moderate", source="deviation", ref="FR-01", rule="FR-01", title="Current ratio",
                   target="policy", evidence=[Evidence(document_id=AFS, page=3)]),
@@ -161,7 +172,8 @@ def _note(**changes) -> PdNote:
         questions=questions,
         topics=[PdTopic(area="identity", title="Identity and KYC", question_ids=["PDQ-1"]),
                 PdTopic(area="turnover", title="Turnover, tax and sales", question_ids=["PDQ-2"]),
-                PdTopic(area="policy", title="Policy norms", question_ids=["PDQ-3"])],
+                PdTopic(area="obligations", title="Existing borrowings", question_ids=["PDQ-3"]),
+                PdTopic(area="policy", title="Policy norms", question_ids=["PDQ-4"])],
         documents_to_collect=[_t("KYC of Sunil Karve."), _t("Bank statement: outdated.", (BANK, 2))],
         record_fields=RECORD, sign_off=[CamSignOff(role="Discussion held by")],
         # Numbered in reading order: the header, the people, the questions (and what they also cover).
@@ -336,8 +348,8 @@ def test_the_word_note_asks_each_question_with_room_for_the_answer():
                           ["Constitution", "Private limited"], ["Proposal", "Cash credit and term loan, INR 6.50 cr [1 p.1]"],
                           ["Data as of", "29 Sep 2026"], ["Configuration version", LABEL]]
     assert _headings(body) == ["People to meet", "Record of the discussion", "Identity and KYC",
-                               "Turnover, tax and sales", "Policy norms", "Documents to collect at the discussion",
-                               "Sources"]
+                               "Turnover, tax and sales", "Existing borrowings", "Policy norms",
+                               "Documents to collect at the discussion", "Sources"]
     # Each person with the pages that name them.
     assert _after(body, "People to meet")[1] == [
         ["Name", "Role", "DIN", "Named in"],
@@ -354,17 +366,36 @@ def test_the_word_note_asks_each_question_with_room_for_the_answer():
     assert ("p", "Memo detail", "Moderate · Deviation from FR-01") in body
     assert ("p", "Normal", f"Why we ask: {note.questions[1].context}") in body
     assert ("p", "Normal", "Evidence: [2 p.2; 4 p.1]") in body
-    # Blank lines for the response and the follow-up under every question.
+    # Four blank lines for the response and two for the follow-up under every question.
     responses = [i for i, b in enumerate(body) if b[0] == "p" and b[2] == "Response"]
     follow_ups = [i for i, b in enumerate(body) if b[0] == "p" and b[2] == "Follow-up"]
     assert len(responses) == len(follow_ups) == len(note.questions)
-    assert all(body[i + 1] == ("t", [[""]] * 3) for i in responses)
+    assert all(body[i + 1] == ("t", [[""]] * 4) for i in responses)
     assert all(body[i + 1] == ("t", [[""]] * 2) for i in follow_ups)
     assert _after(body, "Documents to collect at the discussion")[1] == [
         ["No.", "Document"], ["1", "KYC of Sunil Karve."], ["2", "Bank statement: outdated. [6 p.2]"]]
     sign_off = next(b[1] for b in body if b[0] == "t" and b[1][0][:2] == ["", "Name"])
     assert sign_off[1:] == [["Discussion held by", "", "", "", ""]]
     assert [int(r[0]) for r in _after(body, "Sources")[1][1:]] == [s.number for s in note.sources]
+
+
+def test_an_observation_is_asked_by_its_title_as_a_fact_the_memo_states():
+    note = _note()
+    observation = note.questions[2]
+    body = _body(exports.render(exports.pd_note_document(note), "docx"))
+    # Under its topic, with the memo section that states it (its status): its key and its rule (OBS)
+    # mean nothing to the reader.
+    meta = "Moderate · Observation · section 9"
+    assert _after(body, "Existing borrowings") == ("p", "Memo question", f"3. {observation.question}")
+    assert _after(body, f"3. {observation.question}") == ("p", "Memo detail", meta)
+    assert _after(body, meta) == ("p", "Normal", f"Why we ask: {observation.context}")
+    assert _after(body, f"Why we ask: {observation.context}") == ("p", "Normal", "Evidence: [6 p.2]")
+    assert not any("OBS" in t or observation.ref in t for t in _texts(body))
+    # The word from the note's labels where they give one; no section where the memo numbers none.
+    changed = note.model_copy(update={"labels": {"observation": "Memo observation"}, "questions": [
+        *note.questions[:2], observation.model_copy(update={"status": None}), note.questions[3]]})
+    body = _body(exports.render(exports.pd_note_document(changed), "docx"))
+    assert ("p", "Memo detail", "Moderate · Memo observation") in body
 
 
 def test_a_note_without_header_facts_or_sign_off_still_names_the_case():
@@ -634,16 +665,104 @@ def test_a_short_line_after_a_table_is_not_left_alone_at_the_top_of_a_page():
         assert _row(pages[_page_of(pages, "Every check passed.")], "Row 30"), lines
 
 
-def test_a_list_of_sources_up_to_half_a_page_is_kept_on_one_page():
+def test_a_list_of_sources_starts_under_what_is_before_it_and_leaves_no_row_alone():
     # Fifteen sources, about a third of a page: the note's own seven and eight more its documents cite.
     sources = _note().sources + [_source(n, f"D-{n}", f"Document {n}", f"document-{n}.pdf", [1])
                                  for n in range(8, 16)]
+    files = [s.file_name for s in sources]
+    split = False
     for count in range(8, 40):
         note = _note(sources=sources, documents_to_collect=[
             _t(f"Document {n} to collect.", (f"D-{n % 8 + 8}", 1)) for n in range(count)])
-        pages = _pages(exports.render(exports.pd_note_document(note), "pdf"))
+        data = exports.render(exports.pd_note_document(note), "pdf")
+        pages, blank = _pages(data), _blank(data)
         first = _page_of(pages, "application-message.txt")
-        assert "document-15.pdf" in pages[first], count
+        # Not alone on a page of its own while the page before has room for its heading and first rows;
+        # where it runs over, three rows at least on each page.
+        if first and pages[first].lstrip().startswith("Sources"):
+            assert blank[first - 1] < 0.2, count
+        rows = [sum(f in page for f in files) for page in pages[first:]]
+        assert sum(rows) == len(files) and all(r >= 3 for r in rows if r), (count, rows)
+        split |= len([r for r in rows if r]) > 1
+    assert split
+    # Word keeps the first three rows with the heading and the last three together, as the PDF does.
+    doc = read_docx(io.BytesIO(exports.render(exports.pd_note_document(_note(sources=sources)), "docx")))
+    table = next(t for t in doc.tables if t.rows[0].cells[0].text == "No." and len(t.columns) == 4)
+    kept = [all(p.paragraph_format.keep_with_next for c in row.cells for p in c.paragraphs) for row in table.rows]
+    assert kept == [True, True, True] + [False] * (len(sources) - 5) + [True, True, False]
+
+
+def _blank(data: bytes) -> list[float]:
+    """How much of each page's body is left blank under its last mark, as a share of the body's height."""
+    scale, top, bottom = 0.5, TOP, 842 - FOOT
+    pdf = pdfium.PdfDocument(data)
+    try:
+        out = []
+        for page in pdf:
+            image = page.render(scale=scale).to_pil().convert("L")
+            body = image.crop((0, round(top * scale), image.width, round(bottom * scale)))
+            box = ImageOps.invert(body).point(lambda v: 255 if v > 40 else 0).getbbox()
+            out.append(1 - (box[3] if box else 0) / body.height)
+        return out
+    finally:
+        pdf.close()
+
+
+def _question_with(lines: int, number: int = 1) -> PdQuestion:
+    """A question whose reason runs to about so many lines."""
+    return _question(number, "turnover", f"Question {number}: where are the rest of the sales receipts banked?",
+                     " ".join(["GST outward supplies run above the business credits in the bank."] * (lines * 2)),
+                     severity="moderate", source="finding", ref=f"F-{number}", xv_ref=f"XV-0{number}",
+                     rule="TO-02", title="GST turnover not supported by bank credits", status="Open",
+                     target="cross_verification", evidence=[Evidence(document_id=GST, page=2)])
+
+
+def test_a_question_that_nearly_fits_turns_the_page_between_its_answer_lines_rather_than_move_whole():
+    # A first question long enough to leave a varying room under it for the second.
+    turned = False
+    for lines in range(6, 30):
+        note = _note(people=[], record_fields=[], documents_to_collect=[], sign_off=[],
+                     questions=[_question_with(lines), _question_with(2, 2)],
+                     topics=[PdTopic(area="turnover", title="Turnover, tax and sales", question_ids=["PDQ-1", "PDQ-2"])])
+        data = exports.render(exports.pd_note_document(note), "pdf")
+        pages, blank = _pages(data), _blank(data)
+        second = _page_of(pages, "Question 2:")
+        asked = pages[second].split("Question 2:")[1]
+        # Never apart from its reason, its evidence and the label over its response lines.
+        assert all(text in asked for text in ("Why we ask: GST", "Evidence: [5 p.2]", "Response")), lines
+        # Started on a page with room for it, rather than leave a third of that page blank.
+        assert all(b < 0.3 for b in blank[:-1]), (lines, blank)
+        turned |= second < len(pages) - 1 and "Follow-up" not in asked
+    assert turned
+    # Word may turn the page after the second response line, the third, the fourth (before the
+    # follow-up), and nowhere else in the question.
+    doc = read_docx(io.BytesIO(exports.render(exports.pd_note_document(_note()), "docx")))
+    response, follow_up = [t for t in doc.tables if len(t.columns) == 1][:2]
+    assert [row.cells[0].paragraphs[0].paragraph_format.keep_with_next for row in response.rows] == [
+        True, None, None, None]
+    assert [row.cells[0].paragraphs[0].paragraph_format.keep_with_next for row in follow_up.rows] == [True, None]
+    paragraphs = doc.paragraphs
+    first = next(k for k, p in enumerate(paragraphs) if p.text.startswith("1. "))
+    head = paragraphs[first:first + 5]
+    assert [p.text.split(":")[0] for p in head] == [paragraphs[first].text, "Serious · Finding XV-01 (ID-01) · Open",
+                                                    "Why we ask", "Evidence", "Response"]
+    assert all(p.paragraph_format.keep_with_next or p.style.paragraph_format.keep_with_next for p in head)
+
+
+def test_a_table_of_up_to_twelve_facts_is_kept_on_one_page_with_its_heading():
+    facts = [CamFact(label=f"Fact {n}", value=_t(f"Value {n}", (COI, 1))) for n in range(1, 13)]
+    for lines in range(40, 96, 3):
+        memo = _memo(summary=[], sections=[CamSection(id="policy", number=1, title="Compliance with policy norms",
+                                                      blocks=[_filler(lines), CamBlock(kind="subheading",
+                                                                                       text="Approving authority"),
+                                                              CamBlock(kind="facts", facts=facts)])])
+        pages = _pages(exports.render(exports.cam_document(memo), "pdf"))
+        here = _page_of(pages, "Approving authority")
+        assert all(_row(pages[here], f"Fact {n}") for n in range(1, 13)), lines
+    doc = read_docx(io.BytesIO(exports.render(exports.cam_document(memo), "docx")))
+    table = next(t for t in doc.tables if t.rows[0].cells[0].text == "Fact 1")
+    assert [all(p.paragraph_format.keep_with_next for c in row.cells for p in c.paragraphs) for row in table.rows] \
+        == [True] * 11 + [False]
 
 
 def test_a_long_table_starts_where_it_is_reached_and_repeats_its_header_on_each_page_it_runs_onto():
@@ -677,6 +796,34 @@ def test_the_sources_start_on_their_own_page_after_the_recommendation_and_the_si
     # A table kept with its group, as the note's sign-off is, stays on the page where the group fits.
     pages = _pages(exports.render(exports.pd_note_document(_note()), "pdf"))
     assert any("Documents to collect at the discussion" in page and "Discussion held by" in page for page in pages)
+
+
+def test_the_recommendation_follows_the_last_lines_of_the_summary_where_it_fits_whole_under_them():
+    # Open queries enough to end the summary anywhere on a page: the recommendation and its sign-off
+    # stay on one page, a page of their own unless they fit whole under the summary's last lines.
+    shared = False
+    for count in range(1, 70, 3):
+        memo = _memo(summary=[CamSummaryItem(kind="query", ref=f"Q-{n}", group="documents_needed",
+                                             text=f"GSTR-3B for month {n}.") for n in range(1, count + 1)])
+        data = exports.render(exports.cam_document(memo), "pdf")
+        pages, blank = _pages(data), _blank(data)
+        here = _page_of(pages, "5. Recommendation")
+        assert all(prompt in pages[here] for prompt in PROMPTS) and "Approved by" in pages[here], count
+        if pages[here].lstrip().startswith("5. Recommendation"):
+            # On a page of its own only where the page before has no room for it.
+            assert blank[here - 1] < 1 - blank[here] + 0.03, (count, blank)
+        else:
+            shared = True
+    assert shared
+    # Word keeps it together, rather than start it on a page of its own whatever is above it.
+    doc = read_docx(io.BytesIO(exports.render(exports.cam_document(_memo()), "docx")))
+    heading = next(p for p in doc.paragraphs if p.text == "5. Recommendation")
+    assert not heading.paragraph_format.page_break_before
+    paragraphs = doc.paragraphs
+    first = next(k for k, p in enumerate(paragraphs) if p.text == "5. Recommendation")
+    kept = paragraphs[first:first + 1 + len(PROMPTS)]
+    assert [p.text for p in kept] == ["5. Recommendation", *PROMPTS]
+    assert all(p.paragraph_format.keep_with_next for p in kept)
 
 
 def test_the_same_memo_gives_the_same_files_dated_as_of():

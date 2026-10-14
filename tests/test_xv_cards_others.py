@@ -486,7 +486,22 @@ def test_instalments_to_an_undeclared_lender(client, analyst, published_data_roo
     assert f["outcome"] == "incomplete" and [c["key"] for c in f["columns"]] == ["instalments"]
     assert f["request"] == ("the declaration of existing facilities (or a written confirmation of the facility behind "
                             "TIDEWATER FIN)")
+    assert "; confirm the facility behind TIDEWATER FIN (INR 2.50 lakh a month in 6 months, " in f["explanation"]
     assert _lines(f) == [("Instalments", [], f"{f['request']} needed")]
+
+    # The lender's sanction letter is on file: no word on that facility is asked for, but the declaration in
+    # full, signed.
+    sanctioned = _case(client, analyst, root, borrower="Marigold Agro Foods Pvt Ltd")
+    statement(root, sanctioned, instalments())
+    sanction(root, sanctioned, "Tidewater Finance Limited", 12_000_000)
+    f = _one(_board(client, analyst, root, sanctioned), "OB-02")
+    assert f["outcome"] == "incomplete"
+    assert f["request"] == ("the declaration of existing facilities, signed, giving every existing facility "
+                            "(lender, limit, outstanding, instalment)")
+    assert f["explanation"].startswith("No declaration of existing facilities is on file and the sourcing message "
+                                       "declares none, so the instalments to TIDEWATER FIN (INR 2.50 lakh a month in 6 "
+                                       "months, ")
+    assert f["explanation"].endswith(") cannot be held against one.")
 
 
 def test_borrowings_against_instalments(client, analyst, published_data_root):

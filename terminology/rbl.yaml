@@ -144,10 +144,10 @@ outputs:
       date: Date
   pd:
     eyebrow: For the personal discussion
-    subtitleOne: "1 question, tied to the finding, norm or gap it comes from."
-    subtitleMany: "{n} questions by topic, the most serious first in each, each tied to the finding, norm or gap it comes from."
+    subtitleOne: "1 question, tied to the finding, norm, gap or CAM observation it comes from."
+    subtitleMany: "{n} questions by topic, the most serious first in each, each tied to the finding, norm, gap or CAM observation it comes from."
     emptyTitle: No questions yet
-    emptyDescription: Questions come from cross-check findings, policy deviations and open gaps.
+    emptyDescription: Questions come from cross-check findings, policy deviations, open gaps and facts the draft CAM states that need the promoter's answer.
     header:
       borrower: Borrower
       case: Case ID
@@ -167,6 +167,9 @@ outputs:
       finding: Cross-check finding
       deviation: Policy deviation
       gap: Open gap
+      observation: Observation in the CAM
+    # An observation's link, which opens the draft CAM at the section that states it.
+    cam: Draft CAM
 
 # How serious a cross-check finding is (F-19.1).
 severity:

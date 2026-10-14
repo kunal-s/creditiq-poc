@@ -110,9 +110,11 @@ class PdQuestion(BaseModel):
     text: str
     """The context and the question together, as one paragraph."""
     severity: Severity
-    source: Literal["finding", "deviation", "gap"]
+    source: Literal["finding", "deviation", "gap", "observation"]
+    """observation: a material fact the memo states that needs the promoter's answer (a fall in revenue,
+    borrowings no facility on file explains, a loan disbursal no facility matches)."""
     ref: str
-    """The finding id or norm id it comes from (F-24.2)."""
+    """The finding id, norm id or observation key it comes from (F-24.2)."""
     xv_ref: str | None = None
     """For a finding: its board reference (XV-…)."""
     rule: str
@@ -124,8 +126,8 @@ class PdQuestion(BaseModel):
     status: str | None = None
     """For a finding: Accepted as valid, Escalated or Open."""
     evidence: list[Evidence] = Field(default_factory=list)
-    target: Literal["cross_verification", "policy"] = "policy"
-    """The tab the question links to."""
+    target: Literal["cross_verification", "policy", "cam"] = "policy"
+    """The tab or view the question links to (cam: the memo section that states the observation)."""
     also: list[PdRef] = Field(default_factory=list)
     """Other findings the same question covers, when one question is asked for several."""
 

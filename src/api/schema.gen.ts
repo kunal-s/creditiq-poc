@@ -2858,7 +2858,7 @@ export interface components {
        * Source
        * @enum {string}
        */
-      source: "finding" | "deviation" | "gap";
+      source: "finding" | "deviation" | "gap" | "observation";
       /** Status */
       status?: string | null;
       /**
@@ -2866,7 +2866,7 @@ export interface components {
        * @default policy
        * @enum {string}
        */
-      target: "cross_verification" | "policy";
+      target: "cross_verification" | "policy" | "cam";
       /** Text */
       text: string;
       /** Title */

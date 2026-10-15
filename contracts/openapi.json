@@ -510,6 +510,74 @@
         "title": "AreaScore",
         "type": "object"
       },
+      "AssessmentGate": {
+        "description": "The F-13 gate between intake and assessment: cross-verification, policy checks and the\noutputs open only once completeness is satisfied and a person creates the case.",
+        "properties": {
+          "blockers": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Blockers",
+            "type": "array"
+          },
+          "blocking_open": {
+            "default": 0,
+            "title": "Blocking Open",
+            "type": "integer"
+          },
+          "can_open": {
+            "title": "Can Open",
+            "type": "boolean"
+          },
+          "gate_pct": {
+            "default": 0,
+            "title": "Gate Pct",
+            "type": "number"
+          },
+          "open": {
+            "title": "Open",
+            "type": "boolean"
+          },
+          "open_exceptions": {
+            "default": 0,
+            "title": "Open Exceptions",
+            "type": "integer"
+          },
+          "opened_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opened At"
+          },
+          "opened_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opened By"
+          },
+          "score_pct": {
+            "default": 0,
+            "title": "Score Pct",
+            "type": "number"
+          }
+        },
+        "required": [
+          "open",
+          "can_open"
+        ],
+        "title": "AssessmentGate",
+        "type": "object"
+      },
       "AuditEntry": {
         "properties": {
           "action": {
@@ -1543,6 +1611,28 @@
             "title": "As Of",
             "type": "string"
           },
+          "assessment_opened_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assessment Opened At"
+          },
+          "assessment_opened_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assessment Opened By"
+          },
           "borrower": {
             "title": "Borrower",
             "type": "string"
@@ -1847,6 +1937,16 @@
           "case_id": {
             "title": "Case Id",
             "type": "string"
+          },
+          "gate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AssessmentGate"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "stage": {
             "enum": [
@@ -4782,6 +4882,37 @@
         "title": "MonthFigure",
         "type": "object"
       },
+      "NormComponent": {
+        "description": "One line a derived figure was summed from, with the sign it carried (F-20.2).\n\n`net worth = share capital + reserves and surplus` shows as two components, each with the\nfigure read from the statement and the page it was read from.",
+        "properties": {
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "sign": {
+            "title": "Sign",
+            "type": "integer"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "label",
+          "sign",
+          "value"
+        ],
+        "title": "NormComponent",
+        "type": "object"
+      },
       "NormInput": {
         "description": "One source figure a norm used, with where it came from (F-20.2).",
         "properties": {
@@ -4801,6 +4932,13 @@
             ],
             "title": "Basis",
             "type": "string"
+          },
+          "components": {
+            "items": {
+              "$ref": "#/components/schemas/NormComponent"
+            },
+            "title": "Components",
+            "type": "array"
           },
           "evidence": {
             "items": {
@@ -4879,6 +5017,15 @@
           },
           "category_label": {
             "title": "Category Label",
+            "type": "string"
+          },
+          "comparator": {
+            "default": "min",
+            "enum": [
+              "min",
+              "max"
+            ],
+            "title": "Comparator",
             "type": "string"
           },
           "definition": {
@@ -4991,6 +5138,17 @@
               }
             ],
             "title": "Source"
+          },
+          "threshold_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Threshold Text"
           },
           "unit": {
             "anyOf": [
@@ -9255,6 +9413,62 @@
           }
         },
         "summary": "Case Approving Authority"
+      }
+    },
+    "/api/cases/{case_id}/assessment": {
+      "post": {
+        "description": "F-13: create the case, opening cross-verification, policy checks and the outputs.\n\n`review.decide`, because it is the decision that intake is complete: the analyst and the\ncredit manager hold it, the RM does not.\n\nRefused with 409 while completeness is not satisfied; the body names the blockers so the\nscreen can say which one. Pressing it twice is harmless: the case is returned unchanged.",
+        "operationId": "open_assessment_api_cases__case_id__assessment_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Open Assessment"
       }
     },
     "/api/cases/{case_id}/cam": {

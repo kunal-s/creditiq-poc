@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { AssessmentStage } from "@/components/case/gate/AssessmentStage";
 import { PolicyPage } from "@/components/case/policy/PolicyPage";
 import { t } from "@/config/terminology";
 
@@ -20,6 +21,9 @@ export const Route = createFileRoute("/appraisals/$caseId/policy")({
 
 function PolicyTab() {
   const { caseId } = Route.useParams();
-  const { norm } = Route.useSearch();
-  return <PolicyPage caseId={caseId} norm={norm} />;
+  return (
+    <AssessmentStage caseId={caseId}>
+      <PolicyPage caseId={caseId} />
+    </AssessmentStage>
+  );
 }

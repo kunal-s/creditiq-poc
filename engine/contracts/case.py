@@ -75,6 +75,10 @@ class CaseDetail(CaseSummary):
     created_by: str
     config_version: str | None
     header: dict[str, HeaderField]
+    assessment_opened_at: str | None = None
+    """When the case was created, opening cross-verification, policy and outputs (F-13 gate).
+    None while the appraisal is still in intake."""
+    assessment_opened_by: str | None = None
 
 
 StageKey = Literal["documents", "extraction", "completeness", "cross_verification", "policy", "outputs"]
@@ -94,7 +98,28 @@ class StageProgress(BaseModel):
     """Units waiting for a person or blocking the stage."""
 
 
+class AssessmentGate(BaseModel):
+    """The F-13 gate between intake and assessment: cross-verification, policy checks and the
+    outputs open only once completeness is satisfied and a person creates the case."""
+
+    open: bool
+    """The case has been created; the assessment stages are open."""
+    can_open: bool
+    """Completeness is satisfied, so the case may be created now."""
+    opened_at: str | None = None
+    opened_by: str | None = None
+    blockers: list[str] = Field(default_factory=list)
+    """Why it cannot be created yet, keyed for the screens:
+    `review_gate`, `blocking_items`, `open_exceptions`."""
+    score_pct: float = 0
+    gate_pct: float = 0
+    blocking_open: int = 0
+    open_exceptions: int = 0
+
+
 class CaseProgress(BaseModel):
     case_id: str
     stage: Stage
     stages: list[StageProgress]
+    gate: AssessmentGate | None = None
+    """None only for a progress computed before the gate existed."""

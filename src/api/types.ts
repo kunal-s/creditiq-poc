@@ -54,6 +54,7 @@ export type DocumentTypeDef = S["DocumentTypeDef"];
 export type DocumentTypeGroup = DocumentTypeDef["group"];
 export type DocumentTypes = S["DocumentTypesSection"];
 export type CaseProgress = S["CaseProgress"];
+export type AssessmentGate = S["AssessmentGate"];
 export type StageProgress = S["StageProgress"];
 export type StageKey = StageProgress["key"];
 export type StageStatus = StageProgress["status"];
@@ -121,6 +122,7 @@ export type OutputFormat = "docx" | "pdf";
 /** The outputs that download, as the decision log names them. */
 export type OutputKind = "cam" | "pd_note";
 export type NormInput = S["NormInput"];
+export type NormComponent = S["NormComponent"];
 export type ApprovingAuthority = S["ApprovingAuthority"];
 export type AuthorityStep = S["AuthorityStep"];
 export type AuthorityRef = S["AuthorityRef"];

@@ -94,6 +94,15 @@ def period_months(value: object, financial_year: object = None) -> list[tuple[in
     single = parse_period(text)
     if single:
         return [single]
+    # A month on its own ("Oct"), as a monthly GST filer's return prints it. The year comes from
+    # the financial year beside it, the same way a quarter's does: April to March, so a month
+    # before April belongs to the second of the two years.
+    if text.lower() in _MONTHS:
+        fy = re.match(r"\s*(\d{4})\s*[-/]\s*(\d{2}|\d{4})\s*$", str(financial_year or ""))
+        if not fy:
+            return []
+        month = _MONTHS[text.lower()]
+        return [(int(fy[1]) + (1 if month < 4 else 0), month)]
     m = re.fullmatch(r"([A-Za-z]+)\s*(?:-|to|–)\s*([A-Za-z]+)(?:[\s,'-]+(\d{4}))?", text, re.I)
     if not m or m[1].lower() not in _MONTHS or m[2].lower() not in _MONTHS:
         return []

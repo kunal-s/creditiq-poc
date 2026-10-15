@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { AssessmentStage } from "@/components/case/gate/AssessmentStage";
 import { CrossVerificationBoard } from "@/components/case/xv/Board";
 import { t } from "@/config/terminology";
 
@@ -21,6 +22,9 @@ export const Route = createFileRoute("/appraisals/$caseId/cross-verification")({
 
 function CrossVerificationTab() {
   const { caseId } = Route.useParams();
-  const { finding } = Route.useSearch();
-  return <CrossVerificationBoard caseId={caseId} finding={finding} />;
+  return (
+    <AssessmentStage caseId={caseId}>
+      <CrossVerificationBoard caseId={caseId} />
+    </AssessmentStage>
+  );
 }

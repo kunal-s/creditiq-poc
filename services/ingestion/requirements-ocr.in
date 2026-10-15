@@ -1,3 +1,5 @@
 # Optional: PaddleOCR (CPU). Installed only where scanned pages must be read.
 paddlepaddle
 paddleocr>=3.7
+setuptools   # modelscope imports pkg_resources at runtime and declares setuptools unpinned;
+             # --require-hashes refuses an unpinned transitive, so it is declared here to be locked

@@ -13,7 +13,15 @@ from engine.util import period_months
     ("Jan-Mar 2026", None, [(2026, 1), (2026, 2), (2026, 3)]),
     ("December 2025", None, [(2025, 12)]),
     ("092025", None, [(2025, 9)]),
+    # A monthly filer prints the month on its own; the financial year beside it places the year,
+    # April to March, so a month before April belongs to the second of the two years.
+    ("Oct", "2025-26", [(2025, 10)]),
+    ("Apr", "2025-26", [(2025, 4)]),
+    ("Mar", "2025-26", [(2026, 3)]),
+    ("Jan", "2025-26", [(2026, 1)]),
+    ("Oct | 2025-26", None, [(2025, 10)]),
     ("Jan-Mar", None, []),   # no year to place it in: never guessed
+    ("Oct", None, []),       # likewise for a month on its own
     ("not a period", "2025-26", []),
 ])
 def test_period_months(value, fy, expected):

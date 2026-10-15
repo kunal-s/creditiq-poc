@@ -220,6 +220,32 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/cases/{case_id}/assessment": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Open Assessment
+     * @description F-13: create the case, opening cross-verification, policy checks and the outputs.
+     *
+     *     `review.decide`, because it is the decision that intake is complete: the analyst and the
+     *     credit manager hold it, the RM does not.
+     *
+     *     Refused with 409 while completeness is not satisfied; the body names the blockers so the
+     *     screen can say which one. Pressing it twice is harmless: the case is returned unchanged.
+     */
+    post: operations["open_assessment_api_cases__case_id__assessment_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/cases/{case_id}/cam": {
     parameters: {
       query?: never;
@@ -1053,6 +1079,43 @@ export interface components {
       /** Valid */
       valid: number;
     };
+    /**
+     * AssessmentGate
+     * @description The F-13 gate between intake and assessment: cross-verification, policy checks and the
+     *     outputs open only once completeness is satisfied and a person creates the case.
+     */
+    AssessmentGate: {
+      /** Blockers */
+      blockers?: string[];
+      /**
+       * Blocking Open
+       * @default 0
+       */
+      blocking_open: number;
+      /** Can Open */
+      can_open: boolean;
+      /**
+       * Gate Pct
+       * @default 0
+       */
+      gate_pct: number;
+      /** Open */
+      open: boolean;
+      /**
+       * Open Exceptions
+       * @default 0
+       */
+      open_exceptions: number;
+      /** Opened At */
+      opened_at?: string | null;
+      /** Opened By */
+      opened_by?: string | null;
+      /**
+       * Score Pct
+       * @default 0
+       */
+      score_pct: number;
+    };
     /** AuditEntry */
     AuditEntry: {
       /** Action */
@@ -1401,6 +1464,10 @@ export interface components {
       amount_inr: number;
       /** As Of */
       as_of: string;
+      /** Assessment Opened At */
+      assessment_opened_at?: string | null;
+      /** Assessment Opened By */
+      assessment_opened_by?: string | null;
       /** Borrower */
       borrower: string;
       /** Channel */
@@ -1490,6 +1557,7 @@ export interface components {
     CaseProgress: {
       /** Case Id */
       case_id: string;
+      gate?: components["schemas"]["AssessmentGate"] | null;
       /**
        * Stage
        * @enum {string}
@@ -2575,6 +2643,23 @@ export interface components {
       month: string;
     };
     /**
+     * NormComponent
+     * @description One line a derived figure was summed from, with the sign it carried (F-20.2).
+     *
+     *     `net worth = share capital + reserves and surplus` shows as two components, each with the
+     *     figure read from the statement and the page it was read from.
+     */
+    NormComponent: {
+      /** Evidence */
+      evidence?: components["schemas"]["Evidence"][];
+      /** Label */
+      label: string;
+      /** Sign */
+      sign: number;
+      /** Value */
+      value: number;
+    };
+    /**
      * NormInput
      * @description One source figure a norm used, with where it came from (F-20.2).
      */
@@ -2590,6 +2675,8 @@ export interface components {
        * @enum {string}
        */
       basis: "document" | "case" | "checklist" | "statements_coverage" | "not_requested";
+      /** Components */
+      components?: components["schemas"]["NormComponent"][];
       /** Evidence */
       evidence?: components["schemas"]["Evidence"][];
       /** Label */
@@ -2616,6 +2703,12 @@ export interface components {
       category: string;
       /** Category Label */
       category_label: string;
+      /**
+       * Comparator
+       * @default min
+       * @enum {string}
+       */
+      comparator: "min" | "max";
       /** Definition */
       definition?: string | null;
       /**
@@ -2653,6 +2746,8 @@ export interface components {
       required: string;
       /** Source */
       source?: string | null;
+      /** Threshold Text */
+      threshold_text?: string | null;
       /** Unit */
       unit?: string | null;
     };
@@ -4396,6 +4491,39 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ApprovingAuthority"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  open_assessment_api_cases__case_id__assessment_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CaseDetail"];
         };
       };
       /** @description Validation Error */

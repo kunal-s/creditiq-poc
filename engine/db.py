@@ -353,6 +353,13 @@ MIGRATIONS: list[str] = [
     WHERE r.kind = 'finding' AND r.status = 'open'
       AND CASE WHEN json_valid(r.detail) THEN json_type(r.detail, '$.escalation') END = 'object';
     """,
+    # 12: the assessment gate (F-13, F-19 to F-24). Cross-verification, policy checks and the
+    # outputs open only once completeness is satisfied and a person creates the case. Written
+    # once and never cleared: a late document can move the stage back, but the case stays created.
+    """
+    ALTER TABLE cases ADD COLUMN assessment_opened_at TEXT;
+    ALTER TABLE cases ADD COLUMN assessment_opened_by TEXT;
+    """,
 ]
 
 

@@ -16,7 +16,7 @@ from pathlib import Path
 
 from . import completeness
 from .configstore import reader
-from .contracts import CaseDetail, CaseProgress, Stage, StageKey, StageProgress
+from .contracts import AssessmentGate, CaseDetail, CaseProgress, Readiness, Stage, StageKey, StageProgress
 from .store import MESSAGE_FILE_NAME
 
 _IN_FLIGHT = {"received", "graded", "split"}
@@ -39,6 +39,37 @@ def _open_items(conn: sqlite3.Connection, case_id: str, kinds: tuple[str, ...]) 
         f"SELECT COUNT(*) FROM review_items WHERE case_id = ? AND status = 'open' AND kind IN ({marks})",
         (case_id, *kinds),
     ).fetchone()[0]
+
+
+def open_exceptions(conn: sqlite3.Connection, case_id: str) -> int:
+    """Files that could not be read and have not been superseded (F-05.7)."""
+    return conn.execute(
+        "SELECT COUNT(*) FROM files WHERE case_id = ? AND status = 'exception'", (case_id,)
+    ).fetchone()[0]
+
+
+def _gate(conn: sqlite3.Connection, case: CaseDetail, readiness: Readiness) -> AssessmentGate:
+    """The F-13 gate. `can_open` says the case may be created now; `open` says it has been.
+    The blockers are keys, not sentences: the screens word them from the terminology."""
+    exceptions = open_exceptions(conn, case.id)
+    blockers: list[str] = []
+    if not readiness.gate_met:
+        blockers.append("review_gate")
+    if readiness.blocking_open:
+        blockers.append("blocking_items")
+    if exceptions:
+        blockers.append("open_exceptions")
+    return AssessmentGate(
+        open=bool(case.assessment_opened_at),
+        can_open=not blockers,
+        opened_at=case.assessment_opened_at,
+        opened_by=case.assessment_opened_by,
+        blockers=blockers,
+        score_pct=readiness.score_pct,
+        gate_pct=readiness.gate_pct,
+        blocking_open=readiness.blocking_open,
+        open_exceptions=exceptions,
+    )
 
 
 def compute(conn: sqlite3.Connection, root: Path, case: CaseDetail, *, running_job: str | None = None) -> CaseProgress:
@@ -116,6 +147,12 @@ def compute(conn: sqlite3.Connection, root: Path, case: CaseDetail, *, running_j
         else:
             complete.status = "needs_attention"
 
+    # The gate between intake and assessment (F-13). Cross-verification, policy checks and the
+    # outputs stay unstarted until a person creates the case, which they may do once the review
+    # gate is met, nothing blocking is open and no file is still an exception. The gate is
+    # written once: a late document moves the stage back, but the case stays created.
+    gate = _gate(conn, case, readiness)
+
     # 4. Cross-verification (F-18, F-19): starts once a check has compared
     # two sources; done when every failed check has a person's decision.
     # Checks waiting for a document count towards the total, not the start.
@@ -129,7 +166,7 @@ def compute(conn: sqlite3.Connection, root: Path, case: CaseDetail, *, running_j
         total=len(applicable),
         attention=open_findings,
     )
-    if applicable and docs.status != "not_started":
+    if gate.open and applicable and docs.status != "not_started":
         if "in_progress" in (docs.status, extraction.status):
             cross.status = "in_progress"
         else:
@@ -179,9 +216,15 @@ def compute(conn: sqlite3.Connection, root: Path, case: CaseDetail, *, running_j
         policy_stage,
         outputs,
     ]
+    if not gate.open:
+        # Nothing of the assessment has started, so it reports no counts rather than
+        # the figures of a run that the screens will not let anyone open.
+        for locked in (cross, policy_stage, outputs):
+            locked.status = "not_started"
+            locked.done = locked.total = locked.attention = 0
     stage: Stage = "Intake"
     if submitted:
         # Completed needs the comparison with RBL's record (F-25, §7), which is
         # not built: a case with every stage done stays at Outputs.
         stage = next((_STAGE_OF[s.key] for s in stages if s.status != "done"), "Outputs")
-    return CaseProgress(case_id=case_id, stage=stage, stages=stages)
+    return CaseProgress(case_id=case_id, stage=stage, stages=stages, gate=gate)

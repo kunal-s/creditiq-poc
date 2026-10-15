@@ -26,6 +26,20 @@ export function useProposeCase() {
   return useMutation({ mutationFn: (body: ProposalRequest) => api.proposeCase(body) });
 }
 
+/** F-13: create the case, opening cross-verification, the policy checks and the outputs.
+ * Everything shown for the case is stale afterwards, so the whole case is refreshed. */
+export function useOpenAssessment(caseId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.openAssessment(caseId),
+    onSuccess: () =>
+      client.invalidateQueries({
+        predicate: (q) =>
+          q.queryKey[0] === "cases" && (q.queryKey.length === 1 || q.queryKey[1] === caseId),
+      }),
+  });
+}
+
 /** F-04.7: create the case once the RM has confirmed it. */
 export function useCreateCase() {
   const client = useQueryClient();

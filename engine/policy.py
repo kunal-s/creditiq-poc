@@ -24,7 +24,7 @@ from pathlib import Path
 from . import completeness, facts as facts_module, statements
 from .configstore import reader
 from .configstore.schema import PolicyNorm, PolicyRatio, unsupported_nodes
-from .contracts import (CaseDetail, Evidence, FacilityFact, NormInput, NormResult, Obligation, PolicyAssessment,
+from .contracts import (CaseDetail, Evidence, FacilityFact, NormComponent, NormInput, NormResult, Obligation, PolicyAssessment,
                         PolicyCounts, PolicyGroup)
 from .util import parse_date
 
@@ -56,6 +56,11 @@ INPUT_LABELS = {
     "inventories": "Inventories",
     "trade_receivables": "Trade receivables",
     "trade_payables": "Trade payables",
+    # Lines that appear only inside a derived figure's breakdown (F-20.2).
+    "cash_and_bank_balances": "Cash and bank balances",
+    "short_term_loans_and_advances": "Short-term loans and advances",
+    "other_current_liabilities": "Other current liabilities",
+    "short_term_provisions": "Short-term provisions",
     "current_assets": "Current assets",
     "current_liabilities": "Current liabilities",
     "amount_requested": "Amount requested",
@@ -76,12 +81,13 @@ class Inputs:
     period: str | None = None
 
     def put(self, name: str, value: float | None, evidence: list[Evidence] | None = None, manual: bool = False,
-            pending: bool = False, basis: str = "document", refs: list[str] | None = None) -> None:
+            pending: bool = False, basis: str = "document", refs: list[str] | None = None,
+            components: list[NormComponent] | None = None) -> None:
         if value is None:
             return
         self.values[name] = NormInput(name=name, label=INPUT_LABELS[name], value=float(value), evidence=evidence or [],
                                       relies_on_manual=manual, awaiting_review=pending, basis=basis,  # type: ignore[arg-type]
-                                      refs=refs or [])
+                                      refs=refs or [], components=components or [])
 
 
 def number(v: facts_module.Value | None) -> float | None:
@@ -177,7 +183,14 @@ def gather(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> Inputs:
         for name in FINANCIAL_INPUTS:
             line = next((c[name] for c in copies if name in c), None)
             if line:
-                inputs.put(name, line.value, line.evidence, line.manual, pending=line.pending)
+                # A derived figure (net worth, current assets) carries the lines it was summed
+                # from, so the screen can show the arithmetic rather than only the total.
+                inputs.put(name, line.value, line.evidence, line.manual, pending=line.pending,
+                           components=[
+                               NormComponent(label=INPUT_LABELS.get(part.name, part.name), sign=part.sign,
+                                             value=part.value, evidence=part.evidence)
+                               for part in line.parts
+                           ])
 
     # The amount asked for: the case record, citing the sourcing message where it came from.
     requested = facts.requested_amount
@@ -365,7 +378,8 @@ def evaluate(norm: PolicyNorm, ratio: PolicyRatio | None, case: CaseDetail, inpu
     result = NormResult(
         id=norm.id, family=norm.family, label=label, formula=words(norm.expression),
         definition=ratio.formula if ratio else None, source=norm.source or (ratio.source if ratio else None),
-        required=required, unit=unit, outcome="not_applicable", category=norm.category,
+        required=required, comparator=kind, threshold_text=unit_text(threshold, unit),
+        unit=unit, outcome="not_applicable", category=norm.category,
         category_label=categories.get(norm.category, norm.category), note=norm.note or (ratio.note if ratio else None),
         provisional=status == "provisional",
     )

@@ -18,49 +18,211 @@ version, diff), the checklist deriver, identifier validators and the
 excluded-terms sweep. Everything else is built feature by feature from the
 FRD.
 
-## Running the app
+## Requirements
 
-Three processes: the document-processing service (port 3102), the Python engine service (port 8010) and the React frontend.
+| Tool | Version | Note |
+|---|---|---|
+| Node | >= 22.12 | A system Node is usually too old or too new; use the nvm install (`nvm use 22`). npm only, there is no bun. |
+| Python | 3.12 exactly | Both lock files are compiled for 3.12 with hashes. `python3` on this machine may be newer, so call `python3.12` explicitly. |
+| poppler-utils, Tesseract 5 | — | Already installed; needed only for scanned documents. |
 
-**One-time setup** (inside WSL, as the repository owner)
+## One-time setup
+
+Run every command from the repository root, inside WSL, as the repository
+owner. Each block is independent, so a failed step can be repeated on its own.
+
+**1. Frontend dependencies**
 
 ```sh
-# Node 22 from nvm (the system Node is too old)
 source ~/.nvm/nvm.sh && nvm use 22
 npm install
+```
 
-python3 -m venv .venv
-.venv/bin/pip install pip-tools
+**2. The engine's virtual environment**
+
+```sh
+python3.12 -m venv .venv
+.venv/bin/pip install --upgrade pip pip-tools
 .venv/bin/pip-sync requirements.txt
+```
 
-# The document-processing service has its own Python 3.12 environment
-(cd services/ingestion && python3.12 -m venv .venv && .venv/bin/pip install -r requirements.txt)
-# (scanned documents also need: .venv/bin/pip install -r requirements-ocr.txt)
+**3. The document-processing service's own virtual environment**
 
-# Publish the authored configuration, the engine's and the service's, into the data root
-# (once, and after every change under config/)
+```sh
+python3.12 -m venv services/ingestion/.venv
+services/ingestion/.venv/bin/pip install -r services/ingestion/requirements.txt
+```
+
+Scanned documents additionally need the OCR extras (a large download, skip it
+until you need them):
+
+```sh
+services/ingestion/.venv/bin/pip install -r services/ingestion/requirements-ocr.txt
+```
+
+**4. The local workflow area**
+
+`workflow/` is git-ignored and holds the data root, the audit ledger and the
+private term list, so a fresh clone has to create it (CLAUDE.md rule 3).
+
+```sh
+mkdir -p workflow/data/cases workflow/data/audit workflow/private
+chmod 700 workflow/data/cases workflow/private
+```
+
+`npm run check:terms` reads `workflow/private/stakeholder-names.txt` and fails
+if the file is absent. Create it, one term per line; `#` starts a comment. An
+empty list makes the sweep pass trivially, so paste the real list in before
+relying on it:
+
+```sh
+printf '# Private excluded-terms list: one term per line.\n' > workflow/private/stakeholder-names.txt
+chmod 600 workflow/private/stakeholder-names.txt
+```
+
+**5. Publish the authored configuration**
+
+Once, and again after every change under `config/`. Nothing works before this:
+both services read published configuration only.
+
+```sh
 npm run config:publish -- "<your name>"
 ```
 
-**Start both**
+**6. A browser for the screen tests** (only if you will run `npm run test:e2e`)
 
 ```sh
-./scripts/start.sh        # service and engine in the background, frontend on :4173
+npx playwright install chromium
 ```
 
-or in separate terminals: the service (`cd services/ingestion && PYTHONPATH=. .venv/bin/python -m ingestion.cli serve`), `npm run dev:api` and `npm run dev`. The service answers from recorded model calls unless `INGEST_MODEL_MODE` is `record` or `live`. A document nobody has processed before has no recording, so its model steps fail in the default mode. `INGEST_MODEL_MODE=record ./scripts/start.sh` calls the model once for such a document, stores the answer and replays it afterwards. It needs `OPENAI_API_KEY`, from the environment, `.env.local` or `workflow/private/openai.env`, and stops with a message if neither has a value. The model is only a fallback: most documents are read by the rules alone.
+## Running the app
 
-**Sign in** with any user in `config/roles.yaml` (one per role: RM, Credit
-Analyst, Credit Manager) and the shared password in that file.
+Three processes. Give each one its own terminal, and `source ~/.nvm/nvm.sh &&
+nvm use 22` in the one that runs npm.
+
+**Terminal 1 — the document-processing service, on :3102**
+
+`CREDITIQ_DATA_ROOT` is required here: this service's own default is `./data`
+relative to its own folder, which would put its database outside the shared
+data root.
+
+```sh
+cd services/ingestion
+CREDITIQ_DATA_ROOT="$PWD/../../workflow/data" PYTHONPATH=. .venv/bin/python -m ingestion.cli serve
+```
+
+**Terminal 2 — the engine service, on :8010**
+
+```sh
+npm run dev:api
+```
+
+That reloads on changes under `engine/` and `config/`. The data root defaults
+to `workflow/data` and the service address to `http://127.0.0.1:3102`
+(`config/app.yaml`), so no variables are needed. The explicit form:
+
+```sh
+CREDITIQ_DATA_ROOT="$PWD/workflow/data" \
+CREDITIQ_INGEST_URL=http://127.0.0.1:3102 \
+.venv/bin/uvicorn engine.api:app --reload --reload-dir engine --reload-dir config --port 8010
+```
+
+**Terminal 3 — the frontend, on :4173**
+
+```sh
+VITE_API_BASE_URL=http://localhost:8010 npm run dev -- --port 4173 --strictPort
+```
+
+Then open <http://localhost:4173> and **sign in** with any user in
+`config/roles.yaml` and the password at `auth.demoPassword` in that file. One
+user per role:
+
+| Role | Email |
+|---|---|
+| Relationship Manager | `arjun.deshpande@rblbank.com` |
+| Credit Analyst | `ananya.krishnan@rblbank.com` |
+| Credit Manager | `meenal.kulkarni@rblbank.com` |
+
+**Check the backends are up** before blaming the screens:
+
+```sh
+curl http://127.0.0.1:3102/v1/health   # {"ok":true,...,"model_mode":"replay","versions":["<hash>"]}
+curl http://localhost:8010/api/health  # {"status":"ok","config_version":"<hash>"}
+```
+
+Both must report the same configuration hash that `npm run config:publish`
+printed. An empty `versions` list means step 5 has not been run.
+
+`./scripts/start.sh` runs all three at once; the commands above are what it
+does, one process at a time, which is what you want when one of them fails.
+
+### Model calls
+
+The document-processing service answers from recorded model calls
+(`INGEST_MODEL_MODE=replay`, the default). A document nobody has processed
+before has no recording, so its model steps fail in that mode. To call the
+model once, store the answer and replay it afterwards:
+
+```sh
+cd services/ingestion
+INGEST_MODEL_MODE=record CREDITIQ_DATA_ROOT="$PWD/../../workflow/data" \
+  PYTHONPATH=. .venv/bin/python -m ingestion.cli serve
+```
+
+That needs `OPENAI_API_KEY`, from the environment, `.env.local` or
+`workflow/private/openai.env`. `live` calls without storing. The model is only
+a fallback: most documents are read by the rules alone.
+
+### Environment variables
+
+| Variable | Default | What it does |
+|---|---|---|
+| `CREDITIQ_DATA_ROOT` | `<repo>/workflow/data` | The data root. **Pass it to the document-processing service explicitly** (see above). |
+| `VITE_API_BASE_URL` | `http://localhost:8010` | Where the frontend looks for the engine. |
+| `CREDITIQ_INGEST_URL` | `http://127.0.0.1:3102` | Where the engine looks for the document-processing service. |
+| `INGEST_PORT` | `3102` | The document-processing service's port. |
+| `INGEST_MODEL_MODE` | `replay` | `replay`, `record` or `live`. |
+| `E2E_PORT` | `5173` | The dev-server port Playwright uses. |
 
 ## Checks
 
 ```sh
-npm run check     # contracts, typecheck, eslint, pytest (engine and service), import contracts, excluded terms, build, e2e
+npm run check
 ```
 
-Individually: `npm run typecheck`, `npm run lint`, `npm run test:py`,
-`npm run lint:imports`, `npm run check:terms`, `npm run build`.
+That is contracts, typecheck, eslint, pytest (engine and service), import
+contracts, the excluded-terms sweep, the production build and the screen
+tests, in that order. Individually:
+
+```sh
+npm run check:contracts    # regenerate the OpenAPI contract and fail on a diff
+npm run typecheck          # tsc --noEmit
+npm run lint               # eslint (7 warnings are expected, 0 errors)
+npm run test:py            # engine tests
+npm run test:ingestion     # document-processing service tests
+npm run lint:imports       # the engine's import contracts
+npm run lint:ingestion     # the service's import contracts, and its config
+npm run check:terms        # the excluded-terms sweep
+npm run build              # production build
+npm run test:e2e           # Playwright screen tests
+```
+
+A green run on a fresh clone is **633 passed, 1 skipped** (engine), **99
+passed, 98 skipped** (service) and **120 passed** (screens).
+
+Two things to know about that:
+
+- **The 98 skipped service tests** need the reference document corpus at
+  `workflow/docs/reference/fixtures/southgate` (or `INGEST_FIXTURE_DOCS`).
+  It is git-ignored source material and is not in a fresh clone, so those
+  tests skip. Supply the corpus and they run.
+- **`npm run test:e2e` wants port 5173** and reuses whatever is already
+  listening on it, so another project's dev server there would silently be
+  tested instead. If 5173 is taken, pick another port:
+
+  ```sh
+  E2E_PORT=5399 npm run test:e2e
+  ```
 
 ## Structure
 
@@ -74,6 +236,3 @@ Individually: `npm run typecheck`, `npm run lint`, `npm run test:py`,
 | `config/` | Authored configuration, published as immutable versions to the data root; `config/ingestion/` is the document-processing service's |
 | `tests/` | Python tests |
 | `workflow/` | Local only, never committed: private notes, keys and the data root (`workflow/data`: `cases/` at mode 700, `config_store/`, `audit/`). Never run `git clean -x` or `-X` |
-
-`CREDITIQ_DATA_ROOT` overrides the data root; `VITE_API_BASE_URL` points the
-frontend at a different engine address.

@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { AssessmentStage } from "@/components/case/gate/AssessmentStage";
 import { CamView, PdNoteView, SpreadView } from "@/components/case/Outputs";
 import { TabSection } from "@/components/case/TabSection";
 import { t } from "@/config/terminology";
@@ -32,41 +33,43 @@ function OutputsTab() {
   const view: View = Route.useSearch().view ?? "spread";
   const section = SECTION[view];
   return (
-    <div className="pb-10">
-      <nav className="flex gap-1 px-4 pt-4 sm:px-6" aria-label={t("caseTab.outputs")}>
-        {VIEWS.map((v) => (
-          <Link
-            key={v}
-            to="/appraisals/$caseId/outputs"
-            params={{ caseId }}
-            search={{ view: v }}
-            data-testid={`view-${v}`}
-            className={cn(
-              "rounded px-2.5 py-1 text-[12px] font-medium transition-colors",
-              v === view
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-muted",
+    <AssessmentStage caseId={caseId}>
+      <div className="pb-10">
+        <nav className="flex gap-1 px-4 pt-4 sm:px-6" aria-label={t("caseTab.outputs")}>
+          {VIEWS.map((v) => (
+            <Link
+              key={v}
+              to="/appraisals/$caseId/outputs"
+              params={{ caseId }}
+              search={{ view: v }}
+              data-testid={`view-${v}`}
+              className={cn(
+                "rounded px-2.5 py-1 text-[12px] font-medium transition-colors",
+                v === view
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted",
+              )}
+            >
+              {t(`outputs.view.${v}`)}
+            </Link>
+          ))}
+        </nav>
+        <TabSection
+          id={view}
+          title={t(`page.${section.page}.title`)}
+          purpose={t(`page.${section.page}.purpose`)}
+        >
+          <div className="px-4 py-4 sm:px-6">
+            {view === "spread" ? (
+              <SpreadView caseId={caseId} />
+            ) : view === "cam" ? (
+              <CamView caseId={caseId} />
+            ) : (
+              <PdNoteView caseId={caseId} />
             )}
-          >
-            {t(`outputs.view.${v}`)}
-          </Link>
-        ))}
-      </nav>
-      <TabSection
-        id={view}
-        title={t(`page.${section.page}.title`)}
-        purpose={t(`page.${section.page}.purpose`)}
-      >
-        <div className="px-4 py-4 sm:px-6">
-          {view === "spread" ? (
-            <SpreadView caseId={caseId} />
-          ) : view === "cam" ? (
-            <CamView caseId={caseId} />
-          ) : (
-            <PdNoteView caseId={caseId} />
-          )}
-        </div>
-      </TabSection>
-    </div>
+          </div>
+        </TabSection>
+      </div>
+    </AssessmentStage>
   );
 }

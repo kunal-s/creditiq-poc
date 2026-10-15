@@ -319,4 +319,46 @@ def get_case(conn: sqlite3.Connection, case_id: str) -> CaseDetail | None:
         created_by=row["created_by"],
         config_version=row["config_version"],
         header={k: HeaderField(**v) for k, v in json.loads(row["header"]).items()},
+        assessment_opened_at=row["assessment_opened_at"],
+        assessment_opened_by=row["assessment_opened_by"],
     )
+
+
+class GateNotMet(RuntimeError):
+    """The assessment gate is shut: completeness is not satisfied yet (F-13)."""
+
+    def __init__(self, blockers: list[str]) -> None:
+        super().__init__("assessment gate not met")
+        self.blockers = blockers
+
+
+def open_assessment(conn: sqlite3.Connection, root: Path, case: CaseDetail, actor: str) -> CaseDetail:
+    """Create the case: open cross-verification, policy checks and the outputs (F-13).
+
+    Refuses while the review gate is unmet, a blocking checklist item is open or a file is
+    still an exception. Writing is idempotent: a case already created is returned unchanged,
+    so a second press neither moves the timestamp nor logs again.
+    """
+    from . import progress as progress_module
+
+    if case.assessment_opened_at:
+        return case
+    gate = progress_module.compute(conn, root, case).gate
+    if gate is None or not gate.can_open:
+        raise GateNotMet(list(gate.blockers) if gate else ["review_gate"])
+    at = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "+00:00")
+    with transaction(conn):
+        conn.execute(
+            "UPDATE cases SET assessment_opened_at = ?, assessment_opened_by = ?"
+            " WHERE id = ? AND assessment_opened_at IS NULL",
+            (at, actor, case.id),
+        )
+        log_decision(
+            conn,
+            at=at,
+            actor=actor,
+            action="case.assessment_opened",
+            case_id=case.id,
+            detail=json.dumps({"score_pct": gate.score_pct, "gate_pct": gate.gate_pct}),
+        )
+    return get_case(conn, case.id) or case

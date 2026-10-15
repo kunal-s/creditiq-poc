@@ -152,6 +152,16 @@ def _case_for(conn: sqlite3.Connection, case_id: str, user: dict) -> CaseDetail:
     return case
 
 
+def _assessed_case(conn: sqlite3.Connection, case_id: str, user: dict) -> CaseDetail:
+    """The case, refused with 409 while the assessment gate is shut (F-13). The screens
+    lock these tabs; this is the same rule on the server, so the data is not reachable
+    by asking for it directly."""
+    case = _case_for(conn, case_id, user)
+    if not case.assessment_opened_at:
+        raise HTTPException(status_code=409, detail="assessment_not_open")
+    return case
+
+
 # --- Service ---
 
 
@@ -244,6 +254,29 @@ def case_progress(
     case = _case_for(conn, case_id, user)
     try:
         return progress.compute(conn, data_root(), case)
+    except configstore_reader.NoPublishedConfig as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+
+
+@app.post("/api/cases/{case_id}/assessment", response_model=CaseDetail)
+def open_assessment(
+    case_id: str,
+    user: dict = Depends(require("review.decide")),
+    conn: sqlite3.Connection = Depends(get_conn),
+):
+    """F-13: create the case, opening cross-verification, policy checks and the outputs.
+
+    `review.decide`, because it is the decision that intake is complete: the analyst and the
+    credit manager hold it, the RM does not.
+
+    Refused with 409 while completeness is not satisfied; the body names the blockers so the
+    screen can say which one. Pressing it twice is harmless: the case is returned unchanged.
+    """
+    case = _case_for(conn, case_id, user)
+    try:
+        return cases.open_assessment(conn, data_root(), case, user["id"])
+    except cases.GateNotMet as e:
+        raise HTTPException(status_code=409, detail={"error": "assessment_not_open", "blockers": e.blockers}) from e
     except configstore_reader.NoPublishedConfig as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
 
@@ -341,7 +374,7 @@ def case_policy(
     case_id: str, user: dict = Depends(require("finding.read")), conn: sqlite3.Connection = Depends(get_conn)
 ):
     """F-20: every norm with its required and actual value, source figures and outcome."""
-    case = _case_for(conn, case_id, user)
+    case = _assessed_case(conn, case_id, user)
     try:
         return policy.assess(conn, data_root(), case)
     except configstore_reader.NoPublishedConfig as e:
@@ -354,7 +387,7 @@ def case_cross_verification(
 ):
     """F-19: the cross-verification board: every finding of the latest run, the discrepancies ranked
     by credit impact with their sources side by side, and whether submission is blocked."""
-    case = _case_for(conn, case_id, user)
+    case = _assessed_case(conn, case_id, user)
     try:
         return xv.view(conn, data_root(), case)
     except configstore_reader.NoPublishedConfig as e:
@@ -462,7 +495,7 @@ def case_spread(
     case_id: str, user: dict = Depends(require("output.read")), conn: sqlite3.Connection = Depends(get_conn)
 ):
     """F-22: the spread (interim layout) with ratios and the working-capital assessment."""
-    case = _case_for(conn, case_id, user)
+    case = _assessed_case(conn, case_id, user)
     try:
         return spread.build(conn, data_root(), case)
     except configstore_reader.NoPublishedConfig as e:
@@ -474,7 +507,7 @@ def case_pd_note(
     case_id: str, user: dict = Depends(require("output.read")), conn: sqlite3.Connection = Depends(get_conn)
 ):
     """F-24: questions for the personal discussion, ranked, each tied to its source."""
-    case = _case_for(conn, case_id, user)
+    case = _assessed_case(conn, case_id, user)
     try:
         return pd_note.build(conn, data_root(), case)
     except configstore_reader.NoPublishedConfig as e:
@@ -486,7 +519,7 @@ def case_cam(
     case_id: str, user: dict = Depends(require("output.read")), conn: sqlite3.Connection = Depends(get_conn)
 ):
     """F-23: the draft CAM, every figure cited, ending in the structured summary."""
-    case = _case_for(conn, case_id, user)
+    case = _assessed_case(conn, case_id, user)
     try:
         return cam.build(conn, data_root(), case)
     except configstore_reader.NoPublishedConfig as e:

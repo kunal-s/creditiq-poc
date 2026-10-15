@@ -67,6 +67,7 @@ from .appraisal import (
 from .case import (
     CaseCreate,
     CaseDeleteRequest,
+    AssessmentGate,
     CaseDetail,
     CaseProgress,
     CaseSummary,
@@ -98,7 +99,16 @@ from .outputs import (
     Working,
     WorkingCapitalAssessment,
 )
-from .policy import NormFamily, NormInput, NormOutcome, NormResult, PolicyAssessment, PolicyCounts, PolicyGroup
+from .policy import (
+    NormComponent,
+    NormFamily,
+    NormInput,
+    NormOutcome,
+    NormResult,
+    PolicyAssessment,
+    PolicyCounts,
+    PolicyGroup,
+)
 from .facts import (
     AccountCredits,
     AccountMonth,
@@ -190,6 +200,7 @@ __all__ = [
     "SpreadRow",
     "Working",
     "WorkingCapitalAssessment",
+    "NormComponent",
     "NormInput",
     "NormOutcome",
     "NormResult",
@@ -248,6 +259,7 @@ __all__ = [
     "Span",
     "StrippedSpan",
     "UploadResult",
+    "AssessmentGate",
     "CaseDetail",
     "CaseSummary",
     "ChecklistItemState",

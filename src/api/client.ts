@@ -154,6 +154,9 @@ export const api = {
     }),
   createCase: (body: CaseCreate) =>
     request<CaseDetail>("/api/cases", { method: "POST", body: JSON.stringify(body) }),
+  /** F-13: create the case, opening cross-verification, policy checks and the outputs. */
+  openAssessment: (id: string) =>
+    request<CaseDetail>(`/api/cases/${q(id)}/assessment`, { method: "POST" }),
   deleteCase: (id: string, reason: string) =>
     request<undefined>(`/api/cases/${q(id)}`, {
       method: "DELETE",

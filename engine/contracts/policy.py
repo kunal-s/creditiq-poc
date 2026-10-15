@@ -9,6 +9,19 @@ from pydantic import BaseModel, Field
 from .common import Evidence
 
 
+class NormComponent(BaseModel):
+    """One line a derived figure was summed from, with the sign it carried (F-20.2).
+
+    `net worth = share capital + reserves and surplus` shows as two components, each with the
+    figure read from the statement and the page it was read from."""
+
+    label: str
+    sign: int
+    """+1 added, -1 subtracted."""
+    value: float
+    evidence: list[Evidence] = Field(default_factory=list)
+
+
 class NormInput(BaseModel):
     """One source figure a norm used, with where it came from (F-20.2)."""
 
@@ -24,6 +37,9 @@ class NormInput(BaseModel):
     statements that show no instalments, or no term loan requested."""
     refs: list[str] = Field(default_factory=list)
     """basis checklist: the open blocking checklist item ids."""
+    components: list[NormComponent] = Field(default_factory=list)
+    """For a figure derived by summing statement lines, the lines it came from. Empty for a
+    figure the statement prints itself."""
 
 
 NormOutcome = Literal["pass", "deviation", "cannot_evaluate", "not_applicable"]
@@ -37,6 +53,11 @@ class NormResult(BaseModel):
     """The expression as configured, in words where the ratio gives them."""
     required: str
     """e.g. "at least 1.20x"."""
+    comparator: Literal["min", "max"] = "min"
+    """Which way the threshold runs, so the screens can write the test as a comparison:
+    min reads "actual >= threshold", max reads "actual <= threshold"."""
+    threshold_text: str | None = None
+    """The threshold on its own, formatted as the screens write a value ("1.20x")."""
     actual: float | None = None
     unit: str | None = None
     outcome: NormOutcome

@@ -7,6 +7,7 @@ import { useDocViewer } from "@/components/docviewer/DocViewer";
 import { t } from "@/config/terminology";
 import { actualText, inputLabel, inputValue, normElementId } from "@/domain/policy";
 import { cn } from "@/lib/utils";
+import { NormWorking } from "./NormWorking";
 import { OUTCOME_ICON, OUTCOME_TEXT } from "./styles";
 
 /** Where a figure with no document page comes from. */
@@ -138,22 +139,7 @@ export function NormRow({ caseId, norm }: { caseId: string; norm: NormResult }) 
       )}
       <div className="ml-6">
         <Details testId="norm-details">
-          <p className="text-[12px] text-muted-foreground">
-            <span className="font-medium text-foreground">{t("policy.howCalculated")}: </span>
-            {norm.formula}
-          </p>
-          {norm.definition && norm.definition !== norm.formula && (
-            <p className="text-[12px] text-muted-foreground" data-testid="norm-definition">
-              <span className="font-medium text-foreground">{t("policy.definition")}: </span>
-              {norm.definition}
-            </p>
-          )}
-          {norm.note && (
-            <p className="text-[12px] text-muted-foreground" data-testid="norm-note">
-              <span className="font-medium text-foreground">{t("policy.note")}: </span>
-              {norm.note}
-            </p>
-          )}
+          <NormWorking caseId={caseId} norm={norm} />
         </Details>
       </div>
     </li>

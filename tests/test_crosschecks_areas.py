@@ -64,6 +64,46 @@ def test_the_pan_within_a_gstin_is_compared_with_the_entity_pan(client, analyst,
     assert "(PAN within the GSTIN)" in odd["label"]
     # The PAN card and the return agree: theirs is the majority value, not highlighted.
     assert not next(s for s in f["sides"] if s["value"] == "AAACK1234F")["differs"]
+    assert f["explanation"] == ("The entity PAN differs between documents: AAACK1234F in the company PAN and income "
+                                "tax return; AAACX9999Q in the GSTR-3B (PAN within the GSTIN).")
+
+
+def test_a_document_that_prints_a_pan_is_named_once_for_the_pan_it_prints(client, analyst, published_data_root):
+    """The bureau report prints one PAN and a GSTIN that carries the entity's: the explanation names the
+    report once, for the PAN it prints, and the query asks about both values."""
+    case_id = _case(client, analyst, published_data_root)
+    add_doc(published_data_root, case_id, "company_pan", {"pan": "AAACK1234F"})
+    add_doc(published_data_root, case_id, "income_tax_return", {"pan": "AAACK1234F"})
+    add_doc(published_data_root, case_id, "commercial_bureau_report", {"pan": "AAACK9999Z", "gstin": "27AAACK1234F1Z0"})
+    [f] = _findings(client, analyst, published_data_root, case_id)["ID-01"]
+    assert f["outcome"] == "fail"
+    assert f["explanation"] == ("The entity PAN differs between documents: AAACK1234F in the company PAN and income "
+                                "tax return; AAACK9999Z in the commercial bureau report.")
+    assert f["query"] == ("Please confirm the entity's PAN; the documents show AAACK1234F in the company PAN and "
+                          "income tax return; AAACK9999Z in the commercial bureau report.")
+    # The comparison itself is unchanged: the PAN within the report's GSTIN sides with the majority.
+    majority = next(s for s in f["sides"] if s["value"] == "AAACK1234F")
+    assert "Commercial bureau report (PAN within the GSTIN)" in majority["label"] and not majority["differs"]
+
+
+def test_a_name_in_two_years_statements_names_each_year_and_asks_for_the_odd_one(client, analyst, published_data_root):
+    """ID-03: audited statements of two years read two names; each is named with its year, and the
+    query asks for the odd year's statements in the entity's name."""
+    root = published_data_root
+    case_id = _case(client, analyst, root)
+    add_doc(root, case_id, "certificate_of_incorporation", {"company_name": "Kestrel Tools Private Limited"})
+    audited(root, case_id, "2026-03-31")
+    audited(root, case_id, "2025-03-31", page=3, company_name="Kestrel Engineering Works Private Limited")
+    [f] = _findings(client, analyst, root, case_id)["ID-03"]
+    assert f["outcome"] == "fail"
+    assert f["explanation"] == (
+        "The legal name reads differently across documents: Kestrel Tools Private Limited in the certificate of "
+        "incorporation and audited financial statements for FY 2025-26; Kestrel Engineering Works Private Limited in "
+        "the audited financial statements for FY 2024-25.")
+    assert f["query"] == (
+        "Please provide the audited financial statements for FY 2024-25 in the name of Kestrel Tools Private Limited, "
+        "not Kestrel Engineering Works Private Limited, or, if the entity has changed its name, the fresh certificate "
+        "of incorporation issued on the change of name.")
 
 
 def test_a_banks_truncated_account_name_is_the_same_legal_name(client, analyst, published_data_root):
@@ -193,7 +233,7 @@ def test_gst_and_bank_are_compared_over_the_months_both_cover(client, analyst, p
     [f] = found["TO-05"]
     assert f["outcome"] == "fail" and f["area"] == "turnover" and f["scope"] == "Sep 2025 to Aug 2026"
     assert [s["value"] for s in f["sides"]] == [48_000_000, 33_600_000] and all(s["differs"] for s in f["sides"])
-    assert "30.0%" in f["explanation"] and f["tolerance"] == "10%"
+    assert "30.0%" in f["explanation"] and f["tolerance"] == "1%"
     assert len(f["detail"]["rows"]) == 12 and all(r["flagged"] for r in f["detail"]["rows"])
 
 
@@ -277,6 +317,7 @@ def test_a_declared_account_without_a_statement_is_flagged(client, analyst, publ
     bank(published_data_root, case_id, [], last4="1234")
     [f] = _findings(client, analyst, published_data_root, case_id)["BA-01"]
     assert f["outcome"] == "fail" and "·5678" in f["explanation"] and f["area"] == "accounts"
+    assert f["explanation"].startswith("Declared, but with no statement on file: ")
 
 
 def test_an_account_seen_in_transfers_without_a_statement_is_flagged(client, analyst, published_data_root):
@@ -356,7 +397,8 @@ def test_a_check_waits_for_a_value_under_review(client, analyst, published_data_
     doc = add_doc(published_data_root, case_id, "company_pan", {"pan": "AAACK1234F"}, pending={"pan"})
     add_doc(published_data_root, case_id, "income_tax_return", {"pan": "AAACK9876Q"})
     [f] = _findings(client, analyst, published_data_root, case_id)["ID-01"]
-    assert f["outcome"] == "incomplete" and f["explanation"].startswith("Waiting for review of Company PAN")
+    assert f["outcome"] == "incomplete"
+    assert f["explanation"] == "Waiting for review of the company PAN; confirm or correct the value to complete this check."
     assert next(s for s in f["sides"] if s["value"] == "AAACK1234F")["awaiting_review"]
     # Not raised to the review queue as a finding while it waits.
     review = client.get(f"/api/review?case_id={case_id}", headers=analyst).json()
@@ -369,6 +411,18 @@ def test_a_check_waits_for_a_value_under_review(client, analyst, published_data_
         conn.close()
     [f] = _findings(client, analyst, published_data_root, case_id)["ID-01"]
     assert f["outcome"] == "fail"
+
+
+def test_a_check_waiting_for_review_names_only_the_value_waiting(client, analyst, published_data_root):
+    """Three sources agree and one of them waits: the explanation names that one, not the side it is on."""
+    case_id = _case(client, analyst, published_data_root)
+    add_doc(published_data_root, case_id, "company_pan", {"pan": "AAACK1234F"})
+    add_doc(published_data_root, case_id, "income_tax_return", {"pan": "AAACK1234F"}, pending={"pan"})
+    gstr(published_data_root, case_id, "April 2025", 1_000_000)
+    [f] = _findings(client, analyst, published_data_root, case_id)["ID-01"]
+    assert f["outcome"] == "incomplete"
+    assert f["explanation"] == ("Waiting for review of the PAN read from the income tax return; confirm or correct the "
+                                "value to complete this check.")
 
 
 @pytest.mark.usefixtures("all_rules_enabled")

@@ -23,7 +23,7 @@ from itertools import combinations
 from typing import TYPE_CHECKING
 
 from ..contracts import Finding, FindingDetailRow, FindingSide, GapLeg, SourceColumn, XvFact, XvHighlight
-from ..crosschecks import BUREAU, CASE_RECORD, DECLARATION, NO, SANCTION, _variance
+from ..crosschecks import BUREAU, CASE_RECORD, DECLARATION, NO, SANCTION, _same_lender, _variance
 from ..util import display_date, parse_period, ranges_label
 from . import (
     builds,
@@ -317,8 +317,17 @@ def _instalments_card(ctx: Context, rule: CrossCheckRule, finding: Finding) -> N
         lenders = [o.lender for o in ctx.facts.obligations]
         if not finding.missing and not waits_for_review(finding):
             # Nothing declares the existing facilities: the declaration, or a word on each lender, completes it.
-            finding.request = (document(ctx.type_names[DECLARATION])
-                               + (f" (or a written confirmation of the facility behind {join(lenders)})" if lenders else ""))
+            # A lender whose sanction letter is on file needs no word of its own; when every lender has one,
+            # the declaration is asked for in full, signed.
+            sanctioned = [f.lender for f in ctx.facts.facilities if f.source == SANCTION]
+            unconfirmed = [lender for lender in lenders if not any(_same_lender(lender, s, ctx) for s in sanctioned)]
+            if lenders and not unconfirmed:
+                finding.request = (f"{document(ctx.type_names[DECLARATION])}, signed, giving every existing facility "
+                                   "(lender, limit, outstanding, instalment)")
+            else:
+                finding.request = (document(ctx.type_names[DECLARATION])
+                                   + (f" (or a written confirmation of the facility behind {join(unconfirmed)})"
+                                      if unconfirmed else ""))
         return
     if finding.outcome != "fail" or finding.detail is None:
         return

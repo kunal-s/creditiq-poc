@@ -123,7 +123,7 @@ def test_a_first_name_given_only_as_an_initial_is_found_where_similarity_misses_
     _memorandum(root, case_id, "Tarun Velankar")
     f = _id09(client, analyst, root, case_id)
     assert f["outcome"] == "fail"
-    assert "first name only an initial in KYC received" in f["explanation"]
+    assert "first name only an initial in the KYC received" in f["explanation"]
     kyc = next(r for r in f["detail"]["rows"] if r["cells"][0] == "KYC received")
     assert (kyc["cells"][2], kyc["flagged_cells"]) == ("Initial only", [2])
 
@@ -137,7 +137,7 @@ def test_a_surname_written_differently_is_named_with_its_spelling(client, analys
         "related_parties": [{"name": "Ishita Barvey", "relationship": "Director", "pan": "ABCPB5678M"}]})
     f = _id09(client, analyst, root, case_id)
     assert f["outcome"] == "fail"
-    assert "Ishita Barvey: last name different (Barve) in KYC received" in f["explanation"]
+    assert "Ishita Barvey: last name different (Barve) in the KYC received" in f["explanation"]
 
 
 def test_the_sourcing_message_is_not_held_to_full_names(client, analyst, published_data_root):
@@ -167,3 +167,48 @@ def test_the_board_counts_nine_identity_rules(client, analyst, published_data_ro
     _refresh(root, case_id)
     board = client.get(f"/api/cases/{case_id}/cross-verification", headers=analyst).json()
     assert next(a for a in board["areas"] if a["area"] == "identity")["rules"] == 9
+
+
+# --- One person or two: similar names listed in one document (ID-04, ID-06, ID-08, ID-09) ---
+
+
+def _board_findings(client: TestClient, analyst: dict, root: Path, case_id: str) -> dict:
+    _refresh(root, case_id)
+    board = client.get(f"/api/cases/{case_id}/cross-verification", headers=analyst).json()
+    return {i["finding"]["rule_id"]: i["finding"] for i in board["items"]}
+
+
+def test_two_directors_with_similar_names_in_one_memorandum_are_two_people(client, analyst, published_data_root):
+    root = published_data_root
+    case_id = make_case(client, analyst, root, borrower="Kestrel Tools Pvt Ltd",
+                        header={"promoters": {"value": "Varun Velankar; Tarun Velankar", "source": "person"}})
+    _kyc(root, case_id, "Tarun Velankar")
+    _memorandum(root, case_id, "Tarun Velankar", "Varun Velankar")
+    found = _board_findings(client, analyst, root, case_id)
+    # The names are alike (0.93 against name_match 0.90), but the memorandum and the message each list
+    # both: the one KYC on file is Tarun's, and Varun's is missing.
+    promoters = found["ID-04"]
+    assert promoters["outcome"] == "fail"
+    assert promoters["explanation"] == "The promoters named differ between sources: Varun Velankar has no KYC on file."
+    assert [(r["label"], r["cells"], r["flagged"]) for r in promoters["detail"]["rows"]] == [
+        ("Tarun Velankar", ["✓", "✓"], False), ("Varun Velankar", ["—", "✓"], True)]
+    # The KYC accounts for Tarun alone; the message names both directors.
+    assert [(r["label"], r["cells"]) for r in found["ID-08"]["detail"]["rows"]] == [
+        ("Tarun Velankar", ["✓", "✓"]), ("Varun Velankar", ["—", "✓"])]
+    # Neither name is held part by part against the other.
+    assert found["ID-09"]["outcome"] == "pass"
+
+
+def test_each_kyc_is_held_against_its_own_director_in_the_memorandum(client, analyst, published_data_root):
+    root = published_data_root
+    case_id = _case(client, analyst, root)
+    _kyc(root, case_id, "Varun Velankar", din="07000002")
+    _kyc(root, case_id, "Tarun Velankar", din="01234567")
+    add_doc(root, case_id, "memorandum_articles_of_association", {
+        "company_name": "Kestrel Tools Private Limited", "cin": "U28999MH2015PTC123456",
+        "directors": [{"name": "Tarun Velankar", "din": "01234567"}, {"name": "Varun Velankar", "din": "07000002"}]})
+    f = _board_findings(client, analyst, root, case_id)["ID-06"]
+    # Varun's KYC is compared with Varun's line of the memorandum, not with Tarun's, which comes first.
+    assert (f["outcome"], f["explanation"]) == ("pass", "Identifiers agree for 2 director(s).")
+    assert sorted((r["label"], r["cells"][:2]) for r in f["detail"]["rows"]) == [
+        ("Tarun Velankar", ["01234567", "01234567"]), ("Varun Velankar", ["07000002", "07000002"])]

@@ -17,6 +17,12 @@ python-multipart
 pypdfium2
 pillow
 
+# The draft CAM and PD note as downloads (F-23.5, F-24.3): Word and PDF.
+# python-docx: MIT (lxml: BSD-3-Clause). reportlab: BSD (charset-normalizer: MIT,
+# pillow above). All permissive (CLAUDE.md rule 10).
+python-docx
+reportlab
+
 # Tooling: import contract and tests (httpx drives FastAPI's TestClient).
 import-linter
 pytest

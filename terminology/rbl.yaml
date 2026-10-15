@@ -32,6 +32,7 @@ nav:
   audit: Audit trail
   admin:
     configuration: Configuration
+    settings: Settings
     policy: Policy norms
     checklist: Checklist
     documentTypes: Document types
@@ -87,25 +88,88 @@ outputs:
       profit_and_loss: Profit and loss
       balance_sheet: Balance sheet
       ratios: Ratios
+  # The draft CAM and the PD note: their header lines, downloads, citations and sources.
+  header:
+    case: "Appraisal {id}"
+    asOf: "Drafted from the data on file as of {date}"
+    config: "Configuration: {version}"
+    run: "Cross-check run {id}"
+  download:
+    docx: Download Word
+    pdf: Download PDF
+    preparing: Preparing…
+    failed: The file could not be downloaded
+  # The pages a statement rests on, marked as the downloads mark them: "5 p.1", "11 pp.3-5", and
+  # "13-23 p.1" for three or more sources in a row cited at the same pages.
+  citation:
+    page: "p{page}"
+    onePage: "p.{pages}"
+    manyPages: "pp.{pages}"
+    source: "{n} {at}"
+    range: "{first}-{last} {at}"
+    title: "Source {n}: {label}, page {pages}"
+    titlePages: "Source {n}: {label}, pages {pages}"
+    rangeTitle: "Sources {first} to {last}, {at}"
+  sources:
+    title: Sources
+    number: "No."
+    document: Document
+    file: File
+    pages: Pages
+  # A cross-check finding's status in the memo and the note.
+  status:
+    open: Open
+    accepted_as_valid: Accepted as valid
+    accepted: Accepted as valid
+    escalated: Escalated
+    not_valid: Not valid
   cam:
     eyebrow: Draft for credit
-    title: Credit Approval Memo
     interim: Sections follow an interim list until RBL's CAM template is available. Every figure links to the page it comes from.
     recommendationEmpty: For credit to complete.
     summary:
       finding: "Findings ({n})"
+      findingNone: "Findings (0): no discrepancy in cross-check run {run}"
+      findingNoRun: "Findings (0): the cross-checks have not run on this case yet"
+      incomplete: "Checks not completed ({n})"
+      request: "What would complete it:"
       deviation: "Deviations from policy ({n})"
       unassessed: "Norms not assessed ({n})"
       query: "Open queries ({n})"
+      queryList: Open the query list
+    signOff:
+      name: Name
+      designation: Designation
+      signature: Signature
+      date: Date
   pd:
-    title: Questions for the personal discussion
-    subtitle: "{n} question(s), most serious first, each tied to its finding and pages."
+    eyebrow: For the personal discussion
+    subtitleOne: "1 question, tied to the finding, norm, gap or CAM observation it comes from."
+    subtitleMany: "{n} questions by topic, the most serious first in each, each tied to the finding, norm, gap or CAM observation it comes from."
     emptyTitle: No questions yet
-    emptyDescription: Questions come from cross-check findings, policy deviations and open gaps.
+    emptyDescription: Questions come from cross-check findings, policy deviations, open gaps and facts the draft CAM states that need the promoter's answer.
+    header:
+      borrower: Borrower
+      case: Case ID
+      asOf: Data as of
+      config: Configuration
+    people: People to meet
+    person:
+      name: Name
+      role: Role
+      din: DIN
+      namedIn: Named in
+    record: Record of the discussion
+    why: "Why we ask:"
+    also: "Also covers:"
+    documents: Documents to collect at the discussion
     source:
       finding: Cross-check finding
       deviation: Policy deviation
       gap: Open gap
+      observation: Observation in the CAM
+    # An observation's link, which opens the draft CAM at the section that states it.
+    cam: Draft CAM
 
 # How serious a cross-check finding is (F-19.1).
 severity:
@@ -315,6 +379,26 @@ policy:
   provisional: Provisional norm
   missing: "Cannot evaluate: {inputs} not on file."
   howCalculated: How it is calculated
+  # The computation panel under a norm (F-20.2): the expression, the same expression with the
+  # figures that were read, where each figure came from, and the test against the norm.
+  working:
+    expression: The expression
+    substituted: With the figures read
+    figures: Where each figure came from
+    madeUpOf: "made up of"
+    test: The test
+    testLine: "{required} · actual {actual} · {verdict}"
+    calculation: The calculation
+    satisfied: satisfied
+    notSatisfied: not satisfied
+    verdict:
+      pass: met
+      deviation: not met
+    fromPage: "page {page}"
+    fromCase: from the case header
+    fromChecklist: from the checklist
+    notOnFile: not on file
+    missingTitle: What is needed to evaluate this
   unbounded: Unbounded
   awaitingReview: Awaiting review
   definition: Definition
@@ -485,7 +569,7 @@ page:
   admin:
     eyebrow: Administration
     title: Administration
-    purpose: What the published configuration says and who may do what. It is read-only here; a change is published by an administrator as a new version.
+    purpose: What the published configuration says and who may do what. Tolerances, policy norms, cross-check rules and the approval matrix are changed under Settings by an Administrator; every change is published as a new version.
     sections: Administration sections
   audit:
     eyebrow: Governance
@@ -864,6 +948,8 @@ audit:
     comparison_adjudicated: Decided a comparison item
     finding_escalated: Escalated a discrepancy to the Credit Manager
     finding_query_added: Put a request on the query list
+    config_published: Published a configuration version
+    output_downloaded: Downloaded the draft CAM or the PD note
 
 admin:
   config:
@@ -871,13 +957,115 @@ admin:
     publishedOn: Published
     publishedBy: Published by
     versionNumber: Version
-    readOnly: Configuration is read-only here. An administrator publishes a change as a new version, and earlier versions are kept.
+    readOnly: Tolerances, policy norms, cross-check rules and the approval matrix are changed under Settings by an Administrator. The rest of the configuration is published from the command line. Every change is a new version, and earlier versions are kept.
     history: Version history
     historyHelp: Every version ever published, newest first.
     versionN: "Version {n}"
     inForce: In force
     first: First version.
     changed: "{n} section(s) changed: {sections}"
+    edited: Edited on screen
+  # Settings (F-00.6): what an Administrator changes on screen and publishes as a new version.
+  settings:
+    versionInForce: "Version {n} in force"
+    inForce: In force
+    publishedBy: "Published {when} by {author}"
+    editHelp: Changes stay in a draft on this screen until they are published. Each publish is a new version, and every appraisal's checks run again under it.
+    readOnly: These settings are read-only for your role. An Administrator changes them and publishes them as a new version.
+    published: "Version published · {n} cases re-checked"
+    publishedOne: "Version published · 1 case re-checked"
+    failed: "Could not be re-checked: {cases}"
+    was: "was {value}"
+    undo: "Undo the change to {label}"
+    invalid:
+      number: Enter a number
+      count: Enter a whole number, 0 or more
+      amount: Enter an amount above 0
+    unit:
+      inr: INR
+    tolerances:
+      title: Tolerances
+      subtitle: How far two sources may differ before a cross-check reports a difference.
+      setting: Tolerance
+      value: Value
+      usedBy: Used by
+      unused: Not used by a cross-check
+    policy:
+      title: Policy norms
+      subtitle: The thresholds an application is measured against.
+      ratios: Financial ratios
+      ratiosHelp: The acceptable value is the norm; the marginal value is shown beside it. The norms listed take their threshold from the ratio.
+      ratio: Ratio
+      acceptable: Acceptable
+      marginal: Marginal
+      norms: Norms
+      own: Norms with their own threshold
+      norm: Norm
+      threshold: Threshold
+      kind:
+        min: at least
+        max: at most
+    rules:
+      title: Cross-check rules
+      subtitle: Which checks run, how serious a difference is, and whether an open difference blocks submission.
+      rule: Rule
+      runs: Runs
+      enabled: Runs
+      disabled: "Off"
+      severity: Severity
+      blocks: Blocks submission
+    matrix:
+      title: Approval matrix
+      subtitle: The authority that approves an amount, per product, and how a deviation from policy raises it.
+      band: Band
+      bandN: "Band {n}"
+      upTo: Up to (INR crore)
+      crore: cr
+      above: "Above {amount}"
+      authority: Authority
+      deviations: Deviation steps
+      deviationsHelp: A deviation raises the approving authority by a number of levels above the authority for the amount, and to at least the authority given.
+      category: Deviation
+      levelsAbove: Levels above the amount authority
+      atLeast: At least
+      none: None
+    # What changes in a field, as listed for review.
+    field:
+      value: Value
+      acceptable: Acceptable
+      marginal: Marginal
+      threshold: Threshold
+      enabled: Runs
+      severity: Severity
+      blocking: Blocks submission
+      up_to_inr: Up to
+      authority: Authority
+      levels_above: Levels above the amount authority
+      at_least: At least
+      turnover_requirement_pct: Requirement
+    value:
+      flagOn: "on"
+      flagOff: "off"
+      flagYes: "yes"
+      flagNo: "no"
+      none: none
+      open: open
+    bar:
+      one: 1 change
+      many: "{n} changes"
+      discard: Discard
+      review: Review and publish
+      fixFirst: Correct the values marked in red first.
+    review:
+      title: Review and publish
+      description: These changes are published together as a new configuration version, and every appraisal's checks run again under it.
+      checking: Checking the changes…
+      problems: These changes cannot be published
+      note: Note
+      notePlaceholder: Why these changes are made
+      noteHelp: "Recorded with the version and in the audit trail; at least {n} characters."
+      publish: Publish
+      publishing: Publishing…
   section:
     approval_matrix: approval matrix
     policy: policy norms
@@ -957,6 +1145,7 @@ admin:
     scorecard_read: See the scorecard
     audit_read: See the audit trail
     config_read: See administration
+    config_publish: Change settings and publish them
 
 fileStatus:
   registered: Registered
@@ -1115,6 +1304,33 @@ validation:
   unclassifiedDetail: No type from the published list fits this document with enough confidence. It is not counted against any checklist item until a person assigns a type.
   defects: Deficiencies
   openDocument: Open document
+
+# The gate between intake and assessment (F-13). The first three stages run freely; the
+# cross-checks, the policy checks and the outputs open only once a person creates the case,
+# which they may do when the review gate is met, nothing blocking is open and no file is
+# still unreadable.
+assessment:
+  create: Create case
+  creating: Creating the case
+  createHelp: Creating the case opens the cross-checks, the policy checks and the outputs.
+  created: "Case created {at}"
+  createdBy: "Case created by {who}"
+  gateTitle: Ready to create the case
+  gateTitleBlocked: Not ready to create the case yet
+  gateIntro: The cross-checks, the policy checks and the outputs open once the case is created.
+  lockedTitle: Opens once the case is created
+  lockedBody: This step runs after intake. Finish the checklist on the completeness step, then create the case.
+  lockedAction: Go to completeness
+  condition:
+    reviewGate: "Review gate met · {score}% against a {gate}% gate"
+    reviewGateUnmet: "Review gate not met · {score}% against a {gate}% gate"
+    blockingItems: "{n} blocking checklist item(s) still open"
+    blockingItemsClear: No blocking checklist item is open
+    openExceptions: "{n} file(s) could not be read"
+    openExceptionsClear: Every file was read
+  error:
+    notReady: The case cannot be created yet. The conditions above are not all met.
+    failed: The case could not be created. Try again.
 
 readiness:
   reviewGate: Review gate

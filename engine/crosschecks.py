@@ -44,12 +44,13 @@ from .contracts import (
     FindingSide,
     FinancialYear,
     PersonEntry,
+    PersonSet,
     TurnoverFigure,
 )
 from .db import transaction
 from .names import compare_name_parts, name_parts, same_by_parts, normalise_name, similarity
 from .review_items import raise_item
-from .util import display_date, dumps, parse_date, ranges_label, stable_id
+from .util import display_date, dumps, parse_date, parse_period, ranges_label, stable_id
 
 inr = facts_module.inr
 
@@ -142,12 +143,17 @@ class Context:
 
 def _finding(ctx: Context, rule: CrossCheckRule, outcome: str, sides: list[FindingSide], scope: str = "", *,
              note: str = "", detail: FindingDetail | None = None, missing: list[str] | None = None,
-             **fmt: str) -> Finding:
+             review: list[str] | None = None, **fmt: str) -> Finding:
+    """`review` names the values waiting for review where a side's label says more (a side of agreeing
+    sources, only one of them waiting)."""
     waiting = list(dict.fromkeys(s.label for s in sides if s.awaiting_review))
     if waiting and outcome in ("pass", "fail"):
         # F-17.2: a value below its threshold is reviewed before a check relies on it.
         outcome = "incomplete"
-        note = f"Waiting for review of {', '.join(waiting)}; confirm or correct the value to complete this check."
+        # A side's label may itself list several sources ("Company PAN, Income tax return").
+        named = _join(review) if review else ", ".join(
+            _lower(part) for label in waiting for part in label.split(", "))
+        note = f"Waiting for review of {named}; confirm or correct the value to complete this check."
     values = _Fmt(fmt)
     values.setdefault("tolerance", ctx.tol_text(rule.tolerance) or "")
     explanation = rule.explanation.format_map(values) if outcome == "fail" else note
@@ -183,7 +189,7 @@ def _absent(ctx: Context, rule: CrossCheckRule, sides: list[FindingSide] | None 
     """Too little to compare: incomplete if an expected document is missing (named), else not applicable."""
     missing = ctx.missing(rule)
     if missing:
-        return _finding(ctx, rule, "incomplete", sides or [], scope, note=f"{_join(missing)} not on file.",
+        return _finding(ctx, rule, "incomplete", sides or [], scope, note=f"{_labels(missing)} not on file.",
                         missing=missing)
     return _finding(ctx, rule, "not_applicable", sides or [], scope, note=note)
 
@@ -211,6 +217,17 @@ def _people_side(label: str, people: list[PersonEntry], *, differs: bool = False
 def _join(items: list[str]) -> str:
     items = list(dict.fromkeys(items))
     return items[0] if len(items) == 1 else ", ".join(items[:-1]) + " and " + items[-1]
+
+
+def _lower(label: str) -> str:
+    """A source's label as it reads inside a sentence: its first letter in lower case, unless it opens
+    an acronym (GST outward supplies, KYC received, GSTR-3B)."""
+    return label[:1].lower() + label[1:] if label[1:2].islower() else label
+
+
+def _labels(labels: list[str]) -> str:
+    """Labels joined into a sentence's subject: the first as it is, the rest as they read inside it."""
+    return _join([label if i == 0 else _lower(label) for i, label in enumerate(labels)])
 
 
 def _variance(a: float, b: float) -> float:
@@ -272,13 +289,179 @@ def _identity(ctx: Context, rule: CrossCheckRule) -> list[Finding]:
     ]
     if len({(v.source, v.label, str(v.value)) for v in values}) < 2:
         return [_absent(ctx, rule, sides)]
+    statements = _Statements(ctx, rule, values)
+    review = statements.awaiting()
     if len(groups) == 1:
-        return [_finding(ctx, rule, "pass", sides, note=f"Consistent across {len(values)} sources.")]
-    items = " · ".join(f"{s.value} ({s.label})" for s in sides)
-    return [_finding(ctx, rule, "fail", sides, items=items)]
+        return [_finding(ctx, rule, "pass", sides, note=f"Consistent across {len(values)} sources.", review=review)]
+    names = statements.names(groups)
+    first = _reference_group(rule, sides, groups)
+    order = [first] + [k for k in range(len(groups)) if k != first]
+    others = order[1:]
+    # "X in the company PAN and income tax return; Y in the commercial bureau report": the reference first.
+    items = "; ".join(f"{sides[k].value} in the {_join(names[k])}" for k in order)
+    return [_finding(ctx, rule, "fail", sides, items=items, review=review, reference=str(sides[first].value),
+                     differing="the " + _join([n for k in others for n in names[k]]),
+                     others=_join([str(sides[k].value) for k in others]))]
 
 
-# --- People (ID-04, ID-06, ID-08) ---
+IDENTITY_FIELDS = {"entity_pan": "PAN", "gstin": "GSTIN", "cin": "CIN", "legal_name": "name"}
+YEARLY = ("audited_financial_statements", ITR)
+"""Documents that cover a year: named with it where one type gives two values."""
+
+
+class _Statements:
+    """One value's statements (ID-01, ID-02, ID-03, ID-05), as an explanation names them. A PAN read from
+    within a GSTIN is named only for a document that prints no PAN of its own, so a document that prints
+    a PAN and a GSTIN carrying another is named once, for the PAN it prints. Where one document type
+    gives two values (the audited statements of two years), each is named with its year."""
+
+    def __init__(self, ctx: Context, rule: CrossCheckRule, values: list[FactValue]) -> None:
+        self.ctx, self.rule, self.values = ctx, rule, values
+        self.gstins = {tuple(v.field_ids): v for v in ctx.facts.identities.gstin if v.field_ids}
+        self.printing = {self.document(v) for v in values if not self.derived(v)} - {None}
+
+    def derived(self, v: FactValue) -> FactValue | None:
+        """The GSTIN statement a PAN was read from, or None for a PAN the document prints."""
+        return self.gstins.get(tuple(v.field_ids)) if self.rule.variable == "entity_pan" and v.field_ids else None
+
+    @staticmethod
+    def document(v: FactValue) -> str | None:
+        return v.evidence[0].document_id if v.evidence else None
+
+    def awaiting(self) -> list[str]:
+        """The values waiting for review, each as read: "the PAN read from the income tax return"."""
+        field = IDENTITY_FIELDS.get(self.rule.variable, "value")
+        out = []
+        for v in self.values:
+            if not v.awaiting_review:
+                continue
+            gstin = self.derived(v)
+            label = _lower(gstin.label if gstin else v.label)
+            if gstin:
+                out.append(f"the GSTIN read from the {label}")
+            elif field.lower() in label.lower().split():
+                out.append(f"the {label}")
+            else:
+                out.append(f"the {field} read from the {label}")
+        return list(dict.fromkeys(out))
+
+    def names(self, groups: list[list[FactValue]]) -> list[list[str]]:
+        """Each group's documents in words, each once."""
+        kept = [[v for v in g if not (self.derived(v) and self.document(v) in self.printing)] or g for g in groups]
+        where: dict[str, set[int]] = {}
+        for k, g in enumerate(kept):
+            for v in g:
+                where.setdefault(v.label, set()).add(k)
+        years = _years(self.ctx)
+        out = []
+        for g in kept:
+            named: dict[str, list[str]] = {}
+            for v in g:
+                year = years.get(self.document(v) or "") if v.source in YEARLY and len(where[v.label]) > 1 else None
+                covered = named.setdefault(v.label, [])
+                if year and year not in covered:
+                    covered.append(year)
+            out.append([_documents(label, covered) for label, covered in named.items()])
+        return out
+
+
+def _documents(label: str, years: list[str]) -> str:
+    """A document type inside a sentence, with the years its documents cover: "audited financial
+    statements for FY 2024-25", "income tax returns for AY 2025-26 and AY 2026-27"."""
+    if not years:
+        return _lower(label)
+    many = label if len(years) == 1 or label.endswith("s") else f"{label}s"
+    return f"{_lower(many)} for {_join(sorted(years))}"
+
+
+def _years(ctx: Context) -> dict[str, str]:
+    """The year each audited statement and income tax return covers, by its document: "FY 2024-25",
+    "AY 2025-26"."""
+    found: dict[str, str] = {}
+    for y in ctx.facts.financial_years:
+        for e in (e for v in y.current.values() for e in v.evidence[:1]):
+            found.setdefault(e.document_id, y.fy)
+    for t in ctx.facts.tax_years:
+        for e in t.evidence[:1] + [e for v in t.lines.values() for e in v.evidence[:1]]:
+            found.setdefault(e.document_id, f"AY {t.assessment_year}")
+    return found
+
+
+def _reference_group(rule: CrossCheckRule, sides: list[FindingSide], groups: list[list[FactValue]]) -> int:
+    """The group the others are held against: the clear majority, else the group of the source the
+    rule lists first (the certificate of incorporation for a name, the company PAN for a PAN)."""
+    agree = [k for k, s in enumerate(sides) if not s.differs]
+    if len(agree) == 1:
+        return agree[0]
+    rank = {s: i for i, s in enumerate(rule.sources)}
+    return min(range(len(groups)), key=lambda k: min(rank.get(v.source, len(rank)) for v in groups[k]))
+
+
+# --- People (ID-04, ID-06, ID-08; ID-09 below) ---
+
+
+def _origin(p: PersonSet, e: PersonEntry) -> set[str]:
+    """Where an entry is listed: its documents, or its source for a name with no page (typed on the
+    case), so that two names one list gives are never one person."""
+    return {ev.document_id for ev in e.evidence} or {f"source:{p.source}"}
+
+
+def _alike(ctx: Context, a: str, b: str, by_parts: bool = False) -> float:
+    """How alike two names are, to choose between matches: the same name above a close one (at least
+    name_match alike), and a match by the name's parts (ID-09) below both; 0 when not one person."""
+    if normalise_name(a) == normalise_name(b):
+        return 3.0
+    score = similarity(a, b)
+    if score >= ctx.threshold:
+        return 1.0 + score
+    return 0.5 if by_parts and same_by_parts(a, b) else 0.0
+
+
+def _people(ctx: Context, sets: list[PersonSet], *, lead_only: bool = False,
+            by_parts: bool = False) -> list[list[tuple[PersonSet, PersonEntry]]]:
+    """The sources' entries as people, each in the order first named. One name is one person; then the
+    most alike people join first: by their first names with lead_only, else by any of their names. Two
+    people never join when one document (or one list typed on the case) names both: two directors with
+    similar names in one memorandum are two people however alike."""
+    entries = [(p, e) for p in sets for e in p.entries]
+    by_name: dict[str, list[int]] = {}
+    for i, (_, e) in enumerate(entries):
+        by_name.setdefault(normalise_name(e.name), []).append(i)
+    groups = list(by_name.values())
+    origins = [set().union(*(_origin(*entries[i]) for i in g)) for g in groups]
+
+    def link(a: list[int], b: list[int]) -> float:
+        pairs = [(a[0], b[0])] if lead_only else [(i, j) for i in a for j in b]
+        return max(_alike(ctx, entries[i][1].name, entries[j][1].name, by_parts) for i, j in pairs)
+
+    while True:
+        best = None
+        for a in range(len(groups)):
+            for b in range(a + 1, len(groups)):
+                score = 0.0 if origins[a] & origins[b] else link(groups[a], groups[b])
+                if score and (best is None or score > best[0]):
+                    best = (score, a, b)
+        if best is None:
+            return [[entries[i] for i in g] for g in groups]
+        _, a, b = best
+        groups[a], origins[a] = sorted(groups[a] + groups[b]), origins[a] | origins[b]
+        del groups[b], origins[b]
+
+
+def _best_matches(ctx: Context, name: str, entries: list[PersonEntry]) -> list[int]:
+    """The entries that name is the same person as, at its best: the same name before a close one."""
+    scores = [_alike(ctx, name, e.name) for e in entries]
+    top = max(scores, default=0.0)
+    return [i for i, s in enumerate(scores) if s and s == top]
+
+
+def _not_named(person: str, absent: list[PersonSet]) -> str:
+    """ID-04: what a source lacks for a person, in words."""
+    parts = ["has no KYC on file"] if any(p.source == "director_kyc" for p in absent) else []
+    others = [f"the {_lower(p.label)}" for p in absent if p.source != "director_kyc"]
+    if others:
+        parts.append(f"is not named in {_join(others)}")
+    return f"{person} {' and '.join(parts)}"
 
 
 def _promoter_set(ctx: Context, rule: CrossCheckRule) -> list[Finding]:
@@ -287,18 +470,17 @@ def _promoter_set(ctx: Context, rule: CrossCheckRule) -> list[Finding]:
     if len(sets) < 2:
         return [_absent(ctx, rule, [_people_side(p.label, p.entries, sources=[p.source]) for p in sets],
                         note="Fewer than two sources name the promoters.")]
-    people: list[str] = []
-    for p in sets:
-        for name in p.names:
-            if not any(ctx.same_person(name, q) for q in people):
-                people.append(name)
+    # A source names a person when one of its entries is that person (the first name met stands for
+    # them), so a similar name of someone else does not count.
+    people = _people(ctx, sets, lead_only=True)
     gaps, rows, short = [], [], set()
-    for person in people:
-        named = [any(ctx.same_person(person, n) for n in p.names) for p in sets]
-        absent = [p.label for p, ok in zip(sets, named) if not ok]
-        short |= set(absent)
+    for group in people:
+        person = group[0][1].name
+        named = [any(q is p for q, _ in group) for p in sets]
+        absent = [p for p, ok in zip(sets, named) if not ok]
+        short |= {p.label for p in absent}
         if absent:
-            gaps.append(f"{person} is not in {', '.join(absent)}")
+            gaps.append(_not_named(person, absent))
         rows.append((person, [YES if ok else NO for ok in named], bool(absent)))
     sides = [_people_side(p.label, p.entries, differs=p.label in short, sources=[p.source]) for p in sets]
     detail = _rows([p.label for p in sets], rows)
@@ -321,7 +503,8 @@ def _director_identifiers(ctx: Context, rule: CrossCheckRule) -> list[Finding]:
     ) if s]
     rows, problems, compared = [], [], 0
     for k in kyc:
-        m = next((e for e in moa if ctx.same_person(k.name, e.name)), None)
+        # The memorandum's entry for this director: the same name before a close one.
+        m = next((moa[i] for i in _best_matches(ctx, k.name, moa)), None)
         issues = []
         if m and m.din and k.din:
             compared += 1
@@ -357,10 +540,13 @@ def _memorandum_directors(ctx: Context, rule: CrossCheckRule) -> list[Finding]:
         _people_side("Sourcing message", message, sources=[CASE_RECORD]) if message else None) if s]
     if not moa or not (kyc or message):
         return [_absent(ctx, rule, sides, note="Nothing to hold the memorandum's directors against.")]
+    # A KYC or a name in the message accounts for the director it matches best: two directors with
+    # similar names in the memorandum are two people, and one KYC does not account for both.
+    with_kyc = {i for k in kyc for i in _best_matches(ctx, k.name, moa)}
+    in_messages = {i for k in message for i in _best_matches(ctx, k.name, moa)}
     rows, unaccounted = [], []
-    for e in moa:
-        in_kyc = any(ctx.same_person(e.name, k.name) for k in kyc)
-        in_message = any(ctx.same_person(e.name, k.name) for k in message)
+    for i, e in enumerate(moa):
+        in_kyc, in_message = i in with_kyc, i in in_messages
         if not (in_kyc or in_message):
             unaccounted.append(e.name)
         rows.append((e.name, [YES if in_kyc else NO, YES if in_message else NO], not (in_kyc or in_message)))
@@ -384,15 +570,7 @@ def _person_names(ctx: Context, rule: CrossCheckRule) -> list[Finding]:
     only as an initial, or written differently, against the fullest form of the name."""
     sets = sorted((p for p in ctx.facts.persons if p.source in rule.sources), key=lambda p: rule.sources.index(p.source))
     sides = [_people_side(p.label, p.entries, sources=[p.source]) for p in sets]
-    groups: list[list[tuple[PersonSet, PersonEntry]]] = []
-    for p in sets:
-        for e in p.entries:
-            group = next((g for g in groups if any(ctx.same_person(e.name, x.name) or same_by_parts(e.name, x.name)
-                                                   for _, x in g)), None)
-            if group is None:
-                groups.append([(p, e)])
-            else:
-                group.append((p, e))
+    groups = _people(ctx, sets, by_parts=True)
     named = [g for g in groups if len({p.source for p, _ in g}) >= 2]
     if not named:
         return [_absent(ctx, rule, sides, note="No person is named in two or more documents.")]
@@ -412,7 +590,8 @@ def _person_names(ctx: Context, rule: CrossCheckRule) -> list[Finding]:
                          [2 + NAME_PARTS.index(part) for part in off]))
         if found:
             problems.append(f"{full}: " + "; ".join(
-                f"{part} name {PART_WORDS[s]}{f' ({written})' if written else ''} in {_join(labels)}"
+                f"{part} name {PART_WORDS[s]}{f' ({written})' if written else ''} in "
+                + _join([f"the {_lower(label)}" for label in labels])
                 for (part, s, written), labels in found.items()))
     for side in sides:
         side.differs = side.label in differing
@@ -606,22 +785,37 @@ def _compare_year(ctx: Context, rule: CrossCheckRule, y: TurnoverYear, lf: Turno
                   tol: float) -> Finding:
     """One financial year's two turnover figures: incomplete while a monthly figure lacks months of
     the year, else within the tolerance or not."""
-    gaps = [f"{f.label} covers {f.months_covered} of 12 months ({', '.join(f.months_missing[:3])}"
-            f"{'…' if len(f.months_missing) > 3 else ''} absent)"
-            for f in (lf, rf) if f.months_covered is not None and f.months_covered < 12]
-    if gaps:
+    short = [f for f in (lf, rf) if f.months_covered is not None and f.months_covered < 12]
+    if short:
         return _finding(ctx, rule, "incomplete", [_figure_side(lf), _figure_side(rf)], y.fy,
-                        note="; ".join(gaps) + ".")
+                        note=_months_short(ctx, short) + ".")
     a, b = float(lf.value or 0), float(rf.value or 0)
     variance = abs(a - b) / max(a, b) * 100 if max(a, b) else 0.0
     failed = variance > tol
     sides = [_figure_side(lf, failed), _figure_side(rf, failed)]
-    fmt = dict(period=y.fy, left=inr(a), right=inr(b), left_label=lf.label, right_label=rf.label,
+    # The right-hand label sits inside the sentence: "… against business credits in bank statements …".
+    fmt = dict(period=y.fy, left=inr(a), right=inr(b), left_label=lf.label, right_label=_lower(rf.label),
                variance=f"{variance:.1f}%")
     if not failed:
         return _finding(ctx, rule, "pass", sides, y.fy,
                         note=f"Variance {variance:.1f}% within {ctx.tol_text(rule.tolerance)}.", **fmt)
     return _finding(ctx, rule, "fail", sides, y.fy, **fmt)
+
+
+def _months_short(ctx: Context, short: list[TurnoverFigure]) -> str:
+    """The months monthly figures lack, as runs: "GST outward supplies cover 7 of 12 months (Apr 2025
+    to Aug 2025 not on file)". A month that has not ended by the appraisal date is not missing: it
+    has not happened yet."""
+    now = (ctx.as_of.year, ctx.as_of.month)
+    gaps = []
+    for i, f in enumerate(short):
+        months = [m for m in (parse_period(label) for label in f.months_missing) if m]
+        past = ranges_label([m for m in months if m < now])
+        future = ranges_label([m for m in months if m >= now])
+        absent = ", ".join(t for t in (past and f"{past} not on file", future and f"{future} not yet ended") if t)
+        gaps.append(f"{f.label if i == 0 else _lower(f.label)} cover {f.months_covered} of 12 months"
+                    + (f" ({absent})" if absent else ""))
+    return "; ".join(gaps)
 
 
 def _itr_turnover(ctx: Context, rule: CrossCheckRule) -> list[Finding]:
@@ -804,7 +998,8 @@ def _comparatives(ctx: Context, rule: CrossCheckRule) -> list[Finding]:
         sides = [_fact_side(first[1], f"{first[0]}, {p.fy} column of the {y.fy} statements", differs=bool(flagged)),
                  _fact_side(first[2], f"{first[0]}, {p.fy} statements", differs=bool(flagged))]
         if flagged:
-            items = "; ".join(f"{label} {inr(float(s.value or 0))} against {inr(float(f.value or 0))}" for label, s, f in flagged)
+            items = "; ".join(f"{_lower(label)} {inr(float(s.value or 0))} against {inr(float(f.value or 0))}"
+                              for label, s, f in flagged)
             out.append(_finding(ctx, rule, "fail", sides, y.fy, detail=detail, period=p.fy, items=items))
         else:
             out.append(_finding(ctx, rule, "pass", sides, y.fy, detail=detail,
@@ -937,9 +1132,13 @@ def _emis_declared(ctx: Context, rule: CrossCheckRule) -> list[Finding]:
     emi_side = _side("Instalments in bank statements", "; ".join(f"{o.lender} ({inr(o.typical_amount)} × {o.debits})" for o in obligations),
                      [e for o in obligations for e in o.evidence[:1]], sources=["bank_statement"])
     if not text and declaration is None:
-        return [_finding(ctx, rule, "incomplete", [emi_side],
-                         note=f"No declaration of existing facilities is on file and the sourcing message declares none; "
-                              f"confirm the facility behind {_join([line(o) for o in obligations])}.")]
+        # A lender whose sanction letter is on file needs no confirmation of its facility, only the declaration.
+        sanctioned = [f.lender for f in ctx.facts.facilities if f.source == SANCTION]
+        unconfirmed = [o for o in obligations if not any(_same_lender(o.lender, s, ctx) for s in sanctioned)]
+        none = "No declaration of existing facilities is on file and the sourcing message declares none"
+        note = (f"{none}; confirm the facility behind {_join([line(o) for o in unconfirmed])}." if unconfirmed else
+                f"{none}, so the instalments to {_join([line(o) for o in obligations])} cannot be held against one.")
+        return [_finding(ctx, rule, "incomplete", [emi_side], note=note)]
     rows, undeclared = [], []
     for o in obligations:
         ok = (any(_same_lender(o.lender, lender, ctx) for lender in declared_lenders)
@@ -987,13 +1186,15 @@ def _facilities_reconcile(ctx: Context, rule: CrossCheckRule) -> list[Finding]:
         sides = [_facility_side("Sanction letters", sanctioned, source=SANCTION)] if SANCTION in ctx.on_file else []
         sides += [_facility_side(ctx.type_names[BUREAU], reported, source=BUREAU)] if BUREAU in ctx.on_file else []
         return [_finding(ctx, rule, "incomplete", sides, missing=[name],
-                         note=f"The facilities on file cannot be held against a declaration: {name} not on file.")]
+                         note=f"The facilities on file cannot be held against a declaration: the {_lower(name)} "
+                              "is not on file.")]
     declared_side = (_fact_side(declaration, "Declaration of existing facilities") if declaration is not None
                      else _fact_side(message, "Declared in the sourcing message"))
     if not evidence_on_file:
         names = [ctx.type_names[SANCTION], ctx.type_names[BUREAU]]
         return [_finding(ctx, rule, "incomplete", [declared_side], missing=names,
-                         note=f"Nothing to reconcile the declared facilities against: {_join(names)} not on file.")]
+                         note=f"Nothing to reconcile the declared facilities against: {_join([_lower(n) for n in names])} "
+                              "not on file.")]
 
     groups: list[list] = []
     for f in declared + sanctioned + reported:
@@ -1042,7 +1243,7 @@ def _facilities_reconcile(ctx: Context, rule: CrossCheckRule) -> list[Finding]:
         sides.append(_facility_side("Sanction letters", sanctioned, differs=SANCTION in odd and bool(issues), source=SANCTION))
     if BUREAU in ctx.on_file:
         sides.append(_facility_side(ctx.type_names[BUREAU], reported, differs=BUREAU in odd and bool(issues), source=BUREAU))
-    detail = _rows(["Declared", "Sanction letter", "Bureau", "Outstanding (bureau)"], rows)
+    detail = _rows(["Declared", "Sanction letter", "Bureau", "Bureau outstanding"], rows)
     if issues:
         flagged = [r[0] for r in rows if r[2]]
         return [_finding(ctx, rule, "fail", sides, detail=detail, items="; ".join(issues), lenders=_join(flagged))]

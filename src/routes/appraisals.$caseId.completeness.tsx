@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { ChecklistPanel } from "@/components/case/ChecklistPanel";
+import { CreateCasePanel } from "@/components/case/gate/CreateCasePanel";
 import { QueriesPanel } from "@/components/case/QueriesPanel";
 import { ReadinessSummary } from "@/components/case/ReadinessSummary";
 import { QueryView } from "@/components/common/States";
@@ -8,6 +9,7 @@ import { t } from "@/config/terminology";
 import { useAnchor } from "@/domain/anchor";
 import { useChecklist } from "@/domain/checklist";
 import { useFindings } from "@/domain/findings";
+import { useCaseProgress } from "@/domain/progress";
 import { useCan } from "@/domain/session";
 
 // Stage 3, validation and completeness (FRD §5, §6): readiness against the
@@ -47,6 +49,7 @@ function CompletenessTab() {
   const checklist = useChecklist(caseId);
   const canReadFindings = useCan("finding.read");
   const findings = useFindings(caseId, canReadFindings);
+  const gate = useCaseProgress(caseId).data?.gate ?? null;
   const blockingFindings = canReadFindings
     ? (findings.data ?? []).filter((f) => f.outcome === "fail" && f.blocking).length
     : 0;
@@ -70,6 +73,11 @@ function CompletenessTab() {
                 <QueriesPanel caseId={caseId} />
               </Anchor>
             </div>
+            {gate && (
+              <Anchor id="create-case">
+                <CreateCasePanel caseId={caseId} gate={gate} />
+              </Anchor>
+            )}
           </>
         )}
       </QueryView>

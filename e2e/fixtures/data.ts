@@ -6,17 +6,25 @@ import type {
   ApprovalMatrixConfig,
   ApprovingAuthority,
   Cam,
+  CamBlock,
+  CamSection,
+  CamSummaryItem,
+  CamTable,
+  CamText,
   CaseComparison,
   CaseDetail,
   CaseFacts,
   CrossVerificationView,
+  EditableSettings,
   Evidence,
   EvidenceRow,
   FactValue,
   Finding,
   FindingArea,
   FindingSide,
+  OutputSource,
   PdNote,
+  PdQuestion,
   NormInput,
   NormResult,
   PolicyAssessment,
@@ -128,6 +136,19 @@ export const MANAGER: SessionUser = {
     "audit.read",
     "config.read",
   ],
+};
+
+/** The Administrator: administration only, and the one role that publishes settings (roles.yaml). */
+export const ADMIN: SessionUser = {
+  id: "nikhil-sawant",
+  name: "Nikhil Sawant",
+  email: "nikhil.sawant@rblbank.com",
+  initials: "NS",
+  role: "administrator",
+  roleLabel: "Administrator",
+  branch: "Head office",
+  navGroups: ["administration", "help"],
+  permissions: ["config.read", "config.publish", "audit.read"],
 };
 
 export const META: Meta = {
@@ -2087,6 +2108,8 @@ function norm(
   return {
     formula: "",
     required: "",
+    comparator: "min",
+    threshold_text: "",
     actual: null,
     unit: null,
     category: "financial",
@@ -2162,6 +2185,8 @@ export const POLICY = {
       definition: "Total debt ÷ Tangible net worth",
       note: "Interim threshold proposed by the delivery team.",
       required: "at most 2.00x",
+      comparator: "max",
+      threshold_text: "2.00x",
       actual: 3,
       actual_text: "3.00x",
       unit: "x",
@@ -2177,6 +2202,8 @@ export const POLICY = {
       label: "Commercial bureau rank",
       formula: "Commercial bureau rank",
       required: "at most rank 6",
+      comparator: "max",
+      threshold_text: "rank 6",
       unit: "rank",
       outcome: "cannot_evaluate",
       ...ELIGIBILITY,
@@ -2188,6 +2215,8 @@ export const POLICY = {
       label: "Profit in the latest year",
       formula: "Profit after tax",
       required: "at least INR 0",
+      comparator: "min",
+      threshold_text: "INR 0",
       actual: -4_000_000,
       actual_text: "INR -40.00 lakh",
       unit: "inr",
@@ -2201,6 +2230,8 @@ export const POLICY = {
       label: "Current ratio",
       formula: "Current assets / Current liabilities",
       required: "at least 1.20x",
+      comparator: "min",
+      threshold_text: "1.20x",
       actual: 1.5,
       actual_text: "1.50x",
       unit: "x",
@@ -2216,6 +2247,8 @@ export const POLICY = {
       label: "Interest coverage",
       formula: "(Profit before tax + Finance costs) / Finance costs",
       required: "at least 2.50x",
+      comparator: "min",
+      threshold_text: "2.50x",
       unit: "x",
       outcome: "cannot_evaluate",
       reason: "zero_denominator",
@@ -2231,6 +2264,8 @@ export const POLICY = {
       label: "Working-capital cycle",
       formula: "(Inventories + Trade receivables - Trade payables) / Revenue from operations * 365",
       required: "at most 75 days",
+      comparator: "max",
+      threshold_text: "75 days",
       unit: "days",
       outcome: "cannot_evaluate",
       reason: "awaiting_review",
@@ -2248,6 +2283,8 @@ export const POLICY = {
       label: "Blocking checklist items open",
       formula: "Blocking checklist items open",
       required: "at most 0",
+      comparator: "max",
+      threshold_text: "0",
       actual: 2,
       actual_text: "2",
       unit: "count",
@@ -2284,6 +2321,8 @@ export const SAFFRON_POLICY = {
       label: "Positive net worth",
       formula: "Net worth",
       required: "at least INR 1",
+      comparator: "min",
+      threshold_text: "INR 1",
       actual: -40_000_000,
       actual_text: "INR -4.00 cr",
       unit: "inr",
@@ -2297,6 +2336,8 @@ export const SAFFRON_POLICY = {
       label: "TOL / TNW",
       formula: "(Long-term borrowings + Current liabilities) / Net worth",
       required: "at most 3.00x",
+      comparator: "max",
+      threshold_text: "3.00x",
       unit: "x",
       outcome: "deviation",
       reason: "denominator_not_positive",
@@ -2698,93 +2739,1048 @@ export const SPREAD: Spread = {
   },
 };
 
+// The draft CAM in the assumed layout (config/cam.yaml), as engine/cam.py drafts it for Kestrel:
+// twelve numbered sections of blocks, the summary, the empty recommendation and the documents
+// cited, numbered in the order they are first cited.
+
+const said = (text: string, ...citations: Evidence[]): CamText => ({ text, citations });
+const paragraph = (text: string, ...citations: Evidence[]): CamBlock => ({
+  kind: "paragraph",
+  paragraph: said(text, ...citations),
+});
+const facts = (...rows: [string, string | CamText][]): CamBlock => ({
+  kind: "facts",
+  facts: rows.map(([label, value]) => ({
+    label,
+    value: typeof value === "string" ? said(value) : value,
+  })),
+});
+const table = (
+  columns: string[],
+  rows: (string | CamText)[][],
+  extra: Partial<CamTable> = {},
+): CamBlock => ({
+  kind: "table",
+  table: {
+    title: null,
+    numeric: [],
+    note: null,
+    ...extra,
+    columns,
+    rows: rows.map((row) => row.map((value) => (typeof value === "string" ? said(value) : value))),
+  },
+});
+const subheading = (text: string): CamBlock => ({ kind: "subheading", text });
+const note = (text: string): CamBlock => ({ kind: "note", text });
+const memoSection = (
+  number: number,
+  id: string,
+  title: string,
+  blocks: CamBlock[],
+): CamSection => ({ id, number, title, blocks, empty: null });
+const summaryItem = (
+  kind: CamSummaryItem["kind"],
+  ref: string,
+  text: string,
+  extra: Partial<CamSummaryItem> = {},
+): CamSummaryItem => ({
+  kind,
+  ref,
+  text,
+  severity: null,
+  rule: null,
+  title: null,
+  status: null,
+  blocking: false,
+  citations: [],
+  ...extra,
+});
+const source = (
+  number: number,
+  document_id: string,
+  label: string,
+  file_name: string,
+  pages: number[],
+): OutputSource => ({ number, document_id, label, file_name, pages });
+
+/** The configuration the memo and the note are drafted under: the full version, and the label
+ * Administration counts it by. */
+export const OUTPUT_CONFIG_VERSION =
+  "7f3c9a1e5b2d48c6a0e4f1b7d9c3a5e2f8b6d4c0a1e3f5b7c9d2e4f6a8b0c1d3";
+export const OUTPUT_CONFIG_LABEL = "Version 3 (published 18 Sep 2026)";
+
+/** The monthly GSTR-3B returns on file, Aug 2025 to Mar 2026, one document each: a year's GST
+ * figure rests on every one of them, at page 1. */
+const GST_RETURNS: [document_id: string, month: string, file_name: string][] = [
+  ["doc-gstr3b", "Aug 2025", "gstr3b_aug25.pdf"],
+  ["doc-gstr3b-sep", "Sep 2025", "gstr3b_sep25.pdf"],
+  ["doc-gstr3b-oct", "Oct 2025", "gstr3b_oct25.pdf"],
+  ["doc-gstr3b-nov", "Nov 2025", "gstr3b_nov25.pdf"],
+  ["doc-gstr3b-dec", "Dec 2025", "gstr3b_dec25.pdf"],
+  ["doc-gstr3b-jan", "Jan 2026", "gstr3b_jan26.pdf"],
+  ["doc-gstr3b-feb", "Feb 2026", "gstr3b_feb26.pdf"],
+  ["doc-gstr3b-mar", "Mar 2026", "gstr3b_mar26.pdf"],
+];
+const gstReturns = (): Evidence[] => GST_RETURNS.flatMap(([id]) => at(id, 1));
+
+const PAN_TEXT = `The entity PAN differs between documents: ${PAN} (${PAN_GROUP}) · ${PAN_BUREAU} (Commercial bureau report).`;
+const CIN_TEXT = `The CIN differs between documents: ${CIN} (Certificate of incorporation, Commercial bureau report, Declaration of existing facilities) · ${CIN_MOA} (Memorandum and articles of association).`;
+const GST_TEXT =
+  "Aug 2025 to Mar 2026: GST outward supplies INR 14.80 cr against business credits INR 17.19 cr, a variance of 13.9% (tolerance 10%).";
+const DECLARED_TEXT =
+  "FY 2025-26: declared turnover INR 3.00 cr against audited turnover INR 30.00 cr, a variance of 90.0% (tolerance 20%).";
+const ACCOUNT_TEXT = "Declared account(s) without a statement: Lotuscrest Bank ·5678.";
+const LENDER_TEXT = `Regular debits to lender(s) not declared: ASHWOOD FINSERV (INR 1,45,000 a month in 6 months, ${ACCOUNT}).`;
+const FACILITIES_TEXT =
+  "The existing facilities do not reconcile: Tidewater Finance: sanctioned amounts differ: declared INR 40.00 lakh, sanction letter INR 55.00 lakh, bureau INR 55.00 lakh; Lotuscrest Bank: not declared.";
+
+/** An observation: a fact the memo states (section 8) that the note asks the promoter about. */
+export const DISBURSAL_TEXT =
+  "The loan disbursal of INR 25.00 lakh on 06 Apr 2025 (TL 7781) matches no facility on file.";
+
 export const CAM: Cam = {
   case_id: KESTREL,
+  title: "Credit Approval Memo",
+  borrower: "Kestrel Polymers Pvt Ltd",
+  as_of: "2026-09-20",
+  config_version: OUTPUT_CONFIG_VERSION,
+  config_label: OUTPUT_CONFIG_LABEL,
+  run_id: XV_RUN.id,
   interim_template: true,
+  template_note: "Draft — layout assumed until RBL's CAM template is received.",
   sections: [
-    {
-      id: "financials",
-      title: "Financial performance",
-      paragraphs: [
-        { text: "Revenue from operations was INR 30.00 cr in FY 2025-26.", citations: cite(4) },
-      ],
-      table: null,
-      empty: null,
-    },
-    {
-      id: "banking",
-      title: "Banking and account conduct",
-      paragraphs: [],
-      table: null,
-      empty: "Nothing on file yet.",
-    },
+    memoSection(1, "snapshot", "Proposal at a glance", [
+      facts(
+        ["Borrower", said("Kestrel Polymers Pvt Ltd", ...at("doc-coi", 1))],
+        ["Constitution", "Private limited company"],
+        ["PAN", said(PAN, ...at("doc-cpan", 1))],
+        ["GSTIN", said("27AAACK1234K1Z5", ...at("doc-gstr3b", 1))],
+        ["CIN", said(CIN, ...at("doc-coi", 1))],
+        ["Incorporated", said("12 Jun 2015 (11 years 3 months)", ...at("doc-coi", 1))],
+        ["Facilities proposed", "Cash credit, Term loan"],
+        ["Amount requested", "INR 50.00 lakh"],
+        ["Collateral offered", "Offered (case record; details not on file)"],
+        ["Turnover declared in the sourcing message", "INR 3.00 cr"],
+        ["Relationship manager and branch", "Arjun Deshpande · Mumbai hub"],
+        ["Approving authority", "At least Regional Credit Head (provisional matrix)"],
+        [
+          "Cross-checks",
+          "18 run; 7 discrepancies: 5 open (2 blocking submission), 1 accepted as valid, 1 not valid; 4 could not be completed",
+        ],
+        ["Policy norms", "3 deviations · 3 not assessed"],
+        ["Documentation", "Readiness 58% against the 85% gate · 2 blocking items open"],
+        ["Case ID", KESTREL],
+      ),
+    ]),
+    memoSection(2, "borrower", "Borrower profile", [
+      paragraph(
+        "Kestrel Polymers Pvt Ltd is a private limited company (limited by shares) incorporated on 12 Jun 2015, 11 years 3 months in business.",
+        ...at("doc-coi", 1),
+      ),
+      facts(
+        [
+          "Legal name (certificate of incorporation)",
+          said("Kestrel Polymers Private Limited", ...at("doc-coi", 1)),
+        ],
+        ["CIN", said(CIN, ...at("doc-coi", 1))],
+        ["Date of incorporation", said("12 Jun 2015", ...at("doc-coi", 1))],
+        ["Company type", said("Company limited by shares", ...at("doc-coi", 1))],
+        ["PAN", said(PAN, ...at("doc-cpan", 1))],
+        ["GSTIN", said("27AAACK1234K1Z5 (Maharashtra)", ...at("doc-gstr3b", 1))],
+        [
+          "Registered office",
+          said("Unit 7, Sector 3 industrial estate, Navi Mumbai 410208", ...at("doc-coi", 1)),
+        ],
+      ),
+      note(
+        "The entity PAN and the CIN differ between documents: see XV-000021-03 and XV-000021-04 in section 10.",
+      ),
+    ]),
+    memoSection(3, "promoters", "Promoters and management", [
+      table(
+        ["Name", "Role", "DIN", "PAN", "KYC on file", "Named in"],
+        [
+          [
+            "Kabir Rao",
+            "Director",
+            "08812345",
+            said("ABCPR1234F", ...at("doc-pan", 1)),
+            "Yes",
+            "KYC received, Sourcing message",
+          ],
+          ["Leela Varghese", "Director", "—", "—", "No", "Sourcing message"],
+        ],
+      ),
+      paragraph("No KYC has been received for Leela Varghese."),
+    ]),
+    memoSection(4, "proposal", "Proposal and facilities", [
+      table(
+        ["Facility", "Product"],
+        [
+          ["Cash credit", "Working capital"],
+          ["Term loan", "Term loan"],
+        ],
+      ),
+      paragraph(
+        "The total amount requested is INR 50.00 lakh, with collateral offered. The sourcing message states annual turnover of INR 3.00 cr and does not state the purpose of the facilities.",
+      ),
+      note("The split of the amount between the facilities is not on file."),
+    ]),
+    memoSection(5, "financials", "Financial performance", [
+      table(
+        ["", "FY 2024-25 (audited)", "FY 2025-26 (audited)"],
+        [
+          [
+            "Revenue from operations",
+            said("INR 26.40 cr", ...bs(3)),
+            said("INR 30.00 cr", ...bs(4)),
+          ],
+          ["Growth in revenue (%)", "—", "13.6%"],
+          ["EBITDA", said("INR 1.85 cr", ...bs(3)), said("INR 0.90 cr", ...bs(4))],
+          ["EBITDA margin (%)", "7.0%", "3.0%"],
+          ["Profit after tax", said("INR 42.00 lakh", ...bs(3)), said("INR -40.00 lakh", ...bs(5))],
+          ["PAT margin (%)", "1.6%", "-1.3%"],
+          ["Net worth", said("INR 4.40 cr", ...bs(3)), said("INR 4.00 cr", ...bs(4))],
+          ["Total borrowings", said("INR 9.80 cr", ...bs(3)), said("INR 12.00 cr", ...bs(4))],
+          ["Current ratio", said("1.42x", ...bs(3)), said("1.50x", ...bs(4))],
+          ["TOL / TNW", said("3.10x", ...bs(3)), said("3.75x", ...bs(4))],
+          ["Debt / equity", said("2.23x", ...bs(3)), said("3.00x", ...bs(4))],
+        ],
+        { title: "Key financials", numeric: [1, 2] },
+      ),
+      paragraph(
+        "Revenue from operations grew 13.6%, from INR 26.40 cr in FY 2024-25 to INR 30.00 cr in FY 2025-26.",
+        ...bs(3),
+        ...bs(4),
+      ),
+      paragraph(
+        "The company made a loss after tax of INR 40.00 lakh in FY 2025-26, against a profit of INR 42.00 lakh the year before: a deviation from the norm of a profit in the latest year, see section 11.",
+        ...bs(5),
+        ...bs(3),
+      ),
+      paragraph(
+        "Debt / equity rose to 3.00x against the norm of at most 2.00x, a deviation, see section 11. The current ratio of 1.50x is within the norm of at least 1.20x.",
+        ...bs(4),
+      ),
+      note("Figures as on the spread (interim layout)."),
+    ]),
+    memoSection(6, "working_capital", "Assessment of working-capital requirement", [
+      paragraph("The request is within INR 5.00 cr, so the turnover method applies."),
+      table(
+        ["Step", "Amount", "Basis"],
+        [
+          [
+            "Turnover",
+            said("INR 30.00 cr", ...bs(4)),
+            "Revenue from operations, FY 2025-26 (audited)",
+          ],
+          ["Working-capital requirement", "INR 7.50 cr", "25% of turnover"],
+          ["Margin", "INR 1.50 cr", "5% of turnover"],
+          ["Eligible bank finance", "INR 6.00 cr", "Requirement less the margin"],
+        ],
+        { numeric: [1] },
+      ),
+      paragraph(
+        "On the figures for FY 2025-26 (audited), eligible bank finance is INR 6.00 cr; the request of INR 50.00 lakh is within it.",
+        ...bs(4),
+      ),
+      paragraph(
+        "The proposed instalment of the term loan is not on file, so the DSCR on the proposal cannot be computed.",
+      ),
+    ]),
+    memoSection(7, "turnover", "Turnover across sources (GST, income tax and banking)", [
+      table(
+        [
+          "Financial year",
+          "Audited",
+          "GST outward supplies (GSTR-3B)",
+          "Income tax return",
+          "Business credits (bank)",
+          "Declared",
+        ],
+        [
+          [
+            "FY 2025-26",
+            said("INR 30.00 cr", ...bs(4)),
+            said("INR 14.80 cr (8 of 12 months)", ...gstReturns()),
+            "—",
+            said("INR 25.62 cr", ...at("doc-bank", 3)),
+            "INR 3.00 cr",
+          ],
+          [
+            "FY 2024-25",
+            said("INR 26.40 cr", ...bs(3)),
+            "—",
+            said("INR 26.10 cr", ...at("doc-itr", 2)),
+            "—",
+            "—",
+          ],
+        ],
+        {
+          numeric: [1, 2, 3, 4, 5],
+          note: "Business credits exclude transfers between the borrower's own accounts, loan disbursals and reversals.",
+        },
+      ),
+      paragraph(`XV-000021-05: ${GST_TEXT}`, ...at("doc-gstr3b", 1), ...at("doc-bank", 5)),
+      paragraph(`XV-000021-07, found not valid: ${DECLARED_TEXT}`, ...bs(4)),
+      paragraph(
+        "GST returns (GSTR-3B) are on file for 8 months, Aug 2025 to Mar 2026; income tax returns for AY 2025-26. Every audited year that is due has its return on file (TX-01).",
+        ...gstReturns(),
+        ...at("doc-itr", 1),
+      ),
+    ]),
+    memoSection(8, "banking", "Banking and account conduct", [
+      table(
+        ["Account", "Months", "Gross credits", "Excluded", "Business credits", "Average a month"],
+        [
+          [
+            ACCOUNT,
+            "12",
+            said("INR 27.95 cr", ...at("doc-bank", 3)),
+            said("INR 2.33 cr", ...at("doc-bank", 7)),
+            "INR 25.62 cr",
+            "INR 2.14 cr",
+          ],
+        ],
+        { numeric: [1, 2, 3, 4, 5] },
+      ),
+      paragraph(
+        "Excluded from the credits: a loan disbursal of INR 25.00 lakh (TL 7781) on 06 Apr 2025, transfers between the borrower's own accounts of INR 1.73 cr and reversals of INR 35.00 lakh.",
+        ...at("doc-bank", 7),
+      ),
+      paragraph(
+        "No statements have been received for Lotuscrest Bank ·5678, declared in the sourcing message: see XV-000021-06.",
+      ),
+      paragraph(
+        `${DISBURSAL_TEXT} No instalment of that loan is seen in the statements.`,
+        ...at("doc-bank", 7),
+      ),
+    ]),
+    memoSection(9, "obligations", "Existing facilities and obligations", [
+      table(
+        [
+          "Lender",
+          "Facility",
+          "Declared",
+          "Sanction letter",
+          "Bureau",
+          "Instalment",
+          "Seen in the bank (a month)",
+        ],
+        [
+          [
+            "Tidewater Finance",
+            "Term loan",
+            said("INR 40.00 lakh", ...at("doc-decl", 1)),
+            said("INR 55.00 lakh", ...at("doc-sanction", 1)),
+            said("INR 55.00 lakh; outstanding INR 38.00 lakh", ...at("doc-bureau", 2)),
+            said("INR 92,000", ...at("doc-decl", 1)),
+            said("INR 92,000 (12 months)", ...at("doc-bank", 7)),
+          ],
+          [
+            "ASHWOOD FINSERV",
+            "—",
+            "Not declared",
+            "—",
+            "—",
+            "—",
+            said("INR 1,45,000 (6 months)", ...at("doc-bank", 7)),
+          ],
+          [
+            "Lotuscrest Bank",
+            "Cash credit",
+            "Not declared",
+            "—",
+            said("INR 1.20 cr; outstanding INR 95.00 lakh", ...at("doc-bureau", 3)),
+            "—",
+            "—",
+          ],
+        ],
+        { numeric: [2, 3, 4, 5, 6] },
+      ),
+      paragraph("The commercial bureau rank is not on file."),
+      paragraph(
+        "Existing sanctioned exposure is INR 1.75 cr as the bureau reports it; the bureau shows no overdues.",
+        ...at("doc-bureau", 2),
+        ...at("doc-bureau", 3),
+      ),
+      paragraph(
+        "Regular debits of about INR 1,45,000 a month go to ASHWOOD FINSERV, a lender that has not been declared: see XV-000021-01.",
+        ...at("doc-bank", 7),
+      ),
+    ]),
+    memoSection(10, "verification", "Cross-verification of sources", [
+      table(
+        ["Area", "Checks", "Discrepancies", "Accepted", "Open", "Could not be completed"],
+        [
+          ["Identity consistency", "8", "2", "0", "2", "1"],
+          ["Turnover", "5", "2", "0", "1", "3"],
+          ["Bank accounts", "2", "1", "1", "0", "0"],
+          ["Existing obligations", "3", "2", "0", "2", "0"],
+        ],
+        { title: "By area", numeric: [1, 2, 3, 4, 5] },
+      ),
+      table(
+        ["Check", "Why", "What would complete it"],
+        [
+          [
+            "ID-04 Promoters match the KYC received",
+            "Director KYC not on file.",
+            "The director KYC",
+          ],
+          [
+            "TO-01 Audited turnover against GST outward supplies · FY 2025-26",
+            said(
+              "GST outward supplies covers 8 of 12 months (Apr 2025 to Jul 2025 absent).",
+              ...at("doc-gstr3b", 1),
+            ),
+            "GSTR-3B returns for Apr 2025 to Jul 2025",
+          ],
+        ],
+        { title: "Checks not completed" },
+      ),
+      table(
+        ["Ref", "Severity", "Finding", "Detail", "Status"],
+        [
+          [
+            "XV-000021-03",
+            "Serious",
+            "Entity PAN differs between documents",
+            said(PAN_TEXT, ...at("doc-cpan", 1), ...at("doc-bureau", 1)),
+            "Open · blocks submission",
+          ],
+          [
+            "XV-000021-04",
+            "Serious",
+            "CIN differs between documents",
+            said(CIN_TEXT, ...at("doc-coi", 1), ...at("doc-moa", 2)),
+            "Open · blocks submission",
+          ],
+          [
+            "XV-000021-05",
+            "Moderate",
+            "GST and bank credits diverge over the months both cover",
+            said(GST_TEXT, ...at("doc-gstr3b", 1), ...at("doc-bank", 5)),
+            "Open",
+          ],
+          [
+            "XV-000021-07",
+            "Mild",
+            "Declared turnover differs from the evidence",
+            said(DECLARED_TEXT, ...bs(4)),
+            "Not valid",
+          ],
+          [
+            "XV-000021-06",
+            "Moderate",
+            "Declared account without a statement",
+            said(ACCOUNT_TEXT, ...at("doc-bank", 3)),
+            "Accepted as valid",
+          ],
+          [
+            "XV-000021-01",
+            "Serious",
+            "Instalments to a lender that was not declared",
+            said(LENDER_TEXT, ...at("doc-bank", 7)),
+            "Open",
+          ],
+          [
+            "XV-000021-02",
+            "Serious",
+            "Existing facilities do not reconcile",
+            said(
+              FACILITIES_TEXT,
+              ...at("doc-decl", 1),
+              ...at("doc-sanction", 1),
+              ...at("doc-bureau", 2),
+            ),
+            "Escalated",
+          ],
+        ],
+        { title: "Discrepancies" },
+      ),
+    ]),
+    memoSection(11, "policy", "Compliance with policy norms", [
+      table(
+        ["Norm", "Required", "Actual", "Result", "Category"],
+        [
+          [
+            "EL-04 Profit in the latest year",
+            "no loss",
+            said("INR -40.00 lakh", ...bs(5)),
+            "Deviation",
+            "Eligibility",
+          ],
+          ["EL-02 Commercial bureau rank", "at most rank 6", "—", "Not assessed", "Eligibility"],
+          [
+            "FR-01 Current ratio",
+            "at least 1.20x",
+            said("1.50x", ...bs(4)),
+            "Met",
+            "Financial norms",
+          ],
+          ["FR-04 Interest coverage", "at least 2.50x", "—", "Not assessed", "Financial norms"],
+          [
+            "FR-05 Debt / equity",
+            "at most 2.00x",
+            said("3.00x", ...bs(4)),
+            "Deviation",
+            "Financial norms",
+          ],
+          [
+            "FR-06 Working-capital cycle",
+            "at most 75 days",
+            "—",
+            "Not assessed",
+            "Financial norms",
+          ],
+          ["DOC-01 Blocking checklist items open", "none", "2", "Deviation", "Documentation"],
+        ],
+        { numeric: [2] },
+      ),
+      paragraph(
+        "Profit in the latest year is INR -40.00 lakh against a norm of no loss (Eligibility).",
+        ...bs(5),
+      ),
+      paragraph(
+        "Debt / equity is 3.00x against a norm of at most 2.00x (Financial norms).",
+        ...bs(4),
+      ),
+      paragraph("Blocking checklist items open: 2 against a norm of none (Documentation)."),
+      paragraph(
+        "Commercial bureau rank could not be assessed: Commercial bureau rank not on file.",
+      ),
+      paragraph("Interest coverage could not be computed: Finance costs is zero.", ...bs(5)),
+      paragraph(
+        "Working-capital cycle could not be assessed: Trade receivables awaits review.",
+        ...bs(4),
+      ),
+      subheading("Approving authority"),
+      facts(
+        [
+          "Amount",
+          "Credit Officer: working capital up to INR 2.00 cr, term loan up to INR 1.00 cr",
+        ],
+        ["Eligibility deviation (EL-04)", "One level above, at least Regional Credit Head"],
+        ["Financial norms deviation (FR-05)", "One level above: Regional Credit Head"],
+        ["Documentation deviation (DOC-01)", "One level above: Regional Credit Head"],
+        ["Authority required", "At least Regional Credit Head"],
+        ["Could rise to", "Regional Credit Head, once EL-02, FR-04 and FR-06 are assessed"],
+        ["Matrix", "Provisional matrix"],
+      ),
+    ]),
+    memoSection(12, "documentation", "Documentation status", [
+      facts(["Readiness", "58% against the 85% gate"], ["Blocking items open", "2"]),
+      table(
+        ["Item", "Status", "What is missing"],
+        [
+          [
+            "Valuation report",
+            "Missing",
+            "Valuation report for the property offered as collateral.",
+          ],
+          ["Board resolution", "Insufficient", "Unsigned: the copy provided is not signed."],
+          [
+            "KYC of directors",
+            "Missing",
+            "1 of 2 directors (Leela Varghese): PAN and address proof.",
+          ],
+          [
+            "Provisional financial statements FY26",
+            "Insufficient",
+            "Incomplete: balance sheet pages absent.",
+          ],
+          ["GST returns (12 months)", "Insufficient", "Period gap: April to July 2025 absent."],
+          [
+            "Stock statement",
+            "Insufficient",
+            "Outdated: dated 31 Jan 2026; permitted age 60 days from 20 Sep 2026.",
+          ],
+        ],
+      ),
+      paragraph("Outdated documents: the stock statement dated 31 Jan 2026."),
+    ]),
   ],
+  summary_number: 13,
   summary_title: "Summary of findings, deviations and open queries",
+  // The findings as a register (their explanations are in section 10), the checks that could not
+  // be completed with what would complete them, the deviations, the norms not assessed and the
+  // open queries by group.
   summary: [
-    {
-      kind: "finding",
+    summaryItem("finding", "XV-000021-03", "", {
       severity: "serious",
-      ref: "fnd-ob2",
-      text: "Regular debits to lender(s) not declared: ASHWOOD FINSERV.",
-      citations: [{ document_id: "doc-bank", page: 7 }],
-    },
-    {
-      kind: "deviation",
-      severity: null,
-      ref: "FR-05",
-      text: "Financial norms: Debt / equity is 3.00x against at most 2.00x.",
-      citations: cite(4),
-    },
-    {
-      kind: "unassessed",
-      severity: null,
-      ref: "EL-02",
-      text: "Commercial bureau rank could not be assessed: Commercial bureau rank not on file.",
-      citations: [],
-    },
-    { kind: "query", severity: null, ref: "q1", text: "KYC of Leela Varghese.", citations: [] },
+      rule: "ID-01",
+      title: "Entity PAN differs between documents",
+      status: "Open",
+      blocking: true,
+      citations: [...at("doc-cpan", 1), ...at("doc-bureau", 1)],
+    }),
+    summaryItem("finding", "XV-000021-04", "", {
+      severity: "serious",
+      rule: "ID-05",
+      title: "CIN differs between documents",
+      status: "Open",
+      blocking: true,
+      citations: [...at("doc-coi", 1), ...at("doc-moa", 2)],
+    }),
+    summaryItem("finding", "XV-000021-05", "", {
+      severity: "moderate",
+      rule: "TO-05",
+      title: "GST and bank credits diverge over the months both cover",
+      status: "Open",
+      citations: [...gstReturns(), ...at("doc-bank", 5)],
+    }),
+    summaryItem("finding", "XV-000021-06", "", {
+      severity: "moderate",
+      rule: "BA-01",
+      title: "Declared account without a statement",
+      status: "Accepted as valid",
+      citations: at("doc-bank", 3),
+    }),
+    summaryItem("finding", "XV-000021-01", "", {
+      severity: "serious",
+      rule: "OB-02",
+      title: "Instalments to a lender that was not declared",
+      status: "Open",
+      citations: at("doc-bank", 7),
+    }),
+    summaryItem("finding", "XV-000021-02", "", {
+      severity: "serious",
+      rule: "OB-01",
+      title: "Existing facilities do not reconcile",
+      status: "Escalated",
+      citations: [...at("doc-decl", 1), ...at("doc-sanction", 1), ...at("doc-bureau", 2)],
+    }),
+    summaryItem("incomplete", "ID-04", "Director KYC not on file.", {
+      severity: "serious",
+      rule: "ID-04",
+      title: "Promoters match the KYC received",
+      request: "the director KYC",
+    }),
+    summaryItem(
+      "incomplete",
+      "TO-01",
+      "GST outward supplies covers 8 of 12 months (Apr 2025 to Jul 2025 absent).",
+      {
+        severity: "moderate",
+        rule: "TO-01",
+        title: "Audited turnover against GST outward supplies · FY 2025-26",
+        request: "GSTR-3B returns for Apr 2025 to Jul 2025",
+        citations: at("doc-gstr3b", 1),
+      },
+    ),
+    summaryItem(
+      "deviation",
+      "EL-04",
+      "Eligibility: Profit in the latest year INR -40.00 lakh against no loss.",
+      { rule: "EL-04", title: "Profit in the latest year", citations: bs(5) },
+    ),
+    summaryItem(
+      "deviation",
+      "FR-05",
+      "Financial norms: Debt / equity 3.00x against at most 2.00x.",
+      {
+        rule: "FR-05",
+        title: "Debt / equity",
+        citations: bs(4),
+      },
+    ),
+    summaryItem(
+      "deviation",
+      "DOC-01",
+      "Documentation: Blocking checklist items open 2 against none.",
+      { rule: "DOC-01", title: "Blocking checklist items open" },
+    ),
+    summaryItem(
+      "unassessed",
+      "EL-02",
+      "The commercial bureau report is not on file, so the bureau rank could not be assessed.",
+      { rule: "EL-02", title: "Commercial bureau rank" },
+    ),
+    summaryItem(
+      "unassessed",
+      "FR-04",
+      "Interest coverage could not be computed: Finance costs is zero.",
+      {
+        rule: "FR-04",
+        title: "Interest coverage",
+        citations: bs(5),
+      },
+    ),
+    summaryItem(
+      "unassessed",
+      "FR-06",
+      "Working-capital cycle could not be assessed: Trade receivables awaits review.",
+      { rule: "FR-06", title: "Working-capital cycle", citations: bs(4) },
+    ),
+    summaryItem("query", "q1", "KYC of Leela Varghese: PAN and address proof.", {
+      group: "documents_needed",
+    }),
+    summaryItem("query", "q2", "Valuation report for the property offered as collateral.", {
+      group: "documents_needed",
+    }),
+    summaryItem("query", "q3", "GST returns (GSTR-3B) for April to July 2025.", {
+      group: "documents_needed",
+    }),
+    summaryItem("query", "q4", "Board resolution: the copy provided is not signed.", {
+      group: "documents_to_redo",
+    }),
+    summaryItem(
+      "query",
+      "q5",
+      "Stock statement dated within the last 60 days (latest is 31 Jan 2026).",
+      { group: "documents_to_redo" },
+    ),
+    summaryItem(
+      "query",
+      "q7",
+      "Bank statements show a monthly EMI of INR 1,45,000 to a lender not in the declaration of existing facilities. Please explain.",
+      { group: "clarifications", citations: at("doc-bank", 7) },
+    ),
   ],
+  recommendation_number: 14,
   recommendation_title: "Recommendation",
   recommendation: "",
+  recommendation_prompts: [
+    "Recommendation",
+    "Terms and conditions",
+    "Deviations recommended for approval",
+    "Decision of the approving authority",
+  ],
+  sign_off: [{ role: "Prepared by" }, { role: "Recommended by" }, { role: "Approved by" }],
+  sources: [
+    source(1, "doc-coi", "Certificate of incorporation", "coi.pdf", [1]),
+    source(2, "doc-cpan", "Company PAN", "company_pan.pdf", [1]),
+    source(3, "doc-gstr3b", "GSTR-3B · Aug 2025", "gstr3b_aug25.pdf", [1]),
+    source(4, "doc-pan", "PAN (individual) · Kabir Rao", "director1_pan.jpg", [1]),
+    source(
+      5,
+      "doc-bs",
+      "Audited financial statements · FY 2025-26",
+      "bank stmt apr-mar.pdf",
+      [3, 4, 5],
+    ),
+    ...GST_RETURNS.slice(1).map(([id, month, file], i) =>
+      source(6 + i, id, `GSTR-3B · ${month}`, file, [1]),
+    ),
+    source(13, "doc-bank", "Bank statement · Lotuscrest Bank ·1234", "merged_docs.pdf", [3, 5, 7]),
+    source(14, "doc-itr", "Income tax return · AY 2025-26", "itr_ay2025-26.pdf", [1, 2]),
+    source(
+      15,
+      "doc-decl",
+      "Declaration of existing facilities",
+      "existing_facilities_declaration.pdf",
+      [1],
+    ),
+    source(
+      16,
+      "doc-sanction",
+      "Sanction letter · Tidewater Finance",
+      "sanction_tidewater.pdf",
+      [1],
+    ),
+    source(17, "doc-bureau", "Commercial bureau report", "bureau_report.pdf", [1, 2, 3]),
+    source(18, "doc-moa", "Memorandum and articles of association", "moa_aoa.pdf", [2]),
+  ],
 };
+
+// The PD question note for Kestrel, as engine/pd_note.py composes it: the questions by topic,
+// most serious first within each, numbered across the note; each with the finding, deviation,
+// gap or memo observation it comes from and its pages.
+
+const pdQuestion = (
+  q: Pick<
+    PdQuestion,
+    | "id"
+    | "number"
+    | "question"
+    | "context"
+    | "severity"
+    | "source"
+    | "ref"
+    | "rule"
+    | "title"
+    | "area"
+  > &
+    Partial<PdQuestion>,
+): PdQuestion => ({
+  xv_ref: null,
+  status: null,
+  evidence: [],
+  target:
+    q.source === "deviation" ? "policy" : q.source === "observation" ? "cam" : "cross_verification",
+  text: `${q.context} ${q.question}`,
+  ...q,
+});
 
 export const PD_NOTE: PdNote = {
   case_id: KESTREL,
-  questions: [
+  title: "Personal discussion — question note",
+  borrower: "Kestrel Polymers Pvt Ltd",
+  as_of: "2026-09-20",
+  config_version: OUTPUT_CONFIG_VERSION,
+  config_label: OUTPUT_CONFIG_LABEL,
+  header: [
+    { label: "Borrower", value: said("Kestrel Polymers Pvt Ltd") },
+    { label: "Case ID", value: said(KESTREL) },
+    { label: "Constitution", value: said("Private limited company") },
+    { label: "Proposal", value: said("Cash credit and term loan, INR 50.00 lakh") },
+    { label: "Data as of", value: said("20 Sep 2026") },
+    { label: "Configuration", value: said(OUTPUT_CONFIG_LABEL) },
+  ],
+  people: [
     {
-      id: "pdq-1",
-      text: "Regular debits to lender(s) not declared: ASHWOOD FINSERV. What are these payments for?",
+      name: "Kabir Rao",
+      role: "Director",
+      din: "08812345",
+      sources: ["KYC received", "Memorandum and articles of association", "Sourcing message"],
+      evidence: [...at("doc-moa", 2), ...at("doc-br", 1)],
+    },
+    {
+      name: "Leela Varghese",
+      role: "Director",
+      din: null,
+      sources: ["Memorandum and articles of association", "Sourcing message"],
+      evidence: at("doc-moa", 2),
+    },
+  ],
+  questions: [
+    pdQuestion({
+      id: "pdq-id1",
+      number: 1,
+      area: "identity",
+      severity: "serious",
+      source: "finding",
+      ref: "fnd-id1",
+      xv_ref: "XV-000021-03",
+      rule: "ID-01",
+      title: "Entity PAN differs between documents",
+      status: "Open",
+      question: "Which PAN is the company's, and has the bureau been asked to correct its record?",
+      context: PAN_TEXT,
+      evidence: [...at("doc-cpan", 1), ...at("doc-bureau", 1)],
+    }),
+    pdQuestion({
+      id: "pdq-id5",
+      number: 2,
+      area: "identity",
+      severity: "serious",
+      source: "finding",
+      ref: "fnd-id5",
+      xv_ref: "XV-000021-04",
+      rule: "ID-05",
+      title: "CIN differs between documents",
+      status: "Open",
+      question:
+        "Which CIN is correct, and can a corrected memorandum and articles of association be provided?",
+      context: CIN_TEXT,
+      evidence: [...at("doc-coi", 1), ...at("doc-moa", 2)],
+    }),
+    pdQuestion({
+      id: "pdq-id4",
+      number: 3,
+      area: "identity",
+      severity: "mild",
+      source: "gap",
+      ref: "fnd-id4",
+      rule: "ID-04",
+      title: "Promoter missing from a source",
+      question: "When will the KYC of Leela Varghese, director, be provided?",
+      context: "Director KYC not on file: no KYC has been received for Leela Varghese.",
+    }),
+    pdQuestion({
+      id: "pdq-to5",
+      number: 4,
+      area: "turnover",
+      severity: "moderate",
+      source: "finding",
+      ref: "fnd-to5",
+      xv_ref: "XV-000021-05",
+      rule: "TO-05",
+      title: "GST and bank credits diverge over the months both cover",
+      status: "Open",
+      question:
+        "What explains business credits of INR 17.19 cr against GST outward supplies of INR 14.80 cr over the same months?",
+      context: GST_TEXT,
+      evidence: [...at("doc-gstr3b", 1), ...at("doc-bank", 5)],
+    }),
+    pdQuestion({
+      id: "pdq-to1",
+      number: 5,
+      area: "turnover",
+      severity: "mild",
+      source: "gap",
+      ref: "fnd-to1",
+      rule: "TO-01",
+      title: "Audited turnover differs from GST returns",
+      question:
+        "Can the following be provided before sanction: GSTR-3B returns for Apr 2025 to Jul 2025?",
+      context:
+        "Could not be checked: audited turnover against GST outward supplies; GST outward supplies against cleansed bank credits.",
+      evidence: at("doc-gstr3b", 1),
+      also: [
+        {
+          ref: "fnd-to2",
+          xv_ref: null,
+          rule: "TO-02",
+          title: "GST turnover not supported by bank credits",
+          status: null,
+          evidence: [],
+        },
+      ],
+    }),
+    pdQuestion({
+      id: "pdq-ba1",
+      number: 6,
+      area: "accounts",
+      severity: "moderate",
+      source: "finding",
+      ref: "fnd-ba1",
+      xv_ref: "XV-000021-06",
+      rule: "BA-01",
+      title: "Declared account without a statement",
+      status: "Accepted as valid",
+      question:
+        "What is the Lotuscrest Bank account ending 5678 used for, and can its statements for the last 12 months be provided?",
+      context: ACCOUNT_TEXT,
+      evidence: at("doc-bank", 3),
+    }),
+    pdQuestion({
+      id: "pdq-ob2",
+      number: 7,
+      area: "obligations",
       severity: "serious",
       source: "finding",
       ref: "fnd-ob2",
+      xv_ref: "XV-000021-01",
       rule: "OB-02",
-      title: "Instalments in bank statements go to declared lenders",
-      evidence: [{ document_id: "doc-bank", page: 7 }],
-      target: "cross_verification",
-    },
-    {
-      id: "pdq-2",
-      text: "Debt / equity is 3.00x against a norm of at most 2.00x. What explains it?",
+      title: "Instalments to a lender that was not declared",
+      status: "Open",
+      question:
+        "What are the monthly payments of INR 1,45,000 to ASHWOOD FINSERV for, and why is that facility not in the declaration?",
+      context: LENDER_TEXT,
+      evidence: at("doc-bank", 7),
+    }),
+    pdQuestion({
+      id: "pdq-ob1",
+      number: 8,
+      area: "obligations",
+      severity: "serious",
+      source: "finding",
+      ref: "fnd-ob1",
+      xv_ref: "XV-000021-02",
+      rule: "OB-01",
+      title: "Existing facilities do not reconcile",
+      status: "Escalated",
+      question:
+        "What is the sanctioned amount of the Tidewater Finance term loan, and why does the declaration show INR 40.00 lakh?",
+      context: FACILITIES_TEXT,
+      evidence: [...at("doc-decl", 1), ...at("doc-sanction", 1), ...at("doc-bureau", 2)],
+    }),
+    pdQuestion({
+      id: "pdq-obs1",
+      number: 9,
+      area: "obligations",
+      severity: "moderate",
+      source: "observation",
+      ref: "banking:loan-disbursal",
+      rule: "OBS",
+      title: "Loan disbursal no facility explains",
+      // The memo section that states it, as the engine names it.
+      status: "section 8",
+      question:
+        "Which lender disbursed the INR 25.00 lakh on 06 Apr 2025, on what terms, and why is no instalment seen?",
+      context: DISBURSAL_TEXT,
+      evidence: at("doc-bank", 7),
+    }),
+    pdQuestion({
+      id: "pdq-el04",
+      number: 10,
+      area: "policy",
+      severity: "serious",
+      source: "deviation",
+      ref: "EL-04",
+      rule: "EL-04",
+      title: "Profit in the latest year",
+      question:
+        "What caused the loss in FY 2025-26, and what are the results for the current year so far?",
+      context:
+        "Profit in the latest year is INR -40.00 lakh against a norm of at least INR 0 (Eligibility).",
+      evidence: bs(5),
+    }),
+    pdQuestion({
+      id: "pdq-fr05",
+      number: 11,
+      area: "policy",
       severity: "moderate",
       source: "deviation",
       ref: "FR-05",
       rule: "FR-05",
       title: "Debt / equity",
-      evidence: cite(4),
-      target: "policy",
-    },
-    {
-      id: "pdq-3",
-      text: "The declaration shows Tidewater Finance at INR 40.00 lakh; the sanction letter and the bureau report show INR 55.00 lakh. Which is right?",
-      severity: "serious",
-      source: "finding",
-      ref: "fnd-ob1",
-      rule: "OB-01",
-      title: "Declared facilities reconcile with sanction letters and the bureau",
-      evidence: [{ document_id: "doc-bureau", page: 2 }],
-      target: "cross_verification",
-    },
+      question: "How will borrowings be brought within the norm of debt / equity at most 2.00x?",
+      context: "Debt / equity is 3.00x against a norm of at most 2.00x (Financial norms).",
+      evidence: bs(4),
+    }),
   ],
+  topics: [
+    {
+      area: "identity",
+      title: "Identity and KYC",
+      question_ids: ["pdq-id1", "pdq-id5", "pdq-id4"],
+    },
+    { area: "turnover", title: "Turnover, tax and sales", question_ids: ["pdq-to5", "pdq-to1"] },
+    { area: "accounts", title: "Bank accounts", question_ids: ["pdq-ba1"] },
+    {
+      area: "obligations",
+      title: "Existing borrowings",
+      question_ids: ["pdq-ob2", "pdq-ob1", "pdq-obs1"],
+    },
+    { area: "policy", title: "Policy norms", question_ids: ["pdq-el04", "pdq-fr05"] },
+  ],
+  documents_to_collect: [
+    said("KYC of Leela Varghese: PAN and address proof."),
+    said("Valuation report for the property offered as collateral."),
+    said("GST returns (GSTR-3B) for April to July 2025."),
+    said("Board resolution: the copy provided is not signed.", ...at("doc-br", 1)),
+    said("Stock statement dated within the last 60 days (latest is 31 Jan 2026)."),
+  ],
+  record_fields: [
+    "Date of discussion",
+    "Place",
+    "Bank officials present",
+    "Promoters or representatives present",
+  ],
+  sign_off: [{ role: "Discussion held by" }],
+  sources: [
+    source(1, "doc-cpan", "Company PAN", "company_pan.pdf", [1]),
+    source(2, "doc-bureau", "Commercial bureau report", "bureau_report.pdf", [1, 2]),
+    source(3, "doc-coi", "Certificate of incorporation", "coi.pdf", [1]),
+    source(4, "doc-moa", "Memorandum and articles of association", "moa_aoa.pdf", [2]),
+    source(5, "doc-gstr3b", "GSTR-3B · Aug 2025", "gstr3b_aug25.pdf", [1]),
+    source(6, "doc-bank", "Bank statement · Lotuscrest Bank ·1234", "merged_docs.pdf", [3, 5, 7]),
+    source(
+      7,
+      "doc-decl",
+      "Declaration of existing facilities",
+      "existing_facilities_declaration.pdf",
+      [1],
+    ),
+    source(8, "doc-sanction", "Sanction letter · Tidewater Finance", "sanction_tidewater.pdf", [1]),
+    source(
+      9,
+      "doc-bs",
+      "Audited financial statements · FY 2025-26",
+      "bank stmt apr-mar.pdf",
+      [4, 5],
+    ),
+    source(10, "doc-br", "Board resolution", "board_resolution.pdf", [1]),
+  ],
+};
+
+/** What the download endpoints answer: a few bytes of each kind of file. */
+export const DOWNLOAD_BYTES = {
+  docx: Buffer.from("PK\u0003\u0004 CreditIQ draft", "latin1"),
+  pdf: Buffer.from("%PDF-1.4\n% CreditIQ draft\n%%EOF\n", "latin1"),
 };
 
 export const CONFIG_VERSIONS = [
@@ -2807,6 +3803,164 @@ export const CONFIG_VERSIONS = [
     current: false,
   },
 ];
+
+/** The settings an Administrator edits, as the version in force has them (GET /api/admin/settings). */
+export const SETTINGS: EditableSettings = {
+  version: "v2hash",
+  published_at: "2026-10-01T09:30:00+00:00",
+  author: "Config Admin",
+  origin: "cli",
+  tolerances: [
+    {
+      key: "turnover_variance",
+      label: "Turnover variance between sources",
+      value: 1,
+      unit: "%",
+      source: "provisional",
+      rules: ["TO-02"],
+    },
+    {
+      key: "declared_turnover_variance",
+      label: "RM-declared against evidenced turnover",
+      value: 2,
+      unit: "%",
+      source: "provisional",
+      rules: ["TO-04"],
+    },
+    {
+      key: "name_match",
+      label: "Minimum name similarity to treat two names as one",
+      value: 0.9,
+      unit: "ratio",
+      source: "provisional",
+      rules: ["ID-01"],
+    },
+    {
+      key: "itr_due_days",
+      label: "Days after a financial year ends before its income tax return is expected",
+      value: 214,
+      unit: "days",
+      source: "provisional",
+      rules: [],
+    },
+  ],
+  ratios: [
+    {
+      key: "current-ratio",
+      label: "Current ratio",
+      unit: "x",
+      kind: "min",
+      acceptable: 1.2,
+      marginal: 1.1,
+      norms: ["FR-01"],
+    },
+    {
+      key: "tol-tnw",
+      label: "TOL / TNW",
+      unit: "x",
+      kind: "max",
+      acceptable: 3,
+      marginal: 3.75,
+      norms: ["FR-02"],
+    },
+  ],
+  norms: [
+    {
+      id: "EL-01",
+      family: "eligibility",
+      label: "Business vintage",
+      unit: "years",
+      kind: "min",
+      threshold: 3,
+    },
+    {
+      id: "EL-05",
+      family: "eligibility",
+      label: "Total request against turnover",
+      unit: "%",
+      kind: "max",
+      threshold: 20,
+    },
+    {
+      id: "DOC-01",
+      family: "documentation",
+      label: "Blocking checklist items open",
+      unit: "count",
+      kind: "max",
+      threshold: 0,
+    },
+  ],
+  rules: [
+    {
+      id: "ID-01",
+      title: "Entity PAN consistent across documents",
+      area: "identity",
+      severity: "serious",
+      blocking: true,
+      enabled: true,
+    },
+    {
+      id: "BR-01",
+      title: "Board resolution covers the amount requested",
+      area: "authority",
+      severity: "serious",
+      blocking: true,
+      enabled: false,
+    },
+    {
+      id: "TO-02",
+      title: "GST outward supplies against cleansed bank credits",
+      area: "turnover",
+      severity: "moderate",
+      blocking: false,
+      enabled: true,
+    },
+    {
+      id: "TO-04",
+      title: "RM-declared turnover against evidenced turnover",
+      area: "turnover",
+      severity: "mild",
+      blocking: false,
+      enabled: true,
+    },
+  ],
+  matrix: {
+    status: "provisional",
+    authorities: [
+      { key: "credit_officer", level: 1, label: "Credit Officer" },
+      { key: "regional_credit_head", level: 2, label: "Regional Credit Head" },
+      { key: "zonal_credit_committee", level: 3, label: "Zonal Credit Committee" },
+    ],
+    products: [
+      {
+        key: "working_capital",
+        label: "Working capital",
+        bands: [
+          { up_to_inr: 20_000_000, authority: "credit_officer" },
+          { up_to_inr: 50_000_000, authority: "regional_credit_head" },
+          { up_to_inr: null, authority: "zonal_credit_committee" },
+        ],
+      },
+      {
+        key: "term",
+        label: "Term loan",
+        bands: [
+          { up_to_inr: 10_000_000, authority: "credit_officer" },
+          { up_to_inr: null, authority: "regional_credit_head" },
+        ],
+      },
+    ],
+    deviations: [
+      {
+        category: "eligibility",
+        label: "Eligibility",
+        levels_above: 1,
+        at_least: "regional_credit_head",
+      },
+      { category: "financial", label: "Financial norms", levels_above: 1, at_least: null },
+    ],
+  },
+};
 
 export const USERS = [ANALYST, RM].map((u) => ({
   id: u.id,

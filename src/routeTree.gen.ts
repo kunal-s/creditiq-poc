@@ -21,6 +21,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminChecklistRouteImport } from './routes/admin.checklist'
 import { Route as AdminDocumentTypesRouteImport } from './routes/admin.document-types'
 import { Route as AdminPolicyRouteImport } from './routes/admin.policy'
+import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AppraisalsIndexRouteImport } from './routes/appraisals.index'
 import { Route as AppraisalsCaseIdRouteImport } from './routes/appraisals.$caseId'
@@ -95,6 +96,11 @@ const AdminDocumentTypesRoute = AdminDocumentTypesRouteImport.update({
 const AdminPolicyRoute = AdminPolicyRouteImport.update({
   id: '/policy',
   path: '/policy',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSettingsRoute = AdminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
@@ -190,6 +196,7 @@ export interface FileRoutesByFullPath {
   '/admin/checklist': typeof AdminChecklistRoute
   '/admin/document-types': typeof AdminDocumentTypesRoute
   '/admin/policy': typeof AdminPolicyRoute
+  '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/appraisals/$caseId': typeof AppraisalsCaseIdRouteWithChildren
   '/appraisals/new': typeof AppraisalsNewRoute
@@ -218,6 +225,7 @@ export interface FileRoutesByTo {
   '/admin/checklist': typeof AdminChecklistRoute
   '/admin/document-types': typeof AdminDocumentTypesRoute
   '/admin/policy': typeof AdminPolicyRoute
+  '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/appraisals/new': typeof AppraisalsNewRoute
   '/docready/$': typeof DocreadySplatRoute
@@ -247,6 +255,7 @@ export interface FileRoutesById {
   '/admin/checklist': typeof AdminChecklistRoute
   '/admin/document-types': typeof AdminDocumentTypesRoute
   '/admin/policy': typeof AdminPolicyRoute
+  '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/appraisals/$caseId': typeof AppraisalsCaseIdRouteWithChildren
   '/appraisals/new': typeof AppraisalsNewRoute
@@ -278,6 +287,7 @@ export interface FileRouteTypes {
     | '/admin/checklist'
     | '/admin/document-types'
     | '/admin/policy'
+    | '/admin/settings'
     | '/admin/users'
     | '/appraisals/$caseId'
     | '/appraisals/new'
@@ -306,6 +316,7 @@ export interface FileRouteTypes {
     | '/admin/checklist'
     | '/admin/document-types'
     | '/admin/policy'
+    | '/admin/settings'
     | '/admin/users'
     | '/appraisals/new'
     | '/docready/$'
@@ -334,6 +345,7 @@ export interface FileRouteTypes {
     | '/admin/checklist'
     | '/admin/document-types'
     | '/admin/policy'
+    | '/admin/settings'
     | '/admin/users'
     | '/appraisals/$caseId'
     | '/appraisals/new'
@@ -454,6 +466,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPolicyRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/settings': {
+      id: '/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/users': {
       id: '/admin/users'
       path: '/users'
@@ -566,6 +585,7 @@ interface AdminRouteChildren {
   AdminChecklistRoute: typeof AdminChecklistRoute
   AdminDocumentTypesRoute: typeof AdminDocumentTypesRoute
   AdminPolicyRoute: typeof AdminPolicyRoute
+  AdminSettingsRoute: typeof AdminSettingsRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
@@ -574,6 +594,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminChecklistRoute: AdminChecklistRoute,
   AdminDocumentTypesRoute: AdminDocumentTypesRoute,
   AdminPolicyRoute: AdminPolicyRoute,
+  AdminSettingsRoute: AdminSettingsRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
 }

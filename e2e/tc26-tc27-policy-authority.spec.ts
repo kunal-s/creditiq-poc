@@ -258,6 +258,30 @@ test("TC-24: a card opens its section and focuses its heading; a key norm opens 
   await expect(cycle).not.toHaveAttribute("data-target", "true");
 });
 
+test("TC-24: a link to a norm opens the page at its row once the norms and the authority have loaded", async ({
+  page,
+}) => {
+  const api = new MockApi();
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => {
+    release = () => resolve();
+  });
+  api.on("GET", /\/approving-authority$/, async () => {
+    await held;
+    return { json: APPROVAL };
+  });
+  await signedIn(page, api);
+  await page.goto(`/appraisals/${KESTREL}/policy?norm=DOC-01`);
+  await expect(page.getByTestId("policy-overview")).toBeVisible();
+  // Not while the authority's card above the rows is still loading: it would move them.
+  const blocking = norm(page, "DOC-01");
+  await expect(blocking).not.toBeFocused();
+  release();
+  await expect(blocking).toBeFocused();
+  await expect(blocking).toBeInViewport();
+  await expect(blocking).toHaveAttribute("data-target", "true");
+});
+
 test("TC-24: each family's norms with the required and actual value and their sources", async ({
   page,
 }) => {

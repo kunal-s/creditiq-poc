@@ -97,11 +97,34 @@ def set_as_of(root: Path, case_id: str, as_of: str = TEST_AS_OF) -> None:
         conn.close()
 
 
-def make_case(client: TestClient, headers: dict, root: Path, **overrides) -> str:
+def open_assessment(root: Path, case_id: str, actor: str = "ananya-krishnan") -> None:
+    """Open the assessment gate directly (F-13), without walking the checklist.
+
+    Cross-verification, the policy checks and the outputs are shut until a person creates the
+    case. A test about any of those is not a test of the gate, so it opens it here; the tests
+    of the gate itself use `make_case(..., assessment_open=False)` and the endpoint."""
+    from datetime import datetime, timezone
+
+    from engine import db
+
+    conn = db.connect(root)
+    try:
+        conn.execute(
+            "UPDATE cases SET assessment_opened_at = ?, assessment_opened_by = ? WHERE id = ?",
+            (datetime.now(timezone.utc).isoformat(timespec="milliseconds"), actor, case_id),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def make_case(client: TestClient, headers: dict, root: Path, *, assessment_open: bool = True, **overrides) -> str:
     response = client.post("/api/cases", json=new_case(**overrides), headers=headers)
     assert response.status_code == 201, response.text
     case_id = response.json()["id"]
     set_as_of(root, case_id)
+    if assessment_open:
+        open_assessment(root, case_id)
     return case_id
 
 

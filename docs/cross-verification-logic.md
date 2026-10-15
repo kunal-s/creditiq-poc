@@ -197,13 +197,13 @@ Rules are read from the **published** configuration version (never from the YAML
 
 ## 4. Tolerances
 
-All values are provisional until RBL supplies its working tolerances.
+All values are provisional until RBL supplies its working tolerances. On 12 October 2026 the turnover tolerances were tightened from 10% to 1% and from 20% to 2%, and the name match from 0.85 to 0.90.
 
 | Key | Value | Used by |
 |---|---|---|
-| `turnover_variance` | 10% | TO-01, TO-02, TO-03, TO-05, TX-03, TX-04, TX-05 |
-| `declared_turnover_variance` | 20% | TO-04 |
-| `name_match` | 0.85 | Every name comparison: legal names, people, lenders, banks |
+| `turnover_variance` | 1% | TO-01, TO-02, TO-03, TO-05, TX-03, TX-04, TX-05 |
+| `declared_turnover_variance` | 2% | TO-04 |
+| `name_match` | 0.90 | Every name comparison: legal names, people, lenders, banks; also who a document belongs to, and the borrower on RBL's record |
 | `emi_amount_match` | 5% | Obligation inference: debits this close to the typical amount are one instalment |
 | `emi_min_occurrences` | 3 | Months of debits needed to infer an instalment |
 | `turnover_window_min_months` | 3 | TO-05: months GST and bank statements must share |
@@ -453,7 +453,7 @@ def similarity(a: str | None, b: str | None) -> float:
     words sorted (so "Velankar Tarun" matches "Tarun Velankar")."""
 ```
 
-Two names are the same when their similarity is at least `name_match` (0.85). Lender and firm names first lose their noise words ("bank", "ltd", "limited", "pvt", "private", "co", "company", "finance", "financial", "services", "nbfc", "the"), so "Lotuscrest Bank Ltd" and "LOTUSCREST BANK LIMITED" are one lender:
+Two names are the same when their similarity is at least `name_match` (0.90). Lender and firm names first lose their noise words ("bank", "ltd", "limited", "pvt", "private", "co", "company", "finance", "financial", "services", "nbfc", "the"), so "Lotuscrest Bank Ltd" and "LOTUSCREST BANK LIMITED" are one lender:
 
 ```python
 def resolve_name(name: str, noise: list[str]) -> str:
@@ -856,16 +856,16 @@ def test_tc22_a_pan_mismatch_is_flagged_with_both_sources(client, analyst, publi
 
 | Rule | Compares, per financial year | Tolerance | Severity |
 |---|---|---|---|
-| TO-01 | Audited turnover against GST outward supplies | 10% | Moderate |
-| TO-02 | GST outward supplies against cleansed bank credits | 10% | Moderate |
-| TO-03 | Audited turnover against cleansed bank credits | 10% | Moderate |
-| TO-04 | Turnover the RM declared against evidenced turnover | 20% | Mild |
-| TO-05 | GST against bank credits over the **months both cover**, in any year | 10% | Moderate |
+| TO-01 | Audited turnover against GST outward supplies | 1% | Moderate |
+| TO-02 | GST outward supplies against cleansed bank credits | 1% | Moderate |
+| TO-03 | Audited turnover against cleansed bank credits | 1% | Moderate |
+| TO-04 | Turnover the RM declared against evidenced turnover | 2% | Mild |
+| TO-05 | GST against bank credits over the **months both cover**, in any year | 1% | Moderate |
 | TX-01 | Each audited year has its income tax return, once due | 214 days | Mild |
 | TX-02 | Profit before tax in the books against the tax return | 10% | Moderate |
-| TX-03 | Turnover in the tax return against audited revenue | 10% | Moderate |
-| TX-04 | Turnover in the tax return against GST outward supplies | 10% | Moderate |
-| TX-05 | Turnover in the tax return against cleansed bank credits | 10% | Moderate |
+| TX-03 | Turnover in the tax return against audited revenue | 1% | Moderate |
+| TX-04 | Turnover in the tax return against GST outward supplies | 1% | Moderate |
+| TX-05 | Turnover in the tax return against cleansed bank credits | 1% | Moderate |
 
 The tax-return rules are in section 10.6.
 
@@ -943,7 +943,7 @@ def _turnover(ctx: Context, rule: CrossCheckRule) -> list[Finding]:
         a, b = float(lf.value or 0), float(rf.value or 0)
         variance = abs(a - b) / max(a, b) * 100 if max(a, b) else 0.0
         failed = variance > tol
-        # ... pass "Variance x% within 10%", or fail with period, left, right, labels and variance
+        # ... pass "Variance x% within 1%", or fail with period, left, right, labels and variance
 ```
 
 TO-04 holds the RM's declared figure against the audited turnover, or against a full year of GST returns when no audited statements cover that year. It does not apply when the RM declared no turnover.
@@ -992,14 +992,15 @@ TO-02  INCOMPLETE  GST outward supplies against cleansed bank credits · FY 2025
 
 TO-03  FAIL  [moderate]  Audited turnover against cleansed bank credits · FY 2025-26
     FY 2025-26: Audited financial statements INR 4.80 cr against Business credits in bank
-    statements INR 3.60 cr, a variance of 25.0% (tolerance 10%).
+    statements INR 3.60 cr, a variance of 25.0% (tolerance 1%).
 
-TO-04  PASS  RM-declared turnover against evidenced turnover · FY 2025-26
-    Variance 4.0% within 20%.
+TO-04  FAIL  [mild]  RM-declared turnover against evidenced turnover · FY 2025-26
+    Turnover declared in the sourcing message INR 5.00 cr against Audited financial statements
+    INR 4.80 cr for FY 2025-26, a variance of 4.0% (tolerance 2%).
 
 TO-05  FAIL  [moderate]  GST outward supplies against bank credits, months both cover · Aug 2025 to Mar 2026
     Aug 2025 to Mar 2026: GST outward supplies INR 3.20 cr against business credits INR 2.40 cr,
-    a variance of 25.0% (tolerance 10%).
+    a variance of 25.0% (tolerance 1%).
                 GST outward supplies   Business credits   Difference
     Aug 2025    40,00,000              30,00,000          25.0%   <- flagged
     ...         (each month the same)
@@ -1054,7 +1055,7 @@ def test_tc23_incomplete_coverage_is_stated(client, analyst, published_data_root
 
 - **TX-02 Profit in the income tax return agrees with the books.** For each year with both, the audited profit before tax against the return computation's profit as per the accounts, within 10% (`profit_variance`).
 
-- **TX-03 to TX-05: the turnover in the return.** The return's computation is read for its turnover (`config/statements.yaml` `itr_lines`: revenue from operations, gross receipts, turnover or total sales), and it becomes a fifth turnover figure for the financial year the return covers (`itr`, "Turnover in the income tax return"). Each rule holds it against one other figure for that year, within 10% (`turnover_variance`): TX-03 audited revenue, TX-04 GST outward supplies, TX-05 cleansed bank credits. The comparison of a year is the one TO-01 to TO-04 use, so GST and bank figures need all 12 months, and a part year is incomplete with its missing months named.
+- **TX-03 to TX-05: the turnover in the return.** The return's computation is read for its turnover (`config/statements.yaml` `itr_lines`: revenue from operations, gross receipts, turnover or total sales), and it becomes a fifth turnover figure for the financial year the return covers (`itr`, "Turnover in the income tax return"). Each rule holds it against one other figure for that year, within 1% (`turnover_variance`): TX-03 audited revenue, TX-04 GST outward supplies, TX-05 cleansed bank credits. The comparison of a year is the one TO-01 to TO-04 use, so GST and bank figures need all 12 months, and a part year is incomplete with its missing months named.
 
   The returns set the years: a return is filed after its year ends, so the latest year's figures usually have no return to meet yet. A return that shows no turnover, or another source that does not reach the return's year, leaves nothing to compare (not applicable); a missing return is asked for only when the checklist expects one ([engine/crosschecks.py](../engine/crosschecks.py)):
 
@@ -1424,16 +1425,16 @@ Rules marked *(off)* are switched off (section 13).
 | BR-02 *(off)* | Authority | | Authorised signatories are directors | set_contains | name_match | moderate | | yes |
 | BR-03 *(off)* | Authority | | Board resolution is in favour of this bank | exact | name_match | moderate | | yes |
 | BR-04 *(off)* | Authority | | Board resolution is correctly dated | order | | mild | | yes |
-| TO-01 | Turnover | TC-21 | Audited turnover against GST outward supplies | tolerance | turnover_variance (10%) | moderate | | yes |
-| TO-02 | Turnover | TC-21 | GST outward supplies against cleansed bank credits | tolerance | turnover_variance (10%) | moderate | | yes |
-| TO-03 | Turnover | TC-21 | Audited turnover against cleansed bank credits | tolerance | turnover_variance (10%) | moderate | | |
-| TO-04 | Turnover | TC-21 | RM-declared turnover against evidenced turnover | tolerance | declared_turnover_variance (20%) | mild | | |
-| TO-05 | Turnover | TC-21 | GST outward supplies against bank credits, months both cover | tolerance | turnover_variance (10%) | moderate | | yes |
+| TO-01 | Turnover | TC-21 | Audited turnover against GST outward supplies | tolerance | turnover_variance (1%) | moderate | | yes |
+| TO-02 | Turnover | TC-21 | GST outward supplies against cleansed bank credits | tolerance | turnover_variance (1%) | moderate | | yes |
+| TO-03 | Turnover | TC-21 | Audited turnover against cleansed bank credits | tolerance | turnover_variance (1%) | moderate | | |
+| TO-04 | Turnover | TC-21 | RM-declared turnover against evidenced turnover | tolerance | declared_turnover_variance (2%) | mild | | |
+| TO-05 | Turnover | TC-21 | GST outward supplies against bank credits, months both cover | tolerance | turnover_variance (1%) | moderate | | yes |
 | TX-01 | Turnover | TC-21 | Each audited year has its income tax return | set_contains | | mild | | yes |
 | TX-02 | Turnover | TC-21 | Profit in the income tax return agrees with the books | tolerance | profit_variance (10%) | moderate | | yes |
-| TX-03 | Turnover | TC-21 | Turnover in the income tax return against audited revenue | tolerance | turnover_variance (10%) | moderate | | yes |
-| TX-04 | Turnover | TC-21 | Turnover in the income tax return against GST outward supplies | tolerance | turnover_variance (10%) | moderate | | yes |
-| TX-05 | Turnover | TC-21 | Turnover in the income tax return against cleansed bank credits | tolerance | turnover_variance (10%) | moderate | | yes |
+| TX-03 | Turnover | TC-21 | Turnover in the income tax return against audited revenue | tolerance | turnover_variance (1%) | moderate | | yes |
+| TX-04 | Turnover | TC-21 | Turnover in the income tax return against GST outward supplies | tolerance | turnover_variance (1%) | moderate | | yes |
+| TX-05 | Turnover | TC-21 | Turnover in the income tax return against cleansed bank credits | tolerance | turnover_variance (1%) | moderate | | yes |
 | FS-01 *(off)* | Financials | (TC-21) | Previous-year figures agree with that year's audited statements | tolerance | comparatives_variance (1%) | moderate | | yes |
 | FS-02 *(off)* | Financials | | Year-end bank balances within the audited cash and bank balance | bound | balance_variance (1%) | mild | | |
 | BA-01 | Accounts | TC-22 | Declared accounts have statements | set_contains | | moderate | | yes |

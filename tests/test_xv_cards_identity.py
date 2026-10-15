@@ -173,7 +173,7 @@ def test_a_pan_waiting_for_review_asks_for_the_review_and_not_for_a_document(cli
     card = add_doc(root, case_id, "company_pan", {"pan": PAN}, pending={"pan"})
     add_doc(root, case_id, "income_tax_return", {"pan": ITR_PAN})
     f = _card(client, analyst, root, case_id, "ID-01")
-    assert f["outcome"] == "incomplete" and f["explanation"].startswith("Waiting for review of Company PAN")
+    assert f["outcome"] == "incomplete" and f["explanation"].startswith("Waiting for review of the company PAN")
     # The columns keep the rule's sides: two values, neither the majority.
     assert _columns(f) == [("Company PAN", PAN, True), ("Income tax return", ITR_PAN, True)]
     assert [c["awaiting_review"] for c in f["columns"]] == [True, False]
@@ -524,6 +524,9 @@ def test_promoters_across_three_sources_follow_the_rule_s_order_of_sources(clien
     assert _pages(bureau["evidence"]) == [(report, 1)]
     assert [c["provenance"] for c in f["columns"]] == [["borrower_supplied"], ["declared"], ["independent"]]
     assert [c["coverage"] for c in f["columns"]] == ["Page 1", "Entered on the case", "Page 1"]
+    assert f["explanation"] == ("The promoters named differ between sources: Leela Varghese has no KYC on file "
+                                "and is not named in the commercial bureau report; Ishita Barve has no KYC on "
+                                "file and is not named in the sourcing message.")
     assert f["mismatch"] == ("Leela Varghese is not in KYC received and Commercial bureau report; "
                              "Ishita Barve is not in KYC received and Sourcing message.")
     assert _lines(f) == [("Promoters", [], "Leela Varghese is not in KYC received and Commercial bureau report; "

@@ -413,6 +413,21 @@ def reextract_document(conn: sqlite3.Connection, root: Path, job_id: str, case_i
 # --- Derived state ---
 
 
+def refresh_all_cases(conn: sqlite3.Connection, root: Path) -> tuple[list[str], dict[str, str]]:
+    """Re-run the checks of every case in the store, as a new configuration version needs (the
+    command line's publish, and a publish from the Administration screen). A case that fails is
+    returned with its error and the others still run."""
+    ran: list[str] = []
+    failed: dict[str, str] = {}
+    for (case_id,) in conn.execute("SELECT id FROM cases ORDER BY created_at, id").fetchall():
+        try:
+            refresh_case(conn, root, case_id)
+            ran.append(case_id)
+        except Exception as e:  # one case must not stop the others; reported to the caller
+            failed[case_id] = str(e)
+    return ran, failed
+
+
 def refresh_case(conn: sqlite3.Connection, root: Path, case_id: str, *, running_job: str | None = None) -> None:
     from . import cases, crosschecks, parties, queries
 

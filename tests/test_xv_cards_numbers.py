@@ -224,11 +224,11 @@ def test_gst_against_bank_shows_each_return_and_each_credit_with_its_exclusions(
     _reconciles(credits)
     # The gap: the rule's own variance, against its tolerance.
     assert f["gaps"] == [{**GST_AGAINST_BANK, "amount": 9_600_000, "pct": 20.0, "breached": True}]
-    assert (f["gap_tolerance"], f["amount"], f["request"], f["mismatch"]) == ("10%", 9_600_000, None, None)
+    assert (f["gap_tolerance"], f["amount"], f["request"], f["mismatch"]) == ("1%", 9_600_000, None, None)
     # The overview line: the two figures, the smaller marked, and how far apart against the tolerance.
     assert _lines(f) == [("GST against bank credits · FY 2025-26", [("GST outward supplies", 48_000_000, False),
                                                                     ("Bank credits", 38_400_000, True)],
-                          "20.0% apart · tolerance 10%")]
+                          "20.0% apart · tolerance 1%")]
 
     # No audited statements: TO-01 and TO-03 show the one figure on file and ask for the other.
     for rule, label, name in (("TO-01", "GST outward supplies (GSTR-3B)", "Audited against GST"),
@@ -256,7 +256,7 @@ def test_missing_months_are_asked_for_and_months_a_figure_does_not_count_are_lef
         {"date": "2025-05-07", "description": "REVERSAL OF CHG", "credit": 2_000},
         {"date": "2025-10-10", "description": DISBURSAL, "credit": 5_000_000},
     ])
-    _harbourline(root, case_id, FY26[:5], 1_300_000, end="2025-08-31")  # its statement stops in August
+    _harbourline(root, case_id, FY26[:5], 1_480_000, end="2025-08-31")  # its statement stops in August
     found = _board(client, analyst, root, case_id)
 
     to1 = _card(found, "TO-01", "FY 2025-26")
@@ -278,7 +278,7 @@ def test_missing_months_are_asked_for_and_months_a_figure_does_not_count_are_lef
                               "covering Sep 2025 to Mar 2026")
     credits = to2["columns"][1]
     # The bank figure counts only the months every account's statements cover: April to August.
-    assert credits["value"] == to2["sides"][1]["value"] == 19_000_000
+    assert credits["value"] == to2["sides"][1]["value"] == 19_900_000
     assert credits["coverage"] == f"Apr 2025 to Aug 2025 · 2 accounts: {LOTUSCREST}, {HARBOURLINE}"
     assert [r["cells"][:2] for r in _rows(credits)] == [[m, account] for m in ("Apr 2025", "May 2025", "Jun 2025",
                                                                                "Jul 2025", "Aug 2025")
@@ -298,15 +298,15 @@ def test_missing_months_are_asked_for_and_months_a_figure_does_not_count_are_lef
     assert (gst["coverage"], gst["value"], gst["differs"]) == ("Apr 2025 to Aug 2025 · 5 returns", 20_000_000, False)
     assert len(_rows(gst)) == 5
     assert _rows(gst, "total")[0]["cells"] == ["Aggregate Apr 2025 to Aug 2025", "", 20_000_000]
-    assert (credits["value"], credits["differs"]) == (19_000_000, False)
+    assert (credits["value"], credits["differs"]) == (19_900_000, False)
     assert _rows(credits, "total")[0]["cells"][0] == "Total Apr 2025 to Aug 2025"
     _reconciles(credits)
-    assert to5["gaps"] == [{**GST_AGAINST_BANK, "amount": 1_000_000, "pct": 5.0, "breached": False}]
-    assert (to5["amount"], to5["gap_tolerance"], to5["request"]) == (1_000_000, "10%", None)
+    assert to5["gaps"] == [{**GST_AGAINST_BANK, "amount": 100_000, "pct": 0.5, "breached": False}]
+    assert (to5["amount"], to5["gap_tolerance"], to5["request"]) == (100_000, "1%", None)
     # Over the months both cover: the window names the line; within the tolerance, nothing is marked.
     assert _lines(to5) == [("GST against bank credits · Apr 2025 to Aug 2025",
-                            [("GST outward supplies", 20_000_000, False), ("Bank credits", 19_000_000, False)],
-                            "5.0% apart · within 10%")]
+                            [("GST outward supplies", 20_000_000, False), ("Bank credits", 19_900_000, False)],
+                            "0.5% apart · within 1%")]
 
     # One audited year, and no balance on its year end: the statement checks keep their default card.
     for rule in ("FS-01", "FS-02"):
@@ -339,10 +339,10 @@ def test_audited_turnover_against_bank_credits_and_over_the_months_both_cover(cl
     _reconciles(credits)
     assert to3["gaps"] == [{"label": "Gap against bank credits", "amount": 12_000_000, "pct": 25.0, "base": "audited",
                             "legs": "audited against bank credits", "breached": True}]
-    assert (to3["amount"], to3["gap_tolerance"]) == (12_000_000, "10%")
+    assert (to3["amount"], to3["gap_tolerance"]) == (12_000_000, "1%")
     assert _lines(to3) == [("Audited against bank credits · FY 2025-26",
                             [("Audited", 48_000_000, False), ("Bank credits", 36_000_000, True)],
-                            "25.0% apart · tolerance 10%")]
+                            "25.0% apart · tolerance 1%")]
     for rule in ("TO-01", "TO-02"):
         assert _card(found, rule, "FY 2025-26")["request"] == "GSTR-3B returns for Apr 2025 to Jul 2025"
 
@@ -359,7 +359,7 @@ def test_audited_turnover_against_bank_credits_and_over_the_months_both_cover(cl
     assert to5["amount"] == 8_000_000
     assert _lines(to5) == [("GST against bank credits · Aug 2025 to Mar 2026",
                             [("GST outward supplies", 32_000_000, False), ("Bank credits", 24_000_000, True)],
-                            "25.0% apart · tolerance 10%")]
+                            "25.0% apart · tolerance 1%")]
 
 
 def test_declared_turnover_is_held_against_the_audited_figure_or_a_full_year_of_returns(client, analyst,
@@ -384,14 +384,14 @@ def test_declared_turnover_is_held_against_the_audited_figure_or_a_full_year_of_
     assert revenue["evidence"] == [_page(books, 3)]
     assert f["gaps"] == [{"label": "Gap against audited", "amount": 22_000_000, "pct": 31.4, "base": "declared",
                           "legs": "declared against audited", "breached": True}]
-    assert (f["gap_tolerance"], f["amount"]) == ("20%", 22_000_000)
+    assert (f["gap_tolerance"], f["amount"]) == ("2%", 22_000_000)
     assert _lines(f) == [("Declared against audited · FY 2025-26", [("Declared", 70_000_000, False),
                                                                      ("Audited", 48_000_000, True)],
-                          "31.4% apart · tolerance 20%")]
+                          "31.4% apart · tolerance 2%")]
 
     # Without audited statements, a full year of returns stands in, as the rule takes it.
     other = _case(client, analyst, root, borrower="Heronbay Polymers Pvt Ltd", header={
-        "declared_turnover_inr": {"value": "50000000", "source": "person"}})
+        "declared_turnover_inr": {"value": "48500000", "source": "person"}})
     for ym in FY26:
         _gstr(root, other, ym, 4_000_000)
     f = _card(_board(client, analyst, root, other), "TO-04", "FY 2025-26")
@@ -400,13 +400,13 @@ def test_declared_turnover_is_held_against_the_audited_figure_or_a_full_year_of_
     assert (gst["label"], gst["value"]) == ("GST outward supplies (GSTR-3B)", 48_000_000)
     # Confirmed by a person: no page to trace to.
     assert declared["evidence"] == [] and declared["rows"][0]["evidence"] == []
-    assert f["gaps"] == [{"label": "Gap against GST outward supplies", "amount": 2_000_000, "pct": 4.0,
+    assert f["gaps"] == [{"label": "Gap against GST outward supplies", "amount": 500_000, "pct": 1.0,
                           "base": "declared", "legs": "declared against GST outward supplies", "breached": False}]
-    assert f["amount"] == 2_000_000
+    assert f["amount"] == 500_000
     # The line names the figure that stood in.
-    assert _lines(f) == [("Declared against GST · FY 2025-26", [("Declared", 50_000_000, False),
+    assert _lines(f) == [("Declared against GST · FY 2025-26", [("Declared", 48_500_000, False),
                                                                 ("GST outward supplies", 48_000_000, False)],
-                          "4.0% apart · within 20%")]
+                          "1.0% apart · within 2%")]
 
 
 def test_a_figure_waiting_for_review_asks_the_customer_for_nothing(client, analyst, published_data_root):
@@ -439,7 +439,7 @@ def test_a_figure_waiting_for_review_asks_the_customer_for_nothing(client, analy
     assert _lines(f) == [("GST against bank credits · Aug 2025 to Mar 2026", [], "waiting for review")]
     # Short of months as well as waiting: the review comes first, so nothing is asked for yet.
     to2 = _card(found, "TO-02", "FY 2025-26")
-    assert to2["outcome"] == "incomplete" and "covers 8 of 12 months" in to2["explanation"]
+    assert to2["outcome"] == "incomplete" and "cover 8 of 12 months (Apr 2025 to Jul 2025 not on file)" in to2["explanation"]
     assert to2["columns"][0]["awaiting_review"] and to2["request"] is None
 
 
@@ -516,7 +516,9 @@ def test_a_year_not_yet_ended_asks_for_nothing_and_its_months_to_come_are_not_mi
     # FY 2026-27 runs to 31 Mar 2027: nothing is asked for, though the explanation names what it lacks.
     running = _card(found, "TO-02", "FY 2026-27")
     assert running["outcome"] == "incomplete" and running["request"] is None
-    assert "GST outward supplies covers 4 of 12 months" in running["explanation"]
+    # The months to come are named as such, not as missing.
+    assert running["explanation"].startswith(
+        "GST outward supplies cover 4 of 12 months (Aug 2026 not on file, Sep 2026 to Mar 2027 not yet ended)")
     # Missing are the months that ended before the appraisal date: August, not September onwards.
     assert running["columns"][0]["coverage"] == "Apr 2026 to Jul 2026 · 4 of 12 returns filed; Aug 2026 missing"
     assert _lines(running) == [("GST against bank credits · FY 2026-27", [], "the year ends on 31 Mar 2027")]

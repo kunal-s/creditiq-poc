@@ -358,6 +358,38 @@ test("a key figure opens its finding: the card of a discrepancy, the row of any 
   await expect(id2).not.toHaveAttribute("data-target");
 });
 
+test("a link to a finding opens the board at it: a discrepancy's card, or any other check's row", async ({
+  page,
+}) => {
+  const api = new MockApi();
+  api.documents.set(KESTREL, [...DOCUMENTS, ...XV_DOCUMENTS]);
+  api.documentTypes = XV_DOCUMENT_TYPES;
+  await signedIn(page, api);
+  // By its XV reference (the draft CAM's summary): its card open and focused, the board's top
+  // card left closed.
+  await page.goto(`${BOARD}?finding=XV-000021-02`);
+  const ob1 = card(page, "fnd-ob1");
+  await expect(ob1).toHaveAttribute("data-expanded", "true");
+  await expect(ob1).toBeInViewport();
+  await expect(ob1.getByTestId("xv-card-toggle")).toBeFocused();
+  await expect(card(page, "fnd-id1")).toHaveAttribute("data-expanded", "false");
+
+  // By its finding id (the PD note), a passed check: the passed list opens at its row.
+  await page.goto(`${BOARD}?finding=fnd-id2`);
+  const passed = section(page, "identity").getByTestId("xv-passed");
+  await expect(passed).toHaveAttribute("open", "");
+  const id2 = passed.locator('[data-testid="xv-passed-row"][data-rule="ID-02"]');
+  await expect(id2).toBeInViewport();
+  await expect(id2).toBeFocused();
+  await expect(id2).toHaveAttribute("data-target", "true");
+
+  // A finding no longer on the board: the board as it opens without a link.
+  await page.goto(`${BOARD}?finding=fnd-gone`);
+  await expect(page.getByTestId("xv-overview")).toBeVisible();
+  await expect(card(page, "fnd-id1")).toHaveAttribute("data-expanded", "true");
+  await expect(passed).not.toHaveAttribute("open", "");
+});
+
 test("the key figures follow the decisions, the open discrepancies' first", async ({ page }) => {
   await openBoard(page);
   await decide(page, "fnd-id1", "accept", "The bureau report is wrong; a correction is requested.");

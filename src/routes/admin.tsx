@@ -4,7 +4,9 @@ import { t } from "@/config/terminology";
 import { cn } from "@/lib/utils";
 
 // Administration (FRD §6): what the published configuration says and who may
-// do what. Read-only: an administrator publishes a new version outside the app.
+// do what. Under Settings an Administrator changes the tolerances, norm
+// thresholds, cross-check rules and approval matrix and publishes them as a new
+// version (F-00.6); everything else here is read-only.
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -15,6 +17,7 @@ export const Route = createFileRoute("/admin")({
 
 const SECTIONS = [
   { to: "/admin", key: "configuration" },
+  { to: "/admin/settings", key: "settings" },
   { to: "/admin/policy", key: "policy" },
   { to: "/admin/checklist", key: "checklist" },
   { to: "/admin/document-types", key: "documentTypes" },

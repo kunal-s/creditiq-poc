@@ -3,6 +3,7 @@ credit cleansing, obligations, the account set, with evidence kept."""
 
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from tests.conftest import ANALYST, RM, make_case, sign_in
@@ -107,6 +108,42 @@ def test_the_account_set_spans_statements_and_transfers(client: TestClient, publ
     assert not accounts["7777"]["has_statement"] and "Transfer in" in accounts["7777"]["sources"][0]
     assert not any(a["declared"] for a in accounts.values()) and facts["declaration_received"] is False
     assert facts["facilities"] == []  # no document the configured types can read declares facilities
+
+
+@pytest.mark.parametrize("text,named", [
+    ("current account with Lotuscrest Bank a/c 90100001234 and cash credit with Lotuscrest Bank a/c 90100005678",
+     [("current account", "Lotuscrest Bank", "1234"), ("cash credit", "Lotuscrest Bank", "5678")]),
+    ("current account with Lotuscrest Bank a/c 90100004321; term loan with Tidewater Finance",
+     [("current account", "Lotuscrest Bank", "4321"), ("term loan", "Tidewater Finance", None)]),
+    ("Current account with Lotuscrest Bank a/c 90100001234 and cash credit a/c 90100005678",
+     [("current account", "Lotuscrest Bank", "1234"), ("cash credit", "", "5678")]),
+    ("CC with Ironleaf Bank, OD with Lotuscrest Bank a/c no. 5555.",
+     [("cash credit", "Ironleaf Bank", None), ("overdraft", "Lotuscrest Bank", "5555")]),
+    ("term loan from Jammu and Kashmir Bank a/c 77778888", [("term loan", "Jammu and Kashmir Bank", "8888")]),
+    ("Currently banking with Bank of Maharashtra, Nashik Road", []),
+    ("existing Bank of Baroda CC of 5 cr with", []),
+])
+def test_the_sourcing_message_names_accounts_and_facilities_by_kind_and_bank(text, named):
+    from engine.facts import banking_named
+
+    assert banking_named(text) == named
+
+
+def test_an_account_only_the_message_gives_carries_its_bank_and_kind(client: TestClient, published_data_root: Path):
+    analyst = sign_in(client, ANALYST)
+    banking = "current account with Lotuscrest Bank a/c 90100001234 and cash credit with Lotuscrest Bank a/c 90100005678"
+    case_id = make_case(client, analyst, published_data_root,
+                        header={"existing_banking": {"value": banking, "source": "person"}})
+    bank(published_data_root, case_id, [{"date": "2025-04-10", "description": "RTGS CR CUSTOMER", "credit": 70_000}])
+    facts = _facts(client, analyst, case_id)
+    accounts = {a["last4"]: a for a in facts["accounts"]}
+    # The statement's account keeps its own name; the message only declares it.
+    assert accounts["1234"]["label"] == "Lotuscrest Bank ·1234" and accounts["1234"]["declared"]
+    assert (accounts["5678"]["label"], accounts["5678"]["bank"], accounts["5678"]["has_statement"]) == (
+        "Lotuscrest Bank ·5678 (cash credit)", "Lotuscrest Bank", False)
+    # The cash credit is a facility the message declares, without its limit; the current account is not.
+    assert [(f["source"], f["lender"], f["facility"], f["amount"]) for f in facts["facilities"]] == [
+        ("application_message", "Lotuscrest Bank", "Cash credit", None)]
 
 
 def test_statement_lines_come_from_the_printed_rows(client: TestClient, published_data_root: Path):

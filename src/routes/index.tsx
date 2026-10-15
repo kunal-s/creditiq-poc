@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { AlertTriangle, ArrowUpRight, FileSearch, Plus } from "lucide-react";
 import { useState } from "react";
 import type { CaseSummary, ReviewItem, Stage } from "@/api/types";
@@ -8,6 +8,7 @@ import { useReviewQueue } from "@/domain/review";
 import { useSession } from "@/domain/session";
 import { t } from "@/config/terminology";
 import { CasesTable } from "@/components/cases/CasesTable";
+import { homePath } from "@/components/shell/nav";
 import { ErrorState, LoadingBlock, QueryView } from "@/components/common/States";
 import { reviewItemPath } from "@/components/review/reviewLinks";
 import { cn } from "@/lib/utils";
@@ -19,8 +20,17 @@ export const Route = createFileRoute("/")({
       { name: "description", content: t("tenant.product.metaDescription") },
     ],
   }),
-  component: Workbench,
+  component: Home,
 });
+
+/** A role without the workbench (the Administrator) starts on its own screen instead. */
+function Home() {
+  const session = useSession();
+  if (session && !session.user.navGroups.includes("workbench")) {
+    return <Navigate to={homePath(session.user)} replace />;
+  }
+  return <Workbench />;
+}
 
 function Counter({
   value,

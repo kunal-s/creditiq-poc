@@ -5,7 +5,9 @@ separate package on purpose: pipeline, review and harness code must not be
 able to import it (CLAUDE.md rule 4), enforced by the import-linter
 contract in `.importlinter`. A publish is not a runtime event; it is
 something an Administrator does, ledgered with author and diff, and it never
-edits a prior version in place.
+edits a prior version in place. Two ways in: `publish` from the configuration
+files (the command line), and `publish_edited` from the settings an
+Administrator edits on the screen (engine/admin_config.py, F-00.6).
 """
 
 from __future__ import annotations
@@ -97,6 +99,62 @@ def publish(*, data_root: Path, author: str, note: str = "", private_dir: Path |
     sections = load_authored_sections(private_dir)
     section_dumps = {name: model.model_dump(mode="json") for name, model in sections.items()}
     section_dumps.update({f"ingestion.{name}": data for name, data in load_ingestion_sections().items()})
+    return _write_version(data_root, section_dumps, author=author, note=note, origin="cli",
+                          private=private_sections(private_dir))
+
+
+# The sections an Administrator edits on the screen (F-00.6).
+EDITABLE_SECTIONS = ("tolerances", "policy", "crosschecks", "approval_matrix")
+
+
+def publish_edited(*, data_root: Path, author: str, note: str, sections: dict[str, BaseModel],
+                   changes: list[dict]) -> dict:
+    """Publish the settings an Administrator edited on the screen: every section of the version now
+    published, with the edited ones replaced, validated as a file publish is. Recorded with
+    origin "app" and the changes, so a later publish from the files cannot drop them unnoticed."""
+    current = _published(data_root)
+    if current is None:
+        raise ValueError("no configuration is published yet")
+    unknown = set(sections) - set(EDITABLE_SECTIONS)
+    if unknown:
+        raise ValueError(f"not editable on the screen: {', '.join(sorted(unknown))}")
+    version_dir = Path(data_root) / "config_store" / "versions" / current["version"]
+    dumps = {name: json.loads((version_dir / f"{name}.json").read_text(encoding="utf-8"))
+             for name in current["section_hashes"]}
+    models = {name: model.model_validate(dumps[name]) for name, model in SECTION_MODELS.items()}
+    models.update(sections)
+    ingestion = {name.removeprefix("ingestion."): data for name, data in dumps.items() if name.startswith("ingestion.")}
+    problems = cross_check(models, ingestion, facilities=option_ids("facilities"))
+    if problems:
+        raise ValueError("config cross-check failed:\n  " + "\n  ".join(problems))
+    dumps.update({name: model.model_dump(mode="json") for name, model in sections.items()})
+    return _write_version(data_root, dumps, author=author, note=note, origin="app",
+                          private=current.get("private_sections", []), changes=changes)
+
+
+def _published(data_root: Path) -> dict | None:
+    path = Path(data_root) / "config_store" / "published.json"
+    return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else None
+
+
+def app_edits_at_risk(*, data_root: Path, private_dir: Path | None = None) -> list[str]:
+    """What a publish from the configuration files would undo: when the version now published was
+    edited on the screen, each edited section whose files say otherwise. Empty otherwise."""
+    current = _published(data_root)
+    if current is None or current.get("origin") != "app":
+        return []
+    version_dir = Path(data_root) / "config_store" / "versions" / current["version"]
+    files = load_authored_sections(private_dir)
+    out = []
+    for name in EDITABLE_SECTIONS:
+        published = json.loads((version_dir / f"{name}.json").read_text(encoding="utf-8"))
+        if section_hash(published) != section_hash(files[name].model_dump(mode="json")):
+            out.append(name)
+    return out
+
+
+def _write_version(data_root: Path, section_dumps: dict[str, dict], *, author: str, note: str, origin: str,
+                   private: list[str], changes: list[dict] | None = None) -> dict:
     section_hashes = {name: section_hash(dump) for name, dump in section_dumps.items()}
     version = _merkle_root(section_hashes)
 
@@ -128,8 +186,11 @@ def publish(*, data_root: Path, author: str, note: str = "", private_dir: Path |
         "note": note,
         "section_hashes": section_hashes,
         "prior_version": prior["version"] if prior else None,
-        "private_sections": private_sections(private_dir),
+        "private_sections": private,
+        "origin": origin,
     }
+    if changes is not None:
+        record["changes"] = changes
     store_dir.mkdir(parents=True, exist_ok=True)
     published_path.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 

@@ -2,29 +2,35 @@
 
 Every data endpoint needs a session and a permission (F-03.1). Response
 models come from engine/contracts (AD-4), so the OpenAPI schema, and the
-TypeScript types generated from it, match exactly. This app must never
-import the configuration writer (CLAUDE.md rule 4; enforced by .importlinter).
+TypeScript types generated from it, match exactly. The configuration writer is
+reached only through engine.admin_config, for an Administrator's publish from
+the Administration screen (F-00.6); nothing that runs on a case may import it
+(CLAUDE.md rule 4; enforced by .importlinter).
 """
 
 from __future__ import annotations
 
 import json
+import logging
 import os
 import sqlite3
 from contextlib import asynccontextmanager
+from typing import Literal
 
-from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from python_multipart.exceptions import MultipartParseError
 
 from . import (
+    admin_config,
     approval,
     auth,
     cam,
     cases,
     comparison,
     db,
+    exports,
     facts,
     jobs,
     pages,
@@ -58,6 +64,11 @@ from .contracts import (
     AuditPage,
     ConfigVersion,
     DirectoryUser,
+    EditableSettings,
+    SettingsChanges,
+    SettingsPreview,
+    SettingsPublished,
+    SettingsPublishRequest,
     CaseCreate,
     CaseDeleteRequest,
     Cam,
@@ -87,6 +98,7 @@ from .contracts import (
 )
 from .deps import bearer_token, current_user, get_conn, require
 from .store import data_root
+from .util import now_iso
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
@@ -137,6 +149,16 @@ def _case_for(conn: sqlite3.Connection, case_id: str, user: dict) -> CaseDetail:
     case = cases.get_case(conn, case_id)
     if case is None or ("case.read.all" not in user["permissions"] and case.created_by != user["id"]):
         raise HTTPException(status_code=404, detail=f"no case {case_id!r}")
+    return case
+
+
+def _assessed_case(conn: sqlite3.Connection, case_id: str, user: dict) -> CaseDetail:
+    """The case, refused with 409 while the assessment gate is shut (F-13). The screens
+    lock these tabs; this is the same rule on the server, so the data is not reachable
+    by asking for it directly."""
+    case = _case_for(conn, case_id, user)
+    if not case.assessment_opened_at:
+        raise HTTPException(status_code=409, detail="assessment_not_open")
     return case
 
 
@@ -236,6 +258,29 @@ def case_progress(
         raise HTTPException(status_code=503, detail=str(e)) from e
 
 
+@app.post("/api/cases/{case_id}/assessment", response_model=CaseDetail)
+def open_assessment(
+    case_id: str,
+    user: dict = Depends(require("review.decide")),
+    conn: sqlite3.Connection = Depends(get_conn),
+):
+    """F-13: create the case, opening cross-verification, policy checks and the outputs.
+
+    `review.decide`, because it is the decision that intake is complete: the analyst and the
+    credit manager hold it, the RM does not.
+
+    Refused with 409 while completeness is not satisfied; the body names the blockers so the
+    screen can say which one. Pressing it twice is harmless: the case is returned unchanged.
+    """
+    case = _case_for(conn, case_id, user)
+    try:
+        return cases.open_assessment(conn, data_root(), case, user["id"])
+    except cases.GateNotMet as e:
+        raise HTTPException(status_code=409, detail={"error": "assessment_not_open", "blockers": e.blockers}) from e
+    except configstore_reader.NoPublishedConfig as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+
+
 @app.delete("/api/cases/{case_id}", status_code=204)
 def delete_case(
     case_id: str,
@@ -329,7 +374,7 @@ def case_policy(
     case_id: str, user: dict = Depends(require("finding.read")), conn: sqlite3.Connection = Depends(get_conn)
 ):
     """F-20: every norm with its required and actual value, source figures and outcome."""
-    case = _case_for(conn, case_id, user)
+    case = _assessed_case(conn, case_id, user)
     try:
         return policy.assess(conn, data_root(), case)
     except configstore_reader.NoPublishedConfig as e:
@@ -342,7 +387,7 @@ def case_cross_verification(
 ):
     """F-19: the cross-verification board: every finding of the latest run, the discrepancies ranked
     by credit impact with their sources side by side, and whether submission is blocked."""
-    case = _case_for(conn, case_id, user)
+    case = _assessed_case(conn, case_id, user)
     try:
         return xv.view(conn, data_root(), case)
     except configstore_reader.NoPublishedConfig as e:
@@ -450,7 +495,7 @@ def case_spread(
     case_id: str, user: dict = Depends(require("output.read")), conn: sqlite3.Connection = Depends(get_conn)
 ):
     """F-22: the spread (interim layout) with ratios and the working-capital assessment."""
-    case = _case_for(conn, case_id, user)
+    case = _assessed_case(conn, case_id, user)
     try:
         return spread.build(conn, data_root(), case)
     except configstore_reader.NoPublishedConfig as e:
@@ -462,7 +507,7 @@ def case_pd_note(
     case_id: str, user: dict = Depends(require("output.read")), conn: sqlite3.Connection = Depends(get_conn)
 ):
     """F-24: questions for the personal discussion, ranked, each tied to its source."""
-    case = _case_for(conn, case_id, user)
+    case = _assessed_case(conn, case_id, user)
     try:
         return pd_note.build(conn, data_root(), case)
     except configstore_reader.NoPublishedConfig as e:
@@ -474,11 +519,74 @@ def case_cam(
     case_id: str, user: dict = Depends(require("output.read")), conn: sqlite3.Connection = Depends(get_conn)
 ):
     """F-23: the draft CAM, every figure cited, ending in the structured summary."""
-    case = _case_for(conn, case_id, user)
+    case = _assessed_case(conn, case_id, user)
     try:
         return cam.build(conn, data_root(), case)
     except configstore_reader.NoPublishedConfig as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
+
+
+_DOWNLOAD = {200: {"description": "The file, as an attachment.",
+                   "content": {media: {"schema": {"type": "string", "format": "binary"}}
+                               for media in exports.MEDIA_TYPES.values()}}}
+_OUTPUTS = {"cam": "draft CAM", "pd_note": "PD note"}
+_FORMATS = {"docx": "Word", "pdf": "PDF"}
+_log = logging.getLogger("creditiq.api")
+
+
+def _download(conn: sqlite3.Connection, user: dict, case: CaseDetail, output: str, fmt: str,
+              draft: Cam | PdNote) -> Response:
+    """The file as an attachment; the decision log records the download. A file that cannot be written
+    is a 500 with its reason in words, which reaches the screens as any error does."""
+    try:
+        document = exports.cam_document(draft) if output == "cam" else exports.pd_note_document(draft)
+        content = exports.render(document, fmt)
+    except Exception as e:  # any writer's fault: logged, and answered rather than left to the server
+        _log.exception("%s %s file for %s failed", output, fmt, case.id)
+        raise HTTPException(status_code=500, detail=f"The {_OUTPUTS[output]} could not be written as a "
+                                                    f"{_FORMATS[fmt]} file ({type(e).__name__}).") from e
+    db.log_decision(conn, at=now_iso(), actor=user["id"], case_id=case.id, action="output.downloaded",
+                    detail=json.dumps({"output": output, "format": fmt}))
+    return Response(content=content, media_type=exports.MEDIA_TYPES[fmt], headers={
+        "Content-Disposition": f'attachment; filename="{exports.file_name(output, case.id, fmt)}"',
+        # The screens call from another origin and name the saved file from this header.
+        "Access-Control-Expose-Headers": "Content-Disposition",
+        "Cache-Control": "no-store",
+    })
+
+
+@app.get("/api/cases/{case_id}/pd-note/download", response_class=Response, responses=_DOWNLOAD)
+def case_pd_note_download(
+    case_id: str,
+    fmt: Literal["docx", "pdf"] = Query(alias="format"),
+    user: dict = Depends(require("output.read")),
+    conn: sqlite3.Connection = Depends(get_conn),
+):
+    """F-24.3: the PD question note as a Word or PDF file, the same content as the screen, with room
+    under each question for the response and the follow-up."""
+    case = _case_for(conn, case_id, user)
+    try:
+        note = pd_note.build(conn, data_root(), case)
+    except configstore_reader.NoPublishedConfig as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+    return _download(conn, user, case, "pd_note", fmt, note)
+
+
+@app.get("/api/cases/{case_id}/cam/download", response_class=Response, responses=_DOWNLOAD)
+def case_cam_download(
+    case_id: str,
+    fmt: Literal["docx", "pdf"] = Query(alias="format"),
+    user: dict = Depends(require("output.read")),
+    conn: sqlite3.Connection = Depends(get_conn),
+):
+    """F-23.5: the draft CAM as a Word or PDF file, the same content as the screen, with numbered
+    citations and the sources; the recommendation is left blank for credit."""
+    case = _case_for(conn, case_id, user)
+    try:
+        draft = cam.build(conn, data_root(), case)
+    except configstore_reader.NoPublishedConfig as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+    return _download(conn, user, case, "cam", fmt, draft)
 
 
 @app.get("/api/cases/{case_id}/findings", response_model=list[Finding])
@@ -727,6 +835,35 @@ def audit_trail(
         "actors": [r[0] for r in conn.execute("SELECT DISTINCT actor FROM decision_log ORDER BY actor")],
         "actions": [r[0] for r in conn.execute("SELECT DISTINCT action FROM decision_log ORDER BY action")],
     }
+
+
+@app.get("/api/admin/settings", response_model=EditableSettings)
+def admin_settings(_: dict = Depends(require("config.read"))):
+    """The tolerances, norm thresholds, cross-check rules and approval matrix an Administrator
+    edits (F-00.6), as the version now published has them."""
+    return _config(admin_config.editable)
+
+
+@app.post("/api/admin/settings/preview", response_model=SettingsPreview)
+def admin_settings_preview(body: SettingsChanges, _: dict = Depends(require("config.publish"))):
+    """What the changes would change and why they could not be published; nothing is published."""
+    return _config(lambda root: admin_config.preview(root, body))
+
+
+@app.post("/api/admin/settings/publish", response_model=SettingsPublished)
+def admin_settings_publish(
+    body: SettingsPublishRequest,
+    user: dict = Depends(require("config.publish")),
+    conn: sqlite3.Connection = Depends(get_conn),
+):
+    """Publish the changes as a new configuration version, with the Administrator's note, and
+    re-run every case's checks (F-00.6). 422 with the problems when they cannot be published."""
+    try:
+        return admin_config.publish(conn, data_root(), user, body.note, body.changes)
+    except admin_config.SettingsInvalid as e:
+        raise HTTPException(status_code=422, detail={"problems": e.problems}) from e
+    except configstore_reader.NoPublishedConfig as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
 
 
 @app.get("/api/config/policy", response_model=PolicySection)

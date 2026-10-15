@@ -212,7 +212,7 @@ def test_a_director_the_bureau_names_without_kyc_is_flagged(client, analyst, pub
     add_doc(published_data_root, case_id, "director_kyc", {"person_name": "Tarun Velankar", "pan": "ABCPV1234K"})
     bureau(published_data_root, case_id, parties=[("Tarun Velankar", "ABCPV1234K"), ("Rohan Mistry", "ABCPM4321Q")])
     f = _one(client, analyst, published_data_root, case_id, "ID-04")
-    assert f["outcome"] == "fail" and "Rohan Mistry is not in KYC received" in f["explanation"]
+    assert f["outcome"] == "fail" and "Rohan Mistry has no KYC on file" in f["explanation"]
     assert f["detail"]["columns"] == ["KYC received", "Commercial bureau report"]
     # The bureau's related parties join the case's party set, with their PAN (F-10.2).
     parties = {p["name"]: p for p in client.get(f"/api/cases/{case_id}/parties", headers=analyst).json()}
@@ -238,4 +238,7 @@ def test_facilities_are_collected_from_each_source_with_their_evidence(client, a
     assert facts["declaration_received"] is True and facts["declaration"]["value"] == "Tidewater Finance Limited"
     cam = client.get(f"/api/cases/{case_id}/cam", headers=analyst).json()
     section = next(s for s in cam["sections"] if s["id"] == "obligations")
-    assert any("Declaration of existing facilities: Tidewater Finance Limited" in p["text"] for p in section["paragraphs"])
+    table = next(b["table"] for b in section["blocks"] if b["kind"] == "table")
+    row = next(r for r in table["rows"] if r[0]["text"] == "Tidewater Finance Limited")
+    # Declared, sanction letter and bureau, each cited to its document.
+    assert [c["citations"][0]["document_id"] for c in row[2:5]] == [decl, letter, report]

@@ -24,7 +24,7 @@ from pathlib import Path
 from . import completeness, facts as facts_module, statements
 from .configstore import reader
 from .configstore.schema import PolicyNorm, PolicyRatio, unsupported_nodes
-from .contracts import (CaseDetail, Evidence, FacilityFact, NormInput, NormResult, Obligation, PolicyAssessment,
+from .contracts import (CaseDetail, Evidence, FacilityFact, NormComponent, NormInput, NormResult, Obligation, PolicyAssessment,
                         PolicyCounts, PolicyGroup)
 from .util import parse_date
 
@@ -56,6 +56,11 @@ INPUT_LABELS = {
     "inventories": "Inventories",
     "trade_receivables": "Trade receivables",
     "trade_payables": "Trade payables",
+    # Lines that appear only inside a derived figure's breakdown (F-20.2).
+    "cash_and_bank_balances": "Cash and bank balances",
+    "short_term_loans_and_advances": "Short-term loans and advances",
+    "other_current_liabilities": "Other current liabilities",
+    "short_term_provisions": "Short-term provisions",
     "current_assets": "Current assets",
     "current_liabilities": "Current liabilities",
     "amount_requested": "Amount requested",
@@ -76,12 +81,13 @@ class Inputs:
     period: str | None = None
 
     def put(self, name: str, value: float | None, evidence: list[Evidence] | None = None, manual: bool = False,
-            pending: bool = False, basis: str = "document", refs: list[str] | None = None) -> None:
+            pending: bool = False, basis: str = "document", refs: list[str] | None = None,
+            components: list[NormComponent] | None = None) -> None:
         if value is None:
             return
         self.values[name] = NormInput(name=name, label=INPUT_LABELS[name], value=float(value), evidence=evidence or [],
                                       relies_on_manual=manual, awaiting_review=pending, basis=basis,  # type: ignore[arg-type]
-                                      refs=refs or [])
+                                      refs=refs or [], components=components or [])
 
 
 def number(v: facts_module.Value | None) -> float | None:
@@ -109,8 +115,8 @@ def _document(f: FacilityFact) -> str | None:
     return f.evidence[0].document_id if f.evidence else None
 
 
-def _counted_facilities(facilities: list[FacilityFact], noise: list[str], threshold: float, emi_pct: float
-                        ) -> tuple[list[FacilityFact], list[FacilityFact]]:
+def counted_facilities(facilities: list[FacilityFact], noise: list[str], threshold: float, emi_pct: float
+                       ) -> tuple[list[FacilityFact], list[FacilityFact]]:
     """The declared and sanctioned facilities with an instalment, each counted once (FR-03).
 
     A lender matches on its resolved name only (same_entity): "Indian Bank" and "Indian Overseas
@@ -177,7 +183,14 @@ def gather(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> Inputs:
         for name in FINANCIAL_INPUTS:
             line = next((c[name] for c in copies if name in c), None)
             if line:
-                inputs.put(name, line.value, line.evidence, line.manual, pending=line.pending)
+                # A derived figure (net worth, current assets) carries the lines it was summed
+                # from, so the screen can show the arithmetic rather than only the total.
+                inputs.put(name, line.value, line.evidence, line.manual, pending=line.pending,
+                           components=[
+                               NormComponent(label=INPUT_LABELS.get(part.name, part.name), sign=part.sign,
+                                             value=part.value, evidence=part.evidence)
+                               for part in line.parts
+                           ])
 
     # The amount asked for: the case record, citing the sourcing message where it came from.
     requested = facts.requested_amount
@@ -205,7 +218,7 @@ def gather(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> Inputs:
     # Annual instalments on existing facilities: declared, then sanctioned, then inferred from the
     # bank statements, each facility counted once.
     emi_pct = tolerances.get("emi_amount_match", 5)
-    declared, sanctioned = _counted_facilities(facts.facilities, noise, threshold, emi_pct)
+    declared, sanctioned = counted_facilities(facts.facilities, noise, threshold, emi_pct)
     inferred = [o for o in facts.obligations
                 if not any(_pays(o, f, noise, threshold, emi_pct) for f in declared + sanctioned)]
     if declared or sanctioned or inferred:
@@ -301,9 +314,12 @@ def unit_text(value: float, unit: str | None, extra: int = 0) -> str:
     if unit == "days":
         return _counted(_fixed(value, extra), "day")
     if unit == "years":
-        # Truncated, never rounded up to a threshold: 2.99 years is "2.9 years".
-        scale = 10 ** (1 + extra)
-        return _counted(f"{math.floor(value * scale + 1e-9) / scale:g}", "year")
+        # Years and completed months, as the memo states the time in business; never rounded up to a
+        # threshold: 2.99 years is "2 years 11 months". A value is a count of months over 12 to four
+        # places, so a whole month is never lost to the rounding.
+        years, months = divmod(math.floor(value * 12 + 1e-3), 12)
+        parts = ([_counted(str(years), "year")] if years else []) + ([_counted(str(months), "month")] if months else [])
+        return " ".join(parts) or "0 years"
     if unit == "inr":
         return facts_module.inr(value)
     if unit == "rank":
@@ -324,6 +340,16 @@ def actual_text(value: float, unit: str | None, threshold: float, outcome: str) 
     while base + extra < 9 and round(value, base + extra) == round(threshold, base + extra):
         extra += 1
     return unit_text(value, unit, extra)
+
+
+def required_text(kind: str, threshold: float, unit: str | None) -> str:
+    """The norm as written: "at least 1.20x". A rupee figure that must be positive, a profit that must
+    not be a loss and a count that must be nil read in words, never "at least INR 1" or "at most 0"."""
+    if unit == "inr" and kind == "min" and threshold in (0, 1):
+        return "positive" if threshold == 1 else "no loss"
+    if unit == "count" and kind == "max" and threshold == 0:
+        return "none"
+    return f"{'at least' if kind == 'min' else 'at most'} {unit_text(threshold, unit)}"
 
 
 def _applies(norm: PolicyNorm, case: CaseDetail, inputs: Inputs, wc_limit: float) -> bool:
@@ -347,12 +373,13 @@ def evaluate(norm: PolicyNorm, ratio: PolicyRatio | None, case: CaseDetail, inpu
     unit = norm.unit or (ratio.unit if ratio else None)
     kind = norm.kind or (ratio.kind if ratio else "min")
     threshold = norm.threshold if norm.threshold is not None else (ratio.acceptable if ratio else 0.0)
-    required = f"{'at least' if kind == 'min' else 'at most'} {unit_text(threshold, unit)}"
+    required = required_text(kind, threshold, unit)
     status = norm.status or (ratio.status if ratio else None)
     result = NormResult(
         id=norm.id, family=norm.family, label=label, formula=words(norm.expression),
         definition=ratio.formula if ratio else None, source=norm.source or (ratio.source if ratio else None),
-        required=required, unit=unit, outcome="not_applicable", category=norm.category,
+        required=required, comparator=kind, threshold_text=unit_text(threshold, unit),
+        unit=unit, outcome="not_applicable", category=norm.category,
         category_label=categories.get(norm.category, norm.category), note=norm.note or (ratio.note if ratio else None),
         provisional=status == "provisional",
     )

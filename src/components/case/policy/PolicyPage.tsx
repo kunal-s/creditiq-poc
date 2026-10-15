@@ -1,4 +1,5 @@
 import type { UseQueryResult } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import type { ApprovingAuthority, PolicyAssessment } from "@/api/types";
 import { QueryView } from "@/components/common/States";
 import { EmptyState } from "@/components/shell/EmptyState";
@@ -64,8 +65,18 @@ import { PolicyOverview } from "./PolicyOverview";
 //                               authority-provisional, authority-lower-bound, authority-how with an
 //                               authority-step each and its authority-norm links,
 //                               authority-compare) or authority-not-published
+//
+// A link from the draft CAM or the PD note (?norm=) opens the page at that norm's row, as a key
+// norm does, once the norms and the authority beside them have loaded.
 
-export function PolicyPage({ caseId }: { caseId: string }) {
+export function PolicyPage({
+  caseId,
+  norm,
+}: {
+  caseId: string;
+  /** The norm a link names, to open the page at. */
+  norm?: string | undefined;
+}) {
   const policy = usePolicy(caseId);
   const authority = useApprovingAuthority(caseId);
   return (
@@ -73,7 +84,7 @@ export function PolicyPage({ caseId }: { caseId: string }) {
       <PolicyHeader caseId={caseId} policy={policy.data} />
       <div className="min-w-0 space-y-6 px-4 py-5 sm:px-6">
         <QueryView query={policy}>
-          {(p) => <PolicyBody caseId={caseId} policy={p} authority={authority} />}
+          {(p) => <PolicyBody caseId={caseId} policy={p} authority={authority} linkedTo={norm} />}
         </QueryView>
       </div>
     </div>
@@ -84,11 +95,28 @@ function PolicyBody({
   caseId,
   policy,
   authority,
+  linkedTo,
 }: {
   caseId: string;
   policy: PolicyAssessment;
   authority: UseQueryResult<ApprovingAuthority>;
+  linkedTo?: string | undefined;
 }) {
+  // The authority's card sits above the rows, so the linked norm is opened once it has loaded
+  // (or could not be had), only once, and a frame later: once the router has scrolled the page it
+  // rendered to the top.
+  const linked = policy.norms.some((n) => n.id === linkedTo) ? (linkedTo ?? null) : null;
+  const settled = !authority.isLoading;
+  const shown = useRef<string | null>(null);
+  useEffect(() => {
+    if (!linked || !settled || shown.current === linked) return;
+    const frame = requestAnimationFrame(() => {
+      shown.current = linked;
+      openNorm(linked);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [linked, settled]);
+
   if (policy.norms.length === 0) {
     return <EmptyState title={t("policy.emptyTitle")} description={t("policy.emptyDescription")} />;
   }

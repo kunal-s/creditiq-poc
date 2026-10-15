@@ -352,9 +352,11 @@ def complete_case() -> list[File]:
         ("kestrel audited fy2025.pdf", "audited_financial_statements", lambda f: audited_fs(f, e, "2025-03-31", scale=0.85)),
         ("kestrel itr.pdf", "income_tax_return", lambda f: itr(f, e, ["2026-27", "2025-26"])),
         ("kestrel gst returns.pdf", "gstr_3b", lambda f: gstr3b(f, e, GST_WINDOW)),
+        # Business credits of INR 11.70 cr against INR 11.76 cr of GST over the months both cover: within the
+        # turnover tolerance (TO-05).
         ("kestrel current account.pdf", "bank_statement",
-         lambda f: bank_statement(f, "1234", "Lotuscrest Bank", e["name"], emi=("NACH DR TIDEWATER FIN EMI 000123", 250_000, 6),
-                                  payments=9_300_000)),
+         lambda f: bank_statement(f, "1234", "Lotuscrest Bank", e["name"], credit=9_750_000,
+                                  emi=("NACH DR TIDEWATER FIN EMI 000123", 250_000, 6), payments=9_550_000)),
         ("kyc tarun velankar.pdf", "director_kyc", lambda f: director_kyc(f, TARUN)),
         ("kyc ishita barve.pdf", "director_kyc", lambda f: director_kyc(f, ISHITA)),
         ("kestrel existing facilities declaration.pdf", "existing_facilities_declaration",

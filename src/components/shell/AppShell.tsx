@@ -72,11 +72,17 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
     .filter((group) => session?.user.navGroups.includes(group.id))
     .map((group) => ({ ...group, items: group.items.filter(allowed) }))
     .filter((group) => group.items.length > 0);
-  // Cases stays active inside a case; New case only on its own screen.
-  const isActive = (to: string) =>
+  // Cases stays active inside a case; New case only on its own screen. Of the items a path
+  // falls under, the most specific is active (Settings, not Configuration, at /admin/settings).
+  const matches = (to: string) =>
     to === "/"
       ? pathname === "/" || (pathname.startsWith("/appraisals/") && pathname !== "/appraisals/new")
       : pathname === to || pathname.startsWith(to + "/");
+  const active = visible
+    .flatMap((group) => group.items.map((item) => item.to))
+    .filter(matches)
+    .sort((a, b) => b.length - a.length)[0];
+  const isActive = (to: string) => to === active;
 
   const openCase = /^\/appraisals\/([^/]+)/.exec(pathname)?.[1];
   const caseId = openCase && openCase !== "new" ? decodeURIComponent(openCase) : undefined;

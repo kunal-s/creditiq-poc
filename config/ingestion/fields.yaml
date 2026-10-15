@@ -78,7 +78,9 @@ types:
     identity: {name: company_name}
     fields:
       company_name: {aliases: ['Company']}
-      financial_year: {aliases: ['Financial Year']}
+      # The year end the statements print on their own face, read rather than asked of a model:
+      # "BALANCE SHEET AS AT 31 MARCH 2026", "...FOR THE YEAR ENDED 31 MARCH 2026".
+      financial_year: {aliases: ['Financial Year'], patterns: ['BALANCE SHEET AS AT\s+(\d{1,2}\s+[A-Za-z]+\s+\d{4})', 'FOR THE YEAR ENDED\s+(\d{1,2}\s+[A-Za-z]+\s+\d{4})']}
       auditor_name: {aliases: ['Statutory Auditors']}
       audit_date: {patterns: ['Place:\s*[A-Za-z]+\s*\|\s*Date:\s*(\d{1,2}\s+[A-Za-z]+\s+\d{4})']}
       accounting_standard: {llm_hint: "The accounting standards or framework the statements say they follow (for example 'Indian GAAP' or 'Ind AS'), exactly as written; null if none is named."}

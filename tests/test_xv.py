@@ -180,9 +180,9 @@ def _incorporation(root: Path, case_id: str, memorandum_cin: str = CIN) -> str:
 
 
 def _turnover(root: Path, case_id: str) -> None:
-    """FY 2025-26: audited INR 4.00 cr, GST INR 4.80 cr, bank credits INR 3.84 cr (TO-01 and TO-02
-    fail); the long-term borrowings in the books have no instalments in the bank (OB-03 fails)."""
-    audited(root, case_id, "2026-03-31", scale=40_000_000 / 118_000_000)
+    """FY 2025-26: audited INR 3.86 cr, GST INR 4.80 cr, bank credits INR 3.84 cr (TO-01 and TO-02
+    fail, TO-03 passes); the long-term borrowings in the books have no instalments in the bank (OB-03 fails)."""
+    audited(root, case_id, "2026-03-31", scale=38_600_000 / 118_000_000)
     for period in PERIODS:
         gstr(root, case_id, period, 4_000_000)
     bank(root, case_id, [{"date": f"{ym}-15", "description": "NEFT CR CUSTOMER RECEIPT", "credit": 3_200_000}

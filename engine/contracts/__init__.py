@@ -9,7 +9,18 @@ These pydantic models are the single source for:
 Change a model here, regenerate, and both sides see the change.
 """
 
-from .admin import AuditEntry, AuditPage, ConfigVersion, DirectoryUser
+from .admin import (
+    AuditEntry,
+    AuditPage,
+    ConfigVersion,
+    DirectoryUser,
+    EditableSettings,
+    SettingChange,
+    SettingsChanges,
+    SettingsPreview,
+    SettingsPublished,
+    SettingsPublishRequest,
+)
 from .approval import ApprovingAuthority, AuthorityRef, AuthorityStep
 from .comparison import (
     Adjudication,
@@ -56,6 +67,7 @@ from .appraisal import (
 from .case import (
     CaseCreate,
     CaseDeleteRequest,
+    AssessmentGate,
     CaseDetail,
     CaseProgress,
     CaseSummary,
@@ -67,12 +79,19 @@ from .case import (
 from .common import Evidence, Grade, Stage
 from .outputs import (
     Cam,
+    CamBlock,
+    CamFact,
     CamSection,
+    CamSignOff,
     CamSummaryItem,
     CamTable,
     CamText,
+    OutputSource,
     PdNote,
+    PdPerson,
     PdQuestion,
+    PdRef,
+    PdTopic,
     Spread,
     SpreadCell,
     SpreadColumn,
@@ -80,7 +99,16 @@ from .outputs import (
     Working,
     WorkingCapitalAssessment,
 )
-from .policy import NormFamily, NormInput, NormOutcome, NormResult, PolicyAssessment, PolicyCounts, PolicyGroup
+from .policy import (
+    NormComponent,
+    NormFamily,
+    NormInput,
+    NormOutcome,
+    NormResult,
+    PolicyAssessment,
+    PolicyCounts,
+    PolicyGroup,
+)
 from .facts import (
     AccountCredits,
     AccountMonth,
@@ -153,6 +181,13 @@ __all__ = [
     "ReferenceRecord",
     "ReferenceRecordImport",
     "Cam",
+    "CamBlock",
+    "CamFact",
+    "CamSignOff",
+    "OutputSource",
+    "PdPerson",
+    "PdRef",
+    "PdTopic",
     "CamSection",
     "CamSummaryItem",
     "CamTable",
@@ -165,6 +200,7 @@ __all__ = [
     "SpreadRow",
     "Working",
     "WorkingCapitalAssessment",
+    "NormComponent",
     "NormInput",
     "NormOutcome",
     "NormResult",
@@ -223,6 +259,7 @@ __all__ = [
     "Span",
     "StrippedSpan",
     "UploadResult",
+    "AssessmentGate",
     "CaseDetail",
     "CaseSummary",
     "ChecklistItemState",

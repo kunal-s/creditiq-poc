@@ -17,7 +17,7 @@ Use all three, in this order. If you only have time for one, use **Kestrel**.
 ## Before you start
 
 1. The app runs at **http://localhost:4173**.
-2. Sign in as **ananya.krishnan@rblbank.com** (Credit Analyst). The password is `auth.demoPassword` in `config/roles.yaml`. For escalations, the Credit Manager is **meenal.kulkarni@rblbank.com**.
+2. Sign in as **ananya.krishnan@rblbank.com** (Credit Analyst). The password is `auth.demoPassword` in `config/roles.yaml`. For escalations, the Credit Manager is **meenal.kulkarni@rblbank.com**. To change a tolerance or a norm, the Administrator is **nikhil.sawant@rblbank.com**.
 3. On **Appraisals**, the three applications are marked **(TEST)**.
 4. In each one, open the **Cross-checks** tab.
 
@@ -33,7 +33,7 @@ Use all three, in this order. If you only have time for one, use **Kestrel**.
 Each discrepancy is a card with a reference (XV-…), its severity, and **Blocks submission** when it blocks. Opened, a card shows:
 
 - **The sources side by side:** one column per document, tagged **Declared**, **Borrower-supplied** or **Independent**, with the value, what it covers, **Open the evidence** (the rows read from the document, each opening its page) and **Trace to the source** (the page itself).
-- **The gap:** on each leg, against the tolerance ("RBL tolerance: 10% — breached on …"). For a check without amounts, the difference in words, with the differing characters marked.
+- **The gap:** on each leg, against the tolerance ("RBL tolerance: 1% — breached on …"). For a check without amounts, the difference in words, with the differing characters marked.
 - **The decision:** **Accept** (valid; it stays on the query list), **Dismiss** (not valid) or **Escalate** (to the Credit Manager). A comment is always required.
 
 ---
@@ -44,10 +44,10 @@ Each discrepancy is a card with a reference (XV-…), its severity, and **Blocks
 - **Banner:** "Submission blocked — 3 serious discrepancies unadjudicated", pointing at ID-01.
 - **Overview:**
   - Identity consistency: 6 open (3 serious · 2 moderate · 1 mild), **Blocking**.
-  - Turnover: 5 open (4 moderate · 1 mild).
+  - Turnover: 6 open (5 moderate · 1 mild).
   - Bank accounts: 2 open (2 moderate).
   - Existing obligations: 2 open (2 serious).
-- **Header:** 15 discrepancies; "24 rules across 13 sources".
+- **Header:** 16 discrepancies; "24 rules across 13 sources".
 - **Key figures on the cards:** the PAN AAACK1234F against the bureau's AAACK9999Z; GST INR 12.00 cr against bank credits INR 9.00 cr, 25.0% apart, and the tax return's INR 11.90 cr against the same INR 9.00 cr; account ·5678 declared with no statement; Ashwood Finserv declared at INR 80.00 lakh against INR 95.00 lakh sanctioned.
 
 If decisions were recorded in a rehearsal, the counts show them. [Reset](#resetting-after-a-rehearsal) for the state above.
@@ -71,12 +71,13 @@ Each turnover card shows its two figures large even when closed, the lower one i
 
 | Check | What to point out |
 |---|---|
-| **TO-02 GST vs bank** | GST INR 12.00 cr against INR 9.00 cr of business credits, a gap of INR 3.00 cr, 25.0%, beyond the 10% tolerance. **Open the evidence** on the GST column: each month's return, its filing date and its outward supplies. On the bank column: credits and excluded credits by month and account, and each excluded credit on its own line (the INR 50 lakh loan disbursal and a reversal), so the banked figure is cleansed before it is compared |
+| **TO-02 GST vs bank** | GST INR 12.00 cr against INR 9.00 cr of business credits, a gap of INR 3.00 cr, 25.0%, beyond the 1% tolerance. **Open the evidence** on the GST column: each month's return, its filing date and its outward supplies. On the bank column: credits and excluded credits by month and account, and each excluded credit on its own line (the INR 50 lakh loan disbursal and a reversal), so the banked figure is cleansed before it is compared |
 | **TX-05 Tax return vs bank** | The FY 2025-26 income tax return shows turnover of INR 11.90 cr; the bank shows INR 9.00 cr, 24.4% apart. The same return agrees with the audited INR 11.80 cr (TX-03) and GST's INR 12.00 cr (TX-04), both under **Passed**: the tax return and the books agree, the bank does not |
 | **TO-03 Audited vs bank** | Audited INR 11.80 cr against INR 9.00 cr banked, 23.7% apart |
 | **TX-02 Profit vs the tax return** | FY 2024-25: profit before tax INR 60.00 lakh in the books against INR 45.00 lakh in the return, 25.0% apart. The FY 2025-26 return agrees with its books (under **Passed**) |
-| **TO-04 Declared vs evidenced** | The RM declared INR 18 cr; the audited figure is INR 11.80 cr, 34.4% apart (tolerance 20%) |
-| **TO-01, TX-01, TX-03, TX-04** (under **Passed**) | Audited against GST, 1.7% within 10%; a return for each year due; the tax return against audited and GST |
+| **TO-04 Declared vs evidenced** | The RM declared INR 18 cr; the audited figure is INR 11.80 cr, 34.4% apart (tolerance 2%) |
+| **TO-01 Audited vs GST** | Audited INR 11.80 cr against GST INR 12.00 cr, 1.7% apart: close, but beyond the 1% tolerance |
+| **TX-01, TX-03, TX-04** (under **Passed**) | A return for each year due; the tax return against audited and GST, each 0.8% apart |
 
 Point out that the bank figure is **cleansed** first, and that three independent sources (audited, GST, the tax return) agree around INR 11.8 to 12 cr while the bank shows INR 9 cr: sales may be banked elsewhere.
 
@@ -117,7 +118,7 @@ Open **Facts behind these checks** to show every account and where it appears.
 
 What to point out:
 
-- Open **Passed** in any section: each check is listed with its variance where it has one (for example TO-02, 2.0%), so a pass is evidenced, not assumed.
+- Open **Passed** in any section: each check is listed with its variance where it has one (for example TO-02, 0.5%; every turnover figure is within 1% of the others), so a pass is evidenced, not assumed.
 - **TO-05** is not applicable because the GST returns and bank statements cover exactly one financial year, which TO-02 already compares.
 
 ---
@@ -126,11 +127,11 @@ What to point out:
 
 **What you see:**
 - **Overview:**
-  - Identity consistency: amber (5 could not be checked · 3 passed).
-  - Turnover: amber (4 could not be checked · 3 passed · 4 not applicable: its tax return shows no turnover).
+  - Identity consistency: amber (6 could not be checked · 3 passed).
+  - Turnover: 1 open (1 moderate), with 4 could not be checked · 2 passed · 4 not applicable (its tax return shows no turnover).
   - Bank accounts: green.
   - Existing obligations: amber (2 could not be checked · 1 passed).
-- **No discrepancies.**
+- **One discrepancy:** TO-05 (below).
 
 **The message:** when something is missing, CreditIQ says exactly what, rather than passing or failing a check it can't complete.
 
@@ -140,7 +141,7 @@ What to point out:
 |---|---|
 | **ID-04, ID-05, ID-06, ID-08** | Each says what would complete it: "To complete it, provide the director KYC", "… the memorandum and articles of association". Click **Add to query list** on one: it shows **On the query list**, and the Completeness tab's query list asks the customer for it |
 | **TO-01 to TO-03** | GST returns and statements run September to August, so each financial year is only partly covered: "GST outward supplies covers 7 of 12 months". Each asks for the missing months, for example "GSTR-3B returns for Apr 2025 to Aug 2025" |
-| **TO-05** (under **Passed**) | Still compares GST against the bank over the 12 months both cover (Sep 2025 to Aug 2026), and passes |
+| **TO-05 GST vs bank, months both cover** | Still compares GST against the bank over the 12 months both cover (Sep 2025 to Aug 2026): GST INR 5.04 cr against INR 4.80 cr of business credits, 4.8% apart, beyond the 1% tolerance |
 | **OB-01, OB-02** | A sanction letter and monthly EMIs are on file, but no declaration of existing facilities, so both ask for it |
 | **ID-01** | **Waiting for review**: the tax return's PAN was read with low confidence. Click it, confirm the PAN, then come back: ID-01 now passes. Checks never rely on a value a person hasn't confirmed |
 
@@ -151,7 +152,7 @@ What to point out:
 | Test plan row | Expected | Show it on |
 |---|---|---|
 | TC-20 Identity | Mismatches in PAN, GSTIN, names or the promoter set flagged with their sources | Kestrel, Identity consistency: ID-01, ID-02, ID-03, ID-04 |
-| TC-21 Turnover | Turnover compared across sources; variances beyond tolerance flagged with values; incomplete coverage stated | Kestrel, Turnover: TO-02, TO-03, TO-04, and the tax return: TX-05 (against the bank), TX-02 (profit). Heronbay: TX-03 to TX-05 passing. Marigold, Turnover: TO-01 to TO-03 (coverage), TO-05 |
+| TC-21 Turnover | Turnover compared across sources; variances beyond tolerance flagged with values; incomplete coverage stated | Kestrel, Turnover: TO-01 to TO-04, and the tax return: TX-05 (against the bank), TX-02 (profit). Heronbay: every turnover check passing, within 1%. Marigold, Turnover: TO-01 to TO-03 (coverage), TO-05 (4.8% over the months both cover) |
 | TC-22 Bank accounts | Accounts without statements and undeclared accounts identified | Kestrel, Bank accounts: BA-01, BA-02 |
 | TC-23 Existing obligations | Obligations reconciled; EMIs to lenders not declared identified | Kestrel, Existing obligations: OB-01, OB-02 |
 
@@ -200,3 +201,15 @@ The **Policy** tab of the same applications shows the policy norms and the appro
 | Marigold | EL-05, FR-06 and DOC-02 **Agree**; DOC-01 **New** (found only by CreditIQ); approving authority **Differ** (RBL's record says Regional Credit Head, lower than the matrix requires) |
 
 Decide a Differ or New item as **Valid** or **Not valid** with a reason; the area scores show the share of RBL's deviations found (C4) and of CreditIQ's upheld (C5). The approving authority is shown but not scored while the matrix is provisional (TC-25 counts only once RBL's matrix is published). The analyst never sees RBL's record.
+
+---
+
+## Changing a tolerance or a norm (Administration → Settings)
+
+Sign in as the Administrator (**nikhil.sawant@rblbank.com**). Settings opens straight away. It shows the tolerances, the policy norms, the cross-check rules and the approval matrix in force (details in [admin-settings.md](admin-settings.md)).
+
+1. Change **Turnover variance between sources** from 1 to 2 (%). The field is marked "was 1%" and the bar counts one change.
+2. **Review and publish** lists the change (1% → 2%). Type a note and **Publish**. The new version is in force and every application's checks run again under it.
+3. Sign in as the analyst and open Kestrel's Cross-checks: TO-01 (audited against GST, 1.7% apart) now passes, because it is within 2%. **Administration → Configuration** lists the new version as **Edited on screen**.
+
+**Put it back afterwards:** change the value back to 1 and publish again. A later publish from the configuration files refuses to undo a screen edit unless asked (`--discard-app-edits`).

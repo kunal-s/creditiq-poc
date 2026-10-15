@@ -111,7 +111,10 @@ class PolicyNorm(BaseModel):
     status: Status | None = None
     note: str | None = None
     pd_question: str | None = None
-    """Overrides the family's personal-discussion question (F-24.1)."""
+    """Overrides the family's personal-discussion question for a deviation (F-24.1)."""
+    pd_gap_question: str | None = None
+    """Overrides `pd_questions.cannot_evaluate` when the norm cannot be evaluated for want of an input
+    (F-24.1), with the same placeholders. A version published before it existed reads as None."""
 
 
 class PolicySection(BaseModel):
@@ -123,8 +126,10 @@ class PolicySection(BaseModel):
     deviation_categories: list[DeviationCategory] = Field(default_factory=list)
     norms: list[PolicyNorm] = Field(default_factory=list)
     pd_questions: dict[str, str] = Field(default_factory=dict)
-    """Per norm family, what to ask the promoter about a deviation (F-24.1);
-    may use {label}, {actual}, {required} and {period}."""
+    """Per norm family, what to ask the promoter about a deviation, and per reason, about a norm that
+    could not be evaluated (F-24.1); may use {label}, {subject} (the label as it reads inside a
+    sentence), {actual}, {required}, {period}, {missing}, {inputs} and, for a norm that could not be
+    evaluated, {reason} (the memo's sentence saying why)."""
 
 
 class CoverageRule(BaseModel):
@@ -373,7 +378,12 @@ class CrossChecksSection(BaseModel):
 
     rules: list[CrossCheckRule]
     pd_incomplete: str = "{title}: {explanation}"
-    """The personal-discussion question for a check left incomplete (F-24.1)."""
+    """The personal-discussion question for a check left incomplete (F-24.1); may use {title},
+    {explanation} and {request} (what would complete the check)."""
+    pd_finding: str = "{explanation} What is the position, and what will be provided?"
+    """The personal-discussion question for a failed finding, not found not valid, whose rule has no
+    `pd_question` of its own (F-24.1); may use {explanation}. A version published before it existed
+    reads this default."""
 
     @property
     def enabled_rules(self) -> list[CrossCheckRule]:
@@ -384,19 +394,54 @@ class CrossChecksSection(BaseModel):
 class CamSectionDef(BaseModel):
     id: str
     kind: Literal[
-        "borrower_profile", "proposal", "promoters", "financial_performance", "working_capital", "banking",
-        "existing_facilities", "cross_verification", "policy", "documentation",
+        "snapshot", "borrower_profile", "proposal", "promoters", "financial_performance", "working_capital",
+        "turnover", "banking", "existing_facilities", "cross_verification", "policy", "documentation",
     ]
     title: str
 
 
+PdTopicArea = Literal["identity", "turnover", "accounts", "obligations", "policy"]
+
+
+class PdNoteConfig(BaseModel):
+    """The PD question note's wording (F-24): its title, the blank lines for the record of the
+    discussion, the title of each topic the questions are asked under, the sign-off and the labels in
+    the downloaded note."""
+
+    title: str = "Personal discussion — question note"
+    record_fields: list[str] = Field(default_factory=list)
+    topics: dict[PdTopicArea, str] = Field(default_factory=lambda: {
+        "identity": "Identity and KYC", "turnover": "Turnover, tax and sales", "accounts": "Bank accounts",
+        "obligations": "Existing borrowings", "policy": "Policy norms"})
+    """Each topic's title, by area. The note asks the topics in the order of PdTopicArea: a published
+    version keeps no order of keys."""
+    sign_off: list[str] = Field(default_factory=lambda: ["Discussion held by"])
+    """The sign-off block's roles, in order."""
+    labels: dict[str, str] = Field(default_factory=dict)
+    """The headings and labels inside the downloaded note, by key (people_to_meet, why_we_ask, …); a
+    key not given keeps the download's own wording."""
+
+
 class CamSectionConfig(BaseModel):
-    """config/cam.yaml (F-23.1)."""
+    """config/cam.yaml (F-23.1, F-24). A version published before the title, the template note, the
+    recommendation prompts, the sign-off, the labels and the PD note's wording existed reads them as
+    these defaults."""
 
     interim_template: bool
+    title: str = "Credit Approval Memo"
+    template_note: str | None = None
+    """Said on the memo while its layout is assumed."""
     sections: list[CamSectionDef]
     summary_title: str
     recommendation_title: str
+    recommendation_prompts: list[str] = Field(default_factory=list)
+    """The headings credit completes under the recommendation, each left blank."""
+    sign_off: list[str] = Field(default_factory=list)
+    """The sign-off block's roles, in order."""
+    labels: dict[str, str] = Field(default_factory=dict)
+    """The headings and labels inside the downloaded memo, by key (case_id, sources, summary_findings,
+    …); a key not given keeps the download's own wording."""
+    pd_note: PdNoteConfig = Field(default_factory=PdNoteConfig)
 
 
 class StatementLine(BaseModel):

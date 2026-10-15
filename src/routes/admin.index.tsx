@@ -51,6 +51,7 @@ function Configuration() {
                       <p className="flex flex-wrap items-center gap-2 text-[13px] font-medium">
                         {t("admin.config.versionN", { n: list.length - i })}
                         {v.current && <Chip tone="positive">{t("admin.config.inForce")}</Chip>}
+                        {v.origin === "app" && <Chip tone="info">{t("admin.config.edited")}</Chip>}
                         <span className="text-[12px] font-normal text-muted-foreground">
                           {formatWhen(v.published_at)} · {v.author}
                         </span>

@@ -20,6 +20,16 @@ from .util import fy_end_of
 
 
 @dataclass
+class LinePart:
+    """One line a derived figure was summed from, with the sign it carried (F-20.2)."""
+
+    name: str
+    sign: int
+    value: float
+    evidence: list[Evidence] = field(default_factory=list)
+
+
+@dataclass
 class Line:
     value: float
     evidence: list[Evidence] = field(default_factory=list)
@@ -27,6 +37,9 @@ class Line:
     field_ids: list[str] = field(default_factory=list)
     pending: bool = False
     """A cell it was read from is still waiting for review (F-17.2)."""
+    parts: list[LinePart] = field(default_factory=list)
+    """For a derived line, the lines it was summed from, in the order configured; empty for a
+    line the statement prints itself. The screens show the arithmetic from these."""
 
 
 def _number(v) -> float | None:
@@ -96,6 +109,7 @@ def lines(doc, cfg: StatementsSection, *, column: str | None = None) -> dict[str
                 any(out[name].manual for _, name in terms),
                 [i for _, name in terms for i in out[name].field_ids],
                 any(out[name].pending for _, name in terms),
+                [LinePart(name, sign, out[name].value, out[name].evidence[:1]) for sign, name in terms],
             )
     return out
 

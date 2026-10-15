@@ -32,6 +32,7 @@ from .config import load_app_config
 from .configstore import reader
 from .configstore.schema import ChecklistItemDef
 from .contracts import CaseDetail, ChecklistItemState, Readiness
+from .facts import DECLARATION, MESSAGE_ACCOUNT, banking_named
 from .parties import field_map, table_rows
 from .pipeline import effective_types
 from .util import (
@@ -158,6 +159,11 @@ def _last4(value: object) -> str | None:
     return digits[-4:] if len(digits) >= 4 else None
 
 
+def _lower(text: str) -> str:
+    """The text as it reads inside a sentence: its first letter in lower case, unless it opens an acronym."""
+    return text[:1].lower() + text[1:] if text[1:2].islower() else text
+
+
 def load_case_data(conn: sqlite3.Connection, case: CaseDetail) -> CaseData:
     rows = conn.execute(
         """SELECT d.*, f.label_hint, f.original_name, f.archive_path FROM documents d JOIN files f ON f.id = d.file_id
@@ -180,9 +186,29 @@ def load_case_data(conn: sqlite3.Connection, case: CaseDetail) -> CaseData:
         docs=docs,
         parties=parties,
         waivers=waivers,
-        declared_accounts=[],
+        declared_accounts=_declared_accounts(case, docs),
         existing_facilities_declared=False,
     )
+
+
+def _declared_accounts(case: CaseDetail, docs: list[Doc]) -> list[tuple[str, str]]:
+    """The accounts declared: in the declaration of existing facilities and in the sourcing message
+    (as engine/facts.py reads them), each once by its last four digits."""
+    found: dict[str, str] = {}
+    for d in docs:
+        if DECLARATION in d.types and d.status in USABLE:
+            for row in table_rows(d.fields, "bank_accounts"):
+                last4 = _last4((row.get("account_number") or (None, None))[0])
+                if last4:
+                    found.setdefault(last4, str((row.get("bank") or ("", None))[0] or "").strip())
+    field = case.header.get("existing_banking")
+    message = (field.value if field else None) or ""
+    for _, bank, last4 in banking_named(message):
+        if last4:
+            found.setdefault(last4, bank)
+    for m in MESSAGE_ACCOUNT.finditer(message):
+        found.setdefault(_last4(m[1]) or "", "")
+    return [(bank, last4) for last4, bank in found.items() if last4]
 
 
 class Evaluator:
@@ -250,8 +276,9 @@ class Evaluator:
                         {fy_end_of(d.value("financial_year") or d.row["instance_key"]) for d in usable} - {None}
                     )
                     missing = self.missing_request(item)
+                    # The years received, by the financial year alone, so the brackets do not nest.
                     received = (
-                        " (received: " + ", ".join(fy_label(o) for o in others) + ")" if others else ""
+                        "; received: " + ", ".join(fy_label(o).split(" (")[0] for o in others) if others else ""
                     )
                     return ItemResult(item, state("missing", f"Not received: {missing}{received}", []), [], missing)
                 defs += self.sections(docs, cov.statements)
@@ -345,7 +372,7 @@ class Evaluator:
             Deficiency(
                 "gap",
                 "years",
-                f"{self._ay_list(absent)} not received ({len(required) - len(absent)} of {len(required)} years)",
+                f"{self._ay_list(absent)} not received ({len(required) - len(absent)} of {len(required)} years on file)",
                 f"{request} for {self._ay_list(absent)}",
             )
         ]
@@ -367,7 +394,7 @@ class Evaluator:
             Deficiency(
                 "gap",
                 "periods",
-                f"{ranges_label(absent)} absent ({months - len(absent)} of {months} months)",
+                f"{ranges_label(absent)} absent ({months - len(absent)} of {months} months on file)",
                 f"{request} for {ranges_label(absent)}",
                 [],
                 {"absent": [f"{y}-{m:02d}" for y, m in absent]},
@@ -409,8 +436,9 @@ class Evaluator:
                     first, last = date(p[0], p[1], 1), month_end(*p)
                     if start <= first and end >= last:
                         months_cov.add(p)
-        declared = self.data.declared_accounts
-        accounts = [(bank, last4) for bank, last4 in declared] or [(seen_bank.get(a, ""), a) for a in covered]
+        # Every account with a statement, then each declared account that has none.
+        accounts = [(seen_bank.get(a, ""), a) for a in covered]
+        accounts += [(bank, last4) for bank, last4 in self.data.declared_accounts if last4 not in covered]
         request = item.request or item.name
         out: list[Deficiency] = []
         received = sum(1 for _, a in accounts if a in covered)
@@ -421,7 +449,8 @@ class Evaluator:
                     Deficiency(
                         "gap",
                         f"account:{last4}",
-                        f"statement not received for declared account {name} ({received} of {len(accounts)} accounts)",
+                        f"statement not received for declared account {name} "
+                        f"({received} of {len(accounts)} accounts on file)",
                         f"{request} for account {name} for {ranges_label(window)}",
                     )
                 )
@@ -582,12 +611,13 @@ class Evaluator:
             days = (self.as_of - newest).days
             if days > age.max_age_days:
                 suffix = f" (account ·{key})" if key else ""
+                what = f"statement for ·{key}" if key else _lower(self.type_name(type_id))
                 out.append(
                     Deficiency(
                         "outdated",
                         f"outdated:{type_id}:{key}",
-                        f"Outdated{suffix}: dated {display_date(newest)}, permitted age {age.max_age_days} days"
-                        f" from {display_date(self.as_of)}",
+                        f"Outdated: {what} dated {display_date(newest)}, older than the {age.max_age_days} days allowed"
+                        f" at {display_date(self.as_of)}",
                         "",
                         [d.evidence(*AGE_FIELDS.get(age.measured_from, []))],
                         {"date": display_date(newest), "max_age_days": age.max_age_days},

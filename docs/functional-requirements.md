@@ -127,7 +127,7 @@ These apply to every feature. A pull request that breaks one is not mergeable.
 | Relationship Manager (RM) | Creates the case, uploads documents, reads the checklist and the query list. Uses a phone as well as a desktop | Appraisals, New appraisal; in an appraisal: Overview, Documents, Completeness |
 | Credit Analyst | Resolves review items; reads extracted data, cross-checks and policy; produces outputs | Appraisals, New appraisal, Review queue; every appraisal tab except Comparison |
 | Credit Manager | Checker for maker-checker items; adjudicates in the comparison (the RBL credit reviewer signs in with this role) | Appraisals, Review queue, Scorecard; every appraisal tab |
-| Administrator | Authors and publishes configuration from the command line. No screen | None |
+| Administrator | Edits the tolerances, policy norm thresholds, cross-check rules and approval matrix on the Administration screen and publishes them as a new version (F-00.6); authors and publishes the rest of the configuration from the command line. No access to appraisals | Administration: Settings, Configuration, Policy, Checklist, Document types, Users |
 
 Role gating is enforced on the server, and a role sees only the screens listed for it.
 
@@ -237,6 +237,7 @@ flowchart TB
 | Comparison | `/appraisals/$caseId/comparison` | This case's outputs beside RBL's record, with adjudication | F-25 | Manager | No |
 | Review queue | `/review` | Everything waiting for a person, across cases | F-17 | Analyst, Manager | No |
 | Scorecard | `/scorecard` | The criteria per case and across the case set | F-26 | Manager | No |
+| Administration · Settings | `/admin/settings` | The tolerances, policy norm thresholds, cross-check rules and approval matrix in force; the Administrator edits them, reviews the changes and publishes them with a note | F-00.6 | Administrator (edits); Analyst, Manager (read) | No |
 
 **The case workspace.** Every tab shows:
 - a persistent case header: borrower, constitution, product and amount, PAN and GSTIN, case ID, RM, open review items;
@@ -383,12 +384,20 @@ stateDiagram-v2
   - bureau report;
   - declaration of existing facilities;
   - sanction letters of existing facilities (when facilities are declared).
+- **F-00.6** The Administrator edits these settings on the Administration screen:
+  - the cross-check tolerances;
+  - the policy norms' thresholds (a financial ratio's acceptable and marginal values; the threshold of every other norm). Changing the request-against-turnover norm moves the turnover method's working-capital requirement with it, keeping the margin;
+  - each cross-check rule: whether it runs, its severity and whether it blocks submission;
+  - the approval matrix: each product's amount bands and their authorities, and each deviation category's steps.
+
+  A change is previewed first, with each value before and after and any reason it cannot be published. It is validated as a publish from the files is, and published with the Administrator's name and a note of at least three characters. It becomes a new immutable version marked as edited on the screen, it is recorded in the audit trail, and every case's checks re-run. Analysts and Credit Managers see the same settings read-only. A later publish from the files refuses to undo a section edited on the screen unless asked to (`--discard-app-edits`).
 
 **Acceptance**
 
 - Every section validates and publishes.
 - Publishing unchanged configuration reuses the same version.
-- Runtime code cannot import the writer (the import-linter contract passes).
+- Runtime code cannot import the writer: only the command line and the Administrator's publish from the screen can (the import-linter contract passes).
+- A setting changed on the screen is in force for every case once published, and a publish from the files does not undo it unnoticed.
 
 **Configuration needed from RBL.** See C.3. Until each artefact arrives, the delivery team proposes an interim version, tagged `provisional`, except where C.3 or C.4 says otherwise. RBL's own artefacts are published from a git-ignored directory (`creditiq config publish --private-config DIR`), so they never enter the repository.
 
@@ -1140,7 +1149,7 @@ Turnover — audited, GST and banked turnover by year and by month
      ┌ GST outward supplies (GSTR-3B) ┐ ┌ Business credits in bank statements ┐
      │ INR 12.00 cr · Apr–Mar · 12/12 │ │ INR 9.00 cr · Apr–Mar · 2 accounts  │
      Gap against bank credits: INR 3.00 cr · 25.0% of GST outward supplies
-     RBL tolerance: 10% — breached on GST outward supplies against bank credits
+     RBL tolerance: 1% — breached on GST outward supplies against bank credits
      Period │ Filed │ 3.1(a)+(b)+(c)      Month │ Account │ Credits │ Excluded credits …
  …
 Bank accounts — …
@@ -1277,7 +1286,7 @@ flowchart LR
 - **F-23.2** Every quantitative statement carries a citation to its source page. Narrative is written in a neutral analyst register, from facts only.
 - **F-23.3** The memo ends with a structured summary of findings (F-19), deviations against policy (F-20) and open queries (F-14).
 - **F-23.4** The recommendation section is present and empty, for credit to complete.
-- **F-23.5** The memo is viewable on screen with working citations, and exportable. The export format is decision C.4-5.
+- **F-23.5** The memo is viewable on screen with working citations, and downloads as Word (.docx) and PDF with numbered citations and a sources list (decision C.4-5).
 - **F-23.6** Model-drafted text is recorded and replayed (principle 6).
 
 **Acceptance (TC-28)**
@@ -1296,7 +1305,7 @@ flowchart LR
 
 - **F-24.1** Questions are generated from findings, deviations and unresolved gaps, and ranked by severity.
 - **F-24.2** Each question links to its finding and evidence.
-- **F-24.3** The note is viewable and exportable alongside the CAM.
+- **F-24.3** The note is viewable and downloads alongside the CAM, as Word (.docx) and PDF, with space to record each answer.
 
 **Acceptance (TC-29)**
 - The reviewer confirms the questions are relevant.
@@ -1503,7 +1512,7 @@ flowchart TD
 | 2 | Constitutions: the checklist covers private limited, partnership and proprietorship. Add LLP and public limited? | F-12 | Open. Add them if the case set includes either |
 | 3 | Development data before RBL's cases arrive | Phase 2 | **Decided 29 Sep 2026:** controlled test documents under `tests/fixtures/TC-xx/`, each with its expected result (AD-6) |
 | 4 | Where the model runs for RBL data, and which provider | Phase 2 | Open for RBL data. For development, no model key yet: a stub provider plus recorded responses (AD-5) |
-| 5 | CAM export format (Word, PDF, or both) | F-23 | Match RBL's template's native format. **Decided 30 Sep 2026:** on screen only until the template arrives |
+| 5 | CAM export format (Word, PDF, or both) | F-23 | Match RBL's template's native format. **Decided 30 Sep 2026:** on screen only until the template arrives. **Revised 13 Oct 2026:** the draft CAM and the PD note download as Word (.docx, editable) and PDF in an assumed layout (`docs/outputs-cam-pd.md`) until RBL's template arrives; the layout then follows the template |
 | 6 | Evidence region: page is mandatory (C7). Should the region on the page be shown too? | F-16 | Page for every value; region where cheaply available |
 | 7 | Screen structure: the prototype's two case workspaces and 12 case screens, or one workspace in processing order | Screens | **Decided 30 Sep 2026:** one case workspace whose tabs follow §5; the prototype's visual style is kept; the DocReady and Appraisal workspace names are dropped; screens call the record an appraisal (§6) |
 | 8 | Spread before RBL's template arrives | F-22 | **Decided 30 Sep 2026:** an interim spread on screen (statement lines, ratios and the working-capital assessment with workings, every figure cited), marked interim; re-mapped to RBL's rows and exported to Excel (F-22.4) when the template arrives |

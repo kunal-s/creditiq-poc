@@ -4,6 +4,68 @@
  */
 
 export interface paths {
+  "/api/admin/settings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Admin Settings
+     * @description The tolerances, norm thresholds, cross-check rules and approval matrix an Administrator
+     *     edits (F-00.6), as the version now published has them.
+     */
+    get: operations["admin_settings_api_admin_settings_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/admin/settings/preview": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Admin Settings Preview
+     * @description What the changes would change and why they could not be published; nothing is published.
+     */
+    post: operations["admin_settings_preview_api_admin_settings_preview_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/admin/settings/publish": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Admin Settings Publish
+     * @description Publish the changes as a new configuration version, with the Administrator's note, and
+     *     re-run every case's checks (F-00.6). 422 with the problems when they cannot be published.
+     */
+    post: operations["admin_settings_publish_api_admin_settings_publish_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/audit": {
     parameters: {
       query?: never;
@@ -158,6 +220,32 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/cases/{case_id}/assessment": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Open Assessment
+     * @description F-13: create the case, opening cross-verification, policy checks and the outputs.
+     *
+     *     `review.decide`, because it is the decision that intake is complete: the analyst and the
+     *     credit manager hold it, the RM does not.
+     *
+     *     Refused with 409 while completeness is not satisfied; the body names the blockers so the
+     *     screen can say which one. Pressing it twice is harmless: the case is returned unchanged.
+     */
+    post: operations["open_assessment_api_cases__case_id__assessment_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/cases/{case_id}/cam": {
     parameters: {
       query?: never;
@@ -170,6 +258,27 @@ export interface paths {
      * @description F-23: the draft CAM, every figure cited, ending in the structured summary.
      */
     get: operations["case_cam_api_cases__case_id__cam_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/cases/{case_id}/cam/download": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Case Cam Download
+     * @description F-23.5: the draft CAM as a Word or PDF file, the same content as the screen, with numbered
+     *     citations and the sources; the recommendation is left blank for credit.
+     */
+    get: operations["case_cam_download_api_cases__case_id__cam_download_get"];
     put?: never;
     post?: never;
     delete?: never;
@@ -444,6 +553,27 @@ export interface paths {
      * @description F-24: questions for the personal discussion, ranked, each tied to its source.
      */
     get: operations["case_pd_note_api_cases__case_id__pd_note_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/cases/{case_id}/pd-note/download": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Case Pd Note Download
+     * @description F-24.3: the PD question note as a Word or PDF file, the same content as the screen, with room
+     *     under each question for the response and the follow-up.
+     */
+    get: operations["case_pd_note_download_api_cases__case_id__pd_note_download_get"];
     put?: never;
     post?: never;
     delete?: never;
@@ -949,6 +1079,43 @@ export interface components {
       /** Valid */
       valid: number;
     };
+    /**
+     * AssessmentGate
+     * @description The F-13 gate between intake and assessment: cross-verification, policy checks and the
+     *     outputs open only once completeness is satisfied and a person creates the case.
+     */
+    AssessmentGate: {
+      /** Blockers */
+      blockers?: string[];
+      /**
+       * Blocking Open
+       * @default 0
+       */
+      blocking_open: number;
+      /** Can Open */
+      can_open: boolean;
+      /**
+       * Gate Pct
+       * @default 0
+       */
+      gate_pct: number;
+      /** Open */
+      open: boolean;
+      /**
+       * Open Exceptions
+       * @default 0
+       */
+      open_exceptions: number;
+      /** Opened At */
+      opened_at?: string | null;
+      /** Opened By */
+      opened_by?: string | null;
+      /**
+       * Score Pct
+       * @default 0
+       */
+      score_pct: number;
+    };
     /** AuditEntry */
     AuditEntry: {
       /** Action */
@@ -1068,58 +1235,145 @@ export interface components {
      * @description The draft Credit Approval Memo (F-23).
      */
     Cam: {
+      /** As Of */
+      as_of: string;
+      /** Borrower */
+      borrower: string;
       /** Case Id */
       case_id: string;
+      /**
+       * Config Label
+       * @default
+       */
+      config_label: string;
+      /** Config Version */
+      config_version: string;
       /** Interim Template */
       interim_template: boolean;
+      /** Labels */
+      labels?: {
+        [key: string]: string;
+      };
       /**
        * Recommendation
        * @default
        */
       recommendation: string;
+      /** Recommendation Number */
+      recommendation_number: number;
+      /** Recommendation Prompts */
+      recommendation_prompts?: string[];
       /** Recommendation Title */
       recommendation_title: string;
+      /** Run Id */
+      run_id?: string | null;
       /** Sections */
       sections: components["schemas"]["CamSection"][];
+      /** Sign Off */
+      sign_off?: components["schemas"]["CamSignOff"][];
+      /** Sources */
+      sources?: components["schemas"]["OutputSource"][];
       /** Summary */
       summary: components["schemas"]["CamSummaryItem"][];
+      /** Summary Number */
+      summary_number: number;
       /** Summary Title */
       summary_title: string;
-    };
-    /** CamSection */
-    CamSection: {
-      /** Empty */
-      empty?: string | null;
-      /** Id */
-      id: string;
-      /** Paragraphs */
-      paragraphs?: components["schemas"]["CamText"][];
-      table?: components["schemas"]["CamTable"] | null;
+      /** Template Note */
+      template_note?: string | null;
       /** Title */
       title: string;
     };
-    /** CamSummaryItem */
-    CamSummaryItem: {
-      /** Citations */
-      citations?: components["schemas"]["Evidence"][];
+    /**
+     * CamBlock
+     * @description One block of a section, in reading order.
+     */
+    CamBlock: {
+      /** Facts */
+      facts?: components["schemas"]["CamFact"][];
       /**
        * Kind
        * @enum {string}
        */
-      kind: "finding" | "deviation" | "unassessed" | "query";
+      kind: "paragraph" | "facts" | "table" | "subheading" | "note";
+      paragraph?: components["schemas"]["CamText"] | null;
+      table?: components["schemas"]["CamTable"] | null;
+      /** Text */
+      text?: string | null;
+    };
+    /**
+     * CamFact
+     * @description One labelled value in a block of key facts.
+     */
+    CamFact: {
+      /** Label */
+      label: string;
+      value: components["schemas"]["CamText"];
+    };
+    /** CamSection */
+    CamSection: {
+      /** Blocks */
+      blocks?: components["schemas"]["CamBlock"][];
+      /** Empty */
+      empty?: string | null;
+      /** Id */
+      id: string;
+      /** Number */
+      number: number;
+      /** Title */
+      title: string;
+    };
+    /**
+     * CamSignOff
+     * @description A line of the sign-off block, left for the people who sign.
+     */
+    CamSignOff: {
+      /** Role */
+      role: string;
+    };
+    /** CamSummaryItem */
+    CamSummaryItem: {
+      /**
+       * Blocking
+       * @default false
+       */
+      blocking: boolean;
+      /** Citations */
+      citations?: components["schemas"]["Evidence"][];
+      /** Group */
+      group?: ("documents_needed" | "documents_to_redo" | "clarifications") | null;
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: "finding" | "incomplete" | "deviation" | "unassessed" | "query";
       /** Ref */
       ref: string;
+      /** Request */
+      request?: string | null;
+      /** Rule */
+      rule?: string | null;
       /** Severity */
       severity?: ("serious" | "moderate" | "mild") | null;
+      /** Status */
+      status?: string | null;
       /** Text */
       text: string;
+      /** Title */
+      title?: string | null;
     };
     /** CamTable */
     CamTable: {
       /** Columns */
       columns: string[];
+      /** Note */
+      note?: string | null;
+      /** Numeric */
+      numeric?: number[];
       /** Rows */
       rows: components["schemas"]["CamText"][][];
+      /** Title */
+      title?: string | null;
     };
     /**
      * CamText
@@ -1210,6 +1464,10 @@ export interface components {
       amount_inr: number;
       /** As Of */
       as_of: string;
+      /** Assessment Opened At */
+      assessment_opened_at?: string | null;
+      /** Assessment Opened By */
+      assessment_opened_by?: string | null;
       /** Borrower */
       borrower: string;
       /** Channel */
@@ -1299,6 +1557,7 @@ export interface components {
     CaseProgress: {
       /** Case Id */
       case_id: string;
+      gate?: components["schemas"]["AssessmentGate"] | null;
       /**
        * Stage
        * @enum {string}
@@ -1533,6 +1792,12 @@ export interface components {
       current: boolean;
       /** Note */
       note: string;
+      /**
+       * Origin
+       * @default cli
+       * @enum {string}
+       */
+      origin: "cli" | "app";
       /** Prior Version */
       prior_version: string | null;
       /** Published At */
@@ -1604,6 +1869,13 @@ export interface components {
       key: string;
       /** Label */
       label: string;
+    };
+    /** DeviationChange */
+    DeviationChange: {
+      /** At Least */
+      at_least?: string | null;
+      /** Levels Above */
+      levels_above?: number | null;
     };
     /** DeviationRule */
     DeviationRule: {
@@ -1692,6 +1964,165 @@ export interface components {
     DocumentTypesSection: {
       /** Types */
       types: components["schemas"]["DocumentTypeDef"][];
+    };
+    /** EditableAuthority */
+    EditableAuthority: {
+      /** Key */
+      key: string;
+      /** Label */
+      label: string;
+      /** Level */
+      level: number;
+    };
+    /** EditableBand */
+    EditableBand: {
+      /** Authority */
+      authority: string;
+      /** Up To Inr */
+      up_to_inr?: number | null;
+    };
+    /** EditableDeviation */
+    EditableDeviation: {
+      /** At Least */
+      at_least: string | null;
+      /** Category */
+      category: string;
+      /** Label */
+      label: string;
+      /** Levels Above */
+      levels_above: number;
+    };
+    /** EditableMatrix */
+    EditableMatrix: {
+      /** Authorities */
+      authorities: components["schemas"]["EditableAuthority"][];
+      /** Deviations */
+      deviations: components["schemas"]["EditableDeviation"][];
+      /** Products */
+      products: components["schemas"]["EditableProduct"][];
+      /** Status */
+      status: string;
+    };
+    /**
+     * EditableNorm
+     * @description A norm with its own threshold (eligibility, documentation, security cover).
+     */
+    EditableNorm: {
+      /**
+       * Family
+       * @enum {string}
+       */
+      family: "eligibility" | "ratios" | "security_cover" | "documentation";
+      /** Id */
+      id: string;
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: "min" | "max";
+      /** Label */
+      label: string;
+      /** Threshold */
+      threshold: number;
+      /** Unit */
+      unit: ("x" | "%" | "days" | "years" | "inr" | "count" | "rank") | null;
+    };
+    /** EditableProduct */
+    EditableProduct: {
+      /** Bands */
+      bands: components["schemas"]["EditableBand"][];
+      /** Key */
+      key: string;
+      /** Label */
+      label: string;
+    };
+    /**
+     * EditableRatio
+     * @description A financial-ratio norm's thresholds: acceptable is the norm; marginal is shown beside it.
+     */
+    EditableRatio: {
+      /** Acceptable */
+      acceptable: number;
+      /** Key */
+      key: string;
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: "min" | "max";
+      /** Label */
+      label: string;
+      /** Marginal */
+      marginal: number;
+      /** Norms */
+      norms: string[];
+      /**
+       * Unit
+       * @enum {string}
+       */
+      unit: "x" | "%" | "days";
+    };
+    /** EditableRule */
+    EditableRule: {
+      /** Area */
+      area: string;
+      /** Blocking */
+      blocking: boolean;
+      /** Enabled */
+      enabled: boolean;
+      /** Id */
+      id: string;
+      /**
+       * Severity
+       * @enum {string}
+       */
+      severity: "serious" | "moderate" | "mild";
+      /** Title */
+      title: string;
+    };
+    /**
+     * EditableSettings
+     * @description What the Administration screen edits, as the published version has it.
+     */
+    EditableSettings: {
+      /** Author */
+      author: string;
+      matrix: components["schemas"]["EditableMatrix"];
+      /** Norms */
+      norms: components["schemas"]["EditableNorm"][];
+      /**
+       * Origin
+       * @enum {string}
+       */
+      origin: "cli" | "app";
+      /** Published At */
+      published_at: string;
+      /** Ratios */
+      ratios: components["schemas"]["EditableRatio"][];
+      /** Rules */
+      rules: components["schemas"]["EditableRule"][];
+      /** Tolerances */
+      tolerances: components["schemas"]["EditableTolerance"][];
+      /** Version */
+      version: string;
+    };
+    /** EditableTolerance */
+    EditableTolerance: {
+      /** Key */
+      key: string;
+      /** Label */
+      label: string;
+      /** Rules */
+      rules: string[];
+      /** Source */
+      source: string;
+      /**
+       * Unit
+       * @enum {string}
+       */
+      unit: "%" | "inr" | "days" | "ratio";
+      /** Value */
+      value: number;
     };
     /**
      * Evidence
@@ -2212,6 +2643,23 @@ export interface components {
       month: string;
     };
     /**
+     * NormComponent
+     * @description One line a derived figure was summed from, with the sign it carried (F-20.2).
+     *
+     *     `net worth = share capital + reserves and surplus` shows as two components, each with the
+     *     figure read from the statement and the page it was read from.
+     */
+    NormComponent: {
+      /** Evidence */
+      evidence?: components["schemas"]["Evidence"][];
+      /** Label */
+      label: string;
+      /** Sign */
+      sign: number;
+      /** Value */
+      value: number;
+    };
+    /**
      * NormInput
      * @description One source figure a norm used, with where it came from (F-20.2).
      */
@@ -2227,6 +2675,8 @@ export interface components {
        * @enum {string}
        */
       basis: "document" | "case" | "checklist" | "statements_coverage" | "not_requested";
+      /** Components */
+      components?: components["schemas"]["NormComponent"][];
       /** Evidence */
       evidence?: components["schemas"]["Evidence"][];
       /** Label */
@@ -2253,6 +2703,12 @@ export interface components {
       category: string;
       /** Category Label */
       category_label: string;
+      /**
+       * Comparator
+       * @default min
+       * @enum {string}
+       */
+      comparator: "min" | "max";
       /** Definition */
       definition?: string | null;
       /**
@@ -2290,6 +2746,8 @@ export interface components {
       required: string;
       /** Source */
       source?: string | null;
+      /** Threshold Text */
+      threshold_text?: string | null;
       /** Unit */
       unit?: string | null;
     };
@@ -2319,6 +2777,23 @@ export interface components {
       id: string;
       /** Label */
       label: string;
+    };
+    /**
+     * OutputSource
+     * @description A document the memo or the note cites, numbered in the order it is first cited, so the screen
+     *     and the downloads refer to it the same way (F-23.2, F-24.2).
+     */
+    OutputSource: {
+      /** Document Id */
+      document_id: string;
+      /** File Name */
+      file_name?: string | null;
+      /** Label */
+      label: string;
+      /** Number */
+      number: number;
+      /** Pages */
+      pages: number[];
     };
     /** PageInfo */
     PageInfo: {
@@ -2386,22 +2861,85 @@ export interface components {
       /** Role */
       role?: string | null;
     };
-    /** PdNote */
+    /**
+     * PdNote
+     * @description The PD question note (F-24): ranked questions, each tied to its finding and evidence.
+     */
     PdNote: {
+      /** As Of */
+      as_of: string;
+      /** Borrower */
+      borrower: string;
       /** Case Id */
       case_id: string;
+      /**
+       * Config Label
+       * @default
+       */
+      config_label: string;
+      /** Config Version */
+      config_version: string;
+      /** Documents To Collect */
+      documents_to_collect?: components["schemas"]["CamText"][];
+      /** Header */
+      header?: components["schemas"]["CamFact"][];
+      /** Labels */
+      labels?: {
+        [key: string]: string;
+      };
+      /** People */
+      people?: components["schemas"]["PdPerson"][];
       /** Questions */
       questions: components["schemas"]["PdQuestion"][];
+      /** Record Fields */
+      record_fields?: string[];
+      /** Sign Off */
+      sign_off?: components["schemas"]["CamSignOff"][];
+      /** Sources */
+      sources?: components["schemas"]["OutputSource"][];
+      /** Title */
+      title: string;
+      /** Topics */
+      topics?: components["schemas"]["PdTopic"][];
+    };
+    /**
+     * PdPerson
+     * @description Someone to meet: a promoter or director the documents name.
+     */
+    PdPerson: {
+      /** Din */
+      din?: string | null;
+      /** Evidence */
+      evidence?: components["schemas"]["Evidence"][];
+      /** Name */
+      name: string;
+      /** Role */
+      role?: string | null;
+      /** Sources */
+      sources?: string[];
     };
     /**
      * PdQuestion
      * @description One question for the personal discussion (F-24).
      */
     PdQuestion: {
+      /** Also */
+      also?: components["schemas"]["PdRef"][];
+      /**
+       * Area
+       * @enum {string}
+       */
+      area: "identity" | "turnover" | "accounts" | "obligations" | "policy";
+      /** Context */
+      context: string;
       /** Evidence */
       evidence?: components["schemas"]["Evidence"][];
       /** Id */
       id: string;
+      /** Number */
+      number: number;
+      /** Question */
+      question: string;
       /** Ref */
       ref: string;
       /** Rule */
@@ -2415,15 +2953,52 @@ export interface components {
        * Source
        * @enum {string}
        */
-      source: "finding" | "deviation" | "gap";
+      source: "finding" | "deviation" | "gap" | "observation";
+      /** Status */
+      status?: string | null;
       /**
        * Target
        * @default policy
        * @enum {string}
        */
-      target: "cross_verification" | "policy";
+      target: "cross_verification" | "policy" | "cam";
       /** Text */
       text: string;
+      /** Title */
+      title: string;
+      /** Xv Ref */
+      xv_ref?: string | null;
+    };
+    /**
+     * PdRef
+     * @description Another finding a merged question also rests on (F-24.2).
+     */
+    PdRef: {
+      /** Evidence */
+      evidence?: components["schemas"]["Evidence"][];
+      /** Ref */
+      ref: string;
+      /** Rule */
+      rule: string;
+      /** Status */
+      status?: string | null;
+      /** Title */
+      title: string;
+      /** Xv Ref */
+      xv_ref?: string | null;
+    };
+    /**
+     * PdTopic
+     * @description The questions asked under one topic, in order.
+     */
+    PdTopic: {
+      /**
+       * Area
+       * @enum {string}
+       */
+      area: "identity" | "turnover" | "accounts" | "obligations" | "policy";
+      /** Question Ids */
+      question_ids: string[];
       /** Title */
       title: string;
     };
@@ -2579,6 +3154,8 @@ export interface components {
        * @enum {string}
        */
       pd_gap: "ask" | "skip";
+      /** Pd Gap Question */
+      pd_gap_question?: string | null;
       /** Pd Question */
       pd_question?: string | null;
       /** Ratio */
@@ -2723,6 +3300,13 @@ export interface components {
       source_ref: string;
       /** Text */
       text: string;
+    };
+    /** RatioChange */
+    RatioChange: {
+      /** Acceptable */
+      acceptable?: number | null;
+      /** Marginal */
+      marginal?: number | null;
     };
     /**
      * Readiness
@@ -2877,6 +3461,15 @@ export interface components {
       /** Summary */
       summary: string;
     };
+    /** RuleChange */
+    RuleChange: {
+      /** Blocking */
+      blocking?: boolean | null;
+      /** Enabled */
+      enabled?: boolean | null;
+      /** Severity */
+      severity?: ("serious" | "moderate" | "mild") | null;
+    };
     /** SessionUser */
     SessionUser: {
       /** Branch */
@@ -2897,6 +3490,85 @@ export interface components {
       role: string;
       /** Rolelabel */
       roleLabel: string;
+    };
+    /**
+     * SettingChange
+     * @description One value that changes: where it is, its label, and before and after as raw values.
+     */
+    SettingChange: {
+      /** After */
+      after: number | boolean | string | null;
+      /** Before */
+      before: number | boolean | string | null;
+      /** Field */
+      field: string;
+      /** Item */
+      item: string;
+      /** Label */
+      label: string;
+      /**
+       * Section
+       * @enum {string}
+       */
+      section: "tolerances" | "policy" | "crosschecks" | "approval_matrix";
+      /** Unit */
+      unit?: string | null;
+    };
+    /**
+     * SettingsChanges
+     * @description Only what changes; anything left out stays as published.
+     */
+    SettingsChanges: {
+      /** Bands */
+      bands?: {
+        [key: string]: components["schemas"]["EditableBand"][];
+      };
+      /** Deviations */
+      deviations?: {
+        [key: string]: components["schemas"]["DeviationChange"];
+      };
+      /** Norms */
+      norms?: {
+        [key: string]: number;
+      };
+      /** Ratios */
+      ratios?: {
+        [key: string]: components["schemas"]["RatioChange"];
+      };
+      /** Rules */
+      rules?: {
+        [key: string]: components["schemas"]["RuleChange"];
+      };
+      /** Tolerances */
+      tolerances?: {
+        [key: string]: number;
+      };
+    };
+    /** SettingsPreview */
+    SettingsPreview: {
+      /** Changes */
+      changes: components["schemas"]["SettingChange"][];
+      /** Problems */
+      problems: string[];
+    };
+    /** SettingsPublishRequest */
+    SettingsPublishRequest: {
+      changes: components["schemas"]["SettingsChanges"];
+      /** Note */
+      note: string;
+    };
+    /** SettingsPublished */
+    SettingsPublished: {
+      /** Cases Failed */
+      cases_failed: string[];
+      /** Cases Rerun */
+      cases_rerun: number;
+      /** Changes */
+      changes: components["schemas"]["SettingChange"][];
+      /** Published At */
+      published_at: string;
+      /** Version */
+      version: string;
     };
     /**
      * SourceColumn
@@ -3399,6 +4071,107 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  admin_settings_api_admin_settings_get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EditableSettings"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  admin_settings_preview_api_admin_settings_preview_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SettingsChanges"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SettingsPreview"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  admin_settings_publish_api_admin_settings_publish_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SettingsPublishRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SettingsPublished"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   audit_trail_api_audit_get: {
     parameters: {
       query?: {
@@ -3731,6 +4504,39 @@ export interface operations {
       };
     };
   };
+  open_assessment_api_cases__case_id__assessment_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CaseDetail"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   case_cam_api_cases__case_id__cam_get: {
     parameters: {
       query?: never;
@@ -3751,6 +4557,42 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Cam"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  case_cam_download_api_cases__case_id__cam_download_get: {
+    parameters: {
+      query: {
+        format: "docx" | "pdf";
+      };
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The file, as an attachment. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/pdf": string;
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document": string;
         };
       };
       /** @description Validation Error */
@@ -4267,6 +5109,42 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["PdNote"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  case_pd_note_download_api_cases__case_id__pd_note_download_get: {
+    parameters: {
+      query: {
+        format: "docx" | "pdf";
+      };
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The file, as an attachment. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/pdf": string;
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document": string;
         };
       };
       /** @description Validation Error */

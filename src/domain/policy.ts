@@ -5,6 +5,7 @@ import type {
   AuthorityRef,
   AuthorityStep,
   NormFamily,
+  NormInput,
   NormResult,
   PolicyAssessment,
   PolicyCounts,
@@ -136,6 +137,36 @@ export function inputValue(name: string, value: number | null | undefined): stri
   if (name === "bureau_rank") return amount(value, "rank");
   if (name === "blocking_items_open") return String(value);
   return formatInr(value);
+}
+
+/** The formula split so each input's label can be replaced by the figure that was read, while
+ * the operators and brackets stay where they are. Longest labels match first, so "Current
+ * liabilities" is never matched as "Current assets" would be by a shorter prefix. */
+export function substituted(norm: NormResult): Array<string | NormInput> {
+  const inputs = [...(norm.inputs ?? [])].sort((a, b) => b.label.length - a.label.length);
+  const out: Array<string | NormInput> = [];
+  let text = "";
+  let i = 0;
+  while (i < norm.formula.length) {
+    const hit = inputs.find((input) => norm.formula.startsWith(input.label, i));
+    if (hit) {
+      if (text) out.push(text);
+      text = "";
+      out.push(hit);
+      i += hit.label.length;
+    } else {
+      text += norm.formula[i];
+      i += 1;
+    }
+  }
+  if (text) out.push(text);
+  return out;
+}
+
+/** The test as a comparison: "2.03x >= 1.20x". Null when the norm has no threshold to write. */
+export function comparison(norm: NormResult): string | null {
+  if (!norm.threshold_text) return null;
+  return `${actualText(norm)} ${norm.comparator === "max" ? "\u2264" : "\u2265"} ${norm.threshold_text}`;
 }
 
 export function inputLabel(norm: NormResult, name: string): string {

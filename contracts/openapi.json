@@ -510,6 +510,74 @@
         "title": "AreaScore",
         "type": "object"
       },
+      "AssessmentGate": {
+        "description": "The F-13 gate between intake and assessment: cross-verification, policy checks and the\noutputs open only once completeness is satisfied and a person creates the case.",
+        "properties": {
+          "blockers": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Blockers",
+            "type": "array"
+          },
+          "blocking_open": {
+            "default": 0,
+            "title": "Blocking Open",
+            "type": "integer"
+          },
+          "can_open": {
+            "title": "Can Open",
+            "type": "boolean"
+          },
+          "gate_pct": {
+            "default": 0,
+            "title": "Gate Pct",
+            "type": "number"
+          },
+          "open": {
+            "title": "Open",
+            "type": "boolean"
+          },
+          "open_exceptions": {
+            "default": 0,
+            "title": "Open Exceptions",
+            "type": "integer"
+          },
+          "opened_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opened At"
+          },
+          "opened_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opened By"
+          },
+          "score_pct": {
+            "default": 0,
+            "title": "Score Pct",
+            "type": "number"
+          }
+        },
+        "required": [
+          "open",
+          "can_open"
+        ],
+        "title": "AssessmentGate",
+        "type": "object"
+      },
       "AuditEntry": {
         "properties": {
           "action": {
@@ -857,28 +925,88 @@
       "Cam": {
         "description": "The draft Credit Approval Memo (F-23).",
         "properties": {
+          "as_of": {
+            "title": "As Of",
+            "type": "string"
+          },
+          "borrower": {
+            "title": "Borrower",
+            "type": "string"
+          },
           "case_id": {
             "title": "Case Id",
+            "type": "string"
+          },
+          "config_label": {
+            "default": "",
+            "title": "Config Label",
+            "type": "string"
+          },
+          "config_version": {
+            "title": "Config Version",
             "type": "string"
           },
           "interim_template": {
             "title": "Interim Template",
             "type": "boolean"
           },
+          "labels": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Labels",
+            "type": "object"
+          },
           "recommendation": {
             "default": "",
             "title": "Recommendation",
             "type": "string"
           },
+          "recommendation_number": {
+            "title": "Recommendation Number",
+            "type": "integer"
+          },
+          "recommendation_prompts": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Recommendation Prompts",
+            "type": "array"
+          },
           "recommendation_title": {
             "title": "Recommendation Title",
             "type": "string"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
           },
           "sections": {
             "items": {
               "$ref": "#/components/schemas/CamSection"
             },
             "title": "Sections",
+            "type": "array"
+          },
+          "sign_off": {
+            "items": {
+              "$ref": "#/components/schemas/CamSignOff"
+            },
+            "title": "Sign Off",
+            "type": "array"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/OutputSource"
+            },
+            "title": "Sources",
             "type": "array"
           },
           "summary": {
@@ -888,24 +1016,133 @@
             "title": "Summary",
             "type": "array"
           },
+          "summary_number": {
+            "title": "Summary Number",
+            "type": "integer"
+          },
           "summary_title": {
             "title": "Summary Title",
+            "type": "string"
+          },
+          "template_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Note"
+          },
+          "title": {
+            "title": "Title",
             "type": "string"
           }
         },
         "required": [
           "case_id",
+          "title",
+          "borrower",
+          "as_of",
+          "config_version",
           "interim_template",
           "sections",
+          "summary_number",
           "summary_title",
           "summary",
+          "recommendation_number",
           "recommendation_title"
         ],
         "title": "Cam",
         "type": "object"
       },
+      "CamBlock": {
+        "description": "One block of a section, in reading order.",
+        "properties": {
+          "facts": {
+            "items": {
+              "$ref": "#/components/schemas/CamFact"
+            },
+            "title": "Facts",
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "paragraph",
+              "facts",
+              "table",
+              "subheading",
+              "note"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "paragraph": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CamText"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "table": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CamTable"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "CamBlock",
+        "type": "object"
+      },
+      "CamFact": {
+        "description": "One labelled value in a block of key facts.",
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "value": {
+            "$ref": "#/components/schemas/CamText"
+          }
+        },
+        "required": [
+          "label",
+          "value"
+        ],
+        "title": "CamFact",
+        "type": "object"
+      },
       "CamSection": {
         "properties": {
+          "blocks": {
+            "items": {
+              "$ref": "#/components/schemas/CamBlock"
+            },
+            "title": "Blocks",
+            "type": "array"
+          },
           "empty": {
             "anyOf": [
               {
@@ -921,22 +1158,9 @@
             "title": "Id",
             "type": "string"
           },
-          "paragraphs": {
-            "items": {
-              "$ref": "#/components/schemas/CamText"
-            },
-            "title": "Paragraphs",
-            "type": "array"
-          },
-          "table": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/CamTable"
-              },
-              {
-                "type": "null"
-              }
-            ]
+          "number": {
+            "title": "Number",
+            "type": "integer"
           },
           "title": {
             "title": "Title",
@@ -945,13 +1169,33 @@
         },
         "required": [
           "id",
+          "number",
           "title"
         ],
         "title": "CamSection",
         "type": "object"
       },
+      "CamSignOff": {
+        "description": "A line of the sign-off block, left for the people who sign.",
+        "properties": {
+          "role": {
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role"
+        ],
+        "title": "CamSignOff",
+        "type": "object"
+      },
       "CamSummaryItem": {
         "properties": {
+          "blocking": {
+            "default": false,
+            "title": "Blocking",
+            "type": "boolean"
+          },
           "citations": {
             "items": {
               "$ref": "#/components/schemas/Evidence"
@@ -959,9 +1203,26 @@
             "title": "Citations",
             "type": "array"
           },
+          "group": {
+            "anyOf": [
+              {
+                "enum": [
+                  "documents_needed",
+                  "documents_to_redo",
+                  "clarifications"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group"
+          },
           "kind": {
             "enum": [
               "finding",
+              "incomplete",
               "deviation",
               "unassessed",
               "query"
@@ -972,6 +1233,28 @@
           "ref": {
             "title": "Ref",
             "type": "string"
+          },
+          "request": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request"
+          },
+          "rule": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule"
           },
           "severity": {
             "anyOf": [
@@ -989,9 +1272,31 @@
             ],
             "title": "Severity"
           },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
           "text": {
             "title": "Text",
             "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
           }
         },
         "required": [
@@ -1011,6 +1316,24 @@
             "title": "Columns",
             "type": "array"
           },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "numeric": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Numeric",
+            "type": "array"
+          },
           "rows": {
             "items": {
               "items": {
@@ -1020,6 +1343,17 @@
             },
             "title": "Rows",
             "type": "array"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
           }
         },
         "required": [
@@ -1276,6 +1610,28 @@
           "as_of": {
             "title": "As Of",
             "type": "string"
+          },
+          "assessment_opened_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assessment Opened At"
+          },
+          "assessment_opened_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assessment Opened By"
           },
           "borrower": {
             "title": "Borrower",
@@ -1581,6 +1937,16 @@
           "case_id": {
             "title": "Case Id",
             "type": "string"
+          },
+          "gate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AssessmentGate"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "stage": {
             "enum": [
@@ -2187,6 +2553,15 @@
             "title": "Note",
             "type": "string"
           },
+          "origin": {
+            "default": "cli",
+            "enum": [
+              "cli",
+              "app"
+            ],
+            "title": "Origin",
+            "type": "string"
+          },
           "prior_version": {
             "anyOf": [
               {
@@ -2357,6 +2732,35 @@
           "label"
         ],
         "title": "DeviationCategory",
+        "type": "object"
+      },
+      "DeviationChange": {
+        "properties": {
+          "at_least": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At Least"
+          },
+          "levels_above": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Levels Above"
+          }
+        },
+        "title": "DeviationChange",
         "type": "object"
       },
       "DeviationRule": {
@@ -2556,6 +2960,433 @@
           "types"
         ],
         "title": "DocumentTypesSection",
+        "type": "object"
+      },
+      "EditableAuthority": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "level": {
+            "title": "Level",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "key",
+          "level",
+          "label"
+        ],
+        "title": "EditableAuthority",
+        "type": "object"
+      },
+      "EditableBand": {
+        "properties": {
+          "authority": {
+            "title": "Authority",
+            "type": "string"
+          },
+          "up_to_inr": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Up To Inr"
+          }
+        },
+        "required": [
+          "authority"
+        ],
+        "title": "EditableBand",
+        "type": "object"
+      },
+      "EditableDeviation": {
+        "properties": {
+          "at_least": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At Least"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "levels_above": {
+            "minimum": 0.0,
+            "title": "Levels Above",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "category",
+          "label",
+          "levels_above",
+          "at_least"
+        ],
+        "title": "EditableDeviation",
+        "type": "object"
+      },
+      "EditableMatrix": {
+        "properties": {
+          "authorities": {
+            "items": {
+              "$ref": "#/components/schemas/EditableAuthority"
+            },
+            "title": "Authorities",
+            "type": "array"
+          },
+          "deviations": {
+            "items": {
+              "$ref": "#/components/schemas/EditableDeviation"
+            },
+            "title": "Deviations",
+            "type": "array"
+          },
+          "products": {
+            "items": {
+              "$ref": "#/components/schemas/EditableProduct"
+            },
+            "title": "Products",
+            "type": "array"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "authorities",
+          "products",
+          "deviations"
+        ],
+        "title": "EditableMatrix",
+        "type": "object"
+      },
+      "EditableNorm": {
+        "description": "A norm with its own threshold (eligibility, documentation, security cover).",
+        "properties": {
+          "family": {
+            "enum": [
+              "eligibility",
+              "ratios",
+              "security_cover",
+              "documentation"
+            ],
+            "title": "Family",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "min",
+              "max"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "threshold": {
+            "title": "Threshold",
+            "type": "number"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "enum": [
+                  "x",
+                  "%",
+                  "days",
+                  "years",
+                  "inr",
+                  "count",
+                  "rank"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          }
+        },
+        "required": [
+          "id",
+          "family",
+          "label",
+          "unit",
+          "kind",
+          "threshold"
+        ],
+        "title": "EditableNorm",
+        "type": "object"
+      },
+      "EditableProduct": {
+        "properties": {
+          "bands": {
+            "items": {
+              "$ref": "#/components/schemas/EditableBand"
+            },
+            "title": "Bands",
+            "type": "array"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "bands"
+        ],
+        "title": "EditableProduct",
+        "type": "object"
+      },
+      "EditableRatio": {
+        "description": "A financial-ratio norm's thresholds: acceptable is the norm; marginal is shown beside it.",
+        "properties": {
+          "acceptable": {
+            "title": "Acceptable",
+            "type": "number"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "min",
+              "max"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "marginal": {
+            "title": "Marginal",
+            "type": "number"
+          },
+          "norms": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Norms",
+            "type": "array"
+          },
+          "unit": {
+            "enum": [
+              "x",
+              "%",
+              "days"
+            ],
+            "title": "Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "unit",
+          "kind",
+          "acceptable",
+          "marginal",
+          "norms"
+        ],
+        "title": "EditableRatio",
+        "type": "object"
+      },
+      "EditableRule": {
+        "properties": {
+          "area": {
+            "title": "Area",
+            "type": "string"
+          },
+          "blocking": {
+            "title": "Blocking",
+            "type": "boolean"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "serious",
+              "moderate",
+              "mild"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "area",
+          "severity",
+          "blocking",
+          "enabled"
+        ],
+        "title": "EditableRule",
+        "type": "object"
+      },
+      "EditableSettings": {
+        "description": "What the Administration screen edits, as the published version has it.",
+        "properties": {
+          "author": {
+            "title": "Author",
+            "type": "string"
+          },
+          "matrix": {
+            "$ref": "#/components/schemas/EditableMatrix"
+          },
+          "norms": {
+            "items": {
+              "$ref": "#/components/schemas/EditableNorm"
+            },
+            "title": "Norms",
+            "type": "array"
+          },
+          "origin": {
+            "enum": [
+              "cli",
+              "app"
+            ],
+            "title": "Origin",
+            "type": "string"
+          },
+          "published_at": {
+            "title": "Published At",
+            "type": "string"
+          },
+          "ratios": {
+            "items": {
+              "$ref": "#/components/schemas/EditableRatio"
+            },
+            "title": "Ratios",
+            "type": "array"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/EditableRule"
+            },
+            "title": "Rules",
+            "type": "array"
+          },
+          "tolerances": {
+            "items": {
+              "$ref": "#/components/schemas/EditableTolerance"
+            },
+            "title": "Tolerances",
+            "type": "array"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "published_at",
+          "author",
+          "origin",
+          "tolerances",
+          "ratios",
+          "norms",
+          "rules",
+          "matrix"
+        ],
+        "title": "EditableSettings",
+        "type": "object"
+      },
+      "EditableTolerance": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "rules": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Rules",
+            "type": "array"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "unit": {
+            "enum": [
+              "%",
+              "inr",
+              "days",
+              "ratio"
+            ],
+            "title": "Unit",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "value",
+          "unit",
+          "source",
+          "rules"
+        ],
+        "title": "EditableTolerance",
         "type": "object"
       },
       "Evidence": {
@@ -4051,6 +4882,37 @@
         "title": "MonthFigure",
         "type": "object"
       },
+      "NormComponent": {
+        "description": "One line a derived figure was summed from, with the sign it carried (F-20.2).\n\n`net worth = share capital + reserves and surplus` shows as two components, each with the\nfigure read from the statement and the page it was read from.",
+        "properties": {
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "sign": {
+            "title": "Sign",
+            "type": "integer"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "label",
+          "sign",
+          "value"
+        ],
+        "title": "NormComponent",
+        "type": "object"
+      },
       "NormInput": {
         "description": "One source figure a norm used, with where it came from (F-20.2).",
         "properties": {
@@ -4070,6 +4932,13 @@
             ],
             "title": "Basis",
             "type": "string"
+          },
+          "components": {
+            "items": {
+              "$ref": "#/components/schemas/NormComponent"
+            },
+            "title": "Components",
+            "type": "array"
           },
           "evidence": {
             "items": {
@@ -4148,6 +5017,15 @@
           },
           "category_label": {
             "title": "Category Label",
+            "type": "string"
+          },
+          "comparator": {
+            "default": "min",
+            "enum": [
+              "min",
+              "max"
+            ],
+            "title": "Comparator",
             "type": "string"
           },
           "definition": {
@@ -4261,6 +5139,17 @@
             ],
             "title": "Source"
           },
+          "threshold_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Threshold Text"
+          },
           "unit": {
             "anyOf": [
               {
@@ -4354,6 +5243,49 @@
           "label"
         ],
         "title": "Option",
+        "type": "object"
+      },
+      "OutputSource": {
+        "description": "A document the memo or the note cites, numbered in the order it is first cited, so the screen\nand the downloads refer to it the same way (F-23.2, F-24.2).",
+        "properties": {
+          "document_id": {
+            "title": "Document Id",
+            "type": "string"
+          },
+          "file_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Name"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "pages": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Pages",
+            "type": "array"
+          }
+        },
+        "required": [
+          "number",
+          "document_id",
+          "label",
+          "pages"
+        ],
+        "title": "OutputSource",
         "type": "object"
       },
       "PageInfo": {
@@ -4561,10 +5493,56 @@
         "type": "object"
       },
       "PdNote": {
+        "description": "The PD question note (F-24): ranked questions, each tied to its finding and evidence.",
         "properties": {
+          "as_of": {
+            "title": "As Of",
+            "type": "string"
+          },
+          "borrower": {
+            "title": "Borrower",
+            "type": "string"
+          },
           "case_id": {
             "title": "Case Id",
             "type": "string"
+          },
+          "config_label": {
+            "default": "",
+            "title": "Config Label",
+            "type": "string"
+          },
+          "config_version": {
+            "title": "Config Version",
+            "type": "string"
+          },
+          "documents_to_collect": {
+            "items": {
+              "$ref": "#/components/schemas/CamText"
+            },
+            "title": "Documents To Collect",
+            "type": "array"
+          },
+          "header": {
+            "items": {
+              "$ref": "#/components/schemas/CamFact"
+            },
+            "title": "Header",
+            "type": "array"
+          },
+          "labels": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Labels",
+            "type": "object"
+          },
+          "people": {
+            "items": {
+              "$ref": "#/components/schemas/PdPerson"
+            },
+            "title": "People",
+            "type": "array"
           },
           "questions": {
             "items": {
@@ -4572,18 +5550,126 @@
             },
             "title": "Questions",
             "type": "array"
+          },
+          "record_fields": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Record Fields",
+            "type": "array"
+          },
+          "sign_off": {
+            "items": {
+              "$ref": "#/components/schemas/CamSignOff"
+            },
+            "title": "Sign Off",
+            "type": "array"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/OutputSource"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "topics": {
+            "items": {
+              "$ref": "#/components/schemas/PdTopic"
+            },
+            "title": "Topics",
+            "type": "array"
           }
         },
         "required": [
           "case_id",
+          "title",
+          "borrower",
+          "as_of",
+          "config_version",
           "questions"
         ],
         "title": "PdNote",
         "type": "object"
       },
+      "PdPerson": {
+        "description": "Someone to meet: a promoter or director the documents name.",
+        "properties": {
+          "din": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Din"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "PdPerson",
+        "type": "object"
+      },
       "PdQuestion": {
         "description": "One question for the personal discussion (F-24).",
         "properties": {
+          "also": {
+            "items": {
+              "$ref": "#/components/schemas/PdRef"
+            },
+            "title": "Also",
+            "type": "array"
+          },
+          "area": {
+            "enum": [
+              "identity",
+              "turnover",
+              "accounts",
+              "obligations",
+              "policy"
+            ],
+            "title": "Area",
+            "type": "string"
+          },
+          "context": {
+            "title": "Context",
+            "type": "string"
+          },
           "evidence": {
             "items": {
               "$ref": "#/components/schemas/Evidence"
@@ -4593,6 +5679,14 @@
           },
           "id": {
             "title": "Id",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "question": {
+            "title": "Question",
             "type": "string"
           },
           "ref": {
@@ -4616,16 +5710,29 @@
             "enum": [
               "finding",
               "deviation",
-              "gap"
+              "gap",
+              "observation"
             ],
             "title": "Source",
             "type": "string"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
           },
           "target": {
             "default": "policy",
             "enum": [
               "cross_verification",
-              "policy"
+              "policy",
+              "cam"
             ],
             "title": "Target",
             "type": "string"
@@ -4637,18 +5744,120 @@
           "title": {
             "title": "Title",
             "type": "string"
+          },
+          "xv_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Xv Ref"
           }
         },
         "required": [
           "id",
+          "number",
+          "question",
+          "context",
           "text",
           "severity",
           "source",
           "ref",
           "rule",
-          "title"
+          "title",
+          "area"
         ],
         "title": "PdQuestion",
+        "type": "object"
+      },
+      "PdRef": {
+        "description": "Another finding a merged question also rests on (F-24.2).",
+        "properties": {
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "ref": {
+            "title": "Ref",
+            "type": "string"
+          },
+          "rule": {
+            "title": "Rule",
+            "type": "string"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "xv_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Xv Ref"
+          }
+        },
+        "required": [
+          "ref",
+          "rule",
+          "title"
+        ],
+        "title": "PdRef",
+        "type": "object"
+      },
+      "PdTopic": {
+        "description": "The questions asked under one topic, in order.",
+        "properties": {
+          "area": {
+            "enum": [
+              "identity",
+              "turnover",
+              "accounts",
+              "obligations",
+              "policy"
+            ],
+            "title": "Area",
+            "type": "string"
+          },
+          "question_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Question Ids",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "area",
+          "title",
+          "question_ids"
+        ],
+        "title": "PdTopic",
         "type": "object"
       },
       "PersonEntry": {
@@ -4999,6 +6208,17 @@
             ],
             "title": "Pd Gap",
             "type": "string"
+          },
+          "pd_gap_question": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pd Gap Question"
           },
           "pd_question": {
             "anyOf": [
@@ -5423,6 +6643,34 @@
           "source_ref"
         ],
         "title": "QueryItem",
+        "type": "object"
+      },
+      "RatioChange": {
+        "properties": {
+          "acceptable": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acceptable"
+          },
+          "marginal": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Marginal"
+          }
+        },
+        "title": "RatioChange",
         "type": "object"
       },
       "Readiness": {
@@ -5946,6 +7194,50 @@
         "title": "ReviewItem",
         "type": "object"
       },
+      "RuleChange": {
+        "properties": {
+          "blocking": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blocking"
+          },
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          },
+          "severity": {
+            "anyOf": [
+              {
+                "enum": [
+                  "serious",
+                  "moderate",
+                  "mild"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Severity"
+          }
+        },
+        "title": "RuleChange",
+        "type": "object"
+      },
       "SessionUser": {
         "properties": {
           "branch": {
@@ -6003,6 +7295,226 @@
           "permissions"
         ],
         "title": "SessionUser",
+        "type": "object"
+      },
+      "SettingChange": {
+        "description": "One value that changes: where it is, its label, and before and after as raw values.",
+        "properties": {
+          "after": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "After"
+          },
+          "before": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Before"
+          },
+          "field": {
+            "title": "Field",
+            "type": "string"
+          },
+          "item": {
+            "title": "Item",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "section": {
+            "enum": [
+              "tolerances",
+              "policy",
+              "crosschecks",
+              "approval_matrix"
+            ],
+            "title": "Section",
+            "type": "string"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          }
+        },
+        "required": [
+          "section",
+          "item",
+          "label",
+          "field",
+          "before",
+          "after"
+        ],
+        "title": "SettingChange",
+        "type": "object"
+      },
+      "SettingsChanges": {
+        "description": "Only what changes; anything left out stays as published.",
+        "properties": {
+          "bands": {
+            "additionalProperties": {
+              "items": {
+                "$ref": "#/components/schemas/EditableBand"
+              },
+              "type": "array"
+            },
+            "title": "Bands",
+            "type": "object"
+          },
+          "deviations": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/DeviationChange"
+            },
+            "title": "Deviations",
+            "type": "object"
+          },
+          "norms": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Norms",
+            "type": "object"
+          },
+          "ratios": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/RatioChange"
+            },
+            "title": "Ratios",
+            "type": "object"
+          },
+          "rules": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/RuleChange"
+            },
+            "title": "Rules",
+            "type": "object"
+          },
+          "tolerances": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Tolerances",
+            "type": "object"
+          }
+        },
+        "title": "SettingsChanges",
+        "type": "object"
+      },
+      "SettingsPreview": {
+        "properties": {
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/SettingChange"
+            },
+            "title": "Changes",
+            "type": "array"
+          },
+          "problems": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Problems",
+            "type": "array"
+          }
+        },
+        "required": [
+          "changes",
+          "problems"
+        ],
+        "title": "SettingsPreview",
+        "type": "object"
+      },
+      "SettingsPublishRequest": {
+        "properties": {
+          "changes": {
+            "$ref": "#/components/schemas/SettingsChanges"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "note",
+          "changes"
+        ],
+        "title": "SettingsPublishRequest",
+        "type": "object"
+      },
+      "SettingsPublished": {
+        "properties": {
+          "cases_failed": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Cases Failed",
+            "type": "array"
+          },
+          "cases_rerun": {
+            "title": "Cases Rerun",
+            "type": "integer"
+          },
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/SettingChange"
+            },
+            "title": "Changes",
+            "type": "array"
+          },
+          "published_at": {
+            "title": "Published At",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "published_at",
+          "changes",
+          "cases_rerun",
+          "cases_failed"
+        ],
+        "title": "SettingsPublished",
         "type": "object"
       },
       "SourceColumn": {
@@ -7169,6 +8681,167 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/admin/settings": {
+      "get": {
+        "description": "The tolerances, norm thresholds, cross-check rules and approval matrix an Administrator\nedits (F-00.6), as the version now published has them.",
+        "operationId": "admin_settings_api_admin_settings_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EditableSettings"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Admin Settings"
+      }
+    },
+    "/api/admin/settings/preview": {
+      "post": {
+        "description": "What the changes would change and why they could not be published; nothing is published.",
+        "operationId": "admin_settings_preview_api_admin_settings_preview_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsChanges"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsPreview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Admin Settings Preview"
+      }
+    },
+    "/api/admin/settings/publish": {
+      "post": {
+        "description": "Publish the changes as a new configuration version, with the Administrator's note, and\nre-run every case's checks (F-00.6). 422 with the problems when they cannot be published.",
+        "operationId": "admin_settings_publish_api_admin_settings_publish_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsPublishRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsPublished"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Admin Settings Publish"
+      }
+    },
     "/api/audit": {
       "get": {
         "description": "The append-only decision log, newest first, filtered and paged. RBL's reference record\nand the reviewer's decisions on it are for the reviewer only (F-25): anyone else sees that\nthe import, confirmation or decision happened, never what it said.",
@@ -7742,6 +9415,62 @@
         "summary": "Case Approving Authority"
       }
     },
+    "/api/cases/{case_id}/assessment": {
+      "post": {
+        "description": "F-13: create the case, opening cross-verification, policy checks and the outputs.\n\n`review.decide`, because it is the decision that intake is complete: the analyst and the\ncredit manager hold it, the RM does not.\n\nRefused with 409 while completeness is not satisfied; the body names the blockers so the\nscreen can say which one. Pressing it twice is harmless: the case is returned unchanged.",
+        "operationId": "open_assessment_api_cases__case_id__assessment_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Open Assessment"
+      }
+    },
     "/api/cases/{case_id}/cam": {
       "get": {
         "description": "F-23: the draft CAM, every figure cited, ending in the structured summary.",
@@ -7796,6 +9525,82 @@
           }
         },
         "summary": "Case Cam"
+      }
+    },
+    "/api/cases/{case_id}/cam/download": {
+      "get": {
+        "description": "F-23.5: the draft CAM as a Word or PDF file, the same content as the screen, with numbered\ncitations and the sources; the recommendation is left blank for credit.",
+        "operationId": "case_cam_download_api_cases__case_id__cam_download_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "required": true,
+            "schema": {
+              "enum": [
+                "docx",
+                "pdf"
+              ],
+              "title": "Format",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              },
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "The file, as an attachment."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Cam Download"
       }
     },
     "/api/cases/{case_id}/checklist": {
@@ -8761,6 +10566,82 @@
           }
         },
         "summary": "Case Pd Note"
+      }
+    },
+    "/api/cases/{case_id}/pd-note/download": {
+      "get": {
+        "description": "F-24.3: the PD question note as a Word or PDF file, the same content as the screen, with room\nunder each question for the response and the follow-up.",
+        "operationId": "case_pd_note_download_api_cases__case_id__pd_note_download_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "required": true,
+            "schema": {
+              "enum": [
+                "docx",
+                "pdf"
+              ],
+              "title": "Format",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              },
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "The file, as an attachment."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Pd Note Download"
       }
     },
     "/api/cases/{case_id}/policy": {

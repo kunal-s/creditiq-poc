@@ -19,6 +19,7 @@ FIXTURE_DOCS = Path(os.environ.get("INGEST_FIXTURE_DOCS", HERE.parent.parent.par
 
 pytestmark = pytest.mark.skipif(not FIXTURE_DOCS.exists(), reason="fixture documents not present")
 
+
 IN_SCOPE = {
     "Southgate_Certificate_of_Incorporation.pdf": "certificate_of_incorporation",
     "Southgate_MOA_AOA.pdf": "memorandum_articles_of_association",
@@ -43,7 +44,13 @@ def cfg():
 
 
 def fixture_doc(name: str) -> bytes:
-    return (FIXTURE_DOCS / name).read_bytes()
+    """The corpus is git-ignored source material (workflow/docs/reference/fixtures/southgate,
+    or INGEST_FIXTURE_DOCS). Without it the tests that read a document skip; the rest still run.
+    The `pytestmark` above cannot do this, as pytest does not propagate it from a conftest."""
+    path = FIXTURE_DOCS / name
+    if not path.exists():
+        pytest.skip(f"fixture document not present: {path}")
+    return path.read_bytes()
 
 
 def spec(name: str, data: bytes, ctype: str = "application/pdf", fid: str = "f1") -> FileSpec:

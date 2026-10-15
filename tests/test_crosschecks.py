@@ -93,7 +93,7 @@ def test_tc22_a_legal_name_mismatch_is_flagged_with_its_sources(client, analyst,
     # The two documents that agree are one side, each with its page.
     agree = next(s for s in f["sides"] if not s["differs"])
     assert {e["document_id"] for e in agree["evidence"]} == {pan_doc, itr}
-    assert "Orchid Castings Private Limited" in f["explanation"] and "Company PAN" in f["explanation"]
+    assert "Orchid Castings Private Limited" in f["explanation"] and "company PAN" in f["explanation"]
 
 
 def test_tc22_two_gstins_across_returns_are_flagged(client, analyst, published_data_root):
@@ -110,7 +110,7 @@ def test_tc22_a_promoter_missing_from_one_source_is_flagged(client, analyst, pub
     add_doc(published_data_root, case_id, "director_kyc", {"person_name": "Tarun Velankar", "din": "01234567"})
     [f] = _findings(client, analyst, published_data_root, case_id)["ID-04"]
     assert f["outcome"] == "fail" and f["area"] == "identity"
-    assert "Leela Varghese is not in KYC received" in f["explanation"]
+    assert "Leela Varghese has no KYC on file" in f["explanation"]
     rows = {r["label"]: r for r in f["detail"]["rows"]}
     assert rows["Leela Varghese"]["flagged"] and not rows["Tarun Velankar"]["flagged"]
     assert [s["differs"] for s in f["sides"]] == [True, False]  # the KYC received is short of a person
@@ -145,15 +145,17 @@ def test_tc23_gst_against_bank_beyond_tolerance_is_flagged_with_values(client, a
     case_id = _case(client, analyst, published_data_root)
     _turnover(published_data_root, case_id, gst_months=PERIODS, gst_each=4_000_000, bank_each=3_200_000)
     [f] = _findings(client, analyst, published_data_root, case_id)["TO-02"]
-    assert f["outcome"] == "fail" and f["tolerance"] == "10%"
+    assert f["outcome"] == "fail" and f["tolerance"] == "1%"
     assert [s["value"] for s in f["sides"]] == [48_000_000, 38_400_000]
     assert "20.0%" in f["explanation"] and "FY 2025-26" in f["title"]
+    # The right-hand source reads inside the sentence; an acronym keeps its capitals.
+    assert "against business credits in bank statements INR 3.84 cr" in f["explanation"]
     assert all(s["evidence"] for s in f["sides"])
 
 
 def test_tc23_within_tolerance_passes(client, analyst, published_data_root):
     case_id = _case(client, analyst, published_data_root)
-    _turnover(published_data_root, case_id, gst_months=PERIODS, gst_each=4_000_000, bank_each=3_800_000)
+    _turnover(published_data_root, case_id, gst_months=PERIODS, gst_each=4_000_000, bank_each=3_980_000)
     assert [f["outcome"] for f in _findings(client, analyst, published_data_root, case_id)["TO-02"]] == ["pass"]
 
 
@@ -163,17 +165,20 @@ def test_tc23_incomplete_coverage_is_stated(client, analyst, published_data_root
     found = _findings(client, analyst, published_data_root, case_id)
     [to1] = found["TO-01"]
     assert to1["outcome"] == "incomplete"
-    assert "GST outward supplies covers 8 of 12 months (Apr 2025, May 2025, Jun 2025… absent)" in to1["explanation"]
+    # The months missing as runs.
+    assert to1["explanation"] == "GST outward supplies cover 8 of 12 months (Apr 2025 to Jul 2025 not on file)."
     [to3] = found["TO-03"]
     assert to3["outcome"] == "fail"  # 4.8 cr audited against 3.6 cr banked, 25%
+    assert to3["query"] == ("Please explain the difference between audited turnover (INR 4.80 cr) and business credits "
+                            "in the bank statements (INR 3.60 cr) for FY 2025-26.")
 
 
 def test_tc23_audited_turnover_is_read_from_the_printed_statement(client, analyst, published_data_root):
     case_id = _case(client, analyst, published_data_root)
-    _turnover(published_data_root, case_id, gst_months=PERIODS, gst_each=10_000_000, bank_each=9_800_000, audited_revenue=118_000_000)
+    _turnover(published_data_root, case_id, gst_months=PERIODS, gst_each=9_850_000, bank_each=9_800_000, audited_revenue=118_000_000)
     found = _findings(client, analyst, published_data_root, case_id)
-    assert [f["outcome"] for f in found["TO-01"]] == ["pass"] and [f["outcome"] for f in found["TO-03"]] == ["pass"]  # 11.8 cr, 12 cr, 11.76 cr
-    assert [s["value"] for s in found["TO-01"][0]["sides"]] == [118_000_000, 120_000_000]
+    assert [f["outcome"] for f in found["TO-01"]] == ["pass"] and [f["outcome"] for f in found["TO-03"]] == ["pass"]  # 11.8 cr, 11.82 cr, 11.76 cr
+    assert [s["value"] for s in found["TO-01"][0]["sides"]] == [118_000_000, 118_200_000]
 
 
 # --- F-19.4, F-19.5, F-19.6, F-17.4 ---
@@ -244,3 +249,16 @@ def test_declared_turnover_check_does_not_apply_without_a_declaration(client, an
     case_id = _case(client, analyst, published_data_root)
     audited(published_data_root, case_id, "2026-03-31", scale=50_000_000 / 118_000_000)
     assert [f["outcome"] for f in _findings(client, analyst, published_data_root, case_id)["TO-04"]] == ["not_applicable"]
+
+
+def test_declared_turnover_apart_from_the_evidence_is_put_on_the_query_list(client, analyst, published_data_root):
+    case_id = make_case(client, analyst, published_data_root, borrower="Kestrel Tools Pvt Ltd",
+                        header={"declared_turnover_inr": {"value": "60000000", "source": "person"}})
+    audited(published_data_root, case_id, "2026-03-31", scale=50_000_000 / 118_000_000)
+    [f] = _findings(client, analyst, published_data_root, case_id)["TO-04"]
+    assert f["outcome"] == "fail"
+    assert f["query"] == ("Please explain the difference between the turnover declared in the sourcing message "
+                          "(INR 6.00 cr) and the turnover evidenced by the audited financial statements (INR 5.00 cr) "
+                          "for FY 2025-26, and confirm the turnover to be relied on.")
+    texts = [q["text"] for q in client.get(f"/api/cases/{case_id}/queries", headers=analyst).json()]
+    assert f["query"] in texts

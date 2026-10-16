@@ -82,7 +82,10 @@ export function PolicyPage({
   return (
     <div className="min-w-0 pb-10" data-testid="policy-page">
       <PolicyHeader caseId={caseId} policy={policy.data} />
-      <div className="min-w-0 space-y-6 px-4 py-5 sm:px-6">
+      {/* The norms read as a list, so the content keeps a bounded measure: on a wide window
+          the required and actual values stay beside the norm they belong to instead of being
+          pushed to the far edge. */}
+      <div className="min-w-0 max-w-6xl space-y-6 px-4 py-5 sm:px-6">
         <QueryView query={policy}>
           {(p) => <PolicyBody caseId={caseId} policy={p} authority={authority} linkedTo={norm} />}
         </QueryView>

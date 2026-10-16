@@ -20,6 +20,7 @@ import { AreaOverview } from "./AreaOverview";
 import { AreaSection } from "./AreaSection";
 import { BlockingBanner } from "./BlockingBanner";
 import { BoardHeader } from "./BoardHeader";
+import { SeverityTiles } from "./SeverityTiles";
 
 // The Cross-checks tab: the cross-verification board (F-19; docs/cross-verification-logic.md).
 // Every source lined up against every other, from GET /api/cases/{id}/cross-verification, by
@@ -207,6 +208,7 @@ function BoardBody({
   return (
     <>
       <BlockingBanner view={view} onAdjudicate={adjudicateNow} />
+      <SeverityTiles view={view} />
       <AreaOverview view={view} onOpen={openArea} onOpenFinding={openFinding} />
       {areasOf(view).map((area) => (
         <AreaSection

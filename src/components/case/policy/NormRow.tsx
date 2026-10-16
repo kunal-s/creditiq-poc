@@ -62,8 +62,10 @@ export function NormRow({ caseId, norm }: { caseId: string; norm: NormResult }) 
             {norm.provisional && <Chip tone="muted">{t("policy.provisional")}</Chip>}
           </p>
         </div>
-        {/* Beside the label; under it, in line with the label, where the row is narrow. */}
-        <div className="ml-6 grid max-w-full shrink-0 grid-cols-2 gap-x-4 text-left text-[12px] [overflow-wrap:anywhere] sm:ml-auto sm:text-right">
+        {/* Beside the label at a fixed width, so required and actual line up down the list
+            however wide the window is; under the label, in line with it, where the row is
+            narrow. */}
+        <div className="ml-6 grid w-full shrink-0 grid-cols-2 gap-x-4 text-left text-[12px] [overflow-wrap:anywhere] sm:ml-auto sm:w-44 sm:text-right">
           <span className="text-muted-foreground">{t("policy.required")}</span>
           <span className="text-muted-foreground">{t("policy.actual")}</span>
           <span className="tabular">{norm.required}</span>

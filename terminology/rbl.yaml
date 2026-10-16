@@ -238,6 +238,20 @@ crossVerification:
     noDiscrepancy: No discrepancy
     allDecided: Every discrepancy decided
     keyFigures: Key figures
+  # The severity tiles at the head of the board: the open discrepancies by credit impact, and
+  # how many of all of them have been decided. Ranked by impact, not by the area they fall in.
+  tiles:
+    serious: Serious
+    moderate: Moderate
+    mild: Mild
+    adjudicated: Adjudicated
+    outOf: "of {total}"
+    blocking: Blocking
+    noneSerious: No serious discrepancy
+    noneModerate: No moderate discrepancy
+    noneMild: No mild discrepancy
+    allDecided: Every discrepancy decided
+    noneToDecide: Nothing to decide
   count:
     serious: "{n} serious"
     moderate: "{n} moderate"
@@ -399,6 +413,9 @@ policy:
     fromChecklist: from the checklist
     notOnFile: not on file
     missingTitle: What is needed to evaluate this
+    viewEvidence: "See {label} on the page it was read from"
+    readFrom: Read from
+    noPage: Not read from a document
   unbounded: Unbounded
   awaitingReview: Awaiting review
   definition: Definition

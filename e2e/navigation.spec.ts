@@ -56,7 +56,8 @@ test("technical detail stays closed until asked for", async ({ page }) => {
   await expect(lines.getByTestId("xv-detail-table")).toBeVisible();
 
   await page.goto(`/appraisals/${KESTREL}/policy`);
-  const norm = page.getByTestId("norm-details").first();
-  await expect(norm).not.toHaveAttribute("open", "");
-  await expect(norm.getByText("How it is calculated")).toBeHidden();
+  // A norm's figures and working open only when its tile is selected.
+  await expect(page.getByTestId("norm").first()).toBeVisible();
+  await expect(page.getByTestId("norm-detail")).toHaveCount(0);
+  await expect(page.getByTestId("norm-details")).toHaveCount(0);
 });

@@ -455,6 +455,9 @@ policy:
     marginal: Marginal
     outside: Outside policy
   marginalAt: "marginal {value}"
+  # A norm's tile: the norm it is held to, under its chip.
+  tile:
+    required: "Policy: {required}"
   provisionalNorms: provisional norms
   required: Required
   actual: Actual

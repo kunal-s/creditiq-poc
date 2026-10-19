@@ -1,8 +1,9 @@
+import { useState } from "react";
 import type { NormResult, PolicyGroup } from "@/api/types";
 import { t } from "@/config/terminology";
 import { countParts, groupHeadingId, groupSectionId } from "@/domain/policy";
 import { cn } from "@/lib/utils";
-import { NormRow, VALUES } from "./NormRow";
+import { NormDetail, NormTile } from "./NormTile";
 import { GROUP_STATUS } from "./styles";
 
 /** "5 norms · 1 deviation · 1 cannot be evaluated · 3 passed", as the engine counted them; the
@@ -15,8 +16,22 @@ function countsLine(group: PolicyGroup): string {
   ].join(" · ");
 }
 
-/** One family of norms: each with its required and actual value, the figures it used with their
- * pages, why it could not be evaluated, and how it is calculated. */
+/** The tiles in a row where the window is wide: every norm on one row up to four, three a row for
+ * five or six, four beyond. */
+function columns(n: number): number {
+  return n <= 4 ? n : n <= 6 ? 3 : 4;
+}
+
+const XL_COLS: Record<number, string> = {
+  1: "xl:grid-cols-1",
+  2: "xl:grid-cols-2",
+  3: "xl:grid-cols-3",
+  4: "xl:grid-cols-4",
+};
+
+/** One family of norms as tiles: each with its actual value in the colour of where it stands and
+ * the norm it is held to. The selected tile's figures, with their pages, and how it was decided
+ * open under the tiles. */
 export function GroupSection({
   caseId,
   group,
@@ -27,6 +42,12 @@ export function GroupSection({
   /** The family's norms, in the engine's order. */
   norms: NormResult[];
 }) {
+  const [selected, setSelected] = useState<string | null>(null);
+  const open = norms.find((n) => n.id === selected);
+  const detailId = `${groupSectionId(group.family)}-detail`;
+  const cols = columns(norms.length);
+  const fillXl = (cols - (norms.length % cols)) % cols;
+  const fillSm = norms.length > 1 ? norms.length % 2 : 0;
   const status = GROUP_STATUS[group.status];
   const Icon = status.icon;
   return (
@@ -68,24 +89,43 @@ export function GroupSection({
           {t(`policy.familyPending.${group.family}`)}
         </p>
       ) : (
-        <ul
-          className="divide-y divide-border rounded border border-border bg-surface"
-          data-testid="policy-norms"
-        >
-          {/* The column heads, once; on a phone each row labels its own values. */}
-          <li
-            aria-hidden
-            className="hidden justify-end bg-surface-muted/50 px-4 py-1 text-[10.5px] font-medium uppercase tracking-wide text-muted-foreground sm:flex"
+        <div className="overflow-hidden rounded border border-border bg-surface">
+          <ul
+            className={cn(
+              "grid grid-cols-1 gap-px bg-border",
+              norms.length > 1 && "sm:grid-cols-2",
+              XL_COLS[cols],
+            )}
+            data-testid="policy-norms"
           >
-            <span className={cn("grid text-right", VALUES)}>
-              <span>{t("policy.required")}</span>
-              <span>{t("policy.actual")}</span>
-            </span>
-          </li>
-          {norms.map((norm) => (
-            <NormRow key={norm.id} caseId={caseId} norm={norm} />
-          ))}
-        </ul>
+            {norms.map((norm) => (
+              <NormTile
+                key={norm.id}
+                norm={norm}
+                selected={norm.id === selected}
+                detailId={detailId}
+                onSelect={(force) =>
+                  setSelected((now) => (force || now !== norm.id ? norm.id : null))
+                }
+              />
+            ))}
+            {/* The rest of a short last row, so the grid's lines close around the tiles. */}
+            {Array.from({ length: fillSm }, (_, i) => (
+              <li key={`sm-${i}`} aria-hidden className="hidden bg-surface sm:block xl:hidden" />
+            ))}
+            {Array.from({ length: fillXl }, (_, i) => (
+              <li key={`xl-${i}`} aria-hidden className="hidden bg-surface xl:block" />
+            ))}
+          </ul>
+          {open && (
+            <NormDetail
+              caseId={caseId}
+              norm={open}
+              id={detailId}
+              onClose={() => setSelected(null)}
+            />
+          )}
+        </div>
       )}
     </section>
   );

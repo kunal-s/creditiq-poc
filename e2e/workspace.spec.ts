@@ -208,7 +208,13 @@ test("Policy lists every norm with its required and actual value, deviations fir
   const de = page.locator('[data-testid="norm"][data-norm="FR-05"]');
   await expect(de).toContainText("at most 2.00x");
   await expect(de.getByTestId("norm-actual")).toHaveText("3.00x");
-  await de.getByTestId("norm-input").first().getByRole("button").click();
+  await de.getByTestId("norm-select").click();
+  await page
+    .getByTestId("norm-detail")
+    .getByTestId("norm-input")
+    .first()
+    .getByRole("button")
+    .click();
   await expect(page.getByTestId("evidence-viewer").getByTestId("viewer-page")).toContainText("4");
   await page.keyboard.press("Escape");
   const rank = page.locator('[data-testid="norm"][data-norm="EL-02"]');

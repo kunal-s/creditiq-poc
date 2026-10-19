@@ -36,6 +36,8 @@ const marks = (scope: Locator) =>
 async function openView(page: Page, view: "cam" | "pd", api = new MockApi()) {
   await signedIn(page, api);
   await page.goto(`/appraisals/${KESTREL}/outputs?view=${view}`);
+  // The memo opens for review a section at a time; these read it through, as it downloads.
+  if (view === "cam") await page.getByTestId("cam-mode-memo").click();
   await expect(page.getByTestId(view === "cam" ? "cam" : "pd-note")).toBeVisible();
   return api;
 }
@@ -67,19 +69,24 @@ test("the draft CAM: its header, then numbered sections of facts, tables, paragr
     "Draft — layout assumed until RBL's CAM template is received.",
   );
 
+  // Eight sections: six drafted from parts, each part under its subheading, then the risk
+  // assessment and the recommendation.
   await expect(page.getByTestId("cam-section-title")).toHaveText([
-    "1. Proposal at a glance",
-    "2. Borrower profile",
-    "3. Promoters and management",
-    "4. Proposal and facilities",
-    "5. Financial performance",
-    "6. Assessment of working-capital requirement",
-    "7. Turnover across sources (GST, income tax and banking)",
-    "8. Banking and account conduct",
-    "9. Existing facilities and obligations",
-    "10. Cross-verification of sources",
-    "11. Compliance with policy norms",
-    "12. Documentation status",
+    "1. Borrower and Group Profile",
+    "2. Facility Requested and Purpose",
+    "3. Banking Conduct",
+    "4. Financial Analysis and Ratios",
+    "5. GST and Bureau Findings",
+    "6. Cross-Verification Results",
+  ]);
+  await expect(
+    page.locator(
+      '[data-testid="cam-memo-section"][data-section="facility"] [data-testid="cam-subheading"]',
+    ),
+  ).toHaveText([
+    "Proposal at a glance",
+    "Proposal and facilities",
+    "Assessment of working-capital requirement",
   ]);
 
   // Facts: a label and its value, cited where a document backs it.
@@ -138,7 +145,10 @@ test("the draft CAM: its header, then numbered sections of facts, tables, paragr
     "nowrap",
   );
   const policy = memoSection(page, "policy");
-  await expect(policy.getByTestId("cam-subheading")).toHaveText("Approving authority");
+  await expect(policy.getByTestId("cam-subheading")).toHaveText([
+    "Compliance with policy norms",
+    "Approving authority",
+  ]);
   await expect(fact(policy, "Authority required").locator("dd")).toHaveText(
     "At least Regional Credit Head",
   );
@@ -210,13 +220,20 @@ test("a section with nothing on file says so", async ({ page }) => {
   api.cam = {
     ...structuredClone(CAM),
     sections: CAM.sections.map((s) =>
-      s.id === "banking" ? { ...s, blocks: [], empty: "Nothing on file yet." } : s,
+      s.id === "gst"
+        ? {
+            ...s,
+            blocks: [],
+            parts: (s.parts ?? []).map((p) => ({ ...p, blocks: [] })),
+            empty: "Nothing on file yet.",
+          }
+        : s,
     ),
   };
   await openView(page, "cam", api);
-  const banking = memoSection(page, "banking");
-  await expect(banking.getByTestId("cam-section-empty")).toHaveText("Nothing on file yet.");
-  await expect(banking.getByTestId("cam-table")).toHaveCount(0);
+  const gst = page.locator('[data-testid="cam-memo-section"][data-section="gst"]');
+  await expect(gst.getByTestId("cam-section-empty")).toHaveText("Nothing on file yet.");
+  await expect(gst.getByTestId("cam-table")).toHaveCount(0);
 });
 
 test("the summary lists each finding as a register entry, the checks not completed with what would complete them, the deviations and the open queries", async ({
@@ -224,9 +241,7 @@ test("the summary lists each finding as a register entry, the checks not complet
 }) => {
   await openView(page, "cam");
   const summary = page.getByTestId("cam-summary");
-  await expect(summary.locator("h3")).toHaveText(
-    "13. Summary of findings, deviations and open queries",
-  );
+  await expect(summary.locator("h3")).toHaveText("7. Risk Assessment and Rating");
   await expect(summary.getByTestId("cam-summary-finding")).toContainText("Findings (6)");
   await expect(summary.getByTestId("cam-summary-incomplete")).toContainText(
     "Checks not completed (2)",
@@ -362,7 +377,7 @@ test("the recommendation is left for credit: each prompt an empty box, then the 
 }) => {
   await openView(page, "cam");
   const recommendation = page.getByTestId("cam-recommendation");
-  await expect(recommendation.locator("h3")).toHaveText("14. Recommendation");
+  await expect(recommendation.locator("h3")).toHaveText("8. Recommendation");
   const prompts = recommendation.getByTestId("cam-recommendation-prompt");
   await expect(prompts).toHaveCount(4);
   await expect(prompts.locator("p")).toHaveText([
@@ -412,7 +427,10 @@ test("the sources are numbered as the citations number them, each opening its fi
       return Array.from({ length: last - first + 1 }, (_, i) => first + i);
     }),
   );
-  expect([...new Set(numbers)]).toEqual(Array.from({ length: 18 }, (_, i) => i + 1));
+  // Every source is cited (the order follows the sections, which the engine numbers by).
+  expect([...new Set(numbers)].sort((a, b) => a - b)).toEqual(
+    Array.from({ length: 18 }, (_, i) => i + 1),
+  );
 });
 
 test("the PD note: whom to meet, the record left blank, and the questions by topic, each tied to its finding, norm, gap or observation", async ({
@@ -621,12 +639,14 @@ test("an observation's link opens the draft CAM at the section that states it, o
   await expect(page).toHaveURL(
     new RegExp(`/appraisals/${KESTREL}/outputs\\?view=cam#cam-section-banking$`),
   );
-  const banking = page.locator("#cam-section-banking");
-  await expect(banking.getByTestId("cam-section-title")).toHaveText(
-    "8. Banking and account conduct",
-  );
-  await expect(banking).toBeInViewport();
-  await expect(banking.getByTestId("cam-paragraph").last()).toContainText(DISBURSAL_TEXT);
+  // The memo opens for review at the section that holds the part, scrolled to the part.
+  const section = page.getByTestId("cam-review-section");
+  await expect(section).toHaveAttribute("data-section", "conduct");
+  await expect(section.getByTestId("cam-section-title")).toHaveText("Banking Conduct");
+  await expect(page.locator("#cam-section-banking")).toBeInViewport();
+  await expect(
+    section.getByTestId("cam-paragraph").filter({ hasText: DISBURSAL_TEXT }),
+  ).toHaveCount(1);
 
   // A key that names no section: the link opens the draft CAM at its top.
   const api = new MockApi();

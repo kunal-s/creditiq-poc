@@ -7,26 +7,28 @@ import type {
   AdjudicationRequest,
   ApprovingAuthority,
   Cam,
+  CamReview,
+  CamSection,
   CaseComparison,
   CaseCreate,
   CaseDetail,
   CaseFacts,
+  CaseProgress,
+  CaseProposal,
+  CaseSummary,
   ConfigVersion,
   CrossVerificationView,
   DocumentTypes,
   EditableSettings,
-  Finding,
-  PolicyAssessment,
-  CaseProgress,
-  CaseProposal,
-  CaseSummary,
   FieldValue,
   FileRecord,
+  Finding,
   LogicalDocument,
   OutputFormat,
   OutputKind,
   Party,
   PdNote,
+  PolicyAssessment,
   QueryItem,
   Readiness,
   ReviewDecisionRequest,
@@ -35,6 +37,7 @@ import type {
   SettingChange,
   SettingsChanges,
   SettingsPublishRequest,
+  Spread,
   StageProgress,
   UploadResult,
   XvDecisionRequest,
@@ -149,6 +152,8 @@ export class MockApi {
   review: ReviewItem[] = structuredClone(REVIEW);
   findings = new Map<string, Finding[]>([[KESTREL, FINDINGS]]);
   facts = new Map<string, CaseFacts>([[KESTREL, FACTS]]);
+  /** The spread per case; a case without one answers Kestrel's (F-22). */
+  spreads = new Map<string, Spread>();
   policy = new Map<string, PolicyAssessment>([
     [KESTREL, POLICY],
     [SAFFRON, SAFFRON_POLICY],
@@ -157,6 +162,8 @@ export class MockApi {
   authority = new Map<string, ApprovingAuthority>([[KESTREL, APPROVAL]]);
   /** RBL's record compared, per case; none means no record imported yet. */
   comparisons = new Map<string, CaseComparison>();
+  /** What the CAM review was sent, in order (F-23). */
+  camCalls: { kind: string; section: string; body: unknown }[] = [];
   /** The draft CAM and the PD note every case answers (F-23, F-24). */
   cam: Cam = structuredClone(CAM);
   pdNote: PdNote = structuredClone(PD_NOTE);
@@ -171,6 +178,32 @@ export class MockApi {
    * whose checks have not run does. */
   boards = new Map<string, CrossVerificationView>([[KESTREL, kestrelBoard()]]);
   xvRules = XV_RULES;
+
+  /** Change a CAM section's review, the risk assessment's or the recommendation's. */
+  reviewCam(
+    sectionId: string,
+    change: (review: CamReview, section: CamSection | undefined) => void,
+  ) {
+    const blank = (): CamReview => ({
+      state: "machine",
+      paragraphs: [],
+      overrides: [],
+      requests: [],
+    });
+    if (sectionId === "summary") {
+      this.cam.summary_review = this.cam.summary_review ?? blank();
+      change(this.cam.summary_review, undefined);
+    } else if (sectionId === "recommendation") {
+      this.cam.recommendation_review = this.cam.recommendation_review ?? blank();
+      change(this.cam.recommendation_review, undefined);
+      if (this.cam.recommendation_review.paragraphs?.length)
+        this.cam.recommendation = this.cam.recommendation_review.paragraphs.join("\n\n");
+    } else {
+      const section = this.cam.sections.find((s) => s.id === sectionId)!;
+      section.review = section.review ?? blank();
+      change(section.review, section);
+    }
+  }
   /** Document reads still to answer as "received" before the final state. */
   pendingReads = new Map<string, number>();
   proposal: CaseProposal = proposal();
@@ -389,8 +422,113 @@ export class MockApi {
         new RegExp(`^/api/cases/${id}/cross-verification/findings/${id}/query$`),
         (_req, m) => this.addFindingQuery(decodeURIComponent(m[1]!), decodeURIComponent(m[2]!)),
       ],
-      ["GET", new RegExp(`^/api/cases/${id}/spread$`), () => ({ json: SPREAD })],
+      [
+        "GET",
+        new RegExp(`^/api/cases/${id}/spread$`),
+        (_req, m) => ({ json: this.spreads.get(decodeURIComponent(m[1]!)) ?? SPREAD }),
+      ],
       ["GET", new RegExp(`^/api/cases/${id}/cam$`), () => ({ json: this.cam })],
+      // The CAM review (F-23), applied as engine/cam_review.py lays it over the draft.
+      [
+        "PUT",
+        new RegExp(`^/api/cases/${id}/cam/sections/${id}/words$`),
+        (req, m) => {
+          const body = req.postDataJSON() as {
+            paragraphs: string[];
+            source?: string;
+            model?: string;
+          };
+          this.camCalls.push({ kind: "words", section: decodeURIComponent(m[2]!), body });
+          this.reviewCam(decodeURIComponent(m[2]!), (r, section) => {
+            r.state = body.source === "copilot" ? "regenerated" : "edited";
+            r.by = "ananya-krishnan";
+            r.by_name = "Ananya Krishnan";
+            r.at = "2026-10-19T10:00:00.000+00:00";
+            r.model = body.source === "copilot" ? (body.model ?? null) : null;
+            r.paragraphs = body.paragraphs;
+            if (section) {
+              const left = [...body.paragraphs];
+              section.blocks = (section.blocks ?? []).map((b) =>
+                b.kind === "paragraph" && b.paragraph && left.length
+                  ? { ...b, paragraph: { ...b.paragraph, text: left.shift()! } }
+                  : b,
+              );
+            }
+          });
+          return { json: this.cam };
+        },
+      ],
+      [
+        "POST",
+        new RegExp(`^/api/cases/${id}/cam/sections/${id}/overrides$`),
+        (req, m) => {
+          const body = req.postDataJSON() as {
+            figure: string;
+            original: string;
+            value: string;
+            reason: string;
+          };
+          this.camCalls.push({ kind: "override", section: decodeURIComponent(m[2]!), body });
+          this.reviewCam(decodeURIComponent(m[2]!), (r) => {
+            r.overrides = [
+              ...(r.overrides ?? []),
+              {
+                id: `ov-${(r.overrides ?? []).length + 1}`,
+                ...body,
+                by: "ananya-krishnan",
+                by_name: "Ananya Krishnan",
+                at: "2026-10-19T10:00:00.000+00:00",
+              },
+            ];
+          });
+          return { json: this.cam };
+        },
+      ],
+      [
+        "POST",
+        new RegExp(`^/api/cases/${id}/cam/sections/${id}/requests$`),
+        (req, m) => {
+          const body = req.postDataJSON() as { text: string };
+          this.camCalls.push({ kind: "request", section: decodeURIComponent(m[2]!), body });
+          this.reviewCam(decodeURIComponent(m[2]!), (r) => {
+            r.requests = [
+              ...(r.requests ?? []),
+              {
+                id: `rq-${(r.requests ?? []).length + 1}`,
+                text: body.text,
+                by: "ananya-krishnan",
+                by_name: "Ananya Krishnan",
+                at: "2026-10-19T10:00:00.000+00:00",
+              },
+            ];
+          });
+          return { json: this.cam };
+        },
+      ],
+      [
+        "POST",
+        new RegExp(`^/api/cases/${id}/cam/sections/${id}/regenerate$`),
+        (req, m) => {
+          const body = req.postDataJSON() as { instruction: string };
+          this.camCalls.push({ kind: "regenerate", section: decodeURIComponent(m[2]!), body });
+          if (!this.cam.copilot)
+            return {
+              status: 503,
+              json: { detail: "The copilot is not configured: its key is not set." },
+            };
+          const section = this.cam.sections.find((s) => s.id === decodeURIComponent(m[2]!));
+          const words = (section?.blocks ?? [])
+            .filter((b) => b.kind === "paragraph")
+            .map((b) => b.paragraph!.text);
+          return {
+            json: {
+              paragraphs: words.map((w) => `Redrafted: ${w}`),
+              model: "gpt-5.4-nano",
+              recorded: false,
+            },
+          };
+        },
+      ],
       ["GET", new RegExp(`^/api/cases/${id}/pd-note$`), () => ({ json: this.pdNote })],
       [
         "GET",
@@ -932,6 +1070,20 @@ export async function signedIn(page: Page, api: MockApi, user: SessionUser = api
     (session) => window.localStorage.setItem("creditiq.session", JSON.stringify(session)),
     { token: "session-token", user },
   );
+}
+
+/** Select an area's tab on the Cross-checks board, which shows one area's section at a time. */
+export async function showArea(page: Page, area: string): Promise<void> {
+  const tab = page.getByTestId(`xv-area-tab-${area}`);
+  if ((await tab.getAttribute("data-state")) !== "active") await tab.click();
+}
+
+/** Select the tab of the area whose section holds `el` (a card, a row, a list). */
+export async function showAreaOf(page: Page, el: Locator): Promise<void> {
+  const area = await el.evaluate(
+    (node) => node.closest('section[id^="xv-area-"]')?.id.replace("xv-area-", "") ?? null,
+  );
+  if (area) await showArea(page, area);
 }
 
 /** True when the page scrolls sideways (F-06.1 forbids it at phone width). */

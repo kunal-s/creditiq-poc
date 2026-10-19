@@ -5,7 +5,7 @@ import { Chip } from "@/components/common/Panel";
 import { Details } from "@/components/common/Details";
 import { t } from "@/config/terminology";
 import { formatInr, useLabels } from "@/domain/cases";
-import { authorityRises, normElementId, openNorm } from "@/domain/policy";
+import { authorityRises, normElementId, openNorm, useNormName } from "@/domain/policy";
 import { useCan } from "@/domain/session";
 import { cn } from "@/lib/utils";
 
@@ -37,8 +37,12 @@ export function effectText(step: AuthorityStep): string {
   return step.capped ? `${effect}, ${t("approvingAuthority.capped")}` : effect;
 }
 
-/** A step as one sentence, norm ids in plain text (the Comparison tab). */
-export function stepSentence(step: AuthorityStep, amount: number): string {
+/** A step as one sentence, the norms named in plain text (the Comparison tab). */
+export function stepSentence(
+  step: AuthorityStep,
+  amount: number,
+  nameOf: (id: string) => string = (id) => id,
+): string {
   if (step.kind === "amount") {
     return t("approvingAuthority.step.amount", {
       product: step.product_label ?? step.product ?? "",
@@ -49,13 +53,13 @@ export function stepSentence(step: AuthorityStep, amount: number): string {
   }
   return t("approvingAuthority.step.deviation", {
     category: step.category_label ?? step.category ?? "",
-    norms: (step.norms ?? []).join(", "),
+    norms: (step.norms ?? []).map(nameOf).join(", "),
     effect: effectText(step),
     authority: step.authority.label,
   });
 }
 
-function NormLinks({ ids }: { ids: string[] }) {
+function NormLinks({ ids, nameOf }: { ids: string[]; nameOf: (id: string) => string }) {
   return (
     <>
       {ids.map((id, i) => (
@@ -67,8 +71,9 @@ function NormLinks({ ids }: { ids: string[] }) {
             aria-controls={normElementId(id)}
             className="font-medium text-primary underline decoration-dotted underline-offset-2"
             data-testid="authority-norm"
+            data-norm={id}
           >
-            {id}
+            {nameOf(id)}
           </button>
         </Fragment>
       ))}
@@ -76,8 +81,16 @@ function NormLinks({ ids }: { ids: string[] }) {
   );
 }
 
-function StepText({ step, amount }: { step: AuthorityStep; amount: number }): ReactNode {
-  if (step.kind === "amount") return stepSentence(step, amount);
+function StepText({
+  step,
+  amount,
+  nameOf,
+}: {
+  step: AuthorityStep;
+  amount: number;
+  nameOf: (id: string) => string;
+}): ReactNode {
+  if (step.kind === "amount") return stepSentence(step, amount, nameOf);
   const [before, after] = t("approvingAuthority.step.deviation", {
     category: step.category_label ?? step.category ?? "",
     norms: NORM_SLOT,
@@ -87,7 +100,7 @@ function StepText({ step, amount }: { step: AuthorityStep; amount: number }): Re
   return (
     <>
       {before}
-      <NormLinks ids={step.norms ?? []} />
+      <NormLinks ids={step.norms ?? []} nameOf={nameOf} />
       {after}
     </>
   );
@@ -107,6 +120,7 @@ export function AuthorityView({
   const canCompare = useCan("comparison.adjudicate");
   const required = authority.required;
   const unevaluated = authority.unevaluated ?? [];
+  const nameOf = useNormName(caseId);
   const rises = authorityRises(authority);
   return (
     <div
@@ -174,7 +188,7 @@ export function AuthorityView({
                   data-governs={step.governs ? "true" : "false"}
                   className={cn(step.governs && "font-medium text-foreground")}
                 >
-                  <StepText step={step} amount={authority.amount_inr} />{" "}
+                  <StepText step={step} amount={authority.amount_inr} nameOf={nameOf} />{" "}
                   {step.governs && <Chip tone="primary">{t("approvingAuthority.governs")}</Chip>}
                 </li>
               ))}

@@ -40,7 +40,8 @@ test("every earlier address lands on its place in the workspace", async () => {
     [`/docready/${caseId}/checklist`, `${base}/completeness#checklist`],
     [`/docready/${caseId}/readiness`, `${base}/completeness#readiness`],
     [`/docready/${caseId}/collection`, `${base}/completeness#queries`],
-    [`${base}/spread`, `${base}/outputs?view=spread`],
+    [`${base}/spread`, `${base}/policy#financials`],
+    [`${base}/outputs?view=spread`, `${base}/policy#financials`],
     [`${base}/draft`, `${base}/outputs?view=cam`],
   ];
   for (const [from, to] of redirects) {

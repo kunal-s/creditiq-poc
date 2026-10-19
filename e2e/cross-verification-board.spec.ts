@@ -25,9 +25,10 @@ import {
   xvDecision,
   xvFinding,
   xvItem,
+  xvSide,
   xvView,
 } from "./fixtures/data";
-import { MockApi, scrollsSideways, signedIn } from "./support/api";
+import { MockApi, scrollsSideways, showArea, showAreaOf, signedIn } from "./support/api";
 
 // Times read as the bank's users see them, in India.
 test.use({ timezoneId: "Asia/Kolkata" });
@@ -58,8 +59,20 @@ async function openBoard(page: Page, api = new MockApi(), user: SessionUser = AN
   return api;
 }
 
+/** Select a turnover comparison: its card or check shows beside the Figures compared list. */
+async function pick(page: Page, id: string): Promise<void> {
+  const row = page.locator(`[data-testid="xv-figure-row"][data-finding="${id}"]`);
+  await showAreaOf(page, row);
+  if ((await row.getAttribute("data-selected")) !== "true")
+    await row.getByTestId("xv-figure-select").click();
+}
+
 async function expand(page: Page, id: string): Promise<Locator> {
   const c = card(page, id);
+  await expect(page.getByTestId("xv-overview")).toBeVisible();
+  // A turnover discrepancy's card is beside the figures only while its comparison is selected.
+  if ((await c.count()) === 0) await pick(page, id);
+  await showAreaOf(page, c);
   if ((await c.getAttribute("data-expanded")) !== "true")
     await c.getByTestId("xv-card-toggle").click();
   await expect(c).toHaveAttribute("data-expanded", "true");
@@ -103,7 +116,7 @@ test("the header sums up the board, the decisions made and the run, and locks th
   );
   await expect(page.getByTestId("xv-back-spread")).toHaveAttribute(
     "href",
-    `/appraisals/${KESTREL}/outputs?view=spread`,
+    `/appraisals/${KESTREL}/policy#financials`,
   );
   await expect(page.getByTestId("xv-exception-queue")).toHaveAttribute("href", "/review");
 
@@ -129,7 +142,9 @@ test("the header sums up the board, the decisions made and the run, and locks th
   await expect(page).toHaveURL(/\/review$/);
   await page.goBack();
   await page.getByTestId("xv-back-spread").click();
-  await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}/outputs\\?view=spread$`));
+  await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}/policy#financials$`));
+  // The board's Spread button opens the Financials section of the Financials and policy tab.
+  await expect(page.getByTestId("financials")).toBeInViewport();
 });
 
 test("the overview has a card per area, in the engine's order, each saying where the area stands", async ({
@@ -613,7 +628,8 @@ test("the banner points at the engine's first blocking discrepancy, and Adjudica
   await expect(id1).toHaveAttribute("data-expanded", "true");
   await id1.getByTestId("xv-card-toggle").click();
   await expect(id1).toHaveAttribute("data-expanded", "false");
-  await section(page, "obligations").scrollIntoViewIfNeeded();
+  // Another area's tab hides it; Adjudicate now switches back to its area.
+  await showArea(page, "obligations");
   await expect(id1).not.toBeInViewport();
   await now.click();
   await expect(id1).toHaveAttribute("data-expanded", "true");
@@ -692,11 +708,19 @@ test("each section ranks its discrepancies within the area, the top one on the b
   };
   for (const [area, want] of Object.entries(expected)) {
     const s = section(page, area);
+    await showArea(page, area);
     await expect(s.getByRole("heading", { level: 2 })).toHaveText(want.heading);
     await expect(s.getByTestId("xv-area-counts")).toHaveText(want.counts);
-    // The engine's order within the area, each card numbered by its rank there.
-    expect(await rules(s.locator("[data-rank]"))).toEqual(want.ranked);
-    await expect(s.getByTestId("xv-rank")).toHaveText(want.ranked.map((_, i) => String(i + 1)));
+    // The engine's order within the area, each card numbered by its rank there. Turnover lists its
+    // discrepancies among the figures compared, the selected one's card beside them.
+    if (area === "turnover") {
+      const fails = s.locator('[data-testid="xv-figure-row"][data-outcome="fail"]');
+      expect(await rules(fails)).toEqual(want.ranked);
+      await expect(s.getByTestId("xv-figure-panel").getByTestId("xv-rank")).toHaveText("1");
+    } else {
+      expect(await rules(s.locator("[data-rank]"))).toEqual(want.ranked);
+      await expect(s.getByTestId("xv-rank")).toHaveText(want.ranked.map((_, i) => String(i + 1)));
+    }
   }
   await expect(section(page, "identity")).toContainText(
     "PAN, GSTIN, CIN, name and directors agree across every document.",
@@ -705,8 +729,11 @@ test("each section ranks its discrepancies within the area, the top one on the b
   // The first card on the board (the top of the first area with an open discrepancy) is open;
   // every other is closed, the greatest on the board (OB-02, further down) included.
   await expect(card(page, "fnd-id1")).toHaveAttribute("data-expanded", "true");
-  for (const id of ["fnd-ob2", "fnd-ob1", "fnd-id5", "fnd-to5", "fnd-ba1", "fnd-to4"])
+  for (const id of ["fnd-ob2", "fnd-ob1", "fnd-id5", "fnd-ba1"])
     await expect(card(page, id)).toHaveAttribute("data-expanded", "false");
+  // So is the discrepancy beside the turnover figures, the area's first; its second is not shown.
+  await expect(card(page, "fnd-to5")).toHaveAttribute("data-expanded", "true");
+  await expect(card(page, "fnd-to4")).toHaveCount(0);
 
   // Collapsed: what it is, how serious, and whether it blocks or is decided.
   const id1 = card(page, "fnd-id1");
@@ -719,7 +746,9 @@ test("each section ranks its discrepancies within the area, the top one on the b
   await expect(card(page, "fnd-ob2")).not.toContainText("Blocks submission");
   await expect(card(page, "fnd-ob1")).toContainText("Escalated");
   await expect(card(page, "fnd-to5")).toContainText("XV-000021-05 · TO-05 · Aug 2025 to Mar 2026");
+  await pick(page, "fnd-to4");
   const to4 = card(page, "fnd-to4");
+  await expect(card(page, "fnd-to5")).toHaveCount(0);
   await expect(to4).toHaveAttribute("data-rank", "2");
   await expect(to4).toHaveAttribute("data-adjudicated", "true");
   await expect(to4).toContainText("Dismissed");
@@ -732,6 +761,9 @@ test("a collapsed card with amounts shows its figures large, the differing one m
   await openBoard(page);
   // Turnover: the two figures the engine's key-figure line gives, then how far apart they are.
   const to5 = card(page, "fnd-to5");
+  // It opens beside the turnover figures; closed, it shows its figures.
+  await showArea(page, "turnover");
+  await to5.getByTestId("xv-card-toggle").click();
   await expect(to5).toHaveAttribute("data-expanded", "false");
   const figures = to5.getByTestId("xv-card-figures");
   const values = figures.getByTestId("xv-card-figure");
@@ -744,6 +776,7 @@ test("a collapsed card with amounts shows its figures large, the differing one m
     "13.9% apart · tolerance 10%",
   );
   // Open, the source columns carry the figures instead.
+  await showAreaOf(page, to5);
   await to5.getByTestId("xv-card-toggle").click();
   await expect(to5).toHaveAttribute("data-expanded", "true");
   await expect(to5.getByTestId("xv-card-figures")).toHaveCount(0);
@@ -959,7 +992,9 @@ test("every evidence row opens its own page, by click or from its page button", 
   const december = panel.locator('[data-kind="row"]').nth(4);
   await expect(december).toContainText("Dec 2025");
   const pageButton = december.getByTestId("xv-evidence-page");
-  await expect(pageButton).toHaveText("p2");
+  // An eye on its own; the page is in its label.
+  await expect(pageButton).toHaveText("");
+  await expect(pageButton).toHaveAccessibleName("Open page 2");
   await pageButton.focus();
   await page.keyboard.press("Enter");
   await expect(viewer.getByTestId("viewer-type")).toHaveText("GSTR-3B");
@@ -1131,7 +1166,7 @@ test("Continue to draft opens only once every blocking discrepancy is decided", 
   );
   await next.click();
   await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}/outputs\\?view=cam$`));
-  await expect(page.getByTestId("cam")).toBeVisible();
+  await expect(page.getByTestId("cam-review")).toBeVisible();
 });
 
 test("an escalated discrepancy is read-only for the analyst until the Credit Manager decides", async ({
@@ -1447,6 +1482,7 @@ test("an error the engine did not word for the reader shows as the designed stat
   // Unreachable while a request goes on the query list.
   await page.route("**/cross-verification/findings/fnd-id4/query", (route) => route.abort());
   const id4 = page.locator('[data-testid="xv-incomplete-row"][data-rule="ID-04"]');
+  await showArea(page, "identity");
   await id4.getByTestId("xv-add-query").click();
   const queryError = id4.getByTestId("xv-query-error");
   await expect(queryError.getByTestId("state-unreachable")).toContainText(
@@ -1459,6 +1495,7 @@ test("an error the engine did not word for the reader shows as the designed stat
     json: { detail: "role 'credit_analyst' lacks 'review.decide'" },
   }));
   const to1 = page.locator('[data-testid="xv-incomplete-row"][data-rule="TO-01"]');
+  await showArea(page, "turnover");
   await to1.getByTestId("xv-add-query").click();
   await expect(to1.getByTestId("xv-query-error").getByTestId("state-forbidden")).toContainText(
     "Not part of your role",
@@ -1485,7 +1522,9 @@ test("each area lists its checks that could not run and what would complete them
   const api = await openBoard(page);
   const identity = section(page, "identity").getByTestId("xv-incomplete");
   const turnover = section(page, "turnover").getByTestId("xv-incomplete");
+  await showArea(page, "identity");
   await expect(identity.getByRole("heading")).toHaveText("Could not be checked (1)");
+  await showArea(page, "turnover");
   await expect(turnover.getByRole("heading")).toHaveText("Could not be checked (3)");
   expect(await rules(identity.getByTestId("xv-incomplete-row"))).toEqual(["ID-04"]);
   expect(await rules(turnover.getByTestId("xv-incomplete-row"))).toEqual([
@@ -1515,6 +1554,7 @@ test("each area lists its checks that could not run and what would complete them
   await expect(row("TO-02").getByTestId("xv-on-query-list")).toBeVisible();
 
   // A document not on file: the request, and the way to add documents.
+  await showArea(page, "identity");
   await expect(row("ID-04").getByTestId("xv-request")).toHaveText(
     "To complete it, provide the director KYC.",
   );
@@ -1526,6 +1566,7 @@ test("each area lists its checks that could not run and what would complete them
 
   // Waiting for a person's review: nothing to ask for; the value opens at its page.
   const to3 = row("TO-03");
+  await showArea(page, "turnover");
   await expect(to3.getByTestId("xv-request")).toHaveCount(0);
   await expect(to3.getByTestId("xv-add-query")).toHaveCount(0);
   await to3.getByTestId("xv-awaiting-review").click();
@@ -1569,6 +1610,7 @@ test("each area keeps its passed checks closed, with the checks that did not app
   await expect(section(page, "turnover").getByTestId("xv-passed")).toHaveCount(0);
 
   const obligations = section(page, "obligations").getByTestId("xv-passed");
+  await showArea(page, "obligations");
   await expect(obligations.locator("summary")).toHaveText("Passed (1)");
   await obligations.locator("summary").click();
   await expect(obligations.getByTestId("xv-passed-row")).toHaveText([
@@ -1588,16 +1630,19 @@ test("each area's facts stay closed, load when opened, and show what that area c
   expect(api.called("GET", `/api/cases/${KESTREL}/facts`)).toHaveLength(0);
   const panels = (area: string) => facts(area).locator("[data-testid^='facts-']");
 
+  await showArea(page, "identity");
   await facts("identity").locator("summary").click();
   await expect(facts("identity").getByTestId("facts-identity")).toContainText("AAACK1243K");
   await expect(facts("identity").getByTestId("facts-people")).toContainText("Leela Varghese");
   expect(await testIds(panels("identity"))).toEqual(["facts-identity", "facts-people"]);
   expect(api.called("GET", `/api/cases/${KESTREL}/facts`).length).toBeGreaterThan(0);
 
+  await showArea(page, "turnover");
   await facts("turnover").locator("summary").click();
   await expect(facts("turnover").getByTestId("facts-turnover")).toContainText("FY 2025-26");
   expect(await testIds(panels("turnover"))).toEqual(["facts-turnover"]);
 
+  await showArea(page, "accounts");
   await facts("accounts").locator("summary").click();
   await expect(facts("accounts").getByTestId("facts-accounts")).toContainText(
     "Lotuscrest Bank ·1234",
@@ -1605,6 +1650,7 @@ test("each area's facts stay closed, load when opened, and show what that area c
   await expect(facts("accounts").getByTestId("facts-credits")).toContainText("Loan disbursal");
   expect(await testIds(panels("accounts"))).toEqual(["facts-accounts", "facts-credits"]);
 
+  await showArea(page, "obligations");
   await facts("obligations").locator("summary").click();
   const obligations = facts("obligations").getByTestId("facts-obligations");
   await expect(obligations).toContainText("ASHWOOD FINSERV");
@@ -1641,6 +1687,7 @@ test("a board without discrepancies says so and leaves the draft open", async ({
     await expect(areaCard(page, area)).toHaveAttribute("data-status", status);
     await expect(areaCard(page, area).getByTestId("xv-area-open")).toHaveText("0");
     await expect(areaCard(page, area).getByTestId("xv-area-top")).toHaveText("No discrepancy");
+    await showArea(page, area);
     await expect(section(page, area).getByTestId("xv-area-none")).toBeVisible();
   }
   await expect(page.locator("[data-expanded]")).toHaveCount(0);
@@ -1687,15 +1734,23 @@ async function openEverything(page: Page) {
     await c.getByTestId(`xv-column-${column}`).getByTestId("xv-open-evidence").click();
     await expect(c.getByTestId("xv-evidence-panel")).toBeVisible();
   }
-  for (const lines of await page.getByTestId("xv-line-by-line").all()) {
-    await lines.locator("summary").click();
-    await expect(lines.getByTestId("xv-detail-table")).toBeVisible();
+  // One area's section at a time: open the rest of each in turn, the page never scrolling sideways.
+  for (const area of AREAS) {
+    await showArea(page, area);
+    const s = section(page, area);
+    for (const lines of await s.getByTestId("xv-line-by-line").all()) {
+      await lines.locator("summary").click();
+      await expect(lines.getByTestId("xv-detail-table")).toBeVisible();
+    }
+    for (const passed of await s.getByTestId("xv-passed").all())
+      await passed.locator("summary").click();
+    for (const facts of await s.getByTestId("xv-facts").all())
+      await facts.locator("summary").click();
+    expect(await scrollsSideways(page), `the ${area} section scrolls sideways`).toBe(false);
   }
-  for (const passed of await page.getByTestId("xv-passed").all())
-    await passed.locator("summary").click();
-  for (const facts of await page.getByTestId("xv-facts").all())
-    await facts.locator("summary").click();
+  await showArea(page, "accounts");
   await expect(page.getByTestId("facts-credits")).toBeVisible();
+  await showArea(page, "identity");
   await expect(page.getByTestId("facts-people")).toBeVisible();
 }
 
@@ -1813,8 +1868,118 @@ test.describe("at phone width", () => {
     expect(await scrollsSideways(page)).toBe(false);
     // The sources stack: the second column sits below the first.
     const ob2 = card(page, "fnd-ob2");
+    await showArea(page, "obligations");
     const first = await ob2.getByTestId("xv-column-instalments").boundingBox();
     const second = await ob2.getByTestId("xv-column-declaration").boundingBox();
     expect(second!.y).toBeGreaterThanOrEqual(first!.y + first!.height - 1);
   });
+});
+
+test("the turnover section opens with every compared pair of figures, coloured by the engine's outcome", async ({
+  page,
+}) => {
+  // One turnover check of each outcome; the screen colours what the engine decided and
+  // measures nothing itself.
+  const turnover = (
+    id: string,
+    rule_id: string,
+    outcome: XvItem["finding"]["outcome"],
+    tolerance: string | null,
+    a: number | string,
+    b: number | string,
+  ) =>
+    xvItem(
+      xvFinding({
+        id,
+        rule_id,
+        title: `${rule_id} comparison`,
+        area: "turnover",
+        outcome,
+        severity: "moderate",
+        blocking: false,
+        explanation: outcome === "incomplete" ? "GST outward supplies cover 7 of 12 months." : "",
+        scope: "FY 2025-26",
+        tolerance,
+        sides: [
+          xvSide("Audited financial statements", a, [{ document_id: "doc-bs", page: 4 }]),
+          xvSide("GST outward supplies", b, []),
+        ],
+      }),
+    );
+  const api = new MockApi();
+  api.boards.set(
+    KESTREL,
+    boardWith((items) => [
+      ...items.filter((i) => i.finding.area !== "turnover"),
+      turnover("t-fail", "TO-01", "fail", "1%", 118_000_000, 68_600_000),
+      turnover("t-pass", "TO-02", "pass", "1%", 117_600_000, 117_000_000),
+      turnover("t-incomplete", "TO-03", "incomplete", "1%", 118_000_000, 68_250_000),
+      turnover("t-exact", "TO-05", "pass", null, "FY 2025-26", "FY 2025-26"),
+      turnover("t-na", "TO-04", "not_applicable", null, "", ""),
+    ]),
+  );
+  await openBoard(page, api);
+
+  const figures = section(page, "turnover").getByTestId("xv-figures");
+  await showArea(page, "turnover");
+  await expect(figures).toBeVisible();
+  const rows = figures.getByTestId("xv-figure-row");
+  // Every check that compared two figures, discrepancy or not, in the engine's order; one that
+  // did not apply is left out.
+  expect(await rules(rows)).toEqual(["TO-01", "TO-03", "TO-02", "TO-05"]);
+  expect(await outcomes(rows)).toEqual(["fail", "incomplete", "pass", "pass"]);
+
+  const row = (rule: string) => figures.locator(`[data-rule="${rule}"]`);
+  await expect(row("TO-01")).toContainText("Outside tolerance");
+  await expect(row("TO-01").getByTestId("xv-figure-value").first()).toHaveText("INR 11.80 cr");
+  await expect(row("TO-01").getByTestId("xv-figure-value").first()).toHaveClass(/text-destructive/);
+  await expect(row("TO-02")).toContainText("Within tolerance");
+  await expect(row("TO-02").getByTestId("xv-figure-value").nth(1)).toHaveClass(/text-positive/);
+  await expect(row("TO-03")).toContainText("Not compared");
+  // A rule with no tolerance compares exactly.
+  await expect(row("TO-05")).toContainText("Agrees");
+
+  // The first discrepancy is selected, its card beside the list.
+  const panel = section(page, "turnover").getByTestId("xv-figure-panel");
+  await expect(row("TO-01")).toHaveAttribute("data-selected", "true");
+  await expect(panel.getByTestId("xv-card-t-fail")).toHaveAttribute("data-expanded", "true");
+  // Selecting another comparison shows it there: a check that is not a discrepancy, read-only,
+  // with why it could not be compared and its sources.
+  await row("TO-03").getByTestId("xv-figure-select").click();
+  await expect(row("TO-03")).toHaveAttribute("data-selected", "true");
+  const check = panel.getByTestId("xv-check-panel");
+  await expect(check).toHaveAttribute("data-outcome", "incomplete");
+  await expect(check).toContainText("GST outward supplies cover 7 of 12 months.");
+  await expect(check.getByTestId("xv-adjudication")).toHaveCount(0);
+  await expect(panel.getByTestId("xv-card-t-fail")).toHaveCount(0);
+
+  // The other areas do not carry the table.
+  await expect(section(page, "identity").getByTestId("xv-figures")).toHaveCount(0);
+});
+
+test("the areas' sections sit behind tabs: one area at a time, a card choosing its tab", async ({
+  page,
+}) => {
+  await openBoard(page);
+  const tab = (area: string) => page.getByTestId(`xv-area-tab-${area}`);
+  // The tabs follow the areas, each with its open discrepancies; the top discrepancy's area first.
+  for (const area of AREAS) await expect(tab(area)).toBeVisible();
+  await expect(tab("identity")).toHaveAttribute("data-state", "active");
+  await expect(section(page, "identity")).toBeVisible();
+  await expect(section(page, "turnover")).toBeHidden();
+  await expect(areaCard(page, "identity")).toHaveAttribute("data-active", "true");
+  // A card selects its area's tab and shows its section alone, the card marked.
+  await areaCard(page, "turnover").getByTestId("xv-area-open-section").click();
+  await expect(tab("turnover")).toHaveAttribute("data-state", "active");
+  await expect(section(page, "turnover")).toBeVisible();
+  await expect(section(page, "identity")).toBeHidden();
+  await expect(areaCard(page, "turnover")).toHaveAttribute("data-active", "true");
+  await expect(areaCard(page, "identity")).toHaveAttribute("data-active", "false");
+  // The tab itself does the same.
+  await tab("obligations").click();
+  await expect(section(page, "obligations")).toBeVisible();
+  await expect(section(page, "turnover")).toBeHidden();
+  // A key figure in another area switches to it before opening its finding.
+  await keyFigures(page, "identity").first().click();
+  await expect(tab("identity")).toHaveAttribute("data-state", "active");
 });

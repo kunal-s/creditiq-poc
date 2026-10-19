@@ -1,5 +1,10 @@
 import type {
   AdjudicationRequest,
+  CamDataRequest,
+  CamOverrideRequest,
+  CamRegenerateRequest,
+  CamRegenerateResult,
+  CamWordsRequest,
   ApprovalMatrixConfig,
   ApprovingAuthority,
   Cam,
@@ -210,6 +215,31 @@ export const api = {
     }),
   caseSpread: (id: string) => request<Spread>(`/api/cases/${q(id)}/spread`),
   caseCam: (id: string) => request<Cam>(`/api/cases/${q(id)}/cam`),
+  /** A CAM section in a person's words, or a copilot redraft a person keeps (F-23). */
+  camWords: (id: string, sectionId: string, body: CamWordsRequest) =>
+    request<Cam>(`/api/cases/${q(id)}/cam/sections/${q(sectionId)}/words`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+  /** Back to the engine's draft of a section. */
+  camRestore: (id: string, sectionId: string) =>
+    request<Cam>(`/api/cases/${q(id)}/cam/sections/${q(sectionId)}/words`, { method: "DELETE" }),
+  /** The copilot's redraft of a section, not yet kept. */
+  camRegenerate: (id: string, sectionId: string, body: CamRegenerateRequest) =>
+    request<CamRegenerateResult>(`/api/cases/${q(id)}/cam/sections/${q(sectionId)}/regenerate`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  camOverride: (id: string, sectionId: string, body: CamOverrideRequest) =>
+    request<Cam>(`/api/cases/${q(id)}/cam/sections/${q(sectionId)}/overrides`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  camRequest: (id: string, sectionId: string, body: CamDataRequest) =>
+    request<Cam>(`/api/cases/${q(id)}/cam/sections/${q(sectionId)}/requests`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
   casePdNote: (id: string) => request<PdNote>(`/api/cases/${q(id)}/pd-note`),
   /** The draft CAM as a file: Word, for credit to complete, or PDF (F-23.5). */
   camFile: (id: string, format: OutputFormat) =>

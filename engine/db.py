@@ -360,6 +360,49 @@ MIGRATIONS: list[str] = [
     ALTER TABLE cases ADD COLUMN assessment_opened_at TEXT;
     ALTER TABLE cases ADD COLUMN assessment_opened_by TEXT;
     """,
+    # 13: the draft CAM's review (F-23): a section's words in a person's hand or redrafted by the
+    # copilot and kept, the figures a person overrode with the reason, and the data asked for from
+    # a section (it sits on the query list). Each copilot answer is recorded by its request, so the
+    # same request is answered the same way. Every row is kept with who and when.
+    """
+    CREATE TABLE cam_reviews (
+        case_id TEXT NOT NULL REFERENCES cases(id),
+        section_id TEXT NOT NULL,
+        state TEXT NOT NULL,               -- edited | regenerated
+        paragraphs TEXT NOT NULL,          -- JSON list of strings
+        model TEXT,
+        by TEXT NOT NULL,
+        at TEXT NOT NULL,
+        PRIMARY KEY (case_id, section_id)
+    );
+    CREATE TABLE cam_overrides (
+        id TEXT PRIMARY KEY,
+        case_id TEXT NOT NULL REFERENCES cases(id),
+        section_id TEXT NOT NULL,
+        figure TEXT NOT NULL,
+        original TEXT NOT NULL,
+        value TEXT NOT NULL,
+        reason TEXT NOT NULL,
+        by TEXT NOT NULL,
+        at TEXT NOT NULL
+    );
+    CREATE TABLE cam_requests (
+        id TEXT PRIMARY KEY,
+        case_id TEXT NOT NULL REFERENCES cases(id),
+        section_id TEXT NOT NULL,
+        text TEXT NOT NULL,
+        by TEXT NOT NULL,
+        at TEXT NOT NULL
+    );
+    CREATE TABLE cam_model_calls (
+        case_id TEXT NOT NULL REFERENCES cases(id),
+        request_hash TEXT NOT NULL,
+        model TEXT NOT NULL,
+        response TEXT NOT NULL,            -- JSON list of paragraphs
+        at TEXT NOT NULL,
+        PRIMARY KEY (case_id, request_hash)
+    );
+    """,
 ]
 
 

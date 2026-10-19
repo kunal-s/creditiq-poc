@@ -27,6 +27,9 @@ from . import (
     approval,
     auth,
     cam,
+    cam_copilot,
+    cam_review,
+    keys,
     cases,
     comparison,
     db,
@@ -95,10 +98,19 @@ from .contracts import (
     Readiness,
     ReviewItem,
     SessionUser,
+    CamDataRequest,
+    CamOverrideRequest,
+    CamRegenerateRequest,
+    CamRegenerateResult,
+    CamWordsRequest,
 )
 from .deps import bearer_token, current_user, get_conn, require
 from .store import data_root
 from .util import now_iso
+
+# Keys from git-ignored files (workflow/private/), where the environment does not carry them.
+keys.load()
+
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
@@ -524,6 +536,74 @@ def case_cam(
         return cam.build(conn, data_root(), case)
     except configstore_reader.NoPublishedConfig as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
+
+
+# --- The draft CAM's review (F-23): a section in a person's words, a copilot redraft, a figure
+# overridden, data asked for. Each answers the memo as it now reads.
+
+
+def _review_cam(conn: sqlite3.Connection, case_id: str, user: dict) -> Cam:
+    case = _assessed_case(conn, case_id, user)
+    try:
+        return cam.build(conn, data_root(), case)
+    except configstore_reader.NoPublishedConfig as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+
+
+def _reviewed(conn: sqlite3.Connection, case_id: str, user: dict, change) -> Cam:
+    memo = _review_cam(conn, case_id, user)
+    try:
+        change(memo)
+    except cam_review.ReviewError as e:
+        raise HTTPException(status_code=e.status, detail=str(e)) from e
+    return _review_cam(conn, case_id, user)
+
+
+@app.put("/api/cases/{case_id}/cam/sections/{section_id}/words", response_model=Cam)
+def cam_words(case_id: str, section_id: str, body: CamWordsRequest, user: dict = Depends(require("review.decide")),
+              conn: sqlite3.Connection = Depends(get_conn)):
+    """A section in a person's words, or a copilot redraft a person keeps."""
+    state = "regenerated" if body.source == "copilot" else "edited"
+    return _reviewed(conn, case_id, user, lambda memo: cam_review.save_words(
+        conn, memo, section_id, body.paragraphs, user, state=state, model=body.model if state == "regenerated" else None))
+
+
+@app.delete("/api/cases/{case_id}/cam/sections/{section_id}/words", response_model=Cam)
+def cam_restore(case_id: str, section_id: str, user: dict = Depends(require("review.decide")),
+                conn: sqlite3.Connection = Depends(get_conn)):
+    """Back to the engine's draft of the section."""
+    return _reviewed(conn, case_id, user, lambda memo: cam_review.restore(conn, memo, section_id, user))
+
+
+@app.post("/api/cases/{case_id}/cam/sections/{section_id}/regenerate", response_model=CamRegenerateResult)
+def cam_regenerate(case_id: str, section_id: str, body: CamRegenerateRequest,
+                   user: dict = Depends(require("review.decide")), conn: sqlite3.Connection = Depends(get_conn)):
+    """The copilot's redraft of a section, for a person to keep or discard; nothing is kept yet."""
+    memo = _review_cam(conn, case_id, user)
+    cfg = configstore_reader.load_cam(data_root()).copilot
+    try:
+        paragraphs, recorded = cam_copilot.regenerate(conn, memo, section_id, body.instruction, cfg)
+    except cam_review.ReviewError as e:
+        raise HTTPException(status_code=e.status, detail=str(e)) from e
+    return CamRegenerateResult(paragraphs=paragraphs, model=cfg.model, recorded=recorded)
+
+
+@app.post("/api/cases/{case_id}/cam/sections/{section_id}/overrides", response_model=Cam)
+def cam_override(case_id: str, section_id: str, body: CamOverrideRequest,
+                 user: dict = Depends(require("review.decide")), conn: sqlite3.Connection = Depends(get_conn)):
+    """A figure overridden, with the value drafted and the reason, kept with who and when."""
+    return _reviewed(conn, case_id, user, lambda memo: cam_review.add_override(
+        conn, memo, section_id, body.figure, body.original, body.value, body.reason, user))
+
+
+@app.post("/api/cases/{case_id}/cam/sections/{section_id}/requests", response_model=Cam)
+def cam_request(case_id: str, section_id: str, body: CamDataRequest,
+                user: dict = Depends(require("review.decide")), conn: sqlite3.Connection = Depends(get_conn)):
+    """More data asked for from a section; it goes on the query list."""
+    def change(memo: Cam) -> None:
+        cam_review.add_request(conn, memo, section_id, body.text, user)
+        queries.refresh(conn, data_root(), case_id)
+    return _reviewed(conn, case_id, user, change)
 
 
 _DOWNLOAD = {200: {"description": "The file, as an attachment.",

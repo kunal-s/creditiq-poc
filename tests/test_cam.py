@@ -19,8 +19,7 @@ from tests.triangulation import add_doc, audited, bank, gstr, months
 
 CO = "Kestrel Tools Private Limited"
 CIN = "U28990MH2015PTC123456"
-SECTIONS = ["snapshot", "borrower", "promoters", "proposal", "financials", "working_capital", "turnover", "banking",
-            "obligations", "verification", "policy", "documentation"]
+SECTIONS = ["profile", "facility", "conduct", "analysis", "gst", "verification"]
 FY26 = months((2025, 4), 12)
 MONTH_NAMES = ["April", "May", "June", "July", "August", "September", "October", "November", "December", "January",
                "February", "March"]
@@ -60,7 +59,15 @@ def _cam(client: TestClient, headers: dict, root: Path, case_id: str) -> dict:
 
 
 def _section(cam: dict, section_id: str) -> dict:
-    return next(s for s in cam["sections"] if s["id"] == section_id)
+    """A section by its id, or a part of one by the part's id (the part's blocks, its section's
+    number): the memo's sections are drafted from parts that keep the ids they are linked by."""
+    for s in cam["sections"]:
+        if s["id"] == section_id:
+            return s
+        for p in s.get("parts", []):
+            if p["id"] == section_id:
+                return {**p, "number": s["number"], "section": s["id"]}
+    raise StopIteration(section_id)
 
 
 def _blocks(section: dict, kind: str) -> list[dict]:
@@ -188,10 +195,24 @@ def test_tc26_sections_follow_the_assumed_layout_numbered_then_the_summary_and_t
     cam = _cam(client, analyst, published_data_root, case_id)
     assert [s["id"] for s in cam["sections"]] == SECTIONS
     assert [s["number"] for s in cam["sections"]] == list(range(1, len(SECTIONS) + 1))
-    assert [s["title"] for s in cam["sections"]][:3] == ["Proposal at a glance", "Borrower profile", "Promoters and management"]
+    assert [s["title"] for s in cam["sections"]] == [
+        "Borrower and Group Profile", "Facility Requested and Purpose", "Banking Conduct",
+        "Financial Analysis and Ratios", "GST and Bureau Findings", "Cross-Verification Results"]
+    # Each drafted from parts that keep the ids they are linked by, each under its subheading.
+    assert [[p["id"] for p in s["parts"]] for s in cam["sections"]] == [
+        ["borrower", "promoters"], ["snapshot", "proposal", "working_capital"], ["banking", "obligations"],
+        ["financials", "policy"], ["turnover"], ["verification", "documentation"]]
+    assert all(s["purpose"] for s in cam["sections"])
     assert _section(cam, "turnover")["title"] == "Turnover across sources (GST, income tax and banking)"
-    assert (cam["summary_number"], cam["recommendation_number"]) == (13, 14)
-    assert cam["summary_title"] == "Summary of findings, deviations and open queries"
+    assert _section(cam, "turnover")["number"] == 5
+    profile = _section(cam, "profile")
+    assert [b["text"] for b in profile["blocks"] if b["kind"] == "subheading"][:2] == [
+        "Borrower profile", "Promoters and management"]
+    # Then the risk assessment (the summary, not rated) and the recommendation: eight in all.
+    assert (cam["summary_number"], cam["recommendation_number"]) == (7, 8)
+    assert cam["summary_title"] == "Risk Assessment and Rating"
+    assert cam["rating_note"] == "Not rated: RBL's rating model is not configured."
+    assert all(s["review"]["state"] == "machine" for s in cam["sections"])
     assert cam["title"] == "Credit Approval Memo" and cam["borrower"] == "Kestrel Tools Pvt Ltd"
     assert cam["interim_template"] is True and cam["template_note"].startswith("Draft — layout assumed")
     assert cam["as_of"] == "2026-09-29" and cam["config_version"] == reader.published_version(published_data_root)["version"]
@@ -231,7 +252,7 @@ def test_an_empty_case_still_drafts(client: TestClient, published_data_root: Pat
     case_id = make_case(client, analyst, published_data_root)
     cam = _cam(client, analyst, published_data_root, case_id)
     assert [s["id"] for s in cam["sections"]] == SECTIONS
-    assert _section(cam, "financials")["empty"] == "Nothing on file yet." and not _section(cam, "financials")["blocks"]
+    assert not _section(cam, "financials")["blocks"]
     assert _facts(_blocks(_section(cam, "snapshot"), "facts")[0])["PAN"]["text"] == "Not on file"
     assert cam["sources"] == []
 
@@ -374,7 +395,7 @@ def test_the_borrower_profile_reads_the_certificate_and_points_to_the_identity_d
     [note] = _blocks(profile, "note")
     # A title inside a sentence is in lower case, its acronyms kept.
     assert note["text"] == (f"Identity checks found a discrepancy: entity PAN differs between documents "
-                            f"({pan['finding']['ref']}). See section 10.")
+                            f"({pan['finding']['ref']}). See section 6.")
 
 
 def test_the_vintage_sentence_never_rounds_up(client: TestClient, published_data_root: Path):
@@ -502,7 +523,7 @@ def test_the_proposal_names_each_facility_the_resolution_the_collateral_and_the_
         "Collateral: offered, as recorded on the case at intake; nature and value not on file.",
         # The message sets the facilities out; the case records only the total.
         "Amounts per facility are not captured on the case; the sourcing message sets out the facilities asked for. "
-        "The working-capital method (section 6), the policy norms and the approving authority (section 11) therefore "
+        "The working-capital method (section 2), the policy norms and the approving authority (section 4) therefore "
         "use the total of INR 6.50 cr, including the term loan."]
     paragraphs = [b["paragraph"] for b in _blocks(proposal, "paragraph")]
     assert [_cited(p) for p in paragraphs] == [{docs["message"]}, {docs["resolution"]}, set(), {docs["message"]}]
@@ -557,7 +578,7 @@ def test_financial_performance_tabulates_the_spread_and_sets_each_figure_against
     assert "meeting the norm for positive net worth, against total borrowings of" in leverage
     assert "at least INR" not in profit + leverage
     assert liquidity.endswith("The working-capital cycle was 90 days, above the maximum of 75 days (a deviation; see "
-                              "section 11).")
+                              "section 4).")
     # The FY 2025-26 statements print other figures for FY 2024-25 than its own statements.
     assert restated == ("The FY 2025-26 statements give different figures for FY 2024-25: revenue from operations "
                         "INR 10.03 cr against INR 9.44 cr, profit after tax INR 54.40 lakh against INR 51.20 lakh and "
@@ -648,10 +669,10 @@ def test_turnover_across_sources_by_year_with_partial_months_and_the_filing_posi
               and i["finding"]["area"] in ("turnover", "tax")]
     assert {"TO-03", "TO-05"} <= {f["rule_id"] for f in failed}
     listed, filing = _paragraphs(turnover)
-    # Each finding is named here and explained once, in section 10.
+    # Each finding is named here and explained once, in section 6.
     titles = "; ".join(f"{cam_module._lower(cam_module.plain(f['finding_title']))}"
                        f"{' · ' + f['scope'] if f['scope'] else ''} ({f['ref']})" for f in failed)
-    assert listed == f"The cross-checks found {len(failed)} discrepancies on turnover and tax, set out in section 10: {titles}."
+    assert listed == f"The cross-checks found {len(failed)} discrepancies on turnover and tax, set out in section 6: {titles}."
     assert not any(f["explanation"] in p for f in failed for p in _paragraphs(turnover))
     returns = next(i["finding"] for i in board["items"] if i["finding"]["rule_id"] == "TX-01")
     # The FY 2025-26 return falls due on 31 Oct 2026, after the case's as-of date; the checklist asks for it.
@@ -888,7 +909,7 @@ def test_the_summary_lists_findings_not_dismissed_as_a_register(client, publishe
     pan = findings[escalated["ref"]]
     assert (pan["rule"], pan["title"], pan["severity"], pan["status"], pan["blocking"]) == (
         "ID-01", "Entity PAN differs between documents", "serious", "Escalated", True)
-    # A register: reference, severity, title, status and blocking, cited; the explanation is in section 10.
+    # A register: reference, severity, title, status and blocking, cited; the explanation is in section 6.
     assert pan["text"] == "" and pan["citations"]
     facilities = findings[accepted["ref"]]
     assert (facilities["status"], facilities["blocking"]) == ("Accepted as valid", False)
@@ -1101,8 +1122,8 @@ def test_sources_are_numbered_by_first_citation_and_named_as_the_case_lists_them
     for s in cam["sources"]:
         assert s["pages"] == sorted({e["page"] for e in cited if e["document_id"] == s["document_id"]})
     by_id = {s["document_id"]: s for s in cam["sources"]}
-    # The borrower, cited to the sourcing message, comes first.
-    assert cam["sources"][0]["document_id"] == docs["message"]
+    # The sourcing message is among them, named as the case lists it.
+    assert docs["message"] in by_id
     assert (by_id[docs["message"]]["label"], by_id[docs["message"]]["file_name"]) == ("Sourcing message", "application-message.txt")
     # Several of a type are told apart by year, period or person; GST returns and KYC the case has once are not
     # qualified, statements, returns and sanction letters always are.

@@ -22,9 +22,10 @@ export const Route = createFileRoute("/appraisals/$caseId/cross-verification")({
 
 function CrossVerificationTab() {
   const { caseId } = Route.useParams();
+  const { finding } = Route.useSearch();
   return (
     <AssessmentStage caseId={caseId}>
-      <CrossVerificationBoard caseId={caseId} />
+      <CrossVerificationBoard caseId={caseId} finding={finding} />
     </AssessmentStage>
   );
 }

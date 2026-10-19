@@ -17,6 +17,8 @@ source_modules =
     engine.approval
     engine.auth
     engine.cam
+    engine.cam_copilot
+    engine.cam_review
     engine.cases
     engine.checklist
     engine.comparison
@@ -32,6 +34,7 @@ source_modules =
     engine.identifiers
     engine.ingest_client
     engine.jobs
+    engine.keys
     engine.names
     engine.output_sources
     engine.pages

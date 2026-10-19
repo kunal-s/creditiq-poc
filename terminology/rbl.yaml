@@ -55,7 +55,7 @@ caseTab:
   extraction: Extracted data
   completeness: Completeness
   crossVerification: Cross-checks
-  policy: Policy
+  policy: Financials and policy
   outputs: Outputs
   comparison: Comparison
 
@@ -65,29 +65,87 @@ caseFlow:
   verification: Verification and policy
   subTabs: Sections of this step
 
+# The Financials section of the Financials and policy tab: the statements year by year, turnover
+# from every source, and the working-capital assessment.
+spreadPage:
+  title: Financials
+  purpose: The audited years laid out line by line, turnover from every source side by side, and the working-capital assessment; the norms below test the ratios. Every figure carries the document and page it was read from.
+  interim: This spread uses an interim layout. It will follow RBL's spread template, with an Excel export, when the template is available.
+  emptyTitle: No spread yet
+  emptyDescription: The spread is laid out once audited financial statements have been read.
+  period: Period
+  periodNote: "Year ended {date} · {basis}"
+  basis:
+    audited: Audited
+    provisional: Provisional
+    projected: Projected
+  unit:
+    crore: INR crore
+  banner:
+    open: Take this to Cross-checks
+    more: "(and {n} more)"
+  tabs:
+    turnover: Turnover by year
+    profit_and_loss: Profit and loss
+    balance_sheet: Balance sheet
+    differing: "{n} outside tolerance"
+    manual: "{n} relying on a person's entry"
+  turnover:
+    title: Turnover by year
+    subtitle: INR crore · every source as read from its documents, coloured by what the cross-checks concluded
+    source: Source
+    months: "{n} of 12 months"
+  verdict:
+    agrees: Agrees within tolerance
+    differs: Differs outside tolerance
+    not_compared: Not compared, part of the year missing
+  statement:
+    lineItem: Line item
+    profit_and_loss:
+      title: Profit and loss
+      subtitle: INR crore · as reported, laid out in the spread format
+    balance_sheet:
+      title: Balance sheet
+      subtitle: INR crore · as at the year end
+    manual: "{label} {fy} relies on a person's entry; confirm it against its document before the spread is relied on."
+    manualPage: "{label} {fy} relies on a person's entry; confirm it against page {page} before the spread is relied on."
+    footnote: Every figure is selectable; the source panel shows the page it was read from.
+  trend:
+    turnoverUp: "Turnover grew {pct}% in {fy}"
+    turnoverDown: "Turnover fell {pct}% in {fy}"
+    turnoverBody: "Audited revenue from operations went from {before} cr in {from} to {after} cr in {to}."
+    cycleLonger: "Working-capital cycle lengthened by {n} days in {fy}"
+    cycleShorter: "Working-capital cycle shortened by {n} days in {fy}"
+    cycleSame: "Working-capital cycle held steady in {fy}"
+    cycleBody: "From {before} days in {from} to {after} days in {to}, counting inventory and receivable days less payable days."
+  status:
+    title: Spread status
+    traced: Lines traced to a page
+    manual: Relying on a person's entry
+    periods: Periods spread
+    layout: Layout
+    interim: Interim layout
+    template: Bank template
+    assessed: Ratios assessed on
+  source:
+    title: Source panel
+    hint: Select any figure to see where it was read from.
+    read: Read from the document
+    manual: Relies on a person's entry
+    page: "Page {page}"
+    more: "{n} more pages"
+    open: Open the page
+    noPage: Not read from a page.
+
 # Views within the Outputs tab.
 outputs:
   view:
-    spread: Spread
     cam: Draft CAM
     pd: PD note
   spread:
-    title: Financial spread
-    line: Line item
-    interim: This spread uses an interim layout. It will follow RBL's spread template, with an Excel export, when the template is available.
-    emptyTitle: No financial statements yet
-    emptyDescription: The spread fills in once audited, provisional or projected statements have been read.
     wcTitle: Working-capital assessment
     wcMissing: "Cannot be computed: {inputs} not on file."
     wcVerdict: "Eligible bank finance {eligible} against the request of {requested}."
-    basis:
-      audited: Audited
-      provisional: Provisional
-      projected: Projected
-    section:
-      profit_and_loss: Profit and loss
-      balance_sheet: Balance sheet
-      ratios: Ratios
   # The draft CAM and the PD note: their header lines, downloads, citations and sources.
   header:
     case: "Appraisal {id}"
@@ -102,7 +160,6 @@ outputs:
   # The pages a statement rests on, marked as the downloads mark them: "5 p.1", "11 pp.3-5", and
   # "13-23 p.1" for three or more sources in a row cited at the same pages.
   citation:
-    page: "p{page}"
     onePage: "p.{pages}"
     manyPages: "pp.{pages}"
     source: "{n} {at}"
@@ -123,6 +180,64 @@ outputs:
     accepted: Accepted as valid
     escalated: Escalated
     not_valid: Not valid
+  # The CAM draft and review: a section at a time, in the engine's words, a person's or the copilot's.
+  review:
+    mode: How the memo is shown
+    modes:
+      sections: Review by section
+      memo: Read the whole memo
+    sections: CAM sections
+    sectionCount: "{n} sections"
+    draftState: Draft state
+    citations: Citations in memo
+    edited: Sections edited
+    overrides: Overrides recorded
+    requests: Data requested
+    rating: First-cut rating
+    notRated: Not rated
+    kicker: "Section {n} of {total} · {title}"
+    banner: "A blocking discrepancy is not yet decided. You can draft and edit freely, but submission stays closed until it is dealt with."
+    bannerOpen: "Open {ref}"
+    state:
+      machine: Machine-drafted
+      edited: "Edited by {name}"
+      regenerated: "Copilot redraft, kept by {name}"
+    draftedAsOf: "Drafted from the data as of {date}"
+    changedAt: "Changed {date}"
+    edit: Edit in my words
+    regenerate: Regenerate with copilot
+    override: Override a figure
+    request: Request more data
+    restore: Restore the draft
+    close: Close
+    copilotOff: "The copilot is not configured: its key is not set."
+    editHint: The section's paragraphs, one per block of text; each keeps the citations of the paragraph in its place.
+    editSave: Save my words
+    editNote: Saved with your name and the time; the engine's draft can be restored.
+    instruction: What should the redraft do?
+    instructionPlaceholder: e.g. Shorter, and lead with the turnover gap
+    redraft: Redraft
+    redrafting: Redrafting…
+    redrafted: "Redrafted by {model}. Nothing is kept until you keep it."
+    replayed: "The answer recorded for this same request ({model}). Nothing is kept until you keep it."
+    keep: Keep this redraft
+    discard: Discard
+    overrideField:
+      figure: Figure being overridden
+      original: Original value as drafted
+      value: Your value
+      reason: Reason (kept with your name and the time)
+    overridePlaceholder:
+      figure: e.g. Assessed drawing power
+      original: e.g. INR 1.50 cr
+      value: e.g. INR 1.25 cr
+      reason: e.g. Sized on independently evidenced turnover
+    overrideSave: Record override
+    overrideLine: "{figure}: {original} as drafted, overridden to {value} by {name}. {reason}"
+    requestHint: What more is needed for this section? It goes on the query list.
+    requestPlaceholder: e.g. Please provide the debtors' ageing as at 31 March 2026.
+    requestSave: Add to query list
+    requestLine: "Requested: {text}"
   cam:
     eyebrow: Draft for credit
     interim: Sections follow an interim list until RBL's CAM template is available. Every figure links to the page it comes from.
@@ -238,6 +353,20 @@ crossVerification:
     noDiscrepancy: No discrepancy
     allDecided: Every discrepancy decided
     keyFigures: Key figures
+  # The severity tiles at the head of the board: the open discrepancies by credit impact, and
+  # how many of all of them have been decided. Ranked by impact, not by the area they fall in.
+  tiles:
+    serious: Serious
+    moderate: Moderate
+    mild: Mild
+    adjudicated: Adjudicated
+    outOf: "of {total}"
+    blocking: Blocking
+    noneSerious: No serious discrepancy
+    noneModerate: No moderate discrepancy
+    noneMild: No mild discrepancy
+    allDecided: Every discrepancy decided
+    noneToDecide: Nothing to decide
   count:
     serious: "{n} serious"
     moderate: "{n} moderate"
@@ -294,7 +423,6 @@ crossVerification:
   join: "{head} and {last}"
   evidence:
     excluded: Excluded from the count
-    page: "p{page}"
     pageLabel: Page
     openPage: "Open page {page}"
     close: Close
@@ -329,6 +457,20 @@ crossVerification:
     notApplicable: Not applicable
   facts:
     title: Facts behind these checks
+  # Every pair of figures an area's checks compared, discrepancy or not, at the head of the
+  # area's section; coloured by the outcome the check reached.
+  figures:
+    title: Figures compared
+    note: Every comparison the checks made, within tolerance or not
+    matches: Within tolerance
+    differs: Outside tolerance
+    agrees: Agrees
+    exactDiffers: Differs
+    incomplete: Not compared
+    notApplicable: Not applicable
+    select: Select a comparison to see its sources and evidence beside it.
+    tolerance: "tolerance {tolerance}"
+    openEvidence: "Open {label} at page {page}"
 
 facts:
   purpose: What the checks compared, each with the pages it came from.
@@ -366,7 +508,16 @@ facts:
 # and one for the approving authority, then a section per family with its norms, then the
 # authority with the matrix's steps.
 policy:
-  kicker: "Appraisal {id} · Policy checks"
+  kicker: "Appraisal {id} · Financials and policy"
+  # A ratio's band against its configured acceptable and marginal values (the engine's).
+  band:
+    within: Within policy
+    marginal: Marginal
+    outside: Outside policy
+  marginalAt: "marginal {value}"
+  # A norm's tile: the norm it is held to, under its chip.
+  tile:
+    required: "Policy: {required}"
   provisionalNorms: provisional norms
   required: Required
   actual: Actual
@@ -399,6 +550,9 @@ policy:
     fromChecklist: from the checklist
     notOnFile: not on file
     missingTitle: What is needed to evaluate this
+    viewEvidence: "See {label} on the page it was read from"
+    readFrom: Read from
+    noPage: Not read from a document
   unbounded: Unbounded
   awaitingReview: Awaiting review
   definition: Definition
@@ -595,8 +749,8 @@ page:
         title: Cross-checks
         body: The same fact is compared across documents, for example a name or a turnover figure. Differences are listed with both values for you to accept or reject.
       policy:
-        title: Policy
-        body: The application is measured against each credit policy norm, with the required and the actual value side by side.
+        title: Financials and policy
+        body: The financial statements year by year and turnover from every source, then the application measured against each credit policy norm, with the required and the actual value side by side.
       outputs:
         title: Outputs
         body: The interim spread, the draft credit memo and the personal discussion questions, each figure linked to its source.
@@ -660,16 +814,13 @@ page:
   data:
     title: Extracted data
     purpose: Key fields by source, each with its confidence and a link to the page it came from.
-  spread:
-    title: Financial spread
-    purpose: The financial statements laid out by year, with ratios and the working-capital assessment, every figure traceable to its page.
   crossVerification:
     title: Cross-verification and discrepancy
   policy:
-    title: Policy norms and approving authority
+    title: Financials and policy
   draft:
-    title: CAM draft and PD note
-    purpose: The draft Credit Approval Memo, and the questions for the personal discussion, every statement traceable to its page.
+    title: CAM draft and review
+    purpose: The draft Credit Approval Memo in eight sections, drafted from the evidence on file, and the questions for the personal discussion. Every statement carries the pages it rests on; the engine's words are marked, and anything you change is recorded as yours.
   comparison:
     title: Comparison with RBL's record
     purpose: This case's output beside the assessment RBL credit made at the time, for adjudication.

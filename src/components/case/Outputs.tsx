@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Fragment, createContext, useContext, useState } from "react";
-import { ChevronRight, Download, FileText, Files, Loader2, Lock } from "lucide-react";
+import { ChevronRight, Download, Eye, Files, Loader2, Lock } from "lucide-react";
 import type {
   Cam,
   CamBlock,
@@ -93,7 +93,7 @@ import { cn } from "@/lib/utils";
 //                        citation-more the rest of the pages where documents are not numbered
 
 /** The numbered sources of the memo or the note on screen, by document id. */
-const SourcesContext = createContext<ReadonlyMap<string, OutputSource> | null>(null);
+export const SourcesContext = createContext<ReadonlyMap<string, OutputSource> | null>(null);
 
 /** Where documents are not numbered (the spread), the pages shown before "+n more". */
 const MAX_PAGES = 4;
@@ -223,7 +223,7 @@ function SourceChip({ caseId, cited }: { caseId: string; cited: SourcePages }) {
       data-source={n}
       data-pages={cited.pages.join(",")}
     >
-      <FileText className="h-2.5 w-2.5" />
+      <Eye className="h-2.5 w-2.5" />
       {t("outputs.citation.source", { n, at: pagesAt(cited.pages) })}
     </button>
   );
@@ -238,11 +238,13 @@ function PageChip({ caseId, evidence: e }: { caseId: string; evidence: Evidence 
       onClick={() =>
         viewer.open({ caseId, documentId: e.document_id, page: e.page, bbox: e.bbox ?? null })
       }
+      title={t("crossVerification.evidence.openPage", { page: e.page })}
+      aria-label={t("crossVerification.evidence.openPage", { page: e.page })}
       className={chip}
       data-testid="citation"
+      data-page={e.page}
     >
-      <FileText className="h-2.5 w-2.5" />
-      {t("outputs.citation.page", { page: e.page })}
+      <Eye className="h-3 w-3" aria-hidden />
     </button>
   );
 }
@@ -266,172 +268,6 @@ function PageCitations({ caseId, evidence }: { caseId: string; evidence: Evidenc
         </button>
       )}
     </>
-  );
-}
-
-// --- Spread ---
-
-function spreadValue(value: number | null | undefined, unit: SpreadRow["unit"]): string {
-  if (value === null || value === undefined) return "—";
-  if (unit === "inr") return formatInr(value);
-  if (unit === "x") return `${value.toFixed(2)}x`;
-  if (unit === "%") return `${value.toFixed(1)}%`;
-  return `${Math.round(value)} days`;
-}
-
-function SpreadValue({
-  caseId,
-  cell,
-  unit,
-}: {
-  caseId: string;
-  cell: SpreadCell;
-  unit: SpreadRow["unit"];
-}) {
-  const viewer = useDocViewer();
-  const e = cell.evidence?.[0];
-  const text = spreadValue(cell.value, unit);
-  if (!e || cell.value === null || cell.value === undefined) return <span>{text}</span>;
-  return (
-    <button
-      type="button"
-      onClick={() =>
-        viewer.open({ caseId, documentId: e.document_id, page: e.page, bbox: e.bbox ?? null })
-      }
-      className="tabular underline decoration-border decoration-dotted underline-offset-2 hover:text-primary"
-      data-testid="spread-value"
-    >
-      {text}
-    </button>
-  );
-}
-
-const SECTIONS = ["profit_and_loss", "balance_sheet", "ratios"] as const;
-
-function SpreadTable({ caseId, spread }: { caseId: string; spread: Spread }) {
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[640px] text-[12.5px]" data-testid="spread-table">
-        <thead>
-          <tr className="border-b border-border text-left text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">
-            <th className="px-4 py-2 font-medium">{t("outputs.spread.line")}</th>
-            {spread.columns.map((c) => (
-              <th key={c.key} className="px-3 py-2 text-right font-medium">
-                {c.fy}
-                <span className="block normal-case tracking-normal">
-                  {t(`outputs.spread.basis.${c.basis}`)}
-                </span>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        {SECTIONS.map((section) => {
-          const rows = spread.rows.filter((r) => r.section === section);
-          if (rows.length === 0) return null;
-          return (
-            <tbody key={section} className="divide-y divide-border border-b border-border">
-              <tr>
-                <td
-                  colSpan={spread.columns.length + 1}
-                  className="bg-surface-muted/70 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
-                >
-                  {t(`outputs.spread.section.${section}`)}
-                </td>
-              </tr>
-              {rows.map((row) => (
-                <tr key={row.key} data-testid="spread-row" data-row={row.key}>
-                  <td className="px-4 py-1.5">
-                    <span className={cn(row.kind !== "line" && "italic")}>{row.label}</span>
-                    {row.formula && (
-                      <span className="block text-[10.5px] text-muted-foreground">
-                        {row.formula}
-                      </span>
-                    )}
-                  </td>
-                  {row.cells.map((cell, i) => (
-                    <td key={i} className="tabular px-3 py-1.5 text-right">
-                      <SpreadValue caseId={caseId} cell={cell} unit={row.unit} />
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          );
-        })}
-      </table>
-    </div>
-  );
-}
-
-export function SpreadView({ caseId }: { caseId: string }) {
-  const spread = useSpread(caseId);
-  return (
-    <QueryView
-      query={spread}
-      isEmpty={(s) => s.columns.length === 0}
-      empty={{
-        title: t("outputs.spread.emptyTitle"),
-        description: t("outputs.spread.emptyDescription"),
-      }}
-    >
-      {(s) => {
-        const wc = s.working_capital;
-        return (
-          <div className="space-y-4">
-            {s.interim && (
-              <p
-                className="rounded border border-info/40 bg-info-soft px-3 py-2 text-[12px] text-info"
-                data-testid="spread-interim"
-              >
-                {t("outputs.spread.interim")}
-              </p>
-            )}
-            <Panel title={t("outputs.spread.title")} testId="spread">
-              <SpreadTable caseId={caseId} spread={s} />
-            </Panel>
-            <Panel
-              title={t("outputs.spread.wcTitle")}
-              subtitle={wc.reason}
-              testId="working-capital"
-            >
-              {wc.method === "not_applicable" ? null : wc.missing && wc.missing.length > 0 ? (
-                <p className="px-4 py-3 text-[12.5px] text-flag-foreground">
-                  {t("outputs.spread.wcMissing", { inputs: wc.missing.join(", ") })}
-                </p>
-              ) : (
-                <div className="px-4 py-3 text-[12.5px]">
-                  <table className="w-full">
-                    <tbody className="divide-y divide-border">
-                      {(wc.steps ?? []).map((step) => (
-                        <tr key={step.label}>
-                          <td className="py-1.5">{step.label}</td>
-                          <td className="tabular py-1.5 text-right font-medium">
-                            {step.value === null || step.value === undefined
-                              ? "—"
-                              : formatInr(step.value)}
-                            <Citations caseId={caseId} evidence={step.evidence ?? []} />
-                          </td>
-                          <td className="py-1.5 pl-4 text-muted-foreground">{step.basis}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <p className="mt-2 font-medium" data-testid="wc-verdict">
-                    {t("outputs.spread.wcVerdict", {
-                      eligible:
-                        wc.eligible === null || wc.eligible === undefined
-                          ? "—"
-                          : formatInr(wc.eligible),
-                      requested: formatInr(wc.requested),
-                    })}
-                  </p>
-                </div>
-              )}
-            </Panel>
-          </div>
-        );
-      }}
-    </QueryView>
   );
 }
 
@@ -523,7 +359,7 @@ function Statement({ caseId, text }: { caseId: string; text: CamText }) {
 const DOWNLOAD_ID: Record<OutputKind, string> = { cam: "cam", pd_note: "pd" };
 
 /** Download Word and Download PDF: the file is fetched with the session's token and saved. */
-function Downloads({ caseId, output }: { caseId: string; output: OutputKind }) {
+export function Downloads({ caseId, output }: { caseId: string; output: OutputKind }) {
   const download = useOutputDownload(caseId, output);
   const id = DOWNLOAD_ID[output];
   return (
@@ -586,7 +422,7 @@ function BlocksSubmission() {
 
 /** The documents cited, numbered as the citations and the downloads number them; each opens its
  * first cited page. */
-function Sources({ caseId, sources }: { caseId: string; sources: OutputSource[] }) {
+export function Sources({ caseId, sources }: { caseId: string; sources: OutputSource[] }) {
   const viewer = useDocViewer();
   if (sources.length === 0) return null;
   return (
@@ -768,7 +604,7 @@ function MemoTable({ caseId, table }: { caseId: string; table: CamTable }) {
   );
 }
 
-function Block({ caseId, block }: { caseId: string; block: CamBlock }) {
+export function Block({ caseId, block }: { caseId: string; block: CamBlock }) {
   if (block.kind === "paragraph" && block.paragraph) {
     return (
       <p className="text-[13px] leading-relaxed" data-testid="cam-paragraph">
@@ -797,6 +633,55 @@ function Block({ caseId, block }: { caseId: string; block: CamBlock }) {
   return null;
 }
 
+/** A section's blocks as its parts read them: each part's run of blocks, from its subheading to
+ * the next, the person's words and overrides included (they are laid over the section's blocks). */
+function partsOf(section: CamSection): { id: string; title: string | null; blocks: CamBlock[] }[] {
+  const parts = section.parts ?? [];
+  const blocks = section.blocks ?? [];
+  if (parts.length <= 1) return [{ id: parts[0]?.id ?? section.id, title: null, blocks }];
+  const out: { id: string; title: string | null; blocks: CamBlock[] }[] = [];
+  let next = 0;
+  for (const block of blocks) {
+    if (block.kind === "subheading" && next < parts.length && block.text === parts[next]!.title) {
+      out.push({ id: parts[next]!.id, title: block.text ?? null, blocks: [] });
+      next += 1;
+    } else if (out.length > 0) out[out.length - 1]!.blocks.push(block);
+    else out.push({ id: section.id, title: null, blocks: [block] });
+  }
+  return out;
+}
+
+/** A part of a section, under its subheading where the section has several; it keeps its id, the
+ * anchor the note's observations open. */
+function MemoPart({
+  caseId,
+  part,
+}: {
+  caseId: string;
+  part: { id: string; title: string | null; blocks: CamBlock[] };
+}) {
+  const anchor = camSectionAnchor(part.id);
+  const ref = useAnchor<HTMLElement>(anchor);
+  return (
+    <section
+      ref={ref}
+      id={anchor}
+      className="min-w-0 scroll-mt-4 space-y-2.5"
+      data-testid="cam-section"
+      data-section={part.id}
+    >
+      {part.title && (
+        <h4 className="pt-1 text-[13px] font-semibold" data-testid="cam-subheading">
+          {part.title}
+        </h4>
+      )}
+      {part.blocks.map((block, i) => (
+        <Block key={i} caseId={caseId} block={block} />
+      ))}
+    </section>
+  );
+}
+
 function MemoSection({ caseId, section }: { caseId: string; section: CamSection }) {
   const blocks = section.blocks ?? [];
   const anchor = camSectionAnchor(section.id);
@@ -806,7 +691,7 @@ function MemoSection({ caseId, section }: { caseId: string; section: CamSection 
       ref={ref}
       id={anchor}
       className="min-w-0 scroll-mt-4"
-      data-testid="cam-section"
+      data-testid="cam-memo-section"
       data-section={section.id}
     >
       <h3 className={heading} data-testid="cam-section-title">
@@ -818,8 +703,8 @@ function MemoSection({ caseId, section }: { caseId: string; section: CamSection 
         </p>
       )}
       <div className="mt-1.5 space-y-2.5">
-        {blocks.map((block, i) => (
-          <Block key={i} caseId={caseId} block={block} />
+        {partsOf(section).map((part) => (
+          <MemoPart key={part.id} caseId={caseId} part={part} />
         ))}
       </div>
     </section>
@@ -959,12 +844,23 @@ function queryGroups(items: CamSummaryItem[]): { title: string | null; items: Ca
   return out;
 }
 
-function Summary({ caseId, m }: { caseId: string; m: Cam }) {
+export function Summary({
+  caseId,
+  m,
+  headed = true,
+}: {
+  caseId: string;
+  m: Cam;
+  /** Off where the section's card carries the title. */
+  headed?: boolean;
+}) {
   return (
     <section className="min-w-0" data-testid="cam-summary">
-      <h3 className={heading}>
-        {m.summary_number}. {m.summary_title}
-      </h3>
+      {headed && (
+        <h3 className={heading}>
+          {m.summary_number}. {m.summary_title}
+        </h3>
+      )}
       {SUMMARY_KINDS.map((kind) => {
         const items = m.summary.filter((i) => i.kind === kind);
         if (items.length === 0) {
@@ -1066,16 +962,25 @@ function SignOff({
 }
 
 /** Present and empty (F-23.4): the headings credit completes, each with room to write. */
-function Recommendation({ m }: { m: Cam }) {
+export function Recommendation({ m, headed = true }: { m: Cam; headed?: boolean }) {
   const prompts = m.recommendation_prompts ?? [];
   const boxes = prompts.length > 0 ? prompts : [null];
   const signOff = m.sign_off ?? [];
   return (
     <section className="min-w-0 space-y-3" data-testid="cam-recommendation">
-      <h3 className={heading}>
-        {m.recommendation_number}. {m.recommendation_title}
-      </h3>
-      {m.recommendation && <p className="text-[13px] leading-relaxed">{m.recommendation}</p>}
+      {headed && (
+        <h3 className={heading}>
+          {m.recommendation_number}. {m.recommendation_title}
+        </h3>
+      )}
+      {(m.recommendation ?? "")
+        .split("\n\n")
+        .filter((p) => p.trim())
+        .map((p, i) => (
+          <p key={i} className="text-[13px] leading-relaxed" data-testid="cam-recommendation-text">
+            {p}
+          </p>
+        ))}
       {boxes.map((prompt, i) => (
         <div key={i} data-testid="cam-recommendation-prompt">
           {prompt && <p className="text-[12.5px] font-medium">{prompt}</p>}
@@ -1089,6 +994,26 @@ function Recommendation({ m }: { m: Cam }) {
       ))}
       {signOff.length > 0 && <SignOff roles={signOff} testId="cam-sign-off" />}
     </section>
+  );
+}
+
+/** The whole memo, top to bottom, as the downloads lay it out. */
+export function CamMemo({ caseId, m }: { caseId: string; m: Cam }) {
+  return (
+    <SourcesContext.Provider value={sourcesById(m.sources ?? [])}>
+      <article
+        className="mx-auto max-w-4xl space-y-6 rounded border border-border bg-surface px-4 py-5 sm:px-6"
+        data-testid="cam"
+      >
+        <CamHeader caseId={caseId} m={m} />
+        {m.sections.map((s) => (
+          <MemoSection key={s.id} caseId={caseId} section={s} />
+        ))}
+        <Summary caseId={caseId} m={m} />
+        <Recommendation m={m} />
+        <Sources caseId={caseId} sources={m.sources ?? []} />
+      </article>
+    </SourcesContext.Provider>
   );
 }
 

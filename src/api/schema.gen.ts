@@ -287,6 +287,90 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/cases/{case_id}/cam/sections/{section_id}/overrides": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Cam Override
+     * @description A figure overridden, with the value drafted and the reason, kept with who and when.
+     */
+    post: operations["cam_override_api_cases__case_id__cam_sections__section_id__overrides_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/cases/{case_id}/cam/sections/{section_id}/regenerate": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Cam Regenerate
+     * @description The copilot's redraft of a section, for a person to keep or discard; nothing is kept yet.
+     */
+    post: operations["cam_regenerate_api_cases__case_id__cam_sections__section_id__regenerate_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/cases/{case_id}/cam/sections/{section_id}/requests": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Cam Request
+     * @description More data asked for from a section; it goes on the query list.
+     */
+    post: operations["cam_request_api_cases__case_id__cam_sections__section_id__requests_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/cases/{case_id}/cam/sections/{section_id}/words": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Cam Words
+     * @description A section in a person's words, or a copilot redraft a person keeps.
+     */
+    put: operations["cam_words_api_cases__case_id__cam_sections__section_id__words_put"];
+    post?: never;
+    /**
+     * Cam Restore
+     * @description Back to the engine's draft of the section.
+     */
+    delete: operations["cam_restore_api_cases__case_id__cam_sections__section_id__words_delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/cases/{case_id}/checklist": {
     parameters: {
       query?: never;
@@ -1248,12 +1332,19 @@ export interface components {
       config_label: string;
       /** Config Version */
       config_version: string;
+      /**
+       * Copilot
+       * @default false
+       */
+      copilot: boolean;
       /** Interim Template */
       interim_template: boolean;
       /** Labels */
       labels?: {
         [key: string]: string;
       };
+      /** Rating Note */
+      rating_note?: string | null;
       /**
        * Recommendation
        * @default
@@ -1263,6 +1354,9 @@ export interface components {
       recommendation_number: number;
       /** Recommendation Prompts */
       recommendation_prompts?: string[];
+      /** Recommendation Purpose */
+      recommendation_purpose?: string | null;
+      recommendation_review?: components["schemas"]["CamReview"];
       /** Recommendation Title */
       recommendation_title: string;
       /** Run Id */
@@ -1277,6 +1371,9 @@ export interface components {
       summary: components["schemas"]["CamSummaryItem"][];
       /** Summary Number */
       summary_number: number;
+      /** Summary Purpose */
+      summary_purpose?: string | null;
+      summary_review?: components["schemas"]["CamReview"];
       /** Summary Title */
       summary_title: string;
       /** Template Note */
@@ -1301,6 +1398,11 @@ export interface components {
       /** Text */
       text?: string | null;
     };
+    /** CamDataRequest */
+    CamDataRequest: {
+      /** Text */
+      text: string;
+    };
     /**
      * CamFact
      * @description One labelled value in a block of key facts.
@@ -1310,16 +1412,133 @@ export interface components {
       label: string;
       value: components["schemas"]["CamText"];
     };
+    /**
+     * CamOverride
+     * @description A figure a person overrode in a section, with the value drafted and the reason (F-23).
+     */
+    CamOverride: {
+      /** At */
+      at: string;
+      /** By */
+      by: string;
+      /** By Name */
+      by_name?: string | null;
+      /** Figure */
+      figure: string;
+      /** Id */
+      id: string;
+      /** Original */
+      original: string;
+      /** Reason */
+      reason: string;
+      /** Value */
+      value: string;
+    };
+    /** CamOverrideRequest */
+    CamOverrideRequest: {
+      /** Figure */
+      figure: string;
+      /** Original */
+      original: string;
+      /** Reason */
+      reason: string;
+      /** Value */
+      value: string;
+    };
+    /**
+     * CamPart
+     * @description A part of a section, under its subheading: the kind of content it is drafted from.
+     */
+    CamPart: {
+      /** Blocks */
+      blocks?: components["schemas"]["CamBlock"][];
+      /** Id */
+      id: string;
+      /** Kind */
+      kind: string;
+      /** Title */
+      title: string;
+    };
+    /** CamRegenerateRequest */
+    CamRegenerateRequest: {
+      /**
+       * Instruction
+       * @default
+       */
+      instruction: string;
+    };
+    /**
+     * CamRegenerateResult
+     * @description A copilot redraft, not yet kept: a person reads it, then keeps or discards it.
+     */
+    CamRegenerateResult: {
+      /** Model */
+      model: string;
+      /** Paragraphs */
+      paragraphs: string[];
+      /** Recorded */
+      recorded: boolean;
+    };
+    /**
+     * CamRequest
+     * @description More data a person asked for from a section; it sits on the query list.
+     */
+    CamRequest: {
+      /** At */
+      at: string;
+      /** By */
+      by: string;
+      /** By Name */
+      by_name?: string | null;
+      /** Id */
+      id: string;
+      /** Text */
+      text: string;
+    };
+    /**
+     * CamReview
+     * @description Where a section's words stand: as the engine drafted them, in a person's words, or redrafted
+     *     by the copilot and kept by a person; with the figures overridden and the data asked for.
+     */
+    CamReview: {
+      /** At */
+      at?: string | null;
+      /** By */
+      by?: string | null;
+      /** By Name */
+      by_name?: string | null;
+      /** Model */
+      model?: string | null;
+      /** Overrides */
+      overrides?: components["schemas"]["CamOverride"][];
+      /** Paragraphs */
+      paragraphs?: string[];
+      /** Requests */
+      requests?: components["schemas"]["CamRequest"][];
+      /**
+       * State
+       * @default machine
+       * @enum {string}
+       */
+      state: "machine" | "edited" | "regenerated";
+    };
     /** CamSection */
     CamSection: {
       /** Blocks */
       blocks?: components["schemas"]["CamBlock"][];
+      /** Drafted At */
+      drafted_at?: string | null;
       /** Empty */
       empty?: string | null;
       /** Id */
       id: string;
       /** Number */
       number: number;
+      /** Parts */
+      parts?: components["schemas"]["CamPart"][];
+      /** Purpose */
+      purpose?: string | null;
+      review?: components["schemas"]["CamReview"];
       /** Title */
       title: string;
     };
@@ -1384,6 +1603,22 @@ export interface components {
       citations?: components["schemas"]["Evidence"][];
       /** Text */
       text: string;
+    };
+    /**
+     * CamWordsRequest
+     * @description A section's paragraphs in a person's words, or a copilot redraft a person keeps.
+     */
+    CamWordsRequest: {
+      /** Model */
+      model?: string | null;
+      /** Paragraphs */
+      paragraphs: string[];
+      /**
+       * Source
+       * @default person
+       * @enum {string}
+       */
+      source: "person" | "copilot";
     };
     /** Candidate */
     Candidate: {
@@ -2699,6 +2934,8 @@ export interface components {
       actual?: number | null;
       /** Actual Text */
       actual_text?: string | null;
+      /** Band */
+      band?: ("within" | "marginal" | "outside") | null;
       /** Category */
       category: string;
       /** Category Label */
@@ -2724,6 +2961,8 @@ export interface components {
       inputs?: components["schemas"]["NormInput"][];
       /** Label */
       label: string;
+      /** Marginal Text */
+      marginal_text?: string | null;
       /** Missing */
       missing?: string[];
       /** Note */
@@ -3295,7 +3534,7 @@ export interface components {
        * Source Kind
        * @enum {string}
        */
-      source_kind: "checklist" | "quality" | "label" | "party" | "finding";
+      source_kind: "checklist" | "quality" | "label" | "party" | "finding" | "cam";
       /** Source Ref */
       source_ref: string;
       /** Text */
@@ -4593,6 +4832,192 @@ export interface operations {
         content: {
           "application/pdf": string;
           "application/vnd.openxmlformats-officedocument.wordprocessingml.document": string;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  cam_override_api_cases__case_id__cam_sections__section_id__overrides_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+        section_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CamOverrideRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Cam"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  cam_regenerate_api_cases__case_id__cam_sections__section_id__regenerate_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+        section_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CamRegenerateRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CamRegenerateResult"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  cam_request_api_cases__case_id__cam_sections__section_id__requests_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+        section_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CamDataRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Cam"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  cam_words_api_cases__case_id__cam_sections__section_id__words_put: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+        section_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CamWordsRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Cam"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  cam_restore_api_cases__case_id__cam_sections__section_id__words_delete: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+        section_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Cam"];
         };
       };
       /** @description Validation Error */

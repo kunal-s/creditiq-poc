@@ -27,6 +27,18 @@ export function usePolicy(caseId: string) {
   });
 }
 
+/** A norm's name for its id, as the screens write it in place of the id (screens show no norm
+ * numbers); the id itself where the norm is not in the assessment. */
+export function normName(policy: PolicyAssessment | undefined, id: string): string {
+  return policy?.norms.find((n) => n.id === id)?.label ?? id;
+}
+
+/** `normName` for a case's assessment. */
+export function useNormName(caseId: string): (id: string) => string {
+  const policy = usePolicy(caseId);
+  return (id: string) => normName(policy.data, id);
+}
+
 /** The authority the case needs under the published matrix (F-21). A 503 means the matrix is
  * not published; the norms still show beside it. */
 export function useApprovingAuthority(caseId: string) {
@@ -44,6 +56,9 @@ export function matrixNotPublished(error: unknown): boolean {
 export const groupSectionId = (family: NormFamily) => `policy-group-${family}`;
 export const groupHeadingId = (family: NormFamily) => `policy-group-${family}-title`;
 export const AUTHORITY_SECTION_ID = "policy-authority";
+/** The Financials section of the tab: the spread, turnover by year, the working-capital assessment. */
+export const FINANCIALS_SECTION_ID = "financials";
+export const FINANCIALS_HEADING_ID = "financials-title";
 export const AUTHORITY_HEADING_ID = "policy-authority-title";
 /** A norm's row in its family's section: a key figure, or a norm id in an authority step,
  * scrolls to it and focuses it. */

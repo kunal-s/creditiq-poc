@@ -1,4 +1,4 @@
-import { FileText } from "lucide-react";
+import { Eye } from "lucide-react";
 import { useDocViewer } from "@/components/docviewer/DocViewer";
 import { t } from "@/config/terminology";
 
@@ -22,7 +22,7 @@ export function SourceChip({
         className="inline-flex items-center gap-1 rounded border border-border bg-surface-muted px-1.5 py-0.5 text-[10.5px] font-medium text-primary hover:bg-muted"
         data-testid="source-document"
       >
-        <FileText className="h-3 w-3" /> {t("source.document", { page })}
+        <Eye className="h-3 w-3" /> {t("source.document", { page })}
       </button>
     );
   }

@@ -1,4 +1,4 @@
-import { Check, Copy, FileText, Mail } from "lucide-react";
+import { Check, Copy, Eye, Mail } from "lucide-react";
 import { toast } from "sonner";
 import type { QueryItem } from "@/api/types";
 import { Chip, Panel } from "@/components/common/Panel";
@@ -139,7 +139,7 @@ function QueryRow({ caseId, n, item }: { caseId: string; n: number; item: QueryI
           }
           className="inline-flex items-center gap-1 text-[11.5px] font-medium text-primary hover:underline"
         >
-          <FileText className="h-3 w-3" /> {t("queries.evidence")}
+          <Eye className="h-3 w-3" /> {t("queries.evidence")}
         </button>
       )}
     </li>

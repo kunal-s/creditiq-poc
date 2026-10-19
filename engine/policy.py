@@ -382,6 +382,7 @@ def evaluate(norm: PolicyNorm, ratio: PolicyRatio | None, case: CaseDetail, inpu
         unit=unit, outcome="not_applicable", category=norm.category,
         category_label=categories.get(norm.category, norm.category), note=norm.note or (ratio.note if ratio else None),
         provisional=status == "provisional",
+        marginal_text=unit_text(ratio.marginal, unit) if ratio else None,
     )
     if not _applies(norm, case, inputs, wc_limit):
         return result
@@ -417,6 +418,7 @@ def evaluate(norm: PolicyNorm, ratio: PolicyRatio | None, case: CaseDetail, inpu
         if norm.non_positive_denominator == "deviation":
             result.outcome, result.reason = "deviation", "denominator_not_positive"
             result.actual_text = f"unbounded ({', '.join(labels)} zero or negative)"
+            result.band = "outside" if ratio else None
         else:
             result.outcome = "cannot_evaluate"
             result.reason = "zero_denominator" if all(value == 0 for _, value in bad) else "denominator_not_positive"
@@ -427,7 +429,19 @@ def evaluate(norm: PolicyNorm, ratio: PolicyRatio | None, case: CaseDetail, inpu
     ok = value >= threshold if kind == "min" else value <= threshold
     result.outcome = "pass" if ok else "deviation"
     result.actual_text = actual_text(actual, unit, threshold, result.outcome)
+    if ratio:
+        result.band = band(value, kind, ok, ratio.marginal)
     return result
+
+
+def band(value: float, kind: str, ok: bool, marginal: float) -> str:
+    """Where a ratio's result falls against its configured bands: within the acceptable threshold,
+    past it but no further than the marginal value (inclusive, like the threshold), or past that.
+    The outcome is unchanged: a marginal result is still a deviation."""
+    if ok:
+        return "within"
+    near = value >= round(marginal, 9) if kind == "min" else value <= round(marginal, 9)
+    return "marginal" if near else "outside"
 
 
 FAMILIES = ("eligibility", "ratios", "documentation", "security_cover")

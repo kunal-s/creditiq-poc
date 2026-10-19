@@ -14,6 +14,15 @@ const groupCard = (page: Page, family: string) => page.getByTestId(`policy-group
 const authorityCard = (page: Page) => page.getByTestId("policy-authority-card");
 const section = (page: Page, family: string) => page.getByTestId(`policy-group-${family}`);
 const norm = (page: Page, id: string) => page.locator(`[data-testid="norm"][data-norm="${id}"]`);
+/** Open a norm's tile and return its detail under the family's tiles. */
+async function detailOf(page: Page, id: string): Promise<Locator> {
+  const tile = norm(page, id);
+  if ((await tile.getAttribute("data-selected")) !== "true")
+    await tile.getByTestId("norm-select").click();
+  const detail = page.locator(`[data-testid="norm-detail"][data-norm="${id}"]`);
+  await expect(detail).toBeVisible();
+  return detail;
+}
 const keyNorms = (card: Locator) => card.getByTestId("policy-highlight");
 const keyNorm = (card: Locator, id: string) =>
   card.locator(`[data-testid="policy-highlight"][data-norm="${id}"]`);
@@ -37,9 +46,9 @@ async function cardBoxes(page: Page) {
 test("TC-24: the header says where the case stands against the norms", async ({ page }) => {
   await openPolicy(page);
   const header = page.getByTestId("policy-header");
-  await expect(header).toContainText(`Appraisal ${KESTREL} · Policy checks`);
-  await expect(header.getByRole("heading", { level: 2 })).toHaveText(
-    "Policy norms and approving authority",
+  await expect(header).toContainText(`Appraisal ${KESTREL} · Financials and policy`);
+  await expect(header.getByRole("heading", { level: 2 }).first()).toHaveText(
+    "Financials and policy",
   );
   // The engine's counts, the year the figures come from, and that the norms are provisional.
   await expect(page.getByTestId("policy-summary-line")).toHaveText(
@@ -280,6 +289,9 @@ test("TC-24: a link to a norm opens the page at its row once the norms and the a
   await expect(blocking).toBeFocused();
   await expect(blocking).toBeInViewport();
   await expect(blocking).toHaveAttribute("data-target", "true");
+  // The tile opens on arrival: its figures and working are under the family's tiles.
+  await expect(blocking).toHaveAttribute("data-selected", "true");
+  await expect(page.locator('[data-testid="norm-detail"][data-norm="DOC-01"]')).toBeVisible();
 });
 
 test("TC-24: each family's norms with the required and actual value and their sources", async ({
@@ -319,23 +331,39 @@ test("TC-24: each family's norms with the required and actual value and their so
   const de = norm(page, "FR-05");
   await expect(de).toHaveAttribute("data-outcome", "deviation");
   await expect(de.locator(".sr-only")).toHaveText("Deviation");
-  await expect(de).toContainText("FR-05");
-  await expect(de).toContainText("Financial norms");
+  // Named, not numbered.
+  await expect(de).toContainText("Debt / equity");
+  await expect(de).not.toContainText("FR-05");
   await expect(de).toContainText("at most 2.00x");
   await expect(de.getByTestId("norm-actual")).toHaveText("3.00x");
-  // The source: each figure opens the page it was read from.
-  await de.getByTestId("norm-input").first().getByRole("button").click();
+  await expect(de.getByTestId("norm-status")).toHaveText("Outside policy");
+  // Its tile opens the detail: the category, each figure with the page it was read from, and
+  // how it was calculated (the expression, the same with the figures read, and the test).
+  await expect(page.getByTestId("norm-detail")).toHaveCount(0);
+  const deDetail = await detailOf(page, "FR-05");
+  await expect(norm(page, "FR-05")).toHaveAttribute("data-selected", "true");
+  await expect(deDetail).toContainText("Financial norms");
+  await deDetail.getByTestId("norm-input").first().getByRole("button").click();
   await expect(page.getByTestId("evidence-viewer").getByTestId("viewer-page")).toContainText("4");
   await page.keyboard.press("Escape");
-  await de.getByTestId("norm-details").locator("summary").click();
-  await expect(de.getByTestId("norm-details")).toContainText("How it is calculated");
-  await expect(de.getByTestId("norm-definition")).toContainText("Total debt ÷ Tangible net worth");
-  await expect(de.getByTestId("norm-note")).toContainText("Interim threshold");
+  await expect(deDetail.getByTestId("norm-substituted")).toContainText(
+    "Total borrowings / Net worth",
+  );
+  await expect(deDetail.getByTestId("norm-test")).toContainText("not satisfied");
+  await expect(deDetail.getByTestId("norm-definition")).toContainText(
+    "Total debt ÷ Tangible net worth",
+  );
+  await expect(deDetail.getByTestId("norm-note")).toContainText("Interim threshold");
+  // A second click closes it.
+  await norm(page, "FR-05").getByTestId("norm-select").click();
+  await expect(deDetail).toHaveCount(0);
 
   // A loss keeps its sign.
   const profit = norm(page, "EL-04");
   await expect(profit.getByTestId("norm-actual")).toHaveText("INR -40.00 lakh");
-  await expect(profit.getByTestId("norm-input")).toContainText("INR -40.00 lakh");
+  await expect((await detailOf(page, "EL-04")).getByTestId("norm-input")).toContainText(
+    "INR -40.00 lakh",
+  );
 
   // Why a norm could not be assessed, in words.
   await expect(norm(page, "EL-02").getByTestId("norm-missing")).toHaveText(
@@ -348,13 +376,14 @@ test("TC-24: each family's norms with the required and actual value and their so
   await expect(cycle.getByTestId("norm-reason")).toHaveText(
     "Cannot evaluate until Trade receivables is reviewed.",
   );
-  await expect(cycle.getByTestId("norm-input-awaiting")).toHaveText("Awaiting review");
+  await expect((await detailOf(page, "FR-06")).getByTestId("norm-input-awaiting")).toHaveText(
+    "Awaiting review",
+  );
 
   // The open blocking items come from the checklist, and link to it.
-  await expect(norm(page, "DOC-01").getByTestId("norm-input-checklist")).toHaveAttribute(
-    "href",
-    `/appraisals/${KESTREL}/completeness`,
-  );
+  await expect(
+    (await detailOf(page, "DOC-01")).getByTestId("norm-input-checklist"),
+  ).toHaveAttribute("href", `/appraisals/${KESTREL}/completeness`);
 });
 
 test("TC-24: a ratio over a negative net worth is a deviation with no meaningful value", async ({
@@ -370,7 +399,9 @@ test("TC-24: a ratio over a negative net worth is a deviation with no meaningful
   await expect(
     keyNorm(groupCard(page, "ratios"), "FR-02").getByTestId("policy-highlight-fact"),
   ).toHaveText("Unbounded · at most 3.00x");
-  await expect(norm(page, "EL-03").getByTestId("norm-input")).toContainText("INR -4.00 cr");
+  await expect((await detailOf(page, "EL-03")).getByTestId("norm-input")).toContainText(
+    "INR -4.00 cr",
+  );
   // At phone width the long values wrap: the page never scrolls sideways.
   await page.setViewportSize({ width: 375, height: 800 });
   await expect(tol).toBeVisible();
@@ -396,7 +427,9 @@ test("TC-25: the authority's card says who must approve, at least, and why", asy
   await expect(card.getByTestId("policy-authority-at-least")).toHaveText("At least");
   const rise = card.getByTestId("policy-authority-rise");
   await expect(rise).toHaveAttribute("data-rises", "false");
-  await expect(rise).toHaveText("Would not rise even if EL-02, FR-04 and FR-06 deviated");
+  await expect(rise).toHaveText(
+    "Would not rise even if Commercial bureau rank, Interest coverage and Working-capital cycle deviated",
+  );
   // The amount's authority and each deviation step, the one that decides in bold.
   await expect(card.getByTestId("policy-authority-amount")).toHaveText(
     "Amount: Credit Officer (level 1)",
@@ -426,7 +459,7 @@ test("TC-25: the authority required is shown with the rule applied", async ({ pa
   const governing = panel.locator('[data-testid="authority-step"][data-governs="true"]');
   await expect(governing).toHaveAttribute("data-rule", "deviations.eligibility");
   await expect(governing).toContainText(
-    "Eligibility deviation (EL-04): 1 level(s) above the amount authority, and at least Regional Credit Head, so Regional Credit Head",
+    "Eligibility deviation (Profit in the latest year): 1 level(s) above the amount authority, and at least Regional Credit Head, so Regional Credit Head",
   );
   await expect(governing).toContainText("Decides");
   await expect(steps.first()).toHaveText(
@@ -458,7 +491,7 @@ test("TC-25: the authority may rise once the unassessed norms are known", async 
   const rise = authorityCard(page).getByTestId("policy-authority-rise");
   await expect(rise).toHaveAttribute("data-rises", "true");
   await expect(rise).toHaveText(
-    "Would rise to Zonal Credit Committee (level 3) if EL-02, FR-04 and FR-06 deviated",
+    "Would rise to Zonal Credit Committee (level 3) if Commercial bureau rank, Interest coverage and Working-capital cycle deviated",
   );
   await expect(page.getByTestId("authority-lower-bound")).toHaveText(
     "3 norm(s) could not be evaluated (Commercial bureau rank, Interest coverage, Working-capital cycle). If they are deviations, the matrix would require Zonal Credit Committee.",

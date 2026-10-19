@@ -761,3 +761,33 @@ def test_an_unsupported_expression_cannot_be_evaluated_and_never_crashes():
     inputs.put("net_worth", 10_000_000)
     result = policy.evaluate(norm, None, case, inputs, {"eligibility": "Eligibility"})
     assert result.outcome == "cannot_evaluate" and result.missing == ["a supported expression"]
+
+
+# --- Bands against the configured marginal value ---
+
+
+@pytest.mark.parametrize("value,kind,ok,marginal,expected", [
+    (1.25, "min", True, 1.1, "within"),
+    (1.15, "min", False, 1.1, "marginal"),
+    (1.1, "min", False, 1.1, "marginal"),      # inclusive, like the threshold
+    (1.05, "min", False, 1.1, "outside"),
+    (89.7, "max", False, 95, "marginal"),
+    (95.0, "max", False, 95, "marginal"),
+    (96.0, "max", False, 95, "outside"),
+])
+def test_a_ratio_result_is_banded_by_its_marginal_value(value, kind, ok, marginal, expected):
+    assert policy.band(value, kind, ok, marginal) == expected
+
+
+def test_ratio_norms_carry_their_band_and_marginal_value(client: TestClient, analyst, published_data_root: Path):
+    case_id = make_case(client, analyst, published_data_root)
+    audited(published_data_root, case_id)
+    norms = _policy(client, analyst, case_id)
+    ratio_keys = {r.label: r for r in reader.load_policy(published_data_root).ratios}
+    for n in norms.values():
+        if n["label"] in ratio_keys and n["outcome"] in ("pass", "deviation"):
+            assert n["band"] in ("within", "marginal", "outside")
+            assert (n["band"] == "within") == (n["outcome"] == "pass")
+            assert n["marginal_text"]
+        if n["family"] != "ratios":
+            assert n["band"] is None

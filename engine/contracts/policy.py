@@ -43,6 +43,7 @@ class NormInput(BaseModel):
 
 
 NormOutcome = Literal["pass", "deviation", "cannot_evaluate", "not_applicable"]
+NormBand = Literal["within", "marginal", "outside"]
 
 
 class NormResult(BaseModel):
@@ -78,6 +79,11 @@ class NormResult(BaseModel):
     """The norm's provenance tag (provisional, rbl_supplied, ...)."""
     note: str | None = None
     provisional: bool = False
+    band: NormBand | None = None
+    """For a ratio norm with a result: within the acceptable threshold, past it but within the
+    configured marginal value, or past that too. None where the norm has no ratio or no result."""
+    marginal_text: str | None = None
+    """The ratio's configured marginal value, formatted as the screens write a value."""
 
 
 NormFamily = Literal["eligibility", "ratios", "security_cover", "documentation"]

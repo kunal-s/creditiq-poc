@@ -538,7 +538,8 @@ def _observed(note: dict) -> dict[str, dict]:
 
 def _memo(client: TestClient, headers: dict, case_id: str, section_id: str) -> list[str]:
     cam = client.get(f"/api/cases/{case_id}/cam", headers=headers).json()
-    section = next(s for s in cam["sections"] if s["id"] == section_id)
+    # A part of a section, by the part's id (sections are drafted from parts that keep their ids).
+    section = next(p for s in cam["sections"] for p in [s, *s.get("parts", [])] if p["id"] == section_id)
     return [b["paragraph"]["text"] for b in section["blocks"] if b["kind"] == "paragraph"]
 
 
@@ -572,7 +573,7 @@ def test_a_fall_in_revenue_and_net_worth_is_asked_in_the_memos_words(client: Tes
     assert _memo(client, analyst, case_id, "financials")[:2] == [revenue, worth]
     q = _observed(note)["financials:fall"]
     # Half the revenue gone is serious, and asked first in its topic.
-    _asked_as_observation(q, area="turnover", section=5, severity="serious")
+    _asked_as_observation(q, area="turnover", section=4, severity="serious")
     assert q["title"] == "Revenue and net worth fell" and q["context"] == f"{revenue} {worth}"
     assert q["question"] == ("Why did revenue and net worth fall, what turnover is expected for the current year, and why "
                              "did the share capital and reserves fall (a capital reduction, a buy-back or a write-off)?")
@@ -587,7 +588,7 @@ def test_a_smaller_fall_in_revenue_alone_is_moderate(client: TestClient, publish
     case_id = make_case(client, analyst, root, facilities=["cash_credit"], amount_inr=30_000_000)
     audited(root, case_id, set_rows={"I. Revenue from operations": 60_000_000})  # 40.2% down; net worth up
     q = _observed(_pd(client, analyst, root, case_id))["financials:fall"]
-    _asked_as_observation(q, area="turnover", section=5)
+    _asked_as_observation(q, area="turnover", section=4)
     assert q["title"] == "Revenue fell" and q["context"].startswith("Revenue from operations fell 40.2% to INR 6.00 cr")
     assert q["question"] == "Why did revenue fall, and what turnover is expected for the current year?"
     assert not any(p.startswith("Net worth fell") for p in _memo(client, analyst, case_id, "financials"))
@@ -617,7 +618,7 @@ def test_borrowings_no_facility_on_file_explains_are_asked(client: TestClient, p
     # One lender: said in the singular.
     assert ("Existing sanctioned facilities with Tidewater Finance Limited total INR 1.20 cr; the commercial bureau "
             "report shows INR 75.00 lakh outstanding." in memo)
-    _asked_as_observation(q, area="obligations", section=9)
+    _asked_as_observation(q, area="obligations", section=3)
     assert q["context"] == ("The FY 2025-26 balance sheet shows borrowings of INR 2.70 cr against INR 75.00 lakh "
                             "outstanding on the facilities on file; INR 1.95 cr is not explained.")
     assert q["question"].startswith("Who are the lenders for the INR 1.95 cr of borrowings")
@@ -658,7 +659,7 @@ def test_a_loan_no_facility_matches_and_a_facility_without_a_limit_are_asked(cli
     observed = _observed(_pd(client, analyst, root, case_id))
     memo = _memo(client, analyst, case_id, "obligations")
     loan = observed["obligations:disbursal-2025-06-20-5000000"]
-    _asked_as_observation(loan, area="obligations", section=9)
+    _asked_as_observation(loan, area="obligations", section=3)
     assert loan["context"] == ("A loan of INR 50.00 lakh was disbursed into Lotuscrest Bank ·1234 on 20 Jun 2025 "
                                "(TL DISBURSAL LN 778812); no facility on file matches it and no instalment for it "
                                "appears in the statements.") and loan["context"] in memo
@@ -666,7 +667,7 @@ def test_a_loan_no_facility_matches_and_a_facility_without_a_limit_are_asked(cli
                                 "in the statements?")
     assert [e["document_id"] for e in loan["evidence"]] == [statement]
     facility = observed["obligations:facility-lotuscrest-bank-cash-credit"]
-    _asked_as_observation(facility, area="obligations", section=9)
+    _asked_as_observation(facility, area="obligations", section=3)
     assert facility["context"] in memo and facility["context"].endswith("its limit is not on file.")
     assert facility["question"] == ("What are the limit and the outstanding of the cash credit with Lotuscrest Bank, and "
                                     "can the lender's sanction letter be provided?")
@@ -718,7 +719,7 @@ def test_year_end_balances_apart_from_the_audited_figure_are_asked_either_way(cl
     if question is None:
         assert q is None
         return
-    _asked_as_observation(q, area="accounts", section=8)
+    _asked_as_observation(q, area="accounts", section=3)
     assert q["context"] == stated and q["question"].startswith(question)
 
 
@@ -730,7 +731,7 @@ def test_collateral_offered_with_nothing_on_file_is_asked(client: TestClient, pu
     if not offered:
         assert q is None
         return
-    _asked_as_observation(q, area="policy", section=4)
+    _asked_as_observation(q, area="policy", section=2)
     assert q["context"] == "Collateral is offered, as recorded on the case at intake; its nature and value are not on file."
     assert q["question"].startswith("What collateral is offered (the asset, its owner and its value)")
     assert q["evidence"] == []
@@ -756,7 +757,7 @@ def test_a_return_not_yet_due_is_asked_only_when_nothing_else_asks_for_it(client
     finally:
         conn.close()
     q = _observed(_pd(client, analyst, root, case_id))["turnover:return-ay-2026-27"]
-    _asked_as_observation(q, area="turnover", section=7, severity="mild")
+    _asked_as_observation(q, area="turnover", section=5, severity="mild")
     assert q["context"] == "The return for AY 2026-27 is due by 31 Oct 2026 (not yet due)."
     assert q["question"] == "When will the income tax return for AY 2026-27 be filed?"
     filing = next(p for p in _memo(client, analyst, case_id, "turnover") if p.startswith(("GST returns", "No GST")))

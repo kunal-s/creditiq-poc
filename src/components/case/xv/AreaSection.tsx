@@ -1,12 +1,29 @@
 import type { XvArea, XvItem } from "@/api/types";
 import { AreaFactsSection } from "@/components/case/CrossVerification";
 import { t } from "@/config/terminology";
-import { areaHeadingId, areaSectionId, withOutcome } from "@/domain/crossVerification";
+import {
+  areaHeadingId,
+  areaSectionId,
+  comparedItems,
+  withOutcome,
+} from "@/domain/crossVerification";
 import { cn } from "@/lib/utils";
-import { DiscrepancyCard } from "./DiscrepancyCard";
+import { ComparedFigures } from "./ComparedFigures";
+import { CheckPanel, DiscrepancyCard } from "./DiscrepancyCard";
 import { IncompleteList } from "./IncompleteList";
 import { PassedList } from "./PassedList";
 import { AREA_STATUS } from "./styles";
+
+/** The areas whose section opens with every compared pair of figures (ComparedFigures), the
+ * selected one's card or check beside them. */
+export const FIGURE_AREAS: XvArea["area"][] = ["turnover"];
+
+/** The comparison a figure area shows beside its list when none has been picked: its first
+ * discrepancy, else its first comparison. */
+export function defaultPick(items: XvItem[]): string | null {
+  const compared = comparedItems(items);
+  return (compared.find((i) => i.finding.outcome === "fail") ?? compared[0])?.finding.id ?? null;
+}
 
 /** "8 rules · 2 discrepancies · 1 could not be checked · 4 passed", as the engine counted them;
  * the parts with nothing in them are left out. */
@@ -38,6 +55,8 @@ export function AreaSection({
   items,
   expanded,
   onToggle,
+  picked,
+  onPick,
 }: {
   caseId: string;
   area: XvArea;
@@ -45,10 +64,22 @@ export function AreaSection({
   items: XvItem[];
   expanded: ReadonlySet<string>;
   onToggle: (findingId: string) => void;
+  /** In a figure area, the comparison shown beside the list (the default pick when none). */
+  picked?: string | null | undefined;
+  onPick?: ((findingId: string) => void) | undefined;
 }) {
   const status = AREA_STATUS[area.status];
   const Icon = status.icon;
+  const figures = FIGURE_AREAS.includes(area.area);
+  const compared = figures ? comparedItems(items) : [];
+  const chosen =
+    compared.find((i) => i.finding.id === picked) ??
+    compared.find((i) => i.finding.id === defaultPick(items));
+  // In a figure area the compared discrepancies sit beside the list; any other is listed below.
+  const beside = new Set(compared.map((i) => i.finding.id));
   const discrepancies = withOutcome(items, "fail");
+  const listed = discrepancies.filter((i) => !beside.has(i.finding.id));
+  const panelId = `${areaSectionId(area.area)}-panel`;
   return (
     <section
       id={areaSectionId(area.area)}
@@ -82,6 +113,36 @@ export function AreaSection({
         </p>
       </header>
 
+      {/* Turnover is read as figures: every pair the checks compared, agreeing or not, in a
+          compact list on the left, and the one selected beside it: a discrepancy's card, with its
+          sources, gap, evidence and decision, or any other check's sources and gap. */}
+      {figures && chosen && (
+        <div className="grid min-w-0 gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
+          <ComparedFigures
+            items={items}
+            selected={chosen.finding.id}
+            panelId={panelId}
+            onSelect={(id) => {
+              onPick?.(id);
+              const item = compared.find((i) => i.finding.id === id);
+              if (item?.finding.outcome === "fail" && !expanded.has(id)) onToggle(id);
+            }}
+          />
+          <div id={panelId} className="min-w-0 lg:sticky lg:top-4" data-testid="xv-figure-panel">
+            {chosen.finding.outcome === "fail" ? (
+              <DiscrepancyCard
+                caseId={caseId}
+                item={chosen}
+                expanded={expanded.has(chosen.finding.id)}
+                onToggle={() => onToggle(chosen.finding.id)}
+              />
+            ) : (
+              <CheckPanel key={chosen.finding.id} caseId={caseId} item={chosen} />
+            )}
+          </div>
+        </div>
+      )}
+
       {discrepancies.length === 0 ? (
         <p
           className="rounded border border-border bg-surface px-4 py-2.5 text-[12.5px] text-muted-foreground"
@@ -90,17 +151,19 @@ export function AreaSection({
           {t("crossVerification.section.none")}
         </p>
       ) : (
-        <div className="space-y-3" data-testid="xv-discrepancies">
-          {discrepancies.map((item) => (
-            <DiscrepancyCard
-              key={item.finding.id}
-              caseId={caseId}
-              item={item}
-              expanded={expanded.has(item.finding.id)}
-              onToggle={() => onToggle(item.finding.id)}
-            />
-          ))}
-        </div>
+        listed.length > 0 && (
+          <div className="space-y-3" data-testid="xv-discrepancies">
+            {listed.map((item) => (
+              <DiscrepancyCard
+                key={item.finding.id}
+                caseId={caseId}
+                item={item}
+                expanded={expanded.has(item.finding.id)}
+                onToggle={() => onToggle(item.finding.id)}
+              />
+            ))}
+          </div>
+        )
       )}
       <IncompleteList
         caseId={caseId}

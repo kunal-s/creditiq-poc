@@ -7,21 +7,50 @@
 interim_template: true
 title: Credit Approval Memo
 template_note: "Draft — layout assumed until RBL's CAM template is received."
+# Eight sections: six drafted from parts of the file, then the risk assessment (the findings,
+# deviations and open queries) and the recommendation. A part keeps the id it is linked by.
 sections:
-  - {id: snapshot, kind: snapshot, title: Proposal at a glance}
-  - {id: borrower, kind: borrower_profile, title: Borrower profile}
-  - {id: promoters, kind: promoters, title: Promoters and management}
-  - {id: proposal, kind: proposal, title: Proposal and facilities}
-  - {id: financials, kind: financial_performance, title: Financial performance}
-  - {id: working_capital, kind: working_capital, title: Assessment of working-capital requirement}
-  - {id: turnover, kind: turnover, title: "Turnover across sources (GST, income tax and banking)"}
-  - {id: banking, kind: banking, title: Banking and account conduct}
-  - {id: obligations, kind: existing_facilities, title: Existing facilities and obligations}
-  - {id: verification, kind: cross_verification, title: Cross-verification of sources}
-  - {id: policy, kind: policy, title: Compliance with policy norms}
-  - {id: documentation, kind: documentation, title: Documentation status}
-summary_title: Summary of findings, deviations and open queries
+  - id: profile
+    title: Borrower and Group Profile
+    purpose: Legal identity, constitution, promoters and management, as the documents show them.
+    parts:
+      - {id: borrower, kind: borrower_profile, title: Borrower profile}
+      - {id: promoters, kind: promoters, title: Promoters and management}
+  - id: facility
+    title: Facility Requested and Purpose
+    purpose: What is being asked for, why, and the working-capital assessment behind it.
+    parts:
+      - {id: snapshot, kind: snapshot, title: Proposal at a glance}
+      - {id: proposal, kind: proposal, title: Proposal and facilities}
+      - {id: working_capital, kind: working_capital, title: Assessment of working-capital requirement}
+  - id: conduct
+    title: Banking Conduct
+    purpose: Account behaviour across the statements on file, and the facilities already running.
+    parts:
+      - {id: banking, kind: banking, title: Banking and account conduct}
+      - {id: obligations, kind: existing_facilities, title: Existing facilities and obligations}
+  - id: analysis
+    title: Financial Analysis and Ratios
+    purpose: The audited years' performance and the ratios tested against the policy norms.
+    parts:
+      - {id: financials, kind: financial_performance, title: Financial performance}
+      - {id: policy, kind: policy, title: Compliance with policy norms}
+  - id: gst
+    title: GST and Bureau Findings
+    purpose: Turnover across GST returns, income tax returns and banking, as filed.
+    parts:
+      - {id: turnover, kind: turnover, title: "Turnover across sources (GST, income tax and banking)"}
+  - id: verification
+    title: Cross-Verification Results
+    purpose: Contradictions between sources, the evidence, and how each was decided; the documents' status.
+    parts:
+      - {id: verification, kind: cross_verification, title: Cross-verification of sources}
+      - {id: documentation, kind: documentation, title: Documentation status}
+summary_title: Risk Assessment and Rating
+summary_purpose: The findings, deviations and open queries the risk rests on, and the rating.
+rating_note: "Not rated: RBL's rating model is not configured."
 recommendation_title: Recommendation
+recommendation_purpose: The analyst's recommendation to the approving authority.
 # Left blank under the recommendation, for credit to complete (F-23.4).
 recommendation_prompts:
   - Recommendation
@@ -53,6 +82,39 @@ labels:
   source_document: Document
   source_file: File
   source_pages: Pages
+
+# Regenerate with copilot: the model that redrafts a section in other words. Only the sampling
+# parameters named here are sent, and every answer is recorded and replayed for the same request.
+# The key is read from the environment variable named, never from this file.
+copilot:
+  enabled: true
+  provider: openai
+  model: gpt-5.4-nano          # confirm the exact id against the provider before first live use
+  base_url: https://api.openai.com/v1
+  api_key_env: OPENAI_API_KEY
+  temperature: 0
+  seed: 1
+  timeout_s: 60
+  system: |
+    You redraft one section of a draft credit approval memo for a bank's business-banking credit
+    team. Write in plain, formal British English, in the third person, for a credit committee.
+    Rules:
+    - Use only the facts in the section given. Never add a figure, date, name or fact that is not
+      in it, and never compute a new figure.
+    - Copy every figure exactly as written, with its unit.
+    - Keep the paragraphs in the same order, one for one: paragraph n of your answer restates
+      paragraph n of the section, so its citations stay with it.
+    - Follow the analyst's instruction where one is given, within these rules.
+    Answer only with the JSON object requested.
+  user: |
+    Section: {{title}}
+    Analyst's instruction: {{instruction}}
+
+    Paragraphs, numbered:
+    {{paragraphs}}
+
+    Other facts in the section (for context; do not restate them unless a paragraph does):
+    {{facts}}
 
 pd_note:
   title: Personal discussion — question note

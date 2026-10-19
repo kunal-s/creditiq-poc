@@ -500,7 +500,7 @@ other; the board shows its view as given and never recomputes it.
 | **Kicker** | "Appraisal {id} · Cross-verification" | — |
 | **Summary line** | "Every source lined up against every other. 15 discrepancies found for this borrower, ranked by credit impact, each with its evidence attached and a decision required from you." | Variants for none / one / all decided / not run |
 | **Meta line** | "1 of 15 adjudicated · XR-000004-003 · 24 rules across 13 sources · 09 Oct 2026, 14:00" | What ran, when, and how much is decided |
-| **Spread** | CTA (← arrow) | Back to Outputs → Spread |
+| **Spread** | CTA (← arrow) | Opens the Financials section of Financials and policy (`/policy#financials`) |
 | **Exception queue** | CTA | Opens the Review queue |
 | **Continue to draft** | Primary CTA (→) | Opens Outputs → Draft CAM. **Locked** (grey, padlock) while any blocking discrepancy is unadjudicated; hovering says "Submission is blocked until every blocking discrepancy is accepted or dismissed." |
 
@@ -609,10 +609,32 @@ the banner disappears and **Continue to draft** unlocks.
 
 ---
 
-## 10. Policy — `/appraisals/$caseId/policy`
+## 10. Financials and policy — `/appraisals/$caseId/policy`
 
 **Stage 5 of 6.** Credit Analyst and Credit Manager (`finding.read`).
-**Title.** "Policy norms and approving authority."
+**Title.** "Financials and policy." The tab holds the spread (moved from Outputs, FRD decision
+C.4-10) and the policy norms: the overview cards, then the **Financials** section (`#financials`),
+then each family of norms and the approving authority.
+
+### 10.0 Financials
+
+The spread year by year, every figure selectable, with a rail showing how many lines are traced to
+a page and where the selected figure was read from.
+
+| Component | What it is | What it does |
+|---|---|---|
+| **Interim notice** | Blue line | "This spread uses an interim layout. It will follow RBL's spread template, with an Excel export, when the template is available." |
+| **Period** | Year picker | Shades the selected year down every table; says the year end and basis |
+| **Turnover banner** | Amber banner | The open turnover discrepancy of greatest impact, its figures, and "Take this to Cross-checks" |
+| **Turnover by year** | Table | Every source (audited, GST, bank credits, ITR, declared) by financial year; green where a cross-check found it within tolerance, red where it differs, amber where part of the year is missing |
+| **Profit and loss, Balance sheet** | Tables, INR crore | Each line by year; a figure relying on a person's entry is marked amber and named under the table |
+| **Working-capital assessment** | Table | The method and why, each step with its basis and an eye to its page, and the eligible finance against the request |
+| **Trend notes** | Two cards | Turnover growth and the change in the working-capital cycle from the year before |
+| **Spread status, Source panel** | Rail | Lines traced, figures relying on a person's entry, periods, layout; the selected figure's document and page, with "Open the page" |
+
+The ratios are not repeated here: each financial-ratio norm below carries its band, **Within
+policy** (green), **Marginal** (amber, still a deviation) or **Outside policy** (red), against the
+configured acceptable and marginal values, with "marginal {value}" under the required value.
 
 ### 10.1 Header
 
@@ -686,26 +708,11 @@ a deviation, would not raise it further.
 
 ## 11. Outputs — `/appraisals/$caseId/outputs`
 
-**Stage 6 of 6.** Credit Analyst and Credit Manager (`output.read`). Three views switched by pills
-at the top: **Spread** · **Draft CAM** · **PD note** (the address carries `?view=spread|cam|pd`,
-which is how the Cross-checks header links in).
+**Stage 6 of 6.** Credit Analyst and Credit Manager (`output.read`). Two views switched by pills
+at the top: **Draft CAM** · **PD note** (the address carries `?view=cam|pd`). The spread moved to
+Financials and policy (§10.0); an earlier `?view=spread` link opens it there.
 
-### 11.1 Spread
-
-**Purpose.** "The financial statements laid out by year, with ratios and the working-capital
-assessment, every figure traceable to its page."
-
-| Component | What it is | What it does |
-|---|---|---|
-| **Interim notice** | Blue line | "This spread uses an interim layout. It will follow RBL's spread template, with an Excel export, when the template is available." |
-| **Financial spread** table | Column per year with its basis (Audited / Provisional / Projected); row bands **Profit and loss**, **Balance sheet**, **Ratios** | Derived rows are italic and carry their formula underneath |
-| ↳ **Value** | Dotted-underlined button | Opens the viewer at the page the figure was read from. Units render as "INR 11.80 cr", "1.42x", "12.4%", "90 days"; "—" where there is nothing |
-| **Working-capital assessment** panel | Step rows: label, amount (with page citations), basis | How eligible bank finance was built up |
-| ↳ **Verdict** | Bold line | "Eligible bank finance INR 3.20 cr against the request of INR 5.00 cr." |
-| ↳ **Cannot be computed** | Amber line | "Cannot be computed: stock and book-debt statement not on file." |
-| **Empty** | "No financial statements yet / The spread fills in once audited, provisional or projected statements have been read." | — |
-
-### 11.2 Draft CAM
+### 11.1 Draft CAM
 
 **Purpose.** "The draft Credit Approval Memo, and the questions for the personal discussion, every
 statement traceable to its page."
@@ -720,7 +727,7 @@ statement traceable to its page."
 | **Summary section** | Grouped lists: **Findings (n)** · **Deviations from policy (n)** · **Norms not assessed (n)** · **Open queries (n)** | Everything credit must weigh, each item with its reference, severity chip and citations. The findings here are the discrepancies **accepted** on the Cross-checks tab; dismissed ones drop out |
 | **Recommendation section** | Dashed empty box: "For credit to complete." | Deliberately left blank — the product prepares, credit decides |
 
-### 11.3 PD note
+### 11.2 PD note
 
 | Component | What it is | What it does |
 |---|---|---|
@@ -1045,7 +1052,7 @@ Every screen uses the same designed states rather than a blank page.
 **Saved links still work.** Earlier addresses redirect to their new home: `/appraisals` and
 `/docready` → the workbench; `/exceptions` → `/review`; `/appraisals/{id}/upload` → Files;
 `/appraisals/{id}/identity` → Extracted data `#identity`; `/appraisals/{id}/data` → Extracted data
-`#fields`; `/appraisals/{id}/spread` → Outputs `?view=spread`; `/appraisals/{id}/draft` → Outputs
+`#fields`; `/appraisals/{id}/spread` and Outputs `?view=spread` → Financials and policy `#financials`; `/appraisals/{id}/draft` → Outputs
 `?view=cam`; `/docready/{id}/checklist|readiness|collection` → Completeness `#checklist` /
 `#readiness` / `#queries`; `/docready/{id}/validation` → Files.
 
@@ -1077,8 +1084,7 @@ Every screen uses the same designed states rather than a blank page.
 8. **Policy.** FR-06 deviates (90 days against at most 75), DOC-01 deviates on 3 blocking items,
    FR-03 cannot be evaluated because the instalment was never entered. The approving authority is
    "at least Head Office Credit Committee", with the step that decides marked.
-9. **Outputs.** The spread with every figure linked to its page and the working-capital verdict;
-   the draft CAM with citations, the accepted findings and deviations in its summary, and an empty
+9. **Outputs.** The draft CAM with citations, the accepted findings and deviations in its summary, and an empty
    recommendation; the PD note's questions, most serious first.
 10. **Comparison** (Credit Manager). Confirm RBL's record, then adjudicate: FR-06 **Agree**,
     DOC-01 **Differ**, FR-03 **Missed**, authority **Agree**.

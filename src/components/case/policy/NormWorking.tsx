@@ -1,3 +1,4 @@
+import { Eye } from "lucide-react";
 import type { NormComponent, NormInput, NormResult } from "@/api/types";
 import { useDocViewer } from "@/components/docviewer/DocViewer";
 import { t } from "@/config/terminology";
@@ -39,6 +40,37 @@ function Figure({
   );
 }
 
+/** The explicit way to look at where a figure came from: opens the viewer at its page, with
+ * the region marked. Shown wherever there is a page to open, so the reader does not have to
+ * discover that the number itself is a link. */
+function EvidenceEye({
+  caseId,
+  label,
+  evidence,
+}: {
+  caseId: string;
+  label: string;
+  evidence?: NormInput["evidence"];
+}) {
+  const viewer = useDocViewer();
+  const e = evidence?.[0];
+  if (!e) return <span className="inline-block w-4" aria-hidden />;
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        viewer.open({ caseId, documentId: e.document_id, page: e.page, bbox: e.bbox ?? null })
+      }
+      title={t("policy.working.viewEvidence", { label })}
+      aria-label={t("policy.working.viewEvidence", { label })}
+      data-testid="norm-figure-eye"
+      className="text-muted-foreground transition-colors hover:text-primary"
+    >
+      <Eye className="h-3.5 w-3.5" aria-hidden />
+    </button>
+  );
+}
+
 /** Where a figure came from, in a few words. */
 function originText(input: NormInput): string {
   const basis = input.basis ?? "document";
@@ -64,6 +96,7 @@ function Row({
   label,
   value,
   origin,
+  eye,
   strong = false,
 }: {
   indent?: boolean;
@@ -71,13 +104,14 @@ function Row({
   label: React.ReactNode;
   value: React.ReactNode;
   origin?: string;
+  eye?: React.ReactNode;
   strong?: boolean;
 }) {
   return (
     <div
       className={cn(
-        "grid grid-cols-[1fr_auto_4.5rem] items-baseline gap-x-3 py-[3px]",
-        indent && "pl-5",
+        "grid grid-cols-[minmax(0,1fr)_auto_3.75rem_1rem] items-baseline gap-x-2.5 py-[3px]",
+        indent && "pl-4",
       )}
     >
       <span
@@ -91,76 +125,88 @@ function Row({
       </span>
       <span className={cn("text-[12px] tabular", strong && "font-medium")}>{value}</span>
       <span className="text-[11px] text-muted-foreground">{origin}</span>
+      <span className="justify-self-end self-center leading-none">{eye}</span>
     </div>
   );
 }
 
-/** One input, with the lines it was summed from where it is derived. */
-function FigureBlock({ caseId, input }: { caseId: string; input: NormInput }) {
+/** One input of the figures table: the figure itself, then the lines it was summed from where
+ * it is derived. Several inputs share one box, divided rather than boxed separately. */
+function FigureBlock({
+  caseId,
+  input,
+  first,
+}: {
+  caseId: string;
+  input: NormInput;
+  first: boolean;
+}) {
   const components = (input.components ?? []) as NormComponent[];
-  const value = (
-    <Figure
-      caseId={caseId}
-      label={input.label}
-      value={inputValue(input.name, input.value)}
-      evidence={input.evidence}
-    />
-  );
-  if (components.length === 0)
-    return <Row label={input.label} value={value} origin={originText(input)} strong />;
   return (
-    <div className="rounded border border-border/70 bg-surface-muted/40 px-2.5 py-1.5">
-      <Row label={input.label} value={value} origin={originText(input)} strong />
-      <div className="mt-0.5 border-t border-border/70 pt-0.5">
-        {components.map((c, i) => (
-          <Row
-            key={`${c.label}-${i}`}
-            indent
-            sign={i === 0 ? "" : c.sign < 0 ? "−" : "+"}
-            label={c.label}
-            value={
-              <Figure
-                caseId={caseId}
-                label={c.label}
-                value={inputValue(input.name, c.value)}
-                evidence={c.evidence}
-              />
-            }
-            origin={
-              c.evidence?.[0] ? t("policy.working.fromPage", { page: c.evidence[0].page }) : ""
-            }
+    <div className={cn(!first && "mt-1 border-t border-border/70 pt-1")}>
+      <Row
+        label={input.label}
+        value={
+          <Figure
+            caseId={caseId}
+            label={input.label}
+            value={inputValue(input.name, input.value)}
+            evidence={input.evidence}
           />
-        ))}
-      </div>
+        }
+        origin={originText(input)}
+        eye={<EvidenceEye caseId={caseId} label={input.label} evidence={input.evidence} />}
+        strong
+      />
+      {components.map((c, i) => (
+        <Row
+          key={`${c.label}-${i}`}
+          indent
+          sign={i === 0 ? "" : c.sign < 0 ? "\u2212" : "+"}
+          label={c.label}
+          value={
+            <Figure
+              caseId={caseId}
+              label={c.label}
+              value={inputValue(input.name, c.value)}
+              evidence={c.evidence}
+            />
+          }
+          origin={c.evidence?.[0] ? t("policy.working.fromPage", { page: c.evidence[0].page }) : ""}
+          eye={<EvidenceEye caseId={caseId} label={c.label} evidence={c.evidence} />}
+        />
+      ))}
     </div>
   );
 }
 
-/** How a norm reached its number (F-20.2), laid out as the working: the expression, the same
- * expression with the figures that were read, each figure with where it came from — a derived
- * figure opening into the lines it was summed from — and the test against the norm.
+/** How a norm reached its number (F-20.2).
+
+ * Three blocks at most, and only the ones that say something new:
+ *   1. the calculation — the expression, then the same expression with the figures read and the
+ *      test against the norm on the same line, so the whole result is one glance;
+ *   2. the figures — only where there is more than one, or one is derived and opens into the
+ *      lines it was summed from; a single printed figure is already on the calculation line;
+ *   3. what is missing, for a norm that could not be evaluated.
  *
- * Every figure links to the page it was read from. Nothing here changes an outcome; the norm
- * decided it, and this only shows how. */
+ * Every figure links to its page and carries an eye to open it. Nothing here changes an
+ * outcome; the norm decided it, and this only shows how. */
 export function NormWorking({ caseId, norm }: { caseId: string; norm: NormResult }) {
   const inputs = norm.inputs ?? [];
   const missing = norm.missing ?? [];
   const evaluated = norm.outcome === "pass" || norm.outcome === "deviation";
   const Icon = OUTCOME_ICON[norm.outcome];
+  const derived = inputs.some((i) => (i.components ?? []).length > 0);
+  // One printed figure needs no table under the line that already shows it.
+  const showFigures = inputs.length > 1 || derived;
+  const single = inputs.length === 1 && !derived;
 
   return (
-    <div className="space-y-3" data-testid="norm-working">
-      <div className="space-y-1">
-        <Caption>{t("policy.working.expression")}</Caption>
-        <p className="text-[12.5px] text-foreground">{norm.formula}</p>
-      </div>
-
-      {evaluated && inputs.length > 0 && (
-        <div className="space-y-1" data-testid="norm-substituted">
-          <Caption>{t("policy.working.calculation")}</Caption>
-          {/* The formula with each name replaced by the figure that was read, so the line reads
-              as the sum that was done: (1.63 cr + 48.32 lakh) ÷ (15.00 lakh + 30.00 cr) = 0.07x */}
-          <p className="flex flex-wrap items-baseline gap-x-1 gap-y-1 text-[13px] leading-relaxed">
+    <div className="max-w-3xl space-y-2.5" data-testid="norm-working">
+      {inputs.length > 0 && (
+        <div data-testid="norm-substituted">
+          <p className="text-[11.5px] text-muted-foreground">{norm.formula}</p>
+          <p className="mt-1 flex flex-wrap items-baseline gap-x-1.5 gap-y-1 text-[13px]">
             {substituted(norm).map((piece, i) =>
               typeof piece === "string" ? (
                 <span key={`t${i}`} className="whitespace-pre text-muted-foreground">
@@ -177,29 +223,55 @@ export function NormWorking({ caseId, norm }: { caseId: string; norm: NormResult
                 />
               ),
             )}
-            <span className="px-1 text-muted-foreground">=</span>
-            <span className={cn("tabular text-[15px] font-semibold", OUTCOME_TEXT[norm.outcome])}>
-              {actualText(norm)}
-            </span>
+            {evaluated && (
+              <>
+                <span className="text-muted-foreground">=</span>
+                <span
+                  className={cn("tabular text-[15px] font-semibold", OUTCOME_TEXT[norm.outcome])}
+                >
+                  {actualText(norm)}
+                </span>
+                <span
+                  className="ml-1 inline-flex items-baseline gap-1 text-[11.5px]"
+                  data-testid="norm-test"
+                >
+                  <Icon
+                    className={cn("h-3 w-3 self-center", OUTCOME_TEXT[norm.outcome])}
+                    aria-hidden
+                  />
+                  <span className="tabular text-muted-foreground">{comparison(norm)}</span>
+                  <span className={cn("font-medium", OUTCOME_TEXT[norm.outcome])}>
+                    {t(
+                      norm.outcome === "pass"
+                        ? "policy.working.satisfied"
+                        : "policy.working.notSatisfied",
+                    )}
+                  </span>
+                </span>
+              </>
+            )}
           </p>
+          {single && inputs[0] && (
+            <p className="mt-0.5 inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              {t("policy.working.readFrom")} {originText(inputs[0])}
+              <EvidenceEye caseId={caseId} label={inputs[0].label} evidence={inputs[0].evidence} />
+            </p>
+          )}
         </div>
       )}
 
-      {inputs.length > 0 && (
-        <div className="space-y-1">
-          <Caption>{t("policy.working.figures")}</Caption>
-          <div className="space-y-1.5">
-            {inputs.map((input) => (
-              <FigureBlock key={input.name} caseId={caseId} input={input} />
-            ))}
-          </div>
+      {showFigures && (
+        <div className="rounded border border-border/70 bg-surface-muted/40 px-2.5 py-1.5">
+          {inputs.map((input, i) => (
+            <FigureBlock key={input.name} caseId={caseId} input={input} first={i === 0} />
+          ))}
         </div>
       )}
 
       {missing.length > 0 && (
-        <div className="space-y-1" data-testid="norm-working-missing">
+        <div data-testid="norm-working-missing">
           <Caption>{t("policy.working.missingTitle")}</Caption>
-          <ul className="space-y-0.5 text-[12px] text-muted-foreground">
+          <ul className="mt-0.5 space-y-0.5 text-[12px] text-muted-foreground">
             {missing.map((name) => (
               <li key={name}>
                 {inputLabel(norm, name)} — {t("policy.working.notOnFile")}
@@ -209,28 +281,8 @@ export function NormWorking({ caseId, norm }: { caseId: string; norm: NormResult
         </div>
       )}
 
-      {evaluated && (
-        <div
-          className={cn(
-            "flex items-center gap-2 rounded border-l-2 bg-surface-muted/50 px-2.5 py-1.5 text-[12.5px]",
-            norm.outcome === "pass" ? "border-l-positive" : "border-l-destructive",
-          )}
-          data-testid="norm-test"
-        >
-          <Icon className={cn("h-3.5 w-3.5 shrink-0", OUTCOME_TEXT[norm.outcome])} aria-hidden />
-          <span className="tabular text-[13px] font-medium text-foreground">
-            {comparison(norm) ?? actualText(norm)}
-          </span>
-          <span className={cn("text-[12.5px] font-medium", OUTCOME_TEXT[norm.outcome])}>
-            {t(
-              norm.outcome === "pass" ? "policy.working.satisfied" : "policy.working.notSatisfied",
-            )}
-          </span>
-        </div>
-      )}
-
       {(norm.definition && norm.definition !== norm.formula) || norm.note ? (
-        <div className="space-y-0.5 text-[11.5px] text-muted-foreground">
+        <div className="space-y-0.5 text-[11px] text-muted-foreground">
           {norm.definition && norm.definition !== norm.formula && (
             <p data-testid="norm-definition">
               <span className="font-medium text-foreground">{t("policy.definition")}: </span>

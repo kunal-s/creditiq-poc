@@ -217,17 +217,29 @@ test("Policy lists every norm with its required and actual value, deviations fir
   );
 });
 
-test("Outputs: the spread, the draft CAM and the PD note, each figure cited", async ({ page }) => {
+test("Financials: the spread and the working-capital assessment, each figure cited", async ({
+  page,
+}) => {
+  const api = new MockApi();
+  await signedIn(page, api);
+  await page.goto(`/appraisals/${KESTREL}/policy`);
+  const financials = page.getByTestId("financials");
+  await expect(financials.getByTestId("spread-interim")).toBeVisible();
+  await financials
+    .locator('[data-testid="spread-row"][data-row="revenue_from_operations"]')
+    .getByTestId("spread-figure")
+    .click();
+  await financials.getByTestId("spread-source-open").click();
+  await expect(page.getByTestId("evidence-viewer").getByTestId("viewer-page")).toContainText("4");
+  await page.keyboard.press("Escape");
+  await expect(financials.getByTestId("wc-verdict")).toContainText("INR 6.00 cr");
+});
+
+test("Outputs: the draft CAM and the PD note, each figure cited", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api);
   await page.goto(`/appraisals/${KESTREL}/outputs`);
-  await expect(page.getByTestId("spread-interim")).toBeVisible();
-  const revenue = page.locator('[data-testid="spread-row"][data-row="revenue_from_operations"]');
-  await revenue.getByTestId("spread-value").click();
-  await expect(page.getByTestId("evidence-viewer").getByTestId("viewer-page")).toContainText("4");
-  await page.keyboard.press("Escape");
-  await expect(page.getByTestId("wc-verdict")).toContainText("INR 6.00 cr");
-
+  await expect(page.getByTestId("view-spread")).toHaveCount(0);
   await page.getByTestId("view-cam").click();
   const cam = page.getByTestId("cam");
   const financials = cam.locator('[data-section="financials"]');

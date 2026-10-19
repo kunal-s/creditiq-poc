@@ -44,6 +44,9 @@ export function matrixNotPublished(error: unknown): boolean {
 export const groupSectionId = (family: NormFamily) => `policy-group-${family}`;
 export const groupHeadingId = (family: NormFamily) => `policy-group-${family}-title`;
 export const AUTHORITY_SECTION_ID = "policy-authority";
+/** The Financials section of the tab: the spread, turnover by year, the working-capital assessment. */
+export const FINANCIALS_SECTION_ID = "financials";
+export const FINANCIALS_HEADING_ID = "financials-title";
 export const AUTHORITY_HEADING_ID = "policy-authority-title";
 /** A norm's row in its family's section: a key figure, or a norm id in an authority step,
  * scrolls to it and focuses it. */

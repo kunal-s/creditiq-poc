@@ -2,8 +2,6 @@ import type {
   CaseFacts,
   CrossVerificationView,
   Finding,
-  NormResult,
-  PolicyAssessment,
   Spread,
   SpreadRow,
   TurnoverFigure,
@@ -100,42 +98,6 @@ export function cellText(value: number | null | undefined, unit: SpreadRow["unit
   if (unit === "x") return `${value.toFixed(2)}x`;
   if (unit === "%") return `${value.toFixed(1)}%`;
   return `${Math.round(value)} days`;
-}
-
-/** A ratio tile: a norm of the ratios family, or a spread ratio no norm tests. */
-export type RatioTile = {
-  key: string;
-  label: string;
-  value: number | null;
-  unit: string;
-  norm: NormResult | null;
-};
-
-/** The ratios the policy assessed, in its order, then the spread's other ratios and margins with
- * their value for the year the policy assessed (the latest column). */
-export function ratioTiles(spread: Spread, policy: PolicyAssessment): RatioTile[] {
-  const norms = policy.norms.filter((n) => n.family === "ratios");
-  const assessed = new Set(norms.map((n) => n.label.toLowerCase()));
-  const last = spread.columns.length - 1;
-  const extra = spread.rows
-    .filter((r) => (r.kind === "ratio" || r.unit === "%") && !assessed.has(r.label.toLowerCase()))
-    .map((r) => ({
-      key: r.key,
-      label: r.label,
-      value: r.cells[last]?.value ?? null,
-      unit: r.unit,
-      norm: null,
-    }));
-  return [
-    ...norms.map((n) => ({
-      key: n.id,
-      label: n.label,
-      value: n.actual ?? null,
-      unit: n.unit ?? "",
-      norm: n,
-    })),
-    ...extra,
-  ];
 }
 
 /** The change from the year before to the latest year, where both are on file. */

@@ -209,20 +209,25 @@ test("Policy: the approving authority is worked out from the ask", async () => {
   await expect(card.getByTestId("policy-authority-at-least")).toBeVisible();
 });
 
-test("Outputs: the spread holds every row over two audited years", async () => {
-  await page.goto(`/appraisals/${caseId}/outputs`);
-  await expect(page.getByTestId("spread-table")).toBeVisible();
-  await expect(page.getByTestId("spread-row")).toHaveCount(28);
-  // Two audited years are on file, so the spread has two columns of figures.
-  await expect(page.getByTestId("spread-table").getByRole("columnheader")).toHaveCount(3);
-  await expect(page.getByTestId("wc-verdict")).toBeVisible();
+test("Financials: the spread holds every statement line over two audited years", async () => {
+  await page.goto(`/appraisals/${caseId}/policy`);
+  const financials = page.getByTestId("financials");
+  await expect(financials.getByTestId("spread-profit_and_loss")).toBeVisible();
+  // The profit and loss and the balance sheet; the ratios are tested in the norms below.
+  await expect(financials.getByTestId("spread-row")).toHaveCount(23);
+  // Two audited years are on file, so each statement has two columns of figures.
+  await expect(
+    financials.getByTestId("spread-profit_and_loss").getByRole("columnheader"),
+  ).toHaveCount(3);
+  await expect(financials.getByTestId("wc-verdict")).toBeVisible();
 
   // A figure is traceable to its page.
-  await page
+  await financials
     .locator('[data-testid="spread-row"][data-row="revenue_from_operations"]')
-    .getByTestId("spread-value")
+    .getByTestId("spread-figure")
     .first()
     .click();
+  await financials.getByTestId("spread-source-open").click();
   await expect(page.getByTestId("evidence-viewer").getByTestId("viewer-page")).toBeVisible();
   await page.keyboard.press("Escape");
 });

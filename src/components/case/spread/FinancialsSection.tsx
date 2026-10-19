@@ -1,8 +1,7 @@
-import { Link, useNavigate } from "@tanstack/react-router";
-import { AlertCircle, ArrowLeft, ArrowRight, Eye, FileText } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { AlertCircle, ArrowRight, Eye, FileText } from "lucide-react";
 import { useState } from "react";
 import type { CaseDetail, CrossVerificationView, Spread } from "@/api/types";
-import { PageHeader, PrimaryAction, SecondaryAction } from "@/components/common/PageHeader";
 import { RailPanel, RailRows, RailStats } from "@/components/common/RailPanel";
 import { QueryView } from "@/components/common/States";
 import { useDocViewer } from "@/components/docviewer/DocViewer";
@@ -11,32 +10,56 @@ import { formatDate, useCase } from "@/domain/cases";
 import { useCrossVerification } from "@/domain/crossVerification";
 import { useCaseDocuments, useDocumentTypes } from "@/domain/documents";
 import { useFacts, useSpread } from "@/domain/findings";
-import { usePolicy } from "@/domain/policy";
+import { FINANCIALS_HEADING_ID, FINANCIALS_SECTION_ID } from "@/domain/policy";
 import { openTurnoverDiscrepancies, turnoverYears } from "@/domain/spread";
 import { cn } from "@/lib/utils";
-import { RatioTiles, TrendNotes } from "./SpreadRatios";
+import { TrendNotes } from "./SpreadRatios";
 import { StatementTable, TurnoverByYear, type Picked } from "./SpreadTables";
+import { WorkingCapital } from "./WorkingCapital";
 
-// The Spread tab (F-22, F-18.1, F-20): the audited years line by line, turnover from every source
-// year by year, and the ratios against the policy norms, with a rail that says how much of the
-// spread is traced and where the selected figure was read from.
+// The Financials section of the Financials and policy tab (F-22, F-18.1): the audited years line
+// by line, turnover from every source year by year coloured by what the cross-checks concluded,
+// and the working-capital assessment, with a rail that says how much of the spread is traced and
+// where the selected figure was read from. The ratios are tested in the norms below it.
 //
 // Test ids:
-//   spread-page             the tab
+//   financials              the section (element id `financials`)
 //   spread-period           the year picker; spread-period-<fy> each year
 //   spread-banner           an open turnover discrepancy, with the way to it on Cross-checks
 //   spread-turnover         turnover by year: spread-turnover-row (data-source) and
 //                           spread-turnover-cell (data-fy, data-verdict)
 //   spread-profit_and_loss, spread-balance_sheet   the statements; spread-row (data-row)
 //   spread-figure           any figure (data-selected); spread-manual-note a person's entry
-//   spread-ratios           spread-ratio tiles (data-ratio, data-band)
+//   working-capital         the assessment: wc-step each, wc-verdict
 //   spread-trends           spread-trend-turnover, spread-trend-cycle
 //   spread-status, spread-source   the rail
 
-export function SpreadPage({ caseId }: { caseId: string }) {
+export function FinancialsSection({
+  caseId,
+  period,
+}: {
+  caseId: string;
+  /** The year the policy assessed, for the rail. */
+  period: string | null;
+}) {
   const spread = useSpread(caseId);
   return (
-    <div className="min-w-0 pb-10" data-testid="spread-page">
+    <section
+      id={FINANCIALS_SECTION_ID}
+      aria-labelledby={FINANCIALS_HEADING_ID}
+      className="min-w-0 scroll-mt-4 space-y-3"
+      data-testid="financials"
+    >
+      <header className="border-b border-border pb-2">
+        <h2
+          id={FINANCIALS_HEADING_ID}
+          tabIndex={-1}
+          className="rounded-sm text-[16px] font-semibold tracking-tight text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {t("spreadPage.title")}
+        </h2>
+        <p className="mt-0.5 text-[12px] text-muted-foreground">{t("spreadPage.purpose")}</p>
+      </header>
       <QueryView
         query={spread}
         isEmpty={(s) => s.columns.length === 0}
@@ -44,17 +67,24 @@ export function SpreadPage({ caseId }: { caseId: string }) {
           title: t("spreadPage.emptyTitle"),
           description: t("spreadPage.emptyDescription"),
         }}
+        compact
       >
-        {(s) => <SpreadBody caseId={caseId} spread={s} />}
+        {(s) => <FinancialsBody caseId={caseId} spread={s} period={period} />}
       </QueryView>
-    </div>
+    </section>
   );
 }
 
-function SpreadBody({ caseId, spread }: { caseId: string; spread: Spread }) {
-  const navigate = useNavigate();
+function FinancialsBody({
+  caseId,
+  spread,
+  period: assessed,
+}: {
+  caseId: string;
+  spread: Spread;
+  period: string | null;
+}) {
   const facts = useFacts(caseId);
-  const policy = usePolicy(caseId);
   const board = useCrossVerification(caseId);
   const header = useCase(caseId);
   const latest = spread.columns[spread.columns.length - 1]!;
@@ -64,72 +94,47 @@ function SpreadBody({ caseId, spread }: { caseId: string; spread: Spread }) {
   const years = facts.data ? turnoverYears(facts.data) : [];
 
   return (
-    <>
-      <PageHeader
-        kicker={t("spreadPage.kicker", { id: caseId })}
-        title={t("spreadPage.title")}
-        purpose={t("spreadPage.purpose")}
-        actions={
-          <>
-            <SecondaryAction
-              onClick={() =>
-                void navigate({ to: "/appraisals/$caseId/cross-verification", params: { caseId } })
-              }
-              testId="spread-back"
-            >
-              <ArrowLeft className="h-4 w-4" aria-hidden />
-              {t("spreadPage.back")}
-            </SecondaryAction>
-            <PrimaryAction
-              onClick={() =>
-                void navigate({
-                  to: "/appraisals/$caseId/outputs",
-                  params: { caseId },
-                  search: { view: "cam" },
-                })
-              }
-              testId="spread-continue"
-            >
-              {t("spreadPage.continue")}
-              <ArrowRight className="h-4 w-4" aria-hidden />
-            </PrimaryAction>
-          </>
-        }
-      />
-      <div className="grid min-w-0 grid-cols-1 gap-4 px-4 py-5 sm:px-6 xl:grid-cols-[minmax(0,1fr)_19rem]">
-        <div className="min-w-0 space-y-4">
-          <PeriodPicker spread={spread} period={column.fy} onPick={setPeriod} />
-          <TurnoverBanner caseId={caseId} board={board.data} />
-          <TurnoverByYear
-            years={years}
-            board={board.data}
-            selected={column.fy}
-            picked={picked?.id ?? null}
-            onPick={setPicked}
-          />
-          <StatementTable
-            spread={spread}
-            section="profit_and_loss"
-            selected={column.fy}
-            picked={picked?.id ?? null}
-            onPick={setPicked}
-          />
-          <StatementTable
-            spread={spread}
-            section="balance_sheet"
-            selected={column.fy}
-            picked={picked?.id ?? null}
-            onPick={setPicked}
-          />
-          {policy.data && <RatioTiles spread={spread} policy={policy.data} />}
-          <TrendNotes spread={spread} />
-        </div>
-        <aside className="order-first grid min-w-0 grid-cols-1 content-start gap-4 sm:grid-cols-2 xl:sticky xl:top-4 xl:order-none xl:grid-cols-1 xl:self-start">
-          <StatusPanel spread={spread} header={header.data} period={policy.data?.period ?? null} />
-          <SourcePanel caseId={caseId} picked={picked} />
-        </aside>
+    <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_17rem]">
+      <div className="min-w-0 space-y-4">
+        {spread.interim && (
+          <p
+            className="rounded border border-info/40 bg-info-soft px-3 py-2 text-[12px] text-info"
+            data-testid="spread-interim"
+          >
+            {t("spreadPage.interim")}
+          </p>
+        )}
+        <PeriodPicker spread={spread} period={column.fy} onPick={setPeriod} />
+        <TurnoverBanner caseId={caseId} board={board.data} />
+        <TurnoverByYear
+          years={years}
+          board={board.data}
+          selected={column.fy}
+          picked={picked?.id ?? null}
+          onPick={setPicked}
+        />
+        <StatementTable
+          spread={spread}
+          section="profit_and_loss"
+          selected={column.fy}
+          picked={picked?.id ?? null}
+          onPick={setPicked}
+        />
+        <StatementTable
+          spread={spread}
+          section="balance_sheet"
+          selected={column.fy}
+          picked={picked?.id ?? null}
+          onPick={setPicked}
+        />
+        <WorkingCapital caseId={caseId} spread={spread} />
+        <TrendNotes spread={spread} />
       </div>
-    </>
+      <aside className="order-first grid min-w-0 grid-cols-1 content-start gap-4 sm:grid-cols-2 xl:sticky xl:top-4 xl:order-none xl:grid-cols-1 xl:self-start">
+        <StatusPanel spread={spread} header={header.data} period={assessed} />
+        <SourcePanel caseId={caseId} picked={picked} />
+      </aside>
+    </div>
   );
 }
 

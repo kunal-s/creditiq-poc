@@ -1,26 +1,25 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { AssessmentStage } from "@/components/case/gate/AssessmentStage";
-import { CamView, PdNoteView, SpreadView } from "@/components/case/Outputs";
+import { CamView, PdNoteView } from "@/components/case/Outputs";
 import { TabSection } from "@/components/case/TabSection";
 import { t } from "@/config/terminology";
 import { cn } from "@/lib/utils";
 
-// Stage 6, outputs (FRD §5, §6): the spread, the draft CAM and the PD note,
-// each a view within the tab.
+// Stage 6, outputs (FRD §5, §6): the draft CAM and the PD note, each a view within the tab. The
+// spread moved to the Financials section of the Financials and policy tab; ?view=spread, from an
+// earlier link, goes there.
 
-const VIEWS = ["spread", "cam", "pd"] as const;
+const VIEWS = ["cam", "pd"] as const;
 type View = (typeof VIEWS)[number];
 
-const SECTION: Record<View, { page: string }> = {
-  spread: { page: "spread" },
-  cam: { page: "draft" },
-  pd: { page: "draft" },
-};
-
 export const Route = createFileRoute("/appraisals/$caseId/outputs")({
-  validateSearch: (search: Record<string, unknown>): { view?: View } => {
+  validateSearch: (search: Record<string, unknown>): { view?: View | "spread" } => {
     const view = search["view"];
-    return VIEWS.includes(view as View) ? { view: view as View } : {};
+    return VIEWS.includes(view as View) || view === "spread" ? { view: view as View } : {};
+  },
+  beforeLoad: ({ search, params }) => {
+    if (search.view === "spread")
+      throw redirect({ to: "/appraisals/$caseId/policy", params, hash: "financials" });
   },
   head: () => ({
     meta: [{ title: `${t("caseTab.outputs")} — ${t("tenant.product.name")}` }],
@@ -30,8 +29,8 @@ export const Route = createFileRoute("/appraisals/$caseId/outputs")({
 
 function OutputsTab() {
   const { caseId } = Route.useParams();
-  const view: View = Route.useSearch().view ?? "spread";
-  const section = SECTION[view];
+  const search = Route.useSearch().view;
+  const view: View = search === "pd" ? "pd" : "cam";
   return (
     <AssessmentStage caseId={caseId}>
       <div className="pb-10">
@@ -54,19 +53,9 @@ function OutputsTab() {
             </Link>
           ))}
         </nav>
-        <TabSection
-          id={view}
-          title={t(`page.${section.page}.title`)}
-          purpose={t(`page.${section.page}.purpose`)}
-        >
+        <TabSection id={view} title={t("page.draft.title")} purpose={t("page.draft.purpose")}>
           <div className="px-4 py-4 sm:px-6">
-            {view === "spread" ? (
-              <SpreadView caseId={caseId} />
-            ) : view === "cam" ? (
-              <CamView caseId={caseId} />
-            ) : (
-              <PdNoteView caseId={caseId} />
-            )}
+            {view === "cam" ? <CamView caseId={caseId} /> : <PdNoteView caseId={caseId} />}
           </div>
         </TabSection>
       </div>

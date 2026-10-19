@@ -83,8 +83,8 @@ Credit remains the decision-maker. CreditIQ prepares, checks and drafts.
 | Completeness | RBL's checklist by product and constitution; each item satisfied, insufficient or missing; one pre-login query list | F-12 to F-14 |
 | Extraction | Key fields from identity, financial, tax, banking and bureau documents, including partner outputs, with confidence and page evidence | F-11, F-15 to F-17 |
 | Triangulation | Identity, turnover, bank accounts, existing obligations | F-18, F-19 |
-| Policy checks | Key BBG norms evaluated; deviations listed; approving authority, if RBL provides its matrix | F-20, F-21 |
-| Outputs | Spread in RBL's format; draft CAM in RBL's template with citations; PD question note | F-22 to F-24 |
+| Financials and policy | Spread year by year with turnover from every source and the working-capital assessment (RBL's format once its template arrives); key BBG norms evaluated, each ratio banded against its acceptable and marginal values; deviations listed; approving authority, if RBL provides its matrix | F-20 to F-22 |
+| Outputs | Draft CAM in RBL's template with citations; PD question note | F-23, F-24 |
 | Comparison | Side by side with RBL's record; scorecard against C1 to C9 | F-25, F-26 |
 | Live session | End to end on screen, timed | F-27 |
 
@@ -140,7 +140,7 @@ A case moves through six stages, in this order. The case screens follow the same
 3. **Validation and completeness:** each document's required fields and format, then each checklist item's status and the query list (F-12 to F-14).
 4. **Cross-verification:** facts aligned across sources and cross-checked (F-18, F-19).
 5. **Policy checks:** norms, deviations and the approving authority (F-20, F-21).
-6. **Outputs:** the spread, the draft CAM and the PD note (F-22 to F-24), then the comparison and scorecard (F-25, F-26).
+6. **Outputs:** the spread, the draft CAM and the PD note (F-22 to F-24), then the comparison and scorecard (F-25, F-26). The spread is produced at this stage but shown on the Financials and policy tab, beside the norms that test it (decision C.4-10).
 
 The feature phases in Part B are the build order; this is the processing order.
 
@@ -212,8 +212,8 @@ flowchart TB
   CW --> T2["2. Extraction"]
   CW --> T3["3. Completeness<br/>validation, checklist, queries"]
   CW --> T4["4. Cross-verification"]
-  CW --> T5["5. Policy"]
-  CW --> T6["6. Outputs<br/>spread, CAM, PD note"]
+  CW --> T5["5. Financials and policy<br/>spread, norms, authority"]
+  CW --> T6["6. Outputs<br/>CAM, PD note"]
   CW --> CM["Comparison"]
   T2 --> EV["Evidence viewer<br/>(opens on any value)"]
   T3 --> EV
@@ -232,8 +232,8 @@ flowchart TB
 | 2. Extraction | `/appraisals/$caseId/extraction` | Key fields grouped as entity and parties, financials, GST and banking; each with its confidence and page; confirm or correct in place | F-15, F-16, F-17 | Analyst, Manager | No |
 | 3. Completeness | `/appraisals/$caseId/completeness` | Each document's required fields and format; the checklist with each item's status and deficiency; readiness against the gates; the pre-login query list | F-12, F-13, F-14 | All | Yes |
 | 4. Cross-verification | `/appraisals/$caseId/cross-verification` | An overview of the four areas (identity consistency, turnover, bank accounts, existing obligations), then each area's discrepancies ranked by credit impact, with the sources side by side and a decision on each | F-18, F-19 | Analyst, Manager | No |
-| 5. Policy | `/appraisals/$caseId/policy` | Each norm with its limit, the actual value and source; deviations; the approving authority | F-20, F-21 | Analyst, Manager | No |
-| 6. Outputs | `/appraisals/$caseId/outputs` | The spread, the draft CAM and the PD note, each a view within the tab, with citations and export | F-22, F-23, F-24 | Analyst, Manager | No |
+| 5. Financials and policy | `/appraisals/$caseId/policy` | The Financials section (`#financials`): the spread year by year, turnover from every source coloured by what the cross-checks concluded, and the working-capital assessment, every figure cited; then each norm with its limit, the actual value and source, each ratio in its band (within, marginal, outside); deviations; the approving authority | F-20, F-21, F-22 | Analyst, Manager | No |
+| 6. Outputs | `/appraisals/$caseId/outputs` | The draft CAM and the PD note, each a view within the tab, with citations and export. An earlier `?view=spread` link opens the Financials section | F-23, F-24 | Analyst, Manager | No |
 | Comparison | `/appraisals/$caseId/comparison` | This case's outputs beside RBL's record, with adjudication | F-25 | Manager | No |
 | Review queue | `/review` | Everything waiting for a person, across cases | F-17 | Analyst, Manager | No |
 | Scorecard | `/scorecard` | The criteria per case and across the case set | F-26 | Manager | No |
@@ -1120,6 +1120,7 @@ flowchart TD
 ```text
 APPRAISAL BBG-2026-000123 · CROSS-VERIFICATION
 Cross-verification and discrepancy      [← Spread] [Exception queue] [🔒 Continue to draft →]
+                                        (← Spread opens the Financials section, decision C.4-10)
 7 discrepancies found for this borrower, ranked by credit impact · 1 of 7 adjudicated
 XR-000123-004 · 18 rules across 11 sources · 11 Oct 2026, 13:58
 ┌ ⚠ Submission blocked — 1 serious discrepancy unadjudicated          [Adjudicate now] ┐
@@ -1247,6 +1248,8 @@ Existing obligations — …
 **Tests.** TC-18 (C3, C8).
 
 **Depends on.** F-15, F-18. **RBL's spread template** (C.3); until it arrives, an interim layout on screen (decision C.4-8).
+
+**Screen.** The Financials section of the Financials and policy tab, above the norms that test the ratios (decision C.4-10). The ratios themselves are shown once, as the financial-ratio norms with their workings.
 
 **Requirements**
 
@@ -1517,6 +1520,7 @@ flowchart TD
 | 7 | Screen structure: the prototype's two case workspaces and 12 case screens, or one workspace in processing order | Screens | **Decided 30 Sep 2026:** one case workspace whose tabs follow §5; the prototype's visual style is kept; the DocReady and Appraisal workspace names are dropped; screens call the record an appraisal (§6) |
 | 8 | Spread before RBL's template arrives | F-22 | **Decided 30 Sep 2026:** an interim spread on screen (statement lines, ratios and the working-capital assessment with workings, every figure cited), marked interim; re-mapped to RBL's rows and exported to Excel (F-22.4) when the template arrives |
 | 9 | Approving authority before RBL's approval and delegation matrix arrives | F-21 | **Decided 8 Oct 2026:** F-21 is built against an interim matrix proposed by the delivery team (`config/approval_matrix.yaml`). Every authority, band and deviation rule is tagged provisional and the screens show "Provisional matrix". Authorities are generic roles and committees, never people. TC-27 (test plan TC-25) is not included in C4 while the matrix is provisional. The recorded approval comes from the F-25 approving-authority sheet. The matrix is replaced as a whole when RBL supplies its own (source `rbl_supplied`, status active), published with `--private-config` |
+| 10 | Where the spread is shown | F-22, §6 | **Decided 19 Oct 2026:** the spread moved from a view of the Outputs tab to the Financials section of the Policy tab, renamed **Financials and policy** (`/appraisals/$caseId/policy#financials`). It sits after the overview and before the norm families, with turnover by year from every source and the working-capital assessment. The ratios are shown once, as the financial-ratio norms, each with its band against the configured acceptable and marginal values (the engine's `band`; a marginal result is still a deviation). The Outputs tab keeps the draft CAM and the PD note; `/appraisals/$caseId/spread` and `?view=spread` links open the Financials section. The processing stages (§5) are unchanged |
 
 ## C.5 The base this build starts from
 

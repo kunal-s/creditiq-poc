@@ -164,12 +164,15 @@ test("Policy: three deviations and two norms that cannot be evaluated", async ()
   await expect(page.locator('[data-testid="norm"][data-outcome="pass"]')).toHaveCount(8);
 });
 
-test("Outputs: the spread has one audited year and says it is interim", async () => {
-  await page.goto(`/appraisals/${caseId}/outputs`);
-  await expect(page.getByTestId("spread-row")).toHaveCount(28);
-  await expect(page.getByTestId("spread-interim")).toBeVisible();
+test("Financials: the spread has one audited year and says it is interim", async () => {
+  await page.goto(`/appraisals/${caseId}/policy`);
+  const financials = page.getByTestId("financials");
+  await expect(financials.getByTestId("spread-row")).toHaveCount(23);
+  await expect(financials.getByTestId("spread-interim")).toBeVisible();
   // One audited year is on file: the row label column and one figure column.
-  await expect(page.getByTestId("spread-table").getByRole("columnheader")).toHaveCount(2);
+  await expect(
+    financials.getByTestId("spread-profit_and_loss").getByRole("columnheader"),
+  ).toHaveCount(2);
 });
 
 test("Outputs: the PD note asks after every gap and deviation", async () => {

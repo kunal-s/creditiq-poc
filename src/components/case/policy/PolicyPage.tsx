@@ -1,10 +1,16 @@
 import type { UseQueryResult } from "@tanstack/react-query";
+import { useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import type { ApprovingAuthority, PolicyAssessment } from "@/api/types";
 import { QueryView } from "@/components/common/States";
+import { FinancialsSection } from "@/components/case/spread/FinancialsSection";
 import { EmptyState } from "@/components/shell/EmptyState";
 import { t } from "@/config/terminology";
+import { useCrossVerification } from "@/domain/crossVerification";
+import { useFacts, useSpread } from "@/domain/findings";
 import {
+  FINANCIALS_HEADING_ID,
+  FINANCIALS_SECTION_ID,
   AUTHORITY_HEADING_ID,
   AUTHORITY_SECTION_ID,
   familyNorms,
@@ -21,8 +27,9 @@ import { GroupSection } from "./GroupSection";
 import { PolicyHeader } from "./PolicyHeader";
 import { PolicyOverview } from "./PolicyOverview";
 
-// The Policy checks tab (FRD §6, F-20, F-21): every norm with the required and the actual value,
-// the figures it used with their pages, and whether it passed, deviated or cannot be evaluated;
+// The Financials and policy tab (FRD §6, F-20, F-21, F-22): the spread, turnover by year and the
+// working-capital assessment (the Financials section, FinancialsSection); then every norm with
+// the required and the actual value, the figures it used with their pages, and whether it passed, deviated or cannot be evaluated;
 // and the approving authority those deviations call for. An overview card per family of norms
 // (eligibility, financial ratios, documentation, security cover: the engine's groups, in its
 // order) says where it stands, with its counts and up to three norms the engine picked; one more
@@ -54,6 +61,7 @@ import { PolicyOverview } from "./PolicyOverview";
 //                               policy-authority-at-least, policy-authority-rise (data-rises),
 //                               policy-authority-amount, policy-authority-deviations and
 //                               policy-authority-unavailable
+//   financials                  the Financials section, after the overview (see FinancialsSection)
 //   policy-group-<family>       a family's section (also its element id; data-status), headed by
 //                               the family's title (focused when its card is clicked) and
 //                               policy-group-counts; then policy-norms (or family-pending)
@@ -105,11 +113,14 @@ function PolicyBody({
   authority: UseQueryResult<ApprovingAuthority>;
   linkedTo?: string | undefined;
 }) {
-  // The authority's card sits above the rows, so the linked norm is opened once it has loaded
-  // (or could not be had), only once, and a frame later: once the router has scrolled the page it
-  // rendered to the top.
+  // The authority's card and the Financials section sit above the rows, so the linked norm is
+  // opened once they have loaded (or could not be had), only once, and a frame later: once the
+  // router has scrolled the page it rendered to the top.
   const linked = policy.norms.some((n) => n.id === linkedTo) ? (linkedTo ?? null) : null;
-  const settled = !authority.isLoading;
+  const spread = useSpread(caseId);
+  const facts = useFacts(caseId);
+  const board = useCrossVerification(caseId);
+  const settled = !authority.isLoading && !spread.isLoading && !facts.isLoading && !board.isLoading;
   const shown = useRef<string | null>(null);
   useEffect(() => {
     if (!linked || !settled || shown.current === linked) return;
@@ -120,8 +131,30 @@ function PolicyBody({
     return () => cancelAnimationFrame(frame);
   }, [linked, settled]);
 
+  // A link to the Financials section (#financials: the board's Spread button, an earlier spread
+  // link) is opened the same way, once the cards above it have settled.
+  const hash = useRouterState({ select: (state) => state.location.hash });
+  const opened = useRef<string | null>(null);
+  useEffect(() => {
+    // The browser's own hash: a server-rendered first load does not carry it in the router's
+    // location; a later link does, and re-runs this.
+    const current = window.location.hash.slice(1);
+    if (current !== FINANCIALS_SECTION_ID || !settled || opened.current === `${hash}|${current}`)
+      return;
+    const frame = requestAnimationFrame(() => {
+      opened.current = `${hash}|${current}`;
+      openSection(FINANCIALS_SECTION_ID, FINANCIALS_HEADING_ID);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [hash, settled]);
+
   if (policy.norms.length === 0) {
-    return <EmptyState title={t("policy.emptyTitle")} description={t("policy.emptyDescription")} />;
+    return (
+      <>
+        <EmptyState title={t("policy.emptyTitle")} description={t("policy.emptyDescription")} />
+        <FinancialsSection caseId={caseId} period={policy.period ?? null} />
+      </>
+    );
   }
   return (
     <>
@@ -134,6 +167,8 @@ function PolicyBody({
         onOpenAuthority={() => openSection(AUTHORITY_SECTION_ID, AUTHORITY_HEADING_ID)}
         onOpenNorm={openNorm}
       />
+      {/* The figures first, then the norms that test them. */}
+      <FinancialsSection caseId={caseId} period={policy.period ?? null} />
       {groupsOf(policy).map((group) => (
         <GroupSection
           key={group.family}

@@ -1,6 +1,7 @@
-// The Spread tab (FRD F-22, F-18.1, F-20): the audited years line by line, turnover from every
-// source year by year coloured by what the cross-checks concluded, and the ratios against the
-// policy norms in the band the engine placed them. The screen arranges; it decides nothing.
+// The Financials section of the Financials and policy tab (FRD F-22, F-18.1, F-20): the audited
+// years line by line, turnover from every source year by year coloured by what the cross-checks
+// concluded, and the working-capital assessment; below it the norms, each ratio in the band the
+// engine placed it. The screen arranges; it decides nothing.
 import { expect, test, type Page } from "@playwright/test";
 import type { CaseFacts, Spread, TurnoverFigure } from "../src/api/types";
 import {
@@ -18,7 +19,7 @@ import {
 } from "./fixtures/data";
 import { MockApi, scrollsSideways, signedIn } from "./support/api";
 
-const SPREAD_PATH = `/appraisals/${KESTREL}/spread`;
+const POLICY_PATH = `/appraisals/${KESTREL}/policy`;
 const page14 = [{ document_id: "doc-bs", page: 4 }];
 
 const SPREAD: Spread = {
@@ -83,11 +84,26 @@ const SPREAD: Spread = {
     },
   ],
   working_capital: {
-    method: "not_applicable",
-    reason: "",
-    column: null,
-    steps: [],
-    eligible: null,
+    method: "turnover",
+    reason: "The request is within INR 5.00 cr, so the turnover method applies.",
+    column: "FY 2025-26 (audited)",
+    steps: [
+      {
+        label: "Turnover",
+        value: 120_000_000,
+        unit: "inr",
+        basis: "Revenue from operations",
+        evidence: page14,
+      },
+      {
+        label: "Working-capital requirement",
+        value: 30_000_000,
+        unit: "inr",
+        basis: "25% of turnover",
+        evidence: [],
+      },
+    ],
+    eligible: 24_000_000,
     requested: 50_000_000,
     missing: [],
   },
@@ -213,7 +229,7 @@ const POLICY_BANDS = {
   ],
 };
 
-async function openSpread(page: Page) {
+async function openFinancials(page: Page) {
   const api = new MockApi();
   api.documents.set(KESTREL, [...DOCUMENTS, ...XV_DOCUMENTS]);
   api.documentTypes = XV_DOCUMENT_TYPES;
@@ -222,8 +238,8 @@ async function openSpread(page: Page) {
   api.policy.set(KESTREL, POLICY_BANDS);
   api.boards.set(KESTREL, board());
   await signedIn(page, api);
-  await page.goto(SPREAD_PATH);
-  await expect(page.getByTestId("spread-page")).toBeVisible();
+  await page.goto(POLICY_PATH);
+  await expect(page.getByTestId("financials")).toBeVisible();
   return api;
 }
 
@@ -232,12 +248,25 @@ const cell = (page: Page, source: string, fy: string) =>
     `[data-testid="spread-turnover-row"][data-source="${source}"] [data-testid="spread-turnover-cell"][data-fy="${fy}"]`,
   );
 
-test("the Spread tab sits with Cross-checks and Policy, and opens on the latest year", async ({
+test("the Financials section opens the Financials and policy tab, ahead of the norms", async ({
   page,
 }) => {
-  await openSpread(page);
-  await expect(page.getByTestId("page-header")).toContainText(`Appraisal ${KESTREL} · Spread`);
-  await expect(page.getByRole("link", { name: "Spread", exact: true }).first()).toBeVisible();
+  await openFinancials(page);
+  await expect(page.getByTestId("policy-header")).toContainText(
+    `Appraisal ${KESTREL} · Financials and policy`,
+  );
+  // One tab now: no separate Spread tab.
+  await expect(page.getByRole("link", { name: "Financials and policy" }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Spread", exact: true })).toHaveCount(0);
+  // The overview, then the figures, then the norms that test them.
+  const order = await page
+    .getByTestId("policy-page")
+    .locator(
+      '[data-testid="policy-overview"], [data-testid="financials"], [data-testid^="policy-group-"][id]',
+    )
+    .evaluateAll((els) => els.map((e) => e.getAttribute("data-testid")));
+  expect(order.slice(0, 3)).toEqual(["policy-overview", "financials", "policy-group-eligibility"]);
+  await expect(page.getByTestId("spread-interim")).toBeVisible();
   await expect(page.getByTestId("spread-period-FY 2025-26")).toHaveAttribute(
     "aria-pressed",
     "true",
@@ -254,7 +283,7 @@ test("the Spread tab sits with Cross-checks and Policy, and opens on the latest 
 test("turnover is laid out year by year, each figure coloured by what the cross-checks concluded", async ({
   page,
 }) => {
-  await openSpread(page);
+  await openFinancials(page);
   const rows = page.getByTestId("spread-turnover-row");
   await expect(rows).toHaveCount(3);
   expect(await rows.evaluateAll((els) => els.map((e) => e.dataset["source"]))).toEqual([
@@ -285,8 +314,10 @@ test("turnover is laid out year by year, each figure coloured by what the cross-
   );
 });
 
-test("an open turnover discrepancy heads the tab and leads to Cross-checks", async ({ page }) => {
-  await openSpread(page);
+test("an open turnover discrepancy heads the section and leads to Cross-checks", async ({
+  page,
+}) => {
+  await openFinancials(page);
   const banner = page.getByTestId("spread-banner");
   await expect(banner).toContainText("Bank credits fall short of audited turnover");
   await expect(banner).toContainText("Business credits in bank statements — 9.80 cr");
@@ -297,7 +328,7 @@ test("an open turnover discrepancy heads the tab and leads to Cross-checks", asy
 test("the statements are line by line, and a person's entry is named for confirmation", async ({
   page,
 }) => {
-  await openSpread(page);
+  await openFinancials(page);
   const pl = page.getByTestId("spread-profit_and_loss");
   await expect(pl.locator('[data-row="revenue_from_operations"]')).toContainText("10.00");
   await expect(pl.locator('[data-row="revenue_from_operations"]')).toContainText("12.00");
@@ -309,7 +340,7 @@ test("the statements are line by line, and a person's entry is named for confirm
 });
 
 test("a figure shows where it was read from, and opens its page", async ({ page }) => {
-  await openSpread(page);
+  await openFinancials(page);
   const source = page.getByTestId("spread-source");
   await expect(source).toContainText("Select any figure");
   await page
@@ -324,32 +355,40 @@ test("a figure shows where it was read from, and opens its page", async ({ page 
   await expect(page.getByTestId("evidence-viewer")).toBeVisible();
 });
 
-test("the ratios read in the band the engine placed them, beside the norm", async ({ page }) => {
-  await openSpread(page);
-  const tiles = page.getByTestId("spread-ratio");
-  // The norms arrive after the spread: wait for every tile before reading their order.
-  await expect(tiles).toHaveCount(5);
-  expect(
-    await tiles.evaluateAll((els) => els.map((e) => `${e.dataset["ratio"]}:${e.dataset["band"]}`)),
-  ).toEqual([
-    "FR-01:within",
-    "FR-06:marginal",
-    "FR-02:outside",
-    "FR-03:cannot",
-    "ebitda_margin:noNorm",
-  ]);
-  const tile = (id: string) => page.locator(`[data-testid="spread-ratio"][data-ratio="${id}"]`);
-  await expect(tile("FR-01")).toContainText("Within policy");
-  await expect(tile("FR-06")).toContainText("Marginal");
-  await expect(tile("FR-06")).toContainText("Policy at most 75 days · marginal 95 days");
-  await expect(tile("FR-02")).toContainText("Outside policy");
-  await expect(tile("FR-03")).toContainText("Cannot evaluate");
-  await expect(tile("ebitda_margin")).toContainText("No policy norm");
-  await expect(page.getByTestId("spread-ratios")).toContainText("Computed on FY 2025-26 figures");
+test("each ratio norm reads in the band the engine placed it; the spread has no tiles of its own", async ({
+  page,
+}) => {
+  await openFinancials(page);
+  const row = (id: string) => page.locator(`[data-testid="norm"][data-norm="${id}"]`);
+  await expect(row("FR-01").getByTestId("norm-band")).toHaveAttribute("data-band", "within");
+  await expect(row("FR-01").getByTestId("norm-band")).toHaveText("Within policy");
+  await expect(row("FR-06").getByTestId("norm-band")).toHaveText("Marginal");
+  await expect(row("FR-06").getByTestId("norm-marginal")).toHaveText("marginal 95 days");
+  // A marginal deviation reads amber, not red.
+  await expect(row("FR-06").getByTestId("norm-actual")).toHaveClass(/text-flag-foreground/);
+  await expect(row("FR-02").getByTestId("norm-band")).toHaveText("Outside policy");
+  await expect(row("FR-02").getByTestId("norm-actual")).toHaveClass(/text-destructive/);
+  // No band where the norm has no result.
+  await expect(row("FR-03").getByTestId("norm-band")).toHaveCount(0);
+  await expect(page.getByTestId("spread-ratio")).toHaveCount(0);
+});
+
+test("the working-capital assessment sits with the statements", async ({ page }) => {
+  await openFinancials(page);
+  const wc = page.getByTestId("financials").getByTestId("working-capital");
+  await expect(wc).toContainText(
+    "The request is within INR 5.00 cr, so the turnover method applies.",
+  );
+  await expect(wc.getByTestId("wc-step")).toHaveCount(2);
+  await expect(wc.getByTestId("wc-verdict")).toHaveText(
+    "Eligible bank finance INR 2.40 cr against the request of INR 5.00 cr.",
+  );
+  await wc.getByTestId("wc-step").first().getByRole("button", { name: "Open page 4" }).click();
+  await expect(page.getByTestId("evidence-viewer")).toBeVisible();
 });
 
 test("the trend notes describe the move from the year before", async ({ page }) => {
-  await openSpread(page);
+  await openFinancials(page);
   await expect(page.getByTestId("spread-trend-turnover")).toContainText(
     "Turnover grew 20.0% in FY 2025-26",
   );
@@ -358,8 +397,8 @@ test("the trend notes describe the move from the year before", async ({ page }) 
   );
 });
 
-test("on a phone the tab reads in one column without scrolling sideways", async ({ page }) => {
+test("on a phone the section reads in one column without scrolling sideways", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
-  await openSpread(page);
+  await openFinancials(page);
   expect(await scrollsSideways(page)).toBe(false);
 });

@@ -37,9 +37,9 @@ async function cardBoxes(page: Page) {
 test("TC-24: the header says where the case stands against the norms", async ({ page }) => {
   await openPolicy(page);
   const header = page.getByTestId("policy-header");
-  await expect(header).toContainText(`Appraisal ${KESTREL} · Policy checks`);
-  await expect(header.getByRole("heading", { level: 2 })).toHaveText(
-    "Policy norms and approving authority",
+  await expect(header).toContainText(`Appraisal ${KESTREL} · Financials and policy`);
+  await expect(header.getByRole("heading", { level: 2 }).first()).toHaveText(
+    "Financials and policy",
   );
   // The engine's counts, the year the figures come from, and that the norms are provisional.
   await expect(page.getByTestId("policy-summary-line")).toHaveText(

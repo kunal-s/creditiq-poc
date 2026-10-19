@@ -104,7 +104,7 @@ test("the header sums up the board, the decisions made and the run, and locks th
   );
   await expect(page.getByTestId("xv-back-spread")).toHaveAttribute(
     "href",
-    `/appraisals/${KESTREL}/spread`,
+    `/appraisals/${KESTREL}/policy#financials`,
   );
   await expect(page.getByTestId("xv-exception-queue")).toHaveAttribute("href", "/review");
 
@@ -130,7 +130,9 @@ test("the header sums up the board, the decisions made and the run, and locks th
   await expect(page).toHaveURL(/\/review$/);
   await page.goBack();
   await page.getByTestId("xv-back-spread").click();
-  await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}/spread$`));
+  await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}/policy#financials$`));
+  // The board's Spread button opens the Financials section of the Financials and policy tab.
+  await expect(page.getByTestId("financials")).toBeInViewport();
 });
 
 test("the overview has a card per area, in the engine's order, each saying where the area stands", async ({

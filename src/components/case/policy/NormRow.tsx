@@ -10,6 +10,15 @@ import { cn } from "@/lib/utils";
 import { NormWorking } from "./NormWorking";
 import { OUTCOME_ICON, OUTCOME_TEXT } from "./styles";
 
+/** A ratio's band against its configured values (the engine's): green within the norm, amber past
+ * it but within the marginal value, red past that. */
+const BAND_TONE = { within: "positive", marginal: "flag", outside: "critical" } as const;
+const BAND_TEXT = {
+  within: "text-positive",
+  marginal: "text-flag-foreground",
+  outside: "text-destructive",
+} as const;
+
 /** Where a figure with no document page comes from. */
 function InputBasis({ caseId, input }: { caseId: string; input: NormInput }) {
   const basis = input.basis ?? "document";
@@ -59,6 +68,11 @@ export function NormRow({ caseId, norm }: { caseId: string; norm: NormResult }) 
             </span>
             <span className="min-w-0 break-words">{norm.label}</span>
             {norm.outcome === "deviation" && <Chip tone="critical">{norm.category_label}</Chip>}
+            {norm.band && (
+              <span data-testid="norm-band" data-band={norm.band}>
+                <Chip tone={BAND_TONE[norm.band]}>{t(`policy.band.${norm.band}`)}</Chip>
+              </span>
+            )}
             {norm.provisional && <Chip tone="muted">{t("policy.provisional")}</Chip>}
           </p>
         </div>
@@ -68,9 +82,19 @@ export function NormRow({ caseId, norm }: { caseId: string; norm: NormResult }) 
         <div className="ml-6 grid w-full shrink-0 grid-cols-2 gap-x-4 text-left text-[12px] [overflow-wrap:anywhere] sm:ml-auto sm:w-44 sm:text-right">
           <span className="text-muted-foreground">{t("policy.required")}</span>
           <span className="text-muted-foreground">{t("policy.actual")}</span>
-          <span className="tabular">{norm.required}</span>
+          <span className="tabular">
+            {norm.required}
+            {norm.marginal_text && (
+              <span className="block text-[11px] text-muted-foreground" data-testid="norm-marginal">
+                {t("policy.marginalAt", { value: norm.marginal_text })}
+              </span>
+            )}
+          </span>
           <span
-            className={cn("tabular font-semibold", OUTCOME_TEXT[norm.outcome])}
+            className={cn(
+              "tabular font-semibold",
+              norm.band ? BAND_TEXT[norm.band] : OUTCOME_TEXT[norm.outcome],
+            )}
             data-testid="norm-actual"
           >
             {actualText(norm)}

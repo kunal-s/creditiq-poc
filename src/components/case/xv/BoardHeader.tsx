@@ -91,8 +91,9 @@ export function BoardHeader({
         <div className="flex max-w-full flex-wrap items-center gap-2">
           {canOutputs && (
             <Link
-              to="/appraisals/$caseId/spread"
+              to="/appraisals/$caseId/policy"
               params={{ caseId }}
+              hash="financials"
               className={headerButton}
               data-testid="xv-back-spread"
             >

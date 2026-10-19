@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Fragment, createContext, useContext, useState } from "react";
-import { ChevronRight, Download, FileText, Files, Loader2, Lock } from "lucide-react";
+import { ChevronRight, Download, Eye, Files, Loader2, Lock } from "lucide-react";
 import type {
   Cam,
   CamBlock,
@@ -223,7 +223,7 @@ function SourceChip({ caseId, cited }: { caseId: string; cited: SourcePages }) {
       data-source={n}
       data-pages={cited.pages.join(",")}
     >
-      <FileText className="h-2.5 w-2.5" />
+      <Eye className="h-2.5 w-2.5" />
       {t("outputs.citation.source", { n, at: pagesAt(cited.pages) })}
     </button>
   );
@@ -241,7 +241,7 @@ function PageChip({ caseId, evidence: e }: { caseId: string; evidence: Evidence 
       className={chip}
       data-testid="citation"
     >
-      <FileText className="h-2.5 w-2.5" />
+      <Eye className="h-2.5 w-2.5" />
       {t("outputs.citation.page", { page: e.page })}
     </button>
   );

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { FileText, Users } from "lucide-react";
+import { Eye, Users } from "lucide-react";
 import type { CaseDetail, FieldValue, LogicalDocument, Party } from "@/api/types";
 import { CaseScreen } from "@/components/shell/CaseScreen";
 import { PageHeader } from "@/components/shell/PageHeader";
@@ -165,7 +165,7 @@ function PartyRow({
                 onClick={() => viewer.open({ caseId, documentId: doc.id, page: doc.page_from })}
                 className="inline-flex items-center gap-1 rounded border border-border bg-surface px-1.5 py-0.5 font-medium text-primary hover:bg-muted"
               >
-                <FileText className="h-3 w-3" />
+                <Eye className="h-3 w-3" />
                 {doc.classification?.types.map(types.name).join(" + ") ||
                   t("document.unclassified")}{" "}
                 · {pageRange(doc)}

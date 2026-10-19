@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { ChevronDown, ChevronRight, FileText } from "lucide-react";
+import { ChevronDown, ChevronRight, Eye } from "lucide-react";
 import type {
   ChecklistItemDef,
   ChecklistItemState,
@@ -221,7 +221,7 @@ function Item({
                   className="inline-flex items-center gap-1.5 rounded border border-border bg-surface px-2.5 py-1 text-[12px] font-medium text-primary hover:bg-muted"
                   data-testid="linked-document"
                 >
-                  <FileText className="h-3.5 w-3.5" />
+                  <Eye className="h-3.5 w-3.5" />
                   {doc.classification?.types.map(types.name).join(" + ") ||
                     t("document.unclassified")}{" "}
                   · {pageRange(doc)}

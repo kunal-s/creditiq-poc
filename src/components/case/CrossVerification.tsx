@@ -1,5 +1,5 @@
 import { useState, type ComponentType } from "react";
-import { ChevronRight, FileText } from "lucide-react";
+import { ChevronRight, Eye } from "lucide-react";
 import type { CaseFacts, Evidence, FactValue, FindingArea, FindingSide } from "@/api/types";
 import { Chip, Panel } from "@/components/common/Panel";
 import { QueryView } from "@/components/common/States";
@@ -77,7 +77,7 @@ function EvidenceLinks({ caseId, evidence }: { caseId: string; evidence: Evidenc
           className="inline-flex items-center gap-0.5 rounded border border-border px-1.5 py-0.5 text-[11px] font-medium text-primary hover:bg-muted"
           data-testid="finding-evidence"
         >
-          <FileText className="h-3 w-3" /> p{e.page}
+          <Eye className="h-3 w-3" /> p{e.page}
         </button>
       ))}
       {evidence.length > shown.length && (

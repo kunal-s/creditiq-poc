@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import { FileText, X } from "lucide-react";
+import { Eye, X } from "lucide-react";
 import type { EvidenceRow, SourceColumn } from "@/api/types";
 import { useDocViewer } from "@/components/docviewer/DocViewer";
 import { t } from "@/config/terminology";
@@ -162,7 +162,7 @@ function RowLine({ row, width, onOpen }: { row: EvidenceRow; width: number; onOp
             className="inline-flex items-center gap-0.5 rounded border border-border bg-surface px-1.5 py-0.5 font-sans text-[10.5px] font-medium text-primary hover:bg-muted"
             data-testid="xv-evidence-page"
           >
-            <FileText className="h-3 w-3" aria-hidden />
+            <Eye className="h-3 w-3" aria-hidden />
             {t("crossVerification.evidence.page", { page: evidence.page })}
           </button>
         )}

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowRight, FileText } from "lucide-react";
+import { ArrowRight, Eye } from "lucide-react";
 import type { FieldStatus, FieldValue, LogicalDocument } from "@/api/types";
 import { Panel } from "@/components/common/Panel";
 import { Details } from "@/components/common/Details";
@@ -207,7 +207,7 @@ function DocumentFields({
             onClick={() => viewer.open({ caseId, documentId: doc.id, page: doc.page_from })}
             className="inline-flex items-center gap-1 rounded border border-border px-2 py-0.5 text-[11.5px] font-medium text-primary hover:bg-muted"
           >
-            <FileText className="h-3 w-3" /> {t("validation.openDocument")}
+            <Eye className="h-3 w-3" /> {t("validation.openDocument")}
           </button>
         </span>
       }

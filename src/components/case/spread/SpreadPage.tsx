@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { AlertCircle, ArrowLeft, ArrowRight, FileText } from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowRight, Eye, FileText } from "lucide-react";
 import { useState } from "react";
 import type { CaseDetail, CrossVerificationView, Spread } from "@/api/types";
 import { PageHeader, PrimaryAction, SecondaryAction } from "@/components/common/PageHeader";
@@ -336,9 +336,10 @@ function SourcePanel({ caseId, picked }: { caseId: string; picked: Picked | null
                     bbox: e.bbox ?? null,
                   })
                 }
-                className="mt-2 text-[12.5px] font-medium text-primary hover:underline"
+                className="mt-2 inline-flex items-center gap-1 text-[12.5px] font-medium text-primary hover:underline"
                 data-testid="spread-source-open"
               >
+                <Eye className="h-3.5 w-3.5" aria-hidden />
                 {t("spreadPage.source.open")}
               </button>
             </div>

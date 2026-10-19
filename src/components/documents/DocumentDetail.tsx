@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { FileText } from "lucide-react";
+import { Eye } from "lucide-react";
 import type { ChecklistItemState, FileRecord, LogicalDocument } from "@/api/types";
 import { useDocViewer } from "@/components/docviewer/DocViewer";
 import { t, tOr } from "@/config/terminology";
@@ -188,7 +188,7 @@ export function DocumentDetail({
         onClick={() => viewer.open({ caseId, documentId: doc.id, page: doc.page_from })}
         className="inline-flex items-center gap-1.5 rounded border border-border bg-surface px-2.5 py-1 text-[12px] font-medium text-primary hover:bg-muted"
       >
-        <FileText className="h-3.5 w-3.5" /> {t("validation.openDocument")}
+        <Eye className="h-3.5 w-3.5" /> {t("validation.openDocument")}
       </button>
     </div>
   );

@@ -941,6 +941,20 @@ export async function signedIn(page: Page, api: MockApi, user: SessionUser = api
   );
 }
 
+/** Select an area's tab on the Cross-checks board, which shows one area's section at a time. */
+export async function showArea(page: Page, area: string): Promise<void> {
+  const tab = page.getByTestId(`xv-area-tab-${area}`);
+  if ((await tab.getAttribute("data-state")) !== "active") await tab.click();
+}
+
+/** Select the tab of the area whose section holds `el` (a card, a row, a list). */
+export async function showAreaOf(page: Page, el: Locator): Promise<void> {
+  const area = await el.evaluate(
+    (node) => node.closest('section[id^="xv-area-"]')?.id.replace("xv-area-", "") ?? null,
+  );
+  if (area) await showArea(page, area);
+}
+
 /** True when the page scrolls sideways (F-06.1 forbids it at phone width). */
 export async function scrollsSideways(page: Page): Promise<boolean> {
   return page.evaluate(() =>

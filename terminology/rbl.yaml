@@ -409,6 +409,8 @@ crossVerification:
     agrees: Agrees
     exactDiffers: Differs
     incomplete: Not compared
+    notApplicable: Not applicable
+    select: Select a comparison to see its sources and evidence beside it.
     tolerance: "tolerance {tolerance}"
     openEvidence: "Open {label} at page {page}"
 

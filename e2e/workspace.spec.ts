@@ -3,7 +3,7 @@
 // to a part of a tab land on it.
 import { expect, test } from "@playwright/test";
 import { FINDING_ITEM, KESTREL } from "./fixtures/data";
-import { MockApi, signedIn } from "./support/api";
+import { MockApi, showArea, signedIn } from "./support/api";
 
 test("Overview lists what is still needed and what waits for a decision", async ({ page }) => {
   const api = new MockApi();
@@ -110,6 +110,7 @@ test("Cross-verification shows each finding with its sources and their evidence"
   await page.goto(`/appraisals/${KESTREL}/cross-verification`);
   await expect(page.getByTestId("xv-summary-line")).toContainText("7 discrepancies found");
   const turnover = page.getByTestId("xv-area-turnover");
+  await showArea(page, "turnover");
   await expect(turnover.getByTestId("xv-incomplete").getByRole("heading")).toHaveText(
     "Could not be checked (3)",
   );
@@ -121,6 +122,7 @@ test("Cross-verification shows each finding with its sources and their evidence"
   await expect(page.getByTestId("xv-card-fnd-id1")).toHaveAttribute("data-expanded", "true");
   const ob2 = page.getByTestId("xv-card-fnd-ob2");
   await expect(ob2).toHaveAttribute("data-expanded", "false");
+  await showArea(page, "obligations");
   await ob2.getByTestId("xv-card-toggle").click();
   await expect(ob2).toHaveAttribute("data-expanded", "true");
   await expect(ob2).toContainText("ASHWOOD FINSERV");
@@ -134,9 +136,11 @@ test("Cross-verification shows each finding with its sources and their evidence"
   ).toContainText("8 of 12 months");
   // Each area's facts behind its checks.
   const accounts = page.getByTestId("xv-area-accounts").getByTestId("xv-facts");
+  await showArea(page, "accounts");
   await accounts.locator("summary").click();
   await expect(accounts.getByTestId("facts-credits")).toContainText("Loan disbursal");
   const obligations = page.getByTestId("xv-area-obligations").getByTestId("xv-facts");
+  await showArea(page, "obligations");
   await obligations.locator("summary").click();
   await expect(obligations.getByTestId("facts-obligations")).toContainText("ASHWOOD FINSERV");
 });
@@ -149,6 +153,7 @@ test("a finding is accepted as valid, or dismissed as not valid, each with a com
   await signedIn(page, api);
   await page.goto(`/appraisals/${KESTREL}/cross-verification`);
   const ob2 = page.getByTestId("xv-card-fnd-ob2");
+  await showArea(page, "obligations");
   await ob2.getByTestId("xv-card-toggle").click();
   await ob2.getByTestId("xv-decision-dismiss").check();
   await expect(ob2.getByTestId("xv-save-decision")).toBeDisabled();
@@ -172,6 +177,7 @@ test("a finding is accepted as valid, or dismissed as not valid, each with a com
   });
 
   const ba1 = page.getByTestId("xv-card-fnd-ba1");
+  await showArea(page, "accounts");
   await ba1.getByTestId("xv-card-toggle").click();
   await ba1.getByTestId("xv-decision-accept").check();
   await ba1.getByTestId("xv-comment").fill("A valid finding: the statement is requested.");

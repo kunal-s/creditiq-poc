@@ -341,3 +341,55 @@ function GapRow({ finding }: { finding: Finding }) {
     </dl>
   );
 }
+
+/** A check that is not a discrepancy, as the turnover panel shows it beside the figures: where it
+ * stands, what it compared, the sources side by side with the rows behind each, and the gap; no
+ * decision, since there is nothing to decide. */
+export function CheckPanel({ caseId, item }: { caseId: string; item: XvItem }) {
+  const f = item.finding;
+  const [active, setActive] = useState<string | null>(null);
+  const column = (f.columns ?? []).find((c) => c.key === active);
+  return (
+    <section
+      className="overflow-hidden rounded border border-border bg-surface"
+      data-testid="xv-check-panel"
+      data-finding={f.id}
+      data-outcome={f.outcome}
+    >
+      <div className="px-4 py-3">
+        <span className="flex flex-wrap items-center gap-2">
+          <Chip
+            tone={f.outcome === "pass" ? "positive" : f.outcome === "incomplete" ? "flag" : "muted"}
+          >
+            {t(
+              `crossVerification.figures.${f.outcome === "pass" ? "matches" : f.outcome === "incomplete" ? "incomplete" : "notApplicable"}`,
+            )}
+          </Chip>
+          <span className="min-w-0 break-words font-mono text-[11px] text-muted-foreground">
+            {[f.ref, f.rule_id, f.scope].filter(Boolean).join(" · ")}
+          </span>
+        </span>
+        <span className="mt-1 block break-words text-[14px] font-semibold text-foreground">
+          {comparesText(f)}
+        </span>
+        {f.explanation && (
+          <span className="mt-1 block break-words text-[12.5px] leading-relaxed text-muted-foreground">
+            {f.explanation}
+          </span>
+        )}
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-y border-border px-4 py-2">
+        <RuleLine item={item} />
+        <ComparePages caseId={caseId} finding={f} />
+      </div>
+      <SourceColumns
+        caseId={caseId}
+        finding={f}
+        active={active}
+        onToggle={(key) => setActive(active === key ? null : key)}
+      />
+      <GapRow finding={f} />
+      {column && <EvidencePanel caseId={caseId} column={column} onClose={() => setActive(null)} />}
+    </section>
+  );
+}

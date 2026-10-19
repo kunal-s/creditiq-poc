@@ -5,7 +5,7 @@
 // covered in cross-verification-board.spec.ts; these checks run on a board of their own.
 import { expect, test } from "@playwright/test";
 import { KESTREL, xvColumn, xvFinding, xvItem, xvRow, xvSide, xvView } from "./fixtures/data";
-import { MockApi, signedIn } from "./support/api";
+import { MockApi, showArea, signedIn } from "./support/api";
 
 const onPage = (documentId: string, page: number) => [{ document_id: documentId, page }];
 
@@ -217,6 +217,7 @@ test("an incomplete check names what is not on file; a passed check stays closed
   await page.goto(`/appraisals/${KESTREL}/cross-verification`);
 
   const turnover = page.getByTestId("xv-area-turnover");
+  await showArea(page, "turnover");
   const window = turnover.locator('[data-testid="xv-incomplete-row"][data-rule="TO-05"]');
   await expect(window).toContainText("GSTR-3B not on file.");
   await expect(window.getByTestId("xv-request")).toHaveText("To complete it, provide the GSTR-3B.");

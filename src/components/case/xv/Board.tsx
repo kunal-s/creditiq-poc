@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import type { CrossVerificationView, FindingArea } from "@/api/types";
 import { QueryView } from "@/components/common/States";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/shell/EmptyState";
 import { t } from "@/config/terminology";
+import { cn } from "@/lib/utils";
 import {
   areaHeadingId,
   areaItems,
@@ -17,7 +19,8 @@ import {
   useCrossVerification,
 } from "@/domain/crossVerification";
 import { AreaOverview } from "./AreaOverview";
-import { AreaSection } from "./AreaSection";
+import { AreaSection, FIGURE_AREAS, defaultPick } from "./AreaSection";
+import { AREA_STATUS } from "./styles";
 import { BlockingBanner } from "./BlockingBanner";
 import { BoardHeader } from "./BoardHeader";
 import { SeverityTiles } from "./SeverityTiles";
@@ -87,6 +90,11 @@ import { SeverityTiles } from "./SeverityTiles";
 //                            panels facts-identity, facts-people, facts-turnover,
 //                            facts-accounts, facts-credits, facts-obligations)
 //
+// The areas' sections sit behind tabs under the cards (xv-area-tabs: xv-area-tab-<area> each,
+// with xv-area-tab-open), one area shown at a time: the area of the board's top discrepancy at
+// first, or of the finding a link names. A card selects its area's tab; Adjudicate now, a key
+// figure and a link switch to their finding's area before opening it.
+//
 // A link from the draft CAM or the PD note (?finding=, a finding id or its XV reference) opens
 // the board at that finding once it has loaded: a discrepancy's card open and focused, as
 // Adjudicate now leaves it, or any other check's row, as a key figure leaves it.
@@ -147,11 +155,39 @@ function BoardBody({
   const linked = itemByLink(view, linkedTo);
   const linkedId = linked?.finding.id ?? null;
   const linkedFails = linked?.finding.outcome === "fail";
+  const areas = areasOf(view);
+  const areaOf = (id: string | null | undefined): FindingArea | undefined =>
+    itemById(view, id)?.finding.area ?? undefined;
+  // One area's section at a time: the linked finding's, else the top discrepancy's, else the first.
+  const [chosen, setChosen] = useState<FindingArea | undefined>(
+    () => areaOf(linkedId) ?? areaOf(view.top_finding_id) ?? areas[0]?.area,
+  );
+  const active = areas.some((a) => a.area === chosen) ? chosen : areas[0]?.area;
   // The first card on the board (the engine's top_finding_id) is open when the board loads; a
   // link opens it at the card it names instead, or with every card closed at a check's row.
+  // In a figure area (turnover), the comparison picked beside its list: a link's or the board's
+  // own, its card open with it.
+  const [picked, setPicked] = useState<Partial<Record<FindingArea, string>>>(() => {
+    const out: Partial<Record<FindingArea, string>> = {};
+    for (const a of FIGURE_AREAS) {
+      const id = defaultPick(areaItems(view, a));
+      if (id) out[a] = id;
+    }
+    const linkedArea = linked?.finding.area;
+    if (linked && linkedArea && FIGURE_AREAS.includes(linkedArea))
+      out[linkedArea] = linked.finding.id;
+    return out;
+  });
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => {
     const open = linked ? (linkedFails ? linkedId : null) : view.top_finding_id;
-    return new Set(open ? [open] : []);
+    const ids = new Set(open ? [open] : []);
+    // The discrepancy beside the turnover figures is open, as the board's first card is.
+    if (!linked)
+      for (const a of FIGURE_AREAS) {
+        const id = defaultPick(areaItems(view, a));
+        if (id && itemById(view, id)?.finding.outcome === "fail") ids.add(id);
+      }
+    return ids;
   });
   const toggle = (id: string) =>
     setExpanded((current) => {
@@ -161,13 +197,20 @@ function BoardBody({
       return next;
     });
   const adjudicateNow = (id: string) => {
-    flushSync(() => setExpanded((current) => new Set(current).add(id)));
+    flushSync(() => {
+      const area = areaOf(id) ?? active;
+      setChosen(area);
+      if (area && FIGURE_AREAS.includes(area)) setPicked((p) => ({ ...p, [area]: id }));
+      setExpanded((current) => new Set(current).add(id));
+    });
     focusCard(id);
   };
+  // A card selects its area's tab; the page moves only as far as it takes to show the section.
   const openArea = (area: FindingArea) => {
+    flushSync(() => setChosen(area));
     document
       .getElementById(areaSectionId(area))
-      ?.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
+      ?.scrollIntoView({ behavior: scrollBehavior(), block: "nearest" });
     document.getElementById(areaHeadingId(area))?.focus({ preventScroll: true });
   };
   // A key figure opens its finding: a discrepancy's card, as Adjudicate now does; any other
@@ -176,7 +219,10 @@ function BoardBody({
     const item = itemById(view, id);
     if (!item) return;
     if (item.finding.outcome === "fail") adjudicateNow(id);
-    else focusRow(id);
+    else {
+      flushSync(() => setChosen(item.finding.area ?? active));
+      focusRow(id);
+    }
   };
 
   // The linked finding is shown once, when its card is open (the card the board opened with, or
@@ -209,17 +255,66 @@ function BoardBody({
     <>
       <BlockingBanner view={view} onAdjudicate={adjudicateNow} />
       <SeverityTiles view={view} />
-      <AreaOverview view={view} onOpen={openArea} onOpenFinding={openFinding} />
-      {areasOf(view).map((area) => (
-        <AreaSection
-          key={area.area}
-          caseId={caseId}
-          area={area}
-          items={areaItems(view, area.area)}
-          expanded={expanded}
-          onToggle={toggle}
-        />
-      ))}
+      <AreaOverview view={view} active={active} onOpen={openArea} onOpenFinding={openFinding} />
+      {active && (
+        <Tabs
+          value={active}
+          onValueChange={(v) => setChosen(v as FindingArea)}
+          className="space-y-3"
+          data-testid="xv-area-tabs"
+        >
+          <TabsList className="h-auto flex-wrap justify-start gap-1 rounded border border-border bg-surface p-1">
+            {areas.map((area) => {
+              const Icon = AREA_STATUS[area.status].icon;
+              return (
+                <TabsTrigger
+                  key={area.area}
+                  value={area.area}
+                  className="gap-1.5 rounded px-3 py-1.5 text-[13px] text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-none"
+                  data-testid={`xv-area-tab-${area.area}`}
+                >
+                  <Icon
+                    className={cn(
+                      "h-3.5 w-3.5",
+                      area.area === active ? "" : AREA_STATUS[area.status].text,
+                    )}
+                    aria-hidden
+                  />
+                  {t(`crossVerification.area.${area.area}.title`)}
+                  {area.open > 0 && (
+                    <span
+                      className="tabular rounded-full bg-critical-soft px-1.5 text-[11px] font-semibold leading-[18px] text-destructive"
+                      data-testid="xv-area-tab-open"
+                    >
+                      {area.open}
+                    </span>
+                  )}
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
+          {areas.map((area) => (
+            // Kept in the page while hidden, so a section's place, ids and open cards survive a
+            // switch of tab.
+            <TabsContent
+              key={area.area}
+              value={area.area}
+              forceMount
+              className="mt-0 data-[state=inactive]:hidden"
+            >
+              <AreaSection
+                caseId={caseId}
+                area={area}
+                items={areaItems(view, area.area)}
+                expanded={expanded}
+                onToggle={toggle}
+                picked={picked[area.area] ?? null}
+                onPick={(id) => setPicked((p) => ({ ...p, [area.area]: id }))}
+              />
+            </TabsContent>
+          ))}
+        </Tabs>
+      )}
     </>
   );
 }

@@ -2,7 +2,7 @@
 // Help explains the steps.
 import { expect, test } from "@playwright/test";
 import { KESTREL } from "./fixtures/data";
-import { MockApi, signedIn } from "./support/api";
+import { MockApi, showArea, signedIn } from "./support/api";
 
 test("a case's steps are reached from the side menu and the stage bar", async ({ page }) => {
   const api = new MockApi();
@@ -47,6 +47,7 @@ test("technical detail stays closed until asked for", async ({ page }) => {
   await signedIn(page, api);
   await page.goto(`/appraisals/${KESTREL}/cross-verification`);
   const ob2 = page.getByTestId("xv-card-fnd-ob2");
+  await showArea(page, "obligations");
   await ob2.getByTestId("xv-card-toggle").click();
   await expect(ob2).toHaveAttribute("data-expanded", "true");
   const lines = ob2.getByTestId("xv-line-by-line");

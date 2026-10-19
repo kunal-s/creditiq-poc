@@ -299,3 +299,16 @@ export function diffSegments(value: string, reference: string): Segment[] {
   });
   return segments;
 }
+
+/** The checks of an area that compared two figures or more, discrepancy or not: the Figures
+ * compared list (passed, failed, or not compared for want of months), in the engine's order. */
+export function comparedItems(items: XvItem[]): XvItem[] {
+  return items.filter(
+    (i) =>
+      (i.finding.outcome === "pass" ||
+        i.finding.outcome === "fail" ||
+        i.finding.outcome === "incomplete") &&
+      i.finding.sides.filter((s) => s.value !== null && s.value !== undefined && s.value !== "")
+        .length >= 2,
+  );
+}

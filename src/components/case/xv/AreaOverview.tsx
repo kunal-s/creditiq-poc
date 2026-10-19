@@ -19,10 +19,13 @@ import { AREA_STATUS, highlightMark } from "./styles";
  * picked for it. A card opens its section; a key figure opens its finding. */
 export function AreaOverview({
   view,
+  active,
   onOpen,
   onOpenFinding,
 }: {
   view: CrossVerificationView;
+  /** The area whose section is shown under the cards. */
+  active?: XvArea["area"] | undefined;
   onOpen: (area: XvArea["area"]) => void;
   onOpenFinding: (findingId: string) => void;
 }) {
@@ -43,6 +46,7 @@ export function AreaOverview({
             key={area.area}
             area={area}
             top={itemById(view, area.top_finding_id)?.finding}
+            active={area.area === active}
             decided={(id) => itemById(view, id)?.adjudicated ?? false}
             onOpen={() => onOpen(area.area)}
             onOpenFinding={onOpenFinding}
@@ -55,12 +59,14 @@ export function AreaOverview({
 
 function AreaCard({
   area,
+  active,
   top,
   decided,
   onOpen,
   onOpenFinding,
 }: {
   area: XvArea;
+  active: boolean;
   top: Finding | undefined;
   /** Whether the discrepancy of this finding is accepted or dismissed. */
   decided: (findingId: string) => boolean;
@@ -92,8 +98,10 @@ function AreaCard({
       className={cn(
         "relative row-span-4 grid min-w-0 grid-rows-subgrid gap-y-0 rounded border border-t-[3px] border-border bg-surface",
         status.bar,
+        active && "bg-info-soft/60 ring-2 ring-primary/30",
       )}
       data-testid={`xv-area-card-${area.area}`}
+      data-active={active ? "true" : "false"}
       data-status={area.status}
     >
       <div className="min-w-0 px-3 pt-3">
@@ -106,6 +114,7 @@ function AreaCard({
               type="button"
               onClick={onOpen}
               aria-controls={areaSectionId(area.area)}
+              aria-pressed={active}
               aria-describedby={`${id}-counts${caption ? ` ${id}-top` : ""}`}
               className="min-w-0 break-words text-left text-[13.5px] font-semibold leading-snug text-foreground after:absolute after:inset-0 after:rounded-sm after:transition-colors hover:after:bg-foreground/[0.03] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
               data-testid="xv-area-open-section"

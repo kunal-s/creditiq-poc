@@ -960,7 +960,9 @@ test("every evidence row opens its own page, by click or from its page button", 
   const december = panel.locator('[data-kind="row"]').nth(4);
   await expect(december).toContainText("Dec 2025");
   const pageButton = december.getByTestId("xv-evidence-page");
-  await expect(pageButton).toHaveText("p2");
+  // An eye on its own; the page is in its label.
+  await expect(pageButton).toHaveText("");
+  await expect(pageButton).toHaveAccessibleName("Open page 2");
   await pageButton.focus();
   await page.keyboard.press("Enter");
   await expect(viewer.getByTestId("viewer-type")).toHaveText("GSTR-3B");

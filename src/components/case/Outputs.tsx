@@ -238,11 +238,13 @@ function PageChip({ caseId, evidence: e }: { caseId: string; evidence: Evidence 
       onClick={() =>
         viewer.open({ caseId, documentId: e.document_id, page: e.page, bbox: e.bbox ?? null })
       }
+      title={t("crossVerification.evidence.openPage", { page: e.page })}
+      aria-label={t("crossVerification.evidence.openPage", { page: e.page })}
       className={chip}
       data-testid="citation"
+      data-page={e.page}
     >
-      <Eye className="h-2.5 w-2.5" />
-      {t("outputs.citation.page", { page: e.page })}
+      <Eye className="h-3 w-3" aria-hidden />
     </button>
   );
 }

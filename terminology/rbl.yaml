@@ -182,7 +182,6 @@ outputs:
   # The pages a statement rests on, marked as the downloads mark them: "5 p.1", "11 pp.3-5", and
   # "13-23 p.1" for three or more sources in a row cited at the same pages.
   citation:
-    page: "p{page}"
     onePage: "p.{pages}"
     manyPages: "pp.{pages}"
     source: "{n} {at}"
@@ -388,7 +387,6 @@ crossVerification:
   join: "{head} and {last}"
   evidence:
     excluded: Excluded from the count
-    page: "p{page}"
     pageLabel: Page
     openPage: "Open page {page}"
     close: Close

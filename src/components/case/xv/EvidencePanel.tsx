@@ -159,11 +159,12 @@ function RowLine({ row, width, onOpen }: { row: EvidenceRow; width: number; onOp
               onOpen();
             }}
             title={t("crossVerification.evidence.openPage", { page: evidence.page })}
-            className="inline-flex items-center gap-0.5 rounded border border-border bg-surface px-1.5 py-0.5 font-sans text-[10.5px] font-medium text-primary hover:bg-muted"
+            aria-label={t("crossVerification.evidence.openPage", { page: evidence.page })}
+            className="inline-flex items-center rounded border border-border bg-surface p-1 text-primary hover:bg-muted"
             data-testid="xv-evidence-page"
+            data-page={evidence.page}
           >
-            <Eye className="h-3 w-3" aria-hidden />
-            {t("crossVerification.evidence.page", { page: evidence.page })}
+            <Eye className="h-3.5 w-3.5" aria-hidden />
           </button>
         )}
       </td>

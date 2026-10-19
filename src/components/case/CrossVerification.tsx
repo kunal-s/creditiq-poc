@@ -74,10 +74,13 @@ function EvidenceLinks({ caseId, evidence }: { caseId: string; evidence: Evidenc
           onClick={() =>
             viewer.open({ caseId, documentId: e.document_id, page: e.page, bbox: e.bbox ?? null })
           }
-          className="inline-flex items-center gap-0.5 rounded border border-border px-1.5 py-0.5 text-[11px] font-medium text-primary hover:bg-muted"
+          title={t("crossVerification.evidence.openPage", { page: e.page })}
+          aria-label={t("crossVerification.evidence.openPage", { page: e.page })}
+          className="inline-flex items-center rounded border border-border p-1 text-primary hover:bg-muted"
           data-testid="finding-evidence"
+          data-page={e.page}
         >
-          <Eye className="h-3 w-3" /> p{e.page}
+          <Eye className="h-3.5 w-3.5" aria-hidden />
         </button>
       ))}
       {evidence.length > shown.length && (

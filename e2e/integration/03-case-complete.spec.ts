@@ -212,9 +212,12 @@ test("Policy: the approving authority is worked out from the ask", async () => {
 test("Financials: the spread holds every statement line over two audited years", async () => {
   await page.goto(`/appraisals/${caseId}/policy`);
   const financials = page.getByTestId("financials");
+  // The profit and loss and the balance sheet, a tab each; the ratios are tested in the norms.
+  await financials.getByTestId("financials-tab-balance_sheet").click();
+  await expect(financials.getByTestId("spread-row")).toHaveCount(13);
+  await financials.getByTestId("financials-tab-profit_and_loss").click();
   await expect(financials.getByTestId("spread-profit_and_loss")).toBeVisible();
-  // The profit and loss and the balance sheet; the ratios are tested in the norms below.
-  await expect(financials.getByTestId("spread-row")).toHaveCount(23);
+  await expect(financials.getByTestId("spread-row")).toHaveCount(10);
   // Two audited years are on file, so each statement has two columns of figures.
   await expect(
     financials.getByTestId("spread-profit_and_loss").getByRole("columnheader"),

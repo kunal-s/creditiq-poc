@@ -83,11 +83,10 @@ function Card({
 }) {
   return (
     <section className="min-w-0 rounded border border-border bg-surface" data-testid={testId}>
-      <header className="px-4 pb-3 pt-3.5">
-        <h2 className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
-          {title}
-        </h2>
-        <p className="mt-0.5 text-[12px] text-muted-foreground">{subtitle}</p>
+      {/* The tab above names the table; the heading stays for a screen reader. */}
+      <header className="px-4 pb-2.5 pt-3">
+        <h3 className="sr-only">{title}</h3>
+        <p className="text-[12px] text-muted-foreground">{subtitle}</p>
       </header>
       {children}
     </section>

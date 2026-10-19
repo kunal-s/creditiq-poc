@@ -3,6 +3,7 @@ import { AlertCircle, ArrowRight, Eye, FileText } from "lucide-react";
 import { useState } from "react";
 import type { CaseDetail, CrossVerificationView, Spread } from "@/api/types";
 import { RailPanel, RailRows, RailStats } from "@/components/common/RailPanel";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { QueryView } from "@/components/common/States";
 import { useDocViewer } from "@/components/docviewer/DocViewer";
 import { t } from "@/config/terminology";
@@ -11,7 +12,12 @@ import { useCrossVerification } from "@/domain/crossVerification";
 import { useCaseDocuments, useDocumentTypes } from "@/domain/documents";
 import { useFacts, useSpread } from "@/domain/findings";
 import { FINANCIALS_HEADING_ID, FINANCIALS_SECTION_ID } from "@/domain/policy";
-import { openTurnoverDiscrepancies, turnoverYears } from "@/domain/spread";
+import {
+  differingFigures,
+  manualFigures,
+  openTurnoverDiscrepancies,
+  turnoverYears,
+} from "@/domain/spread";
 import { cn } from "@/lib/utils";
 import { TrendNotes } from "./SpreadRatios";
 import { StatementTable, TurnoverByYear, type Picked } from "./SpreadTables";
@@ -26,6 +32,8 @@ import { WorkingCapital } from "./WorkingCapital";
 //   financials              the section (element id `financials`)
 //   spread-period           the year picker; spread-period-<fy> each year
 //   spread-banner           an open turnover discrepancy, with the way to it on Cross-checks
+//   financials-tabs         the three tables, one at a time: financials-tab-<turnover|
+//                           profit_and_loss|balance_sheet> each, with financials-tab-count
 //   spread-turnover         turnover by year: spread-turnover-row (data-source) and
 //                           spread-turnover-cell (data-fy, data-verdict)
 //   spread-profit_and_loss, spread-balance_sheet   the statements; spread-row (data-row)
@@ -33,6 +41,9 @@ import { WorkingCapital } from "./WorkingCapital";
 //   working-capital         the assessment: wc-step each, wc-verdict
 //   spread-trends           spread-trend-turnover, spread-trend-cycle
 //   spread-status, spread-source   the rail
+
+/** The tables of the section, one per tab, in this order. */
+const TABS = ["turnover", "profit_and_loss", "balance_sheet"] as const;
 
 export function FinancialsSection({
   caseId,
@@ -92,6 +103,8 @@ function FinancialsBody({
   const [picked, setPicked] = useState<Picked | null>(null);
   const column = spread.columns.find((c) => c.fy === period) ?? latest;
   const years = facts.data ? turnoverYears(facts.data) : [];
+  const [tab, setTab] = useState<string>("turnover");
+  const differing = differingFigures(years, board.data);
 
   return (
     <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_17rem]">
@@ -106,27 +119,71 @@ function FinancialsBody({
         )}
         <PeriodPicker spread={spread} period={column.fy} onPick={setPeriod} />
         <TurnoverBanner caseId={caseId} board={board.data} />
-        <TurnoverByYear
-          years={years}
-          board={board.data}
-          selected={column.fy}
-          picked={picked?.id ?? null}
-          onPick={setPicked}
-        />
-        <StatementTable
-          spread={spread}
-          section="profit_and_loss"
-          selected={column.fy}
-          picked={picked?.id ?? null}
-          onPick={setPicked}
-        />
-        <StatementTable
-          spread={spread}
-          section="balance_sheet"
-          selected={column.fy}
-          picked={picked?.id ?? null}
-          onPick={setPicked}
-        />
+        {/* One table at a time, to keep the section short; the year and the picked figure
+            carry across the tabs, and a badge says what a tab holds that needs a look. */}
+        <Tabs value={tab} onValueChange={setTab} data-testid="financials-tabs">
+          <TabsList className="h-auto flex-wrap justify-start gap-1 rounded border border-border bg-surface p-1">
+            {TABS.map((key) => {
+              const count = key === "turnover" ? differing : manualFigures(spread, key);
+              return (
+                <TabsTrigger
+                  key={key}
+                  value={key}
+                  className="gap-1.5 rounded px-3 py-1.5 text-[13px] text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-none"
+                  data-testid={`financials-tab-${key}`}
+                >
+                  {t(`spreadPage.tabs.${key}`)}
+                  {count > 0 && (
+                    <span
+                      className={cn(
+                        "tabular rounded-full px-1.5 text-[11px] font-semibold leading-[18px]",
+                        key === "turnover"
+                          ? "bg-critical-soft text-destructive"
+                          : "bg-flag-soft text-flag-foreground",
+                      )}
+                      data-testid="financials-tab-count"
+                      title={t(
+                        key === "turnover" ? "spreadPage.tabs.differing" : "spreadPage.tabs.manual",
+                        { n: count },
+                      )}
+                    >
+                      {count}
+                      <span className="sr-only">
+                        {" "}
+                        {t(
+                          key === "turnover"
+                            ? "spreadPage.tabs.differing"
+                            : "spreadPage.tabs.manual",
+                          { n: count },
+                        )}
+                      </span>
+                    </span>
+                  )}
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
+          <TabsContent value="turnover">
+            <TurnoverByYear
+              years={years}
+              board={board.data}
+              selected={column.fy}
+              picked={picked?.id ?? null}
+              onPick={setPicked}
+            />
+          </TabsContent>
+          {(["profit_and_loss", "balance_sheet"] as const).map((section) => (
+            <TabsContent key={section} value={section}>
+              <StatementTable
+                spread={spread}
+                section={section}
+                selected={column.fy}
+                picked={picked?.id ?? null}
+                onPick={setPicked}
+              />
+            </TabsContent>
+          ))}
+        </Tabs>
         <WorkingCapital caseId={caseId} spread={spread} />
         <TrendNotes spread={spread} />
       </div>

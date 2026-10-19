@@ -314,6 +314,36 @@ test("turnover is laid out year by year, each figure coloured by what the cross-
   );
 });
 
+test("the tables sit behind tabs, turnover first, each badged with what needs a look", async ({
+  page,
+}) => {
+  await openFinancials(page);
+  const tab = (key: string) => page.getByTestId(`financials-tab-${key}`);
+  await expect(tab("turnover")).toHaveAttribute("data-state", "active");
+  await expect(page.getByTestId("spread-turnover")).toBeVisible();
+  await expect(page.getByTestId("spread-profit_and_loss")).toHaveCount(0);
+  // One turnover figure is outside tolerance; one balance-sheet figure relies on a person's entry.
+  await expect(tab("turnover").getByTestId("financials-tab-count")).toHaveText(
+    "1 1 outside tolerance",
+  );
+  await expect(tab("profit_and_loss").getByTestId("financials-tab-count")).toHaveCount(0);
+  await expect(tab("balance_sheet").getByTestId("financials-tab-count")).toHaveText(
+    "1 1 relying on a person's entry",
+  );
+  // The arrow keys move between tabs.
+  await tab("turnover").focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(tab("profit_and_loss")).toHaveAttribute("data-state", "active");
+  await expect(page.getByTestId("spread-profit_and_loss")).toBeVisible();
+  await expect(page.getByTestId("spread-turnover")).toHaveCount(0);
+  // The year picked carries across the tabs.
+  await page.getByTestId("spread-period-FY 2024-25").click();
+  await tab("balance_sheet").click();
+  await expect(page.getByTestId("spread-balance_sheet").locator("thead th").nth(1)).toHaveClass(
+    /bg-info-soft/,
+  );
+});
+
 test("an open turnover discrepancy heads the section and leads to Cross-checks", async ({
   page,
 }) => {
@@ -329,9 +359,11 @@ test("the statements are line by line, and a person's entry is named for confirm
   page,
 }) => {
   await openFinancials(page);
+  await page.getByTestId("financials-tab-profit_and_loss").click();
   const pl = page.getByTestId("spread-profit_and_loss");
   await expect(pl.locator('[data-row="revenue_from_operations"]')).toContainText("10.00");
   await expect(pl.locator('[data-row="revenue_from_operations"]')).toContainText("12.00");
+  await page.getByTestId("financials-tab-balance_sheet").click();
   const bs = page.getByTestId("spread-balance_sheet");
   await expect(bs.getByTestId("spread-manual-note")).toHaveText(
     "Current liabilities FY 2025-26 relies on a person's entry; confirm it against page 12 before the spread is relied on.",
@@ -343,6 +375,7 @@ test("a figure shows where it was read from, and opens its page", async ({ page 
   await openFinancials(page);
   const source = page.getByTestId("spread-source");
   await expect(source).toContainText("Select any figure");
+  await page.getByTestId("financials-tab-profit_and_loss").click();
   await page
     .getByTestId("spread-profit_and_loss")
     .locator('[data-row="revenue_from_operations"] [data-testid="spread-figure"]')

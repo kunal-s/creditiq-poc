@@ -75,6 +75,31 @@ export function openTurnoverDiscrepancies(board: CrossVerificationView | undefin
   );
 }
 
+/** How many figures the turnover cross-checks found outside tolerance, for the tab's badge. */
+export function differingFigures(
+  years: TurnoverYear[],
+  board: CrossVerificationView | undefined,
+): number {
+  return turnoverSources(years).reduce(
+    (n, { source }) =>
+      n +
+      years.filter(
+        (y) =>
+          figureFor(y, source)?.value != null &&
+          figureVerdict(board, y.fy, source).verdict === "differs",
+      ).length,
+    0,
+  );
+}
+
+/** How many figures of a statement rely on a person's entry, for the tab's badge. */
+export function manualFigures(spread: Spread, section: SpreadRow["section"]): number {
+  return rowsOf(spread, section).reduce(
+    (n, r) => n + r.cells.filter((c) => c.relies_on_manual).length,
+    0,
+  );
+}
+
 export function rowsOf(spread: Spread, section: SpreadRow["section"]): SpreadRow[] {
   return spread.rows.filter((r) => r.section === section);
 }

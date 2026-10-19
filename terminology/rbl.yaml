@@ -84,6 +84,12 @@ spreadPage:
   banner:
     open: Take this to Cross-checks
     more: "(and {n} more)"
+  tabs:
+    turnover: Turnover by year
+    profit_and_loss: Profit and loss
+    balance_sheet: Balance sheet
+    differing: "{n} outside tolerance"
+    manual: "{n} relying on a person's entry"
   turnover:
     title: Turnover by year
     subtitle: INR crore · every source as read from its documents, coloured by what the cross-checks concluded

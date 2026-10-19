@@ -225,6 +225,7 @@ test("Financials: the spread and the working-capital assessment, each figure cit
   await page.goto(`/appraisals/${KESTREL}/policy`);
   const financials = page.getByTestId("financials");
   await expect(financials.getByTestId("spread-interim")).toBeVisible();
+  await financials.getByTestId("financials-tab-profit_and_loss").click();
   await financials
     .locator('[data-testid="spread-row"][data-row="revenue_from_operations"]')
     .getByTestId("spread-figure")

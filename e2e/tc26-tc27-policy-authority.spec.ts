@@ -319,7 +319,9 @@ test("TC-24: each family's norms with the required and actual value and their so
   const de = norm(page, "FR-05");
   await expect(de).toHaveAttribute("data-outcome", "deviation");
   await expect(de.locator(".sr-only")).toHaveText("Deviation");
-  await expect(de).toContainText("FR-05");
+  // Named, not numbered.
+  await expect(de).toContainText("Debt / equity");
+  await expect(de).not.toContainText("FR-05");
   await expect(de).toContainText("Financial norms");
   await expect(de).toContainText("at most 2.00x");
   await expect(de.getByTestId("norm-actual")).toHaveText("3.00x");
@@ -398,7 +400,9 @@ test("TC-25: the authority's card says who must approve, at least, and why", asy
   await expect(card.getByTestId("policy-authority-at-least")).toHaveText("At least");
   const rise = card.getByTestId("policy-authority-rise");
   await expect(rise).toHaveAttribute("data-rises", "false");
-  await expect(rise).toHaveText("Would not rise even if EL-02, FR-04 and FR-06 deviated");
+  await expect(rise).toHaveText(
+    "Would not rise even if Commercial bureau rank, Interest coverage and Working-capital cycle deviated",
+  );
   // The amount's authority and each deviation step, the one that decides in bold.
   await expect(card.getByTestId("policy-authority-amount")).toHaveText(
     "Amount: Credit Officer (level 1)",
@@ -428,7 +432,7 @@ test("TC-25: the authority required is shown with the rule applied", async ({ pa
   const governing = panel.locator('[data-testid="authority-step"][data-governs="true"]');
   await expect(governing).toHaveAttribute("data-rule", "deviations.eligibility");
   await expect(governing).toContainText(
-    "Eligibility deviation (EL-04): 1 level(s) above the amount authority, and at least Regional Credit Head, so Regional Credit Head",
+    "Eligibility deviation (Profit in the latest year): 1 level(s) above the amount authority, and at least Regional Credit Head, so Regional Credit Head",
   );
   await expect(governing).toContainText("Decides");
   await expect(steps.first()).toHaveText(
@@ -460,7 +464,7 @@ test("TC-25: the authority may rise once the unassessed norms are known", async 
   const rise = authorityCard(page).getByTestId("policy-authority-rise");
   await expect(rise).toHaveAttribute("data-rises", "true");
   await expect(rise).toHaveText(
-    "Would rise to Zonal Credit Committee (level 3) if EL-02, FR-04 and FR-06 deviated",
+    "Would rise to Zonal Credit Committee (level 3) if Commercial bureau rank, Interest coverage and Working-capital cycle deviated",
   );
   await expect(page.getByTestId("authority-lower-bound")).toHaveText(
     "3 norm(s) could not be evaluated (Commercial bureau rank, Interest coverage, Working-capital cycle). If they are deviations, the matrix would require Zonal Credit Committee.",

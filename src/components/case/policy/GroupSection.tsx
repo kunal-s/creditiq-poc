@@ -2,7 +2,7 @@ import type { NormResult, PolicyGroup } from "@/api/types";
 import { t } from "@/config/terminology";
 import { countParts, groupHeadingId, groupSectionId } from "@/domain/policy";
 import { cn } from "@/lib/utils";
-import { NormRow } from "./NormRow";
+import { NormRow, VALUES } from "./NormRow";
 import { GROUP_STATUS } from "./styles";
 
 /** "5 norms · 1 deviation · 1 cannot be evaluated · 3 passed", as the engine counted them; the
@@ -33,7 +33,7 @@ export function GroupSection({
     <section
       id={groupSectionId(group.family)}
       aria-labelledby={groupHeadingId(group.family)}
-      className="min-w-0 scroll-mt-4 space-y-3"
+      className="min-w-0 scroll-mt-4 space-y-2"
       data-testid={groupSectionId(group.family)}
       data-status={group.status}
     >
@@ -72,6 +72,16 @@ export function GroupSection({
           className="divide-y divide-border rounded border border-border bg-surface"
           data-testid="policy-norms"
         >
+          {/* The column heads, once; on a phone each row labels its own values. */}
+          <li
+            aria-hidden
+            className="hidden justify-end bg-surface-muted/50 px-4 py-1 text-[10.5px] font-medium uppercase tracking-wide text-muted-foreground sm:flex"
+          >
+            <span className={cn("grid text-right", VALUES)}>
+              <span>{t("policy.required")}</span>
+              <span>{t("policy.actual")}</span>
+            </span>
+          </li>
           {norms.map((norm) => (
             <NormRow key={norm.id} caseId={caseId} norm={norm} />
           ))}

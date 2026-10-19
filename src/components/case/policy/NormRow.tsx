@@ -19,6 +19,10 @@ const BAND_TEXT = {
   outside: "text-destructive",
 } as const;
 
+/** The required and actual columns: one width for every row and for the list's column heads, so
+ * the values line up down a family. */
+export const VALUES = "grid-cols-2 gap-x-4 sm:w-72";
+
 /** Where a figure with no document page comes from. */
 function InputBasis({ caseId, input }: { caseId: string; input: NormInput }) {
   const basis = input.basis ?? "document";
@@ -53,19 +57,16 @@ export function NormRow({ caseId, norm }: { caseId: string; norm: NormResult }) 
     <li
       id={normElementId(norm.id)}
       tabIndex={-1}
-      className={cn("space-y-1.5 px-4 py-3", checkRow)}
+      className={cn("space-y-1 px-4 py-2", checkRow)}
       data-testid="norm"
       data-norm={norm.id}
       data-outcome={norm.outcome}
     >
-      <div className="flex flex-wrap items-start gap-2">
+      <div className="flex flex-wrap items-start gap-x-2 gap-y-1">
         <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", OUTCOME_TEXT[norm.outcome])} aria-hidden />
         <span className="sr-only">{t(`policy.outcome.${norm.outcome}`)}</span>
         <div className="min-w-0 flex-1 basis-48">
           <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] font-medium text-foreground">
-            <span className="font-mono text-[11.5px] font-normal text-muted-foreground">
-              {norm.id}
-            </span>
             <span className="min-w-0 break-words">{norm.label}</span>
             {norm.outcome === "deviation" && <Chip tone="critical">{norm.category_label}</Chip>}
             {norm.band && (
@@ -76,13 +77,17 @@ export function NormRow({ caseId, norm }: { caseId: string; norm: NormResult }) 
             {norm.provisional && <Chip tone="muted">{t("policy.provisional")}</Chip>}
           </p>
         </div>
-        {/* Beside the label at a fixed width, so required and actual line up down the list
-            however wide the window is; under the label, in line with it, where the row is
-            narrow. */}
-        <div className="ml-6 grid w-full shrink-0 grid-cols-2 gap-x-4 text-left text-[12px] [overflow-wrap:anywhere] sm:ml-auto sm:w-44 sm:text-right">
-          <span className="text-muted-foreground">{t("policy.required")}</span>
-          <span className="text-muted-foreground">{t("policy.actual")}</span>
+        {/* Beside the label at a fixed width, so required and actual line up under the list's
+            column heads however wide the window is; under the label, each with its own label,
+            where the row is narrow. */}
+        <div
+          className={cn(
+            "ml-6 grid w-full shrink-0 text-left text-[12px] sm:ml-auto sm:text-right",
+            VALUES,
+          )}
+        >
           <span className="tabular">
+            <span className="text-muted-foreground sm:sr-only">{t("policy.required")} </span>
             {norm.required}
             {norm.marginal_text && (
               <span className="block text-[11px] text-muted-foreground" data-testid="norm-marginal">
@@ -90,14 +95,17 @@ export function NormRow({ caseId, norm }: { caseId: string; norm: NormResult }) 
               </span>
             )}
           </span>
-          <span
-            className={cn(
-              "tabular font-semibold",
-              norm.band ? BAND_TEXT[norm.band] : OUTCOME_TEXT[norm.outcome],
-            )}
-            data-testid="norm-actual"
-          >
-            {actualText(norm)}
+          <span className="tabular">
+            <span className="text-muted-foreground sm:sr-only">{t("policy.actual")} </span>
+            <span
+              className={cn(
+                "font-semibold",
+                norm.band ? BAND_TEXT[norm.band] : OUTCOME_TEXT[norm.outcome],
+              )}
+              data-testid="norm-actual"
+            >
+              {actualText(norm)}
+            </span>
           </span>
         </div>
       </div>
@@ -122,49 +130,52 @@ export function NormRow({ caseId, norm }: { caseId: string; norm: NormResult }) 
           })}
         </p>
       )}
-      {norm.outcome !== "not_applicable" && (norm.inputs ?? []).length > 0 && (
-        <ul className="ml-6 flex flex-wrap gap-x-4 gap-y-1 text-[11.5px]">
-          {(norm.inputs ?? []).map((input) => {
-            const e = input.evidence?.[0];
-            return (
-              <li
-                key={input.name}
-                className="inline-flex min-w-0 flex-wrap items-center gap-1"
-                data-testid="norm-input"
-              >
-                <span className="text-muted-foreground">{input.label}</span>
-                {e ? (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      viewer.open({
-                        caseId,
-                        documentId: e.document_id,
-                        page: e.page,
-                        bbox: e.bbox ?? null,
-                      })
-                    }
-                    className="tabular font-medium text-primary underline decoration-dotted underline-offset-2"
-                  >
-                    {inputValue(input.name, input.value)}
-                  </button>
-                ) : (
-                  <span className="tabular font-medium">{inputValue(input.name, input.value)}</span>
-                )}
-                <InputBasis caseId={caseId} input={input} />
-                {input.relies_on_manual && <Chip tone="flag">{t("crossCheck.manual")}</Chip>}
-                {input.awaiting_review && (
-                  <Chip tone="flag">
-                    <span data-testid="norm-input-awaiting">{t("policy.awaitingReview")}</span>
-                  </Chip>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      )}
-      <div className="ml-6">
-        <Details testId="norm-details">
+      {/* The figures it used and, at the end of the same line, how it was decided. */}
+      <div className="ml-6 flex flex-wrap items-center gap-x-4 gap-y-1">
+        {norm.outcome !== "not_applicable" && (norm.inputs ?? []).length > 0 && (
+          <ul className="contents text-[11.5px]">
+            {(norm.inputs ?? []).map((input) => {
+              const e = input.evidence?.[0];
+              return (
+                <li
+                  key={input.name}
+                  className="inline-flex min-w-0 flex-wrap items-center gap-1"
+                  data-testid="norm-input"
+                >
+                  <span className="text-muted-foreground">{input.label}</span>
+                  {e ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        viewer.open({
+                          caseId,
+                          documentId: e.document_id,
+                          page: e.page,
+                          bbox: e.bbox ?? null,
+                        })
+                      }
+                      className="tabular font-medium text-primary underline decoration-dotted underline-offset-2"
+                    >
+                      {inputValue(input.name, input.value)}
+                    </button>
+                  ) : (
+                    <span className="tabular font-medium">
+                      {inputValue(input.name, input.value)}
+                    </span>
+                  )}
+                  <InputBasis caseId={caseId} input={input} />
+                  {input.relies_on_manual && <Chip tone="flag">{t("crossCheck.manual")}</Chip>}
+                  {input.awaiting_review && (
+                    <Chip tone="flag">
+                      <span data-testid="norm-input-awaiting">{t("policy.awaitingReview")}</span>
+                    </Chip>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <Details testId="norm-details" variant="inline">
           <NormWorking caseId={caseId} norm={norm} />
         </Details>
       </div>

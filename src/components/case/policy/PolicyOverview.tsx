@@ -337,9 +337,11 @@ function AuthorityCard({
                   ? t("policy.authorityCard.couldRise", {
                       authority: a.could_rise_to.label,
                       level: a.could_rise_to.level,
-                      norms: joinList(a.unevaluated),
+                      norms: joinList(a.unevaluated_labels ?? a.unevaluated),
                     })
-                  : t("policy.authorityCard.wouldNotRise", { norms: joinList(a.unevaluated) })}
+                  : t("policy.authorityCard.wouldNotRise", {
+                      norms: joinList(a.unevaluated_labels ?? a.unevaluated),
+                    })}
               </p>
             )}
           </>

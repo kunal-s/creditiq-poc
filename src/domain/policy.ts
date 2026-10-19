@@ -27,6 +27,18 @@ export function usePolicy(caseId: string) {
   });
 }
 
+/** A norm's name for its id, as the screens write it in place of the id (screens show no norm
+ * numbers); the id itself where the norm is not in the assessment. */
+export function normName(policy: PolicyAssessment | undefined, id: string): string {
+  return policy?.norms.find((n) => n.id === id)?.label ?? id;
+}
+
+/** `normName` for a case's assessment. */
+export function useNormName(caseId: string): (id: string) => string {
+  const policy = usePolicy(caseId);
+  return (id: string) => normName(policy.data, id);
+}
+
 /** The authority the case needs under the published matrix (F-21). A 503 means the matrix is
  * not published; the norms still show beside it. */
 export function useApprovingAuthority(caseId: string) {

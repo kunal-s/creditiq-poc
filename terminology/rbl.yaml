@@ -180,6 +180,64 @@ outputs:
     accepted: Accepted as valid
     escalated: Escalated
     not_valid: Not valid
+  # The CAM draft and review: a section at a time, in the engine's words, a person's or the copilot's.
+  review:
+    mode: How the memo is shown
+    modes:
+      sections: Review by section
+      memo: Read the whole memo
+    sections: CAM sections
+    sectionCount: "{n} sections"
+    draftState: Draft state
+    citations: Citations in memo
+    edited: Sections edited
+    overrides: Overrides recorded
+    requests: Data requested
+    rating: First-cut rating
+    notRated: Not rated
+    kicker: "Section {n} of {total} · {title}"
+    banner: "A blocking discrepancy is not yet decided. You can draft and edit freely, but submission stays closed until it is dealt with."
+    bannerOpen: "Open {ref}"
+    state:
+      machine: Machine-drafted
+      edited: "Edited by {name}"
+      regenerated: "Copilot redraft, kept by {name}"
+    draftedAsOf: "Drafted from the data as of {date}"
+    changedAt: "Changed {date}"
+    edit: Edit in my words
+    regenerate: Regenerate with copilot
+    override: Override a figure
+    request: Request more data
+    restore: Restore the draft
+    close: Close
+    copilotOff: "The copilot is not configured: its key is not set."
+    editHint: The section's paragraphs, one per block of text; each keeps the citations of the paragraph in its place.
+    editSave: Save my words
+    editNote: Saved with your name and the time; the engine's draft can be restored.
+    instruction: What should the redraft do?
+    instructionPlaceholder: e.g. Shorter, and lead with the turnover gap
+    redraft: Redraft
+    redrafting: Redrafting…
+    redrafted: "Redrafted by {model}. Nothing is kept until you keep it."
+    replayed: "The answer recorded for this same request ({model}). Nothing is kept until you keep it."
+    keep: Keep this redraft
+    discard: Discard
+    overrideField:
+      figure: Figure being overridden
+      original: Original value as drafted
+      value: Your value
+      reason: Reason (kept with your name and the time)
+    overridePlaceholder:
+      figure: e.g. Assessed drawing power
+      original: e.g. INR 1.50 cr
+      value: e.g. INR 1.25 cr
+      reason: e.g. Sized on independently evidenced turnover
+    overrideSave: Record override
+    overrideLine: "{figure}: {original} as drafted, overridden to {value} by {name}. {reason}"
+    requestHint: What more is needed for this section? It goes on the query list.
+    requestPlaceholder: e.g. Please provide the debtors' ageing as at 31 March 2026.
+    requestSave: Add to query list
+    requestLine: "Requested: {text}"
   cam:
     eyebrow: Draft for credit
     interim: Sections follow an interim list until RBL's CAM template is available. Every figure links to the page it comes from.
@@ -761,8 +819,8 @@ page:
   policy:
     title: Financials and policy
   draft:
-    title: CAM draft and PD note
-    purpose: The draft Credit Approval Memo, and the questions for the personal discussion, every statement traceable to its page.
+    title: CAM draft and review
+    purpose: The draft Credit Approval Memo in eight sections, drafted from the evidence on file, and the questions for the personal discussion. Every statement carries the pages it rests on; the engine's words are marked, and anything you change is recorded as yours.
   comparison:
     title: Comparison with RBL's record
     purpose: This case's output beside the assessment RBL credit made at the time, for adjudication.

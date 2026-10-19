@@ -1166,7 +1166,7 @@ test("Continue to draft opens only once every blocking discrepancy is decided", 
   );
   await next.click();
   await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}/outputs\\?view=cam$`));
-  await expect(page.getByTestId("cam")).toBeVisible();
+  await expect(page.getByTestId("cam-review")).toBeVisible();
 });
 
 test("an escalated discrepancy is read-only for the analyst until the Credit Manager decides", async ({

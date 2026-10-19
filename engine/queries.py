@@ -17,7 +17,7 @@ import json
 import sqlite3
 from pathlib import Path
 
-from . import cases, completeness
+from . import cam_review, cases, completeness
 from .config import load_app_config
 from .configstore import reader
 from .parties import hint_types
@@ -165,6 +165,9 @@ def build(conn: sqlite3.Connection, root: Path, case_id: str) -> list[dict]:
 
     for ref, text in xv.requests_for_queries(conn, case_id):
         add("documents_needed", text, "finding", ref)
+    # Data asked for from the draft CAM (F-23), as the analyst worded it.
+    for ref, text in cam_review.requests_for_queries(conn, case_id):
+        add("clarifications", text, "cam", ref)
     return out
 
 

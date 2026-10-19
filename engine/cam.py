@@ -26,6 +26,7 @@ from functools import cached_property
 from pathlib import Path
 
 from . import approval, completeness, facts as facts_module, output_sources, policy as policy_module, reads
+from . import cam_copilot, cam_review
 from . import spread as spread_module, statements as statements_module, xv
 from .config import find_user_by_id, load_app_config
 from .configstore import reader
@@ -34,6 +35,7 @@ from .contracts import (
     Cam,
     CamBlock,
     CamFact,
+    CamPart,
     CamSection,
     CamSignOff,
     CamSummaryItem,
@@ -506,9 +508,11 @@ class Draft:
         self.config = reader.load_cam(root)
         self.numbers: dict[str, int] = {}
         self.section_ids: dict[str, str] = {}
+        # A part keeps the id it is linked by; the number is its section's.
         for number, s in enumerate(self.config.sections, start=1):
-            self.numbers.setdefault(s.kind, number)
-            self.section_ids.setdefault(s.kind, s.id)
+            for part in s.drafted_from():
+                self.numbers.setdefault(part.kind, number)
+                self.section_ids.setdefault(part.kind, part.id)
         self.facts = facts_module.compute(conn, root, case)
         self.docs = facts_module.load_documents(conn, root, case.id)
         self.message_doc = next((d.id for d in self.docs if MESSAGE in d.types), None)
@@ -2081,18 +2085,27 @@ def build(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> Cam:
     config = d.config
     sections = []
     for number, s in enumerate(config.sections, start=1):
-        blocks = getattr(d, s.kind)()
-        sections.append(CamSection(id=s.id, number=number, title=s.title, blocks=blocks,
-                                   empty=None if blocks else "Nothing on file yet."))
+        defs = s.drafted_from()
+        parts = [CamPart(id=p.id, kind=p.kind, title=p.title, blocks=getattr(d, p.kind)()) for p in defs]
+        # One part reads as the section itself; several each go under their subheading.
+        blocks = (parts[0].blocks if len(parts) == 1 else
+                  [b for p in parts if p.blocks for b in [_subheading(p.title), *p.blocks]])
+        sections.append(CamSection(id=s.id, number=number, title=s.title, purpose=s.purpose, blocks=blocks,
+                                   parts=parts, empty=None if blocks else "Nothing on file yet."))
     cam = Cam(
         case_id=case.id, title=config.title, borrower=case.borrower, as_of=case.as_of,
         config_version=reader.published_version(root)["version"], config_label=config_label(root),
         run_id=d.board.run.id if d.board.run else None,
         interim_template=config.interim_template, template_note=config.template_note, sections=sections,
-        summary_number=len(sections) + 1, summary_title=config.summary_title, summary=d.summary(),
+        summary_number=len(sections) + 1, summary_title=config.summary_title,
+        summary_purpose=config.summary_purpose, summary=d.summary(), rating_note=config.rating_note,
         recommendation_number=len(sections) + 2, recommendation_title=config.recommendation_title,
+        recommendation_purpose=config.recommendation_purpose,
         recommendation_prompts=config.recommendation_prompts, sign_off=[CamSignOff(role=r) for r in config.sign_off],
         labels=dict(getattr(config, "labels", None) or {}),
     )
+    # A person's words, the copilot's redrafts, the figures overridden and the data asked for.
+    cam_review.apply(conn, cam)
+    cam.copilot = cam_copilot.available(config.copilot)
     cam.sources = output_sources.sources(conn, root, case.id, output_sources.cam_citations(cam))
     return cam

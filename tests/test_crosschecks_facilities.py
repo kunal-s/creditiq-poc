@@ -237,7 +237,8 @@ def test_facilities_are_collected_from_each_source_with_their_evidence(client, a
                                                                  "commercial_bureau_report")] == [decl, letter, report]
     assert facts["declaration_received"] is True and facts["declaration"]["value"] == "Tidewater Finance Limited"
     cam = client.get(f"/api/cases/{case_id}/cam", headers=analyst).json()
-    section = next(s for s in cam["sections"] if s["id"] == "obligations")
+    # The obligations part of its section (sections are drafted from parts that keep their ids).
+    section = next(p for s in cam["sections"] for p in s["parts"] if p["id"] == "obligations")
     table = next(b["table"] for b in section["blocks"] if b["kind"] == "table")
     row = next(r for r in table["rows"] if r[0]["text"] == "Tidewater Finance Limited")
     # Declared, sanction letter and bureau, each cited to its document.

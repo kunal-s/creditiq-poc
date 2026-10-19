@@ -254,9 +254,10 @@ test("Outputs: the draft CAM and the PD note, each figure cited", async ({ page 
   await page.goto(`/appraisals/${KESTREL}/outputs`);
   await expect(page.getByTestId("view-spread")).toHaveCount(0);
   await page.getByTestId("view-cam").click();
+  await page.getByTestId("cam-mode-memo").click();
   const cam = page.getByTestId("cam");
-  const financials = cam.locator('[data-section="financials"]');
-  await expect(financials.getByTestId("cam-section-title")).toHaveText("5. Financial performance");
+  const financials = cam.locator('[data-testid="cam-section"][data-section="financials"]');
+  await expect(financials.getByTestId("cam-subheading")).toHaveText("Financial performance");
   await financials.getByTestId("cam-paragraph").first().getByTestId("citation").first().click();
   await expect(page.getByTestId("evidence-viewer").getByTestId("viewer-page")).toContainText("3");
   await page.keyboard.press("Escape");

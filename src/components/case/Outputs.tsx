@@ -93,7 +93,7 @@ import { cn } from "@/lib/utils";
 //                        citation-more the rest of the pages where documents are not numbered
 
 /** The numbered sources of the memo or the note on screen, by document id. */
-const SourcesContext = createContext<ReadonlyMap<string, OutputSource> | null>(null);
+export const SourcesContext = createContext<ReadonlyMap<string, OutputSource> | null>(null);
 
 /** Where documents are not numbered (the spread), the pages shown before "+n more". */
 const MAX_PAGES = 4;
@@ -359,7 +359,7 @@ function Statement({ caseId, text }: { caseId: string; text: CamText }) {
 const DOWNLOAD_ID: Record<OutputKind, string> = { cam: "cam", pd_note: "pd" };
 
 /** Download Word and Download PDF: the file is fetched with the session's token and saved. */
-function Downloads({ caseId, output }: { caseId: string; output: OutputKind }) {
+export function Downloads({ caseId, output }: { caseId: string; output: OutputKind }) {
   const download = useOutputDownload(caseId, output);
   const id = DOWNLOAD_ID[output];
   return (
@@ -422,7 +422,7 @@ function BlocksSubmission() {
 
 /** The documents cited, numbered as the citations and the downloads number them; each opens its
  * first cited page. */
-function Sources({ caseId, sources }: { caseId: string; sources: OutputSource[] }) {
+export function Sources({ caseId, sources }: { caseId: string; sources: OutputSource[] }) {
   const viewer = useDocViewer();
   if (sources.length === 0) return null;
   return (
@@ -604,7 +604,7 @@ function MemoTable({ caseId, table }: { caseId: string; table: CamTable }) {
   );
 }
 
-function Block({ caseId, block }: { caseId: string; block: CamBlock }) {
+export function Block({ caseId, block }: { caseId: string; block: CamBlock }) {
   if (block.kind === "paragraph" && block.paragraph) {
     return (
       <p className="text-[13px] leading-relaxed" data-testid="cam-paragraph">
@@ -633,6 +633,55 @@ function Block({ caseId, block }: { caseId: string; block: CamBlock }) {
   return null;
 }
 
+/** A section's blocks as its parts read them: each part's run of blocks, from its subheading to
+ * the next, the person's words and overrides included (they are laid over the section's blocks). */
+function partsOf(section: CamSection): { id: string; title: string | null; blocks: CamBlock[] }[] {
+  const parts = section.parts ?? [];
+  const blocks = section.blocks ?? [];
+  if (parts.length <= 1) return [{ id: parts[0]?.id ?? section.id, title: null, blocks }];
+  const out: { id: string; title: string | null; blocks: CamBlock[] }[] = [];
+  let next = 0;
+  for (const block of blocks) {
+    if (block.kind === "subheading" && next < parts.length && block.text === parts[next]!.title) {
+      out.push({ id: parts[next]!.id, title: block.text ?? null, blocks: [] });
+      next += 1;
+    } else if (out.length > 0) out[out.length - 1]!.blocks.push(block);
+    else out.push({ id: section.id, title: null, blocks: [block] });
+  }
+  return out;
+}
+
+/** A part of a section, under its subheading where the section has several; it keeps its id, the
+ * anchor the note's observations open. */
+function MemoPart({
+  caseId,
+  part,
+}: {
+  caseId: string;
+  part: { id: string; title: string | null; blocks: CamBlock[] };
+}) {
+  const anchor = camSectionAnchor(part.id);
+  const ref = useAnchor<HTMLElement>(anchor);
+  return (
+    <section
+      ref={ref}
+      id={anchor}
+      className="min-w-0 scroll-mt-4 space-y-2.5"
+      data-testid="cam-section"
+      data-section={part.id}
+    >
+      {part.title && (
+        <h4 className="pt-1 text-[13px] font-semibold" data-testid="cam-subheading">
+          {part.title}
+        </h4>
+      )}
+      {part.blocks.map((block, i) => (
+        <Block key={i} caseId={caseId} block={block} />
+      ))}
+    </section>
+  );
+}
+
 function MemoSection({ caseId, section }: { caseId: string; section: CamSection }) {
   const blocks = section.blocks ?? [];
   const anchor = camSectionAnchor(section.id);
@@ -642,7 +691,7 @@ function MemoSection({ caseId, section }: { caseId: string; section: CamSection 
       ref={ref}
       id={anchor}
       className="min-w-0 scroll-mt-4"
-      data-testid="cam-section"
+      data-testid="cam-memo-section"
       data-section={section.id}
     >
       <h3 className={heading} data-testid="cam-section-title">
@@ -654,8 +703,8 @@ function MemoSection({ caseId, section }: { caseId: string; section: CamSection 
         </p>
       )}
       <div className="mt-1.5 space-y-2.5">
-        {blocks.map((block, i) => (
-          <Block key={i} caseId={caseId} block={block} />
+        {partsOf(section).map((part) => (
+          <MemoPart key={part.id} caseId={caseId} part={part} />
         ))}
       </div>
     </section>
@@ -795,12 +844,23 @@ function queryGroups(items: CamSummaryItem[]): { title: string | null; items: Ca
   return out;
 }
 
-function Summary({ caseId, m }: { caseId: string; m: Cam }) {
+export function Summary({
+  caseId,
+  m,
+  headed = true,
+}: {
+  caseId: string;
+  m: Cam;
+  /** Off where the section's card carries the title. */
+  headed?: boolean;
+}) {
   return (
     <section className="min-w-0" data-testid="cam-summary">
-      <h3 className={heading}>
-        {m.summary_number}. {m.summary_title}
-      </h3>
+      {headed && (
+        <h3 className={heading}>
+          {m.summary_number}. {m.summary_title}
+        </h3>
+      )}
       {SUMMARY_KINDS.map((kind) => {
         const items = m.summary.filter((i) => i.kind === kind);
         if (items.length === 0) {
@@ -902,16 +962,25 @@ function SignOff({
 }
 
 /** Present and empty (F-23.4): the headings credit completes, each with room to write. */
-function Recommendation({ m }: { m: Cam }) {
+export function Recommendation({ m, headed = true }: { m: Cam; headed?: boolean }) {
   const prompts = m.recommendation_prompts ?? [];
   const boxes = prompts.length > 0 ? prompts : [null];
   const signOff = m.sign_off ?? [];
   return (
     <section className="min-w-0 space-y-3" data-testid="cam-recommendation">
-      <h3 className={heading}>
-        {m.recommendation_number}. {m.recommendation_title}
-      </h3>
-      {m.recommendation && <p className="text-[13px] leading-relaxed">{m.recommendation}</p>}
+      {headed && (
+        <h3 className={heading}>
+          {m.recommendation_number}. {m.recommendation_title}
+        </h3>
+      )}
+      {(m.recommendation ?? "")
+        .split("\n\n")
+        .filter((p) => p.trim())
+        .map((p, i) => (
+          <p key={i} className="text-[13px] leading-relaxed" data-testid="cam-recommendation-text">
+            {p}
+          </p>
+        ))}
       {boxes.map((prompt, i) => (
         <div key={i} data-testid="cam-recommendation-prompt">
           {prompt && <p className="text-[12.5px] font-medium">{prompt}</p>}
@@ -925,6 +994,26 @@ function Recommendation({ m }: { m: Cam }) {
       ))}
       {signOff.length > 0 && <SignOff roles={signOff} testId="cam-sign-off" />}
     </section>
+  );
+}
+
+/** The whole memo, top to bottom, as the downloads lay it out. */
+export function CamMemo({ caseId, m }: { caseId: string; m: Cam }) {
+  return (
+    <SourcesContext.Provider value={sourcesById(m.sources ?? [])}>
+      <article
+        className="mx-auto max-w-4xl space-y-6 rounded border border-border bg-surface px-4 py-5 sm:px-6"
+        data-testid="cam"
+      >
+        <CamHeader caseId={caseId} m={m} />
+        {m.sections.map((s) => (
+          <MemoSection key={s.id} caseId={caseId} section={s} />
+        ))}
+        <Summary caseId={caseId} m={m} />
+        <Recommendation m={m} />
+        <Sources caseId={caseId} sources={m.sources ?? []} />
+      </article>
+    </SourcesContext.Provider>
   );
 }
 

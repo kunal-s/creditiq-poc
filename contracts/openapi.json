@@ -946,6 +946,11 @@
             "title": "Config Version",
             "type": "string"
           },
+          "copilot": {
+            "default": false,
+            "title": "Copilot",
+            "type": "boolean"
+          },
           "interim_template": {
             "title": "Interim Template",
             "type": "boolean"
@@ -956,6 +961,17 @@
             },
             "title": "Labels",
             "type": "object"
+          },
+          "rating_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating Note"
           },
           "recommendation": {
             "default": "",
@@ -972,6 +988,20 @@
             },
             "title": "Recommendation Prompts",
             "type": "array"
+          },
+          "recommendation_purpose": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendation Purpose"
+          },
+          "recommendation_review": {
+            "$ref": "#/components/schemas/CamReview"
           },
           "recommendation_title": {
             "title": "Recommendation Title",
@@ -1019,6 +1049,20 @@
           "summary_number": {
             "title": "Summary Number",
             "type": "integer"
+          },
+          "summary_purpose": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary Purpose"
+          },
+          "summary_review": {
+            "$ref": "#/components/schemas/CamReview"
           },
           "summary_title": {
             "title": "Summary Title",
@@ -1116,6 +1160,19 @@
         "title": "CamBlock",
         "type": "object"
       },
+      "CamDataRequest": {
+        "properties": {
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "CamDataRequest",
+        "type": "object"
+      },
       "CamFact": {
         "description": "One labelled value in a block of key facts.",
         "properties": {
@@ -1134,6 +1191,280 @@
         "title": "CamFact",
         "type": "object"
       },
+      "CamOverride": {
+        "description": "A figure a person overrode in a section, with the value drafted and the reason (F-23).",
+        "properties": {
+          "at": {
+            "title": "At",
+            "type": "string"
+          },
+          "by": {
+            "title": "By",
+            "type": "string"
+          },
+          "by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "By Name"
+          },
+          "figure": {
+            "title": "Figure",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "original": {
+            "title": "Original",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "figure",
+          "original",
+          "value",
+          "reason",
+          "by",
+          "at"
+        ],
+        "title": "CamOverride",
+        "type": "object"
+      },
+      "CamOverrideRequest": {
+        "properties": {
+          "figure": {
+            "title": "Figure",
+            "type": "string"
+          },
+          "original": {
+            "title": "Original",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "figure",
+          "original",
+          "value",
+          "reason"
+        ],
+        "title": "CamOverrideRequest",
+        "type": "object"
+      },
+      "CamPart": {
+        "description": "A part of a section, under its subheading: the kind of content it is drafted from.",
+        "properties": {
+          "blocks": {
+            "items": {
+              "$ref": "#/components/schemas/CamBlock"
+            },
+            "title": "Blocks",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "title"
+        ],
+        "title": "CamPart",
+        "type": "object"
+      },
+      "CamRegenerateRequest": {
+        "properties": {
+          "instruction": {
+            "default": "",
+            "title": "Instruction",
+            "type": "string"
+          }
+        },
+        "title": "CamRegenerateRequest",
+        "type": "object"
+      },
+      "CamRegenerateResult": {
+        "description": "A copilot redraft, not yet kept: a person reads it, then keeps or discards it.",
+        "properties": {
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "paragraphs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Paragraphs",
+            "type": "array"
+          },
+          "recorded": {
+            "title": "Recorded",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "paragraphs",
+          "model",
+          "recorded"
+        ],
+        "title": "CamRegenerateResult",
+        "type": "object"
+      },
+      "CamRequest": {
+        "description": "More data a person asked for from a section; it sits on the query list.",
+        "properties": {
+          "at": {
+            "title": "At",
+            "type": "string"
+          },
+          "by": {
+            "title": "By",
+            "type": "string"
+          },
+          "by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "By Name"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "by",
+          "at"
+        ],
+        "title": "CamRequest",
+        "type": "object"
+      },
+      "CamReview": {
+        "description": "Where a section's words stand: as the engine drafted them, in a person's words, or redrafted\nby the copilot and kept by a person; with the figures overridden and the data asked for.",
+        "properties": {
+          "at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At"
+          },
+          "by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "By"
+          },
+          "by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "By Name"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "overrides": {
+            "items": {
+              "$ref": "#/components/schemas/CamOverride"
+            },
+            "title": "Overrides",
+            "type": "array"
+          },
+          "paragraphs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Paragraphs",
+            "type": "array"
+          },
+          "requests": {
+            "items": {
+              "$ref": "#/components/schemas/CamRequest"
+            },
+            "title": "Requests",
+            "type": "array"
+          },
+          "state": {
+            "default": "machine",
+            "enum": [
+              "machine",
+              "edited",
+              "regenerated"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "title": "CamReview",
+        "type": "object"
+      },
       "CamSection": {
         "properties": {
           "blocks": {
@@ -1142,6 +1473,17 @@
             },
             "title": "Blocks",
             "type": "array"
+          },
+          "drafted_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Drafted At"
           },
           "empty": {
             "anyOf": [
@@ -1161,6 +1503,27 @@
           "number": {
             "title": "Number",
             "type": "integer"
+          },
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/CamPart"
+            },
+            "title": "Parts",
+            "type": "array"
+          },
+          "purpose": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purpose"
+          },
+          "review": {
+            "$ref": "#/components/schemas/CamReview"
           },
           "title": {
             "title": "Title",
@@ -1382,6 +1745,43 @@
           "text"
         ],
         "title": "CamText",
+        "type": "object"
+      },
+      "CamWordsRequest": {
+        "description": "A section's paragraphs in a person's words, or a copilot redraft a person keeps.",
+        "properties": {
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "paragraphs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Paragraphs",
+            "type": "array"
+          },
+          "source": {
+            "default": "person",
+            "enum": [
+              "person",
+              "copilot"
+            ],
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "paragraphs"
+        ],
+        "title": "CamWordsRequest",
         "type": "object"
       },
       "Candidate": {
@@ -6647,7 +7047,8 @@
               "quality",
               "label",
               "party",
-              "finding"
+              "finding",
+              "cam"
             ],
             "title": "Source Kind",
             "type": "string"
@@ -9628,6 +10029,369 @@
           }
         },
         "summary": "Case Cam Download"
+      }
+    },
+    "/api/cases/{case_id}/cam/sections/{section_id}/overrides": {
+      "post": {
+        "description": "A figure overridden, with the value drafted and the reason, kept with who and when.",
+        "operationId": "cam_override_api_cases__case_id__cam_sections__section_id__overrides_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "section_id",
+            "required": true,
+            "schema": {
+              "title": "Section Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CamOverrideRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cam"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cam Override"
+      }
+    },
+    "/api/cases/{case_id}/cam/sections/{section_id}/regenerate": {
+      "post": {
+        "description": "The copilot's redraft of a section, for a person to keep or discard; nothing is kept yet.",
+        "operationId": "cam_regenerate_api_cases__case_id__cam_sections__section_id__regenerate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "section_id",
+            "required": true,
+            "schema": {
+              "title": "Section Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CamRegenerateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CamRegenerateResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cam Regenerate"
+      }
+    },
+    "/api/cases/{case_id}/cam/sections/{section_id}/requests": {
+      "post": {
+        "description": "More data asked for from a section; it goes on the query list.",
+        "operationId": "cam_request_api_cases__case_id__cam_sections__section_id__requests_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "section_id",
+            "required": true,
+            "schema": {
+              "title": "Section Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CamDataRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cam"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cam Request"
+      }
+    },
+    "/api/cases/{case_id}/cam/sections/{section_id}/words": {
+      "delete": {
+        "description": "Back to the engine's draft of the section.",
+        "operationId": "cam_restore_api_cases__case_id__cam_sections__section_id__words_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "section_id",
+            "required": true,
+            "schema": {
+              "title": "Section Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cam"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cam Restore"
+      },
+      "put": {
+        "description": "A section in a person's words, or a copilot redraft a person keeps.",
+        "operationId": "cam_words_api_cases__case_id__cam_sections__section_id__words_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "section_id",
+            "required": true,
+            "schema": {
+              "title": "Section Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CamWordsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cam"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cam Words"
       }
     },
     "/api/cases/{case_id}/checklist": {

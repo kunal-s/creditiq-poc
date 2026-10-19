@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
-import type { Finding, FindingOutcome } from "@/api/types";
+import type { Cam, Finding, FindingOutcome } from "@/api/types";
 
 /** The case's cross-check outcomes (F-19), fails first. */
 export function useFindings(caseId: string, enabled = true) {
@@ -40,6 +40,28 @@ export function useSpread(caseId: string) {
 /** The draft CAM (F-23). */
 export function useCam(caseId: string) {
   return useQuery({ queryKey: ["cases", caseId, "cam"], queryFn: () => api.caseCam(caseId) });
+}
+
+/** A change to the draft CAM's review (F-23): the memo as it now reads replaces the one on
+ * screen; a data request also changes the query list. */
+export function useCamChange<V>(caseId: string, send: (v: V) => Promise<Cam>) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: send,
+    onSuccess: (cam) => {
+      client.setQueryData(["cases", caseId, "cam"], cam);
+      void client.invalidateQueries({ queryKey: ["cases", caseId, "queries"] });
+      void client.invalidateQueries({ queryKey: ["cases", caseId, "pd-note"] });
+    },
+  });
+}
+
+/** The copilot's redraft of a section, for a person to keep or discard. */
+export function useCamRegenerate(caseId: string) {
+  return useMutation({
+    mutationFn: ({ sectionId, instruction }: { sectionId: string; instruction: string }) =>
+      api.camRegenerate(caseId, sectionId, { instruction }),
+  });
 }
 
 /** The PD question note (F-24). */

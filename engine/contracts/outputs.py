@@ -216,14 +216,70 @@ class CamBlock(BaseModel):
     """A subheading's or a note's words."""
 
 
+class CamPart(BaseModel):
+    """A part of a section, under its subheading: the kind of content it is drafted from."""
+
+    id: str
+    kind: str
+    title: str
+    blocks: list[CamBlock] = Field(default_factory=list)
+
+
+class CamOverride(BaseModel):
+    """A figure a person overrode in a section, with the value drafted and the reason (F-23)."""
+
+    id: str
+    figure: str
+    original: str
+    value: str
+    reason: str
+    by: str
+    by_name: str | None = None
+    at: str
+
+
+class CamRequest(BaseModel):
+    """More data a person asked for from a section; it sits on the query list."""
+
+    id: str
+    text: str
+    by: str
+    by_name: str | None = None
+    at: str
+
+
+class CamReview(BaseModel):
+    """Where a section's words stand: as the engine drafted them, in a person's words, or redrafted
+    by the copilot and kept by a person; with the figures overridden and the data asked for."""
+
+    state: Literal["machine", "edited", "regenerated"] = "machine"
+    by: str | None = None
+    by_name: str | None = None
+    at: str | None = None
+    model: str | None = None
+    """For a redraft: the model that wrote it."""
+    paragraphs: list[str] = Field(default_factory=list)
+    """The section's words when not the engine's own: each paragraph keeps the citations of the
+    drafted paragraph in its place."""
+    overrides: list[CamOverride] = Field(default_factory=list)
+    requests: list[CamRequest] = Field(default_factory=list)
+
+
 class CamSection(BaseModel):
     id: str
     number: int
     """Its number in the memo, 1 first."""
     title: str
+    purpose: str | None = None
     blocks: list[CamBlock] = Field(default_factory=list)
+    """The section's blocks as the memo shows them: the parts in order, each under its subheading
+    where there are several, a person's or the copilot's words in place of the drafted paragraphs."""
+    parts: list[CamPart] = Field(default_factory=list)
     empty: str | None = None
     """What is shown when the section has nothing on file yet."""
+    review: CamReview = Field(default_factory=CamReview)
+    drafted_at: str | None = None
+    """When the engine drafted it: the case data's last change."""
 
 
 class CamSummaryItem(BaseModel):
@@ -274,15 +330,56 @@ class Cam(BaseModel):
     sections: list[CamSection]
     summary_number: int
     summary_title: str
+    summary_purpose: str | None = None
     summary: list[CamSummaryItem]
     """Findings, deviations and open queries (F-23.3)."""
+    summary_review: CamReview = Field(default_factory=CamReview)
+    """A person's or the copilot's words on the risks, shown above the findings."""
+    rating_note: str | None = None
+    """Where a rating would be, while no rating model is configured."""
     recommendation_number: int
     recommendation_title: str
+    recommendation_purpose: str | None = None
     recommendation: str = ""
-    """Left empty for credit to complete (F-23.4)."""
+    """Left empty for credit to complete (F-23.4); a person's words once written."""
+    recommendation_review: CamReview = Field(default_factory=CamReview)
+    copilot: bool = False
+    """Whether a section can be redrafted by the copilot: configured, and its key present."""
     recommendation_prompts: list[str] = Field(default_factory=list)
     """The headings credit completes under the recommendation, each left blank."""
     sign_off: list[CamSignOff] = Field(default_factory=list)
     labels: dict[str, str] = Field(default_factory=dict)
     """The wording printed inside the downloads (headings and field labels), from configuration."""
     sources: list[OutputSource] = Field(default_factory=list)
+
+
+class CamWordsRequest(BaseModel):
+    """A section's paragraphs in a person's words, or a copilot redraft a person keeps."""
+
+    paragraphs: list[str]
+    source: Literal["person", "copilot"] = "person"
+    model: str | None = None
+
+
+class CamRegenerateRequest(BaseModel):
+    instruction: str = ""
+
+
+class CamRegenerateResult(BaseModel):
+    """A copilot redraft, not yet kept: a person reads it, then keeps or discards it."""
+
+    paragraphs: list[str]
+    model: str
+    recorded: bool
+    """The answer was the one recorded for this same request (replayed, not asked again)."""
+
+
+class CamOverrideRequest(BaseModel):
+    figure: str
+    original: str
+    value: str
+    reason: str
+
+
+class CamDataRequest(BaseModel):
+    text: str

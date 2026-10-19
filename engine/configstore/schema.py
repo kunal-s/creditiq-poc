@@ -391,13 +391,52 @@ class CrossChecksSection(BaseModel):
         return [r for r in self.rules if r.enabled]
 
 
-class CamSectionDef(BaseModel):
+CamKind = Literal[
+    "snapshot", "borrower_profile", "proposal", "promoters", "financial_performance", "working_capital",
+    "turnover", "banking", "existing_facilities", "cross_verification", "policy", "documentation",
+]
+
+
+class CamPartDef(BaseModel):
+    """One part of a memo section: what it is drafted from, under its own subheading."""
+
     id: str
-    kind: Literal[
-        "snapshot", "borrower_profile", "proposal", "promoters", "financial_performance", "working_capital",
-        "turnover", "banking", "existing_facilities", "cross_verification", "policy", "documentation",
-    ]
+    kind: CamKind
     title: str
+
+
+class CamSectionDef(BaseModel):
+    """A memo section: drafted from one kind (`kind`, a version published before parts existed), or
+    from several parts in order, each under its subheading."""
+
+    id: str
+    kind: CamKind | None = None
+    title: str
+    purpose: str | None = None
+    """One line under the section's title on the screen: what the section is for."""
+    parts: list[CamPartDef] = Field(default_factory=list)
+
+    def drafted_from(self) -> list[CamPartDef]:
+        if self.parts:
+            return self.parts
+        return [CamPartDef(id=self.id, kind=self.kind, title=self.title)] if self.kind else []
+
+
+class CamCopilotConfig(BaseModel):
+    """The model that redrafts a memo section in other words (Regenerate with copilot). Only the
+    sampling parameters named here are sent; every answer is recorded and replayed for the same
+    request, so a section reads the same each time it is shown."""
+
+    enabled: bool = False
+    provider: Literal["openai"] = "openai"
+    model: str = ""
+    base_url: str = "https://api.openai.com/v1"
+    api_key_env: str = "OPENAI_API_KEY"
+    temperature: float | None = None
+    seed: int | None = None
+    timeout_s: int = 60
+    system: str = ""
+    user: str = ""
 
 
 PdTopicArea = Literal["identity", "turnover", "accounts", "obligations", "policy"]
@@ -433,7 +472,12 @@ class CamSectionConfig(BaseModel):
     """Said on the memo while its layout is assumed."""
     sections: list[CamSectionDef]
     summary_title: str
+    summary_purpose: str | None = None
     recommendation_title: str
+    recommendation_purpose: str | None = None
+    rating_note: str | None = None
+    """Said where a rating would be, while no rating model is configured."""
+    copilot: CamCopilotConfig = Field(default_factory=CamCopilotConfig)
     recommendation_prompts: list[str] = Field(default_factory=list)
     """The headings credit completes under the recommendation, each left blank."""
     sign_off: list[str] = Field(default_factory=list)

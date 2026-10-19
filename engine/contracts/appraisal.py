@@ -46,7 +46,7 @@ class QueryItem(BaseModel):
     case_id: str
     group: Literal["documents_needed", "documents_to_redo", "clarifications"]
     text: str
-    source_kind: Literal["checklist", "quality", "label", "party", "finding"]
+    source_kind: Literal["checklist", "quality", "label", "party", "finding", "cam"]
     source_ref: str
     evidence: list[Evidence] = Field(default_factory=list)
     resolved: bool = False

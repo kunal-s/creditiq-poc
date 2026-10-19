@@ -2777,7 +2777,74 @@ const memoSection = (
   id: string,
   title: string,
   blocks: CamBlock[],
-): CamSection => ({ id, number, title, blocks, empty: null });
+): CamSection => ({
+  id,
+  number,
+  title,
+  blocks,
+  empty: null,
+  parts: [],
+  review: { state: "machine", paragraphs: [], overrides: [], requests: [] },
+});
+
+/** The memo's eight sections as config/cam.yaml composes them: six drafted from the parts (each a
+ * part keeping its id, under its subheading where there are several), then the risk assessment
+ * and the recommendation. */
+const CAM_LAYOUT: [string, string, string, string[]][] = [
+  [
+    "profile",
+    "Borrower and Group Profile",
+    "Legal identity, constitution, promoters and management, as the documents show them.",
+    ["borrower", "promoters"],
+  ],
+  [
+    "facility",
+    "Facility Requested and Purpose",
+    "What is being asked for, why, and the working-capital assessment behind it.",
+    ["snapshot", "proposal", "working_capital"],
+  ],
+  [
+    "conduct",
+    "Banking Conduct",
+    "Account behaviour across the statements on file, and the facilities already running.",
+    ["banking", "obligations"],
+  ],
+  [
+    "analysis",
+    "Financial Analysis and Ratios",
+    "The audited years' performance and the ratios tested against the policy norms.",
+    ["financials", "policy"],
+  ],
+  [
+    "gst",
+    "GST and Bureau Findings",
+    "Turnover across GST returns, income tax returns and banking, as filed.",
+    ["turnover"],
+  ],
+  [
+    "verification",
+    "Cross-Verification Results",
+    "Contradictions between sources, the evidence, and how each was decided; the documents' status.",
+    ["verification", "documentation"],
+  ],
+];
+function eightSections(parts: CamSection[]): CamSection[] {
+  return CAM_LAYOUT.map(([id, title, purpose, ids], i) => {
+    const own = ids.map((p) => parts.find((s) => s.id === p)!);
+    const blocks =
+      own.length === 1
+        ? (own[0]!.blocks ?? [])
+        : own.flatMap((p) =>
+            (p.blocks ?? []).length ? [subheading(p.title), ...(p.blocks ?? [])] : [],
+          );
+    return {
+      ...memoSection(i + 1, id, title, blocks),
+      purpose,
+      parts: own.map((p) => ({ id: p.id, kind: p.id, title: p.title, blocks: p.blocks ?? [] })),
+      empty: blocks.length ? null : "Nothing on file yet.",
+    };
+  });
+}
 const summaryItem = (
   kind: CamSummaryItem["kind"],
   ref: string,
@@ -2848,7 +2915,8 @@ export const CAM: Cam = {
   run_id: XV_RUN.id,
   interim_template: true,
   template_note: "Draft — layout assumed until RBL's CAM template is received.",
-  sections: [
+  copilot: false,
+  sections: eightSections([
     memoSection(1, "snapshot", "Proposal at a glance", [
       facts(
         ["Borrower", said("Kestrel Polymers Pvt Ltd", ...at("doc-coi", 1))],
@@ -3300,9 +3368,11 @@ export const CAM: Cam = {
       ),
       paragraph("Outdated documents: the stock statement dated 31 Jan 2026."),
     ]),
-  ],
-  summary_number: 13,
-  summary_title: "Summary of findings, deviations and open queries",
+  ]),
+  summary_number: 7,
+  summary_title: "Risk Assessment and Rating",
+  summary_purpose: "The findings, deviations and open queries the risk rests on, and the rating.",
+  rating_note: "Not rated: RBL's rating model is not configured.",
   // The findings as a register (their explanations are in section 10), the checks that could not
   // be completed with what would complete them, the deviations, the norms not assessed and the
   // open queries by group.
@@ -3438,8 +3508,9 @@ export const CAM: Cam = {
       { group: "clarifications", citations: at("doc-bank", 7) },
     ),
   ],
-  recommendation_number: 14,
+  recommendation_number: 8,
   recommendation_title: "Recommendation",
+  recommendation_purpose: "The analyst's recommendation to the approving authority.",
   recommendation: "",
   recommendation_prompts: [
     "Recommendation",

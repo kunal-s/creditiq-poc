@@ -1,6 +1,7 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { AssessmentStage } from "@/components/case/gate/AssessmentStage";
-import { CamView, PdNoteView } from "@/components/case/Outputs";
+import { CamReviewView } from "@/components/case/cam/CamReview";
+import { PdNoteView } from "@/components/case/Outputs";
 import { TabSection } from "@/components/case/TabSection";
 import { t } from "@/config/terminology";
 import { cn } from "@/lib/utils";
@@ -55,7 +56,7 @@ function OutputsTab() {
         </nav>
         <TabSection id={view} title={t("page.draft.title")} purpose={t("page.draft.purpose")}>
           <div className="px-4 py-4 sm:px-6">
-            {view === "cam" ? <CamView caseId={caseId} /> : <PdNoteView caseId={caseId} />}
+            {view === "cam" ? <CamReviewView caseId={caseId} /> : <PdNoteView caseId={caseId} />}
           </div>
         </TabSection>
       </div>

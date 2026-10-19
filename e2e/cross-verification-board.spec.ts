@@ -25,6 +25,7 @@ import {
   xvDecision,
   xvFinding,
   xvItem,
+  xvSide,
   xvView,
 } from "./fixtures/data";
 import { MockApi, scrollsSideways, signedIn } from "./support/api";
@@ -103,7 +104,7 @@ test("the header sums up the board, the decisions made and the run, and locks th
   );
   await expect(page.getByTestId("xv-back-spread")).toHaveAttribute(
     "href",
-    `/appraisals/${KESTREL}/outputs?view=spread`,
+    `/appraisals/${KESTREL}/spread`,
   );
   await expect(page.getByTestId("xv-exception-queue")).toHaveAttribute("href", "/review");
 
@@ -129,7 +130,7 @@ test("the header sums up the board, the decisions made and the run, and locks th
   await expect(page).toHaveURL(/\/review$/);
   await page.goBack();
   await page.getByTestId("xv-back-spread").click();
-  await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}/outputs\\?view=spread$`));
+  await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}/spread$`));
 });
 
 test("the overview has a card per area, in the engine's order, each saying where the area stands", async ({
@@ -1817,4 +1818,76 @@ test.describe("at phone width", () => {
     const second = await ob2.getByTestId("xv-column-declaration").boundingBox();
     expect(second!.y).toBeGreaterThanOrEqual(first!.y + first!.height - 1);
   });
+});
+
+test("the turnover section opens with every compared pair of figures, coloured by the engine's outcome", async ({
+  page,
+}) => {
+  // One turnover check of each outcome; the screen colours what the engine decided and
+  // measures nothing itself.
+  const turnover = (
+    id: string,
+    rule_id: string,
+    outcome: XvItem["finding"]["outcome"],
+    tolerance: string | null,
+    a: number | string,
+    b: number | string,
+  ) =>
+    xvItem(
+      xvFinding({
+        id,
+        rule_id,
+        title: `${rule_id} comparison`,
+        area: "turnover",
+        outcome,
+        severity: "moderate",
+        blocking: false,
+        explanation: outcome === "incomplete" ? "GST outward supplies cover 7 of 12 months." : "",
+        scope: "FY 2025-26",
+        tolerance,
+        sides: [
+          xvSide("Audited financial statements", a, [{ document_id: "doc-bs", page: 4 }]),
+          xvSide("GST outward supplies", b, []),
+        ],
+      }),
+    );
+  const api = new MockApi();
+  api.boards.set(
+    KESTREL,
+    boardWith((items) => [
+      ...items.filter((i) => i.finding.area !== "turnover"),
+      turnover("t-fail", "TO-01", "fail", "1%", 118_000_000, 68_600_000),
+      turnover("t-pass", "TO-02", "pass", "1%", 117_600_000, 117_000_000),
+      turnover("t-incomplete", "TO-03", "incomplete", "1%", 118_000_000, 68_250_000),
+      turnover("t-exact", "TO-05", "pass", null, "FY 2025-26", "FY 2025-26"),
+      turnover("t-na", "TO-04", "not_applicable", null, "", ""),
+    ]),
+  );
+  await openBoard(page, api);
+
+  const figures = section(page, "turnover").getByTestId("xv-figures");
+  await expect(figures).toBeVisible();
+  const rows = figures.getByTestId("xv-figure-row");
+  // Every check that compared two figures, discrepancy or not, in the engine's order; one that
+  // did not apply is left out.
+  expect(await rules(rows)).toEqual(["TO-01", "TO-03", "TO-02", "TO-05"]);
+  expect(await outcomes(rows)).toEqual(["fail", "incomplete", "pass", "pass"]);
+
+  const row = (rule: string) => figures.locator(`[data-rule="${rule}"]`);
+  await expect(row("TO-01")).toContainText("Outside tolerance");
+  await expect(row("TO-01").getByTestId("xv-figure-value").first()).toHaveText("INR 11.80 cr");
+  await expect(row("TO-01").getByTestId("xv-figure-value").first()).toHaveClass(/text-destructive/);
+  await expect(row("TO-02")).toContainText("Within tolerance");
+  await expect(row("TO-02").getByTestId("xv-figure-value").nth(1)).toHaveClass(/text-positive/);
+  await expect(row("TO-03")).toContainText("Not compared");
+  await expect(row("TO-03")).toContainText("GST outward supplies cover 7 of 12 months.");
+  // A rule with no tolerance compares exactly.
+  await expect(row("TO-05")).toContainText("Agrees");
+
+  // A figure with a page opens it.
+  await row("TO-01").getByTestId("xv-figure-value").first().click();
+  await expect(page.getByTestId("evidence-viewer")).toBeVisible();
+
+  // The other areas do not carry the table.
+  await expect(section(page, "identity").getByTestId("xv-figures")).toHaveCount(0);
 });

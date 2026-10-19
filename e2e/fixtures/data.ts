@@ -2102,7 +2102,7 @@ export const FACTS: CaseFacts = {
 
 const bs = (page: number) => [{ document_id: "doc-bs", page }];
 
-function norm(
+export function norm(
   n: Partial<NormResult> & Pick<NormResult, "id" | "family" | "label" | "outcome">,
 ): NormResult {
   return {

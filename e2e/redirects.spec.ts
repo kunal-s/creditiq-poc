@@ -20,7 +20,7 @@ const REDIRECTS: [string, string][] = [
   [`/docready/${KESTREL}/checklist`, `${C}/completeness#checklist`],
   [`/docready/${KESTREL}/readiness`, `${C}/completeness#readiness`],
   [`/docready/${KESTREL}/collection`, `${C}/completeness#queries`],
-  [`/appraisals/${KESTREL}/spread`, `${C}/outputs?view=spread`],
+  [`/appraisals/${KESTREL}/spread`, `${C}/spread`],
   [`/appraisals/${KESTREL}/draft`, `${C}/outputs?view=cam`],
   [`/appraisals/${KESTREL}/cross-verification`, `${C}/cross-verification`],
   [`/appraisals/${KESTREL}/policy`, `${C}/policy`],

@@ -5011,6 +5011,22 @@
             ],
             "title": "Actual Text"
           },
+          "band": {
+            "anyOf": [
+              {
+                "enum": [
+                  "within",
+                  "marginal",
+                  "outside"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Band"
+          },
           "category": {
             "title": "Category",
             "type": "string"
@@ -5067,6 +5083,17 @@
           "label": {
             "title": "Label",
             "type": "string"
+          },
+          "marginal_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Marginal Text"
           },
           "missing": {
             "items": {

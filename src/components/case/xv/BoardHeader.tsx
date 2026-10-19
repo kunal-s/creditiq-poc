@@ -91,9 +91,8 @@ export function BoardHeader({
         <div className="flex max-w-full flex-wrap items-center gap-2">
           {canOutputs && (
             <Link
-              to="/appraisals/$caseId/outputs"
+              to="/appraisals/$caseId/spread"
               params={{ caseId }}
-              search={{ view: "spread" }}
               className={headerButton}
               data-testid="xv-back-spread"
             >

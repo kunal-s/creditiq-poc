@@ -11,22 +11,22 @@ import type {
   CaseCreate,
   CaseDetail,
   CaseFacts,
+  CaseProgress,
+  CaseProposal,
+  CaseSummary,
   ConfigVersion,
   CrossVerificationView,
   DocumentTypes,
   EditableSettings,
-  Finding,
-  PolicyAssessment,
-  CaseProgress,
-  CaseProposal,
-  CaseSummary,
   FieldValue,
   FileRecord,
+  Finding,
   LogicalDocument,
   OutputFormat,
   OutputKind,
   Party,
   PdNote,
+  PolicyAssessment,
   QueryItem,
   Readiness,
   ReviewDecisionRequest,
@@ -35,6 +35,7 @@ import type {
   SettingChange,
   SettingsChanges,
   SettingsPublishRequest,
+  Spread,
   StageProgress,
   UploadResult,
   XvDecisionRequest,
@@ -149,6 +150,8 @@ export class MockApi {
   review: ReviewItem[] = structuredClone(REVIEW);
   findings = new Map<string, Finding[]>([[KESTREL, FINDINGS]]);
   facts = new Map<string, CaseFacts>([[KESTREL, FACTS]]);
+  /** The spread per case; a case without one answers Kestrel's (F-22). */
+  spreads = new Map<string, Spread>();
   policy = new Map<string, PolicyAssessment>([
     [KESTREL, POLICY],
     [SAFFRON, SAFFRON_POLICY],
@@ -389,7 +392,11 @@ export class MockApi {
         new RegExp(`^/api/cases/${id}/cross-verification/findings/${id}/query$`),
         (_req, m) => this.addFindingQuery(decodeURIComponent(m[1]!), decodeURIComponent(m[2]!)),
       ],
-      ["GET", new RegExp(`^/api/cases/${id}/spread$`), () => ({ json: SPREAD })],
+      [
+        "GET",
+        new RegExp(`^/api/cases/${id}/spread$`),
+        (_req, m) => ({ json: this.spreads.get(decodeURIComponent(m[1]!)) ?? SPREAD }),
+      ],
       ["GET", new RegExp(`^/api/cases/${id}/cam$`), () => ({ json: this.cam })],
       ["GET", new RegExp(`^/api/cases/${id}/pd-note$`), () => ({ json: this.pdNote })],
       [

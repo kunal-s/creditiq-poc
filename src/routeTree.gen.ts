@@ -37,6 +37,7 @@ import { Route as AppraisalsCaseIdDocumentsRouteImport } from './routes/appraisa
 import { Route as AppraisalsCaseIdExtractionRouteImport } from './routes/appraisals.$caseId.extraction'
 import { Route as AppraisalsCaseIdOutputsRouteImport } from './routes/appraisals.$caseId.outputs'
 import { Route as AppraisalsCaseIdPolicyRouteImport } from './routes/appraisals.$caseId.policy'
+import { Route as AppraisalsCaseIdSpreadRouteImport } from './routes/appraisals.$caseId.spread'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -183,6 +184,11 @@ const AppraisalsCaseIdPolicyRoute = AppraisalsCaseIdPolicyRouteImport.update({
   path: '/policy',
   getParentRoute: () => AppraisalsCaseIdRoute,
 } as any)
+const AppraisalsCaseIdSpreadRoute = AppraisalsCaseIdSpreadRouteImport.update({
+  id: '/spread',
+  path: '/spread',
+  getParentRoute: () => AppraisalsCaseIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -212,6 +218,7 @@ export interface FileRoutesByFullPath {
   '/appraisals/$caseId/extraction': typeof AppraisalsCaseIdExtractionRoute
   '/appraisals/$caseId/outputs': typeof AppraisalsCaseIdOutputsRoute
   '/appraisals/$caseId/policy': typeof AppraisalsCaseIdPolicyRoute
+  '/appraisals/$caseId/spread': typeof AppraisalsCaseIdSpreadRoute
   '/appraisals/$caseId/': typeof AppraisalsCaseIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -240,6 +247,7 @@ export interface FileRoutesByTo {
   '/appraisals/$caseId/extraction': typeof AppraisalsCaseIdExtractionRoute
   '/appraisals/$caseId/outputs': typeof AppraisalsCaseIdOutputsRoute
   '/appraisals/$caseId/policy': typeof AppraisalsCaseIdPolicyRoute
+  '/appraisals/$caseId/spread': typeof AppraisalsCaseIdSpreadRoute
   '/appraisals/$caseId': typeof AppraisalsCaseIdIndexRoute
 }
 export interface FileRoutesById {
@@ -271,6 +279,7 @@ export interface FileRoutesById {
   '/appraisals/$caseId/extraction': typeof AppraisalsCaseIdExtractionRoute
   '/appraisals/$caseId/outputs': typeof AppraisalsCaseIdOutputsRoute
   '/appraisals/$caseId/policy': typeof AppraisalsCaseIdPolicyRoute
+  '/appraisals/$caseId/spread': typeof AppraisalsCaseIdSpreadRoute
   '/appraisals/$caseId/': typeof AppraisalsCaseIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -303,6 +312,7 @@ export interface FileRouteTypes {
     | '/appraisals/$caseId/extraction'
     | '/appraisals/$caseId/outputs'
     | '/appraisals/$caseId/policy'
+    | '/appraisals/$caseId/spread'
     | '/appraisals/$caseId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -331,6 +341,7 @@ export interface FileRouteTypes {
     | '/appraisals/$caseId/extraction'
     | '/appraisals/$caseId/outputs'
     | '/appraisals/$caseId/policy'
+    | '/appraisals/$caseId/spread'
     | '/appraisals/$caseId'
   id:
     | '__root__'
@@ -361,6 +372,7 @@ export interface FileRouteTypes {
     | '/appraisals/$caseId/extraction'
     | '/appraisals/$caseId/outputs'
     | '/appraisals/$caseId/policy'
+    | '/appraisals/$caseId/spread'
     | '/appraisals/$caseId/'
   fileRoutesById: FileRoutesById
 }
@@ -578,6 +590,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppraisalsCaseIdPolicyRouteImport
       parentRoute: typeof AppraisalsCaseIdRoute
     }
+    '/appraisals/$caseId/spread': {
+      id: '/appraisals/$caseId/spread'
+      path: '/spread'
+      fullPath: '/appraisals/$caseId/spread'
+      preLoaderRoute: typeof AppraisalsCaseIdSpreadRouteImport
+      parentRoute: typeof AppraisalsCaseIdRoute
+    }
   }
 }
 
@@ -610,6 +629,7 @@ interface AppraisalsCaseIdRouteChildren {
   AppraisalsCaseIdExtractionRoute: typeof AppraisalsCaseIdExtractionRoute
   AppraisalsCaseIdOutputsRoute: typeof AppraisalsCaseIdOutputsRoute
   AppraisalsCaseIdPolicyRoute: typeof AppraisalsCaseIdPolicyRoute
+  AppraisalsCaseIdSpreadRoute: typeof AppraisalsCaseIdSpreadRoute
   AppraisalsCaseIdIndexRoute: typeof AppraisalsCaseIdIndexRoute
 }
 
@@ -623,6 +643,7 @@ const AppraisalsCaseIdRouteChildren: AppraisalsCaseIdRouteChildren = {
   AppraisalsCaseIdExtractionRoute: AppraisalsCaseIdExtractionRoute,
   AppraisalsCaseIdOutputsRoute: AppraisalsCaseIdOutputsRoute,
   AppraisalsCaseIdPolicyRoute: AppraisalsCaseIdPolicyRoute,
+  AppraisalsCaseIdSpreadRoute: AppraisalsCaseIdSpreadRoute,
   AppraisalsCaseIdIndexRoute: AppraisalsCaseIdIndexRoute,
 }
 

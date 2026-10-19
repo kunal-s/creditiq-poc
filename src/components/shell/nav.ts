@@ -30,6 +30,7 @@ export const CASE_TABS: CaseTab[] = [
     permission: "finding.read",
   },
   { to: "policy", key: "policy", stage: "policy", permission: "finding.read" },
+  { to: "spread", key: "spread", permission: "output.read" },
   { to: "outputs", key: "outputs", stage: "outputs", permission: "output.read" },
   { to: "comparison", key: "comparison", permission: "comparison.adjudicate" },
 ];
@@ -48,7 +49,7 @@ export type CaseFlow = {
 /** The two processing flows; their tabs show as sub-tabs under one top-level tab. */
 export const CASE_FLOWS: CaseFlow[] = [
   { id: "ingestion", tabs: ["documents", "extraction", "completeness"] },
-  { id: "verification", tabs: ["crossVerification", "policy"] },
+  { id: "verification", tabs: ["crossVerification", "policy", "spread"] },
 ];
 
 /** A top-level tab: a single case tab, or a flow standing for its sub-tabs. */

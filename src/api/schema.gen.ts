@@ -2699,6 +2699,8 @@ export interface components {
       actual?: number | null;
       /** Actual Text */
       actual_text?: string | null;
+      /** Band */
+      band?: ("within" | "marginal" | "outside") | null;
       /** Category */
       category: string;
       /** Category Label */
@@ -2724,6 +2726,8 @@ export interface components {
       inputs?: components["schemas"]["NormInput"][];
       /** Label */
       label: string;
+      /** Marginal Text */
+      marginal_text?: string | null;
       /** Missing */
       missing?: string[];
       /** Note */

@@ -8,7 +8,7 @@ const APPRAISAL: Record<string, Target> = {
   upload: { to: "documents" },
   identity: { to: "extraction", hash: "identity" },
   data: { to: "extraction", hash: "fields" },
-  spread: { to: "outputs", search: { view: "spread" } },
+  spread: { to: "spread" },
   draft: { to: "outputs", search: { view: "cam" } },
   "cross-verification": { to: "cross-verification" },
   policy: { to: "policy" },

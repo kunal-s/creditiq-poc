@@ -56,6 +56,7 @@ caseTab:
   completeness: Completeness
   crossVerification: Cross-checks
   policy: Policy
+  spread: Spread
   outputs: Outputs
   comparison: Comparison
 
@@ -64,6 +65,85 @@ caseFlow:
   ingestion: Documents and data
   verification: Verification and policy
   subTabs: Sections of this step
+
+# The Spread tab: the statements year by year, turnover from every source, and the ratios
+# against the policy norms.
+spreadPage:
+  kicker: "Appraisal {id} · Spread"
+  title: Financial spread
+  purpose: The audited years laid out line by line, turnover from every source side by side, and the ratios tested against the policy norms. Every figure carries the document and page it was read from.
+  back: Cross-checks
+  continue: Continue to draft
+  emptyTitle: No spread yet
+  emptyDescription: The spread is laid out once audited financial statements have been read.
+  period: Period
+  periodNote: "Year ended {date} · {basis}"
+  basis:
+    audited: Audited
+    provisional: Provisional
+    projected: Projected
+  unit:
+    crore: INR crore
+  banner:
+    open: Take this to Cross-checks
+    more: "(and {n} more)"
+  turnover:
+    title: Turnover by year
+    subtitle: INR crore · every source as read from its documents, coloured by what the cross-checks concluded
+    source: Source
+    months: "{n} of 12 months"
+  verdict:
+    agrees: Agrees within tolerance
+    differs: Differs outside tolerance
+    not_compared: Not compared, part of the year missing
+  statement:
+    lineItem: Line item
+    profit_and_loss:
+      title: Profit and loss
+      subtitle: INR crore · as reported, laid out in the spread format
+    balance_sheet:
+      title: Balance sheet
+      subtitle: INR crore · as at the year end
+    manual: "{label} {fy} relies on a person's entry; confirm it against its document before the spread is relied on."
+    manualPage: "{label} {fy} relies on a person's entry; confirm it against page {page} before the spread is relied on."
+    footnote: Every figure is selectable; the source panel shows the page it was read from.
+  ratios:
+    title: Ratios against policy
+    subtitle: "Computed on {period} figures · thresholds from the published policy norms"
+    within: Within policy
+    marginal: Marginal
+    outside: Outside policy
+    cannot: Cannot evaluate
+    noNorm: No policy norm
+    required: "Policy {required}"
+    marginalAt: "marginal {value}"
+    noNormNote: No policy threshold
+  trend:
+    turnoverUp: "Turnover grew {pct}% in {fy}"
+    turnoverDown: "Turnover fell {pct}% in {fy}"
+    turnoverBody: "Audited revenue from operations went from {before} cr in {from} to {after} cr in {to}."
+    cycleLonger: "Working-capital cycle lengthened by {n} days in {fy}"
+    cycleShorter: "Working-capital cycle shortened by {n} days in {fy}"
+    cycleSame: "Working-capital cycle held steady in {fy}"
+    cycleBody: "From {before} days in {from} to {after} days in {to}, counting inventory and receivable days less payable days."
+  status:
+    title: Spread status
+    traced: Lines traced to a page
+    manual: Relying on a person's entry
+    periods: Periods spread
+    layout: Layout
+    interim: Interim layout
+    template: Bank template
+    assessed: Ratios assessed on
+  source:
+    title: Source panel
+    hint: Select any figure to see where it was read from.
+    read: Read from the document
+    manual: Relies on a person's entry
+    page: "Page {page}"
+    more: "{n} more pages"
+    open: Open the page
+    noPage: Not read from a page.
 
 # Views within the Outputs tab.
 outputs:
@@ -343,6 +423,18 @@ crossVerification:
     notApplicable: Not applicable
   facts:
     title: Facts behind these checks
+  # Every pair of figures an area's checks compared, discrepancy or not, at the head of the
+  # area's section; coloured by the outcome the check reached.
+  figures:
+    title: Figures compared
+    note: Every comparison the checks made, within tolerance or not
+    matches: Within tolerance
+    differs: Outside tolerance
+    agrees: Agrees
+    exactDiffers: Differs
+    incomplete: Not compared
+    tolerance: "tolerance {tolerance}"
+    openEvidence: "Open {label} at page {page}"
 
 facts:
   purpose: What the checks compared, each with the pages it came from.

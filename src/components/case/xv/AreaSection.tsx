@@ -3,10 +3,14 @@ import { AreaFactsSection } from "@/components/case/CrossVerification";
 import { t } from "@/config/terminology";
 import { areaHeadingId, areaSectionId, withOutcome } from "@/domain/crossVerification";
 import { cn } from "@/lib/utils";
+import { ComparedFigures } from "./ComparedFigures";
 import { DiscrepancyCard } from "./DiscrepancyCard";
 import { IncompleteList } from "./IncompleteList";
 import { PassedList } from "./PassedList";
 import { AREA_STATUS } from "./styles";
+
+/** The areas whose section opens with every compared pair of figures (ComparedFigures). */
+const FIGURE_AREAS: XvArea["area"][] = ["turnover"];
 
 /** "8 rules · 2 discrepancies · 1 could not be checked · 4 passed", as the engine counted them;
  * the parts with nothing in them are left out. */
@@ -81,6 +85,10 @@ export function AreaSection({
           {countsLine(area)}
         </p>
       </header>
+
+      {/* Turnover is read as figures: every pair the checks compared, agreeing or not, comes
+          first, before the discrepancies drawn from them. */}
+      {FIGURE_AREAS.includes(area.area) && <ComparedFigures caseId={caseId} items={items} />}
 
       {discrepancies.length === 0 ? (
         <p

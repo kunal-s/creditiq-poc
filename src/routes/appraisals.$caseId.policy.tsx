@@ -21,9 +21,10 @@ export const Route = createFileRoute("/appraisals/$caseId/policy")({
 
 function PolicyTab() {
   const { caseId } = Route.useParams();
+  const { norm } = Route.useSearch();
   return (
     <AssessmentStage caseId={caseId}>
-      <PolicyPage caseId={caseId} />
+      <PolicyPage caseId={caseId} norm={norm} />
     </AssessmentStage>
   );
 }

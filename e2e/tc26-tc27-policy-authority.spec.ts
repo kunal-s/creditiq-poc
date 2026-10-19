@@ -328,7 +328,9 @@ test("TC-24: each family's norms with the required and actual value and their so
   await expect(page.getByTestId("evidence-viewer").getByTestId("viewer-page")).toContainText("4");
   await page.keyboard.press("Escape");
   await de.getByTestId("norm-details").locator("summary").click();
-  await expect(de.getByTestId("norm-details")).toContainText("How it is calculated");
+  // How it was calculated: the expression, then the same with the figures read, and the test.
+  await expect(de.getByTestId("norm-substituted")).toContainText("Total borrowings / Net worth");
+  await expect(de.getByTestId("norm-test")).toContainText("not satisfied");
   await expect(de.getByTestId("norm-definition")).toContainText("Total debt ÷ Tangible net worth");
   await expect(de.getByTestId("norm-note")).toContainText("Interim threshold");
 

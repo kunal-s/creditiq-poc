@@ -5,7 +5,7 @@ import type { CaseDetail, CrossVerificationView, Spread } from "@/api/types";
 import { RailPanel, RailRows, RailStats } from "@/components/common/RailPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { QueryView } from "@/components/common/States";
-import { useDocViewer } from "@/components/docviewer/DocViewer";
+import { evidenceRequest, useDocViewer } from "@/components/docviewer/DocViewer";
 import { t } from "@/config/terminology";
 import { formatDate, useCase } from "@/domain/cases";
 import { useCrossVerification } from "@/domain/crossVerification";
@@ -23,7 +23,7 @@ import { TrendNotes } from "./SpreadRatios";
 import { StatementTable, TurnoverByYear, type Picked } from "./SpreadTables";
 import { WorkingCapital } from "./WorkingCapital";
 
-// The Financials section of the Financials and policy tab (F-22, F-18.1): the audited years line
+// The Financials section of the Financials and Policy tab (F-22, F-18.1): the audited years line
 // by line, turnover from every source year by year coloured by what the cross-checks concluded,
 // and the working-capital assessment, with a rail that says how much of the spread is traced and
 // where the selected figure was read from. The ratios are tested in the norms below it.
@@ -390,14 +390,10 @@ function SourcePanel({ caseId, picked }: { caseId: string; picked: Picked | null
               </p>
               <button
                 type="button"
-                onClick={() =>
-                  viewer.open({
-                    caseId,
-                    documentId: e.document_id,
-                    page: e.page,
-                    bbox: e.bbox ?? null,
-                  })
-                }
+                onClick={() => {
+                  const request = evidenceRequest(caseId, picked.evidence);
+                  if (request) viewer.open(request);
+                }}
                 className="mt-2 inline-flex items-center gap-1 text-[12.5px] font-medium text-primary hover:underline"
                 data-testid="spread-source-open"
               >

@@ -27,7 +27,7 @@ import { GroupSection } from "./GroupSection";
 import { PolicyHeader } from "./PolicyHeader";
 import { PolicyOverview } from "./PolicyOverview";
 
-// The Financials and policy tab (FRD §6, F-20, F-21, F-22): the spread, turnover by year and the
+// The Financials and Policy tab (FRD §6, F-20, F-21, F-22): the spread, turnover by year and the
 // working-capital assessment (the Financials section, FinancialsSection); then every norm with
 // the required and the actual value, the figures it used with their pages, and whether it passed, deviated or cannot be evaluated;
 // and the approving authority those deviations call for. An overview card per family of norms

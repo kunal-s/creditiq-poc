@@ -29,6 +29,7 @@ from . import (
     cam,
     cam_copilot,
     cam_review,
+    cam_templates,
     keys,
     cases,
     comparison,
@@ -103,6 +104,10 @@ from .contracts import (
     CamRegenerateRequest,
     CamRegenerateResult,
     CamWordsRequest,
+    CamTemplate,
+    CamTemplateChoice,
+    CamTemplateCreate,
+    CamTemplates,
 )
 from .deps import bearer_token, current_user, get_conn, require
 from .store import data_root
@@ -604,6 +609,51 @@ def cam_request(case_id: str, section_id: str, body: CamDataRequest,
         cam_review.add_request(conn, memo, section_id, body.text, user)
         queries.refresh(conn, data_root(), case_id)
     return _reviewed(conn, case_id, user, change)
+
+
+# --- CAM templates (F-23; FRD decision C.4-12): the layouts a memo can follow, and each case's.
+
+
+def _cam_config():
+    try:
+        return configstore_reader.load_cam(data_root())
+    except configstore_reader.NoPublishedConfig as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+
+
+@app.get("/api/cam/templates", response_model=CamTemplates)
+def cam_template_list(user: dict = Depends(require("output.read")), conn: sqlite3.Connection = Depends(get_conn)):
+    """Every template, the default first, with the parts a new one may draw on."""
+    config = _cam_config()
+    return CamTemplates(
+        templates=[cam_templates.view(t) for t in cam_templates.templates(conn, config)],
+        parts=[{"kind": p.kind, "id": p.id, "title": p.title} for p in cam_templates.catalogue(config)],
+        closing=[config.summary_title, config.recommendation_title],
+    )
+
+
+@app.post("/api/cam/templates", response_model=CamTemplate, status_code=201)
+def cam_template_create(body: CamTemplateCreate, user: dict = Depends(require("review.decide")),
+                        conn: sqlite3.Connection = Depends(get_conn)):
+    """A new template, kept bank-wide with who made it and when; never edited in place."""
+    try:
+        made = cam_templates.create(conn, _cam_config(), body.name, body.description,
+                                    [s.model_dump() for s in body.sections], user)
+    except cam_templates.TemplateError as e:
+        raise HTTPException(status_code=e.status, detail=str(e)) from e
+    return cam_templates.view(made)
+
+
+@app.put("/api/cases/{case_id}/cam/template", response_model=Cam)
+def cam_template_choose(case_id: str, body: CamTemplateChoice, user: dict = Depends(require("review.decide")),
+                        conn: sqlite3.Connection = Depends(get_conn)):
+    """The template this case's memo follows; edits stay with their sections across a switch."""
+    _assessed_case(conn, case_id, user)
+    try:
+        cam_templates.choose(conn, _cam_config(), case_id, body.template_id, user)
+    except cam_templates.TemplateError as e:
+        raise HTTPException(status_code=e.status, detail=str(e)) from e
+    return _review_cam(conn, case_id, user)
 
 
 _DOWNLOAD = {200: {"description": "The file, as an attachment.",

@@ -143,7 +143,7 @@ test("the header sums up the board, the decisions made and the run, and locks th
   await page.goBack();
   await page.getByTestId("xv-back-spread").click();
   await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}/policy#financials$`));
-  // The board's Spread button opens the Financials section of the Financials and policy tab.
+  // The board's Spread button opens the Financials section of the Financials and Policy tab.
   await expect(page.getByTestId("financials")).toBeInViewport();
 });
 
@@ -1982,4 +1982,43 @@ test("the areas' sections sit behind tabs: one area at a time, a card choosing i
   // A key figure in another area switches to it before opening its finding.
   await keyFigures(page, "identity").first().click();
   await expect(tab("identity")).toHaveAttribute("data-state", "active");
+});
+
+test("one eye opens every page a fact rests on, each named by its type and page", async ({
+  page,
+}) => {
+  await openBoard(page);
+  const facts = section(page, "identity").getByTestId("xv-facts");
+  await showArea(page, "identity");
+  await facts.locator("summary").click();
+  await expect(facts.getByTestId("facts-identity")).toBeVisible();
+  const eyes = facts.getByTestId("finding-evidence");
+  const counts = await eyes.evaluateAll((all) => all.map((e) => Number(e.dataset["count"])));
+  const at = counts.findIndex((n) => n > 1);
+  expect(at).toBeGreaterThanOrEqual(0);
+  const total = counts[at]!;
+  const eye = eyes.nth(at);
+  await expect(eye).toHaveAccessibleName(`Open the evidence (${total} pages)`);
+  await expect(eye).toHaveText(String(total));
+  await eye.click();
+
+  const viewer = page.getByTestId("evidence-viewer");
+  const select = viewer.getByTestId("viewer-evidence-select");
+  await expect(viewer.getByTestId("viewer-evidence-count")).toHaveText(`Evidence 1 of ${total}`);
+  // Each named by its type once the documents have loaded.
+  await expect
+    .poll(async () => (await select.locator("option").allTextContents()).join("|"))
+    .not.toMatch(/Not identified|Unclassified/);
+  const options = await select.locator("option").allTextContents();
+  expect(options).toHaveLength(total);
+  expect(options[0]).toMatch(/^1\. .+ · page \d+$/);
+  await expect(viewer.getByTestId("viewer-evidence-previous")).toBeDisabled();
+  // The type in the header follows the chosen evidence.
+  const second = options[1]!.replace(/^2\. /, "").replace(/ · page \d+$/, "");
+  await viewer.getByTestId("viewer-evidence-next").click();
+  await expect(viewer.getByTestId("viewer-evidence-count")).toHaveText(`Evidence 2 of ${total}`);
+  await expect(viewer.getByTestId("viewer-type")).toHaveText(second);
+  await select.selectOption("0");
+  await expect(viewer.getByTestId("viewer-evidence-count")).toHaveText(`Evidence 1 of ${total}`);
+  await expect(viewer.getByTestId("viewer-evidence-previous")).toBeDisabled();
 });

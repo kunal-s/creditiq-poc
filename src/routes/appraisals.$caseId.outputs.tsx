@@ -7,7 +7,7 @@ import { t } from "@/config/terminology";
 import { cn } from "@/lib/utils";
 
 // Stage 6, outputs (FRD §5, §6): the draft CAM and the PD note, each a view within the tab. The
-// spread moved to the Financials section of the Financials and policy tab; ?view=spread, from an
+// spread moved to the Financials section of the Financials and Policy tab; ?view=spread, from an
 // earlier link, goes there.
 
 const VIEWS = ["cam", "pd"] as const;

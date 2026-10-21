@@ -403,6 +403,25 @@ MIGRATIONS: list[str] = [
         PRIMARY KEY (case_id, request_hash)
     );
     """,
+    # 14: CAM templates (F-23; FRD decision C.4-12). Further layouts analysts make, bank-wide, beside
+    # the configured default; never edited in place. And the template each appraisal's memo follows,
+    # where one other than the default was chosen.
+    """
+    CREATE TABLE cam_templates (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL UNIQUE,
+        description TEXT NOT NULL DEFAULT '',
+        sections TEXT NOT NULL,            -- JSON: [{id, title, purpose, parts: [kind]}]
+        created_by TEXT NOT NULL,
+        created_at TEXT NOT NULL
+    );
+    CREATE TABLE case_cam_templates (
+        case_id TEXT PRIMARY KEY REFERENCES cases(id),
+        template_id TEXT NOT NULL,
+        chosen_by TEXT NOT NULL,
+        chosen_at TEXT NOT NULL
+    );
+    """,
 ]
 
 

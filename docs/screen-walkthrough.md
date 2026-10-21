@@ -500,7 +500,7 @@ other; the board shows its view as given and never recomputes it.
 | **Kicker** | "Appraisal {id} · Cross-verification" | — |
 | **Summary line** | "Every source lined up against every other. 15 discrepancies found for this borrower, ranked by credit impact, each with its evidence attached and a decision required from you." | Variants for none / one / all decided / not run |
 | **Meta line** | "1 of 15 adjudicated · XR-000004-003 · 24 rules across 13 sources · 09 Oct 2026, 14:00" | What ran, when, and how much is decided |
-| **Spread** | CTA (← arrow) | Opens the Financials section of Financials and policy (`/policy#financials`) |
+| **Spread** | CTA (← arrow) | Opens the Financials section of Financials and Policy (`/policy#financials`) |
 | **Exception queue** | CTA | Opens the Review queue |
 | **Continue to draft** | Primary CTA (→) | Opens Outputs → Draft CAM. **Locked** (grey, padlock) while any blocking discrepancy is unadjudicated; hovering says "Submission is blocked until every blocking discrepancy is accepted or dismissed." |
 
@@ -609,10 +609,10 @@ the banner disappears and **Continue to draft** unlocks.
 
 ---
 
-## 10. Financials and policy — `/appraisals/$caseId/policy`
+## 10. Financials and Policy — `/appraisals/$caseId/policy`
 
 **Stage 5 of 6.** Credit Analyst and Credit Manager (`finding.read`).
-**Title.** "Financials and policy." The tab holds the spread (moved from Outputs, FRD decision
+**Title.** "Financials and Policy." The tab holds the spread (moved from Outputs, FRD decision
 C.4-10) and the policy norms: the overview cards, then the **Financials** section (`#financials`),
 then each family of norms and the approving authority.
 
@@ -710,7 +710,7 @@ a deviation, would not raise it further.
 
 **Stage 6 of 6.** Credit Analyst and Credit Manager (`output.read`). Two views switched by pills
 at the top: **Draft CAM** · **PD note** (the address carries `?view=cam|pd`). The spread moved to
-Financials and policy (§10.0); an earlier `?view=spread` link opens it there.
+Financials and Policy (§10.0); an earlier `?view=spread` link opens it there.
 
 ### 11.1 Draft CAM
 
@@ -1052,7 +1052,7 @@ Every screen uses the same designed states rather than a blank page.
 **Saved links still work.** Earlier addresses redirect to their new home: `/appraisals` and
 `/docready` → the workbench; `/exceptions` → `/review`; `/appraisals/{id}/upload` → Files;
 `/appraisals/{id}/identity` → Extracted data `#identity`; `/appraisals/{id}/data` → Extracted data
-`#fields`; `/appraisals/{id}/spread` and Outputs `?view=spread` → Financials and policy `#financials`; `/appraisals/{id}/draft` → Outputs
+`#fields`; `/appraisals/{id}/spread` and Outputs `?view=spread` → Financials and Policy `#financials`; `/appraisals/{id}/draft` → Outputs
 `?view=cam`; `/docready/{id}/checklist|readiness|collection` → Completeness `#checklist` /
 `#readiness` / `#queries`; `/docready/{id}/validation` → Files.
 

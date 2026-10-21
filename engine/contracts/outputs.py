@@ -278,6 +278,8 @@ class CamSection(BaseModel):
     empty: str | None = None
     """What is shown when the section has nothing on file yet."""
     review: CamReview = Field(default_factory=CamReview)
+    blank: bool = False
+    """Drafted from no part: left for the analyst to write (a section of a template)."""
     drafted_at: str | None = None
     """When the engine drafted it: the case data's last change."""
 
@@ -345,6 +347,9 @@ class Cam(BaseModel):
     recommendation_review: CamReview = Field(default_factory=CamReview)
     copilot: bool = False
     """Whether a section can be redrafted by the copilot: configured, and its key present."""
+    template_id: str = "default"
+    template_name: str = ""
+    """The template the memo follows (FRD decision C.4-12)."""
     recommendation_prompts: list[str] = Field(default_factory=list)
     """The headings credit completes under the recommendation, each left blank."""
     sign_off: list[CamSignOff] = Field(default_factory=list)
@@ -383,3 +388,48 @@ class CamOverrideRequest(BaseModel):
 
 class CamDataRequest(BaseModel):
     text: str
+
+
+class CamTemplateSection(BaseModel):
+    id: str = ""
+    title: str
+    purpose: str | None = None
+    parts: list[str] = Field(default_factory=list)
+    """The kinds of part it is drafted from, in order; none leaves it for the analyst to write."""
+
+
+class CamTemplate(BaseModel):
+    """A layout a draft CAM can follow: the configured default, or one an analyst made."""
+
+    id: str
+    name: str
+    description: str | None = None
+    default: bool = False
+    created_by: str | None = None
+    created_by_name: str | None = None
+    created_at: str | None = None
+    sections: list[CamTemplateSection]
+
+
+class CamPartOption(BaseModel):
+    kind: str
+    id: str
+    title: str
+
+
+class CamTemplates(BaseModel):
+    templates: list[CamTemplate]
+    parts: list[CamPartOption]
+    """Every part a template may draw on, each at most once."""
+    closing: list[str]
+    """The sections every memo closes with (the risk assessment, the recommendation)."""
+
+
+class CamTemplateCreate(BaseModel):
+    name: str
+    description: str = ""
+    sections: list[CamTemplateSection]
+
+
+class CamTemplateChoice(BaseModel):
+    template_id: str

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
-import type { Cam, Finding, FindingOutcome } from "@/api/types";
+import type { Cam, CamTemplateCreate, Finding, FindingOutcome } from "@/api/types";
 
 /** The case's cross-check outcomes (F-19), fails first. */
 export function useFindings(caseId: string, enabled = true) {
@@ -53,6 +53,20 @@ export function useCamChange<V>(caseId: string, send: (v: V) => Promise<Cam>) {
       void client.invalidateQueries({ queryKey: ["cases", caseId, "queries"] });
       void client.invalidateQueries({ queryKey: ["cases", caseId, "pd-note"] });
     },
+  });
+}
+
+/** The CAM templates (FRD decision C.4-12). */
+export function useCamTemplates() {
+  return useQuery({ queryKey: ["cam-templates"], queryFn: () => api.camTemplates() });
+}
+
+/** Make a template; the list is read again. */
+export function useCreateCamTemplate() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (body: CamTemplateCreate) => api.createCamTemplate(body),
+    onSuccess: () => void client.invalidateQueries({ queryKey: ["cam-templates"] }),
   });
 }
 

@@ -83,7 +83,7 @@ Credit remains the decision-maker. CreditIQ prepares, checks and drafts.
 | Completeness | RBL's checklist by product and constitution; each item satisfied, insufficient or missing; one pre-login query list | F-12 to F-14 |
 | Extraction | Key fields from identity, financial, tax, banking and bureau documents, including partner outputs, with confidence and page evidence | F-11, F-15 to F-17 |
 | Triangulation | Identity, turnover, bank accounts, existing obligations | F-18, F-19 |
-| Financials and policy | Spread year by year with turnover from every source and the working-capital assessment (RBL's format once its template arrives); key BBG norms evaluated, each ratio banded against its acceptable and marginal values; deviations listed; approving authority, if RBL provides its matrix | F-20 to F-22 |
+| Financials and Policy | Spread year by year with turnover from every source and the working-capital assessment (RBL's format once its template arrives); key BBG norms evaluated, each ratio banded against its acceptable and marginal values; deviations listed; approving authority, if RBL provides its matrix | F-20 to F-22 |
 | Outputs | Draft CAM in RBL's template with citations; PD question note | F-23, F-24 |
 | Comparison | Side by side with RBL's record; scorecard against C1 to C9 | F-25, F-26 |
 | Live session | End to end on screen, timed | F-27 |
@@ -140,7 +140,7 @@ A case moves through six stages, in this order. The case screens follow the same
 3. **Validation and completeness:** each document's required fields and format, then each checklist item's status and the query list (F-12 to F-14).
 4. **Cross-verification:** facts aligned across sources and cross-checked (F-18, F-19).
 5. **Policy checks:** norms, deviations and the approving authority (F-20, F-21).
-6. **Outputs:** the spread, the draft CAM and the PD note (F-22 to F-24), then the comparison and scorecard (F-25, F-26). The spread is produced at this stage but shown on the Financials and policy tab, beside the norms that test it (decision C.4-10).
+6. **Outputs:** the spread, the draft CAM and the PD note (F-22 to F-24), then the comparison and scorecard (F-25, F-26). The spread is produced at this stage but shown on the Financials and Policy tab, beside the norms that test it (decision C.4-10).
 
 The feature phases in Part B are the build order; this is the processing order.
 
@@ -212,7 +212,7 @@ flowchart TB
   CW --> T2["2. Extraction"]
   CW --> T3["3. Completeness<br/>validation, checklist, queries"]
   CW --> T4["4. Cross-verification"]
-  CW --> T5["5. Financials and policy<br/>spread, norms, authority"]
+  CW --> T5["5. Financials and Policy<br/>spread, norms, authority"]
   CW --> T6["6. Outputs<br/>CAM, PD note"]
   CW --> CM["Comparison"]
   T2 --> EV["Evidence viewer<br/>(opens on any value)"]
@@ -232,7 +232,7 @@ flowchart TB
 | 2. Extraction | `/appraisals/$caseId/extraction` | Key fields grouped as entity and parties, financials, GST and banking; each with its confidence and page; confirm or correct in place | F-15, F-16, F-17 | Analyst, Manager | No |
 | 3. Completeness | `/appraisals/$caseId/completeness` | Each document's required fields and format; the checklist with each item's status and deficiency; readiness against the gates; the pre-login query list | F-12, F-13, F-14 | All | Yes |
 | 4. Cross-verification | `/appraisals/$caseId/cross-verification` | An overview of the four areas (identity consistency, turnover, bank accounts, existing obligations), then each area's discrepancies ranked by credit impact, with the sources side by side and a decision on each | F-18, F-19 | Analyst, Manager | No |
-| 5. Financials and policy | `/appraisals/$caseId/policy` | The Financials section (`#financials`): the spread year by year, turnover from every source coloured by what the cross-checks concluded, and the working-capital assessment, every figure cited; then each norm with its limit, the actual value and source, each ratio in its band (within, marginal, outside); deviations; the approving authority | F-20, F-21, F-22 | Analyst, Manager | No |
+| 5. Financials and Policy | `/appraisals/$caseId/policy` | The Financials section (`#financials`): the spread year by year, turnover from every source coloured by what the cross-checks concluded, and the working-capital assessment, every figure cited; then each norm with its limit, the actual value and source, each ratio in its band (within, marginal, outside); deviations; the approving authority | F-20, F-21, F-22 | Analyst, Manager | No |
 | 6. Outputs | `/appraisals/$caseId/outputs` | The draft CAM and the PD note, each a view within the tab, with citations and export. An earlier `?view=spread` link opens the Financials section | F-23, F-24 | Analyst, Manager | No |
 | Comparison | `/appraisals/$caseId/comparison` | This case's outputs beside RBL's record, with adjudication | F-25 | Manager | No |
 | Review queue | `/review` | Everything waiting for a person, across cases | F-17 | Analyst, Manager | No |
@@ -1249,7 +1249,7 @@ Existing obligations — …
 
 **Depends on.** F-15, F-18. **RBL's spread template** (C.3); until it arrives, an interim layout on screen (decision C.4-8).
 
-**Screen.** The Financials section of the Financials and policy tab, above the norms that test the ratios (decision C.4-10). The ratios themselves are shown once, as the financial-ratio norms with their workings.
+**Screen.** The Financials section of the Financials and Policy tab, above the norms that test the ratios (decision C.4-10). The ratios themselves are shown once, as the financial-ratio norms with their workings.
 
 **Requirements**
 
@@ -1520,8 +1520,9 @@ flowchart TD
 | 7 | Screen structure: the prototype's two case workspaces and 12 case screens, or one workspace in processing order | Screens | **Decided 30 Sep 2026:** one case workspace whose tabs follow §5; the prototype's visual style is kept; the DocReady and Appraisal workspace names are dropped; screens call the record an appraisal (§6) |
 | 8 | Spread before RBL's template arrives | F-22 | **Decided 30 Sep 2026:** an interim spread on screen (statement lines, ratios and the working-capital assessment with workings, every figure cited), marked interim; re-mapped to RBL's rows and exported to Excel (F-22.4) when the template arrives |
 | 9 | Approving authority before RBL's approval and delegation matrix arrives | F-21 | **Decided 8 Oct 2026:** F-21 is built against an interim matrix proposed by the delivery team (`config/approval_matrix.yaml`). Every authority, band and deviation rule is tagged provisional and the screens show "Provisional matrix". Authorities are generic roles and committees, never people. TC-27 (test plan TC-25) is not included in C4 while the matrix is provisional. The recorded approval comes from the F-25 approving-authority sheet. The matrix is replaced as a whole when RBL supplies its own (source `rbl_supplied`, status active), published with `--private-config` |
-| 10 | Where the spread is shown | F-22, §6 | **Decided 19 Oct 2026:** the spread moved from a view of the Outputs tab to the Financials section of the Policy tab, renamed **Financials and policy** (`/appraisals/$caseId/policy#financials`). It sits after the overview and before the norm families, with turnover by year from every source and the working-capital assessment. The ratios are shown once, as the financial-ratio norms, each with its band against the configured acceptable and marginal values (the engine's `band`; a marginal result is still a deviation). The Outputs tab keeps the draft CAM and the PD note; `/appraisals/$caseId/spread` and `?view=spread` links open the Financials section. The processing stages (§5) are unchanged |
+| 10 | Where the spread is shown | F-22, §6 | **Decided 19 Oct 2026:** the spread moved from a view of the Outputs tab to the Financials section of the Policy tab, renamed **Financials and Policy** (`/appraisals/$caseId/policy#financials`). It sits after the overview and before the norm families, with turnover by year from every source and the working-capital assessment. The ratios are shown once, as the financial-ratio norms, each with its band against the configured acceptable and marginal values (the engine's `band`; a marginal result is still a deviation). The Outputs tab keeps the draft CAM and the PD note; `/appraisals/$caseId/spread` and `?view=spread` links open the Financials section. The processing stages (§5) are unchanged |
 | 11 | The draft CAM's sections and its review | F-23 | **Decided 19 Oct 2026:** the assumed layout is eight sections (`config/cam.yaml`): Borrower and Group Profile, Facility Requested and Purpose, Banking Conduct, Financial Analysis and Ratios, GST and Bureau Findings, Cross-Verification Results (each drafted from parts that keep their earlier ids), then Risk Assessment and Rating (the summary, stated as not rated while no rating model is configured) and Recommendation; the screen, Word and PDF follow it. The Outputs tab's CAM view reviews it a section at a time: Edit in my words, Regenerate with copilot, Override a figure (with the value drafted and the reason) and Request more data (on the query list), each kept with who and when in the decision log; or reads it whole. The copilot is the model named in the configuration (only its temperature and seed are sent), its key read from `workflow/private/openai.env`; every answer is recorded and replayed for the same request, an answer bringing in a figure the section does not hold is refused, and nothing is kept until a person keeps it |
+| 12 | CAM templates | F-23 | **Decided 21 Oct 2026:** the eight sections of decision 11 are the default template (`config/cam.yaml`). Analysts may make further templates from the draft screen: a name, a description and its sections in order, each drafted from the same parts of the file (each part in one section at most) or left blank for the analyst to write; the risk assessment and the recommendation always close the memo. Each appraisal follows the default until a template is chosen for it; the choice is saved with the case and the screen, the Word and PDF downloads and the PD note's section numbers follow it; edits stay with their sections across a switch. **An exception to rule 4, recorded here:** templates are made at runtime and kept bank-wide in the case store (`cam_templates`), not published as configuration, because a template only arranges what the engine drafts and changes no rule, figure or outcome. A template is never edited in place (a change is a new template), and every template made and every choice of one is kept with who and when, in the decision log |
 
 ## C.5 The base this build starts from
 

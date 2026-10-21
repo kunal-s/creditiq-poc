@@ -25,7 +25,7 @@ import type {
 import { SEVERITY_TONE } from "@/components/case/xv/styles";
 import { Chip, Panel, type Tone } from "@/components/common/Panel";
 import { QueryView } from "@/components/common/States";
-import { useDocViewer } from "@/components/docviewer/DocViewer";
+import { evidenceRequest, useDocViewer } from "@/components/docviewer/DocViewer";
 import { t, tOr } from "@/config/terminology";
 import { useAnchor } from "@/domain/anchor";
 import { formatInr } from "@/domain/cases";
@@ -95,9 +95,6 @@ import { cn } from "@/lib/utils";
 /** The numbered sources of the memo or the note on screen, by document id. */
 export const SourcesContext = createContext<ReadonlyMap<string, OutputSource> | null>(null);
 
-/** Where documents are not numbered (the spread), the pages shown before "+n more". */
-const MAX_PAGES = 4;
-
 const chip =
   "inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap rounded border border-border px-1 text-[10.5px] font-medium text-primary hover:bg-muted";
 
@@ -160,7 +157,9 @@ function NumberedCitations({
         const last = run[run.length - 1];
         if (!first || !last) return null;
         if (run.length === 1)
-          return <SourceChip key={first.source.number} caseId={caseId} cited={first} />;
+          return (
+            <SourceChip key={first.source.number} caseId={caseId} cited={first} all={evidence} />
+          );
         const expanded = open.has(first.source.number);
         const span = {
           first: first.source.number,
@@ -188,7 +187,12 @@ function NumberedCitations({
             </button>
             {expanded &&
               run.map((cited) => (
-                <SourceChip key={cited.source.number} caseId={caseId} cited={cited} />
+                <SourceChip
+                  key={cited.source.number}
+                  caseId={caseId}
+                  cited={cited}
+                  all={evidence}
+                />
               ))}
           </Fragment>
         );
@@ -200,8 +204,17 @@ function NumberedCitations({
   );
 }
 
-/** One numbered source, "5 p.1" or "11 pp.3-5", opening its first cited page. */
-function SourceChip({ caseId, cited }: { caseId: string; cited: SourcePages }) {
+/** One numbered source, "5 p.1" or "11 pp.3-5", opening its first cited page with the statement's
+ * other pages listed in the viewer. */
+function SourceChip({
+  caseId,
+  cited,
+  all,
+}: {
+  caseId: string;
+  cited: SourcePages;
+  all: Evidence[];
+}) {
   const viewer = useDocViewer();
   const e = cited.evidence[0];
   if (!e) return null;
@@ -210,9 +223,10 @@ function SourceChip({ caseId, cited }: { caseId: string; cited: SourcePages }) {
   return (
     <button
       type="button"
-      onClick={() =>
-        viewer.open({ caseId, documentId: e.document_id, page: e.page, bbox: e.bbox ?? null })
-      }
+      onClick={() => {
+        const request = evidenceRequest(caseId, all, e);
+        if (request) viewer.open(request);
+      }}
       title={
         cited.pages.length === 1
           ? t("outputs.citation.title", { n, label, pages })
@@ -249,25 +263,31 @@ function PageChip({ caseId, evidence: e }: { caseId: string; evidence: Evidence 
   );
 }
 
+/** Where documents are not numbered, one eye for all the pages a statement rests on: the viewer
+ * opens at the first and lists the rest. */
 function PageCitations({ caseId, evidence }: { caseId: string; evidence: Evidence[] }) {
-  const [all, setAll] = useState(false);
-  const shown = all ? evidence : evidence.slice(0, MAX_PAGES);
+  const viewer = useDocViewer();
+  const request = evidenceRequest(caseId, evidence);
+  if (!request) return null;
+  const count = request.set?.length ?? 1;
+  const label =
+    count > 1
+      ? t("viewer.openEvidenceSet", { count })
+      : t("crossVerification.evidence.openPage", { page: request.page ?? 1 });
   return (
-    <>
-      {shown.map((e) => (
-        <PageChip key={`${e.document_id}-${e.page}`} caseId={caseId} evidence={e} />
-      ))}
-      {shown.length < evidence.length && (
-        <button
-          type="button"
-          onClick={() => setAll(true)}
-          className="whitespace-nowrap text-[10.5px] font-medium text-primary hover:underline"
-          data-testid="citation-more"
-        >
-          {t("crossCheck.morePages", { n: evidence.length - shown.length })}
-        </button>
-      )}
-    </>
+    <button
+      type="button"
+      onClick={() => viewer.open(request)}
+      title={label}
+      aria-label={label}
+      className={chip}
+      data-testid="citation"
+      data-page={request.page}
+      data-count={count}
+    >
+      <Eye className="h-3 w-3" aria-hidden />
+      {count > 1 && <span className="tabular">{count}</span>}
+    </button>
   );
 }
 

@@ -44,6 +44,16 @@ export type ViewerRequest = {
   correct?: boolean;
   /** Two or more sources shown side by side (F-16.2), for a finding's sides. */
   compare?: CompareSource[];
+  /** Every page a figure rests on, to step through: the viewer opens at `index` (the first by
+   * default) and offers the rest, each named by its document type and page. */
+  set?: EvidenceStop[];
+  index?: number;
+};
+
+export type EvidenceStop = {
+  documentId: string;
+  page: number;
+  bbox?: [number, number, number, number] | null;
 };
 
 export type CompareSource = {
@@ -57,6 +67,33 @@ export type CompareSource = {
 type Ctx = { open: (request: ViewerRequest) => void; close: () => void };
 
 const DocViewerContext = createContext<Ctx | null>(null);
+
+/** The viewer opened at one of the pages a figure rests on, with the others to step to. The same
+ * page of a document is offered once. */
+export function evidenceRequest(
+  caseId: string,
+  evidence: readonly {
+    document_id: string;
+    page: number;
+    bbox?: [number, number, number, number] | null;
+  }[],
+  at: { document_id: string; page: number } | undefined = evidence[0],
+): ViewerRequest | null {
+  const seen = new Set<string>();
+  const set: EvidenceStop[] = [];
+  for (const e of evidence) {
+    const key = `${e.document_id}:${e.page}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    set.push({ documentId: e.document_id, page: e.page, bbox: e.bbox ?? null });
+  }
+  const index = Math.max(
+    0,
+    set.findIndex((s) => s.documentId === at?.document_id && s.page === at?.page),
+  );
+  const stop = set[index];
+  return stop ? { caseId, ...stop, set, index } : null;
+}
 
 export function useDocViewer(): Ctx {
   const ctx = useContext(DocViewerContext);
@@ -89,13 +126,27 @@ export function DocViewerProvider({ children }: { children: ReactNode }) {
           key={`${request.documentId}-${request.page ?? ""}`}
           request={request}
           onClose={close}
+          onStep={(index) =>
+            setRequest((now) => {
+              const stop = now?.set?.[index];
+              return now && stop ? { ...now, ...stop, index } : now;
+            })
+          }
         />
       )}
     </DocViewerContext.Provider>
   );
 }
 
-function ViewerPanel({ request, onClose }: { request: ViewerRequest; onClose: () => void }) {
+function ViewerPanel({
+  request,
+  onClose,
+  onStep,
+}: {
+  request: ViewerRequest;
+  onClose: () => void;
+  onStep: (index: number) => void;
+}) {
   const documents = useCaseDocuments(request.caseId);
   const files = useCaseFiles(request.caseId);
   const types = useDocumentTypes();
@@ -155,6 +206,19 @@ function ViewerPanel({ request, onClose }: { request: ViewerRequest; onClose: ()
         </header>
 
         <div className="space-y-2 border-b border-border bg-surface px-4 py-2.5">
+          {(request.set?.length ?? 0) > 1 && (
+            <EvidenceSteps
+              set={request.set!}
+              index={request.index ?? 0}
+              name={(id) => {
+                const d = documents.data?.find((x) => x.id === id);
+                return d?.classification?.types.length
+                  ? d.classification.types.map(types.name).join(" + ")
+                  : t("document.unclassified");
+              }}
+              onStep={onStep}
+            />
+          )}
           {field && (
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px]">
               <span className="font-medium text-foreground">{fieldLabel(field.field)}</span>
@@ -221,6 +285,67 @@ function ViewerPanel({ request, onClose }: { request: ViewerRequest; onClose: ()
           />
         </div>
       </aside>
+    </div>
+  );
+}
+
+/** The pages a figure rests on, one at a time: which one is shown, a list naming each by its
+ * document type and page, and the way to the one before and after. */
+function EvidenceSteps({
+  set,
+  index,
+  name,
+  onStep,
+}: {
+  set: EvidenceStop[];
+  index: number;
+  name: (documentId: string) => string;
+  onStep: (index: number) => void;
+}) {
+  return (
+    <div
+      className="flex flex-wrap items-center gap-2 rounded border border-primary/20 bg-info-soft/40 px-2.5 py-1.5"
+      data-testid="viewer-evidence"
+    >
+      <span
+        className="text-[11.5px] font-medium text-foreground"
+        data-testid="viewer-evidence-count"
+      >
+        {t("viewer.evidenceOf", { n: index + 1, total: set.length })}
+      </span>
+      <button
+        type="button"
+        onClick={() => onStep(index - 1)}
+        disabled={index === 0}
+        className="rounded border border-border bg-surface p-1 text-muted-foreground hover:bg-muted disabled:opacity-40"
+        aria-label={t("viewer.previousEvidence")}
+        data-testid="viewer-evidence-previous"
+      >
+        <ChevronLeft className="h-3.5 w-3.5" />
+      </button>
+      <select
+        value={index}
+        onChange={(e) => onStep(Number(e.target.value))}
+        className="min-w-0 flex-1 rounded border border-border bg-surface px-2 py-1 text-[12px] text-foreground"
+        aria-label={t("viewer.chooseEvidence")}
+        data-testid="viewer-evidence-select"
+      >
+        {set.map((stop, i) => (
+          <option key={`${stop.documentId}-${stop.page}-${i}`} value={i}>
+            {t("viewer.evidenceOption", { n: i + 1, type: name(stop.documentId), page: stop.page })}
+          </option>
+        ))}
+      </select>
+      <button
+        type="button"
+        onClick={() => onStep(index + 1)}
+        disabled={index >= set.length - 1}
+        className="rounded border border-border bg-surface p-1 text-muted-foreground hover:bg-muted disabled:opacity-40"
+        aria-label={t("viewer.nextEvidence")}
+        data-testid="viewer-evidence-next"
+      >
+        <ChevronRight className="h-3.5 w-3.5" />
+      </button>
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { ChevronRight, Eye } from "lucide-react";
 import type { CaseFacts, Evidence, FactValue, FindingArea, FindingSide } from "@/api/types";
 import { Chip, Panel } from "@/components/common/Panel";
 import { QueryView } from "@/components/common/States";
-import { useDocViewer } from "@/components/docviewer/DocViewer";
+import { evidenceRequest, useDocViewer } from "@/components/docviewer/DocViewer";
 import { t } from "@/config/terminology";
 import { formatInr } from "@/domain/cases";
 import { useDocumentTypes } from "@/domain/documents";
@@ -63,32 +63,28 @@ function value(v: FindingSide["value"] | undefined): string {
 
 function EvidenceLinks({ caseId, evidence }: { caseId: string; evidence: Evidence[] }) {
   const viewer = useDocViewer();
-  if (evidence.length === 0) return null;
-  const shown = evidence.slice(0, 3);
+  const request = evidenceRequest(caseId, evidence);
+  if (!request) return null;
+  const count = request.set?.length ?? 1;
+  const label =
+    count > 1
+      ? t("viewer.openEvidenceSet", { count })
+      : t("crossVerification.evidence.openPage", { page: request.page ?? 1 });
+  // One eye however many pages: the viewer opens at the first and lists the rest.
   return (
-    <span className="inline-flex flex-wrap items-center gap-1">
-      {shown.map((e, i) => (
-        <button
-          key={`${e.document_id}-${e.page}-${i}`}
-          type="button"
-          onClick={() =>
-            viewer.open({ caseId, documentId: e.document_id, page: e.page, bbox: e.bbox ?? null })
-          }
-          title={t("crossVerification.evidence.openPage", { page: e.page })}
-          aria-label={t("crossVerification.evidence.openPage", { page: e.page })}
-          className="inline-flex items-center rounded border border-border p-1 text-primary hover:bg-muted"
-          data-testid="finding-evidence"
-          data-page={e.page}
-        >
-          <Eye className="h-3.5 w-3.5" aria-hidden />
-        </button>
-      ))}
-      {evidence.length > shown.length && (
-        <span className="text-[11px] text-muted-foreground">
-          {t("crossCheck.morePages", { n: evidence.length - shown.length })}
-        </span>
-      )}
-    </span>
+    <button
+      type="button"
+      onClick={() => viewer.open(request)}
+      title={label}
+      aria-label={label}
+      className="inline-flex items-center gap-1 rounded border border-border p-1 text-primary hover:bg-muted"
+      data-testid="finding-evidence"
+      data-page={request.page}
+      data-count={count}
+    >
+      <Eye className="h-3.5 w-3.5" aria-hidden />
+      {count > 1 && <span className="tabular text-[10.5px] font-medium leading-none">{count}</span>}
+    </button>
   );
 }
 

@@ -1679,6 +1679,12 @@ viewer:
   compareTitle: Sources side by side
   rendering: Rendering page
   pageAlt: "Page {page}"
+  evidenceOf: "Evidence {n} of {total}"
+  evidenceOption: "{n}. {type} · page {page}"
+  chooseEvidence: Choose the evidence to view
+  previousEvidence: Previous evidence
+  nextEvidence: Next evidence
+  openEvidenceSet: "Open the evidence ({count} pages)"
 
 # Page quality grade (FRD F-07).
 qualityGrade:

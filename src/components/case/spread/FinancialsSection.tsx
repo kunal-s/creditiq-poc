@@ -5,7 +5,7 @@ import type { CaseDetail, CrossVerificationView, Spread } from "@/api/types";
 import { RailPanel, RailRows, RailStats } from "@/components/common/RailPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { QueryView } from "@/components/common/States";
-import { useDocViewer } from "@/components/docviewer/DocViewer";
+import { evidenceRequest, useDocViewer } from "@/components/docviewer/DocViewer";
 import { t } from "@/config/terminology";
 import { formatDate, useCase } from "@/domain/cases";
 import { useCrossVerification } from "@/domain/crossVerification";
@@ -390,14 +390,10 @@ function SourcePanel({ caseId, picked }: { caseId: string; picked: Picked | null
               </p>
               <button
                 type="button"
-                onClick={() =>
-                  viewer.open({
-                    caseId,
-                    documentId: e.document_id,
-                    page: e.page,
-                    bbox: e.bbox ?? null,
-                  })
-                }
+                onClick={() => {
+                  const request = evidenceRequest(caseId, picked.evidence);
+                  if (request) viewer.open(request);
+                }}
                 className="mt-2 inline-flex items-center gap-1 text-[12.5px] font-medium text-primary hover:underline"
                 data-testid="spread-source-open"
               >

@@ -43,6 +43,15 @@ def cfg():
     return load_dir(CONFIG, version="test", overlay=OVERLAY)
 
 
+@pytest.fixture(scope="session")
+def rules_cfg(cfg):
+    """The same configuration with every type read by rules first (the model only fills what is left): for tests of that path."""
+    c = cfg.model_copy(deep=True)
+    for t in c.fields.types.values():
+        t.extraction = "rules"
+    return c
+
+
 def fixture_doc(name: str) -> bytes:
     """The corpus is git-ignored source material (workflow/docs/reference/fixtures/southgate,
     or INGEST_FIXTURE_DOCS). Without it the tests that read a document skip; the rest still run.

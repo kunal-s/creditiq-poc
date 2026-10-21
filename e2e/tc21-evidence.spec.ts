@@ -51,16 +51,17 @@ test("TC-21: every field carries a confidence and a page link; corrections show 
   await expect(fields.getByTestId("field-table-row")).toHaveCount(2);
   // Every extracted (non-missing) value is a link to its page with a confidence.
   await expect(fields.getByTestId("field-value")).toHaveCount(5);
-  await expect(fields.getByTestId("confidence")).toHaveCount(5);
+  await expect(fields.getByTestId("confidence")).toHaveCount(0);
+  await expect(fields.getByTestId("average-confidence")).toHaveCount(1);
 
   const corrected = page.locator('[data-testid="field-value"][data-field="monthly[1].credits"]');
   await expect(corrected).toContainText("39,85,000");
   await expect(corrected.getByTestId("system-value")).toHaveText("38,95,000");
 
-  // Composition on hover.
-  await expect(page.getByTestId("confidence").first().locator("xpath=../..")).toHaveAttribute(
+  // The average sits in the document header, with the lowest value on hover.
+  await expect(page.getByTestId("average-confidence").first()).toHaveAttribute(
     "title",
-    /Classification 96%/,
+    /lowest of 5/,
   );
 
   // The same correction in the review queue, both values shown.

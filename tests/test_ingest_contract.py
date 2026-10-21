@@ -135,3 +135,17 @@ def test_the_reference_case_runs_end_to_end_through_the_engine(client, published
     fields = client.get(f"/api/cases/{case_id}/fields", headers=sign_in(client, "ananya.krishnan@rblbank.com")).json()
     assert any(f["field"] == "gstin" and f["status"] == "in_review" for f in fields)  # the check digit is wrong
     assert all(f["evidence"]["page"] >= 1 for f in fields if f["value"] is not None and f["status"] != "missing")
+
+
+@pytest.mark.skipif(not REAL, reason="no recorded service output")
+def test_a_value_named_by_a_failed_check_is_held_for_review_with_the_reason():
+    from engine.contracts.ingest import IngestCheck
+
+    fr = IngestFileResult.model_validate(json.loads((HERE / "service_output" / "Southgate_Director_KYC_Iyer_x2.json").read_text()))
+    fr.documents[0].validation.append(IngestCheck(id="format:din", label="din format", outcome="fail", severity="fail",
+                                                  detail='"0742168" is not in the DIN format', fields=["din"]))
+    units = pipeline.units_of(fr)
+    din = next(f for f in units[0].fields if f.field == "din")
+    assert din.status == "in_review" and din.check_note == '"0742168" is not in the DIN format'
+    assert all(f.status != "in_review" for f in units[0].fields if f.field != "din" and f.status != "missing")
+    assert all(f.status != "in_review" for f in units[1].fields)       # the other person's sheet is untouched

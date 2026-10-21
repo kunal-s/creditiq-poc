@@ -437,3 +437,12 @@ def test_missing_documents_are_named_rather_than_not_applicable(client, analyst,
     # Every finding carries its area.
     assert {f["area"] for fs in found.values() for f in fs} == {
         "identity", "authority", "turnover", "financials", "accounts", "obligations"}
+
+
+def test_a_masked_pan_is_not_called_a_company_pan(client, analyst, published_data_root):
+    """A masked PAN hides its fourth character, so it cannot be told from a company's by that character."""
+    case_id = _case(client, analyst, published_data_root)
+    add_doc(published_data_root, case_id, "memorandum_articles_of_association", {"directors": [{"name": "Tarun Velankar", "din": "01234567"}]})
+    add_doc(published_data_root, case_id, "director_kyc", {"person_name": "Tarun Velankar", "din": "01234567", "pan": "AXXXX1234K"})
+    [f] = _findings(client, analyst, published_data_root, case_id)["ID-06"]
+    assert f["outcome"] == "pass"

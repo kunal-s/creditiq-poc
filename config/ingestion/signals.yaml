@@ -135,7 +135,8 @@ types:
       - '{PAN}'
     contrary: ['statement\s+of\s+account']
     instances:
-      key_pattern: 'assessment\s+year\s*:?\s*(20\d{2})'
+      first_key_pattern: '^\s*acknowledg(?:e)?ment\s+(?:number|no\.?)\s*:\s*(\d{12,})'   # printed in every page header of a return
+      key_pattern: 'assessment\s+year\s*:?\s*(?:[^\n]*\n[^\n]*?)?(20\d{2})'
       keys: [assessment_year]
 
   gstr_3b:

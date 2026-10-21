@@ -63,7 +63,7 @@ from . import statements
 from .parties import party_list_spec
 from .pipeline import effective_types
 from .store import MESSAGE_FILE_NAME
-from .util import assessment_year_start, format_inr, month_add, month_label, parse_date, parse_period
+from .util import assessment_year_start, format_inr, month_add, month_label, parse_date, parse_period, period_months
 
 USABLE = {"accepted", "in_review", "extracted", "classified"}
 
@@ -869,7 +869,10 @@ def _gst_by_month(b: Build) -> dict[tuple[int, int], tuple[float, Doc, statement
     cfg = reader.load_statements(b.root)
     gst: dict[tuple[int, int], tuple[float, Doc, statements.Line]] = {}
     for d in b.of_type("gstr_3b"):
-        period = parse_period(d.get("tax_period").value) if d.get("tax_period") else None
+        tp, fy = d.get("tax_period"), d.get("financial_year")
+        # A month named without its year ("Sep", in financial year 2026-27) is placed by the return's own financial year.
+        months = period_months(tp.value, fy.value if fy else None) if tp else []
+        period = months[0] if len(months) == 1 else (parse_period(tp.value) if tp else None)
         line = statements.gst_outward(d, cfg)
         if period and line and period not in gst:
             gst[period] = (line.value, d, line)

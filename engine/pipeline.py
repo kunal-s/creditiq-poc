@@ -72,6 +72,8 @@ class Flat:
     components: dict[str, float]
     status: str
     missing_reason: str | None = None
+    check_note: str | None = None
+    """Why a value is held for review when a validation check on it failed (not only a low confidence)."""
 
 
 @dataclass
@@ -121,6 +123,12 @@ def _norm_bbox(bbox: list[float] | None, dims: tuple[float, float] | None) -> li
 
 def _flatten(doc: IngestDocument, dims: dict[int, tuple[float, float]]) -> list[Flat]:
     out: list[Flat] = []
+    # A value named by a check that failed (a malformed DIN, a total above its gross) is held for review, whatever its confidence.
+    failed: dict[str, str] = {}
+    for c in doc.validation:
+        if c.outcome == "fail" and c.severity == "fail" and c.id != "required_present":
+            for fname in c.fields:
+                failed.setdefault(fname, c.detail)
 
     def field_row(name: str, f: IngestField) -> None:
         page = f.source.page if f.source else None
@@ -128,11 +136,12 @@ def _flatten(doc: IngestDocument, dims: dict[int, tuple[float, float]]) -> list[
         if f.status == "missing" or f.value is None:
             out.append(Flat(name, None, f.raw_text, page, None, METHOD.get(f.method or "pattern", "deterministic"), None, {}, "missing", f.reason or "not_found"))
             return
-        status = "in_review" if f.needs_review else "accepted"
+        status = "in_review" if (f.needs_review or name in failed) else "accepted"
         method = METHOD[f.method] if f.method else "deterministic"
+        note = failed.get(name)
 
         def add(fname: str, value: object, raw: str | None) -> None:
-            out.append(Flat(fname, value, raw, page, bbox, method, f.confidence, dict(f.components), status))
+            out.append(Flat(fname, value, raw, page, bbox, method, f.confidence, dict(f.components), status, None, note))
 
         if isinstance(f.value, list):
             for i, el in enumerate(f.value):
@@ -218,9 +227,10 @@ def _store_fields(conn: sqlite3.Connection, ctx: Context, case_id: str, doc_id: 
         if f.status == "in_review":
             in_review = True
             shown = f.raw if f.raw is not None else f.value
+            why = f.check_note or (f"confidence {f.confidence:.2f}" if f.confidence is not None else "held for review")
             raise_item(
                 conn, case_id=case_id, kind="field", ref=f"field:{fv_id}",
-                summary=f"{label}: {f.field} = {shown} (confidence {f.confidence:.2f})",
+                summary=f"{label}: {f.field} = {shown} ({why})",
                 detail={"document_id": doc_id, "field_value_id": fv_id, "page": f.page},
             )
     return "in_review" if in_review else "accepted"

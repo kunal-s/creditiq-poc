@@ -57,3 +57,26 @@ export function ConfidenceChip({
     </TooltipProvider>
   );
 }
+
+/** One average for a set of fields, for a section or document header. Shows
+ * the lowest value on hover so a weak field is not hidden by the mean. */
+export function AverageConfidence({
+  fields,
+}: {
+  fields: { confidence?: number | null | undefined; status?: string }[];
+}) {
+  const scores = fields.map((f) => f.confidence).filter((c): c is number => typeof c === "number");
+  if (scores.length === 0) return null;
+  const average = scores.reduce((a, b) => a + b, 0) / scores.length;
+  const lowest = Math.min(...scores);
+  const flagged = fields.some((f) => f.status === "in_review");
+  const detail = `${t("data.col.confidence")} ${confidencePct(average)} · ${confidencePct(lowest)} lowest of ${scores.length}`;
+  return (
+    <span title={detail} aria-label={detail} data-testid="average-confidence">
+      <Chip tone={flagged ? "flag" : "positive"}>
+        <span className="h-1.5 w-1.5 rounded-full bg-current" />
+        <span className="tabular">{confidencePct(average)}</span>
+      </Chip>
+    </span>
+  );
+}

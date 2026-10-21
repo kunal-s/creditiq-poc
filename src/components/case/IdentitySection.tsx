@@ -7,7 +7,7 @@ import { Panel } from "@/components/common/Panel";
 import { ErrorState, LoadingBlock, QueryView } from "@/components/common/States";
 import { SourceChip } from "@/components/common/SourceChip";
 import { FieldValueButton } from "@/components/common/FieldValueButton";
-import { ConfidenceChip } from "@/components/common/ConfidenceChip";
+import { AverageConfidence } from "@/components/common/ConfidenceChip";
 import { FieldStatusChip } from "@/components/documents/chips";
 import { FieldRowDecision } from "@/components/review/FieldDecision";
 import { useDocViewer } from "@/components/docviewer/DocViewer";
@@ -194,6 +194,11 @@ function IdentityFields({ caseId }: { caseId: string }) {
       title={t("identity.fields")}
       subtitle={t("identity.fieldsHelp")}
       testId="identity-fields"
+      action={
+        fields.data && documents.data ? (
+          <AverageConfidence fields={fields.data.filter((f) => identityDoc(f.document_id))} />
+        ) : undefined
+      }
     >
       <div className="p-0">
         {fields.isError ? (
@@ -233,11 +238,6 @@ function FieldList({ caseId, fields }: { caseId: string; fields: FieldValue[] })
           <span className="min-w-0 flex-1">
             <FieldValueButton caseId={caseId} field={f} />
           </span>
-          <ConfidenceChip
-            confidence={f.confidence}
-            components={f.confidence_components}
-            flagged={f.status === "in_review"}
-          />
           <FieldStatusChip status={f.status} />
           <FieldRowDecision field={f} />
         </li>

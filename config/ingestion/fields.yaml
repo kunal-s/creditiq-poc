@@ -5,25 +5,27 @@
 # s=dot matches newline; `multi: true` makes every match one list element.
 types:
   certificate_of_incorporation:
+    extraction: model   # the model reads each field; code checks the value on its page; the rules below are the fallback without a model
     identity: {name: company_name, cin: cin}
     fields:
-      company_name: {aliases: ['Name of Company']}
+      company_name: {aliases: ['Name of Company'], llm_hint: 'the full legal name of the company, as printed in the certificate text (for example "X PRIVATE LIMITED")'}
       cin: {identifier: cin, validators: ['format:cin']}
-      date_of_incorporation: {aliases: ['Date of Incorporation']}
-      company_type: {aliases: ['Company Category']}
-      registered_address: {aliases: ['Registered Office'], llm: true}
-      roc: {patterns: ['Office of the (Registrar of Companies[^\n]*)']}
+      date_of_incorporation: {aliases: ['Date of Incorporation'], llm_hint: 'the date the company was incorporated, copied as printed (it may be written in words)'}
+      company_type: {aliases: ['Company Category'], llm_hint: 'the type of company as printed, for example "Company limited by shares" or "Private Limited"; null if not stated'}
+      registered_address: {aliases: ['Registered Office'], llm: true, llm_hint: 'the address of the registered office, as printed'}
+      roc: {patterns: ['Office of the (Registrar of Companies[^\n]*)'], llm_hint: 'the Registrar of Companies office named in the certificate, as printed'}
 
   memorandum_articles_of_association:
+    extraction: model   # the model reads each field; code checks the value on its page; the rules below are the fallback without a model
     identity: {name: company_name, cin: cin}
     fields:
-      company_name: {patterns: ['The name of the company is\s+(.+?)\.\s*$']}
+      company_name: {patterns: ['The name of the company is\s+(.+?)\.\s*$'], llm_hint: 'the name of the company, from the name clause (for example "The name of the company is X PRIVATE LIMITED")'}
       cin: {identifier: cin, validators: ['format:cin']}
-      registered_office: {patterns: ['registered office of the company will be situated in the State of\s+([A-Za-z ]+?)\.']}
-      authorized_share_capital: {patterns: ['authori[sz]ed\s+share\s+capital\s+of\s+the\s+company\s+is\s+Rs\.?\s*([\d,]+)']}
-      paid_up_share_capital: {patterns: ['paid-?up\s+capital\s+is\s+Rs\.?\s*([\d,]+)']}
-      objects_of_company: {patterns: [{regex: 'MAIN OBJECTS TO BE PURSUED[^\n]*\n(.+?)\n\(B\)', flags: ims, span_pages: true}]}
-      directors: {patterns: [{regex: 'first\s+directors\s+of\s+the\s+company\s+are\s+(.+?)\.\s*$', flags: ims, multi: true, split: '\s+and\s+|,\s*', strip: '^(?:Smt|Sri|Shri|Mr|Ms|Mrs)\.?\s+'}], llm: true}
+      registered_office: {patterns: ['registered office of the company will be situated in the State of\s+([A-Za-z ]+?)\.'], llm_hint: 'the State in which the registered office is to be situated, or the registered office address, as the memorandum states it'}
+      authorized_share_capital: {patterns: ['authori[sz]ed\s+share\s+capital\s+of\s+the\s+company\s+is\s+Rs\.?\s*([\d,]+)'], llm_hint: 'the authorised share capital in rupees, the amount only, as printed'}
+      paid_up_share_capital: {patterns: ['paid-?up\s+capital\s+is\s+Rs\.?\s*([\d,]+)'], llm_hint: 'the paid-up (subscribed) share capital in rupees, the amount only, as printed; null if not stated'}
+      objects_of_company: {patterns: [{regex: 'MAIN OBJECTS TO BE PURSUED[^\n]*\n(.+?)\n\(B\)', flags: ims, span_pages: true}], llm_hint: 'the main objects clause, copied as printed; null if absent'}
+      directors: {patterns: [{regex: 'first\s+directors\s+of\s+the\s+company\s+are\s+(.+?)\.\s*$', flags: ims, multi: true, split: '\s+and\s+|,\s*', strip: '^(?:Smt|Sri|Shri|Mr|Ms|Mrs)\.?\s+'}], llm: true, llm_hint: 'the first directors named in the articles, one entry per person with the name only (no title) and the DIN when printed'}
     tables:
       shareholding:
         page_match: 'SUBSCRIPTION CLAUSE'
@@ -38,72 +40,101 @@ types:
           - {name: signature, header: '^Signature$', emit: false}
 
   company_pan:
+    extraction: model   # the model reads each field; code checks the value on its page; the rules below are the fallback without a model
     identity: {name: company_name, pan: pan}
     fields:
-      company_name: {aliases: ['Name']}
+      company_name: {aliases: ['Name'], llm_hint: 'the name of the company printed on the PAN card or allotment letter'}
       pan: {identifier: pan, validators: ['format:pan']}
-      date_of_issue: {patterns: ['^Date:\s*(\d{1,2}\s+[A-Za-z]+\s+\d{4})']}
+      date_of_issue: {patterns: ['^Date:\s*(\d{1,2}\s+[A-Za-z]+\s+\d{4})'], llm_hint: 'the date the PAN was issued or the letter dated, copied as printed'}
 
   director_kyc:
+    extraction: model   # the model reads each field; code checks the value on its page; the rules below are the fallback without a model
     identity: {name: person_name, pan: pan, din: din, dob: date_of_birth}
     fields:
-      person_name: {aliases: ['Name of Director']}
-      din: {aliases: ['Director Identification Number'], validators: ['format:din']}
-      designation: {aliases: ['Designation']}
-      date_of_birth: {aliases: ['Date of Birth']}
-      pan: {aliases: ['PAN \(masked\)', 'PAN'], validators: ['format:masked_pan']}
-      id_document_type: {patterns: ['\b(Aadhaar)\s+\(masked\)']}
-      id_number: {aliases: ['Aadhaar \(masked\)'], validators: ['format:masked_aadhaar']}
-      address: {aliases: ['Residential Address']}
+      father_or_spouse_name: {llm_hint: "the father's or spouse's name, if stated; null if not"}
+      gender: {llm_hint: 'the gender, if stated; null if not'}
+      person_name: {aliases: ['Name of Director'], llm_hint: 'the full name of the director or person the KYC is about'}
+      din: {aliases: ['Director Identification Number'], validators: ['format:din'], llm_hint: 'the Director Identification Number, 8 digits'}
+      designation: {aliases: ['Designation'], llm_hint: 'the designation, for example Director or Managing Director'}
+      date_of_birth: {aliases: ['Date of Birth'], llm_hint: 'the date of birth, copied as printed'}
+      pan: {aliases: ['PAN \(masked\)', 'PAN'], validators: ['format:masked_pan'], llm_hint: 'the PAN, as printed (it may be masked)'}
+      id_document_type: {patterns: ['\b(Aadhaar)\s+\(masked\)'], llm_hint: 'the type of identity document shown (for example Aadhaar, Passport), as printed'}
+      id_number: {aliases: ['Aadhaar \(masked\)'], validators: ['format:masked_aadhaar'], llm_hint: 'the identity document number, as printed (it may be masked)'}
+      address: {aliases: ['Residential Address'], llm_hint: 'the residential address, as printed'}
       # The KYC summary sheet does not print an identity document's number or dates; the model is not asked for them.
       document_number: {llm: false}
       issue_date: {llm: false}
       expiry_date: {aliases: ['Date of Expiry', 'Expiry Date', 'Valid Until'], llm: false}
 
   board_resolution_borrowing:
+    extraction: model   # the model reads each field; code checks the value on its page; the rules below are the fallback without a model
     identity: {name: company_name}
     fields:
-      company_name: {patterns: [{regex: 'Board of Directors of\s+(.+?)\s*\(CIN', flags: ims}]}
-      meeting_date: {patterns: [{regex: '\bon\s+(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+(\d{1,2}\s+[A-Za-z]+\s+\d{4})', flags: ims}]}
-      borrowing_limit: {patterns: ['aggregating\s+to\s+Rs\.?\s*([\d,]+)']}
-      lender_name: {patterns: [{regex: 'borrow\s+from\s+(.+?),\s*credit\s+facilities', flags: ims}]}
+      resolution_number: {llm_hint: 'the resolution number or reference, if stated; null if not'}
+      company_name: {patterns: [{regex: 'Board of Directors of\s+(.+?)\s*\(CIN', flags: ims}], llm_hint: 'the name of the company whose Board passed the resolution'}
+      meeting_date: {patterns: [{regex: '\bon\s+(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+(\d{1,2}\s+[A-Za-z]+\s+\d{4})', flags: ims}], llm_hint: 'the date of the Board meeting, copied as printed'}
+      borrowing_limit: {patterns: ['aggregating\s+to\s+Rs\.?\s*([\d,]+)'], llm_hint: 'the aggregate borrowing limit in rupees, the amount only, as printed'}
+      lender_name: {patterns: [{regex: 'borrow\s+from\s+(.+?),\s*credit\s+facilities', flags: ims}], llm_hint: 'the bank or lender the resolution authorises borrowing from'}
       resolution_date: {llm: false}   # only a date the resolution itself carries; never derived from the meeting date
       purpose_of_borrowing: {llm_hint: "The purpose of the borrowing exactly as the resolution states it (for example 'working capital'). A heading, or the bare words 'borrowing' or 'security', is not a purpose: report null when none is stated."}
-      authorized_persons: {patterns: [{regex: '(?:Smt|Sri|Shri|Mr|Ms|Mrs)\.?\s+([A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)*),\s+(?:Managing\s+)?Director', flags: m, multi: true}]}
+      authorized_persons: {patterns: [{regex: '(?:Smt|Sri|Shri|Mr|Ms|Mrs)\.?\s+([A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)*),\s+(?:Managing\s+)?Director', flags: m, multi: true}], llm_hint: 'the directors named as authorised, one entry per person, the name only (leave out titles, designations and DIN numbers)'}
       # The DIN printed after each authorised person, in the same order; used to tell the directors apart, never to correct a value.
       authorized_person_dins: {patterns: [{regex: '(?:Smt|Sri|Shri|Mr|Ms|Mrs)\.?\s+[A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)*,\s+(?:Managing\s+)?Director\s*\(DIN\s+(\d{8})\)', flags: m, multi: true}], llm: false}
       authorized_signatories: {llm_hint: "The people the resolution authorises to sign or execute the loan documents: one entry per person, the name only (leave out Smt., Sri., titles, designations and DIN numbers). List every person named."}
 
   audited_financial_statements:
+    # The model reads every field (all pages); code checks each value against its page. The aliases and patterns below are the
+    # fallback when no model is configured.
+    extraction: model
     identity: {name: company_name}
     fields:
-      company_name: {aliases: ['Company']}
+      company_name: {aliases: ['Company'], llm_hint: 'the full legal name of the company whose financial statements these are, as printed in the auditor report heading or opinion (for example "X PRIVATE LIMITED"); not a sentence'}
       # The year end the statements print on their own face, read rather than asked of a model:
       # "BALANCE SHEET AS AT 31 MARCH 2026", "...FOR THE YEAR ENDED 31 MARCH 2026".
-      financial_year: {aliases: ['Financial Year'], patterns: ['BALANCE SHEET AS AT\s+(\d{1,2}\s+[A-Za-z]+\s+\d{4})', 'FOR THE YEAR ENDED\s+(\d{1,2}\s+[A-Za-z]+\s+\d{4})']}
-      auditor_name: {aliases: ['Statutory Auditors']}
-      audit_date: {patterns: ['Place:\s*[A-Za-z]+\s*\|\s*Date:\s*(\d{1,2}\s+[A-Za-z]+\s+\d{4})']}
+      financial_year: {aliases: ['Financial Year'], llm: false, patterns: ['BALANCE SHEET AS AT\s+(\d{1,2}\s+[A-Za-z]+\s+\d{4})', 'FOR THE YEAR ENDED\s+(\d{1,2}\s+[A-Za-z]+\s+\d{4})']}
+      auditor_name: {aliases: ['Statutory Auditors'], llm_hint: 'the name of the audit firm that signs the report, without logo or title text such as "CA"'}
+      audit_date: {patterns: ['Place:\s*[A-Za-z]+\s*\|\s*Date:\s*(\d{1,2}\s+[A-Za-z]+\s+\d{4})'], llm_hint: 'the date the auditor report was signed, copied as printed'}
       accounting_standard: {llm_hint: "The accounting standards or framework the statements say they follow (for example 'Indian GAAP' or 'Ind AS'), exactly as written; null if none is named."}
     tables:
+      # Each statement lists layout variants, tried in order: the summary layout, then the filed-accounts layout (a Notes column
+      # between the label and the amounts; the period dates in the column headings).
       balance_sheet:
-        page_match: 'BALANCE SHEET AS AT'
-        start: 'As at 31 March\s+As at 31 March'
-        header_lines: 2
-        end: '^Net worth'
-        columns:
-          - {name: particulars, header: '^Particulars$'}
-          - {name: current_period, header: '^As$', nth: 0, align: right}
-          - {name: previous_period, header: '^As$', nth: 1, align: right}
+        - page_match: 'BALANCE SHEET AS AT'
+          start: 'As at 31 March\s+As at 31 March'
+          header_lines: 2
+          end: '^Net worth'
+          columns:
+            - {name: particulars, header: '^Particulars$'}
+            - {name: current_period, header: '^As$', nth: 0, align: right}
+            - {name: previous_period, header: '^As$', nth: 1, align: right}
+        - page_match: 'BALANCE SHEET AS AT'
+          start: '^Particulars\s+Notes\s+As at'
+          end: '^NOTES TO ACCOUNTS'
+          columns:
+            - {name: particulars, header: '^Particulars$'}
+            - {name: notes, header: '^Notes$', align: right, emit: false}
+            - {name: current_period, header: '^31\.03\.20\d\d$', nth: 0, align: right}
+            - {name: previous_period, header: '^31\.03\.20\d\d$', nth: 1, align: right}
       profit_and_loss:
-        page_match: 'STATEMENT OF PROFIT AND LOSS FOR THE YEAR'
-        start: 'Year ended 31\s+Year ended 31'
-        header_lines: 2
-        end: '^EBITDA'
-        columns:
-          - {name: particulars, header: '^Particulars$'}
-          - {name: current_period, header: '^Year$', nth: 0, align: right}
-          - {name: previous_period, header: '^Year$', nth: 1, align: right}
+        - page_match: 'STATEMENT OF PROFIT AND LOSS FOR THE YEAR'
+          start: 'Year ended 31\s+Year ended 31'
+          header_lines: 2
+          end: '^EBITDA'
+          columns:
+            - {name: particulars, header: '^Particulars$'}
+            - {name: current_period, header: '^Year$', nth: 0, align: right}
+            - {name: previous_period, header: '^Year$', nth: 1, align: right}
+        - page_match: 'PROFIT & LOSS STATEMENT FOR THE PERIOD'
+          start: '^For the Period\s+For the Period'
+          header_lines: 1
+          end: '^Notes referred to above'
+          columns:
+            - {name: particulars, header: '^Particulars$'}
+            - {name: notes, header: '^Notes$', emit: false}
+            - {name: current_period, header: '^Period$', nth: 0, align: right}
+            - {name: previous_period, header: '^Period$', nth: 1, align: right}
       cash_flow:
+        optional: true   # a small company's filed accounts may carry no cash flow statement; the table is still reported missing
         page_match: 'CASH FLOW STATEMENT FOR THE YEAR'
         start: '^Year ended 31 March$'
         header_lines: 2
@@ -112,19 +143,26 @@ types:
           - {name: current_period, header: '^Year$', nth: 0, align: right}
 
   income_tax_return:
+    # The model reads the fields from the first page and the computation sections (Part B-TI and B-TTI); code checks every
+    # value against its page and validators.yaml checks the figures against each other. Identifiers stay rule-based.
+    # The aliases and patterns below are the fallback when no model is configured; with a model they are not used.
+    extraction: model
+    model_pages:
+      - {match: 'PART B[\s_-]*TI\s*-\s*COMPUTATION OF TOTAL INCOME', span: 4}
+      - {match: 'FINANCIAL YEAR 20\d{2}-\d{2}', span: 1}
     identity: {name: taxpayer_name, pan: pan}
     fields:
       pan: {identifier: pan, validators: ['format:pan']}
-      taxpayer_name: {aliases: ['Name of (?:the )?(?:assessee|taxpayer)', 'Assessee Name', 'Taxpayer Name', 'Name']}
-      assessment_year: {aliases: ['Assessment Year', 'A\.?Y\.?']}
-      financial_year: {aliases: ['Financial Year', 'Previous Year'], patterns: ['for the (FY\d{4})']}
-      filing_date: {aliases: ['Date of (?:e-?)?Filing', 'Filing Date', 'e-?Filed on', 'Filed on', 'Date of Submission']}
-      acknowledgement_number: {aliases: ['e-?Filing Acknowledgement(?: Number| No\.?)?', 'Acknowledgement (?:Number|No\.?)', 'Ack(?:nowledgement)?\.? (?:Number|No\.?)', 'Receipt (?:Number|No\.?)']}
-      gross_total_income: {aliases: ['Gross Total Income'], patterns: ['Gross Total Income\s+([\d,]+)']}
-      total_income: {aliases: ['Total Income', 'Total Taxable Income']}
-      tax_payable: {aliases: ['Total Tax and Interest Payable', 'Total Tax Payable', 'Net Tax Payable']}
-      tax_paid: {aliases: ['Taxes Paid \(TDS \+ Advance \+', 'Total Taxes Paid', 'Taxes Paid']}
-      refund_amount: {aliases: ['Tax Payable / \(Refund\)', 'Refund(?:able)? Amount', 'Refund Due']}
+      taxpayer_name: {aliases: ['Name of (?:the )?(?:assessee|taxpayer)', 'Assessee Name', 'Taxpayer Name', 'Name'], llm_hint: 'the name of the company or person filing, printed under "Name" in Part A on the first page (not a question or a label)'}
+      assessment_year: {aliases: ['Assessment Year', 'A\.?Y\.?'], llm_hint: 'the assessment year of the return, written like 2024-25, printed beside "Assessment Year" on the first page'}
+      financial_year: {aliases: ['Financial Year', 'Previous Year'], patterns: ['for the (FY\d{4})'], llm_hint: 'the financial year the return covers, written like 2023-24, copied as the year span only (2023-24), without the words before it, from a heading such as "FINANCIAL YEAR 2023-24"'}
+      filing_date: {aliases: ['Date of (?:e-?)?Filing', 'Filing Date', 'e-?Filed on', 'Filed on', 'Date of Submission'], llm_hint: 'the date of filing, printed as "Date of Filing" in the header at the top of the first page'}
+      acknowledgement_number: {aliases: ['e-?Filing Acknowledgement(?: Number| No\.?)?', 'Acknowledgement (?:Number|No\.?)', 'Ack(?:nowledgement)?\.? (?:Number|No\.?)', 'Receipt (?:Number|No\.?)'], llm_hint: 'the acknowledgement number, printed as "Acknowledgement Number" in the header at the top of the first page'}
+      gross_total_income: {aliases: ['Gross Total Income'], patterns: ['Gross Total Income\s+([\d,]+)'], llm_hint: 'Part B-TI, the row "Gross Total income (7 - 8)", item 9; the amount in the last column'}
+      total_income: {aliases: ['Total Income', 'Total Taxable Income'], llm_hint: 'Part B-TI, the row "Total income (9 - 11c - 12)", item 13; the amount in the last column'}
+      tax_payable: {aliases: ['Total Tax and Interest Payable', 'Total Tax Payable', 'Net Tax Payable'], llm_hint: 'Part B-TTI, the row "Aggregate liability (7 + 8e)", item 9; the amount in the last column'}
+      tax_paid: {aliases: ['Taxes Paid \(TDS \+ Advance \+', 'Total Taxes Paid', 'Taxes Paid'], llm_hint: 'Part B-TTI, the row "Total Taxes Paid (10a+10b+10c+10d)", item 10e; the amount in the last column'}
+      refund_amount: {aliases: ['Tax Payable / \(Refund\)', 'Refund(?:able)? Amount', 'Refund Due'], llm_hint: 'Part B-TTI, the row "Refund (If 10e is greater than 9)", item 12; the amount in the last column'}
     tables:
       income_computation:
         page_match: 'COMPUTATION OF (?:TOTAL )?INCOME'
@@ -135,14 +173,15 @@ types:
           - {name: amount, header: '^Amount(?:\s*\(.*\))?$', align: right}
 
   gstr_3b:
+    extraction: model   # the model reads each field; code checks the value on its page; the rules below are the fallback without a model
     identity: {name: legal_name, gstin: gstin}
     fields:
       gstin: {identifier: gstin, validators: ['format:gstin']}
       legal_name: {aliases: ['2\(a\)\.?\s*Legal name of the registered person', 'Legal Name'], llm_hint: 'the legal name of the registered person (table 2(a))'}
-      trade_name: {aliases: ['2\(b\)\.?\s*Trade name, if any', 'Trade Name']}
-      financial_year: {patterns: ['^\s*Year\s+(\d{4}-\d{2})\s*$']}
-      tax_period: {patterns: ['^\s*Period\s+([A-Za-z]{3}(?:-[A-Za-z]{3})?)\s*$', {regex: '(?:^|\s{2})Tax Period\s+(\S.*?)(?:\s{2}|$)', flags: m}]}
-      filing_date: {aliases: ['2\(d\)\.?\s*Date of ARN', 'Date of Filing']}
+      trade_name: {aliases: ['2\(b\)\.?\s*Trade name, if any', 'Trade Name'], llm_hint: 'the trade name, table 2(b), if any; null if none'}
+      financial_year: {patterns: ['^\s*Year\s+(\d{4}-\d{2})\s*$'], llm_hint: 'the financial year of the return, written like 2025-26'}
+      tax_period: {patterns: ['^\s*Period\s+([A-Za-z]{3}(?:-[A-Za-z]{3})?)\s*$', {regex: '(?:^|\s{2})Tax Period\s+(\S.*?)(?:\s{2}|$)', flags: m}], llm_hint: 'the tax period of the return, the month name as printed (for example Dec)'}
+      filing_date: {aliases: ['2\(d\)\.?\s*Date of ARN', 'Date of Filing'], llm_hint: 'the date of filing or ARN date, table 2(d), copied as printed'}
       return_status: {patterns: ['Return status:\s*([A-Za-z]+)'], llm: false}
     # Two layouts, tried in order: the portal's own printout, then the summary layout.
     tables:
@@ -216,14 +255,15 @@ types:
             - {name: paid_cash, header: '^Paid$', nth: 1, align: right, emit: false}
 
   gstr_1:
+    extraction: model   # the model reads each field; code checks the value on its page; the rules below are the fallback without a model
     identity: {name: legal_name, gstin: gstin}
     fields:
       gstin: {identifier: gstin, validators: ['format:gstin']}
       legal_name: {aliases: ['Legal name of the registered person'], llm_hint: 'the legal name of the registered person (table 2(a))'}
-      trade_name: {aliases: ['Trade name if any']}
-      financial_year: {patterns: ['Financial year\s+(\d{4}-\d{2})\b']}
-      tax_period: {patterns: ['Tax period\s+([A-Za-z]{3}(?:-[A-Za-z]{3})?)\s*$']}
-      filing_date: {aliases: ['ARN date']}
+      trade_name: {aliases: ['Trade name if any'], llm_hint: 'the trade name, if any; null if none'}
+      financial_year: {patterns: ['Financial year\s+(\d{4}-\d{2})\b'], llm_hint: 'the financial year of the return, written like 2025-26'}
+      tax_period: {patterns: ['Tax period\s+([A-Za-z]{3}(?:-[A-Za-z]{3})?)\s*$'], llm_hint: 'the tax period of the return, the month name as printed (for example Dec)'}
+      filing_date: {aliases: ['ARN date'], llm_hint: 'the ARN date, copied as printed'}
     # One row per section, from its Total line, headed by the section's own title (4A, 4B, 5, 6A to 6C, 7, 8).
     tables:
       outward_supplies:
@@ -245,18 +285,21 @@ types:
           - {name: cess, header: '^Cess$', align: right}
 
   bank_statement:
+    extraction: model   # the model reads each field; code checks the value on its page; the rules below are the fallback without a model
+    model_pages:
+      - {match: 'Statement Summary', span: 1}
     identity: {name: account_holder_name}
     fields:
-      account_holder_name: {aliases: ['Account Name']}
-      account_number: {patterns: ['\bAccount(?:\s+(?:No\.?|Number))?\s+(\d{9,18})\b']}
-      bank_name: {patterns: ['^(.+?\bBank)\s*$']}
-      branch: {patterns: ['Branch\s*/\s*IFSC\s+(.+?)\s*/\s*[A-Z]{4}0[A-Z0-9]{6}\b']}
+      account_holder_name: {aliases: ['Account Name'], llm_hint: 'the name of the account holder, as printed'}
+      account_number: {patterns: ['\bAccount(?:\s+(?:No\.?|Number))?\s+(\d{9,18})\b'], llm_hint: 'the account number, digits only as printed'}
+      bank_name: {patterns: ['^(.+?\bBank)\s*$'], llm_hint: 'the name of the bank that issued the statement'}
+      branch: {patterns: ['Branch\s*/\s*IFSC\s+(.+?)\s*/\s*[A-Z]{4}0[A-Z0-9]{6}\b'], llm_hint: 'the branch name, as printed'}
       ifsc: {identifier: ifsc, validators: ['format:ifsc']}
-      statement_period_start: {patterns: ['Statement\s+(\d{1,2}\s+[A-Za-z]+\s+\d{4})\s+to\s+\d{1,2}\s+[A-Za-z]+\s+\d{4}']}
-      statement_period_end: {patterns: ['Statement\s+\d{1,2}\s+[A-Za-z]+\s+\d{4}\s+to\s+(\d{1,2}\s+[A-Za-z]+\s+\d{4})']}
-      opening_balance: {patterns: ['Opening Balance\s*\([^)]*\)\s+([\d,]+)']}
-      closing_balance: {patterns: ['Closing Balance\s*\([^)]*\)\s+([\d,]+)']}
-      currency: {patterns: ['Currency\s+([A-Z]{3})\b']}
+      statement_period_start: {patterns: ['Statement\s+(\d{1,2}\s+[A-Za-z]+\s+\d{4})\s+to\s+\d{1,2}\s+[A-Za-z]+\s+\d{4}'], llm_hint: 'the first date of the statement period, copied as printed'}
+      statement_period_end: {patterns: ['Statement\s+\d{1,2}\s+[A-Za-z]+\s+\d{4}\s+to\s+(\d{1,2}\s+[A-Za-z]+\s+\d{4})'], llm_hint: 'the last date of the statement period, copied as printed'}
+      opening_balance: {patterns: ['Opening Balance\s*\([^)]*\)\s+([\d,]+)'], llm_hint: 'the opening balance of the period, the amount only, as printed'}
+      closing_balance: {patterns: ['Closing Balance\s*\([^)]*\)\s+([\d,]+)'], llm_hint: 'the closing balance of the period, the amount only, as printed'}
+      currency: {patterns: ['Currency\s+([A-Z]{3})\b'], llm_hint: 'the currency code, for example INR'}
     tables:
       transactions:
         start: '^Date\s+Particulars\s+Reference'
@@ -276,10 +319,11 @@ types:
   # Declaration of existing facilities: a table of facilities and one of bank accounts. A nil
   # declaration prints neither; its letterhead carries the identifiers.
   existing_facilities_declaration:
+    extraction: model   # the model reads each field; code checks the value on its page; the rules below are the fallback without a model
     identity: {name: company_name, pan: pan, cin: cin, gstin: gstin}
     fields:
-      company_name: {aliases: ['Name of Company', 'Name of the Company'], patterns: [{regex: '^For\s+(.+?(?:Limited|Ltd\.?|LLP))\s*$', flags: im}]}
-      declaration_date: {aliases: ['Date of Declaration', 'Date']}
+      company_name: {aliases: ['Name of Company', 'Name of the Company'], patterns: [{regex: '^For\s+(.+?(?:Limited|Ltd\.?|LLP))\s*$', flags: im}], llm_hint: 'the name of the company making the declaration'}
+      declaration_date: {aliases: ['Date of Declaration', 'Date'], llm_hint: 'the date of the declaration, copied as printed'}
       pan: {identifier: pan, validators: ['format:pan']}
       cin: {identifier: cin, validators: ['format:cin']}
       gstin: {identifier: gstin, validators: ['format:gstin']}
@@ -302,12 +346,13 @@ types:
           - {name: account_type, header: '^Type$'}
 
   sanction_letter:
+    extraction: model   # the model reads each field; code checks the value on its page; the rules below are the fallback without a model
     identity: {name: borrower_name}
     fields:
-      lender_name: {aliases: ['Lender', 'Name of Lender'], patterns: [{regex: '^For\s+(.+?(?:Bank|Limited|Ltd\.?|Finance|Finserv))\s*$', flags: im}]}
-      borrower_name: {aliases: ['Borrower', 'Name of Borrower']}
-      sanction_date: {aliases: ['Date of Sanction', 'Date']}
-      reference_number: {aliases: ['Reference', 'Ref\.? No\.?']}
+      lender_name: {aliases: ['Lender', 'Name of Lender'], patterns: [{regex: '^For\s+(.+?(?:Bank|Limited|Ltd\.?|Finance|Finserv))\s*$', flags: im}], llm_hint: 'the bank or lender issuing the sanction'}
+      borrower_name: {aliases: ['Borrower', 'Name of Borrower'], llm_hint: 'the borrower the facilities are sanctioned to'}
+      sanction_date: {aliases: ['Date of Sanction', 'Date'], llm_hint: 'the date of the sanction letter, copied as printed'}
+      reference_number: {aliases: ['Reference', 'Ref\.? No\.?'], llm_hint: 'the reference number of the letter, as printed'}
     tables:
       facilities:
         start: '^Facility\s+Sanctioned Amount'
@@ -321,14 +366,15 @@ types:
 
   # The company's PAN is printed above the related parties, so the first PAN on the page is the company's.
   commercial_bureau_report:
+    extraction: model   # the model reads each field; code checks the value on its page; the rules below are the fallback without a model
     identity: {name: company_name, pan: pan, cin: cin, gstin: gstin}
     fields:
-      company_name: {aliases: ['Company Name', 'Name of Company']}
+      company_name: {aliases: ['Company Name', 'Name of Company'], llm_hint: 'the name of the company the report is about'}
       pan: {identifier: pan, validators: ['format:pan']}
       cin: {identifier: cin, validators: ['format:cin']}
       gstin: {identifier: gstin, validators: ['format:gstin']}
-      report_date: {aliases: ['Report Date', 'Date of Report']}
-      credit_rank: {aliases: ['Credit Rank']}
+      report_date: {aliases: ['Report Date', 'Date of Report'], llm_hint: 'the date of the report, copied as printed'}
+      credit_rank: {aliases: ['Credit Rank'], llm_hint: 'the credit rank or score as printed'}
     tables:
       credit_facilities:
         start: '^Lender\s+Facility\s+Sanctioned'

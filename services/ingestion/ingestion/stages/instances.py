@@ -16,6 +16,10 @@ def split_instances(cfg: IngestionConfig, doc_type: str, pages: list[Page]) -> t
     if not rule:
         return [], [real] if real else []
     if rule.key_pattern:
+        if rule.first_key_pattern:
+            first = re.compile(rule.first_key_pattern, re.I | re.M)
+            if any(first.search(p.text()) for p in real):
+                return _by_key(first, real)
         return _by_key(re.compile(rule.key_pattern, re.I | re.M), real)
     rx = re.compile(rule.start, re.I | re.M)
     starts = [i for i, p in enumerate(real) if rx.search(p.text())]

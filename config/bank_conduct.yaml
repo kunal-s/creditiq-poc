@@ -1,0 +1,41 @@
+# Conduct of the bank accounts, read from the classified statement transactions (config/txn_classification.yaml).
+# Interim thresholds until RBL supplies its own: every figure here is a proposal, and a flag is a question for a
+# person, never a decision. Percentages are of the amounts named; days are calendar days.
+
+cash:
+  share_flag_pct: 20            # cash deposits as a share of a month's credits
+  large_deposit: 1000000        # a single cash deposit at or above this is listed
+
+returns:
+  flag_per_month: 1             # cheques returned unpaid, or debits failed, at or above this in a month
+
+concentration:
+  top1_flag_pct: 40             # one customer's share of receipts from customers
+  top5_flag_pct: 80
+  min_parties: 3                # below this many customers the shares are not meaningful
+
+round_trip:
+  window_days: 10               # money to and from the same party within this many days
+  amount_match_pct: 5
+  min_amount: 100000
+
+balance:
+  spike_ratio: 2.0              # the month-end balance against the month's average daily balance
+  drop_pct: 40                  # and the balance after month end, over the next days, lower than month end by this much
+  drop_days: 7
+
+statutory_due_day:              # the day of the month by which each payment is due
+  statutory_gst: 20
+  statutory_pf_esi: 15
+  statutory_tds: 7
+
+promoter:
+  drawings_flag_pct: 10         # payments to promoters as a share of a month's credits from customers
+
+unusual:
+  multiple_of_median: 5         # an entry this many times the median of its category in the account
+  min_amount: 500000
+  weekend_min_amount: 1000000   # a large entry posted on a Saturday or Sunday
+
+integrity:
+  balance_tolerance: 1          # rupees: a running balance that differs from the previous plus the entry by more is a break

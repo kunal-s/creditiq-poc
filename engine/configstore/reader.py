@@ -18,6 +18,7 @@ from pydantic import BaseModel
 from .schema import (
     SECTION_MODELS,
     AlignmentSection,
+    BankConductSection,
     ApprovalMatrixSection,
     CamSectionConfig,
     ChecklistTaxonomySection,
@@ -114,6 +115,10 @@ def load_tolerances(data_root: Path) -> TolerancesSection:
 
 def load_alignment(data_root: Path) -> AlignmentSection:
     return AlignmentSection.model_validate(_load_section(data_root, "alignment"))
+
+
+def load_bank_conduct(data_root: Path) -> BankConductSection:
+    return BankConductSection.model_validate(_load_section(data_root, "bank_conduct"))
 
 
 def load_txn_classification(data_root: Path) -> TxnClassificationSection:

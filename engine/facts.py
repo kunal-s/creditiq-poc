@@ -63,6 +63,8 @@ from . import statements
 from .parties import party_list_spec
 from .pipeline import effective_types
 from .store import MESSAGE_FILE_NAME
+from .txn_intel import Context, Txn as IntelTxn
+from .txn_labels import Final, label_case, load_state
 from .util import assessment_year_start, format_inr, month_add, month_label, parse_date, parse_period, period_months
 
 USABLE = {"accepted", "in_review", "extracted", "classified"}
@@ -274,6 +276,8 @@ class Txn:
     evidence: list[Evidence]
     doc: Doc
     balance: float | None = None
+    reference: str = ""
+    """The bank's reference for the entry, as printed."""
     ref: str = ""
     """The id of the row's description cell: a key that survives a rerun of the same extraction."""
     seq: int = 0
@@ -704,6 +708,7 @@ def _transactions(b: Build) -> tuple[list[Txn], dict[str, set[tuple[int, int]]]]
                     evidence=d.evidence(r.get("credit") or r.get("debit"), r.get("description")),
                     doc=d,
                     balance=_amount(r["balance"]) if r.get("balance") and r["balance"].value not in (None, "") else None,
+                    reference=str(r["reference_number"].value or "").strip() if r.get("reference_number") else "",
                     ref=next((v.field_id for v in (r.get("description"), r.get("credit"), r.get("debit")) if v is not None and v.field_id), ""),
                     seq=seq,
                 )
@@ -764,16 +769,17 @@ def _accounts(b: Build, txns: list[Txn]) -> tuple[list[AccountFact], bool]:
     return list(found.values()), bool(b.of_type(DECLARATION))
 
 
-def _cleanse(b: Build, txns: list[Txn], accounts: list[AccountFact]) -> tuple[list[AccountCredits], dict[str, dict]]:
-    """Credits less the configured exclusions (F-18.2), by account and month."""
-    own_last4 = {a.last4 for a in accounts if a.last4}
-    borrower = normalise_name(b.case.borrower)
+def _cleanse(b: Build, txns: list[Txn], finals: list[Final], accounts: list[AccountFact]) -> tuple[list[AccountCredits], dict[str, dict]]:
+    """Credits less the categories the configuration removes (F-18.2), by account and month. A credit's category is
+    its final label: the rules' reading, the model's answer where the rules left it open, a person's decision over
+    both. A credit nothing has filed is counted, and reported as unsettled."""
+    removes = {c: ex for ex in b.align.bank_credit_exclusions for c in ex.categories}
     per_account: dict[str, AccountCredits] = {}
     net_by_month: dict[tuple[int, int], float] = defaultdict(float)
     evidence_by_month: dict[tuple[int, int], list[Evidence]] = defaultdict(list)
     # Each account's credits month by month, for the evidence behind a bank figure.
     account_months: dict[str, dict[tuple[int, int], dict]] = defaultdict(dict)
-    for t in txns:
+    for t, final in zip(txns, finals):
         if not t.credit:
             continue
         acct = per_account.setdefault(
@@ -786,18 +792,7 @@ def _cleanse(b: Build, txns: list[Txn], accounts: list[AccountFact]) -> tuple[li
                 (t.date.year, t.date.month), {"gross": 0.0, "excluded": 0.0, "net": 0.0, "evidence": []})
             slot["gross"] += t.credit
             slot["evidence"] = slot["evidence"] or t.evidence[:1]
-        rule = None
-        for ex in b.align.bank_credit_exclusions:
-            cue = _phrase(t.narration, ex.narration_any)
-            if ex.own_account:
-                digits = {_last4(m) for m in re.findall(r"\d{4,}", t.narration)}
-                names_borrower = borrower and borrower.split()[0] in normalise_name(t.narration)
-                if (digits & own_last4 - {t.account.split("·")[-1]}) or (cue and names_borrower):
-                    rule = ex
-                    break
-            elif cue:
-                rule = ex
-                break
+        rule = removes.get(final.category)
         if rule:
             acct.excluded += t.credit
             if slot is not None:
@@ -808,6 +803,9 @@ def _cleanse(b: Build, txns: list[Txn], accounts: list[AccountFact]) -> tuple[li
                           evidence=t.evidence)
             )
             continue
+        if not final.settled:
+            acct.unsettled += t.credit
+            acct.unsettled_count += 1
         acct.net += t.credit
         if slot is not None:
             slot["net"] += t.credit
@@ -827,47 +825,33 @@ def _cleanse(b: Build, txns: list[Txn], accounts: list[AccountFact]) -> tuple[li
     return list(per_account.values()), {"net": net_by_month, "evidence": evidence_by_month}
 
 
-def _obligations(b: Build, txns: list[Txn]) -> list[Obligation]:
-    """Recurring debits to a lender (F-18.4): an instalment cue, the same
-    counterparty in enough months, amounts within the EMI tolerance."""
-    candidates: dict[tuple[str, str], list[Txn]] = defaultdict(list)
-    for t in txns:
-        if not t.debit or not _phrase(t.narration, b.align.obligation_narration_any):
+def _obligations(b: Build, txns: list[Txn], finals: list[Final]) -> list[Obligation]:
+    """Recurring debits to a lender (F-18.4): debits filed under loan_emi, the same lender in enough months, amounts
+    within the EMI tolerance."""
+    candidates: dict[tuple[str, str], list[tuple[Txn, str]]] = defaultdict(list)
+    for t, final in zip(txns, finals):
+        if not t.debit or final.category != "loan_emi" or not final.counterparty:
             continue
-        party = _counterparty(t.narration, b.align.obligation_narration_any)
-        if not party:
-            continue
+        party = final.counterparty
         key = next((k for k in candidates if k[1] == t.account and same_entity(party, k[0], b.noise, b.name_threshold)),
                    (party, t.account))
-        candidates[key].append(t)
+        candidates[key].append((t, party))
     out: list[Obligation] = []
-    for (party, account), debits in candidates.items():
+    for (party, account), found in candidates.items():
+        debits = [t for t, _ in found]
         months = sorted({(t.date.year, t.date.month) for t in debits if t.date})
         amounts = sorted(t.debit for t in debits)
         typical = amounts[len(amounts) // 2]
         steady = [a for a in amounts if abs(a - typical) <= typical * b.emi_tolerance_pct / 100]
         if len(months) < b.emi_min or len(steady) < b.emi_min:
             continue
-        variants = sorted({_counterparty(t.narration, b.align.obligation_narration_any) or party for t in debits})
+        variants = sorted({p for _, p in found})
         out.append(
             Obligation(lender=party, variants=variants, account=account, months=[month_label(m) for m in months],
                        typical_amount=typical, debits=len(debits),
                        evidence=[e for t in debits[:3] for e in t.evidence[:1]])
         )
     return out
-
-
-def _counterparty(narration: str, cues: list[str]) -> str | None:
-    """The name in an instalment narration, without cues, references and digits:
-    "NACH DR LOTUSCREST FIN 000123 EMI" -> "LOTUSCREST FIN"."""
-    text = narration
-    for cue in sorted(cues, key=len, reverse=True):
-        text = re.sub(re.escape(cue.strip()), " ", text, flags=re.I)
-    text = re.sub(r"[^A-Za-z& ]+", " ", text)
-    text = re.sub(r"\b(dr|cr|to|by|debit|payment|repayment|inst|instalment|installment|ref|no|umrn|mandate)\b", " ",
-                  text, flags=re.I)
-    words = [w for w in text.split() if len(w) > 1]
-    return " ".join(words[:4]).strip() or None
 
 
 def _gst_by_month(b: Build) -> dict[tuple[int, int], tuple[float, Doc, statements.Line]]:
@@ -1012,15 +996,12 @@ class StatementInputs:
     emi_tolerance_pct: float
 
 
-def statement_inputs(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> StatementInputs:
-    b = _build(conn, root, case)
-    txns, _ = _transactions(b)
-    accounts, _ = _accounts(b, txns)
+def _inputs(b: Build, txns: list[Txn], accounts: list[AccountFact]) -> StatementInputs:
     lenders = dict.fromkeys(f.lender for f in _facilities(b) if f.lender)
     people = dict.fromkeys(n for ps in _persons(b) for n in ps.names if n)
     return StatementInputs(
         txns=txns,
-        borrower=case.borrower or "",
+        borrower=b.case.borrower or "",
         own_account_last4=frozenset(a.last4 for a in accounts if a.last4),
         lender_names=tuple(lenders),
         director_names=tuple(people),
@@ -1029,11 +1010,42 @@ def statement_inputs(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> 
     )
 
 
+def statement_inputs(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> StatementInputs:
+    b = _build(conn, root, case)
+    txns, _ = _transactions(b)
+    accounts, _ = _accounts(b, txns)
+    return _inputs(b, txns, accounts)
+
+
+def labelled_statement(conn: sqlite3.Connection, root: Path, case: CaseDetail):
+    """The statement rows with their final labels, the months each account's statements cover, and the credit
+    categories removed from business inflow."""
+    b = _build(conn, root, case)
+    txns, coverage = _transactions(b)
+    accounts, _ = _accounts(b, txns)
+    inputs = _inputs(b, txns, accounts)
+    removed = {c for ex in b.align.bank_credit_exclusions for c in ex.categories}
+    return inputs, label_statement(conn, root, case.id, inputs), coverage, removed
+
+
+def label_statement(conn: sqlite3.Connection, root: Path, case_id: str, inputs: StatementInputs) -> list[Final]:
+    """Each statement row's final label (rules, then the model, then a person), in the order of `inputs.txns`."""
+    version = reader.published_version(root)["version"]
+    models, overrides = load_state(conn, case_id, version)
+    ctx = Context(borrower_name=inputs.borrower, own_account_last4=inputs.own_account_last4,
+                  lender_names=inputs.lender_names, director_names=inputs.director_names,
+                  emi_min_months=inputs.emi_min_months, emi_tolerance_pct=inputs.emi_tolerance_pct)
+    rows = [IntelTxn(t.ref or f"row-{i}", t.account, t.date, t.narration, t.debit, t.credit,
+                     t.account.rsplit("·", 1)[-1] if "·" in t.account else None) for i, t in enumerate(inputs.txns)]
+    return label_case(reader.load_txn_classification(root), rows, ctx, models, overrides)
+
+
 def compute(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> CaseFacts:
     b = _build(conn, root, case)
     txns, coverage = _transactions(b)
     accounts, declared = _accounts(b, txns)
-    credits, by_month = _cleanse(b, txns, accounts)
+    finals = label_statement(conn, root, case.id, _inputs(b, txns, accounts))
+    credits, by_month = _cleanse(b, txns, finals, accounts)
     years = _financial_years(b)
     tax_years = _tax_years(b)
     return CaseFacts(
@@ -1042,7 +1054,7 @@ def compute(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> CaseFacts
         persons=_persons(b),
         turnover=_turnover(b, by_month, coverage, tax_years),
         credits=credits,
-        obligations=_obligations(b, txns),
+        obligations=_obligations(b, txns, finals),
         accounts=accounts,
         facilities=_facilities(b),
         declaration_received=declared,

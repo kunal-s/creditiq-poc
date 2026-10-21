@@ -1,6 +1,27 @@
 {
   "components": {
     "schemas": {
+      "AccountBalances": {
+        "properties": {
+          "account": {
+            "title": "Account",
+            "type": "string"
+          },
+          "months": {
+            "items": {
+              "$ref": "#/components/schemas/BalanceMonth"
+            },
+            "title": "Months",
+            "type": "array"
+          }
+        },
+        "required": [
+          "account",
+          "months"
+        ],
+        "title": "AccountBalances",
+        "type": "object"
+      },
       "AccountCredits": {
         "description": "One account's credits, before and after cleansing (F-18.2).",
         "properties": {
@@ -40,6 +61,16 @@
           "net": {
             "title": "Net",
             "type": "number"
+          },
+          "unsettled": {
+            "default": 0,
+            "title": "Unsettled",
+            "type": "number"
+          },
+          "unsettled_count": {
+            "default": 0,
+            "title": "Unsettled Count",
+            "type": "integer"
           }
         },
         "required": [
@@ -920,6 +951,151 @@
           "balance"
         ],
         "title": "BalanceFact",
+        "type": "object"
+      },
+      "BalanceMonth": {
+        "properties": {
+          "average": {
+            "title": "Average",
+            "type": "number"
+          },
+          "minimum": {
+            "title": "Minimum",
+            "type": "number"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "month_end": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Month End"
+          },
+          "spike": {
+            "default": false,
+            "title": "Spike",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "month",
+          "average",
+          "minimum"
+        ],
+        "title": "BalanceMonth",
+        "type": "object"
+      },
+      "BankConduct": {
+        "properties": {
+          "accounts": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Accounts",
+            "type": "array"
+          },
+          "balances": {
+            "items": {
+              "$ref": "#/components/schemas/AccountBalances"
+            },
+            "title": "Balances",
+            "type": "array"
+          },
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "customer_top1_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Top1 Pct"
+          },
+          "customer_top5_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Top5 Pct"
+          },
+          "customers": {
+            "items": {
+              "$ref": "#/components/schemas/PartyShare"
+            },
+            "title": "Customers",
+            "type": "array"
+          },
+          "flags": {
+            "items": {
+              "$ref": "#/components/schemas/ConductFlag"
+            },
+            "title": "Flags",
+            "type": "array"
+          },
+          "months": {
+            "items": {
+              "$ref": "#/components/schemas/MonthConduct"
+            },
+            "title": "Months",
+            "type": "array"
+          },
+          "promoter_in": {
+            "title": "Promoter In",
+            "type": "number"
+          },
+          "promoter_out": {
+            "title": "Promoter Out",
+            "type": "number"
+          },
+          "round_trips": {
+            "items": {
+              "$ref": "#/components/schemas/RoundTrip"
+            },
+            "title": "Round Trips",
+            "type": "array"
+          },
+          "suppliers": {
+            "items": {
+              "$ref": "#/components/schemas/PartyShare"
+            },
+            "title": "Suppliers",
+            "type": "array"
+          },
+          "unsettled_count": {
+            "title": "Unsettled Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "case_id",
+          "accounts",
+          "months",
+          "customers",
+          "suppliers",
+          "round_trips",
+          "balances",
+          "promoter_in",
+          "promoter_out",
+          "flags",
+          "unsettled_count"
+        ],
+        "title": "BankConduct",
         "type": "object"
       },
       "Cam": {
@@ -3158,6 +3334,92 @@
           "scored"
         ],
         "title": "ComparisonItem",
+        "type": "object"
+      },
+      "ConductFlag": {
+        "description": "Something in the accounts for a person to look at. A question, never a decision.",
+        "properties": {
+          "account": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account"
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "cash",
+              "returns",
+              "concentration",
+              "round_trip",
+              "balance_spike",
+              "statutory_late",
+              "statutory_gap",
+              "promoter",
+              "unusual",
+              "weekend",
+              "period_gap",
+              "balance_break",
+              "duplicate",
+              "duplicate_reference",
+              "unsettled"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "month": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Month"
+          },
+          "severity": {
+            "enum": [
+              "info",
+              "watch",
+              "concern"
+            ],
+            "title": "Severity",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "severity",
+          "message"
+        ],
+        "title": "ConductFlag",
         "type": "object"
       },
       "ConfigVersion": {
@@ -5432,6 +5694,92 @@
         "title": "Meta",
         "type": "object"
       },
+      "MonthConduct": {
+        "properties": {
+          "business_credits": {
+            "title": "Business Credits",
+            "type": "number"
+          },
+          "cash_deposits": {
+            "title": "Cash Deposits",
+            "type": "number"
+          },
+          "cash_share_pct": {
+            "title": "Cash Share Pct",
+            "type": "number"
+          },
+          "credits": {
+            "title": "Credits",
+            "type": "number"
+          },
+          "customer_receipts": {
+            "title": "Customer Receipts",
+            "type": "number"
+          },
+          "failed_debits_reversed": {
+            "title": "Failed Debits Reversed",
+            "type": "number"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "promoter_in": {
+            "title": "Promoter In",
+            "type": "number"
+          },
+          "promoter_out": {
+            "title": "Promoter Out",
+            "type": "number"
+          },
+          "returns_amount": {
+            "title": "Returns Amount",
+            "type": "number"
+          },
+          "returns_count": {
+            "title": "Returns Count",
+            "type": "integer"
+          },
+          "salary": {
+            "title": "Salary",
+            "type": "number"
+          },
+          "salary_day": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Salary Day"
+          },
+          "statutory": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Statutory",
+            "type": "object"
+          }
+        },
+        "required": [
+          "month",
+          "credits",
+          "business_credits",
+          "customer_receipts",
+          "cash_deposits",
+          "cash_share_pct",
+          "returns_count",
+          "returns_amount",
+          "failed_debits_reversed",
+          "salary",
+          "promoter_in",
+          "promoter_out"
+        ],
+        "title": "MonthConduct",
+        "type": "object"
+      },
       "MonthFigure": {
         "description": "GST outward supplies and cleansed bank credits for one month (TO-05).",
         "properties": {
@@ -6138,6 +6486,34 @@
           "field"
         ],
         "title": "PartyList",
+        "type": "object"
+      },
+      "PartyShare": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "number"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "party": {
+            "title": "Party",
+            "type": "string"
+          },
+          "share_pct": {
+            "title": "Share Pct",
+            "type": "number"
+          }
+        },
+        "required": [
+          "party",
+          "amount",
+          "count",
+          "share_pct"
+        ],
+        "title": "PartyShare",
         "type": "object"
       },
       "PdNote": {
@@ -7842,6 +8218,46 @@
           "status"
         ],
         "title": "ReviewItem",
+        "type": "object"
+      },
+      "RoundTrip": {
+        "properties": {
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "in_amount": {
+            "title": "In Amount",
+            "type": "number"
+          },
+          "in_date": {
+            "title": "In Date",
+            "type": "string"
+          },
+          "out_amount": {
+            "title": "Out Amount",
+            "type": "number"
+          },
+          "out_date": {
+            "title": "Out Date",
+            "type": "string"
+          },
+          "party": {
+            "title": "Party",
+            "type": "string"
+          }
+        },
+        "required": [
+          "party",
+          "out_date",
+          "out_amount",
+          "in_date",
+          "in_amount"
+        ],
+        "title": "RoundTrip",
         "type": "object"
       },
       "RuleChange": {
@@ -12695,6 +13111,62 @@
           }
         },
         "summary": "Case Transactions"
+      }
+    },
+    "/api/cases/{case_id}/transactions/conduct": {
+      "get": {
+        "description": "Cash, returns, concentration, round trips, balances, salary and statutory payments, promoter flows,\nunusual entries and the integrity of the statements, with thresholds from configuration.",
+        "operationId": "case_bank_conduct_api_cases__case_id__transactions_conduct_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankConduct"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Bank Conduct"
       }
     },
     "/api/cases/{case_id}/transactions/summary": {

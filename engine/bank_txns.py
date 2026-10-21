@@ -25,6 +25,7 @@ from .db import log_decision, transaction
 from .review_items import close_item, raise_item
 from .ingest_client import IngestError
 from .txn_intel import Context, Txn, classify, cluster_key
+from .txn_labels import apply_model, load_state
 from .util import dumps, now_iso
 
 REVIEW_KIND = "transactions"
@@ -49,26 +50,8 @@ def _basis(cfg_version: str, inputs: facts.StatementInputs, models: dict) -> str
     return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
 
 
-def _model_labels(conn: sqlite3.Connection, case_id: str, cfg_version: str) -> dict[tuple[str, str], sqlite3.Row]:
-    """The model's answers kept for this case under the configuration now published."""
-    return {(r["cluster_key"], r["direction"]): r for r in conn.execute(
-        "SELECT * FROM txn_model_labels WHERE case_id = ? AND config_version = ?", (case_id, cfg_version))}
-
-
-def _apply_model(cfg: TxnClassificationSection, lab, t, answer) -> str | None:
-    """Put the model's answer on a row the rules left open. Returns the model's reason, if it read the row."""
-    cats = {c.id: c for c in cfg.categories}
-    direction = "credit" if t.credit else "debit"
-    cat = cats.get(answer["category"])
-    if cat is None or cat.direction != direction:      # 'unknown', or a category since removed or of the other direction
-        return answer["reason"] or None
-    if answer["confidence"] in cfg.model.accept and (answer["confidence"] == "high" or cat.id not in cfg.model.high_only):
-        lab.category, lab.status, lab.rule_id, lab.candidates = cat.id, "matched", None, []
-        lab.confidence, lab.needs_model = cfg.model.confidence[answer["confidence"]], False
-        lab.method = "model"
-    else:
-        lab.candidates = [cat.id]                      # a suggestion for a person; the row stays open
-    return answer["reason"] or None
+def _model_labels(conn: sqlite3.Connection, case_id: str, cfg_version: str) -> dict:
+    return load_state(conn, case_id, cfg_version)[0]
 
 
 def _last4(account: str) -> str | None:
@@ -100,7 +83,7 @@ def refresh(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> dict:
                 reason = None
                 if lab.needs_model:
                     answer = models.get((cluster_key(t.narration), "credit" if t.credit else "debit"))
-                    reason = _apply_model(cfg, lab, t, answer) if answer else None
+                    reason = apply_model(cfg, lab, bool(t.credit), answer) if answer else None
                 conn.execute(
                     """INSERT INTO txn_class (case_id, txn_id, document_id, account, seq, date, narration, debit, credit,
                        category, status, method, rule_id, confidence, channel, counterparty, counterparty_key, candidates,

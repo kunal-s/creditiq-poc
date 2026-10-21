@@ -23,6 +23,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from python_multipart.exceptions import MultipartParseError
 
 from . import (
+    bank_conduct,
     bank_txns,
     admin_config,
     approval,
@@ -57,6 +58,7 @@ from .config import load_app_config, load_roles_config, option_ids, role_label, 
 from .configstore import reader as configstore_reader
 from .configstore.schema import ApprovalMatrixSection, ChecklistTaxonomySection, DocumentTypesSection, PolicySection
 from .contracts import (
+    BankConduct,
     TxnCategoryRequest,
     TxnPage,
     TxnRow,
@@ -563,6 +565,19 @@ def case_transactions_summary(
     try:
         bank_txns.ensure_current(conn, data_root(), case)
         return bank_txns.summary(conn, data_root(), case_id)
+    except configstore_reader.NoPublishedConfig as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+
+
+@app.get("/api/cases/{case_id}/transactions/conduct", response_model=BankConduct)
+def case_bank_conduct(
+    case_id: str, user: dict = Depends(require("output.read")), conn: sqlite3.Connection = Depends(get_conn)
+):
+    """Cash, returns, concentration, round trips, balances, salary and statutory payments, promoter flows,
+    unusual entries and the integrity of the statements, with thresholds from configuration."""
+    case = _assessed_case(conn, case_id, user)
+    try:
+        return bank_conduct.compute(conn, data_root(), case)
     except configstore_reader.NoPublishedConfig as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
 

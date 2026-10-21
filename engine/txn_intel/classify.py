@@ -67,7 +67,7 @@ def _counterparty(c: _Compiled, rule: TxnRule, rx: re.Pattern | None, text: str)
 def _key(c: _Compiled, name: str | None) -> str | None:
     if not name:
         return None
-    words = _tokens(name, c.noise)
+    words = [w for w in _tokens(name, c.noise) if not any(ch.isdigit() for ch in w)]   # a reference is not part of who it is
     return " ".join(words) or None
 
 
@@ -146,10 +146,11 @@ def _recurring(c: _Compiled, txns: list[Txn], labels: dict[str, Label], ctx: Con
         if len({_month(t) for t in steady}) < ctx.emi_min_months:
             continue
         lender_like = bool(set(key.split()) & c.lender_cues)
+        mandate = set(c.cfg.recurring_mandate_channels)
         for t in steady:
             lab = labels[t.id]
             lab.flags.append("recurring")
-            if lender_like and lab.category in ("other_debit", "supplier_payment") and (lab.status != "matched" or lab.confidence < 0.8):
+            if (lender_like or lab.channel in mandate) and lab.category in ("other_debit", "supplier_payment") and (lab.status != "matched" or lab.confidence < 0.8):
                 lab.category, lab.status, lab.rule_id, lab.confidence, lab.needs_model = "loan_emi", "matched", "recurring_lender_debit", 0.8, False
                 lab.candidates = []
 

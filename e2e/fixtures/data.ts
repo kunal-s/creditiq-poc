@@ -2047,6 +2047,8 @@ export const FACTS: CaseFacts = {
       excluded: 2_876_500,
       net: 400_000,
       months: ["Apr 2025"],
+      unsettled: 0,
+      unsettled_count: 0,
       exclusions: [
         {
           rule: "loan_disbursal",

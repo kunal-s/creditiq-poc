@@ -828,6 +828,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/cases/{case_id}/transactions/conduct": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Case Bank Conduct
+     * @description Cash, returns, concentration, round trips, balances, salary and statutory payments, promoter flows,
+     *     unusual entries and the integrity of the statements, with thresholds from configuration.
+     */
+    get: operations["case_bank_conduct_api_cases__case_id__transactions_conduct_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/cases/{case_id}/transactions/summary": {
     parameters: {
       query?: never;
@@ -1067,6 +1088,13 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** AccountBalances */
+    AccountBalances: {
+      /** Account */
+      account: string;
+      /** Months */
+      months: components["schemas"]["BalanceMonth"][];
+    };
     /**
      * AccountCredits
      * @description One account's credits, before and after cleansing (F-18.2).
@@ -1086,6 +1114,16 @@ export interface components {
       months: string[];
       /** Net */
       net: number;
+      /**
+       * Unsettled
+       * @default 0
+       */
+      unsettled: number;
+      /**
+       * Unsettled Count
+       * @default 0
+       */
+      unsettled_count: number;
     };
     /**
      * AccountFact
@@ -1421,6 +1459,51 @@ export interface components {
       date: string;
       /** Evidence */
       evidence?: components["schemas"]["Evidence"][];
+    };
+    /** BalanceMonth */
+    BalanceMonth: {
+      /** Average */
+      average: number;
+      /** Minimum */
+      minimum: number;
+      /** Month */
+      month: string;
+      /** Month End */
+      month_end?: number | null;
+      /**
+       * Spike
+       * @default false
+       */
+      spike: boolean;
+    };
+    /** BankConduct */
+    BankConduct: {
+      /** Accounts */
+      accounts: string[];
+      /** Balances */
+      balances: components["schemas"]["AccountBalances"][];
+      /** Case Id */
+      case_id: string;
+      /** Customer Top1 Pct */
+      customer_top1_pct?: number | null;
+      /** Customer Top5 Pct */
+      customer_top5_pct?: number | null;
+      /** Customers */
+      customers: components["schemas"]["PartyShare"][];
+      /** Flags */
+      flags: components["schemas"]["ConductFlag"][];
+      /** Months */
+      months: components["schemas"]["MonthConduct"][];
+      /** Promoter In */
+      promoter_in: number;
+      /** Promoter Out */
+      promoter_out: number;
+      /** Round Trips */
+      round_trips: components["schemas"]["RoundTrip"][];
+      /** Suppliers */
+      suppliers: components["schemas"]["PartyShare"][];
+      /** Unsettled Count */
+      unsettled_count: number;
     };
     /**
      * Cam
@@ -2215,6 +2298,47 @@ export interface components {
        * @enum {string}
        */
       status: "agree" | "differ" | "new" | "missed";
+    };
+    /**
+     * ConductFlag
+     * @description Something in the accounts for a person to look at. A question, never a decision.
+     */
+    ConductFlag: {
+      /** Account */
+      account?: string | null;
+      /** Amount */
+      amount?: number | null;
+      /** Evidence */
+      evidence?: components["schemas"]["Evidence"][];
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind:
+        | "cash"
+        | "returns"
+        | "concentration"
+        | "round_trip"
+        | "balance_spike"
+        | "statutory_late"
+        | "statutory_gap"
+        | "promoter"
+        | "unusual"
+        | "weekend"
+        | "period_gap"
+        | "balance_break"
+        | "duplicate"
+        | "duplicate_reference"
+        | "unsettled";
+      /** Message */
+      message: string;
+      /** Month */
+      month?: string | null;
+      /**
+       * Severity
+       * @enum {string}
+       */
+      severity: "info" | "watch" | "concern";
     };
     /** ConfigVersion */
     ConfigVersion: {
@@ -3049,6 +3173,39 @@ export interface components {
       /** Facilities */
       facilities: components["schemas"]["Option"][];
     };
+    /** MonthConduct */
+    MonthConduct: {
+      /** Business Credits */
+      business_credits: number;
+      /** Cash Deposits */
+      cash_deposits: number;
+      /** Cash Share Pct */
+      cash_share_pct: number;
+      /** Credits */
+      credits: number;
+      /** Customer Receipts */
+      customer_receipts: number;
+      /** Failed Debits Reversed */
+      failed_debits_reversed: number;
+      /** Month */
+      month: string;
+      /** Promoter In */
+      promoter_in: number;
+      /** Promoter Out */
+      promoter_out: number;
+      /** Returns Amount */
+      returns_amount: number;
+      /** Returns Count */
+      returns_count: number;
+      /** Salary */
+      salary: number;
+      /** Salary Day */
+      salary_day?: number | null;
+      /** Statutory */
+      statutory?: {
+        [key: string]: number;
+      };
+    };
     /**
      * MonthFigure
      * @description GST outward supplies and cleansed bank credits for one month (TO-05).
@@ -3296,6 +3453,17 @@ export interface components {
       pan_key?: string | null;
       /** Role */
       role?: string | null;
+    };
+    /** PartyShare */
+    PartyShare: {
+      /** Amount */
+      amount: number;
+      /** Count */
+      count: number;
+      /** Party */
+      party: string;
+      /** Share Pct */
+      share_pct: number;
     };
     /**
      * PdNote
@@ -3904,6 +4072,21 @@ export interface components {
       status: "open" | "decided";
       /** Summary */
       summary: string;
+    };
+    /** RoundTrip */
+    RoundTrip: {
+      /** Evidence */
+      evidence?: components["schemas"]["Evidence"][];
+      /** In Amount */
+      in_amount: number;
+      /** In Date */
+      in_date: string;
+      /** Out Amount */
+      out_amount: number;
+      /** Out Date */
+      out_date: string;
+      /** Party */
+      party: string;
     };
     /** RuleChange */
     RuleChange: {
@@ -6226,6 +6409,39 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["TxnPage"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  case_bank_conduct_api_cases__case_id__transactions_conduct_get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BankConduct"];
         };
       };
       /** @description Validation Error */

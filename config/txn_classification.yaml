@@ -60,11 +60,16 @@ counterparty:
     - '\b(?:UTR|REF|ACH|NEFT|RTGS|IMPS|GST|INB)\s*[/:-]\s*\S+'
     - '\b\d{4,}\b'
     - '\bEMI\b'
+    - '\b(?:UMRN|MANDATE|MNDT)\w*'
     - '\b(?:SUPPLIER|VENDOR|CREDITOR|DEBTOR|CUSTOMER|SALES?|PURCHASE|INVOICE|INV)\b'
   # Words that do not tell one party from another, dropped when two names are compared.
   noise_words: [pvt, ltd, limited, private, llp, co, company, the, and, of]
   # A party whose name carries one of these is read as a lender (for a recurring debit with no cue).
-  lender_cues: [finance, financial, capital, fincorp, housing, leasing, credit, nbfc, bank, microfin]
+  lender_cues: [finance, financial, finserv, finserve, fin, fincorp, capital, housing, leasing, loan, loans, credit, nbfc, hfc, bank, microfin]
+
+# A debit through one of these channels that recurs at a steady amount (alignment's EMI tolerance and minimum
+# months) and that nothing more specific explains is read as a loan instalment: a mandate is how instalments are taken.
+recurring_mandate_channels: [nach]
 
 # A transaction whose amount is a whole multiple of this (and at least this much) is flagged.
 round_amount_multiple: 100000

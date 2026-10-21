@@ -288,9 +288,8 @@ class CreditExclusion(BaseModel):
 
     id: str
     label: str
-    narration_any: list[str] = Field(default_factory=list)
-    own_account: bool = False
-    """Also match a narration naming another account in the account set."""
+    categories: list[str]
+    """The transaction categories (config/txn_classification.yaml) this rule removes from credits."""
 
 
 class AlignmentSection(BaseModel):
@@ -298,7 +297,6 @@ class AlignmentSection(BaseModel):
 
     financial_year_start_month: int = Field(ge=1, le=12)
     bank_credit_exclusions: list[CreditExclusion]
-    obligation_narration_any: list[str]
     name_noise_words: list[str]
     own_bank_names: list[str] = Field(default_factory=list)
     """The names a board resolution in favour of this bank may use (BR-03)."""
@@ -365,6 +363,7 @@ class TxnClassificationSection(BaseModel):
     categories: list[TxnCategory]
     channels: list[TxnChannel]
     counterparty: TxnCounterparty
+    recurring_mandate_channels: list[str] = Field(default_factory=list)
     round_amount_multiple: int = Field(gt=0)
     pairing: TxnPairing
     model_threshold: float = Field(ge=0, le=1)
@@ -414,6 +413,53 @@ class TxnClassificationSection(BaseModel):
             if r.counterparty not in ("none", "auto"):
                 compiles(f"{where}.counterparty", r.counterparty, groups=1)
         return out
+
+
+class BankConductSection(BaseModel):
+    """config/bank_conduct.yaml: thresholds for reading the conduct of the bank accounts."""
+
+    class Cash(BaseModel):
+        share_flag_pct: float = Field(ge=0)
+        large_deposit: float = Field(ge=0)
+
+    class Returns(BaseModel):
+        flag_per_month: int = Field(ge=1)
+
+    class Concentration(BaseModel):
+        top1_flag_pct: float = Field(ge=0)
+        top5_flag_pct: float = Field(ge=0)
+        min_parties: int = Field(ge=1)
+
+    class RoundTrip(BaseModel):
+        window_days: int = Field(ge=0)
+        amount_match_pct: float = Field(ge=0)
+        min_amount: float = Field(ge=0)
+
+    class Balance(BaseModel):
+        spike_ratio: float = Field(gt=1)
+        drop_pct: float = Field(ge=0, le=100)
+        drop_days: int = Field(ge=1)
+
+    class Promoter(BaseModel):
+        drawings_flag_pct: float = Field(ge=0)
+
+    class Unusual(BaseModel):
+        multiple_of_median: float = Field(gt=1)
+        min_amount: float = Field(ge=0)
+        weekend_min_amount: float = Field(ge=0)
+
+    class Integrity(BaseModel):
+        balance_tolerance: float = Field(ge=0)
+
+    cash: Cash
+    returns: Returns
+    concentration: Concentration
+    round_trip: RoundTrip
+    balance: Balance
+    statutory_due_day: dict[str, int]
+    promoter: Promoter
+    unusual: Unusual
+    integrity: Integrity
 
 
 CrossCheckVariable = Literal[
@@ -749,6 +795,7 @@ SECTION_MODELS: dict[str, type[BaseModel]] = {
     "tolerances": TolerancesSection,
     "alignment": AlignmentSection,
     "txn_classification": TxnClassificationSection,
+    "bank_conduct": BankConductSection,
     "crosschecks": CrossChecksSection,
     "cam": CamSectionConfig,
     "statements": StatementsSection,
@@ -763,6 +810,16 @@ def cross_check(sections: dict[str, BaseModel], ingestion: dict[str, dict] | Non
     txn = sections.get("txn_classification")
     if isinstance(txn, TxnClassificationSection):
         problems += txn.problems()
+        conduct = sections.get("bank_conduct")
+        if isinstance(conduct, BankConductSection):
+            debit_ids = {c.id for c in txn.categories if c.direction == "debit"}
+            problems += [f"bank_conduct.statutory_due_day: {c!r} is not a debit category of txn_classification"
+                         for c in conduct.statutory_due_day if c not in debit_ids]
+        align = sections.get("alignment")
+        credit_ids = {c.id for c in txn.categories if c.direction == "credit"}
+        for ex in getattr(align, "bank_credit_exclusions", []):
+            problems += [f"alignment.bank_credit_exclusions.{ex.id}: {c!r} is not a credit category of txn_classification"
+                         for c in ex.categories if c not in credit_ids]
     checklist = sections["checklist_taxonomy"]
     types = sections["document_types"]
     assert isinstance(checklist, ChecklistTaxonomySection) and isinstance(types, DocumentTypesSection)

@@ -39,7 +39,7 @@ test("a relationship manager's own case offers three tabs", async () => {
   await expect(caseTabs(page)).toHaveCount(3);
   const nav = page.getByTestId("case-nav");
   await expect(nav.getByRole("link", { name: "Extracted data" })).toHaveCount(0);
-  await expect(nav.getByRole("link", { name: "Cross-checks" })).toHaveCount(0);
+  await expect(nav.getByRole("link", { name: "Cross-verification" })).toHaveCount(0);
   await expect(nav.getByRole("link", { name: "Policy" })).toHaveCount(0);
   await expect(nav.getByRole("link", { name: "Outputs" })).toHaveCount(0);
   await expect(nav.getByRole("link", { name: "Comparison" })).toHaveCount(0);

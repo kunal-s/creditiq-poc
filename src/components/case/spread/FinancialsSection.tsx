@@ -23,7 +23,7 @@ import { TrendNotes } from "./SpreadRatios";
 import { StatementTable, TurnoverByYear, type Picked } from "./SpreadTables";
 import { WorkingCapital } from "./WorkingCapital";
 
-// The Financials section of the Financials and policy tab (F-22, F-18.1): the audited years line
+// The Financials section of the Financials and Policy tab (F-22, F-18.1): the audited years line
 // by line, turnover from every source year by year coloured by what the cross-checks concluded,
 // and the working-capital assessment, with a rail that says how much of the spread is traced and
 // where the selected figure was read from. The ratios are tested in the norms below it.

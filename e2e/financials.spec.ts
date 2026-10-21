@@ -1,4 +1,4 @@
-// The Financials section of the Financials and policy tab (FRD F-22, F-18.1, F-20): the audited
+// The Financials section of the Financials and Policy tab (FRD F-22, F-18.1, F-20): the audited
 // years line by line, turnover from every source year by year coloured by what the cross-checks
 // concluded, and the working-capital assessment; below it the norms, each ratio in the band the
 // engine placed it. The screen arranges; it decides nothing.
@@ -248,15 +248,15 @@ const cell = (page: Page, source: string, fy: string) =>
     `[data-testid="spread-turnover-row"][data-source="${source}"] [data-testid="spread-turnover-cell"][data-fy="${fy}"]`,
   );
 
-test("the Financials section opens the Financials and policy tab, ahead of the norms", async ({
+test("the Financials section opens the Financials and Policy tab, ahead of the norms", async ({
   page,
 }) => {
   await openFinancials(page);
   await expect(page.getByTestId("policy-header")).toContainText(
-    `Appraisal ${KESTREL} · Financials and policy`,
+    `Appraisal ${KESTREL} · Financials and Policy`,
   );
   // One tab now: no separate Spread tab.
-  await expect(page.getByRole("link", { name: "Financials and policy" }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Financials and Policy" }).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Spread", exact: true })).toHaveCount(0);
   // The overview, then the figures, then the norms that test them.
   const order = await page

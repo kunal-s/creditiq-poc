@@ -54,8 +54,8 @@ caseTab:
   documents: Files
   extraction: Extracted data
   completeness: Completeness
-  crossVerification: Cross-checks
-  policy: Financials and policy
+  crossVerification: Cross-verification
+  policy: Financials and Policy
   outputs: Outputs
   comparison: Comparison
 
@@ -82,7 +82,7 @@ spreadPage:
   unit:
     crore: INR crore
   banner:
-    open: Take this to Cross-checks
+    open: Take this to Cross-verification
     more: "(and {n} more)"
   tabs:
     turnover: Turnover by year
@@ -508,7 +508,7 @@ facts:
 # and one for the approving authority, then a section per family with its norms, then the
 # authority with the matrix's steps.
 policy:
-  kicker: "Appraisal {id} · Financials and policy"
+  kicker: "Appraisal {id} · Financials and Policy"
   # A ratio's band against its configured acceptable and marginal values (the engine's).
   band:
     within: Within policy
@@ -569,7 +569,7 @@ policy:
     normOne: 1 norm
     normMany: "{n} norms"
   overview:
-    label: Policy checks at a glance
+    label: Financials and Policy at a glance
   # Where a family stands, as the engine sends it.
   status:
     deviation: A norm deviates
@@ -703,7 +703,7 @@ progress:
     extraction: Extraction
     completeness: Validation and completeness
     cross_verification: Cross-verification
-    policy: Policy checks
+    policy: Financials and Policy
     outputs: Outputs
   status:
     not_started: Not started
@@ -746,10 +746,10 @@ page:
         title: Completeness
         body: The documents received are compared with those the facility needs. What is missing, stale or incomplete is listed with the request to send to the customer.
       crossVerification:
-        title: Cross-checks
+        title: Cross-verification
         body: The same fact is compared across documents, for example a name or a turnover figure. Differences are listed with both values for you to accept or reject.
       policy:
-        title: Financials and policy
+        title: Financials and Policy
         body: The financial statements year by year and turnover from every source, then the application measured against each credit policy norm, with the required and the actual value side by side.
       outputs:
         title: Outputs
@@ -817,7 +817,7 @@ page:
   crossVerification:
     title: Cross-verification and discrepancy
   policy:
-    title: Financials and policy
+    title: Financials and Policy
   draft:
     title: CAM draft and review
     purpose: The draft Credit Approval Memo in eight sections, drafted from the evidence on file, and the questions for the personal discussion. Every statement carries the pages it rests on; the engine's words are marked, and anything you change is recorded as yours.

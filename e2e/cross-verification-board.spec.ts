@@ -143,7 +143,7 @@ test("the header sums up the board, the decisions made and the run, and locks th
   await page.goBack();
   await page.getByTestId("xv-back-spread").click();
   await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}/policy#financials$`));
-  // The board's Spread button opens the Financials section of the Financials and policy tab.
+  // The board's Spread button opens the Financials section of the Financials and Policy tab.
   await expect(page.getByTestId("financials")).toBeInViewport();
 });
 

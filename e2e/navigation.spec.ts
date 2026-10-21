@@ -28,7 +28,7 @@ test("the side menu lists the open case's flows and statuses", async ({ page }) 
   await expect(nav).toContainText("Documents and data");
   await expect(nav).toContainText("Verification and policy");
   await expect(nav.getByRole("link", { name: "Policy" })).toBeVisible();
-  await nav.getByRole("link", { name: "Cross-checks" }).click();
+  await nav.getByRole("link", { name: "Cross-verification" }).click();
   await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}/cross-verification$`));
 });
 

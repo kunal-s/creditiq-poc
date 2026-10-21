@@ -127,12 +127,12 @@ def test_maker_cannot_check_their_own_entry(published_data_root):
         conn.close()
 
 
-def test_store_migrates_to_version_10(published_data_root):
+def test_store_migrates_to_version_11(published_data_root):
     from engine import db
 
     conn = db.connect(published_data_root)
     try:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == len(db.MIGRATIONS) == 10
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == len(db.MIGRATIONS) == 11
         tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
         finding_columns = {r["name"] for r in conn.execute("PRAGMA table_info(findings)")}
         case_columns = {r["name"] for r in conn.execute("PRAGMA table_info(cases)")}
@@ -147,3 +147,5 @@ def test_store_migrates_to_version_10(published_data_root):
     assert "finding_escalations" in tables
     # 10: the draft CAM's review: words, overrides, data requests, recorded copilot answers.
     assert {"cam_reviews", "cam_overrides", "cam_requests", "cam_model_calls"} <= tables
+    # 11: CAM templates analysts make, and the template each case follows.
+    assert {"cam_templates", "case_cam_templates"} <= tables

@@ -2,6 +2,9 @@ import type {
   AdjudicationRequest,
   CamDataRequest,
   CamOverrideRequest,
+  CamTemplate,
+  CamTemplateCreate,
+  CamTemplates,
   CamRegenerateRequest,
   CamRegenerateResult,
   CamWordsRequest,
@@ -234,6 +237,16 @@ export const api = {
     request<Cam>(`/api/cases/${q(id)}/cam/sections/${q(sectionId)}/overrides`, {
       method: "POST",
       body: JSON.stringify(body),
+    }),
+  /** Every CAM template, the default first, with the parts a new one may draw on. */
+  camTemplates: () => request<CamTemplates>("/api/cam/templates"),
+  createCamTemplate: (body: CamTemplateCreate) =>
+    request<CamTemplate>("/api/cam/templates", { method: "POST", body: JSON.stringify(body) }),
+  /** The template a case's memo follows. */
+  chooseCamTemplate: (id: string, templateId: string) =>
+    request<Cam>(`/api/cases/${q(id)}/cam/template`, {
+      method: "PUT",
+      body: JSON.stringify({ template_id: templateId }),
     }),
   camRequest: (id: string, sectionId: string, body: CamDataRequest) =>
     request<Cam>(`/api/cases/${q(id)}/cam/sections/${q(sectionId)}/requests`, {

@@ -2784,6 +2784,7 @@ const memoSection = (
   blocks,
   empty: null,
   parts: [],
+  blank: false,
   review: { state: "machine", paragraphs: [], overrides: [], requests: [] },
 });
 
@@ -2828,6 +2829,21 @@ const CAM_LAYOUT: [string, string, string, string[]][] = [
     ["verification", "documentation"],
   ],
 ];
+/** The kind each part is drafted from, by the id it keeps. */
+const PART_KIND: Record<string, string> = {
+  snapshot: "snapshot",
+  borrower: "borrower_profile",
+  promoters: "promoters",
+  proposal: "proposal",
+  financials: "financial_performance",
+  working_capital: "working_capital",
+  turnover: "turnover",
+  banking: "banking",
+  obligations: "existing_facilities",
+  verification: "cross_verification",
+  policy: "policy",
+  documentation: "documentation",
+};
 function eightSections(parts: CamSection[]): CamSection[] {
   return CAM_LAYOUT.map(([id, title, purpose, ids], i) => {
     const own = ids.map((p) => parts.find((s) => s.id === p)!);
@@ -2840,7 +2856,12 @@ function eightSections(parts: CamSection[]): CamSection[] {
     return {
       ...memoSection(i + 1, id, title, blocks),
       purpose,
-      parts: own.map((p) => ({ id: p.id, kind: p.id, title: p.title, blocks: p.blocks ?? [] })),
+      parts: own.map((p) => ({
+        id: p.id,
+        kind: PART_KIND[p.id]!,
+        title: p.title,
+        blocks: p.blocks ?? [],
+      })),
       empty: blocks.length ? null : "Nothing on file yet.",
     };
   });
@@ -2916,6 +2937,8 @@ export const CAM: Cam = {
   interim_template: true,
   template_note: "Draft — layout assumed until RBL's CAM template is received.",
   copilot: false,
+  template_id: "default",
+  template_name: "Default template",
   sections: eightSections([
     memoSection(1, "snapshot", "Proposal at a glance", [
       facts(

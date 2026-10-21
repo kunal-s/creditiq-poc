@@ -17,6 +17,7 @@ import { api } from "@/api/client";
 import { useCam, useCamChange, useCamRegenerate } from "@/domain/findings";
 import { camSectionAnchor, configLabel, formatDay, sourcesById } from "@/domain/outputs";
 import { cn } from "@/lib/utils";
+import { TemplatePicker } from "./CamTemplates";
 
 // The CAM draft and review (F-23): the memo's eight sections, one at a time, chosen from the list
 // on the left, with the draft's state under it. Each section says whether its words are the
@@ -273,6 +274,9 @@ function ReviewBody({ caseId, m }: { caseId: string; m: Cam }) {
               <p className="mt-0.5 text-[12px] text-muted-foreground">
                 {t("outputs.review.sectionCount", { n: total })}
               </p>
+              <div className="mt-2.5">
+                <TemplatePicker caseId={caseId} m={m} />
+              </div>
             </header>
             <ol className="space-y-0.5 p-2">
               {shown.map((s) => (

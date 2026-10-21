@@ -26,7 +26,7 @@ from functools import cached_property
 from pathlib import Path
 
 from . import approval, completeness, facts as facts_module, output_sources, policy as policy_module, reads
-from . import cam_copilot, cam_review
+from . import cam_copilot, cam_review, cam_templates
 from . import spread as spread_module, statements as statements_module, xv
 from .config import find_user_by_id, load_app_config
 from .configstore import reader
@@ -506,10 +506,13 @@ class Draft:
         self.facility_names = {f["id"]: f["label"] for f in app["facilities"]}
         self.constitutions = {c["id"]: c["label"] for c in app.get("constitutions", [])}
         self.config = reader.load_cam(root)
+        # The layout the case's memo follows: the template chosen for it, else the configured one.
+        self.template = cam_templates.for_case(conn, self.config, case.id)
+        self.sections = self.template["sections"]
         self.numbers: dict[str, int] = {}
         self.section_ids: dict[str, str] = {}
         # A part keeps the id it is linked by; the number is its section's.
-        for number, s in enumerate(self.config.sections, start=1):
+        for number, s in enumerate(self.sections, start=1):
             for part in s.drafted_from():
                 self.numbers.setdefault(part.kind, number)
                 self.section_ids.setdefault(part.kind, part.id)
@@ -2084,14 +2087,16 @@ def build(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> Cam:
     d = Draft(conn, root, case)
     config = d.config
     sections = []
-    for number, s in enumerate(config.sections, start=1):
+    for number, s in enumerate(d.sections, start=1):
         defs = s.drafted_from()
         parts = [CamPart(id=p.id, kind=p.kind, title=p.title, blocks=getattr(d, p.kind)()) for p in defs]
         # One part reads as the section itself; several each go under their subheading.
         blocks = (parts[0].blocks if len(parts) == 1 else
                   [b for p in parts if p.blocks for b in [_subheading(p.title), *p.blocks]])
+        # A section with no parts is left for the analyst to write.
+        empty = None if blocks else ("For the analyst to write." if not defs else "Nothing on file yet.")
         sections.append(CamSection(id=s.id, number=number, title=s.title, purpose=s.purpose, blocks=blocks,
-                                   parts=parts, empty=None if blocks else "Nothing on file yet."))
+                                   parts=parts, empty=empty, blank=not defs))
     cam = Cam(
         case_id=case.id, title=config.title, borrower=case.borrower, as_of=case.as_of,
         config_version=reader.published_version(root)["version"], config_label=config_label(root),
@@ -2105,6 +2110,7 @@ def build(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> Cam:
         labels=dict(getattr(config, "labels", None) or {}),
     )
     # A person's words, the copilot's redrafts, the figures overridden and the data asked for.
+    cam.template_id, cam.template_name = d.template["id"], d.template["name"]
     cam_review.apply(conn, cam)
     cam.copilot = cam_copilot.available(config.copilot)
     cam.sources = output_sources.sources(conn, root, case.id, output_sources.cam_citations(cam))

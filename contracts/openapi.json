@@ -1068,6 +1068,16 @@
             "title": "Summary Title",
             "type": "string"
           },
+          "template_id": {
+            "default": "default",
+            "title": "Template Id",
+            "type": "string"
+          },
+          "template_name": {
+            "default": "",
+            "title": "Template Name",
+            "type": "string"
+          },
           "template_note": {
             "anyOf": [
               {
@@ -1305,6 +1315,29 @@
         "title": "CamPart",
         "type": "object"
       },
+      "CamPartOption": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "title"
+        ],
+        "title": "CamPartOption",
+        "type": "object"
+      },
       "CamRegenerateRequest": {
         "properties": {
           "instruction": {
@@ -1467,6 +1500,11 @@
       },
       "CamSection": {
         "properties": {
+          "blank": {
+            "default": false,
+            "title": "Blank",
+            "type": "boolean"
+          },
           "blocks": {
             "items": {
               "$ref": "#/components/schemas/CamBlock"
@@ -1724,6 +1762,189 @@
           "rows"
         ],
         "title": "CamTable",
+        "type": "object"
+      },
+      "CamTemplate": {
+        "description": "A layout a draft CAM can follow: the configured default, or one an analyst made.",
+        "properties": {
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "created_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Name"
+          },
+          "default": {
+            "default": false,
+            "title": "Default",
+            "type": "boolean"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/CamTemplateSection"
+            },
+            "title": "Sections",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "sections"
+        ],
+        "title": "CamTemplate",
+        "type": "object"
+      },
+      "CamTemplateChoice": {
+        "properties": {
+          "template_id": {
+            "title": "Template Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "template_id"
+        ],
+        "title": "CamTemplateChoice",
+        "type": "object"
+      },
+      "CamTemplateCreate": {
+        "properties": {
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/CamTemplateSection"
+            },
+            "title": "Sections",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "sections"
+        ],
+        "title": "CamTemplateCreate",
+        "type": "object"
+      },
+      "CamTemplateSection": {
+        "properties": {
+          "id": {
+            "default": "",
+            "title": "Id",
+            "type": "string"
+          },
+          "parts": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Parts",
+            "type": "array"
+          },
+          "purpose": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purpose"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "title": "CamTemplateSection",
+        "type": "object"
+      },
+      "CamTemplates": {
+        "properties": {
+          "closing": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Closing",
+            "type": "array"
+          },
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/CamPartOption"
+            },
+            "title": "Parts",
+            "type": "array"
+          },
+          "templates": {
+            "items": {
+              "$ref": "#/components/schemas/CamTemplate"
+            },
+            "title": "Templates",
+            "type": "array"
+          }
+        },
+        "required": [
+          "templates",
+          "parts",
+          "closing"
+        ],
+        "title": "CamTemplates",
         "type": "object"
       },
       "CamText": {
@@ -9514,6 +9735,108 @@
         "summary": "Session"
       }
     },
+    "/api/cam/templates": {
+      "get": {
+        "description": "Every template, the default first, with the parts a new one may draw on.",
+        "operationId": "cam_template_list_api_cam_templates_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CamTemplates"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cam Template List"
+      },
+      "post": {
+        "description": "A new template, kept bank-wide with who made it and when; never edited in place.",
+        "operationId": "cam_template_create_api_cam_templates_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CamTemplateCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CamTemplate"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cam Template Create"
+      }
+    },
     "/api/cases": {
       "get": {
         "operationId": "list_cases_api_cases_get",
@@ -10392,6 +10715,72 @@
           }
         },
         "summary": "Cam Words"
+      }
+    },
+    "/api/cases/{case_id}/cam/template": {
+      "put": {
+        "description": "The template this case's memo follows; edits stay with their sections across a switch.",
+        "operationId": "cam_template_choose_api_cases__case_id__cam_template_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CamTemplateChoice"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cam"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cam Template Choose"
       }
     },
     "/api/cases/{case_id}/checklist": {

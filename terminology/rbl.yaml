@@ -181,6 +181,30 @@ outputs:
     escalated: Escalated
     not_valid: Not valid
   # The CAM draft and review: a section at a time, in the engine's words, a person's or the copilot's.
+  # CAM templates: the layout a memo follows; the default is the configured one.
+  templates:
+    label: Template
+    option: "{name} · {n} sections"
+    new: Create new template
+    builderTitle: New CAM template
+    builderHint: Name the sections in order. Each draws on parts of the file, or is left blank for the analyst to write. A template only arranges what is drafted; it changes no figure or check.
+    name: Template name
+    namePlaceholder: e.g. Renewal memo
+    start: Start from
+    description: Description (optional)
+    descriptionPlaceholder: e.g. For renewals within the existing limit
+    sectionTitle: Section title
+    sectionPurpose: What the section is for (optional)
+    partElsewhere: Already drafted in another section
+    blank: "No parts chosen: the section is left for the analyst to write."
+    up: Move up
+    down: Move down
+    remove: Remove section
+    add: Add section
+    closing: "Then, as every memo closes: {sections} (sections {first} onwards)."
+    use: Use it for this appraisal
+    cancel: Cancel
+    save: Save template
   review:
     mode: How the memo is shown
     modes:

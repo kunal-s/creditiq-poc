@@ -139,6 +139,30 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/cam/templates": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Cam Template List
+     * @description Every template, the default first, with the parts a new one may draw on.
+     */
+    get: operations["cam_template_list_api_cam_templates_get"];
+    put?: never;
+    /**
+     * Cam Template Create
+     * @description A new template, kept bank-wide with who made it and when; never edited in place.
+     */
+    post: operations["cam_template_create_api_cam_templates_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/cases": {
     parameters: {
       query?: never;
@@ -366,6 +390,26 @@ export interface paths {
      * @description Back to the engine's draft of the section.
      */
     delete: operations["cam_restore_api_cases__case_id__cam_sections__section_id__words_delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/cases/{case_id}/cam/template": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Cam Template Choose
+     * @description The template this case's memo follows; edits stay with their sections across a switch.
+     */
+    put: operations["cam_template_choose_api_cases__case_id__cam_template_put"];
+    post?: never;
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
@@ -1376,6 +1420,16 @@ export interface components {
       summary_review?: components["schemas"]["CamReview"];
       /** Summary Title */
       summary_title: string;
+      /**
+       * Template Id
+       * @default default
+       */
+      template_id: string;
+      /**
+       * Template Name
+       * @default
+       */
+      template_name: string;
       /** Template Note */
       template_note?: string | null;
       /** Title */
@@ -1459,6 +1513,15 @@ export interface components {
       /** Title */
       title: string;
     };
+    /** CamPartOption */
+    CamPartOption: {
+      /** Id */
+      id: string;
+      /** Kind */
+      kind: string;
+      /** Title */
+      title: string;
+    };
     /** CamRegenerateRequest */
     CamRegenerateRequest: {
       /**
@@ -1524,6 +1587,11 @@ export interface components {
     };
     /** CamSection */
     CamSection: {
+      /**
+       * Blank
+       * @default false
+       */
+      blank: boolean;
       /** Blocks */
       blocks?: components["schemas"]["CamBlock"][];
       /** Drafted At */
@@ -1593,6 +1661,71 @@ export interface components {
       rows: components["schemas"]["CamText"][][];
       /** Title */
       title?: string | null;
+    };
+    /**
+     * CamTemplate
+     * @description A layout a draft CAM can follow: the configured default, or one an analyst made.
+     */
+    CamTemplate: {
+      /** Created At */
+      created_at?: string | null;
+      /** Created By */
+      created_by?: string | null;
+      /** Created By Name */
+      created_by_name?: string | null;
+      /**
+       * Default
+       * @default false
+       */
+      default: boolean;
+      /** Description */
+      description?: string | null;
+      /** Id */
+      id: string;
+      /** Name */
+      name: string;
+      /** Sections */
+      sections: components["schemas"]["CamTemplateSection"][];
+    };
+    /** CamTemplateChoice */
+    CamTemplateChoice: {
+      /** Template Id */
+      template_id: string;
+    };
+    /** CamTemplateCreate */
+    CamTemplateCreate: {
+      /**
+       * Description
+       * @default
+       */
+      description: string;
+      /** Name */
+      name: string;
+      /** Sections */
+      sections: components["schemas"]["CamTemplateSection"][];
+    };
+    /** CamTemplateSection */
+    CamTemplateSection: {
+      /**
+       * Id
+       * @default
+       */
+      id: string;
+      /** Parts */
+      parts?: string[];
+      /** Purpose */
+      purpose?: string | null;
+      /** Title */
+      title: string;
+    };
+    /** CamTemplates */
+    CamTemplates: {
+      /** Closing */
+      closing: string[];
+      /** Parts */
+      parts: components["schemas"]["CamPartOption"][];
+      /** Templates */
+      templates: components["schemas"]["CamTemplate"][];
     };
     /**
      * CamText
@@ -4541,6 +4674,72 @@ export interface operations {
       };
     };
   };
+  cam_template_list_api_cam_templates_get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CamTemplates"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  cam_template_create_api_cam_templates_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CamTemplateCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CamTemplate"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   list_cases_api_cases_get: {
     parameters: {
       query?: never;
@@ -5010,6 +5209,43 @@ export interface operations {
       cookie?: never;
     };
     requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Cam"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  cam_template_choose_api_cases__case_id__cam_template_put: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CamTemplateChoice"];
+      };
+    };
     responses: {
       /** @description Successful Response */
       200: {

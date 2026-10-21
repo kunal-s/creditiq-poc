@@ -8,6 +8,9 @@ import type {
   ApprovingAuthority,
   Cam,
   CamReview,
+  CamTemplate,
+  CamTemplateCreate,
+  CamTemplates,
   CamSection,
   CaseComparison,
   CaseCreate,
@@ -162,6 +165,41 @@ export class MockApi {
   authority = new Map<string, ApprovingAuthority>([[KESTREL, APPROVAL]]);
   /** RBL's record compared, per case; none means no record imported yet. */
   comparisons = new Map<string, CaseComparison>();
+  /** The CAM templates made beside the default (FRD decision C.4-12). */
+  camTemplates: CamTemplate[] = [];
+  camTemplateList(): CamTemplates {
+    const parts = [
+      ["snapshot", "Proposal at a glance"],
+      ["borrower_profile", "Borrower profile"],
+      ["promoters", "Promoters and management"],
+      ["proposal", "Proposal and facilities"],
+      ["financial_performance", "Financial performance"],
+      ["working_capital", "Assessment of working-capital requirement"],
+      ["turnover", "Turnover across sources (GST, income tax and banking)"],
+      ["banking", "Banking and account conduct"],
+      ["existing_facilities", "Existing facilities and obligations"],
+      ["cross_verification", "Cross-verification of sources"],
+      ["policy", "Compliance with policy norms"],
+      ["documentation", "Documentation status"],
+    ].map(([kind, title]) => ({ kind: kind!, id: kind!, title: title! }));
+    const def: CamTemplate = {
+      id: "default",
+      name: "Default template",
+      description: null,
+      default: true,
+      sections: CAM.sections.map((sec) => ({
+        id: sec.id,
+        title: sec.title,
+        purpose: sec.purpose ?? null,
+        parts: (sec.parts ?? []).map((p) => p.kind),
+      })),
+    };
+    return {
+      templates: [def, ...this.camTemplates],
+      parts,
+      closing: ["Risk Assessment and Rating", "Recommendation"],
+    };
+  }
   /** What the CAM review was sent, in order (F-23). */
   camCalls: { kind: string; section: string; body: unknown }[] = [];
   /** The draft CAM and the PD note every case answers (F-23, F-24). */
@@ -428,6 +466,60 @@ export class MockApi {
         (_req, m) => ({ json: this.spreads.get(decodeURIComponent(m[1]!)) ?? SPREAD }),
       ],
       ["GET", new RegExp(`^/api/cases/${id}/cam$`), () => ({ json: this.cam })],
+      // CAM templates (FRD decision C.4-12): the default and those made here.
+      ["GET", /^\/api\/cam\/templates$/, () => ({ json: this.camTemplateList() })],
+      [
+        "POST",
+        /^\/api\/cam\/templates$/,
+        (req) => {
+          const body = req.postDataJSON() as CamTemplateCreate;
+          this.camCalls.push({ kind: "template", section: "", body });
+          if (this.camTemplates.some((x) => x.name.toLowerCase() === body.name.toLowerCase()))
+            return {
+              status: 409,
+              json: { detail: `A template named “${body.name}” already exists.` },
+            };
+          const made: CamTemplate = {
+            id: `tpl-${this.camTemplates.length + 1}`,
+            name: body.name,
+            description: body.description || null,
+            default: false,
+            created_by: "ananya-krishnan",
+            created_by_name: "Ananya Krishnan",
+            created_at: "2026-10-21T10:00:00.000+00:00",
+            sections: body.sections.map((sec, i) => ({ ...sec, id: `s${i + 1}` })),
+          };
+          this.camTemplates.push(made);
+          return { status: 201, json: made };
+        },
+      ],
+      [
+        "PUT",
+        new RegExp(`^/api/cases/${id}/cam/template$`),
+        (req) => {
+          const { template_id } = req.postDataJSON() as { template_id: string };
+          this.camCalls.push({ kind: "choose", section: "", body: { template_id } });
+          const tpl = this.camTemplateList().templates.find((x) => x.id === template_id);
+          if (!tpl) return { status: 404, json: { detail: `no template '${template_id}'` } };
+          this.cam = { ...this.cam, template_id: tpl.id, template_name: tpl.name };
+          if (!tpl.default)
+            this.cam.sections = tpl.sections.map((sec, i) => ({
+              id: sec.id,
+              number: i + 1,
+              title: sec.title,
+              purpose: sec.purpose ?? null,
+              blocks: [],
+              parts: [],
+              blank: (sec.parts ?? []).length === 0,
+              empty:
+                (sec.parts ?? []).length === 0
+                  ? "For the analyst to write."
+                  : "Nothing on file yet.",
+              review: { state: "machine", paragraphs: [], overrides: [], requests: [] },
+            }));
+          return { json: this.cam };
+        },
+      ],
       // The CAM review (F-23), applied as engine/cam_review.py lays it over the draft.
       [
         "PUT",

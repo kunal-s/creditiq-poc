@@ -1719,6 +1719,7 @@ reviewKind:
   split: Uncertain split
   manual_entry: Manual entry
   finding: Finding
+  transactions: Transaction classification
 
 reviewDecision:
   confirm: Confirm

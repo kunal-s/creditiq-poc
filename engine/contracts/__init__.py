@@ -177,6 +177,14 @@ from .intake import (
     StrippedSpan,
     UploadResult,
 )
+from .transactions import (
+    TxnCategoryRequest,
+    TxnCategoryTotal,
+    TxnMonthTotal,
+    TxnPage,
+    TxnRow,
+    TxnSummary,
+)
 from .session import LoginRequest, LoginResponse, Meta, Option, SessionUser
 
 __all__ = [
@@ -326,5 +334,11 @@ __all__ = [
     "ReviewDecisionRequest",
     "ReviewItem",
     "SessionUser",
+    "TxnCategoryRequest",
+    "TxnCategoryTotal",
+    "TxnMonthTotal",
+    "TxnPage",
+    "TxnRow",
+    "TxnSummary",
     "Stage",
 ]

@@ -15,5 +15,7 @@ export function reviewItemPath(kind: ReviewKind, caseId: string): string {
       return `/appraisals/${id}/extraction`;
     case "finding":
       return `/appraisals/${id}/cross-verification`;
+    case "transactions":
+      return `/appraisals/${id}/policy`;
   }
 }

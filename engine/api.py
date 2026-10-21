@@ -23,6 +23,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from python_multipart.exceptions import MultipartParseError
 
 from . import (
+    bank_txns,
     admin_config,
     approval,
     auth,
@@ -56,6 +57,10 @@ from .config import load_app_config, load_roles_config, option_ids, role_label, 
 from .configstore import reader as configstore_reader
 from .configstore.schema import ApprovalMatrixSection, ChecklistTaxonomySection, DocumentTypesSection, PolicySection
 from .contracts import (
+    TxnCategoryRequest,
+    TxnPage,
+    TxnRow,
+    TxnSummary,
     CrossVerificationView,
     XvDecisionRequest,
     XvItem,
@@ -517,6 +522,75 @@ def case_spread(
         return spread.build(conn, data_root(), case)
     except configstore_reader.NoPublishedConfig as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
+
+
+# --- Bank-statement transactions (the Banking view of the Financials section) ---
+
+
+@app.get("/api/cases/{case_id}/transactions", response_model=TxnPage)
+def case_transactions(
+    case_id: str,
+    category: str | None = None,
+    account: str | None = None,
+    status: str | None = None,
+    month: str | None = None,
+    counterparty: str | None = None,
+    flag: str | None = None,
+    q: str | None = None,
+    needs_review: bool | None = None,
+    limit: int = Query(200, ge=1, le=1000),
+    offset: int = Query(0, ge=0),
+    user: dict = Depends(require("output.read")),
+    conn: sqlite3.Connection = Depends(get_conn),
+):
+    """The case's statement transactions with their categories, filtered; behind the assessment gate."""
+    case = _assessed_case(conn, case_id, user)
+    try:
+        bank_txns.ensure_current(conn, data_root(), case)
+        return bank_txns.list_rows(conn, data_root(), case_id, category=category, account=account, status=status,
+                                   month=month, counterparty=counterparty, flag=flag, q=q, needs_review=needs_review,
+                                   limit=limit, offset=offset)
+    except configstore_reader.NoPublishedConfig as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+
+
+@app.get("/api/cases/{case_id}/transactions/summary", response_model=TxnSummary)
+def case_transactions_summary(
+    case_id: str, user: dict = Depends(require("output.read")), conn: sqlite3.Connection = Depends(get_conn)
+):
+    """Totals by category and by month, and how many rows the rules settled, a person settled, or nothing has."""
+    case = _assessed_case(conn, case_id, user)
+    try:
+        bank_txns.ensure_current(conn, data_root(), case)
+        return bank_txns.summary(conn, data_root(), case_id)
+    except configstore_reader.NoPublishedConfig as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+
+
+@app.put("/api/cases/{case_id}/transactions/{txn_id}/category", response_model=TxnRow)
+def case_transaction_categorise(
+    case_id: str, txn_id: str, body: TxnCategoryRequest, user: dict = Depends(require("review.decide")),
+    conn: sqlite3.Connection = Depends(get_conn),
+):
+    """A person files one transaction under a category, with the reason. The rules are not changed."""
+    case = _assessed_case(conn, case_id, user)
+    try:
+        bank_txns.ensure_current(conn, data_root(), case)
+        return bank_txns.set_category(conn, data_root(), case, txn_id, body.category, body.reason, actor=user["id"])
+    except bank_txns.TxnError as e:
+        raise HTTPException(status_code=e.status, detail=str(e)) from e
+
+
+@app.delete("/api/cases/{case_id}/transactions/{txn_id}/category", response_model=TxnRow)
+def case_transaction_clear(
+    case_id: str, txn_id: str, user: dict = Depends(require("review.decide")), conn: sqlite3.Connection = Depends(get_conn)
+):
+    """Take a person's decision off a transaction; it returns to how the rules (or the model) read it."""
+    case = _assessed_case(conn, case_id, user)
+    try:
+        return bank_txns.clear_category(conn, data_root(), case, txn_id, actor=user["id"])
+    except bank_txns.TxnError as e:
+        raise HTTPException(status_code=e.status, detail=str(e)) from e
 
 
 @app.get("/api/cases/{case_id}/pd-note", response_model=PdNote)

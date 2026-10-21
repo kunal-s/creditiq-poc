@@ -274,6 +274,10 @@ class Txn:
     evidence: list[Evidence]
     doc: Doc
     balance: float | None = None
+    ref: str = ""
+    """The id of the row's description cell: a key that survives a rerun of the same extraction."""
+    seq: int = 0
+    """The row's place in its statement."""
 
 
 def _amount(v: Value | None) -> float:
@@ -683,7 +687,7 @@ def _transactions(b: Build) -> tuple[list[Txn], dict[str, set[tuple[int, int]]]]
             while ym <= (end.year, end.month):
                 coverage[account].add(ym)
                 ym = month_add(*ym, 1)
-        for r in rows:
+        for seq, r in enumerate(rows):
             debit, credit = _amount(r.get("debit")), _amount(r.get("credit"))
             if not debit and not credit:
                 continue
@@ -700,6 +704,8 @@ def _transactions(b: Build) -> tuple[list[Txn], dict[str, set[tuple[int, int]]]]
                     evidence=d.evidence(r.get("credit") or r.get("debit"), r.get("description")),
                     doc=d,
                     balance=_amount(r["balance"]) if r.get("balance") and r["balance"].value not in (None, "") else None,
+                    ref=next((v.field_id for v in (r.get("description"), r.get("credit"), r.get("debit")) if v is not None and v.field_id), ""),
+                    seq=seq,
                 )
             )
     return txns, coverage
@@ -973,14 +979,14 @@ def _turnover(b: Build, credits_by_month: dict, coverage: dict[str, set[tuple[in
     ]
 
 
-def compute(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> CaseFacts:
+def _build(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> Build:
     tolerances = {t.key: t.value for t in reader.load_tolerances(root).tolerances}
     row = conn.execute(
         "SELECT d.id FROM documents d JOIN files f ON f.id = d.file_id WHERE d.case_id = ? AND f.original_name = ?",
         (case.id, MESSAGE_FILE_NAME),
     ).fetchone()
     header_row = conn.execute("SELECT header FROM cases WHERE id = ?", (case.id,)).fetchone()
-    b = Build(
+    return Build(
         root=root,
         case=case,
         docs=load_documents(conn, root, case.id),
@@ -991,6 +997,40 @@ def compute(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> CaseFacts
         message_doc=row["id"] if row else None,
         header=json.loads(header_row["header"] or "{}") if header_row else {},
     )
+
+
+@dataclass
+class StatementInputs:
+    """What the transaction classifier needs of a case: its statement rows and the names a narration may mention."""
+
+    txns: list[Txn]
+    borrower: str
+    own_account_last4: frozenset[str]
+    lender_names: tuple[str, ...]
+    director_names: tuple[str, ...]
+    emi_min_months: int
+    emi_tolerance_pct: float
+
+
+def statement_inputs(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> StatementInputs:
+    b = _build(conn, root, case)
+    txns, _ = _transactions(b)
+    accounts, _ = _accounts(b, txns)
+    lenders = dict.fromkeys(f.lender for f in _facilities(b) if f.lender)
+    people = dict.fromkeys(n for ps in _persons(b) for n in ps.names if n)
+    return StatementInputs(
+        txns=txns,
+        borrower=case.borrower or "",
+        own_account_last4=frozenset(a.last4 for a in accounts if a.last4),
+        lender_names=tuple(lenders),
+        director_names=tuple(people),
+        emi_min_months=b.emi_min,
+        emi_tolerance_pct=b.emi_tolerance_pct,
+    )
+
+
+def compute(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> CaseFacts:
+    b = _build(conn, root, case)
     txns, coverage = _transactions(b)
     accounts, declared = _accounts(b, txns)
     credits, by_month = _cleanse(b, txns, accounts)

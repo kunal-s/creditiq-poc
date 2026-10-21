@@ -16,6 +16,7 @@ type = forbidden
 source_modules =
     engine.approval
     engine.auth
+    engine.bank_txns
     engine.cam
     engine.cam_copilot
     engine.cam_review

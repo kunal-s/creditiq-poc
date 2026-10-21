@@ -422,6 +422,52 @@ MIGRATIONS: list[str] = [
         chosen_at TEXT NOT NULL
     );
     """,
+    # 15: classified bank-statement transactions. The rows are derived from the extracted statement
+    # and the case's other documents, so they are rewritten whenever that basis changes; a person's
+    # decision on a row is kept apart, and survives. A row is keyed by the id of its description cell.
+    """
+    CREATE TABLE txn_class (
+        case_id TEXT NOT NULL REFERENCES cases(id),
+        txn_id TEXT NOT NULL,
+        document_id TEXT NOT NULL,
+        account TEXT NOT NULL,
+        seq INTEGER NOT NULL,
+        date TEXT,
+        narration TEXT NOT NULL,
+        debit REAL NOT NULL,
+        credit REAL NOT NULL,
+        category TEXT NOT NULL,
+        status TEXT NOT NULL,              -- matched | ambiguous | unmatched
+        method TEXT NOT NULL DEFAULT 'rule',
+        rule_id TEXT,
+        confidence REAL NOT NULL,
+        channel TEXT,
+        counterparty TEXT,
+        counterparty_key TEXT,
+        candidates TEXT NOT NULL DEFAULT '[]',
+        flags TEXT NOT NULL DEFAULT '[]',
+        paired_with TEXT,
+        needs_model INTEGER NOT NULL DEFAULT 0,
+        evidence TEXT NOT NULL DEFAULT '[]',
+        PRIMARY KEY (case_id, txn_id)
+    );
+    CREATE INDEX txn_class_doc ON txn_class(case_id, document_id, seq);
+    CREATE TABLE txn_class_basis (
+        case_id TEXT PRIMARY KEY REFERENCES cases(id),
+        basis TEXT NOT NULL,               -- hash of the rows, the context and the configuration version
+        config_version TEXT NOT NULL,
+        classified_at TEXT NOT NULL
+    );
+    CREATE TABLE txn_class_overrides (
+        case_id TEXT NOT NULL REFERENCES cases(id),
+        txn_id TEXT NOT NULL,
+        category TEXT NOT NULL,
+        reason TEXT NOT NULL,
+        decided_by TEXT NOT NULL,
+        decided_at TEXT NOT NULL,
+        PRIMARY KEY (case_id, txn_id)
+    );
+    """,
 ]
 
 

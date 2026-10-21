@@ -808,6 +808,70 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/cases/{case_id}/transactions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Case Transactions
+     * @description The case's statement transactions with their categories, filtered; behind the assessment gate.
+     */
+    get: operations["case_transactions_api_cases__case_id__transactions_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/cases/{case_id}/transactions/summary": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Case Transactions Summary
+     * @description Totals by category and by month, and how many rows the rules settled, a person settled, or nothing has.
+     */
+    get: operations["case_transactions_summary_api_cases__case_id__transactions_summary_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/cases/{case_id}/transactions/{txn_id}/category": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Case Transaction Categorise
+     * @description A person files one transaction under a category, with the reason. The rules are not changed.
+     */
+    put: operations["case_transaction_categorise_api_cases__case_id__transactions__txn_id__category_put"];
+    post?: never;
+    /**
+     * Case Transaction Clear
+     * @description Take a person's decision off a transaction; it returns to how the rules (or the model) read it.
+     */
+    delete: operations["case_transaction_clear_api_cases__case_id__transactions__txn_id__category_delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/config/approval-matrix": {
     parameters: {
       query?: never;
@@ -3818,7 +3882,15 @@ export interface components {
        * Kind
        * @enum {string}
        */
-      kind: "type" | "field" | "quality" | "party" | "split" | "manual_entry" | "finding";
+      kind:
+        | "type"
+        | "field"
+        | "quality"
+        | "party"
+        | "split"
+        | "manual_entry"
+        | "finding"
+        | "transactions";
       /** Maker */
       maker?: string | null;
       /** Reason */
@@ -4174,6 +4246,136 @@ export interface components {
       fy: string;
       /** Fy End */
       fy_end: string;
+    };
+    /** TxnCategoryRequest */
+    TxnCategoryRequest: {
+      /** Category */
+      category: string;
+      /** Reason */
+      reason: string;
+    };
+    /** TxnCategoryTotal */
+    TxnCategoryTotal: {
+      /** Amount */
+      amount: number;
+      /** Category */
+      category: string;
+      /** Count */
+      count: number;
+      /**
+       * Direction
+       * @enum {string}
+       */
+      direction: "credit" | "debit";
+      /** Label */
+      label: string;
+    };
+    /** TxnMonthTotal */
+    TxnMonthTotal: {
+      /** By Category */
+      by_category: {
+        [key: string]: number;
+      };
+      /** Credits */
+      credits: number;
+      /** Debits */
+      debits: number;
+      /** Month */
+      month: string;
+    };
+    /** TxnPage */
+    TxnPage: {
+      /** Items */
+      items: components["schemas"]["TxnRow"][];
+      /** Limit */
+      limit: number;
+      /** Offset */
+      offset: number;
+      /** Total */
+      total: number;
+    };
+    /**
+     * TxnRow
+     * @description One statement transaction and how it was classified.
+     */
+    TxnRow: {
+      /** Account */
+      account: string;
+      /** Candidates */
+      candidates?: string[];
+      /** Category */
+      category: string;
+      /** Category Label */
+      category_label: string;
+      /** Channel */
+      channel?: string | null;
+      /** Confidence */
+      confidence: number;
+      /** Counterparty */
+      counterparty?: string | null;
+      /** Credit */
+      credit: number;
+      /** Date */
+      date?: string | null;
+      /** Debit */
+      debit: number;
+      /**
+       * Direction
+       * @enum {string}
+       */
+      direction: "credit" | "debit";
+      /** Document Id */
+      document_id: string;
+      /** Evidence */
+      evidence?: components["schemas"]["Evidence"][];
+      /** Flags */
+      flags?: string[];
+      /**
+       * Method
+       * @enum {string}
+       */
+      method: "rule" | "model" | "manual";
+      /** Narration */
+      narration: string;
+      /**
+       * Needs Review
+       * @default false
+       */
+      needs_review: boolean;
+      /** Paired With */
+      paired_with?: string | null;
+      /** Rule Id */
+      rule_id?: string | null;
+      /** Seq */
+      seq: number;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "matched" | "ambiguous" | "unmatched";
+      /** Txn Id */
+      txn_id: string;
+    };
+    /** TxnSummary */
+    TxnSummary: {
+      /** Accounts */
+      accounts: string[];
+      /** By Person */
+      by_person: number;
+      /** By Rule */
+      by_rule: number;
+      /** Case Id */
+      case_id: string;
+      /** Categories */
+      categories: components["schemas"]["TxnCategoryTotal"][];
+      /** Config Version */
+      config_version?: string | null;
+      /** Months */
+      months: components["schemas"]["TxnMonthTotal"][];
+      /** Total */
+      total: number;
+      /** Unsettled */
+      unsettled: number;
     };
     /**
      * UploadResult
@@ -5971,6 +6173,155 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Spread"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  case_transactions_api_cases__case_id__transactions_get: {
+    parameters: {
+      query?: {
+        category?: string | null;
+        account?: string | null;
+        status?: string | null;
+        month?: string | null;
+        counterparty?: string | null;
+        flag?: string | null;
+        q?: string | null;
+        needs_review?: boolean | null;
+        limit?: number;
+        offset?: number;
+      };
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TxnPage"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  case_transactions_summary_api_cases__case_id__transactions_summary_get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TxnSummary"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  case_transaction_categorise_api_cases__case_id__transactions__txn_id__category_put: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+        txn_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TxnCategoryRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TxnRow"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  case_transaction_clear_api_cases__case_id__transactions__txn_id__category_delete: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+        txn_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TxnRow"];
         };
       };
       /** @description Validation Error */

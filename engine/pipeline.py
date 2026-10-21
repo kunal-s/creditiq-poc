@@ -439,11 +439,15 @@ def refresh_all_cases(conn: sqlite3.Connection, root: Path) -> tuple[list[str], 
 
 
 def refresh_case(conn: sqlite3.Connection, root: Path, case_id: str, *, running_job: str | None = None) -> None:
-    from . import cases, crosschecks, parties, queries
+    from . import bank_txns, cases, crosschecks, parties, queries
 
     parties.refresh(conn, root, case_id)
     case = cases.get_case(conn, case_id)
     if case is not None:
+        try:
+            bank_txns.refresh(conn, root, case)
+        except reader.NoPublishedConfig:
+            pass   # a configuration published before the transaction rules existed: they wait for the next publish
         try:
             crosschecks.run(conn, root, case)
         except reader.NoPublishedConfig:

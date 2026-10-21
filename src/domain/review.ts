@@ -46,6 +46,8 @@ export const DECISIONS_BY_KIND: Record<ReviewKind, ReviewDecision[]> = {
   split: ["confirm"],
   manual_entry: ["confirm"],
   finding: ["confirm", "waive"],
+  // Decided row by row on the Banking view of the Financials section, not from the queue.
+  transactions: [],
 };
 
 /** What a review item points at: "field:<id>", "document:<id>" or "file:<id>". */
@@ -75,6 +77,7 @@ export const REVIEW_KINDS: ReviewKind[] = [
   "split",
   "manual_entry",
   "finding",
+  "transactions",
 ];
 
 /** The open field review item for this value, if the user may see it. */

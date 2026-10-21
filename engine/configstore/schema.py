@@ -304,6 +304,100 @@ class AlignmentSection(BaseModel):
     """The names a board resolution in favour of this bank may use (BR-03)."""
 
 
+TxnDirection = Literal["credit", "debit"]
+TxnLookup = Literal["own_account_number", "borrower_name", "lender_name", "director_name"]
+
+
+class TxnCategory(BaseModel):
+    id: str
+    direction: TxnDirection
+    label: str
+
+
+class TxnChannel(BaseModel):
+    id: str
+    pattern: str
+
+
+class TxnCounterparty(BaseModel):
+    strip: list[str]
+    noise_words: list[str]
+    lender_cues: list[str]
+
+
+class TxnPairing(BaseModel):
+    days: int = Field(ge=0)
+
+
+class TxnRule(BaseModel):
+    """One narration rule (config/txn_classification.yaml). It matches when the direction agrees, some
+    `any` pattern is found (or none is asked for), no `none` pattern is found, and, when `lookup`
+    names something the case supplies, the narration mentions it."""
+
+    id: str
+    category: str
+    tier: int = Field(ge=1, le=3)
+    direction: TxnDirection
+    any: list[str] = Field(default_factory=list)
+    none: list[str] = Field(default_factory=list)
+    lookup: TxnLookup | None = None
+    counterparty: str = "none"
+    """`none`, `auto` (what is left after the strip patterns), or a pattern with one capture group."""
+    confidence: float = Field(gt=0, le=1)
+
+
+class TxnClassificationSection(BaseModel):
+    """config/txn_classification.yaml: the deterministic pass over bank-statement transactions."""
+
+    categories: list[TxnCategory]
+    channels: list[TxnChannel]
+    counterparty: TxnCounterparty
+    round_amount_multiple: int = Field(gt=0)
+    pairing: TxnPairing
+    model_threshold: float = Field(ge=0, le=1)
+    rules: list[TxnRule]
+
+    def problems(self) -> list[str]:
+        out: list[str] = []
+        cats = {c.id: c for c in self.categories}
+        if len(cats) != len(self.categories):
+            out.append("txn_classification: duplicate category ids")
+        for fallback in ("other_credit", "other_debit"):
+            if fallback not in cats:
+                out.append(f"txn_classification: needs the category {fallback!r}")
+        ids = [r.id for r in self.rules]
+        if len(ids) != len(set(ids)):
+            out.append("txn_classification: duplicate rule ids")
+
+        def compiles(where: str, pattern: str, groups: int | None = None) -> None:
+            try:
+                rx = re.compile(pattern, re.I)
+            except re.error as e:
+                out.append(f"{where}: bad pattern {pattern!r} ({e})")
+                return
+            if groups is not None and rx.groups != groups:
+                out.append(f"{where}: pattern {pattern!r} needs exactly {groups} capture group(s)")
+
+        for ch in self.channels:
+            compiles(f"txn_classification.channels.{ch.id}", ch.pattern)
+        for p in self.counterparty.strip:
+            compiles("txn_classification.counterparty.strip", p)
+        for r in self.rules:
+            where = f"txn_classification.rules.{r.id}"
+            cat = cats.get(r.category)
+            if cat is None:
+                out.append(f"{where}: unknown category {r.category!r}")
+            elif cat.direction != r.direction:
+                out.append(f"{where}: a {r.direction} rule cannot give the {cat.direction} category {r.category!r}")
+            if not r.any and not r.lookup:
+                out.append(f"{where}: needs `any` patterns or a `lookup`")
+            for p in [*r.any, *r.none]:
+                compiles(where, p)
+            if r.counterparty not in ("none", "auto"):
+                compiles(f"{where}.counterparty", r.counterparty, groups=1)
+        return out
+
+
 CrossCheckVariable = Literal[
     "entity_pan",
     "gstin",
@@ -636,6 +730,7 @@ SECTION_MODELS: dict[str, type[BaseModel]] = {
     "document_ages": DocumentAgesSection,
     "tolerances": TolerancesSection,
     "alignment": AlignmentSection,
+    "txn_classification": TxnClassificationSection,
     "crosschecks": CrossChecksSection,
     "cam": CamSectionConfig,
     "statements": StatementsSection,
@@ -647,6 +742,9 @@ def cross_check(sections: dict[str, BaseModel], ingestion: dict[str, dict] | Non
                 facilities: set[str] | None = None) -> list[str]:
     """References between sections that must resolve. Returns problems."""
     problems: list[str] = []
+    txn = sections.get("txn_classification")
+    if isinstance(txn, TxnClassificationSection):
+        problems += txn.problems()
     checklist = sections["checklist_taxonomy"]
     types = sections["document_types"]
     assert isinstance(checklist, ChecklistTaxonomySection) and isinstance(types, DocumentTypesSection)

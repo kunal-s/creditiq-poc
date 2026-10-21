@@ -1,0 +1,323 @@
+# Bank-statement transaction classification (deterministic pass).
+# Interim rules until RBL confirms its own conventions.
+#
+# A rule matches a transaction by its narration (case-insensitive regular expressions), its direction
+# (credit or debit) and, optionally, its amount or a name the case supplies (the borrower, its other
+# accounts, its lenders, its directors). Rules are grouped in tiers: the lowest tier that matches
+# decides. When the matches in that tier name different categories the transaction is ambiguous and
+# goes to the model pass; when nothing matches it is unmatched and goes there too. Nothing here is
+# edited at runtime: a change is a new published version.
+
+categories:
+  # Credits
+  - {id: customer_receipt,       direction: credit, label: Receipt from a customer}
+  - {id: own_transfer_in,        direction: credit, label: Transfer in from the borrower's own account}
+  - {id: loan_disbursal,         direction: credit, label: Loan disbursal or limit drawdown}
+  - {id: cash_deposit,           direction: credit, label: Cash deposit}
+  - {id: reversal_refund,        direction: credit, label: Reversal or refund}
+  - {id: failed_debit_reversal,  direction: credit, label: Credit reversing a returned cheque or failed debit}
+  - {id: interest_credit,        direction: credit, label: Interest credited}
+  - {id: tax_refund,             direction: credit, label: Tax refund}
+  - {id: promoter_funding,       direction: credit, label: Funds introduced by a promoter or director}
+  - {id: other_credit,           direction: credit, label: Other credit}
+  # Debits
+  - {id: supplier_payment,       direction: debit,  label: Payment to a supplier}
+  - {id: salary,                 direction: debit,  label: Salary and wages}
+  - {id: statutory_gst,          direction: debit,  label: GST payment}
+  - {id: statutory_tds,          direction: debit,  label: TDS payment}
+  - {id: statutory_pf_esi,       direction: debit,  label: Provident fund and ESI}
+  - {id: statutory_income_tax,   direction: debit,  label: Income tax payment}
+  - {id: statutory_other,        direction: debit,  label: Other statutory payment}
+  - {id: loan_emi,               direction: debit,  label: Loan instalment}
+  - {id: loan_interest,          direction: debit,  label: Interest on a loan or limit}
+  - {id: own_transfer_out,       direction: debit,  label: Transfer out to the borrower's own account}
+  - {id: cash_withdrawal,        direction: debit,  label: Cash withdrawal}
+  - {id: promoter_drawings,      direction: debit,  label: Payment to a promoter or director}
+  - {id: bank_charges,           direction: debit,  label: Bank charges and penalties}
+  - {id: rent_utilities,         direction: debit,  label: Rent and utilities}
+  - {id: insurance_premium,      direction: debit,  label: Insurance premium}
+  - {id: cheque_return,          direction: debit,  label: Cheque returned unpaid}
+  - {id: capex,                  direction: debit,  label: Purchase of an asset}
+  - {id: other_debit,            direction: debit,  label: Other debit}
+
+# How the channel is read from a narration (first match wins).
+channels:
+  - {id: rtgs, pattern: '\bRTGS\b'}
+  - {id: neft, pattern: '\bNEFT\b'}
+  - {id: imps, pattern: '\bIMPS\b'}
+  - {id: upi,  pattern: '\bUPI\b'}
+  - {id: nach, pattern: '\b(?:NACH|ACH|ECS|SI)\b'}
+  - {id: cheque, pattern: '\b(?:CHQ|CHEQUE|CLG|CLEARING)\b'}
+  - {id: cash, pattern: '\b(?:CASH|ATM|CDM)\b'}
+  - {id: card, pattern: '\b(?:POS|CARD)\b'}
+
+# The party named in a narration, when a rule asks for it with `counterparty: auto`: these are
+# removed from the narration and what remains is the party.
+counterparty:
+  strip:
+    - '^\W*(?:NEFT|RTGS|IMPS|UPI|NACH|ACH|ECS|CHQ|CHEQUE|CLG|INB|ATM|POS)\b'
+    - '\b(?:DR|CR|DEBIT|CREDIT|TFR|TRF|TRANSFER|PAYMENT|PMT)\b'
+    - '\b(?:UTR|REF|ACH|NEFT|RTGS|IMPS|GST|INB)\s*[/:-]\s*\S+'
+    - '\b\d{4,}\b'
+    - '\bEMI\b'
+    - '\b(?:SUPPLIER|VENDOR|CREDITOR|DEBTOR|CUSTOMER|SALES?|PURCHASE|INVOICE|INV)\b'
+  # Words that do not tell one party from another, dropped when two names are compared.
+  noise_words: [pvt, ltd, limited, private, llp, co, company, the, and, of]
+  # A party whose name carries one of these is read as a lender (for a recurring debit with no cue).
+  lender_cues: [finance, financial, capital, fincorp, housing, leasing, credit, nbfc, bank, microfin]
+
+# A transaction whose amount is a whole multiple of this (and at least this much) is flagged.
+round_amount_multiple: 100000
+
+# Two rows in different accounts with the same amount, within `days`, and nothing more specific said
+# of either, are a transfer between the borrower's accounts.
+pairing:
+  days: 3
+
+# A rule below this confidence goes to the model pass even though it matched.
+model_threshold: 0.6
+
+rules:
+  # ---- Tier 1: the narration states what the entry is -------------------------------------------
+  - id: salary
+    category: salary
+    tier: 1
+    direction: debit
+    any: ['\bsalary\b', '\bsalaries\b', '\bpayroll\b', '\bwages\b']
+    confidence: 0.95
+
+  - id: gst_payment
+    category: statutory_gst
+    tier: 1
+    direction: debit
+    any: ['\bgst\b[^\n]{0,20}\b(?:challan|payment|pmt|cpin)\b', '\bgstn?\s+(?:tax|payment)\b', '\bcbic\b']
+    none: ['\bbank\s+charges\b', '\bcharges\b[^\n]{0,10}\+\s*gst\b']
+    confidence: 0.95
+
+  - id: tds_payment
+    category: statutory_tds
+    tier: 1
+    direction: debit
+    any: ['\btds\b', '\btax\s+deducted\b']
+    confidence: 0.9
+
+  - id: pf_esi
+    category: statutory_pf_esi
+    tier: 1
+    direction: debit
+    any: ['\bepf\b', '\bepfo\b', '\besi\b', '\besic\b', '\bprovident\s+fund\b']
+    confidence: 0.95
+
+  - id: income_tax
+    category: statutory_income_tax
+    tier: 1
+    direction: debit
+    any: ['\badvance\s+tax\b', '\bincome\s*-?\s*tax\b', '\bitns\b', '\bself\s+assessment\s+tax\b']
+    confidence: 0.9
+
+  - id: statutory_other
+    category: statutory_other
+    tier: 1
+    direction: debit
+    any: ['\bprofessional\s+tax\b', '\bptax\b', '\bmca\b[^\n]{0,15}\bfee\b', '\broc\b[^\n]{0,15}\bfee\b']
+    confidence: 0.85
+
+  - id: loan_emi
+    category: loan_emi
+    tier: 1
+    direction: debit
+    any: ['\bemi\b', '\binstal+ment\b', '\bloan\s+(?:repay|recovery|a/c)', '\bloan\s+repayment\b', '\bnach\b[^\n]*\b(?:loan|ln)\b']
+    counterparty: '(?i)^(?:NACH|ACH|ECS|SI)?\W*(?:DR\W+)?(.+?)\W+(?:\d{4,}\W+)?(?:EMI|LOAN|INSTAL)'
+    confidence: 0.95
+
+  - id: loan_interest
+    category: loan_interest
+    tier: 1
+    direction: debit
+    any: ['\b(?:loan|od|cc|limit|tl)\s+interest\b', '\binterest\s+(?:debit|charged|on\s+(?:loan|od|cc|limit))\b', '\bint\.?\s+(?:on|debit)\b']
+    confidence: 0.9
+
+  - id: loan_disbursal
+    category: loan_disbursal
+    tier: 1
+    direction: credit
+    any: ['\bloan\s+disb', '\bdisbursal\b', '\bdisbursement\b', '\bln\s+disb', '\btl\s+disb', '\bloan\s+a/c\b', '\bloan\s+account\b', '\bod\s+drawdown\b', '\bsanction\s+disb']
+    counterparty: auto
+    confidence: 0.9
+
+  - id: cash_deposit
+    category: cash_deposit
+    tier: 1
+    direction: credit
+    any: ['\bcash\s+(?:dep|deposit)', '\bcdm\b', '\bby\s+cash\b', '\bcash\s+cr\b']
+    confidence: 0.95
+
+  - id: cash_withdrawal
+    category: cash_withdrawal
+    tier: 1
+    direction: debit
+    any: ['\bcash\s+(?:wd|wdl|withdrawal)', '\batm\b[^\n]{0,15}\b(?:wd|wdl|cash)\b', '\bself\s+chq\b', '\bchq\s+self\b', '\bcash\s+dr\b']
+    confidence: 0.95
+
+  - id: cheque_return
+    category: cheque_return
+    tier: 1
+    direction: debit
+    any: ['\bchq\s+ret', '\bcheque\s+return', '\binward\s+return', '\bchq\s+bounce', '\bcheque\s+bounce', '\bunpaid\s+chq', '\binsufficient\s+funds?\b', '\bretd?\s+chq\b']
+    none: ['\breversal\b', '\brefund\b']
+    confidence: 0.9
+
+  - id: failed_debit_reversal
+    category: failed_debit_reversal
+    tier: 1
+    direction: credit
+    any: ['\bchq\s+ret', '\bcheque\s+return', '\breturned\b', '\bnach\s+return', '\bfailed\s+debit\b', '\bunpaid\b', '\bbounce']
+    confidence: 0.85
+
+  - id: reversal_refund
+    category: reversal_refund
+    tier: 1
+    direction: credit
+    any: ['\breversal\b', '\breversed\b', '\brefund\b', '\brev\b', '\bchargeback\b', '\bcancelled\b']
+    confidence: 0.85
+
+  - id: interest_credit
+    category: interest_credit
+    tier: 1
+    direction: credit
+    any: ['\bint\.?\s*(?:cr|credit|paid)\b', '\binterest\s+(?:credit|paid|on\s+(?:sb|savings|fd|deposit))\b', '\bsb\s+int\b']
+    confidence: 0.9
+
+  - id: tax_refund
+    category: tax_refund
+    tier: 1
+    direction: credit
+    any: ['\bit\s+refund\b', '\bincome\s*-?\s*tax\s+refund\b', '\bgst\s+refund\b', '\bitd\s+refund\b', '\btax\s+refund\b']
+    confidence: 0.9
+
+  - id: bank_charges
+    category: bank_charges
+    tier: 1
+    direction: debit
+    any: ['\bbank\s+charges?\b', '\bservice\s+charges?\b', '\bsms\s+charges?\b', '\bamc\b', '\bprocessing\s+fee\b', '\bpenal(?:ty)?\b', '\bmin(?:imum)?\s+bal(?:ance)?\s+charges?\b', '\bcharges?\b[^\n]{0,10}\+\s*gst\b']
+    confidence: 0.9
+
+  - id: rent_utilities
+    category: rent_utilities
+    tier: 1
+    direction: debit
+    any: ['\brent\b', '\belectricity\b', '\bwater\s+(?:bill|charges?)\b', '\btelephone\b', '\bbroadband\b', '\bbsnl\b', '\bmseb\b', '\btneb\b', '\bbescom\b', '\bgas\s+bill\b']
+    confidence: 0.85
+
+  - id: insurance_premium
+    category: insurance_premium
+    tier: 1
+    direction: debit
+    any: ['\binsurance\b', '\bpremium\b', '\blic\b', '\bpolicy\s+(?:no|premium)\b']
+    confidence: 0.85
+
+  - id: capex
+    category: capex
+    tier: 1
+    direction: debit
+    any: ['\bmachinery\b', '\bcapex\b', '\bplant\s+(?:&|and)\s+machinery\b', '\bequipment\s+purchase\b', '\basset\s+purchase\b']
+    confidence: 0.8
+
+  - id: supplier_payment
+    category: supplier_payment
+    tier: 1
+    direction: debit
+    any: ['\bsupplier\b', '\bvendor\b', '\bcreditor\b', '\binvoice\b', '\binv\s*(?:no|#)', '\bpurchase\b']
+    counterparty: auto
+    confidence: 0.9
+
+  - id: customer_receipt_cue
+    category: customer_receipt
+    tier: 1
+    direction: credit
+    any: ['\binvoice\b', '\binv\s*(?:no|#)', '\bsales?\b', '\bcustomer\b', '\bdebtor\b']
+    counterparty: auto
+    confidence: 0.9
+
+  # ---- Tier 2: a name the case supplies ---------------------------------------------------------
+  - id: own_transfer_by_account
+    category: own_transfer_out
+    tier: 2
+    direction: debit
+    lookup: own_account_number
+    confidence: 0.9
+
+  - id: own_transfer_by_account_in
+    category: own_transfer_in
+    tier: 2
+    direction: credit
+    lookup: own_account_number
+    confidence: 0.9
+
+  - id: own_transfer_by_name
+    category: own_transfer_out
+    tier: 2
+    direction: debit
+    lookup: borrower_name
+    any: ['\bself\b', '\bown\s+a/?c', '\bown\s+account\b', '\bsweep\b', '\btransfer\b', '\btrf\b']
+    confidence: 0.85
+
+  - id: own_transfer_by_name_in
+    category: own_transfer_in
+    tier: 2
+    direction: credit
+    lookup: borrower_name
+    any: ['\bself\b', '\bown\s+a/?c', '\bown\s+account\b', '\bsweep\b', '\btransfer\b', '\btrf\b']
+    confidence: 0.85
+
+  - id: lender_instalment
+    category: loan_emi
+    tier: 2
+    direction: debit
+    lookup: lender_name
+    any: ['\bnach\b', '\bach\b', '\becs\b', '\bsi\b', '\bstanding\s+instruction\b']
+    counterparty: auto
+    confidence: 0.9
+
+  - id: lender_disbursal
+    category: loan_disbursal
+    tier: 2
+    direction: credit
+    lookup: lender_name
+    counterparty: auto
+    confidence: 0.8
+
+  - id: promoter_funding
+    category: promoter_funding
+    tier: 2
+    direction: credit
+    lookup: director_name
+    counterparty: auto
+    confidence: 0.85
+
+  - id: promoter_drawings
+    category: promoter_drawings
+    tier: 2
+    direction: debit
+    lookup: director_name
+    counterparty: auto
+    confidence: 0.85
+
+  # ---- Tier 3: the channel and direction only ---------------------------------------------------
+  # A named party paid through a channel, with nothing more said, is read as trade. Lower confidence:
+  # the same shape is also a lender, a promoter, a group company or a one-off.
+  - id: customer_receipt_default
+    category: customer_receipt
+    tier: 3
+    direction: credit
+    any: ['\b(?:neft|rtgs|imps|upi|clg|chq|cheque)\b']
+    counterparty: auto
+    confidence: 0.7
+
+  - id: supplier_payment_default
+    category: supplier_payment
+    tier: 3
+    direction: debit
+    any: ['\b(?:neft|rtgs|imps|upi)\b']
+    counterparty: auto
+    confidence: 0.7

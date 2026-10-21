@@ -53,6 +53,7 @@ source_modules =
     engine.spread
     engine.statements
     engine.store
+    engine.txn_intel
     engine.uploads
     engine.util
     engine.xlsx

@@ -10,6 +10,7 @@ import yaml
 from fastapi.testclient import TestClient
 
 from engine.bank_conduct import Row, build
+from engine.contracts import Evidence
 from engine.configstore.schema import BankConductSection, TxnClassificationSection
 from engine.txn_intel import Context, Txn
 from engine.txn_labels import label_case
@@ -26,7 +27,8 @@ A = "Lotuscrest Bank ·1234"
 def r(day: str, category: str, *, cr=0.0, dr=0.0, party=None, bal=None, ref="", account=A, settled=True, narration=None) -> Row:
     return Row(account=account, date=date.fromisoformat(day), narration=narration or f"{category} {party or ''}".strip(),
                debit=dr, credit=cr, category=category, settled=settled, counterparty=party.upper() if party else None,
-               party_key=party.lower() if party else None, balance=bal, reference=ref)
+               party_key=party.lower() if party else None, balance=bal, reference=ref,
+               evidence=[Evidence(document_id="doc-1", page=1)])
 
 
 def conduct(rows, coverage=None):
@@ -104,7 +106,10 @@ def test_a_high_balance_that_stays_is_not_a_spike():
 def test_statutory_payments_late_or_missing_are_flagged():
     c = conduct([r("2025-04-18", "statutory_gst", dr=50_000), r("2025-05-24", "statutory_gst", dr=50_000),
                  r("2025-06-19", "customer_receipt", cr=1.0, party="X"), r("2025-07-19", "statutory_gst", dr=50_000)])
-    assert [(f.kind, f.month) for f in c.flags if f.kind.startswith("statutory")] == [("statutory_late", "2025-05"), ("statutory_gap", "2025-06")]
+    by = {f.kind: f for f in c.flags if f.kind.startswith("statutory")}
+    late, gap = by["statutory_late"], by["statutory_gap"]
+    assert late.kind == "statutory_late" and "1 of 3 months" in late.message and "May 2025" in late.message
+    assert gap.kind == "statutory_gap" and "Jun 2025" in gap.message
 
 
 def test_payments_to_promoters_are_flagged_by_their_share_of_customer_receipts():
@@ -215,3 +220,12 @@ def test_kestrel_second_statement_repeats_the_first_ones_bank_references(name, s
 def test_kestrel_clean_set_repeats_no_reference():
     rows = _kestrel_with_references(KESTREL / "K00_clean" / "09_Bank_Statement_Harbour_CA.pdf", "Harbour ·4417")
     assert not [f for f in build("K", rows, {}, CFG, REMOVED).flags if f.kind == "duplicate_reference"]
+
+
+def test_a_flag_that_would_repeat_every_month_is_one_line_with_the_count():
+    rows = [r(f"2025-{m:02d}-25", "statutory_gst", dr=50_000) for m in range(4, 12)]
+    late = [f for f in conduct(rows).flags if f.kind == "statutory_late"]
+    assert len(late) == 1 and "8 of 8 months" in late[0].message and "usually the 25th" in late[0].message and late[0].evidence
+    saturdays = [r(f"2025-04-{d:02d}", "supplier_payment", dr=2_000_000, party="Acme") for d in (5, 12, 19, 26)]
+    weekend = [f for f in conduct(saturdays).flags if f.kind == "weekend"]
+    assert len(weekend) == 1 and "4 large entries" in weekend[0].message and len(weekend[0].evidence) == 3

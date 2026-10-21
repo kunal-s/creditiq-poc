@@ -158,19 +158,25 @@ def build(case_id: str, rows: list[Row], coverage: dict[str, set[tuple[int, int]
         if r.category == "cash_deposit" and r.credit >= cfg.cash.large_deposit:
             _flag(flags, "cash", "info", f"A cash deposit of {r.credit:,.0f} on {r.date.isoformat()}", [r], month=_ym(r.date), account=r.account, amount=r.credit)
 
-    # Statutory payments: late, and months with none among months that otherwise have them.
+    # Statutory payments: late, and months with none among months that otherwise have them. One line per payment.
     for cat, due in cfg.statutory_due_day.items():
+        name = cat.replace("statutory_", "").replace("_", " ").upper()
         paid = {m.month: m.statutory[cat] for m in months if cat in m.statutory}
-        for ym, day in paid.items():
-            if day > due:
-                late = [r for r in by_month[ym] if r.category == cat]
-                _flag(flags, "statutory_late", "watch", f"{month_label((int(ym[:4]), int(ym[5:])))}: {cat.replace('statutory_', '').replace('_', ' ').upper()} "
-                      f"paid on the {day}th; due by the {due}th", late, month=ym)
+        late = {ym: day for ym, day in paid.items() if day > due}
+        if late:
+            usual = sorted(late.values())[len(late) // 2]
+            _flag(flags, "statutory_late", "watch",
+                  f"{name} was paid after the {due}th in {len(late)} of {len(paid)} months with a payment"
+                  f" (usually the {usual}th): {', '.join(month_label((int(m[:4]), int(m[5:]))) for m in sorted(late)[:6])}"
+                  f"{' and others' if len(late) > 6 else ''}",
+                  [r for ym in sorted(late) for r in by_month[ym] if r.category == cat])
         if len(paid) >= 2:
             span = [m.month for m in months]
             gaps = [m for m in span[span.index(min(paid)): span.index(max(paid)) + 1] if m not in paid]
-            for ym in gaps:
-                _flag(flags, "statutory_gap", "watch", f"{month_label((int(ym[:4]), int(ym[5:])))}: no {cat.replace('statutory_', '').replace('_', ' ').upper()} payment among months that otherwise have one", None, month=ym)
+            if gaps:
+                _flag(flags, "statutory_gap", "watch",
+                      f"No {name} payment in {', '.join(month_label((int(m[:4]), int(m[5:]))) for m in gaps[:6])}"
+                      f"{' and others' if len(gaps) > 6 else ''}, among months that otherwise have one")
 
     # Concentration.
     receipts = [r for r in rows if r.category == "customer_receipt" and r.credit]
@@ -214,19 +220,32 @@ def build(case_id: str, rows: list[Row], coverage: dict[str, set[tuple[int, int]
         if got:
             balances.append(got)
 
-    # Unusual entries.
+    # Unusual entries. A few are listed one by one; many are one line with the count and the largest as evidence.
     by_cat: dict[tuple[str, str], list[float]] = defaultdict(list)
     for r in dated:
         by_cat[(r.account, r.category)].append(r.amount)
+    far: list[Row] = []
+    weekend: list[Row] = []
     for r in dated:
         pool = sorted(by_cat[(r.account, r.category)])
         median = pool[len(pool) // 2]
         if len(pool) >= 3 and r.amount >= cfg.unusual.min_amount and r.amount >= median * cfg.unusual.multiple_of_median:
-            _flag(flags, "unusual", "watch", f"{r.amount:,.0f} on {r.date.isoformat()} is {r.amount / median:.0f} times the usual for this kind of entry in {r.account}",
-                  [r], month=_ym(r.date), account=r.account, amount=r.amount)
+            far.append(r)
         elif r.date.weekday() >= 5 and r.amount >= cfg.unusual.weekend_min_amount:
-            _flag(flags, "weekend", "info", f"{r.amount:,.0f} posted on a {'Saturday' if r.date.weekday() == 5 else 'Sunday'}, {r.date.isoformat()}",
-                  [r], month=_ym(r.date), account=r.account, amount=r.amount)
+            weekend.append(r)
+    if 0 < len(far) <= 3:
+        for r in far:
+            _flag(flags, "unusual", "watch", f"{r.amount:,.0f} on {r.date.isoformat()} is {r.amount / (sorted(by_cat[(r.account, r.category)])[len(by_cat[(r.account, r.category)]) // 2]):.0f} "
+                  f"times the usual for this kind of entry in {r.account}", [r], month=_ym(r.date), account=r.account, amount=r.amount)
+    elif far:
+        big = sorted(far, key=lambda r: -r.amount)
+        _flag(flags, "unusual", "watch", f"{len(far)} entries are far above the usual for their kind; the largest is {big[0].amount:,.0f} on {big[0].date.isoformat()}",
+              big, amount=sum(r.amount for r in far))
+    if weekend:
+        big = sorted(weekend, key=lambda r: -r.amount)
+        _flag(flags, "weekend", "info", f"{len(weekend)} large entr{'ies were' if len(weekend) != 1 else 'y was'} posted on a Saturday or Sunday"
+              f" ({sum(r.amount for r in weekend):,.0f} in all); the largest is {big[0].amount:,.0f} on {big[0].date.isoformat()}", big,
+              amount=sum(r.amount for r in weekend))
 
     # Integrity of the statements.
     for account in sorted({r.account for r in rows}):
@@ -250,12 +269,15 @@ def build(case_id: str, rows: list[Row], coverage: dict[str, set[tuple[int, int]
             _flag(flags, "balance_break", "concern", f"{account}: the running balance does not follow from the entries at {len(breaks)} place{'s' if len(breaks) != 1 else ''}",
                   breaks, account=account)
         seen: dict[tuple, Row] = {}
+        twice: list[Row] = []
         for r in mine:
             key = (r.date, r.narration, r.debit, r.credit)
             if key in seen and r.date:
-                _flag(flags, "duplicate", "watch", f"{account}: the same entry twice on {r.date.isoformat()}: {r.narration[:50]}", [seen[key], r],
-                      month=_ym(r.date), account=account, amount=r.amount)
+                twice += [seen[key], r]
             seen.setdefault(key, r)
+        if twice:
+            _flag(flags, "duplicate", "watch", f"{account}: {len(twice) // 2} entr{'ies appear' if len(twice) > 2 else 'y appears'} twice with the same date, narration and amount"
+                  f", for example {twice[0].narration[:40]} on {twice[0].date.isoformat()}", twice, account=account, amount=sum(r.amount for r in twice[1::2]))
     refs: dict[str, list[Row]] = defaultdict(list)
     for r in rows:
         if r.reference:

@@ -468,6 +468,25 @@ MIGRATIONS: list[str] = [
         PRIMARY KEY (case_id, txn_id)
     );
     """,
+    # 16: the model's answers for the narrations the rules could not settle. An answer is kept per case,
+    # distinct narration and direction, for the configuration version it was asked under; asking again
+    # after a publish is a replay of the same recording when nothing in the request changed.
+    """
+    ALTER TABLE txn_class ADD COLUMN model_reason TEXT;
+    ALTER TABLE txn_class_basis ADD COLUMN model_error TEXT;
+    CREATE TABLE txn_model_labels (
+        case_id TEXT NOT NULL REFERENCES cases(id),
+        cluster_key TEXT NOT NULL,
+        direction TEXT NOT NULL,
+        config_version TEXT NOT NULL,
+        category TEXT NOT NULL,            -- a category id, or 'unknown'
+        confidence TEXT NOT NULL,          -- high | medium | low
+        reason TEXT NOT NULL,
+        model TEXT NOT NULL,
+        at TEXT NOT NULL,
+        PRIMARY KEY (case_id, cluster_key, direction)
+    );
+    """,
 ]
 
 

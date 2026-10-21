@@ -77,6 +77,15 @@ pairing:
 # A rule below this confidence goes to the model pass even though it matched.
 model_threshold: 0.6
 
+# The model pass (ambiguous and unmatched rows only). It is asked once per distinct narration, never for amounts,
+# dates or names. An answer is taken as settled only at a confidence listed in `accept`; the others are kept as a
+# suggestion for a person. `max_narrations` bounds one case's request.
+model:
+  enabled: true
+  accept: [high, medium]
+  confidence: {high: 0.9, medium: 0.75, low: 0.5}
+  max_narrations: 400
+
 rules:
   # ---- Tier 1: the narration states what the entry is -------------------------------------------
   - id: salary

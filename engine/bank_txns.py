@@ -23,7 +23,8 @@ from .contracts import CaseDetail, Evidence, TxnMonthTotal, TxnPage, TxnRow, Txn
 from .contracts.transactions import TxnCategoryTotal
 from .db import log_decision, transaction
 from .review_items import close_item, raise_item
-from .txn_intel import Context, Txn, classify
+from .ingest_client import IngestError
+from .txn_intel import Context, Txn, classify, cluster_key
 from .util import dumps, now_iso
 
 REVIEW_KIND = "transactions"
@@ -36,15 +37,38 @@ class TxnError(Exception):
         self.status = status
 
 
-def _basis(cfg_version: str, inputs: facts.StatementInputs) -> str:
+def _basis(cfg_version: str, inputs: facts.StatementInputs, models: dict) -> str:
     payload = {
         "config": cfg_version,
+        "models": sorted([k[0], k[1], m["category"], m["confidence"]] for k, m in models.items()),
         "context": [inputs.borrower, sorted(inputs.own_account_last4), inputs.lender_names, inputs.director_names,
                     inputs.emi_min_months, inputs.emi_tolerance_pct],
         "rows": [[t.ref, t.account, t.date.isoformat() if t.date else None, t.narration, t.debit, t.credit, t.doc.id]
                  for t in inputs.txns],
     }
     return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
+
+
+def _model_labels(conn: sqlite3.Connection, case_id: str, cfg_version: str) -> dict[tuple[str, str], sqlite3.Row]:
+    """The model's answers kept for this case under the configuration now published."""
+    return {(r["cluster_key"], r["direction"]): r for r in conn.execute(
+        "SELECT * FROM txn_model_labels WHERE case_id = ? AND config_version = ?", (case_id, cfg_version))}
+
+
+def _apply_model(cfg: TxnClassificationSection, lab, t, answer) -> str | None:
+    """Put the model's answer on a row the rules left open. Returns the model's reason, if it read the row."""
+    cats = {c.id: c for c in cfg.categories}
+    direction = "credit" if t.credit else "debit"
+    cat = cats.get(answer["category"])
+    if cat is None or cat.direction != direction:      # 'unknown', or a category since removed or of the other direction
+        return answer["reason"] or None
+    if answer["confidence"] in cfg.model.accept:
+        lab.category, lab.status, lab.rule_id, lab.candidates = cat.id, "matched", None, []
+        lab.confidence, lab.needs_model = cfg.model.confidence[answer["confidence"]], False
+        lab.method = "model"
+    else:
+        lab.candidates = [cat.id]                      # a suggestion for a person; the row stays open
+    return answer["reason"] or None
 
 
 def _last4(account: str) -> str | None:
@@ -56,7 +80,8 @@ def refresh(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> dict:
     cfg_version = reader.published_version(root)["version"]
     inputs = facts.statement_inputs(conn, root, case)
     rows = [t for t in inputs.txns if t.ref]
-    basis = _basis(cfg_version, inputs)
+    models = _model_labels(conn, case.id, cfg_version)
+    basis = _basis(cfg_version, inputs, models)
     known = conn.execute("SELECT basis FROM txn_class_basis WHERE case_id = ?", (case.id,)).fetchone()
     rewritten = known is None or known["basis"] != basis
     if rewritten:
@@ -72,15 +97,19 @@ def refresh(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> dict:
         with transaction(conn):
             conn.execute("DELETE FROM txn_class WHERE case_id = ?", (case.id,))
             for t, lab in zip(rows, labels):
+                reason = None
+                if lab.needs_model:
+                    answer = models.get((cluster_key(t.narration), "credit" if t.credit else "debit"))
+                    reason = _apply_model(cfg, lab, t, answer) if answer else None
                 conn.execute(
                     """INSERT INTO txn_class (case_id, txn_id, document_id, account, seq, date, narration, debit, credit,
                        category, status, method, rule_id, confidence, channel, counterparty, counterparty_key, candidates,
-                       flags, paired_with, needs_model, evidence)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'rule', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                       flags, paired_with, needs_model, evidence, model_reason)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (case.id, t.ref, t.doc.id, t.account, t.seq, t.date.isoformat() if t.date else None, t.narration,
-                     t.debit, t.credit, lab.category, lab.status, lab.rule_id, lab.confidence, lab.channel,
+                     t.debit, t.credit, lab.category, lab.status, lab.method, lab.rule_id, lab.confidence, lab.channel,
                      lab.counterparty, lab.counterparty_key, dumps(lab.candidates), dumps(lab.flags), lab.paired_with,
-                     int(lab.needs_model), dumps([e.model_dump(mode="json") for e in t.evidence])),
+                     int(lab.needs_model), dumps([e.model_dump(mode="json") for e in t.evidence]), reason),
                 )
             conn.execute(
                 """INSERT INTO txn_class_basis (case_id, basis, config_version, classified_at) VALUES (?, ?, ?, ?)
@@ -94,6 +123,75 @@ def refresh(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> dict:
             )
     unsettled = _raise_reviews(conn, case.id)
     return {"rows": len(rows), "unsettled": sum(unsettled.values()), "rewritten": rewritten}
+
+
+# ---- The model pass -------------------------------------------------------------------------------------------
+
+def run_model_pass(conn: sqlite3.Connection, root: Path, case: CaseDetail, client) -> dict:
+    """Ask the model about the narrations the rules left open and nothing has answered under this configuration.
+    One question per distinct narration and direction. A failure is kept (the rows stay open for a person) and never
+    raised: the rest of processing does not wait on a model. Returns {"asked", "answered", "error"}."""
+    cfg = reader.load_txn_classification(root)
+    result = {"asked": 0, "answered": 0, "error": None}
+    if not cfg.model.enabled or not hasattr(client, "classify_transactions"):
+        return result
+    refresh(conn, root, case)
+    cfg_version = reader.published_version(root)["version"]
+    have = _model_labels(conn, case.id, cfg_version)
+    clusters: dict[tuple[str, str], list[sqlite3.Row]] = {}
+    for r in conn.execute(
+        """SELECT t.* FROM txn_class t LEFT JOIN txn_class_overrides o ON o.case_id = t.case_id AND o.txn_id = t.txn_id
+           WHERE t.case_id = ? AND t.needs_model = 1 AND o.txn_id IS NULL ORDER BY t.document_id, t.seq""",
+        (case.id,),
+    ):
+        key = (cluster_key(r["narration"]), "credit" if r["credit"] else "debit")
+        if key not in have:
+            clusters.setdefault(key, []).append(r)
+    if not clusters:
+        _set_model_error(conn, case.id, None)
+        return result
+    asked = list(clusters.items())[: cfg.model.max_narrations]
+    items = []
+    for (ckey, direction), rows in asked:
+        amounts = sorted(r["credit"] or r["debit"] for r in rows)
+        items.append({"key": f"{direction}:{ckey}", "direction": direction, "narration": rows[0]["narration"],
+                      "amount": amounts[len(amounts) // 2]})
+    request = {"config_version": cfg_version,
+               "categories": [{"id": c.id, "direction": c.direction, "label": c.label} for c in cfg.categories],
+               "items": items}
+    result["asked"] = len(items)
+    try:
+        response = client.classify_transactions(request)
+        answers = {a["key"]: a for a in response["results"]}
+        valid = {c.id for c in cfg.categories} | {"unknown"}
+        with transaction(conn):
+            for (ckey, direction), _ in asked:
+                a = answers.get(f"{direction}:{ckey}")
+                if a is None or a["category"] not in valid or a["confidence"] not in ("high", "medium", "low"):
+                    continue
+                conn.execute(
+                    """INSERT INTO txn_model_labels (case_id, cluster_key, direction, config_version, category, confidence,
+                       reason, model, at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                       ON CONFLICT(case_id, cluster_key, direction) DO UPDATE SET config_version = excluded.config_version,
+                       category = excluded.category, confidence = excluded.confidence, reason = excluded.reason,
+                       model = excluded.model, at = excluded.at""",
+                    (case.id, ckey, direction, cfg_version, a["category"], a["confidence"], str(a.get("reason") or "")[:120],
+                     str(response.get("model") or ""), now_iso()),
+                )
+                result["answered"] += 1
+        _set_model_error(conn, case.id, None if result["answered"] == len(items) else
+                         f"the model answered {result['answered']} of {len(items)} narrations")
+    except (IngestError, KeyError, TypeError, ValueError) as e:
+        result["error"] = f"{type(e).__name__}: {e}"[:300]
+        _set_model_error(conn, case.id, result["error"])
+    if result["answered"]:
+        refresh(conn, root, case)
+    return result
+
+
+def _set_model_error(conn: sqlite3.Connection, case_id: str, message: str | None) -> None:
+    with transaction(conn):
+        conn.execute("UPDATE txn_class_basis SET model_error = ? WHERE case_id = ?", (message, case_id))
 
 
 def ensure_current(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> None:
@@ -152,7 +250,7 @@ def _categories(cfg: TxnClassificationSection) -> dict:
 def _row(r: sqlite3.Row, cats: dict, override: sqlite3.Row | None) -> TxnRow:
     category = override["category"] if override else r["category"]
     cat = cats.get(category)
-    method = "manual" if override else r["method"]
+    method = "manual" if override else r["method"]   # rule | model | manual
     settled = override is not None or r["status"] == "matched" and not r["needs_model"]
     return TxnRow(
         txn_id=r["txn_id"], document_id=r["document_id"], account=r["account"], seq=r["seq"], date=r["date"],
@@ -163,7 +261,8 @@ def _row(r: sqlite3.Row, cats: dict, override: sqlite3.Row | None) -> TxnRow:
         rule_id=None if override else r["rule_id"], confidence=1.0 if override else r["confidence"],
         channel=r["channel"], counterparty=r["counterparty"],
         candidates=json.loads(r["candidates"]), flags=json.loads(r["flags"]), paired_with=r["paired_with"],
-        needs_review=not settled, evidence=[Evidence.model_validate(e) for e in json.loads(r["evidence"])],
+        needs_review=not settled, reason=r["model_reason"],
+        evidence=[Evidence.model_validate(e) for e in json.loads(r["evidence"])],
     )
 
 
@@ -209,11 +308,12 @@ def summary(conn: sqlite3.Connection, root: Path, case_id: str) -> TxnSummary:
             m = months[r.date[:7]]
             m["credits" if r.credit else "debits"] += amount
             m["by"][r.category] += amount
-    basis = conn.execute("SELECT config_version FROM txn_class_basis WHERE case_id = ?", (case_id,)).fetchone()
+    basis = conn.execute("SELECT config_version, model_error FROM txn_class_basis WHERE case_id = ?", (case_id,)).fetchone()
     order = {c.id: i for i, c in enumerate(cfg.categories)}
     return TxnSummary(
         case_id=case_id, config_version=basis["config_version"] if basis else None, total=len(rows),
         by_rule=sum(1 for r in rows if r.method == "rule" and not r.needs_review),
+        by_model=sum(1 for r in rows if r.method == "model"),
         by_person=sum(1 for r in rows if r.method == "manual"),
         unsettled=sum(1 for r in rows if r.needs_review),
         categories=[TxnCategoryTotal(category=c, label=cats[c].label if c in cats else c,
@@ -222,6 +322,7 @@ def summary(conn: sqlite3.Connection, root: Path, case_id: str) -> TxnSummary:
         months=[TxnMonthTotal(month=m, credits=v["credits"], debits=v["debits"], by_category=dict(v["by"]))
                 for m, v in sorted(months.items())],
         accounts=sorted({r.account for r in rows}),
+        model_error=basis["model_error"] if basis else None,
     )
 
 

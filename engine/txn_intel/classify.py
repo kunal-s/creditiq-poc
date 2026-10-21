@@ -26,6 +26,11 @@ class _Compiled:
         ]
 
 
+def cluster_key(narration: str) -> str:
+    """Narrations that differ only in their digits and spacing are one question for the model."""
+    return re.sub(r"\s+", " ", re.sub(r"\d+", "#", (narration or "").lower())).strip()
+
+
 def _tokens(name: str, noise: set[str]) -> list[str]:
     return [w for w in normalise_name(name).split() if w not in noise and len(w) > 1]
 

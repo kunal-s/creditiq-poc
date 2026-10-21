@@ -6,7 +6,7 @@ model pass. Nothing here reads a document or the database: it takes plain transa
 context, so the same input always gives the same labels.
 """
 
-from .classify import classify
+from .classify import classify, cluster_key
 from .models import Context, Label, Txn
 
-__all__ = ["Context", "Label", "Txn", "classify"]
+__all__ = ["Context", "Label", "Txn", "classify", "cluster_key"]

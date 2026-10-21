@@ -51,6 +51,6 @@ class Label:
     """For an ambiguous row, the categories the competing rules named."""
     flags: list[str] = field(default_factory=list)
     paired_with: str | None = None
-    method: Literal["rule"] = "rule"
+    method: Literal["rule", "model"] = "rule"
 
     needs_model: bool = False

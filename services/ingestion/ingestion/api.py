@@ -23,6 +23,8 @@ from .pipeline import Ingestor
 from .readers.ocr import get_engine
 from .settings import Settings
 from .stages.quality import run_gate
+from .llm.provider import ModelError
+from .stages import transactions as txn_stage
 from .stages.read import document_grade, read_document
 from .store import Store
 from .util import sha256_hex
@@ -107,6 +109,21 @@ def create_app(settings: Settings | None = None, store: Store | None = None) -> 
                 yield f"event: {item[0]}\ndata: {json.dumps(item[1])}\n\n"
 
         return StreamingResponse(gen(), media_type="text/event-stream")
+
+    @app.post("/v1/classify-transactions", dependencies=[Depends(auth)])
+    def classify_transactions(body: txn_stage.ClassifyRequest):
+        """File bank-statement transactions under the categories sent with the request. Answers come from
+        recordings in replay mode (the default); a transaction with no recording is an error, never a guess."""
+        import os
+
+        cfg = config_for(body.config_version)
+        if cfg.llm.provider != "openai":
+            raise HTTPException(409, "no model is configured")
+        model = ModelClient(OpenAIProvider(cfg.llm, os.environ.get(cfg.llm.api_key_env)), st.model_mode, db)
+        try:
+            return txn_stage.classify(cfg, model, body).model_dump(mode="json")
+        except ModelError as e:
+            raise HTTPException(502, detail={"code": e.code, "message": str(e)}) from e
 
     @app.post("/v1/parse", dependencies=[Depends(auth)])
     async def parse(file: UploadFile = File(...), config_version: str = Form("dev")):

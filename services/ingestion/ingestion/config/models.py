@@ -343,6 +343,12 @@ class Prompt(Strict):
     user: str
 
 
+class TransactionsLlm(Strict):
+    """How bank-statement transactions are put to the model (`POST /v1/classify-transactions`)."""
+
+    batch_size: int = Field(default=40, ge=1, le=200)
+
+
 class LlmConfig(Strict):
     """The model layer (FRD AD-5a). Prompt text and sampling settings are part of the published version."""
 
@@ -359,6 +365,7 @@ class LlmConfig(Strict):
     seed: int | None = None
     fill: Literal["missing", "flagged"] = "missing"  # which unfilled fields the model may read
     prompts: dict[str, Prompt]
+    transactions: TransactionsLlm = Field(default_factory=TransactionsLlm)
 
 
 # --- confidence.yaml, decision.yaml ------------------------------------------------------------
@@ -467,7 +474,7 @@ class IngestionConfig(Strict):
             for t in r.types:
                 if t not in types:
                     problems.append(f"validators.{r.id}: unknown type {t}")
-        for name in ("classify", "extract"):
+        for name in ("classify", "extract", "transactions"):
             if name not in self.llm.prompts:
                 problems.append(f"llm.prompts: missing '{name}'")
         for rx in self.routing.reading.boilerplate:

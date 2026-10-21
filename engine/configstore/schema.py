@@ -329,6 +329,15 @@ class TxnPairing(BaseModel):
     days: int = Field(ge=0)
 
 
+class TxnModel(BaseModel):
+    """The model pass over what the rules could not settle."""
+
+    enabled: bool = True
+    accept: list[Literal["high", "medium", "low"]]
+    confidence: dict[Literal["high", "medium", "low"], float]
+    max_narrations: int = Field(gt=0)
+
+
 class TxnRule(BaseModel):
     """One narration rule (config/txn_classification.yaml). It matches when the direction agrees, some
     `any` pattern is found (or none is asked for), no `none` pattern is found, and, when `lookup`
@@ -355,6 +364,7 @@ class TxnClassificationSection(BaseModel):
     round_amount_multiple: int = Field(gt=0)
     pairing: TxnPairing
     model_threshold: float = Field(ge=0, le=1)
+    model: TxnModel
     rules: list[TxnRule]
 
     def problems(self) -> list[str]:
@@ -368,6 +378,8 @@ class TxnClassificationSection(BaseModel):
         ids = [r.id for r in self.rules]
         if len(ids) != len(set(ids)):
             out.append("txn_classification: duplicate rule ids")
+        if set(self.model.confidence) != {"high", "medium", "low"}:
+            out.append("txn_classification.model: needs a confidence for high, medium and low")
 
         def compiles(where: str, pattern: str, groups: int | None = None) -> None:
             try:

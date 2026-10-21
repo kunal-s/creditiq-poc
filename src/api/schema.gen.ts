@@ -4344,6 +4344,8 @@ export interface components {
       needs_review: boolean;
       /** Paired With */
       paired_with?: string | null;
+      /** Reason */
+      reason?: string | null;
       /** Rule Id */
       rule_id?: string | null;
       /** Seq */
@@ -4360,6 +4362,11 @@ export interface components {
     TxnSummary: {
       /** Accounts */
       accounts: string[];
+      /**
+       * By Model
+       * @default 0
+       */
+      by_model: number;
       /** By Person */
       by_person: number;
       /** By Rule */
@@ -4370,6 +4377,8 @@ export interface components {
       categories: components["schemas"]["TxnCategoryTotal"][];
       /** Config Version */
       config_version?: string | null;
+      /** Model Error */
+      model_error?: string | null;
       /** Months */
       months: components["schemas"]["TxnMonthTotal"][];
       /** Total */

@@ -376,7 +376,7 @@ def process_files(conn: sqlite3.Connection, root: Path, job_id: str, case_id: st
             detail=dumps({"job_id": job_id, "config_version": result.config.version, "config_hash": result.config.hash,
                           "engine_version": result.engine.version, "model": result.engine.model, "files": [r["id"] for r in rows]}),
         )
-    refresh_case(conn, root, case_id, running_job=job_id)
+    refresh_case(conn, root, case_id, running_job=job_id, client=client)
 
 
 def reextract_document(conn: sqlite3.Connection, root: Path, job_id: str, case_id: str, document_id: str, client) -> None:
@@ -417,7 +417,7 @@ def reextract_document(conn: sqlite3.Connection, root: Path, job_id: str, case_i
             conn, at=now_iso(), actor="system", case_id=case_id, action="processing.reextract",
             detail=dumps({"job_id": job_id, "document_id": document_id, "type_id": types[0], "config_version": result.config.version}),
         )
-    refresh_case(conn, root, case_id, running_job=job_id)
+    refresh_case(conn, root, case_id, running_job=job_id, client=client)
 
 
 # --- Derived state ---
@@ -438,7 +438,7 @@ def refresh_all_cases(conn: sqlite3.Connection, root: Path) -> tuple[list[str], 
     return ran, failed
 
 
-def refresh_case(conn: sqlite3.Connection, root: Path, case_id: str, *, running_job: str | None = None) -> None:
+def refresh_case(conn: sqlite3.Connection, root: Path, case_id: str, *, running_job: str | None = None, client=None) -> None:
     from . import bank_txns, cases, crosschecks, parties, queries
 
     parties.refresh(conn, root, case_id)
@@ -446,6 +446,8 @@ def refresh_case(conn: sqlite3.Connection, root: Path, case_id: str, *, running_
     if case is not None:
         try:
             bank_txns.refresh(conn, root, case)
+            if client is not None:   # only after documents were processed: the model is asked then, not on every decision
+                bank_txns.run_model_pass(conn, root, case, client)
         except reader.NoPublishedConfig:
             pass   # a configuration published before the transaction rules existed: they wait for the next publish
         try:

@@ -38,7 +38,9 @@ class TxnRow(BaseModel):
     flags: list[str] = Field(default_factory=list)
     paired_with: str | None = None
     needs_review: bool = False
-    """Neither the rules nor a person settled it."""
+    """Neither the rules, the model nor a person settled it."""
+    reason: str | None = None
+    """What the model relied on, when it read this row."""
     evidence: list[Evidence] = Field(default_factory=list)
 
 
@@ -70,12 +72,15 @@ class TxnSummary(BaseModel):
     config_version: str | None = None
     total: int
     by_rule: int
+    by_model: int = 0
     by_person: int
     unsettled: int
     """Rows nothing has settled yet: ambiguous or unmatched, with no person's decision."""
     categories: list[TxnCategoryTotal]
     months: list[TxnMonthTotal]
     accounts: list[str]
+    model_error: str | None = None
+    """Why the last attempt to ask the model failed, if it did."""
 
 
 class TxnCategoryRequest(BaseModel):

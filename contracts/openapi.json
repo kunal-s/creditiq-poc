@@ -8931,6 +8931,17 @@
             ],
             "title": "Paired With"
           },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
           "rule_id": {
             "anyOf": [
               {
@@ -8987,6 +8998,11 @@
             "title": "Accounts",
             "type": "array"
           },
+          "by_model": {
+            "default": 0,
+            "title": "By Model",
+            "type": "integer"
+          },
           "by_person": {
             "title": "By Person",
             "type": "integer"
@@ -9016,6 +9032,17 @@
               }
             ],
             "title": "Config Version"
+          },
+          "model_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Error"
           },
           "months": {
             "items": {

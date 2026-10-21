@@ -236,3 +236,21 @@ def test_the_stub_service_has_no_model_so_rows_stay_for_a_person(ready):
     result = model_pass(root, case_id, StubIngestClient())
     assert result["answered"] == 0 and "no model" in result["error"]
     assert rows(client, headers, case_id)["ZZ-SETTLEMENT 77/ADJ"]["needs_review"]
+
+
+def test_a_category_only_the_case_can_decide_is_never_offered_to_the_model(ready):
+    client, headers, case_id, root = ready
+    fake = FakeModel()
+    model_pass(root, case_id, fake)
+    offered = {c["id"] for c in fake.requests[0]["categories"]}
+    assert not offered & {"own_transfer_in", "own_transfer_out"} and "supplier_payment" in offered
+
+
+def test_a_category_that_takes_money_out_of_business_inflow_needs_the_model_to_be_sure(ready):
+    client, headers, case_id, root = ready
+    model_pass(root, case_id, FakeModel(answers={"amber oils": ("loan_disbursal", "medium"), "orchid mart": ("loan_disbursal", "high")}))
+    by = rows(client, headers, case_id)
+    amber = by["BY 004419 AMBER OILS"]
+    assert (amber["needs_review"], amber["category"], amber["candidates"]) == (True, "other_credit", ["loan_disbursal"])
+    orchid = by["BY TRANSFER 402211009988 ORCHID MART PAYMENT"]
+    assert (orchid["needs_review"], orchid["category"], orchid["method"], orchid["confidence"]) == (False, "loan_disbursal", "model", 0.9)

@@ -336,6 +336,10 @@ class TxnModel(BaseModel):
     accept: list[Literal["high", "medium", "low"]]
     confidence: dict[Literal["high", "medium", "low"], float]
     max_narrations: int = Field(gt=0)
+    withhold: list[str] = Field(default_factory=list)
+    """Categories the model is never offered: only the case's own facts can decide them."""
+    high_only: list[str] = Field(default_factory=list)
+    """Categories the model's answer settles only at high confidence."""
 
 
 class TxnRule(BaseModel):
@@ -378,6 +382,8 @@ class TxnClassificationSection(BaseModel):
         ids = [r.id for r in self.rules]
         if len(ids) != len(set(ids)):
             out.append("txn_classification: duplicate rule ids")
+        for name, listed in (("withhold", self.model.withhold), ("high_only", self.model.high_only)):
+            out += [f"txn_classification.model.{name}: unknown category {c!r}" for c in listed if c not in cats]
         if set(self.model.confidence) != {"high", "medium", "low"}:
             out.append("txn_classification.model: needs a confidence for high, medium and low")
 

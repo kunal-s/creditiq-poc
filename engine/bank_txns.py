@@ -62,7 +62,7 @@ def _apply_model(cfg: TxnClassificationSection, lab, t, answer) -> str | None:
     cat = cats.get(answer["category"])
     if cat is None or cat.direction != direction:      # 'unknown', or a category since removed or of the other direction
         return answer["reason"] or None
-    if answer["confidence"] in cfg.model.accept:
+    if answer["confidence"] in cfg.model.accept and (answer["confidence"] == "high" or cat.id not in cfg.model.high_only):
         lab.category, lab.status, lab.rule_id, lab.candidates = cat.id, "matched", None, []
         lab.confidence, lab.needs_model = cfg.model.confidence[answer["confidence"]], False
         lab.method = "model"
@@ -157,13 +157,14 @@ def run_model_pass(conn: sqlite3.Connection, root: Path, case: CaseDetail, clien
         items.append({"key": f"{direction}:{ckey}", "direction": direction, "narration": rows[0]["narration"],
                       "amount": amounts[len(amounts) // 2]})
     request = {"config_version": cfg_version,
-               "categories": [{"id": c.id, "direction": c.direction, "label": c.label} for c in cfg.categories],
+               "categories": [{"id": c.id, "direction": c.direction, "label": c.label} for c in cfg.categories
+                              if c.id not in cfg.model.withhold],
                "items": items}
     result["asked"] = len(items)
     try:
         response = client.classify_transactions(request)
         answers = {a["key"]: a for a in response["results"]}
-        valid = {c.id for c in cfg.categories} | {"unknown"}
+        valid = {c.id for c in cfg.categories if c.id not in cfg.model.withhold} | {"unknown"}
         with transaction(conn):
             for (ckey, direction), _ in asked:
                 a = answers.get(f"{direction}:{ckey}")

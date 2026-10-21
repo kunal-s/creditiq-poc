@@ -80,9 +80,14 @@ model_threshold: 0.6
 # The model pass (ambiguous and unmatched rows only). It is asked once per distinct narration, never for amounts,
 # dates or names. An answer is taken as settled only at a confidence listed in `accept`; the others are kept as a
 # suggestion for a person. `max_narrations` bounds one case's request.
+# `withhold`: categories only the case's own facts can decide (the model cannot know which accounts are the
+# borrower's), so it is never offered them. `high_only`: categories that take a credit out of business inflow or
+# mark money as not the business's own; the model's word counts for them only at high confidence.
 model:
   enabled: true
   accept: [high, medium]
+  withhold: [own_transfer_in, own_transfer_out]
+  high_only: [loan_disbursal, promoter_funding, reversal_refund, failed_debit_reversal, tax_refund, interest_credit]
   confidence: {high: 0.9, medium: 0.75, low: 0.5}
   max_narrations: 400
 

@@ -225,7 +225,7 @@ def test_kestrel_clean_set_repeats_no_reference():
 def test_a_flag_that_would_repeat_every_month_is_one_line_with_the_count():
     rows = [r(f"2025-{m:02d}-25", "statutory_gst", dr=50_000) for m in range(4, 12)]
     late = [f for f in conduct(rows).flags if f.kind == "statutory_late"]
-    assert len(late) == 1 and "8 of 8 months" in late[0].message and "usually the 25th" in late[0].message and late[0].evidence
+    assert len(late) == 1 and "8 of 8 months" in late[0].message and "typically the 25th" in late[0].message and late[0].evidence
     saturdays = [r(f"2025-04-{d:02d}", "supplier_payment", dr=2_000_000, party="Acme") for d in (5, 12, 19, 26)]
     weekend = [f for f in conduct(saturdays).flags if f.kind == "weekend"]
-    assert len(weekend) == 1 and "4 large entries" in weekend[0].message and len(weekend[0].evidence) == 3
+    assert len(weekend) == 1 and "4 high-value transactions" in weekend[0].message and len(weekend[0].evidence) == 3

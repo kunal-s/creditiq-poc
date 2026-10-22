@@ -148,8 +148,7 @@ const CONDUCT: BankConduct = {
     {
       kind: "unsettled",
       severity: "info",
-      message:
-        "2 transactions not yet filed under a category; the figures count them as they stand",
+      message: "2 transactions pending classification; included in the figures as they stand",
       evidence: page7,
     },
     {
@@ -162,7 +161,7 @@ const CONDUCT: BankConduct = {
     {
       kind: "returns",
       severity: "concern",
-      message: "Apr 2025: 1 cheque returned unpaid",
+      message: "Apr 2025: 1 cheque return (dishonoured)",
       month: "2025-04",
       evidence: page7,
     },
@@ -193,7 +192,7 @@ async function openBanking(page: Page, opts: { rows?: TxnRow[]; user?: typeof AN
 
 const txn = (page: Page) => page.getByTestId("banking-txn");
 
-test("the Banking tab sits with the statements and is badged with what is not yet filed", async ({
+test("the Banking tab sits with the statements and is badged with what is unclassified", async ({
   page,
 }) => {
   await openBanking(page);
@@ -213,7 +212,7 @@ test("the counts say how many were read by the rules, the model and a person, an
   await expect(page.getByTestId("banking-count-model")).toContainText("1");
   await expect(page.getByTestId("banking-count-person")).toContainText("0");
   await expect(page.getByTestId("banking-count-open")).toContainText("2");
-  await expect(page.getByTestId("banking-count-open")).toContainText("counted as they stand");
+  await expect(page.getByTestId("banking-count-open")).toContainText("included in business inflow");
 });
 
 test("the flags are questions for a person, concerns first, each with its page", async ({
@@ -225,7 +224,7 @@ test("the flags are questions for a person, concerns first, each with its page",
   expect(await flags.evaluateAll((els) => els.map((e) => e.getAttribute("data-severity")))).toEqual(
     ["info", "watch", "concern"],
   );
-  await expect(flags.nth(2)).toContainText("1 cheque returned unpaid");
+  await expect(flags.nth(2)).toContainText("1 cheque return (dishonoured)");
   await flags.nth(2).getByTestId("banking-flag-page").click();
   await expect(page.getByTestId("evidence-viewer")).toBeVisible();
 });
@@ -256,11 +255,11 @@ test("each row says how it was read, a row nothing settled is open with a sugges
   await expect(by("ORCHID MART")).toHaveAttribute("data-method", "model");
   await expect(by("ORCHID MART")).toContainText("Model");
   await expect(by("ORCHID MART")).toContainText(
-    "Read: “ORCHID MART PAYMENT” indicates customer payment",
+    "Basis: “ORCHID MART PAYMENT” indicates customer payment",
   );
   await expect(by("AMBER OILS")).toHaveAttribute("data-open", "true");
-  await expect(by("AMBER OILS")).toContainText("Not yet filed");
-  await expect(by("AMBER OILS")).toContainText("Suggested: Receipt from a customer");
+  await expect(by("AMBER OILS")).toContainText("Unclassified");
+  await expect(by("AMBER OILS")).toContainText("Suggested category: Receipt from a customer");
 });
 
 test("the list narrows by category, by what is open, and by what is typed", async ({ page }) => {
@@ -341,7 +340,7 @@ test("someone who may not decide sees the rows and their pages but no way to fil
 
 test("a case with no bank transactions says so", async ({ page }) => {
   await openBanking(page, { rows: [] });
-  await expect(page.getByTestId("banking-none")).toContainText("No bank transactions yet");
+  await expect(page.getByTestId("banking-none")).toContainText("No bank statement transactions");
   await expect(
     page.getByTestId("financials-tab-banking").getByTestId("financials-tab-count"),
   ).toHaveCount(0);

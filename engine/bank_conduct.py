@@ -146,17 +146,17 @@ def build(case_id: str, rows: list[Row], coverage: dict[str, set[tuple[int, int]
         months.append(mc)
         label = month_label((int(ym[:4]), int(ym[5:])))
         if credits and mc.cash_share_pct >= cfg.cash.share_flag_pct:
-            _flag(flags, "cash", "watch", f"{label}: cash deposits are {mc.cash_share_pct:.0f}% of credits", 
+            _flag(flags, "cash", "watch", f"{label}: cash deposits form {mc.cash_share_pct:.0f}% of gross credits", 
                   [r for r in mrows if r.category == "cash_deposit"], month=ym, amount=cash)
         if len(ret) >= cfg.returns.flag_per_month:
-            _flag(flags, "returns", "concern", f"{label}: {len(ret)} cheque{'s' if len(ret) != 1 else ''} returned unpaid", ret,
+            _flag(flags, "returns", "concern", f"{label}: {len(ret)} cheque return{'s' if len(ret) != 1 else ''} (dishonoured)", ret,
                   month=ym, amount=mc.returns_amount)
         if receipts and mc.promoter_out / receipts * 100 >= cfg.promoter.drawings_flag_pct:
-            _flag(flags, "promoter", "watch", f"{label}: payments to promoters are {mc.promoter_out / receipts * 100:.0f}% of receipts from customers",
+            _flag(flags, "promoter", "watch", f"{label}: promoter drawings are {mc.promoter_out / receipts * 100:.0f}% of customer receipts",
                   [r for r in mrows if r.category == "promoter_drawings"], month=ym, amount=mc.promoter_out)
     for r in dated:
         if r.category == "cash_deposit" and r.credit >= cfg.cash.large_deposit:
-            _flag(flags, "cash", "info", f"A cash deposit of {r.credit:,.0f} on {r.date.isoformat()}", [r], month=_ym(r.date), account=r.account, amount=r.credit)
+            _flag(flags, "cash", "info", f"Large cash deposit of {r.credit:,.0f} on {r.date.isoformat()}", [r], month=_ym(r.date), account=r.account, amount=r.credit)
 
     # Statutory payments: late, and months with none among months that otherwise have them. One line per payment.
     for cat, due in cfg.statutory_due_day.items():
@@ -166,8 +166,8 @@ def build(case_id: str, rows: list[Row], coverage: dict[str, set[tuple[int, int]
         if late:
             usual = sorted(late.values())[len(late) // 2]
             _flag(flags, "statutory_late", "watch",
-                  f"{name} was paid after the {due}th in {len(late)} of {len(paid)} months with a payment"
-                  f" (usually the {usual}th): {', '.join(month_label((int(m[:4]), int(m[5:]))) for m in sorted(late)[:6])}"
+                  f"{name} paid after the due date (the {due}th) in {len(late)} of {len(paid)} months with a payment"
+                  f" (typically the {usual}th): {', '.join(month_label((int(m[:4]), int(m[5:]))) for m in sorted(late)[:6])}"
                   f"{' and others' if len(late) > 6 else ''}",
                   [r for ym in sorted(late) for r in by_month[ym] if r.category == cat])
         if len(paid) >= 2:
@@ -175,8 +175,8 @@ def build(case_id: str, rows: list[Row], coverage: dict[str, set[tuple[int, int]
             gaps = [m for m in span[span.index(min(paid)): span.index(max(paid)) + 1] if m not in paid]
             if gaps:
                 _flag(flags, "statutory_gap", "watch",
-                      f"No {name} payment in {', '.join(month_label((int(m[:4]), int(m[5:]))) for m in gaps[:6])}"
-                      f"{' and others' if len(gaps) > 6 else ''}, among months that otherwise have one")
+                      f"No {name} payment recorded for {', '.join(month_label((int(m[:4]), int(m[5:]))) for m in gaps[:6])}"
+                      f"{' and others' if len(gaps) > 6 else ''}; payments are otherwise regular")
 
     # Concentration.
     receipts = [r for r in rows if r.category == "customer_receipt" and r.credit]
@@ -186,10 +186,10 @@ def build(case_id: str, rows: list[Row], coverage: dict[str, set[tuple[int, int]
     if len(customers) >= cfg.concentration.min_parties:
         top1, top5 = customers[0].share_pct, round(sum(c.share_pct for c in customers[:5]), 1)
         if top1 >= cfg.concentration.top1_flag_pct:
-            _flag(flags, "concentration", "watch", f"{customers[0].party} is {top1:.0f}% of receipts from customers",
+            _flag(flags, "concentration", "watch", f"Customer concentration: {customers[0].party} accounts for {top1:.0f}% of customer receipts",
                   [r for r in receipts if r.party_key and r.counterparty == customers[0].party], amount=customers[0].amount)
         if top5 >= cfg.concentration.top5_flag_pct:
-            _flag(flags, "concentration", "info", f"The five largest customers are {top5:.0f}% of receipts from customers")
+            _flag(flags, "concentration", "info", f"Top 5 customers account for {top5:.0f}% of customer receipts")
     payments = [r for r in rows if r.category == "supplier_payment" and r.debit and r.party_key]
     suppliers = _shares(payments, sum(r.debit for r in payments))
 
@@ -209,7 +209,7 @@ def build(case_id: str, rows: list[Row], coverage: dict[str, set[tuple[int, int]
             trips.append(RoundTrip(party=o.counterparty or o.party_key, out_date=o.date.isoformat(), out_amount=o.debit,
                                    in_date=i.date.isoformat(), in_amount=i.credit, evidence=[*o.evidence[:1], *i.evidence[:1]]))
             _flag(flags, "round_trip", "concern",
-                  f"{o.counterparty or o.party_key}: {o.debit:,.0f} paid on {o.date.isoformat()} and {i.credit:,.0f} received on {i.date.isoformat()}",
+                  f"Possible round-tripping with {o.counterparty or o.party_key}: {o.debit:,.0f} paid on {o.date.isoformat()} and {i.credit:,.0f} received on {i.date.isoformat()}",
                   [o, i], month=_ym(o.date), account=o.account, amount=o.debit)
             break
 
@@ -236,15 +236,15 @@ def build(case_id: str, rows: list[Row], coverage: dict[str, set[tuple[int, int]
     if 0 < len(far) <= 3:
         for r in far:
             _flag(flags, "unusual", "watch", f"{r.amount:,.0f} on {r.date.isoformat()} is {r.amount / (sorted(by_cat[(r.account, r.category)])[len(by_cat[(r.account, r.category)]) // 2]):.0f} "
-                  f"times the usual for this kind of entry in {r.account}", [r], month=_ym(r.date), account=r.account, amount=r.amount)
+                  f"times the median for this type of transaction in {r.account}", [r], month=_ym(r.date), account=r.account, amount=r.amount)
     elif far:
         big = sorted(far, key=lambda r: -r.amount)
-        _flag(flags, "unusual", "watch", f"{len(far)} entries are far above the usual for their kind; the largest is {big[0].amount:,.0f} on {big[0].date.isoformat()}",
+        _flag(flags, "unusual", "watch", f"{len(far)} transactions significantly exceed the median for their type; the largest is {big[0].amount:,.0f} on {big[0].date.isoformat()}",
               big, amount=sum(r.amount for r in far))
     if weekend:
         big = sorted(weekend, key=lambda r: -r.amount)
-        _flag(flags, "weekend", "info", f"{len(weekend)} large entr{'ies were' if len(weekend) != 1 else 'y was'} posted on a Saturday or Sunday"
-              f" ({sum(r.amount for r in weekend):,.0f} in all); the largest is {big[0].amount:,.0f} on {big[0].date.isoformat()}", big,
+        _flag(flags, "weekend", "info", f"{len(weekend)} high-value transaction{'s' if len(weekend) != 1 else ''} posted on non-working days"
+              f" ({sum(r.amount for r in weekend):,.0f} in aggregate); the largest is {big[0].amount:,.0f} on {big[0].date.isoformat()}", big,
               amount=sum(r.amount for r in weekend))
 
     # Integrity of the statements.
@@ -255,7 +255,7 @@ def build(case_id: str, rows: list[Row], coverage: dict[str, set[tuple[int, int]
             y, m = covered[0]
             while (y, m) <= covered[-1]:
                 if (y, m) not in coverage[account]:
-                    _flag(flags, "period_gap", "concern", f"{account}: no statement for {month_label((y, m))}, between months that have one", None,
+                    _flag(flags, "period_gap", "concern", f"{account}: statement not available for {month_label((y, m))} (gap in the period covered)", None,
                           month=f"{y}-{m:02d}", account=account)
                 y, m = (y + 1, 1) if m == 12 else (y, m + 1)
         breaks = []
@@ -266,7 +266,7 @@ def build(case_id: str, rows: list[Row], coverage: dict[str, set[tuple[int, int]
             if r.balance is not None:
                 prev = r.balance
         if breaks:
-            _flag(flags, "balance_break", "concern", f"{account}: the running balance does not follow from the entries at {len(breaks)} place{'s' if len(breaks) != 1 else ''}",
+            _flag(flags, "balance_break", "concern", f"{account}: running balance does not reconcile with the transactions at {len(breaks)} point{'s' if len(breaks) != 1 else ''}",
                   breaks, account=account)
         seen: dict[tuple, Row] = {}
         twice: list[Row] = []
@@ -276,7 +276,7 @@ def build(case_id: str, rows: list[Row], coverage: dict[str, set[tuple[int, int]
                 twice += [seen[key], r]
             seen.setdefault(key, r)
         if twice:
-            _flag(flags, "duplicate", "watch", f"{account}: {len(twice) // 2} entr{'ies appear' if len(twice) > 2 else 'y appears'} twice with the same date, narration and amount"
+            _flag(flags, "duplicate", "watch", f"{account}: {len(twice) // 2} possible duplicate transaction{'s' if len(twice) > 2 else ''} (same date, narration and amount)"
                   f", for example {twice[0].narration[:40]} on {twice[0].date.isoformat()}", twice, account=account, amount=sum(r.amount for r in twice[1::2]))
     refs: dict[str, list[Row]] = defaultdict(list)
     for r in rows:
@@ -285,11 +285,11 @@ def build(case_id: str, rows: list[Row], coverage: dict[str, set[tuple[int, int]
     for ref, group in refs.items():
         if len({r.account for r in group}) > 1:
             _flag(flags, "duplicate_reference", "concern",
-                  f"The bank reference {ref} appears on {len({r.account for r in group})} accounts' statements", group)
+                  f"Same bank reference {ref} appears on {len({r.account for r in group})} accounts' statements", group)
 
     unsettled = [r for r in rows if not r.settled]
     if unsettled:
-        _flag(flags, "unsettled", "info", f"{len(unsettled)} transaction{'s' if len(unsettled) != 1 else ''} not yet filed under a category; the figures count them as they stand", unsettled)
+        _flag(flags, "unsettled", "info", f"{len(unsettled)} transaction{'s' if len(unsettled) != 1 else ''} pending classification; included in the figures as they stand", unsettled)
 
     order = {"concern": 0, "watch": 1, "info": 2}
     flags.sort(key=lambda f: (order[f.severity], f.month or "", f.kind))

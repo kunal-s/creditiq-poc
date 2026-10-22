@@ -85,8 +85,8 @@ spreadPage:
     open: Take this to Cross-verification
     more: "(and {n} more)"
   tabs:
-    banking: Banking
-    bankingOpen: "{n} not yet filed"
+    banking: Banking Analysis
+    bankingOpen: "{n} unclassified"
     turnover: Turnover by year
     profit_and_loss: Profit and loss
     balance_sheet: Balance sheet
@@ -1849,71 +1849,71 @@ comparison:
 
 # The Banking view of the Financials section: statement transactions filed under categories, and the conduct of the accounts.
 banking:
-  title: Banking
-  purpose: Every statement transaction filed under a category, how it was read, and what the accounts show.
-  emptyTitle: No bank transactions yet
-  emptyDescription: Transactions appear once a bank statement has been read.
+  title: Banking Analysis
+  purpose: Bank statement transactions classified by nature, the basis of each classification, and the observed conduct of the accounts.
+  emptyTitle: No bank statement transactions
+  emptyDescription: Transactions are analysed once a bank statement has been processed.
   counts:
-    total: Transactions
-    rule: Read by the rules
-    model: Read by the model
-    person: Filed by a person
-    open: Not yet filed
-  openNote: These are counted as they stand until they are filed.
-  modelError: "The model could not be asked just now: {error}"
+    total: Transactions analysed
+    rule: Rule-classified
+    model: Model-classified
+    person: Manually classified
+    open: Unclassified
+  openNote: Unclassified credits are included in business inflow until classified.
+  modelError: "Model classification could not be completed: {error}"
   severity:
-    concern: Concern
+    concern: Adverse
     watch: Watch
-    info: Note
+    info: Observation
   flags:
-    title: What the accounts show
-    subtitle: Questions for a person, each with the page it rests on. None is a decision.
-    none: Nothing in the accounts stands out against the configured thresholds.
+    title: Account Conduct Observations
+    subtitle: Observations for the credit reviewer, each referenced to its source page. None is a decision.
+    none: No observations against the configured thresholds.
     more: "Show all {n}"
     less: Show fewer
-    open: Open the page
+    open: View source page
   months:
-    title: Month by month
-    subtitle: INR · all accounts together
+    title: Monthly Analysis
+    subtitle: INR · all accounts combined
     month: Month
-    credits: Credits
-    business: Business credits
-    cash: Cash
-    returns: Returned
-    salary: Salary
-    promoters: To promoters
+    credits: Gross credits
+    business: Net business credits
+    cash: Cash deposits
+    returns: Cheque returns
+    salary: Salary outflow
+    promoters: Promoter drawings
   categories:
-    title: By category
-    subtitle: INR · credits and debits filed under each category
+    title: Category-wise Summary
+    subtitle: INR · credits and debits by nature of transaction
     category: Category
     total: Total
     credits: Credits
     debits: Debits
   customers:
-    title: Customers
-    subtitle: Receipts from customers, largest first
+    title: Customer Concentration
+    subtitle: Receipts from customers, in descending order
     party: Customer
-    amount: Received
-    share: Share
+    amount: Receipts
+    share: Share of receipts
     count: Entries
-    top1: "Largest: {pct}%"
-    top5: "Five largest: {pct}%"
-    none: No named customers among the receipts.
+    top1: "Top customer: {pct}%"
+    top5: "Top 5 customers: {pct}%"
+    none: No identifiable customers among the receipts.
   trips:
-    title: Money out and back
-    subtitle: Paid to and received from the same party within days, at about the same amount
-    none: None found.
-    row: "{party}: {out} paid on {outDate}, {in} received on {inDate}"
+    title: Circular (Round-trip) Transactions
+    subtitle: Funds paid to and received back from the same counterparty within days, for a similar amount
+    none: None identified.
+    row: "{party}: {out} paid on {outDate}; {in} received on {inDate}"
   balances:
-    title: Balances by month
+    title: Monthly Balance Analysis
     account: Account
     month: Month
-    average: Average
-    minimum: Lowest
-    monthEnd: Month end
-    spike: Month-end peak
+    average: Average balance
+    minimum: Minimum balance
+    monthEnd: Month-end balance
+    spike: Month-end spike
   txn:
-    title: Transactions
+    title: Transaction Register
     subtitle: "{shown} of {total}"
     empty: No transaction matches.
     date: Date
@@ -1925,34 +1925,34 @@ banking:
       category: Category
       month: Month
       account: Account
-      search: Search the narration or the party
+      search: Search narration or counterparty
       all: All
       status: Show
-      statusAll: Every transaction
-      statusOpen: Not yet filed
-      statusPerson: Filed by a person
+      statusAll: All transactions
+      statusOpen: Unclassified
+      statusPerson: Manually classified
     method:
       rule: Rule
       model: Model
-      manual: Person
-    suggested: "Suggested: {label}"
-    reason: "Read: {reason}"
+      manual: Manual
+    suggested: "Suggested category: {label}"
+    reason: "Basis: {reason}"
     flag:
       recurring: Recurring
-      round_amount: Round amount
+      round_amount: Round sum
     more: Show more
-    page: Open the page
-    file: File under…
-    change: Change
+    page: View source page
+    file: Reclassify…
+    change: Reclassify
   file:
-    title: File this transaction
+    title: Classify transaction
     narration: Narration
     category: Category
-    choose: Choose a category
-    reason: Reason
-    reasonHint: What you checked, at least three characters.
+    choose: Select a category
+    reason: Basis for classification
+    reasonHint: Record what was verified (minimum three characters).
     save: Save
     cancel: Cancel
-    remove: Remove my decision
-    recorded: Filed.
-    removed: Decision removed.
+    remove: Remove manual classification
+    recorded: Classification saved.
+    removed: Manual classification removed.

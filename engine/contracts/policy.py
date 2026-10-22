@@ -90,6 +90,11 @@ class NormResult(BaseModel):
     configured marginal value, or past that too. None where the norm has no ratio or no result."""
     marginal_text: str | None = None
     """The ratio's configured marginal value, formatted as the screens write a value."""
+    ratio: str | None = None
+    """The ratio's key, which names its row in the spread (the same ratio year by year)."""
+    threshold: float | None = None
+    marginal: float | None = None
+    """The norm's acceptable and marginal values as numbers, for the screens to place an actual between them."""
 
 
 NormFamily = Literal["eligibility", "ratios", "security_cover", "documentation"]

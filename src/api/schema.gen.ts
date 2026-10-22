@@ -3469,6 +3469,8 @@ export interface components {
       inputs?: components["schemas"]["NormInput"][];
       /** Label */
       label: string;
+      /** Marginal */
+      marginal?: number | null;
       /** Marginal Text */
       marginal_text?: string | null;
       /** Missing */
@@ -3485,6 +3487,8 @@ export interface components {
        * @default false
        */
       provisional: boolean;
+      /** Ratio */
+      ratio?: string | null;
       /** Reason */
       reason?: ("zero_denominator" | "denominator_not_positive" | "awaiting_review") | null;
       /** Reason Inputs */
@@ -3493,6 +3497,8 @@ export interface components {
       required: string;
       /** Source */
       source?: string | null;
+      /** Threshold */
+      threshold?: number | null;
       /** Threshold Text */
       threshold_text?: string | null;
       /** Unit */

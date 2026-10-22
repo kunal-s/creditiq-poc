@@ -390,6 +390,8 @@ def evaluate(norm: PolicyNorm, ratio: PolicyRatio | None, case: CaseDetail, inpu
         category_label=categories.get(norm.category, norm.category), note=norm.note or (ratio.note if ratio else None),
         provisional=status == "provisional",
         marginal_text=unit_text(ratio.marginal, unit) if ratio else None,
+        ratio=ratio.key if ratio else None, threshold=float(threshold) if ratio else None,
+        marginal=float(ratio.marginal) if ratio else None,
     )
     if not _applies(norm, case, inputs, wc_limit):
         return result

@@ -6405,6 +6405,17 @@
             "title": "Label",
             "type": "string"
           },
+          "marginal": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Marginal"
+          },
           "marginal_text": {
             "anyOf": [
               {
@@ -6449,6 +6460,17 @@
             "title": "Provisional",
             "type": "boolean"
           },
+          "ratio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ratio"
+          },
           "reason": {
             "anyOf": [
               {
@@ -6486,6 +6508,17 @@
               }
             ],
             "title": "Source"
+          },
+          "threshold": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Threshold"
           },
           "threshold_text": {
             "anyOf": [

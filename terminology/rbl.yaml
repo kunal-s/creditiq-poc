@@ -592,6 +592,34 @@ policy:
   # A norm's tile: the norm it is held to, under its chip.
   tile:
     required: "Policy: {required}"
+  # The financial ratios as one table: each year side by side, and where the latest sits against its limits.
+  ratios:
+    ratio: Ratio
+    policy: Policy
+    latest: Latest
+    summary: "{within} of {total} within policy"
+    summaryOutside: "{n} outside"
+    summaryMarginal: "{n} marginal"
+    summaryOpen: "{n} cannot be evaluated"
+    years: "Years on file: {years}"
+    scaleLabel: "Where {value} sits between the limits"
+    limits: "{required} · marginal {marginal}"
+    better: Better
+    worse: Worse
+    flat: Unchanged
+    trendUp: "up {delta} on {fy}"
+    trendDown: "down {delta} on {fy}"
+    trendFlat: "unchanged on {fy}"
+    enter: "Enter {label}"
+    enterHint: "The statement does not give this figure. Enter it from the page, or as nil if there is none; it is kept with a reason."
+    needsData: "Needs figures that come from the bank statements or a sanction letter, not from the financial statements."
+    meaning:
+      current-ratio: Whether short-term assets cover what falls due within the year.
+      tol-tnw: How much the business owes outsiders for each rupee its owners have put in.
+      dscr: Whether the year's cash profit covers the loan instalments falling due.
+      interest-coverage: How many times the year's operating profit pays the interest on its borrowings.
+      debt-equity: Borrowings as a share of the owners' funds.
+      wc-cycle: Days cash is tied up in stock and receivables, net of what suppliers finance.
   provisionalNorms: provisional norms
   required: Required
   actual: Actual

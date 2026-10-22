@@ -197,10 +197,12 @@ const ratioNorm = (
   actual: number | null,
   unit: string,
   required: string,
+  extra: Record<string, unknown> = {},
 ) =>
   norm({
     id,
     family: "ratios",
+    ...extra,
     label,
     outcome,
     band,
@@ -223,6 +225,7 @@ const POLICY_BANDS = {
       87,
       "days",
       "at most 75 days",
+      { ratio: "wc-cycle", threshold: 75, marginal: 95, comparator: "max" },
     ),
     ratioNorm("FR-02", "TOL / TNW", "deviation", "outside", 4.1, "x", "at most 3.00x"),
     ratioNorm("FR-03", "DSCR", "cannot_evaluate", null, null, "x", "at least 1.50x"),
@@ -404,6 +407,24 @@ test("each ratio norm reads in the band the engine placed it; the spread has no 
   // No band where the norm has no result.
   await expect(row("FR-03").getByTestId("norm-band")).toHaveCount(0);
   await expect(page.getByTestId("spread-ratio")).toHaveCount(0);
+});
+
+test("a ratio is read year by year, with its direction and the latest set against its limits", async ({
+  page,
+}) => {
+  await openFinancials(page);
+  const wc = page.locator('[data-testid="norm"][data-norm="FR-06"]');
+  // Both years of the spread's row, the later one the latest.
+  await expect(wc.getByTestId("ratio-year")).toHaveText([/71 days$/, /87 days$/]);
+  // The cycle lengthened, and a longer cycle is the worse way for a norm that is at most.
+  await expect(wc.getByTestId("ratio-trend")).toHaveAttribute("data-direction", "worse");
+  await expect(wc.getByTestId("ratio-scale")).toBeVisible();
+  // A ratio with no spread row still shows its requirement, and the working opens under its own row.
+  await expect(page.locator('[data-testid="norm"][data-norm="FR-03"]')).toContainText(
+    "at least 1.50x",
+  );
+  await wc.getByTestId("norm-select").click();
+  await expect(wc.getByTestId("norm-detail")).toBeVisible();
 });
 
 test("the working-capital assessment sits with the statements", async ({ page }) => {

@@ -63,15 +63,23 @@ export function useClearCategory(caseId: string) {
   });
 }
 
-/** An amount as the Banking view writes it: whole rupees, Indian grouping. */
+/** An amount in whole rupees, Indian grouping: a register entry. */
 export function rupees(amount: number): string {
   return Math.round(amount).toLocaleString("en-IN");
 }
 
+/** An amount in INR lakh to two places: the monthly and category summaries. */
+export function lakh(amount: number): string {
+  return (amount / 100_000).toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** "2025-09" as "Sep 2025", as the other tabs write a month. */
 export function monthLabel(month: string): string {
   const [y, m] = month.split("-");
-  return new Date(Number(y), Number(m) - 1, 1).toLocaleString("en-IN", {
-    month: "short",
-    year: "numeric",
-  });
+  return `${MONTHS[Number(m) - 1] ?? m} ${y}`;
 }

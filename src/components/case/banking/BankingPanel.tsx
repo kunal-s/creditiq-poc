@@ -1,18 +1,21 @@
 import { Eye } from "lucide-react";
 import { useState } from "react";
 import type { BankConduct, ConductFlag, TxnSummary } from "@/api/types";
-import { Chip, Kpi, Panel, type Tone } from "@/components/common/Panel";
+import { Chip, Panel, type Tone } from "@/components/common/Panel";
 import { ErrorState, LoadingBlock } from "@/components/common/States";
 import { evidenceRequest, useDocViewer } from "@/components/docviewer/DocViewer";
 import { t } from "@/config/terminology";
-import { monthLabel, rupees, useBankConduct, useTxnSummary } from "@/domain/transactions";
+import { formatDate } from "@/domain/cases";
+import { lakh, monthLabel, rupees, useBankConduct, useTxnSummary } from "@/domain/transactions";
 import { cn } from "@/lib/utils";
+import { TH, td, th } from "./styles";
 import { TransactionsTable } from "./TransactionsTable";
 
 // The Banking view of the Financials section: the case's statement transactions each filed under a category, how it
-// was read (a rule, the model, a person), and what the accounts show: cash, returns, concentration, money out and
-// back, balances, salary and statutory payments, promoters, unusual entries, and the statements' own integrity.
-// The screen arranges; the engine decides nothing here.
+// was read (a rule, the model, a person), and what the accounts show: cash, returns, concentration, round trips,
+// balances, salary and statutory payments, promoters, unusual entries, and the statements' own integrity. It is laid
+// out as the other tabs are: compact tables, small uppercase headers, dates as `03 Apr 2025`, summary figures in
+// INR lakh and the register in whole rupees. The screen arranges; the engine decides nothing here.
 //
 // Test ids:
 //   banking                 the view; banking-counts and banking-count-<total|rule|model|person|open> each
@@ -56,7 +59,7 @@ export function BankingPanel({ caseId }: { caseId: string }) {
       <CategoryTable summary={summary.data} />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Customers conduct={conduct.data} />
-        <RoundTrips conduct={conduct.data} />
+        <RoundTrips caseId={caseId} conduct={conduct.data} />
       </div>
       <Balances conduct={conduct.data} />
       <TransactionsTable caseId={caseId} summary={summary.data} />
@@ -64,28 +67,42 @@ export function BankingPanel({ caseId }: { caseId: string }) {
   );
 }
 
+/** How the transactions were classified, in one strip. */
 function Counts({ summary }: { summary: TxnSummary }) {
-  const tiles: [string, number, "flag" | undefined][] = [
-    ["total", summary.total, undefined],
-    ["rule", summary.by_rule, undefined],
-    ["model", summary.by_model, undefined],
-    ["person", summary.by_person, undefined],
-    ["open", summary.unsettled, summary.unsettled > 0 ? "flag" : undefined],
+  const stats: [string, number][] = [
+    ["total", summary.total],
+    ["rule", summary.by_rule],
+    ["model", summary.by_model],
+    ["person", summary.by_person],
+    ["open", summary.unsettled],
   ];
   return (
-    <div data-testid="banking-counts">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        {tiles.map(([k, n, tone]) => (
-          <Kpi
-            key={k}
-            label={t(`banking.counts.${k}`)}
-            value={n.toLocaleString("en-IN")}
-            {...(tone ? { tone } : {})}
-            {...(k === "open" && n > 0 ? { note: t("banking.openNote") } : {})}
-            testId={`banking-count-${k}`}
-          />
+    <section
+      className="rounded border border-border bg-surface px-4 py-3"
+      data-testid="banking-counts"
+    >
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3 lg:grid-cols-5">
+        {stats.map(([k, n]) => (
+          <div key={k} data-testid={`banking-count-${k}`}>
+            <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">
+              {t(`banking.counts.${k}`)}
+            </dt>
+            <dd
+              className={cn(
+                "tabular mt-0.5 text-[20px] font-semibold leading-tight",
+                k === "open" && n > 0 ? "text-flag-foreground" : "text-foreground",
+              )}
+            >
+              {n.toLocaleString("en-IN")}
+            </dd>
+          </div>
         ))}
-      </div>
+      </dl>
+      {summary.unsettled > 0 && (
+        <p className="mt-2.5 border-t border-border pt-2 text-[12px] text-muted-foreground">
+          {t("banking.openNote")}
+        </p>
+      )}
       {summary.model_error && (
         <p
           className="mt-2 rounded border border-flag/40 bg-flag-soft px-3 py-2 text-[12.5px] text-flag-foreground"
@@ -95,7 +112,7 @@ function Counts({ summary }: { summary: TxnSummary }) {
           {t("banking.modelError", { error: summary.model_error })}
         </p>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -123,7 +140,9 @@ function Flags({ caseId, flags }: { caseId: string; flags: ConductFlag[] }) {
               data-kind={f.kind}
               data-severity={f.severity}
             >
-              <Chip tone={SEVERITY_TONE[f.severity]}>{t(`banking.severity.${f.severity}`)}</Chip>
+              <span className="w-[5.5rem] shrink-0">
+                <Chip tone={SEVERITY_TONE[f.severity]}>{t(`banking.severity.${f.severity}`)}</Chip>
+              </span>
               <p className="min-w-0 flex-1 text-[13px] text-foreground">{f.message}</p>
               {(f.evidence ?? []).length > 0 && (
                 <button
@@ -160,10 +179,8 @@ function Flags({ caseId, flags }: { caseId: string; flags: ConductFlag[] }) {
   );
 }
 
-const th = "px-3 py-2 text-right font-medium";
-const td = "tabular px-3 py-1.5 text-right";
-
 function MonthTable({ conduct }: { conduct: BankConduct }) {
+  const dash = <span className="text-muted-foreground">—</span>;
   return (
     <Panel
       title={t("banking.months.title")}
@@ -171,39 +188,63 @@ function MonthTable({ conduct }: { conduct: BankConduct }) {
       testId="banking-months"
     >
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[40rem] text-[12.5px]">
+        <table className="w-full min-w-[640px] text-[13px]">
           <thead>
-            <tr className="border-b border-border text-muted-foreground">
-              <th className="px-4 py-2 text-left font-medium">{t("banking.months.month")}</th>
-              <th className={th}>{t("banking.months.credits")}</th>
-              <th className={th}>{t("banking.months.business")}</th>
-              <th className={th}>{t("banking.months.cash")}</th>
-              <th className={th}>{t("banking.months.returns")}</th>
-              <th className={th}>{t("banking.months.salary")}</th>
-              <th className={th}>{t("banking.months.promoters")}</th>
+            <tr className={TH}>
+              <th scope="col" className="px-4 py-2 text-left font-medium">
+                {t("banking.months.month")}
+              </th>
+              {(["credits", "business", "cash", "returns", "salary", "promoters"] as const).map(
+                (k) => (
+                  <th key={k} scope="col" className={cn(th, "whitespace-nowrap")}>
+                    {t(`banking.months.${k}`)}
+                  </th>
+                ),
+              )}
             </tr>
           </thead>
           <tbody>
             {conduct.months.map((m) => (
               <tr
                 key={m.month}
-                className="border-b border-border/60"
+                className="border-b border-border/60 last:border-b-0"
                 data-testid="banking-month"
                 data-month={m.month}
               >
-                <td className="px-4 py-1.5 font-medium">{monthLabel(m.month)}</td>
-                <td className={td}>{rupees(m.credits)}</td>
-                <td className={td}>{rupees(m.business_credits)}</td>
-                <td className={cn(td, m.cash_deposits > 0 && "text-foreground")}>
-                  {m.cash_deposits > 0
-                    ? `${rupees(m.cash_deposits)} (${m.cash_share_pct.toFixed(0)}%)`
-                    : "—"}
+                <th
+                  scope="row"
+                  className="whitespace-nowrap px-4 py-2 text-left font-medium text-foreground"
+                >
+                  {monthLabel(m.month)}
+                </th>
+                <td className={td}>{lakh(m.credits)}</td>
+                <td className={td}>{lakh(m.business_credits)}</td>
+                <td className={td}>
+                  {m.cash_deposits > 0 ? (
+                    <>
+                      {lakh(m.cash_deposits)}
+                      <span className="ml-1 text-[11.5px] text-muted-foreground">
+                        ({m.cash_share_pct.toFixed(0)}%)
+                      </span>
+                    </>
+                  ) : (
+                    dash
+                  )}
                 </td>
                 <td className={td}>
-                  {m.returns_count > 0 ? `${m.returns_count} · ${rupees(m.returns_amount)}` : "—"}
+                  {m.returns_count > 0 ? (
+                    <>
+                      {lakh(m.returns_amount)}
+                      <span className="ml-1 text-[11.5px] text-muted-foreground">
+                        ({m.returns_count})
+                      </span>
+                    </>
+                  ) : (
+                    dash
+                  )}
                 </td>
-                <td className={td}>{m.salary > 0 ? rupees(m.salary) : "—"}</td>
-                <td className={td}>{m.promoter_out > 0 ? rupees(m.promoter_out) : "—"}</td>
+                <td className={td}>{m.salary > 0 ? lakh(m.salary) : dash}</td>
+                <td className={td}>{m.promoter_out > 0 ? lakh(m.promoter_out) : dash}</td>
               </tr>
             ))}
           </tbody>
@@ -222,11 +263,16 @@ function CategoryTable({ summary }: { summary: TxnSummary }) {
       data-testid="banking-category"
       data-category={c.category}
     >
-      <td className="px-4 py-1.5">{c.label}</td>
-      <td className={cn(td, "font-medium")}>{rupees(c.amount)}</td>
+      <th
+        scope="row"
+        className="sticky left-0 z-10 whitespace-nowrap bg-surface px-4 py-2 text-left font-medium text-foreground"
+      >
+        {c.label}
+      </th>
+      <td className={cn(td, "font-semibold text-foreground")}>{lakh(c.amount)}</td>
       {months.map((m) => (
         <td key={m.month} className={cn(td, "text-muted-foreground")}>
-          {m.by_category[c.category] ? rupees(m.by_category[c.category]!) : "—"}
+          {m.by_category[c.category] ? lakh(m.by_category[c.category]!) : "—"}
         </td>
       ))}
     </tr>
@@ -239,17 +285,22 @@ function CategoryTable({ summary }: { summary: TxnSummary }) {
     >
       <div className="overflow-x-auto">
         <table
-          className="w-full text-[12.5px]"
-          style={{ minWidth: `${14 + months.length * 6}rem` }}
+          className="w-full text-[13px]"
+          style={{ minWidth: `${16 + months.length * 5.5}rem` }}
         >
           <thead>
-            <tr className="border-b border-border text-muted-foreground">
-              <th className="px-4 py-2 text-left font-medium">
+            <tr className={TH}>
+              <th
+                scope="col"
+                className="sticky left-0 z-10 bg-surface px-4 py-2 text-left font-medium"
+              >
                 {t("banking.categories.category")}
               </th>
-              <th className={th}>{t("banking.categories.total")}</th>
+              <th scope="col" className={cn(th, "whitespace-nowrap")}>
+                {t("banking.categories.total")}
+              </th>
               {months.map((m) => (
-                <th key={m.month} className={th}>
+                <th key={m.month} scope="col" className={cn(th, "whitespace-nowrap")}>
                   {monthLabel(m.month)}
                 </th>
               ))}
@@ -257,9 +308,9 @@ function CategoryTable({ summary }: { summary: TxnSummary }) {
           </thead>
           <tbody>
             {(["credit", "debit"] as const).map((d) => (
-              <FragmentRows key={d} title={t(`banking.categories.${d}s`)} span={2 + months.length}>
+              <Group key={d} title={t(`banking.categories.${d}s`)} span={2 + months.length}>
                 {summary.categories.filter((c) => c.direction === d).map(row)}
-              </FragmentRows>
+              </Group>
             ))}
           </tbody>
         </table>
@@ -268,7 +319,7 @@ function CategoryTable({ summary }: { summary: TxnSummary }) {
   );
 }
 
-function FragmentRows({
+function Group({
   title,
   span,
   children,
@@ -282,7 +333,7 @@ function FragmentRows({
       <tr className="bg-surface-muted/60">
         <td
           colSpan={span}
-          className="px-4 py-1 text-[11.5px] font-semibold uppercase tracking-wide text-muted-foreground"
+          className="px-4 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
         >
           {title}
         </td>
@@ -293,12 +344,13 @@ function FragmentRows({
 }
 
 function Customers({ conduct }: { conduct: BankConduct }) {
+  const top1 = conduct.customer_top1_pct;
   return (
     <Panel
       title={t("banking.customers.title")}
       subtitle={
-        conduct.customer_top1_pct !== null && conduct.customer_top1_pct !== undefined
-          ? `${t("banking.customers.top1", { pct: conduct.customer_top1_pct })} · ${t("banking.customers.top5", { pct: conduct.customer_top5_pct ?? 0 })}`
+        top1 !== null && top1 !== undefined
+          ? `${t("banking.customers.top1", { pct: top1 })} · ${t("banking.customers.top5", { pct: conduct.customer_top5_pct ?? 0 })}`
           : t("banking.customers.subtitle")
       }
       testId="banking-customers"
@@ -306,23 +358,31 @@ function Customers({ conduct }: { conduct: BankConduct }) {
       {conduct.customers.length === 0 ? (
         <p className="px-4 py-5 text-[13px] text-muted-foreground">{t("banking.customers.none")}</p>
       ) : (
-        <table className="w-full text-[12.5px]">
+        <table className="w-full text-[13px]">
           <thead>
-            <tr className="border-b border-border text-muted-foreground">
-              <th className="px-4 py-2 text-left font-medium">{t("banking.customers.party")}</th>
-              <th className={th}>{t("banking.customers.amount")}</th>
-              <th className={th}>{t("banking.customers.share")}</th>
+            <tr className={TH}>
+              <th scope="col" className="px-4 py-2 text-left font-medium">
+                {t("banking.customers.party")}
+              </th>
+              <th scope="col" className={th}>
+                {t("banking.customers.amount")}
+              </th>
+              <th scope="col" className={th}>
+                {t("banking.customers.share")}
+              </th>
             </tr>
           </thead>
           <tbody>
             {conduct.customers.slice(0, 8).map((c) => (
               <tr
                 key={c.party}
-                className="border-b border-border/60"
+                className="border-b border-border/60 last:border-b-0"
                 data-testid="banking-customer"
               >
-                <td className="px-4 py-1.5">{c.party}</td>
-                <td className={td}>{rupees(c.amount)}</td>
+                <th scope="row" className="px-4 py-2 text-left font-medium text-foreground">
+                  {c.party}
+                </th>
+                <td className={td}>{lakh(c.amount)}</td>
                 <td className={td}>{c.share_pct.toFixed(1)}%</td>
               </tr>
             ))}
@@ -333,7 +393,8 @@ function Customers({ conduct }: { conduct: BankConduct }) {
   );
 }
 
-function RoundTrips({ conduct }: { conduct: BankConduct }) {
+function RoundTrips({ caseId, conduct }: { caseId: string; conduct: BankConduct }) {
+  const viewer = useDocViewer();
   return (
     <Panel
       title={t("banking.trips.title")}
@@ -345,23 +406,63 @@ function RoundTrips({ conduct }: { conduct: BankConduct }) {
           {t("banking.trips.none")}
         </p>
       ) : (
-        <ul className="divide-y divide-border/60">
-          {conduct.round_trips.map((r, i) => (
-            <li
-              key={i}
-              className="px-4 py-2.5 text-[13px] text-foreground"
-              data-testid="banking-trip"
-            >
-              {t("banking.trips.row", {
-                party: r.party,
-                out: rupees(r.out_amount),
-                outDate: r.out_date,
-                in: rupees(r.in_amount),
-                inDate: r.in_date,
-              })}
-            </li>
-          ))}
-        </ul>
+        <table className="w-full text-[13px]">
+          <thead>
+            <tr className={TH}>
+              <th scope="col" className="px-4 py-2 text-left font-medium">
+                {t("banking.trips.party")}
+              </th>
+              <th scope="col" className={th}>
+                {t("banking.trips.paid")}
+              </th>
+              <th scope="col" className={th}>
+                {t("banking.trips.received")}
+              </th>
+              <th scope="col" className="w-8" />
+            </tr>
+          </thead>
+          <tbody>
+            {conduct.round_trips.map((r, i) => (
+              <tr
+                key={i}
+                className="border-b border-border/60 last:border-b-0"
+                data-testid="banking-trip"
+              >
+                <th scope="row" className="px-4 py-2 text-left font-medium text-foreground">
+                  {r.party}
+                </th>
+                <td className={td}>
+                  {rupees(r.out_amount)}
+                  <span className="block text-[11.5px] text-muted-foreground">
+                    {formatDate(r.out_date)}
+                  </span>
+                </td>
+                <td className={td}>
+                  {rupees(r.in_amount)}
+                  <span className="block text-[11.5px] text-muted-foreground">
+                    {formatDate(r.in_date)}
+                  </span>
+                </td>
+                <td className="pr-4 text-right">
+                  {(r.evidence ?? []).length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const request = evidenceRequest(caseId, r.evidence ?? []);
+                        if (request) viewer.open(request);
+                      }}
+                      className="inline-flex items-center text-muted-foreground hover:text-primary"
+                      aria-label={t("banking.flags.open")}
+                      title={t("banking.flags.open")}
+                    >
+                      <Eye className="h-4 w-4" aria-hidden />
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </Panel>
   );
@@ -373,28 +474,49 @@ function Balances({ conduct }: { conduct: BankConduct }) {
     <details className="rounded border border-border bg-surface" data-testid="banking-balances">
       <summary className="cursor-pointer px-4 py-2.5 text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
         {t("banking.balances.title")}
+        <span className="ml-2 font-normal normal-case tracking-normal">
+          {t("banking.balances.subtitle")}
+        </span>
       </summary>
-      <div className="overflow-x-auto border-t border-border">
-        <table className="w-full min-w-[34rem] text-[12.5px]">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[560px] text-[13px]">
           <thead>
-            <tr className="border-b border-border text-muted-foreground">
-              <th className="px-4 py-2 text-left font-medium">{t("banking.balances.account")}</th>
-              <th className="px-3 py-2 text-left font-medium">{t("banking.balances.month")}</th>
-              <th className={th}>{t("banking.balances.average")}</th>
-              <th className={th}>{t("banking.balances.minimum")}</th>
-              <th className={th}>{t("banking.balances.monthEnd")}</th>
+            <tr className={TH}>
+              <th scope="col" className="px-4 py-2 text-left font-medium">
+                {t("banking.balances.account")}
+              </th>
+              <th scope="col" className="px-4 py-2 text-left font-medium">
+                {t("banking.balances.month")}
+              </th>
+              <th scope="col" className={th}>
+                {t("banking.balances.average")}
+              </th>
+              <th scope="col" className={th}>
+                {t("banking.balances.minimum")}
+              </th>
+              <th scope="col" className={th}>
+                {t("banking.balances.monthEnd")}
+              </th>
             </tr>
           </thead>
           <tbody>
             {conduct.balances.flatMap((a) =>
               a.months.map((m) => (
-                <tr key={`${a.account}${m.month}`} className="border-b border-border/60">
-                  <td className="px-4 py-1.5">{a.account}</td>
-                  <td className="px-3 py-1.5">{monthLabel(m.month)}</td>
-                  <td className={td}>{rupees(m.average)}</td>
-                  <td className={td}>{rupees(m.minimum)}</td>
+                <tr
+                  key={`${a.account}${m.month}`}
+                  className="border-b border-border/60 last:border-b-0"
+                >
+                  <th
+                    scope="row"
+                    className="whitespace-nowrap px-4 py-2 text-left font-medium text-foreground"
+                  >
+                    {a.account}
+                  </th>
+                  <td className="whitespace-nowrap px-4 py-2">{monthLabel(m.month)}</td>
+                  <td className={td}>{lakh(m.average)}</td>
+                  <td className={td}>{lakh(m.minimum)}</td>
                   <td className={td}>
-                    {m.month_end === null || m.month_end === undefined ? "—" : rupees(m.month_end)}
+                    {m.month_end === null || m.month_end === undefined ? "—" : lakh(m.month_end)}
                     {m.spike && (
                       <span className="ml-1.5">
                         <Chip tone="critical">{t("banking.balances.spike")}</Chip>

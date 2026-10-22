@@ -212,7 +212,7 @@ test("the counts say how many were read by the rules, the model and a person, an
   await expect(page.getByTestId("banking-count-model")).toContainText("1");
   await expect(page.getByTestId("banking-count-person")).toContainText("0");
   await expect(page.getByTestId("banking-count-open")).toContainText("2");
-  await expect(page.getByTestId("banking-count-open")).toContainText("included in business inflow");
+  await expect(page.getByTestId("banking-counts")).toContainText("included in business inflow");
 });
 
 test("the flags are questions for a person, concerns first, each with its page", async ({
@@ -234,16 +234,19 @@ test("the months, the categories, the customers and the money out and back are l
 }) => {
   await openBanking(page);
   await expect(page.getByTestId("banking-month")).toHaveCount(2);
-  await expect(page.getByTestId("banking-month").first()).toContainText("11,00,000");
+  await expect(page.getByTestId("banking-month").first()).toContainText("11.00");
   await expect(page.getByTestId("banking-month").first()).toContainText("36%");
   const category = page.locator(
     '[data-testid="banking-category"][data-category="customer_receipt"]',
   );
-  await expect(category).toContainText("7,07,200");
+  await expect(category).toContainText("7.07");
   await expect(page.getByTestId("banking-customer")).toContainText("ORCHID TRADERS");
-  await expect(page.getByTestId("banking-trip")).toContainText(
-    "ACME TRADERS: 5,00,000 paid on 2025-04-03",
-  );
+  const trip = page.getByTestId("banking-trip");
+  await expect(trip).toContainText("ACME TRADERS");
+  await expect(trip).toContainText("5,00,000");
+  await expect(trip).toContainText("03 Apr 2025");
+  await expect(trip).toContainText("4,90,000");
+  await expect(trip).toContainText("09 Apr 2025");
 });
 
 test("each row says how it was read, a row nothing settled is open with a suggestion, and the model's reason is kept", async ({
@@ -351,4 +354,51 @@ test("on a phone the tab reads without scrolling the page sideways", async ({ pa
   await openBanking(page);
   await expect(page.getByTestId("banking")).toBeVisible();
   expect(await scrollsSideways(page)).toBe(false);
+});
+
+test("the register shows a page at a time and offers more", async ({ page }) => {
+  const many = Array.from({ length: 30 }, (_, i) =>
+    row(
+      100 + i,
+      "2025-04-03",
+      `NEFT CR CUSTOMER ${i}`,
+      { credit: 1_000 + i },
+      "customer_receipt",
+      "Receipt from a customer",
+    ),
+  );
+  await openBanking(page, { rows: many });
+  await expect(txn(page)).toHaveCount(25);
+  await expect(page.getByTestId("banking-transactions")).toContainText("25 of 30");
+  await page.getByTestId("banking-more").click();
+  await expect(txn(page)).toHaveCount(30);
+  await expect(page.getByTestId("banking-more")).toHaveCount(0);
+});
+
+test("dates read as elsewhere in the appraisal, and months are written Sep, not Sept", async ({
+  page,
+}) => {
+  await openBanking(page, {
+    rows: [
+      row(
+        1,
+        "2025-04-03",
+        "NEFT CR ORCHID TRADERS",
+        { credit: 700_000 },
+        "customer_receipt",
+        "Receipt from a customer",
+      ),
+      row(
+        2,
+        "2025-09-03",
+        "NEFT CR BHARAT PUMPS",
+        { credit: 100_000 },
+        "customer_receipt",
+        "Receipt from a customer",
+      ),
+    ],
+  });
+  await expect(txn(page).first()).toContainText("03 Apr 2025");
+  await expect(page.getByTestId("banking-categories")).toContainText("Sep 2025");
+  await expect(page.getByTestId("banking-categories")).not.toContainText("Sept");
 });

@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { t } from "@/config/terminology";
+import { formatDate } from "@/domain/cases";
 import { refusal } from "@/domain/errors";
 import { useCan } from "@/domain/session";
 import {
@@ -25,8 +26,9 @@ import {
   type TxnFilter,
 } from "@/domain/transactions";
 import { cn } from "@/lib/utils";
+import { TH, td, th } from "./styles";
 
-const PAGE = 100;
+const PAGE = 25;
 const selectClass =
   "h-8 min-w-0 rounded border border-border bg-surface px-2 text-[12.5px] text-foreground outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/20";
 
@@ -170,15 +172,25 @@ export function TransactionsTable({ caseId, summary }: { caseId: string; summary
         </p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[46rem] text-[12.5px]" data-testid="banking-table">
+          <table className="w-full min-w-[46rem] text-[13px]" data-testid="banking-table">
             <thead>
-              <tr className="border-b border-border text-left text-muted-foreground">
-                <th className="px-4 py-2 font-medium">{t("banking.txn.date")}</th>
-                <th className="px-2 py-2 font-medium">{t("banking.txn.narration")}</th>
-                <th className="px-2 py-2 text-right font-medium">{t("banking.txn.debit")}</th>
-                <th className="px-2 py-2 text-right font-medium">{t("banking.txn.credit")}</th>
-                <th className="px-2 py-2 font-medium">{t("banking.txn.category")}</th>
-                <th className="px-4 py-2" />
+              <tr className={TH}>
+                <th scope="col" className="px-4 py-2 text-left font-medium">
+                  {t("banking.txn.date")}
+                </th>
+                <th scope="col" className="px-4 py-2 text-left font-medium">
+                  {t("banking.txn.narration")}
+                </th>
+                <th scope="col" className={th}>
+                  {t("banking.txn.debit")}
+                </th>
+                <th scope="col" className={th}>
+                  {t("banking.txn.credit")}
+                </th>
+                <th scope="col" className="px-4 py-2 text-left font-medium">
+                  {t("banking.txn.category")}
+                </th>
+                <th scope="col" className="w-20" />
               </tr>
             </thead>
             <tbody>
@@ -194,37 +206,33 @@ export function TransactionsTable({ caseId, summary }: { caseId: string; summary
                   data-method={r.method}
                   data-open={r.needs_review ? "true" : "false"}
                 >
-                  <td className="tabular whitespace-nowrap px-4 py-2 text-muted-foreground">
-                    {r.date ?? "—"}
+                  <td className="whitespace-nowrap px-4 py-2 text-[12.5px] text-muted-foreground">
+                    {r.date ? formatDate(r.date) : "—"}
                   </td>
-                  <td className="max-w-[22rem] px-2 py-2">
+                  <td className="px-3 py-2">
                     <p className="break-words text-foreground">{r.narration}</p>
-                    <p className="mt-0.5 flex flex-wrap items-center gap-1 text-[11.5px] text-muted-foreground">
-                      {r.counterparty && <span>{r.counterparty}</span>}
-                      {(r.flags ?? []).map((f) => (
-                        <span key={f} className="rounded border border-border px-1">
-                          {t(`banking.txn.flag.${f}`)}
-                        </span>
-                      ))}
-                    </p>
-                    {r.reason && (
-                      <p className="mt-0.5 text-[11.5px] text-muted-foreground">
-                        {t("banking.txn.reason", { reason: r.reason })}
+                    {(r.counterparty || (r.flags ?? []).length > 0 || r.reason) && (
+                      <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11.5px] text-muted-foreground">
+                        {r.counterparty && <span>{r.counterparty}</span>}
+                        {(r.flags ?? []).map((f) => (
+                          <span key={f} className="rounded border border-border px-1">
+                            {t(`banking.txn.flag.${f}`)}
+                          </span>
+                        ))}
+                        {r.reason && <span>{t("banking.txn.reason", { reason: r.reason })}</span>}
                       </p>
                     )}
                   </td>
-                  <td className="tabular px-2 py-2 text-right">{r.debit ? rupees(r.debit) : ""}</td>
-                  <td className="tabular px-2 py-2 text-right">
-                    {r.credit ? rupees(r.credit) : ""}
-                  </td>
-                  <td className="px-2 py-2">
-                    <p className="flex flex-wrap items-center gap-1.5">
-                      <span
-                        className="font-medium text-foreground"
-                        data-testid="banking-txn-category"
-                      >
-                        {r.category_label}
-                      </span>
+                  <td className={td}>{r.debit ? rupees(r.debit) : ""}</td>
+                  <td className={td}>{r.credit ? rupees(r.credit) : ""}</td>
+                  <td className="min-w-[11rem] px-3 py-2">
+                    <span
+                      className="block font-medium text-foreground"
+                      data-testid="banking-txn-category"
+                    >
+                      {r.category_label}
+                    </span>
+                    <span className="mt-1 flex flex-wrap items-center gap-1.5">
                       {r.needs_review ? (
                         <Chip tone="flag">{t("banking.counts.open")}</Chip>
                       ) : (
@@ -232,15 +240,15 @@ export function TransactionsTable({ caseId, summary }: { caseId: string; summary
                           {t(`banking.txn.method.${r.method}`)}
                         </Chip>
                       )}
-                    </p>
-                    {r.needs_review && r.candidates?.[0] && (
-                      <p className="mt-0.5 text-[11.5px] text-muted-foreground">
-                        {t("banking.txn.suggested", { label: label(r.candidates[0]!) })}
-                      </p>
-                    )}
+                      {r.needs_review && r.candidates?.[0] && (
+                        <span className="text-[11.5px] text-muted-foreground">
+                          {t("banking.txn.suggested", { label: label(r.candidates[0]!) })}
+                        </span>
+                      )}
+                    </span>
                   </td>
-                  <td className="whitespace-nowrap px-4 py-2 text-right">
-                    <span className="inline-flex items-center gap-2">
+                  <td className="whitespace-nowrap py-2 pl-2 pr-4 text-right">
+                    <span className="inline-flex items-center gap-2.5">
                       {canFile && (
                         <button
                           type="button"

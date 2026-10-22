@@ -1874,7 +1874,7 @@ banking:
     open: View source page
   months:
     title: Monthly Analysis
-    subtitle: INR · all accounts combined
+    subtitle: INR lakh · all accounts combined
     month: Month
     credits: Gross credits
     business: Net business credits
@@ -1884,7 +1884,7 @@ banking:
     promoters: Promoter drawings
   categories:
     title: Category-wise Summary
-    subtitle: INR · credits and debits by nature of transaction
+    subtitle: INR lakh · credits and debits by nature of transaction
     category: Category
     total: Total
     credits: Credits
@@ -1903,9 +1903,12 @@ banking:
     title: Circular (Round-trip) Transactions
     subtitle: Funds paid to and received back from the same counterparty within days, for a similar amount
     none: None identified.
-    row: "{party}: {out} paid on {outDate}; {in} received on {inDate}"
+    party: Counterparty
+    paid: Paid
+    received: Received
   balances:
     title: Monthly Balance Analysis
+    subtitle: INR lakh
     account: Account
     month: Month
     average: Average balance

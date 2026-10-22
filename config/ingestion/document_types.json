@@ -356,6 +356,11 @@
             "name": "accounting_standard",
             "type": "string",
             "required": false
+          },
+          {
+            "name": "amount_unit",
+            "type": "string",
+            "required": false
           }
         ],
         "tables": [

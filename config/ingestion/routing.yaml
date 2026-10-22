@@ -14,3 +14,4 @@ ocr:
   engine: paddle
   dpi: 200
   det_limit_side: 1600
+  dash_marks: true   # a lone dash the engine skips (a statement's nil) is read from the image

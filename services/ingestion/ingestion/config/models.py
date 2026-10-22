@@ -246,6 +246,7 @@ class TableRule(Strict):
     multi_page: bool = False
     optional: bool = False   # a statement the document type may legitimately lack: still reported missing, but not a reason for review
     y_tol: float | None = None
+    dash_is_zero: bool = False   # a statement prints nil as a dash: the cell is 0, not unread
     repair: dict | None = None  # {kind: running_balance, debit, credit, balance}: arithmetic repair, recorded
 
 
@@ -316,6 +317,7 @@ class OcrConfig(Strict):
     det_limit_side: int = 1600
     det_model: str | None = None
     rec_model: str | None = None
+    dash_marks: bool = False   # read a lone dash the engine skips (a statement's nil) from the image
 
 
 class ReadingConfig(Strict):

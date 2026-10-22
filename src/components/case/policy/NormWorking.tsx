@@ -1,6 +1,15 @@
-import { Eye } from "lucide-react";
-import type { NormComponent, NormInput, NormResult } from "@/api/types";
+import { Eye, Info } from "lucide-react";
+import { useState } from "react";
+import type { CellWorking, NormComponent, NormInput, NormResult } from "@/api/types";
+import { FigureWorking } from "@/components/case/spread/FigureWorking";
 import { useDocViewer } from "@/components/docviewer/DocViewer";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { t } from "@/config/terminology";
 import { actualText, comparison, inputLabel, inputValue, substituted } from "@/domain/policy";
 import { cn } from "@/lib/utils";
@@ -68,6 +77,46 @@ function EvidenceEye({
     >
       <Eye className="h-3.5 w-3.5" aria-hidden />
     </button>
+  );
+}
+
+/** How a statement figure was read, and the way to edit it: opens the figure's working in a dialog,
+ * so a ratio can be followed down to the printed figure and corrected there. */
+function WorkingDetail({
+  caseId,
+  label,
+  working,
+}: {
+  caseId: string;
+  label: string;
+  working: CellWorking | null | undefined;
+}) {
+  const [open, setOpen] = useState(false);
+  if (!working) return null;
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        title={t("spreadPage.working.detail")}
+        aria-label={`${t("spreadPage.working.detail")}: ${label}`}
+        data-testid="norm-figure-working"
+        className="text-muted-foreground transition-colors hover:text-primary"
+      >
+        <Info className="h-3.5 w-3.5" aria-hidden />
+      </button>
+      {open && (
+        <Dialog open onOpenChange={(o) => !o && setOpen(false)}>
+          <DialogContent className="max-w-md" data-testid="norm-working-dialog">
+            <DialogHeader>
+              <DialogTitle>{label}</DialogTitle>
+              <DialogDescription>{t("spreadPage.working.title")}</DialogDescription>
+            </DialogHeader>
+            <FigureWorking caseId={caseId} label={label} fy="" working={working} />
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
   );
 }
 
@@ -155,7 +204,12 @@ function FigureBlock({
           />
         }
         origin={originText(input)}
-        eye={<EvidenceEye caseId={caseId} label={input.label} evidence={input.evidence} />}
+        eye={
+          <span className="inline-flex items-center gap-1.5">
+            <WorkingDetail caseId={caseId} label={input.label} working={input.working} />
+            <EvidenceEye caseId={caseId} label={input.label} evidence={input.evidence} />
+          </span>
+        }
         strong
       />
       {components.map((c, i) => (
@@ -173,7 +227,12 @@ function FigureBlock({
             />
           }
           origin={c.evidence?.[0] ? t("policy.working.fromPage", { page: c.evidence[0].page }) : ""}
-          eye={<EvidenceEye caseId={caseId} label={c.label} evidence={c.evidence} />}
+          eye={
+            <span className="inline-flex items-center gap-1.5">
+              <WorkingDetail caseId={caseId} label={c.label} working={c.working} />
+              <EvidenceEye caseId={caseId} label={c.label} evidence={c.evidence} />
+            </span>
+          }
         />
       ))}
     </div>

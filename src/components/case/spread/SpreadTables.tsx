@@ -1,4 +1,11 @@
-import type { CrossVerificationView, Evidence, Spread, SpreadRow, TurnoverYear } from "@/api/types";
+import type {
+  CellWorking,
+  CrossVerificationView,
+  Evidence,
+  Spread,
+  SpreadRow,
+  TurnoverYear,
+} from "@/api/types";
 import { t } from "@/config/terminology";
 import {
   cellText,
@@ -20,7 +27,28 @@ export type Picked = {
   unit: string;
   evidence: Evidence[];
   manual: boolean;
+  /** How the figure was arrived at, where the engine gives it (a statement line or a derived line). */
+  working?: CellWorking | null;
 };
+
+/** The picked figure as the spread now has it: an edit recalculates the spread, and the panel beside the
+ * table follows rather than showing the figure as it was. Figures that are not statement lines stay as picked. */
+export function pickedNow(spread: Spread, picked: Picked | null): Picked | null {
+  if (!picked) return picked;
+  for (const row of spread.rows) {
+    const i = spread.columns.findIndex((c) => `${row.key}:${c.fy}` === picked.id);
+    const cell = i >= 0 ? row.cells[i] : undefined;
+    if (cell)
+      return {
+        ...picked,
+        text: cellText(cell.value, row.unit),
+        evidence: cell.evidence ?? [],
+        manual: cell.relies_on_manual,
+        working: cell.working ?? null,
+      };
+  }
+  return picked;
+}
 
 /** A figure in a table: the marker says where it came from (grey: a page; amber: a person's
  * entry), the colour what the checks made of it, and a click puts it in the source panel. */
@@ -357,6 +385,7 @@ function StatementRow({
                 unit: row.unit === "inr" ? t("spreadPage.unit.crore") : "",
                 evidence: cell.evidence ?? [],
                 manual: cell.relies_on_manual,
+                working: cell.working ?? null,
               }}
               selected={picked === id}
               tone={cell.relies_on_manual ? "text-destructive" : undefined}

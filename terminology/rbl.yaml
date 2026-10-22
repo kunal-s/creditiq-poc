@@ -137,6 +137,43 @@ spreadPage:
     more: "{n} more pages"
     open: Open the page
     noPage: Not read from a page.
+  working:
+    title: How this figure was arrived at
+    state:
+      printed: Printed on the statement
+      nil: Printed as nil (a dash)
+      not_printed: Not printed on the statement, taken as nil
+      edited: Entered by a person
+      derived: Added up from other lines
+      ratio: Worked out from other lines
+      missing: Not read from the statement
+    row: "Row as printed: {label}"
+    printed: "Printed as {value}"
+    unit: "The statement gives its amounts in {unit}; {printed} is {rupees} in rupees."
+    rupees: "In rupees"
+    original: "The statement's own figure was {value}."
+    originalNone: The statement gave no figure for this line.
+    editedBy: "Entered by {name} on {date}"
+    reason: "Reason: {reason}"
+    inputs: Worked from
+    edit: Edit this figure
+    editInput: Edit
+    detail: How it was worked out
+    revert: Put the statement's figure back
+  edit:
+    title: Edit a statement figure
+    subtitle: "{label} · {fy}"
+    entry: "Amount as the statement prints it ({unit})"
+    entryRupees: "That is {rupees} in rupees."
+    entryHint: Type it as it appears on the page, in the same unit, so a missing or extra zero shows.
+    reason: Reason
+    reasonHint: Say what the page shows or why the figure is being changed; at least 3 characters.
+    save: Save the edit
+    cancel: Cancel
+    saved: Figure updated; everything worked from it has been recalculated.
+    revertTitle: Put the statement's figure back
+    revertReason: Why is the statement's figure right?
+    reverted: The statement's figure is back.
 
 # Views within the Outputs tab.
 outputs:

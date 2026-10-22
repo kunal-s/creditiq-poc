@@ -1,13 +1,14 @@
 import { Eye } from "lucide-react";
 import { useState } from "react";
 import type { BankConduct, ConductFlag, TxnSummary } from "@/api/types";
-import { Chip, Panel, type Tone } from "@/components/common/Panel";
+import { Chip, type Tone } from "@/components/common/Panel";
 import { ErrorState, LoadingBlock } from "@/components/common/States";
 import { evidenceRequest, useDocViewer } from "@/components/docviewer/DocViewer";
 import { t } from "@/config/terminology";
 import { formatDate } from "@/domain/cases";
 import { lakh, monthLabel, rupees, useBankConduct, useTxnSummary } from "@/domain/transactions";
 import { cn } from "@/lib/utils";
+import { Block } from "./Block";
 import { TH, td, th } from "./styles";
 import { TransactionsTable } from "./TransactionsTable";
 
@@ -52,12 +53,12 @@ export function BankingPanel({ caseId }: { caseId: string }) {
     );
   }
   return (
-    <div className="space-y-4" data-testid="banking">
+    <div className="space-y-3" data-testid="banking">
       <Counts summary={summary.data} />
       <Flags caseId={caseId} flags={conduct.data.flags} />
       <MonthTable conduct={conduct.data} />
       <CategoryTable summary={summary.data} />
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-2">
         <Customers conduct={conduct.data} />
         <RoundTrips caseId={caseId} conduct={conduct.data} />
       </div>
@@ -78,10 +79,10 @@ function Counts({ summary }: { summary: TxnSummary }) {
   ];
   return (
     <section
-      className="rounded border border-border bg-surface px-4 py-3"
+      className="rounded border border-border bg-surface px-4 py-2.5"
       data-testid="banking-counts"
     >
-      <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3 lg:grid-cols-5">
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3 lg:grid-cols-5">
         {stats.map(([k, n]) => (
           <div key={k} data-testid={`banking-count-${k}`}>
             <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">
@@ -89,7 +90,7 @@ function Counts({ summary }: { summary: TxnSummary }) {
             </dt>
             <dd
               className={cn(
-                "tabular mt-0.5 text-[20px] font-semibold leading-tight",
+                "tabular text-[18px] font-semibold leading-tight",
                 k === "open" && n > 0 ? "text-flag-foreground" : "text-foreground",
               )}
             >
@@ -99,7 +100,7 @@ function Counts({ summary }: { summary: TxnSummary }) {
         ))}
       </dl>
       {summary.unsettled > 0 && (
-        <p className="mt-2.5 border-t border-border pt-2 text-[12px] text-muted-foreground">
+        <p className="mt-2 border-t border-border pt-1.5 text-[12px] text-muted-foreground">
           {t("banking.openNote")}
         </p>
       )}
@@ -121,13 +122,13 @@ function Flags({ caseId, flags }: { caseId: string; flags: ConductFlag[] }) {
   const viewer = useDocViewer();
   const shown = all ? flags : flags.slice(0, FLAGS_SHOWN);
   return (
-    <Panel
+    <Block
       title={t("banking.flags.title")}
       subtitle={t("banking.flags.subtitle")}
       testId="banking-flags"
     >
       {flags.length === 0 ? (
-        <p className="px-4 py-5 text-[13px] text-muted-foreground" data-testid="banking-flags-none">
+        <p className="px-4 py-3 text-[13px] text-muted-foreground" data-testid="banking-flags-none">
           {t("banking.flags.none")}
         </p>
       ) : (
@@ -135,15 +136,15 @@ function Flags({ caseId, flags }: { caseId: string; flags: ConductFlag[] }) {
           {shown.map((f, i) => (
             <li
               key={i}
-              className="flex items-start gap-3 px-4 py-2.5"
+              className="flex items-start gap-3 px-4 py-1.5"
               data-testid="banking-flag"
               data-kind={f.kind}
               data-severity={f.severity}
             >
-              <span className="w-[5.5rem] shrink-0">
+              <span className="w-[5.25rem] shrink-0">
                 <Chip tone={SEVERITY_TONE[f.severity]}>{t(`banking.severity.${f.severity}`)}</Chip>
               </span>
-              <p className="min-w-0 flex-1 text-[13px] text-foreground">{f.message}</p>
+              <p className="min-w-0 flex-1 text-[13px] leading-snug text-foreground">{f.message}</p>
               {(f.evidence ?? []).length > 0 && (
                 <button
                   type="button"
@@ -164,7 +165,7 @@ function Flags({ caseId, flags }: { caseId: string; flags: ConductFlag[] }) {
         </ul>
       )}
       {flags.length > FLAGS_SHOWN && (
-        <div className="border-t border-border px-4 py-2 text-center">
+        <div className="border-t border-border px-4 py-1.5 text-center">
           <button
             type="button"
             onClick={() => setAll((v) => !v)}
@@ -175,28 +176,28 @@ function Flags({ caseId, flags }: { caseId: string; flags: ConductFlag[] }) {
           </button>
         </div>
       )}
-    </Panel>
+    </Block>
   );
 }
 
 function MonthTable({ conduct }: { conduct: BankConduct }) {
   const dash = <span className="text-muted-foreground">—</span>;
   return (
-    <Panel
+    <Block
       title={t("banking.months.title")}
       subtitle={t("banking.months.subtitle")}
       testId="banking-months"
     >
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[640px] text-[13px]">
+        <table className="w-full min-w-[560px] text-[13px]">
           <thead>
             <tr className={TH}>
-              <th scope="col" className="px-4 py-2 text-left font-medium">
+              <th scope="col" className="px-3 py-1.5 text-left font-medium">
                 {t("banking.months.month")}
               </th>
               {(["credits", "business", "cash", "returns", "salary", "promoters"] as const).map(
                 (k) => (
-                  <th key={k} scope="col" className={cn(th, "whitespace-nowrap")}>
+                  <th key={k} scope="col" className={th}>
                     {t(`banking.months.${k}`)}
                   </th>
                 ),
@@ -213,7 +214,7 @@ function MonthTable({ conduct }: { conduct: BankConduct }) {
               >
                 <th
                   scope="row"
-                  className="whitespace-nowrap px-4 py-2 text-left font-medium text-foreground"
+                  className="whitespace-nowrap px-3 py-1.5 text-left font-medium text-foreground"
                 >
                   {monthLabel(m.month)}
                 </th>
@@ -250,7 +251,7 @@ function MonthTable({ conduct }: { conduct: BankConduct }) {
           </tbody>
         </table>
       </div>
-    </Panel>
+    </Block>
   );
 }
 
@@ -265,7 +266,7 @@ function CategoryTable({ summary }: { summary: TxnSummary }) {
     >
       <th
         scope="row"
-        className="sticky left-0 z-10 whitespace-nowrap bg-surface px-4 py-2 text-left font-medium text-foreground"
+        className="sticky left-0 z-10 whitespace-nowrap bg-surface px-3 py-1.5 text-left font-medium text-foreground"
       >
         {c.label}
       </th>
@@ -278,7 +279,7 @@ function CategoryTable({ summary }: { summary: TxnSummary }) {
     </tr>
   );
   return (
-    <Panel
+    <Block
       title={t("banking.categories.title")}
       subtitle={t("banking.categories.subtitle")}
       testId="banking-categories"
@@ -292,7 +293,7 @@ function CategoryTable({ summary }: { summary: TxnSummary }) {
             <tr className={TH}>
               <th
                 scope="col"
-                className="sticky left-0 z-10 bg-surface px-4 py-2 text-left font-medium"
+                className="sticky left-0 z-10 bg-surface px-3 py-1.5 text-left font-medium"
               >
                 {t("banking.categories.category")}
               </th>
@@ -315,7 +316,7 @@ function CategoryTable({ summary }: { summary: TxnSummary }) {
           </tbody>
         </table>
       </div>
-    </Panel>
+    </Block>
   );
 }
 
@@ -333,7 +334,7 @@ function Group({
       <tr className="bg-surface-muted/60">
         <td
           colSpan={span}
-          className="px-4 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
+          className="px-3 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
         >
           {title}
         </td>
@@ -346,7 +347,7 @@ function Group({
 function Customers({ conduct }: { conduct: BankConduct }) {
   const top1 = conduct.customer_top1_pct;
   return (
-    <Panel
+    <Block
       title={t("banking.customers.title")}
       subtitle={
         top1 !== null && top1 !== undefined
@@ -356,12 +357,12 @@ function Customers({ conduct }: { conduct: BankConduct }) {
       testId="banking-customers"
     >
       {conduct.customers.length === 0 ? (
-        <p className="px-4 py-5 text-[13px] text-muted-foreground">{t("banking.customers.none")}</p>
+        <p className="px-4 py-3 text-[13px] text-muted-foreground">{t("banking.customers.none")}</p>
       ) : (
         <table className="w-full text-[13px]">
           <thead>
             <tr className={TH}>
-              <th scope="col" className="px-4 py-2 text-left font-medium">
+              <th scope="col" className="px-3 py-1.5 text-left font-medium">
                 {t("banking.customers.party")}
               </th>
               <th scope="col" className={th}>
@@ -379,7 +380,7 @@ function Customers({ conduct }: { conduct: BankConduct }) {
                 className="border-b border-border/60 last:border-b-0"
                 data-testid="banking-customer"
               >
-                <th scope="row" className="px-4 py-2 text-left font-medium text-foreground">
+                <th scope="row" className="px-3 py-1.5 text-left font-medium text-foreground">
                   {c.party}
                 </th>
                 <td className={td}>{lakh(c.amount)}</td>
@@ -389,27 +390,27 @@ function Customers({ conduct }: { conduct: BankConduct }) {
           </tbody>
         </table>
       )}
-    </Panel>
+    </Block>
   );
 }
 
 function RoundTrips({ caseId, conduct }: { caseId: string; conduct: BankConduct }) {
   const viewer = useDocViewer();
   return (
-    <Panel
+    <Block
       title={t("banking.trips.title")}
       subtitle={t("banking.trips.subtitle")}
       testId="banking-trips"
     >
       {conduct.round_trips.length === 0 ? (
-        <p className="px-4 py-5 text-[13px] text-muted-foreground" data-testid="banking-trips-none">
+        <p className="px-4 py-3 text-[13px] text-muted-foreground" data-testid="banking-trips-none">
           {t("banking.trips.none")}
         </p>
       ) : (
         <table className="w-full text-[13px]">
           <thead>
             <tr className={TH}>
-              <th scope="col" className="px-4 py-2 text-left font-medium">
+              <th scope="col" className="px-3 py-1.5 text-left font-medium">
                 {t("banking.trips.party")}
               </th>
               <th scope="col" className={th}>
@@ -428,7 +429,7 @@ function RoundTrips({ caseId, conduct }: { caseId: string; conduct: BankConduct 
                 className="border-b border-border/60 last:border-b-0"
                 data-testid="banking-trip"
               >
-                <th scope="row" className="px-4 py-2 text-left font-medium text-foreground">
+                <th scope="row" className="px-3 py-1.5 text-left font-medium text-foreground">
                   {r.party}
                 </th>
                 <td className={td}>
@@ -464,7 +465,7 @@ function RoundTrips({ caseId, conduct }: { caseId: string; conduct: BankConduct 
           </tbody>
         </table>
       )}
-    </Panel>
+    </Block>
   );
 }
 
@@ -472,7 +473,7 @@ function Balances({ conduct }: { conduct: BankConduct }) {
   if (conduct.balances.length === 0) return null;
   return (
     <details className="rounded border border-border bg-surface" data-testid="banking-balances">
-      <summary className="cursor-pointer px-4 py-2.5 text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <summary className="cursor-pointer px-4 py-2 text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
         {t("banking.balances.title")}
         <span className="ml-2 font-normal normal-case tracking-normal">
           {t("banking.balances.subtitle")}
@@ -482,10 +483,10 @@ function Balances({ conduct }: { conduct: BankConduct }) {
         <table className="w-full min-w-[560px] text-[13px]">
           <thead>
             <tr className={TH}>
-              <th scope="col" className="px-4 py-2 text-left font-medium">
+              <th scope="col" className="px-3 py-1.5 text-left font-medium">
                 {t("banking.balances.account")}
               </th>
-              <th scope="col" className="px-4 py-2 text-left font-medium">
+              <th scope="col" className="px-3 py-1.5 text-left font-medium">
                 {t("banking.balances.month")}
               </th>
               <th scope="col" className={th}>
@@ -508,11 +509,11 @@ function Balances({ conduct }: { conduct: BankConduct }) {
                 >
                   <th
                     scope="row"
-                    className="whitespace-nowrap px-4 py-2 text-left font-medium text-foreground"
+                    className="whitespace-nowrap px-3 py-1.5 text-left font-medium text-foreground"
                   >
                     {a.account}
                   </th>
-                  <td className="whitespace-nowrap px-4 py-2">{monthLabel(m.month)}</td>
+                  <td className="whitespace-nowrap px-3 py-1.5">{monthLabel(m.month)}</td>
                   <td className={td}>{lakh(m.average)}</td>
                   <td className={td}>{lakh(m.minimum)}</td>
                   <td className={td}>

@@ -2,7 +2,7 @@ import { Eye } from "lucide-react";
 import { useDeferredValue, useState } from "react";
 import { toast } from "sonner";
 import type { TxnCategoryRef, TxnRow, TxnSummary } from "@/api/types";
-import { Chip, Panel, type Tone } from "@/components/common/Panel";
+import { Chip, type Tone } from "@/components/common/Panel";
 import { ErrorState, LoadingBlock } from "@/components/common/States";
 import { evidenceRequest, useDocViewer } from "@/components/docviewer/DocViewer";
 import {
@@ -26,9 +26,16 @@ import {
   type TxnFilter,
 } from "@/domain/transactions";
 import { cn } from "@/lib/utils";
+import { Block } from "./Block";
 import { TH, td, th } from "./styles";
 
 const PAGE = 25;
+
+/** The party a row names, unless its narration already says so. */
+const partyOf = (r: TxnRow): string | null =>
+  r.counterparty && !r.narration.toLowerCase().includes(r.counterparty.toLowerCase())
+    ? r.counterparty
+    : null;
 const selectClass =
   "h-8 min-w-0 rounded border border-border bg-surface px-2 text-[12.5px] text-foreground outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/20";
 
@@ -70,7 +77,7 @@ export function TransactionsTable({ caseId, summary }: { caseId: string; summary
     };
 
   return (
-    <Panel
+    <Block
       title={t("banking.txn.title")}
       subtitle={
         list.data
@@ -79,7 +86,7 @@ export function TransactionsTable({ caseId, summary }: { caseId: string; summary
       }
       testId="banking-transactions"
     >
-      <div className="flex flex-wrap items-end gap-3 border-b border-border px-4 py-3">
+      <div className="flex flex-wrap items-end gap-x-3 gap-y-2 border-y border-border px-4 py-2">
         <label className="block">
           <span className="field-label">{t("banking.txn.filters.category")}</span>
           <select
@@ -175,10 +182,10 @@ export function TransactionsTable({ caseId, summary }: { caseId: string; summary
           <table className="w-full min-w-[46rem] text-[13px]" data-testid="banking-table">
             <thead>
               <tr className={TH}>
-                <th scope="col" className="px-4 py-2 text-left font-medium">
+                <th scope="col" className="px-3 py-1.5 text-left font-medium">
                   {t("banking.txn.date")}
                 </th>
-                <th scope="col" className="px-4 py-2 text-left font-medium">
+                <th scope="col" className="px-3 py-1.5 text-left font-medium">
                   {t("banking.txn.narration")}
                 </th>
                 <th scope="col" className={th}>
@@ -187,7 +194,7 @@ export function TransactionsTable({ caseId, summary }: { caseId: string; summary
                 <th scope="col" className={th}>
                   {t("banking.txn.credit")}
                 </th>
-                <th scope="col" className="px-4 py-2 text-left font-medium">
+                <th scope="col" className="px-3 py-1.5 text-left font-medium">
                   {t("banking.txn.category")}
                 </th>
                 <th scope="col" className="w-20" />
@@ -206,14 +213,14 @@ export function TransactionsTable({ caseId, summary }: { caseId: string; summary
                   data-method={r.method}
                   data-open={r.needs_review ? "true" : "false"}
                 >
-                  <td className="whitespace-nowrap px-4 py-2 text-[12.5px] text-muted-foreground">
+                  <td className="whitespace-nowrap px-3 py-1.5 text-[12.5px] text-muted-foreground">
                     {r.date ? formatDate(r.date) : "—"}
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-1.5">
                     <p className="break-words text-foreground">{r.narration}</p>
-                    {(r.counterparty || (r.flags ?? []).length > 0 || r.reason) && (
+                    {(partyOf(r) || (r.flags ?? []).length > 0 || r.reason) && (
                       <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11.5px] text-muted-foreground">
-                        {r.counterparty && <span>{r.counterparty}</span>}
+                        {partyOf(r) && <span>{partyOf(r)}</span>}
                         {(r.flags ?? []).map((f) => (
                           <span key={f} className="rounded border border-border px-1">
                             {t(`banking.txn.flag.${f}`)}
@@ -225,14 +232,14 @@ export function TransactionsTable({ caseId, summary }: { caseId: string; summary
                   </td>
                   <td className={td}>{r.debit ? rupees(r.debit) : ""}</td>
                   <td className={td}>{r.credit ? rupees(r.credit) : ""}</td>
-                  <td className="min-w-[11rem] px-3 py-2">
-                    <span
-                      className="block font-medium text-foreground"
-                      data-testid="banking-txn-category"
-                    >
-                      {r.category_label}
-                    </span>
-                    <span className="mt-1 flex flex-wrap items-center gap-1.5">
+                  <td className="min-w-[13rem] px-3 py-1.5">
+                    <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                      <span
+                        className="font-medium text-foreground"
+                        data-testid="banking-txn-category"
+                      >
+                        {r.category_label}
+                      </span>
                       {r.needs_review ? (
                         <Chip tone="flag">{t("banking.counts.open")}</Chip>
                       ) : (
@@ -240,14 +247,14 @@ export function TransactionsTable({ caseId, summary }: { caseId: string; summary
                           {t(`banking.txn.method.${r.method}`)}
                         </Chip>
                       )}
-                      {r.needs_review && r.candidates?.[0] && (
-                        <span className="text-[11.5px] text-muted-foreground">
-                          {t("banking.txn.suggested", { label: label(r.candidates[0]!) })}
-                        </span>
-                      )}
                     </span>
+                    {r.needs_review && r.candidates?.[0] && (
+                      <span className="block text-[11.5px] text-muted-foreground">
+                        {t("banking.txn.suggested", { label: label(r.candidates[0]!) })}
+                      </span>
+                    )}
                   </td>
-                  <td className="whitespace-nowrap py-2 pl-2 pr-4 text-right">
+                  <td className="whitespace-nowrap py-1.5 pl-2 pr-3 text-right">
                     <span className="inline-flex items-center gap-2.5">
                       {canFile && (
                         <button
@@ -279,7 +286,7 @@ export function TransactionsTable({ caseId, summary }: { caseId: string; summary
             </tbody>
           </table>
           {list.data.items.length < list.data.total && (
-            <div className="border-t border-border px-4 py-2.5 text-center">
+            <div className="border-t border-border px-4 py-1.5 text-center">
               <button
                 type="button"
                 onClick={() => setLimit((n) => n + PAGE)}
@@ -302,7 +309,7 @@ export function TransactionsTable({ caseId, summary }: { caseId: string; summary
           onClose={() => setFiling(null)}
         />
       )}
-    </Panel>
+    </Block>
   );
 }
 

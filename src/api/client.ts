@@ -9,6 +9,8 @@ import type {
   CamRegenerateRequest,
   CamRegenerateResult,
   CamWordsRequest,
+  CellEdit,
+  StatementEditRequest,
   ApprovalMatrixConfig,
   ApprovingAuthority,
   Cam,
@@ -222,6 +224,18 @@ export const api = {
       body: JSON.stringify(body),
     }),
   caseSpread: (id: string) => request<Spread>(`/api/cases/${q(id)}/spread`),
+  /** Set a statement line to a person's figure, in the unit the statement prints (F-22.3). */
+  editStatementLine: (id: string, body: StatementEditRequest) =>
+    request<CellEdit>(`/api/cases/${q(id)}/statement-edits`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  /** Put the statement's own figure back; the edit stays in the history. */
+  revertStatementEdit: (id: string, edit: string, reason: string) =>
+    request<void>(`/api/cases/${q(id)}/statement-edits/${q(edit)}/revert`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    }),
   /** The case's statement transactions, each filed under a category (the Banking view). */
   caseTransactions: (id: string, filter: Record<string, string | number | boolean | undefined>) => {
     const params = new URLSearchParams();

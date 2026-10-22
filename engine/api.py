@@ -51,6 +51,7 @@ from . import (
     reference,
     review,
     spread,
+    statement_edits,
     uploads,
     xv,
 )
@@ -59,6 +60,9 @@ from .configstore import reader as configstore_reader
 from .configstore.schema import ApprovalMatrixSection, ChecklistTaxonomySection, DocumentTypesSection, PolicySection
 from .contracts import (
     BankConduct,
+    CellEdit,
+    StatementEditRequest,
+    StatementRevertRequest,
     TxnCategoryRequest,
     TxnPage,
     TxnRow,
@@ -524,6 +528,40 @@ def case_spread(
         return spread.build(conn, data_root(), case)
     except configstore_reader.NoPublishedConfig as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
+
+
+@app.post("/api/cases/{case_id}/statement-edits", response_model=CellEdit, status_code=201)
+def edit_statement_line(
+    case_id: str,
+    body: StatementEditRequest,
+    user: dict = Depends(require("review.decide")),
+    conn: sqlite3.Connection = Depends(get_conn),
+):
+    """F-22.3: set a statement line to a person's figure, in the unit the statement prints, with a
+    reason. The document's own figure is kept beside it; the norms, the memo and the spread all follow."""
+    case = _assessed_case(conn, case_id, user)
+    try:
+        return statement_edits.edit(conn, data_root(), case, body, user)
+    except statement_edits.EditError as e:
+        raise HTTPException(status_code=e.status, detail=str(e)) from e
+    except configstore_reader.NoPublishedConfig as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+
+
+@app.post("/api/cases/{case_id}/statement-edits/{edit_id}/revert", status_code=204)
+def revert_statement_edit(
+    case_id: str,
+    edit_id: str,
+    body: StatementRevertRequest,
+    user: dict = Depends(require("review.decide")),
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> None:
+    """Put the statement's own figure back; the edit stays in the history."""
+    case = _assessed_case(conn, case_id, user)
+    try:
+        statement_edits.revert(conn, data_root(), case, edit_id, body.reason, user)
+    except statement_edits.EditError as e:
+        raise HTTPException(status_code=e.status, detail=str(e)) from e
 
 
 # --- Bank-statement transactions (the Banking view of the Financials section) ---

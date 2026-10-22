@@ -487,6 +487,27 @@ MIGRATIONS: list[str] = [
         PRIMARY KEY (case_id, cluster_key, direction)
     );
     """,
+    # 17: a person's edit of a figure a statement prints (or leaves out). The document's own value is kept
+    # beside it, in the unit the statement prints; an earlier edit of the same figure is superseded, never
+    # overwritten, so the history stays.
+    """
+    CREATE TABLE statement_edits (
+        id TEXT PRIMARY KEY,
+        case_id TEXT NOT NULL REFERENCES cases(id),
+        document_id TEXT NOT NULL REFERENCES documents(id),
+        line TEXT NOT NULL,
+        column_name TEXT NOT NULL,
+        original REAL,                     -- as the document prints it (its own unit); NULL when unread or not printed
+        value REAL NOT NULL,               -- as entered, in the document's own unit
+        reason TEXT NOT NULL,
+        edited_by TEXT NOT NULL,
+        edited_at TEXT NOT NULL,
+        superseded_at TEXT,
+        superseded_by TEXT
+    );
+    CREATE INDEX statement_edits_case ON statement_edits(case_id);
+    CREATE INDEX statement_edits_doc ON statement_edits(document_id);
+    """,
 ]
 
 

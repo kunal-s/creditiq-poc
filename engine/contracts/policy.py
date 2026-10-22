@@ -7,6 +7,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from .common import Evidence
+from .outputs import CellWorking
 
 
 class NormComponent(BaseModel):
@@ -20,6 +21,8 @@ class NormComponent(BaseModel):
     """+1 added, -1 subtracted."""
     value: float
     evidence: list[Evidence] = Field(default_factory=list)
+    working: CellWorking | None = None
+    """How this line was read, and what an edit of it names."""
 
 
 class NormInput(BaseModel):
@@ -40,6 +43,9 @@ class NormInput(BaseModel):
     components: list[NormComponent] = Field(default_factory=list)
     """For a figure derived by summing statement lines, the lines it came from. Empty for a
     figure the statement prints itself."""
+    working: CellWorking | None = None
+    """For a statement figure: how it was read (page, unit, nil or not printed, a person's edit) and, on
+    the lines the statement prints, what an edit of it names."""
 
 
 NormOutcome = Literal["pass", "deviation", "cannot_evaluate", "not_applicable"]
@@ -84,6 +90,11 @@ class NormResult(BaseModel):
     configured marginal value, or past that too. None where the norm has no ratio or no result."""
     marginal_text: str | None = None
     """The ratio's configured marginal value, formatted as the screens write a value."""
+    ratio: str | None = None
+    """The ratio's key, which names its row in the spread (the same ratio year by year)."""
+    threshold: float | None = None
+    marginal: float | None = None
+    """The norm's acceptable and marginal values as numbers, for the screens to place an actual between them."""
 
 
 NormFamily = Literal["eligibility", "ratios", "security_cover", "documentation"]

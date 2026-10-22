@@ -59,6 +59,7 @@ INPUT_LABELS = {
     # Lines that appear only inside a derived figure's breakdown (F-20.2).
     "cash_and_bank_balances": "Cash and bank balances",
     "short_term_loans_and_advances": "Short-term loans and advances",
+    "other_current_assets": "Other current assets",
     "other_current_liabilities": "Other current liabilities",
     "short_term_provisions": "Short-term provisions",
     "current_assets": "Current assets",
@@ -82,12 +83,12 @@ class Inputs:
 
     def put(self, name: str, value: float | None, evidence: list[Evidence] | None = None, manual: bool = False,
             pending: bool = False, basis: str = "document", refs: list[str] | None = None,
-            components: list[NormComponent] | None = None) -> None:
+            components: list[NormComponent] | None = None, working=None) -> None:
         if value is None:
             return
         self.values[name] = NormInput(name=name, label=INPUT_LABELS[name], value=float(value), evidence=evidence or [],
                                       relies_on_manual=manual, awaiting_review=pending, basis=basis,  # type: ignore[arg-type]
-                                      refs=refs or [], components=components or [])
+                                      refs=refs or [], components=components or [], working=working)
 
 
 def number(v: facts_module.Value | None) -> float | None:
@@ -179,18 +180,24 @@ def gather(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> Inputs:
         end = audited[-1][0]
         inputs.period = facts_module.fy_name(facts_module.fy_of(end.year, end.month, start), start)
         # More than one copy of the latest year's statements: each figure from the first copy that has it.
-        copies = [statements.lines(d, cfg) for e, d in audited if e == end]
+        from . import workings  # imports this module for the labels, so it is read here
+
+        latest_docs = [d for e, d in audited if e == end]
+        copies = [statements.lines(d, cfg) for d in latest_docs]
         for name in FINANCIAL_INPUTS:
-            line = next((c[name] for c in copies if name in c), None)
+            at = next((i for i, c in enumerate(copies) if name in c), None)
+            line = copies[at][name] if at is not None else None
             if line:
                 # A derived figure (net worth, current assets) carries the lines it was summed
                 # from, so the screen can show the arithmetic rather than only the total.
                 inputs.put(name, line.value, line.evidence, line.manual, pending=line.pending,
                            components=[
                                NormComponent(label=INPUT_LABELS.get(part.name, part.name), sign=part.sign,
-                                             value=part.value, evidence=part.evidence)
+                                             value=part.value, evidence=part.evidence,
+                                             working=workings.line_working(part.line, latest_docs[at], part.name, True)
+                                             if part.line is not None else None)
                                for part in line.parts
-                           ])
+                           ], working=workings.line_working(line, latest_docs[at], name, name in cfg.lines))
 
     # The amount asked for: the case record, citing the sourcing message where it came from.
     requested = facts.requested_amount
@@ -383,6 +390,8 @@ def evaluate(norm: PolicyNorm, ratio: PolicyRatio | None, case: CaseDetail, inpu
         category_label=categories.get(norm.category, norm.category), note=norm.note or (ratio.note if ratio else None),
         provisional=status == "provisional",
         marginal_text=unit_text(ratio.marginal, unit) if ratio else None,
+        ratio=ratio.key if ratio else None, threshold=float(threshold) if ratio else None,
+        marginal=float(ratio.marginal) if ratio else None,
     )
     if not _applies(norm, case, inputs, wc_limit):
         return result

@@ -13,13 +13,13 @@ import { OUTCOME_TEXT } from "./styles";
 
 /** A ratio's band against its configured values (the engine's): green within the norm, amber past
  * it but within the marginal value, red past that. */
-const BAND_TEXT = {
+export const BAND_TEXT = {
   within: "text-positive",
   marginal: "text-flag-foreground",
   outside: "text-destructive",
 } as const;
 
-const CHIP: Record<string, { tone: string; dot: string }> = {
+export const CHIP: Record<string, { tone: string; dot: string }> = {
   within: { tone: "border-positive/30 bg-positive-soft text-positive", dot: "bg-positive" },
   marginal: { tone: "border-flag/40 bg-flag-soft text-flag-foreground", dot: "bg-flag-foreground" },
   outside: {
@@ -35,7 +35,12 @@ const CHIP: Record<string, { tone: string; dot: string }> = {
 
 /** Where a norm stands, in the tile's chip: a ratio by the band the engine placed it in; any other
  * norm within policy when it passed and outside it when it deviated. */
-function statusOf(norm: NormResult): { key: string; label: string; tone: string; dot: string } {
+export function statusOf(norm: NormResult): {
+  key: string;
+  label: string;
+  tone: string;
+  dot: string;
+} {
   const key =
     norm.band ??
     (norm.outcome === "pass" ? "within" : norm.outcome === "deviation" ? "outside" : norm.outcome);
@@ -48,7 +53,7 @@ function statusOf(norm: NormResult): { key: string; label: string; tone: string;
 
 /** The actual value as two parts, so the figure reads large and its unit small: "1.79" "x",
  * "129" " days", "INR 4.80" " cr". A value without a leading figure stays whole. */
-function split(text: string): [string, string] {
+export function split(text: string): [string, string] {
   const m = text.match(/^(INR\s)?(-?[\d.,]+)(.*)$/);
   return m ? [`${m[1] ?? ""}${m[2]}`, m[3] ?? ""] : [text, ""];
 }

@@ -261,7 +261,7 @@ def build_table(rule: TableRule, defs: list[ColumnDef], pages: list[Page], readi
             if r is None:
                 cells_out[d.name] = None
             elif d.type == "number":
-                v = to_number(r)
+                v = 0 if rule.dash_is_zero and r.strip() in ("-", "–", "—") else to_number(r)
                 unparsed += v is None and r.strip() not in ("", "-")
                 cells_out[d.name] = v
             elif d.type == "date":

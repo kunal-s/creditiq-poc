@@ -14,6 +14,7 @@ from PIL import Image, ImageSequence
 from ..config.models import QualityConfig, RoutingConfig
 from ..pageindex import Line, Page, Word, build_lines
 from ..readers import imagequal
+from ..readers.marks import find_dashes
 from ..readers import pdf_text
 from ..readers import sheet as sheet_reader
 from ..readers.ocr import OcrEngine
@@ -112,6 +113,8 @@ def _ocr_page(no: int, img: Image.Image, dpi: int, q: QualityConfig, r: RoutingC
     grade = "A"
     if not words:
         return Page(no, "ocr", w_pt, h_pt, [], [], "U", ["ocr_floor"], 0.0, ocr_conf=0.0)
+    if r.ocr.dash_marks:   # outside the cache, so recorded pages gain the marks too
+        words = words + find_dashes(img, dpi, [(w.x0, w.y0, w.x1, w.y1) for w in words])
     if conf < q.ocr_confidence_floor:
         grade, reasons = "C", ["ocr_floor"]
     elif conf < q.ocr_confidence_degraded:

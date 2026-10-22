@@ -4,6 +4,7 @@ import { t } from "@/config/terminology";
 import { countParts, groupHeadingId, groupSectionId } from "@/domain/policy";
 import { cn } from "@/lib/utils";
 import { NormDetail, NormTile } from "./NormTile";
+import { RatioTable } from "./RatioTable";
 import { GROUP_STATUS } from "./styles";
 
 /** "5 norms · 1 deviation · 1 cannot be evaluated · 3 passed", as the engine counted them; the
@@ -88,6 +89,14 @@ export function GroupSection({
         >
           {t(`policy.familyPending.${group.family}`)}
         </p>
+      ) : group.family === "ratios" ? (
+        <RatioTable
+          caseId={caseId}
+          norms={norms}
+          selected={selected}
+          detailId={detailId}
+          onSelect={(id, force) => setSelected((now) => (force || now !== id ? id : null))}
+        />
       ) : (
         <div className="overflow-hidden rounded border border-border bg-surface">
           <ul

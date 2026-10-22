@@ -9,10 +9,102 @@ from pydantic import BaseModel, Field
 from .common import Evidence
 
 
+CellState = Literal["printed", "nil", "not_printed", "edited", "derived", "ratio", "missing"]
+"""How a figure came about: printed on the statement; nil (the statement prints a dash); not printed (the
+statement has no such row and the configuration reads that as nil); edited by a person; summed from other
+lines; a ratio of lines; or missing."""
+
+
+class CellSource(BaseModel):
+    """Where a figure the statement prints was read, and in what unit."""
+
+    document_id: str
+    document: str
+    page: int | None = None
+    row_label: str | None = None
+    """The row as the statement prints it."""
+    printed: str | None = None
+    """The amount as printed ("3,586", "-")."""
+    printed_value: float | None = None
+    """The amount in the statement's own unit."""
+    unit_label: str | None = None
+    """"INR thousands" when the statement prints its amounts in thousands; absent for rupees."""
+    scale: float = 1.0
+    """What the printed amount is multiplied by to give rupees."""
+    column: str
+
+
+class CellEdit(BaseModel):
+    """A person's figure standing in place of the statement's (the printed one stays beside it)."""
+
+    id: str
+    original: float | None = None
+    """The statement's own figure, in its own unit; absent when it was unread or not printed."""
+    value: float
+    """The figure entered, in the statement's own unit."""
+    reason: str
+    edited_by: str
+    edited_at: str
+
+
+class EditTarget(BaseModel):
+    """What an edit of this figure names."""
+
+    document_id: str
+    line: str
+    column: str
+
+
+class CellInput(BaseModel):
+    """One figure a derived figure or ratio rests on, with the figures it rests on in turn."""
+
+    key: str
+    label: str
+    value: float | None = None
+    sign: int = 1
+    unit: Literal["inr", "x", "%", "days"] = "inr"
+    state: CellState = "printed"
+    parts: list["CellInput"] = Field(default_factory=list)
+    source: CellSource | None = None
+    edit: CellEdit | None = None
+    target: EditTarget | None = None
+    """As on the figure itself: an input that is one of the statement's own lines can be edited from here."""
+
+
+class CellWorking(BaseModel):
+    """How one spread figure was arrived at (F-22.3): where it was read, or what it was worked out from."""
+
+    state: CellState
+    formula: str | None = None
+    """For a derived figure or ratio, the working in words."""
+    substituted: str | None = None
+    """The same working with the figures in it."""
+    inputs: list[CellInput] = Field(default_factory=list)
+    source: CellSource | None = None
+    edit: CellEdit | None = None
+    target: EditTarget | None = None
+    """Present on a figure a person may edit: the statement's own lines, not derived figures or ratios."""
+
+
+class StatementEditRequest(BaseModel):
+    """Set a statement line to a person's figure, entered in the unit the statement prints."""
+
+    document_id: str
+    line: str
+    column: str = "current_period"
+    value: float
+    reason: str
+
+
+class StatementRevertRequest(BaseModel):
+    reason: str
+
+
 class SpreadCell(BaseModel):
     value: float | None = None
     evidence: list[Evidence] = Field(default_factory=list)
     relies_on_manual: bool = False
+    working: CellWorking | None = None
 
 
 class SpreadColumn(BaseModel):
@@ -59,6 +151,29 @@ class WorkingCapitalAssessment(BaseModel):
     missing: list[str] = Field(default_factory=list)
 
 
+class SpreadCheck(BaseModel):
+    """A statement checked against itself or against the next year's report (F-22.3): the balance sheet's two
+    totals, or a figure as one year's statements give it and as the following year's give it as its comparative."""
+
+    id: str
+    kind: Literal["balance", "comparative"]
+    fy: str
+    """The year the check is about (for a comparative, the earlier year)."""
+    label: str
+    outcome: Literal["agrees", "differs"]
+    left_label: str
+    left: float
+    right_label: str
+    right: float
+    difference: float
+    tolerance: float
+    """The most the two may differ by and still agree: the rounding of the unit the statements print in."""
+    detail: str
+    evidence: list[Evidence] = Field(default_factory=list)
+    lines: list[str] = Field(default_factory=list)
+    """The statement lines it compares, for the screen to mark."""
+
+
 class Spread(BaseModel):
     case_id: str
     interim: bool = True
@@ -66,6 +181,7 @@ class Spread(BaseModel):
     columns: list[SpreadColumn]
     rows: list[SpreadRow]
     working_capital: WorkingCapitalAssessment
+    checks: list[SpreadCheck] = Field(default_factory=list)
 
 
 Severity = Literal["serious", "moderate", "mild"]

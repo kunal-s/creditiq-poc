@@ -2885,6 +2885,314 @@
         "title": "CaseSummary",
         "type": "object"
       },
+      "CellEdit": {
+        "description": "A person's figure standing in place of the statement's (the printed one stays beside it).",
+        "properties": {
+          "edited_at": {
+            "title": "Edited At",
+            "type": "string"
+          },
+          "edited_by": {
+            "title": "Edited By",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "original": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Original"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "value",
+          "reason",
+          "edited_by",
+          "edited_at"
+        ],
+        "title": "CellEdit",
+        "type": "object"
+      },
+      "CellInput": {
+        "description": "One figure a derived figure or ratio rests on, with the figures it rests on in turn.",
+        "properties": {
+          "edit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CellEdit"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/CellInput"
+            },
+            "title": "Parts",
+            "type": "array"
+          },
+          "sign": {
+            "default": 1,
+            "title": "Sign",
+            "type": "integer"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CellSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "default": "printed",
+            "enum": [
+              "printed",
+              "nil",
+              "not_printed",
+              "edited",
+              "derived",
+              "ratio",
+              "missing"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EditTarget"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unit": {
+            "default": "inr",
+            "enum": [
+              "inr",
+              "x",
+              "%",
+              "days"
+            ],
+            "title": "Unit",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "key",
+          "label"
+        ],
+        "title": "CellInput",
+        "type": "object"
+      },
+      "CellSource": {
+        "description": "Where a figure the statement prints was read, and in what unit.",
+        "properties": {
+          "column": {
+            "title": "Column",
+            "type": "string"
+          },
+          "document": {
+            "title": "Document",
+            "type": "string"
+          },
+          "document_id": {
+            "title": "Document Id",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "printed": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Printed"
+          },
+          "printed_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Printed Value"
+          },
+          "row_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Row Label"
+          },
+          "scale": {
+            "default": 1.0,
+            "title": "Scale",
+            "type": "number"
+          },
+          "unit_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Label"
+          }
+        },
+        "required": [
+          "document_id",
+          "document",
+          "column"
+        ],
+        "title": "CellSource",
+        "type": "object"
+      },
+      "CellWorking": {
+        "description": "How one spread figure was arrived at (F-22.3): where it was read, or what it was worked out from.",
+        "properties": {
+          "edit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CellEdit"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "formula": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Formula"
+          },
+          "inputs": {
+            "items": {
+              "$ref": "#/components/schemas/CellInput"
+            },
+            "title": "Inputs",
+            "type": "array"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CellSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "enum": [
+              "printed",
+              "nil",
+              "not_printed",
+              "edited",
+              "derived",
+              "ratio",
+              "missing"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "substituted": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Substituted"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EditTarget"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "title": "CellWorking",
+        "type": "object"
+      },
       "ChecklistItemDef": {
         "properties": {
           "basis": {
@@ -3843,6 +4151,30 @@
           "types"
         ],
         "title": "DocumentTypesSection",
+        "type": "object"
+      },
+      "EditTarget": {
+        "description": "What an edit of this figure names.",
+        "properties": {
+          "column": {
+            "title": "Column",
+            "type": "string"
+          },
+          "document_id": {
+            "title": "Document Id",
+            "type": "string"
+          },
+          "line": {
+            "title": "Line",
+            "type": "string"
+          }
+        },
+        "required": [
+          "document_id",
+          "line",
+          "column"
+        ],
+        "title": "EditTarget",
         "type": "object"
       },
       "EditableAuthority": {
@@ -5872,6 +6204,16 @@
           "value": {
             "title": "Value",
             "type": "number"
+          },
+          "working": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CellWorking"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -5946,6 +6288,16 @@
               }
             ],
             "title": "Value"
+          },
+          "working": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CellWorking"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -6053,6 +6405,17 @@
             "title": "Label",
             "type": "string"
           },
+          "marginal": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Marginal"
+          },
           "marginal_text": {
             "anyOf": [
               {
@@ -6097,6 +6460,17 @@
             "title": "Provisional",
             "type": "boolean"
           },
+          "ratio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ratio"
+          },
           "reason": {
             "anyOf": [
               {
@@ -6134,6 +6508,17 @@
               }
             ],
             "title": "Source"
+          },
+          "threshold": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Threshold"
           },
           "threshold_text": {
             "anyOf": [
@@ -8727,6 +9112,13 @@
             "title": "Case Id",
             "type": "string"
           },
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/SpreadCheck"
+            },
+            "title": "Checks",
+            "type": "array"
+          },
           "columns": {
             "items": {
               "$ref": "#/components/schemas/SpreadColumn"
@@ -8783,9 +9175,110 @@
               }
             ],
             "title": "Value"
+          },
+          "working": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CellWorking"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "title": "SpreadCell",
+        "type": "object"
+      },
+      "SpreadCheck": {
+        "description": "A statement checked against itself or against the next year's report (F-22.3): the balance sheet's two\ntotals, or a figure as one year's statements give it and as the following year's give it as its comparative.",
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "difference": {
+            "title": "Difference",
+            "type": "number"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "fy": {
+            "title": "Fy",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "balance",
+              "comparative"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "left": {
+            "title": "Left",
+            "type": "number"
+          },
+          "left_label": {
+            "title": "Left Label",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "outcome": {
+            "enum": [
+              "agrees",
+              "differs"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "right": {
+            "title": "Right",
+            "type": "number"
+          },
+          "right_label": {
+            "title": "Right Label",
+            "type": "string"
+          },
+          "tolerance": {
+            "title": "Tolerance",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "fy",
+          "label",
+          "outcome",
+          "left_label",
+          "left",
+          "right_label",
+          "right",
+          "difference",
+          "tolerance",
+          "detail"
+        ],
+        "title": "SpreadCheck",
         "type": "object"
       },
       "SpreadColumn": {
@@ -8936,6 +9429,53 @@
           "status"
         ],
         "title": "StageProgress",
+        "type": "object"
+      },
+      "StatementEditRequest": {
+        "description": "Set a statement line to a person's figure, entered in the unit the statement prints.",
+        "properties": {
+          "column": {
+            "default": "current_period",
+            "title": "Column",
+            "type": "string"
+          },
+          "document_id": {
+            "title": "Document Id",
+            "type": "string"
+          },
+          "line": {
+            "title": "Line",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "document_id",
+          "line",
+          "value",
+          "reason"
+        ],
+        "title": "StatementEditRequest",
+        "type": "object"
+      },
+      "StatementRevertRequest": {
+        "properties": {
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "StatementRevertRequest",
         "type": "object"
       },
       "StrippedSpan": {
@@ -12938,6 +13478,140 @@
           }
         },
         "summary": "Case Spread"
+      }
+    },
+    "/api/cases/{case_id}/statement-edits": {
+      "post": {
+        "description": "F-22.3: set a statement line to a person's figure, in the unit the statement prints, with a\nreason. The document's own figure is kept beside it; the norms, the memo and the spread all follow.",
+        "operationId": "edit_statement_line_api_cases__case_id__statement_edits_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatementEditRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CellEdit"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Edit Statement Line"
+      }
+    },
+    "/api/cases/{case_id}/statement-edits/{edit_id}/revert": {
+      "post": {
+        "description": "Put the statement's own figure back; the edit stays in the history.",
+        "operationId": "revert_statement_edit_api_cases__case_id__statement_edits__edit_id__revert_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "edit_id",
+            "required": true,
+            "schema": {
+              "title": "Edit Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatementRevertRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Revert Statement Edit"
       }
     },
     "/api/cases/{case_id}/transactions": {

@@ -22,7 +22,9 @@ import {
 } from "@/domain/spread";
 import { cn } from "@/lib/utils";
 import { TrendNotes } from "./SpreadRatios";
-import { StatementTable, TurnoverByYear, type Picked } from "./SpreadTables";
+import { FigureWorking } from "./FigureWorking";
+import { Reconciliation } from "./Reconciliation";
+import { StatementTable, TurnoverByYear, pickedNow, type Picked } from "./SpreadTables";
 import { WorkingCapital } from "./WorkingCapital";
 
 // The Financials section of the Financials and Policy tab (F-22, F-18.1): the audited years line
@@ -187,6 +189,9 @@ function FinancialsBody({
             </TabsContent>
           ))}
         </Tabs>
+        {tab !== "banking" && tab !== "turnover" && (
+          <Reconciliation caseId={caseId} spread={spread} />
+        )}
         <WorkingCapital caseId={caseId} spread={spread} />
         <TrendNotes spread={spread} />
       </div>
@@ -196,7 +201,7 @@ function FinancialsBody({
         ) : (
           <>
             <StatusPanel spread={spread} header={header.data} period={assessed} />
-            <SourcePanel caseId={caseId} picked={picked} />
+            <SourcePanel caseId={caseId} picked={pickedNow(spread, picked)} />
           </>
         )}
       </aside>
@@ -412,6 +417,19 @@ function SourcePanel({ caseId, picked }: { caseId: string; picked: Picked | null
             </div>
           ) : (
             <p className="text-[12px] text-muted-foreground">{t("spreadPage.source.noPage")}</p>
+          )}
+          {picked.working && (
+            <div className="border-t border-border pt-3">
+              <p className="mb-2 text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+                {t("spreadPage.working.title")}
+              </p>
+              <FigureWorking
+                caseId={caseId}
+                label={picked.label}
+                fy={picked.fy}
+                working={picked.working}
+              />
+            </div>
           )}
         </div>
       )}

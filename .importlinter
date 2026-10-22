@@ -53,7 +53,10 @@ source_modules =
     engine.review
     engine.review_items
     engine.spread
+    engine.reconcile
+    engine.statement_edits
     engine.statements
+    engine.workings
     engine.store
     engine.txn_intel
     engine.txn_labels
@@ -87,7 +90,10 @@ source_modules =
     engine.progress
     engine.review
     engine.spread
+    engine.reconcile
+    engine.statement_edits
     engine.statements
+    engine.workings
     engine.xv
     engine.xv_cards
 forbidden_modules =

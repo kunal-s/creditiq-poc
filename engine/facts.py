@@ -113,6 +113,22 @@ class Value:
     manual: bool
     pending: bool = False
     """Still waiting for a person's review (F-17.2)."""
+    raw: str | None = None
+    """The text as the document prints it ("3,586", "-")."""
+
+
+@dataclass
+class StatementEdit:
+    """A person's figure for a statement line, in the unit the statement prints (see statement_edits)."""
+
+    id: str
+    line: str
+    column: str
+    original: float | None
+    value: float
+    reason: str
+    edited_by: str
+    edited_at: str
 
 
 @dataclass
@@ -123,6 +139,8 @@ class Doc:
     page_from: int
     fields: dict[str, Value]
     party_id: str | None = None
+    edits: dict[tuple[str, str], StatementEdit] = field(default_factory=dict)
+    """The live edits of this document's statement lines, by line and column."""
 
     @property
     def label(self) -> str:
@@ -177,7 +195,7 @@ def load_documents(conn: sqlite3.Connection, root: Path, case_id: str) -> list[D
             continue
         fields: dict[str, Value] = {}
         for fv in conn.execute(
-            "SELECT id, field, value, corrected_value, status, evidence, method FROM field_values WHERE document_id = ?",
+            "SELECT id, field, value, corrected_value, status, evidence, method, raw FROM field_values WHERE document_id = ?",
             (row["id"],),
         ):
             if fv["status"] in ("missing", "rejected"):
@@ -188,7 +206,14 @@ def load_documents(conn: sqlite3.Connection, root: Path, case_id: str) -> list[D
                 evidence=json.loads(fv["evidence"]) if fv["evidence"] else None,
                 manual=fv["method"] == "manual" or fv["status"] == "corrected",
                 pending=fv["status"] == "in_review",
+                raw=fv["raw"],
             )
+        edits = {
+            (e["line"], e["column_name"]): StatementEdit(e["id"], e["line"], e["column_name"], e["original"], e["value"],
+                                                          e["reason"], e["edited_by"], e["edited_at"])
+            for e in conn.execute(
+                "SELECT * FROM statement_edits WHERE document_id = ? AND superseded_at IS NULL", (row["id"],))
+        }
         docs.append(
             Doc(
                 id=row["id"],
@@ -197,6 +222,7 @@ def load_documents(conn: sqlite3.Connection, root: Path, case_id: str) -> list[D
                 page_from=row["page_from"],
                 fields=fields,
                 party_id=row["party_id"] if "party_id" in row.keys() else None,
+                edits=edits,
             )
         )
     return docs
@@ -869,6 +895,20 @@ def _gst_by_month(b: Build) -> dict[tuple[int, int], tuple[float, Doc, statement
     return gst
 
 
+def _gst_returns(b: Build) -> dict[tuple[tuple[int, int], ...], tuple[float, Doc, statements.Line]]:
+    """Outward supplies per return, monthly or quarterly, by the months the return covers (the first return
+    for a period). A quarter's figure is one figure for its three months: it is never divided among them."""
+    cfg = reader.load_statements(b.root)
+    found: dict[tuple[tuple[int, int], ...], tuple[float, Doc, statements.Line]] = {}
+    for d in b.of_type("gstr_3b"):
+        tp, fy = d.get("tax_period"), d.get("financial_year")
+        months = tuple(period_months(tp.value, fy.value if fy else None)) if tp else ()
+        line = statements.gst_outward(d, cfg)
+        if months and line and months not in found:
+            found[months] = (line.value, d, line)
+    return found
+
+
 def _months(b: Build, credits_by_month: dict, coverage: dict[str, set[tuple[int, int]]]) -> list[MonthFigure]:
     """GST and cleansed bank credits month by month (TO-05). A month has a bank
     figure only when every account's statements cover it."""
@@ -904,15 +944,15 @@ def _turnover(b: Build, credits_by_month: dict, coverage: dict[str, set[tuple[in
             source="financials", label="Audited financial statements", value=revenue.value, evidence=revenue.evidence,
             field_ids=revenue.field_ids, relies_on_manual=revenue.manual, awaiting_review=revenue.pending))
 
-    # GST: outward supplies per return period, from each GSTR-3B.
-    gst = _gst_by_month(b)
-    for fy in sorted({fy_of(y, m, start) for (y, m) in gst}):
-        months = fy_months(fy, start)
-        present = [m for m in months if m in gst]
-        values = [gst[m] for m in present]
+    # GST: outward supplies per return (a month or a quarter), from each GSTR-3B.
+    returns = _gst_returns(b)
+    for fy in sorted({fy_of(*months[0], start) for months in returns}):
+        in_year = [(months, v) for months, v in returns.items() if fy_of(*months[0], start) == fy]
+        present = {m for months, _ in in_year for m in months}
+        values = [v for _, v in in_year]
         years[fy].append(TurnoverFigure(
             source="gst", label="GST outward supplies", value=sum(v[0] for v in values),
-            months_covered=len(present), months_missing=[month_label(m) for m in months if m not in gst],
+            months_covered=len(present), months_missing=[month_label(m) for m in fy_months(fy, start) if m not in present],
             evidence=[e for v in values[:12] for e in v[2].evidence[:1]],
             field_ids=[i for v in values for i in v[2].field_ids], relies_on_manual=any(v[2].manual for v in values),
             awaiting_review=any(v[2].pending for v in values)))

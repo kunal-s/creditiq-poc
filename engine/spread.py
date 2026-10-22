@@ -12,16 +12,23 @@ RBL's rows when its template arrives.
 from __future__ import annotations
 
 import ast
+import re
 import sqlite3
 from datetime import date
 from pathlib import Path
 
 from . import facts as facts_module
 from . import policy as policy_module
+from . import reconcile, workings
 from . import statements
 from .configstore import reader
 from .contracts import (
     CaseDetail,
+    CellEdit,
+    CellInput,
+    CellSource,
+    CellWorking,
+    EditTarget,
     Evidence,
     Spread,
     SpreadCell,
@@ -78,28 +85,46 @@ def _columns(conn: sqlite3.Connection, root: Path, case: CaseDetail):
     return columns, [groups[k] for k in keys]
 
 
-def _line(copies: list[dict[str, statements.Line]], name: str) -> SpreadCell:
-    for lines in copies:
+def _line(copies: list[dict[str, statements.Line]], name: str, docs: list[facts_module.Doc] | None = None,
+          editable: bool = False) -> SpreadCell:
+    docs = docs or []
+    for i, lines in enumerate(copies):
         if name in lines:
             line = lines[name]
-            return SpreadCell(value=line.value, evidence=line.evidence, relies_on_manual=line.manual)
-    return SpreadCell()
+            working = workings.line_working(line, docs[i], name, editable) if i < len(docs) else None
+            return SpreadCell(value=line.value, evidence=line.evidence, relies_on_manual=line.manual, working=working)
+    # Not on any copy: unread or unprinted. A person may still enter it, on the first copy of the year.
+    if not (editable and docs):
+        return SpreadCell()
+    doc = docs[0]
+    source = CellSource(document_id=doc.id, document=doc.label, unit_label=workings.unit_label(doc),
+                        scale=statements.unit_scale(doc), column="current_period")
+    return SpreadCell(working=CellWorking(state="missing", source=source,
+                                          target=EditTarget(document_id=doc.id, line=name, column="current_period")))
 
 
-def _derived(expression: str, lines: dict[str, SpreadCell]) -> SpreadCell:
+def _derived(expression: str, lines: dict[str, SpreadCell], kind: str = "derived", labels: dict[str, str] | None = None) -> SpreadCell:
     tree = ast.parse(expression, mode="eval")
     names = [n.id for n in ast.walk(tree) if isinstance(n, ast.Name)]
     values = {k: c.value for k, c in lines.items() if c.value is not None}
     missing: list[str] = []
     divisors: list[tuple[str, float]] = []
     value = policy_module.evaluate_expression(tree, values, missing, divisors)
+    unique = list(dict.fromkeys(names))
+    inputs = [CellInput(key=n, label=policy_module.INPUT_LABELS.get(n, n), value=lines[n].value if n in lines else None,
+                        state=(lines[n].working.state if n in lines and lines[n].working else "missing"),
+                        parts=list(lines[n].working.inputs) if n in lines and lines[n].working else [])
+              for n in unique]
+    shown = re.sub(r"[a-z_]+", lambda m: f"{lines[m[0]].value:,.0f}" if m[0] in lines and lines[m[0]].value is not None else "?", expression)
+    working = CellWorking(state=kind, formula=policy_module.words(expression),  # type: ignore[arg-type]
+                          substituted=shown.replace("/", "÷").replace("*", "×"), inputs=inputs)
     if missing or any(d == 0 for _, d in divisors):
-        return SpreadCell()
+        return SpreadCell(working=working)
     evidence: list[Evidence] = []
-    for n in dict.fromkeys(names):
+    for n in unique:
         evidence += lines[n].evidence[:1] if n in lines else []
     return SpreadCell(value=round(value, 4), evidence=evidence,
-                      relies_on_manual=any(lines[n].relies_on_manual for n in names if n in lines))
+                      relies_on_manual=any(lines[n].relies_on_manual for n in names if n in lines), working=working)
 
 
 def _working_capital(root: Path, case: CaseDetail, columns: list[SpreadColumn],
@@ -175,7 +200,8 @@ def build(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> Spread:
     ratios = {r.key: r for r in policy.ratios}
     columns, groups = _columns(conn, root, case)
     cfg = reader.load_statements(root)
-    lines_by_column = [{name: _line([statements.lines(d, cfg) for d in docs], name) for name in PROFIT_AND_LOSS + BALANCE_SHEET} for docs in groups]
+    lines_by_column = [{name: _line([statements.lines(d, cfg) for d in docs], name, docs, name in cfg.lines)
+                        for name in PROFIT_AND_LOSS + BALANCE_SHEET} for docs in groups]
     rows: list[SpreadRow] = []
     for section, names in (("profit_and_loss", PROFIT_AND_LOSS), ("balance_sheet", BALANCE_SHEET)):
         for name in names:
@@ -197,6 +223,7 @@ def build(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> Spread:
             continue
         rows.append(SpreadRow(key=ratio.key, label=ratio.label, section="ratios", kind="ratio",
                               unit=ratio.unit, formula=ratio.formula,
-                              cells=[_derived(norm.expression, lines) for lines in lines_by_column]))
+                              cells=[_derived(norm.expression, lines, "ratio") for lines in lines_by_column]))
     return Spread(case_id=case.id, columns=columns, rows=rows,
-                  working_capital=_working_capital(root, case, columns, lines_by_column))
+                  working_capital=_working_capital(root, case, columns, lines_by_column),
+                  checks=reconcile.checks(columns, groups, cfg))

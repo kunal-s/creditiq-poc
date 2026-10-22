@@ -677,6 +677,10 @@ class StatementsSection(BaseModel):
     lines: dict[str, StatementLine]
     derived: dict[str, str] = Field(default_factory=dict)
     """Line key to an expression over other lines (summed from the lines it names)."""
+    absent_is_nil: list[str] = Field(default_factory=list)
+    """Lines a statement may leave out when it has nothing to report (inventories on a services company's
+    balance sheet). Where the statement's table was read and the row is not on it, the line is 0 and marked
+    not printed; a line not listed here stays missing and blocks whatever is derived from it."""
     gst_outward: GstLine
     """GST turnover: every row of the return's table that matches is summed."""
     itr_lines: dict[str, StatementLine] = Field(default_factory=dict)

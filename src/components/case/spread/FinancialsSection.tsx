@@ -23,6 +23,7 @@ import {
 import { cn } from "@/lib/utils";
 import { TrendNotes } from "./SpreadRatios";
 import { FigureWorking } from "./FigureWorking";
+import { Reconciliation } from "./Reconciliation";
 import { StatementTable, TurnoverByYear, pickedNow, type Picked } from "./SpreadTables";
 import { WorkingCapital } from "./WorkingCapital";
 
@@ -188,6 +189,9 @@ function FinancialsBody({
             </TabsContent>
           ))}
         </Tabs>
+        {tab !== "banking" && tab !== "turnover" && (
+          <Reconciliation caseId={caseId} spread={spread} />
+        )}
         <WorkingCapital caseId={caseId} spread={spread} />
         <TrendNotes spread={spread} />
       </div>

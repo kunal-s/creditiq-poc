@@ -137,6 +137,18 @@ spreadPage:
     more: "{n} more pages"
     open: Open the page
     noPage: Not read from a page.
+  reconcile:
+    title: Checks against the statements
+    summary: "{agree} of {total} agree"
+    allAgree: Every check agrees.
+    differs: Differs
+    agrees: Agrees
+    show: Show the checks that agree
+    hide: Hide the checks that agree
+    open: Open the page
+    balance: Balance sheet totals
+    comparative: One year's figures against the next year's comparatives
+    tolerance: "Agreement is to within {n}, the rounding of the unit the statements print in."
   working:
     title: How this figure was arrived at
     state:

@@ -111,6 +111,7 @@ export type RoundTrip = S["RoundTrip"];
 export type AccountBalances = S["AccountBalances"];
 export type SpreadRow = S["SpreadRow"];
 export type SpreadCell = S["SpreadCell"];
+export type SpreadCheck = S["SpreadCheck"];
 export type CellWorking = S["CellWorking"];
 export type CellInput = S["CellInput"];
 export type CellSource = S["CellSource"];

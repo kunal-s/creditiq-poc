@@ -37,6 +37,11 @@ class IngestClient(Protocol):
         """`payloads` maps each request file's file_id to its bytes."""
         ...
 
+    def classify_transactions(self, request: dict) -> dict:
+        """File bank-statement transactions under the categories sent: {config_version, categories, items} in,
+        {model, calls, results: [{key, category, confidence, reason}]} out."""
+        ...
+
 
 class HttpIngestClient:
     def __init__(self, base_url: str, timeout_s: float = 600, api_key: str | None = None) -> None:
@@ -75,6 +80,20 @@ class HttpIngestClient:
             raise IngestError(f"ingest service unavailable at {self.base_url}: {e}") from e
 
 
+    def classify_transactions(self, request: dict) -> dict:
+        req = urllib.request.Request(f"{self.base_url}/v1/classify-transactions", data=json.dumps(request).encode(),
+                                     method="POST", headers={"Content-Type": "application/json",
+                                                             **({"x-api-key": self.api_key} if self.api_key else {})})
+        try:
+            with urllib.request.urlopen(req, timeout=self.timeout_s) as resp:
+                return json.loads(resp.read())
+        except urllib.error.HTTPError as e:
+            detail = e.read().decode("utf-8", "replace")[:300]
+            raise IngestError(f"ingest service answered {e.code}: {detail}") from e
+        except OSError as e:
+            raise IngestError(f"ingest service unavailable at {self.base_url}: {e}") from e
+
+
 class StubIngestClient:
     """Canned results by file hash. Every file in a request must have a fixture; a file with a
     person's type assignment needs the `<sha256>@<type_id>.json` fixture."""
@@ -100,6 +119,10 @@ class StubIngestClient:
             {"contract_version": "2", "case_ref": request.case_ref, "config": {"version": request.config_version, "hash": "stub"},
              "engine": {"version": "stub", "ocr": "stub", "model": "stub"}, "files": [x.model_dump(mode="json") for x in files]}
         )
+
+
+    def classify_transactions(self, request: dict) -> dict:
+        raise IngestError("the stub has no model: transactions the rules cannot settle stay for a person")
 
 
 def get_client() -> IngestClient:

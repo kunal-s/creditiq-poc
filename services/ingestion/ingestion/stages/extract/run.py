@@ -3,7 +3,9 @@ every value verified on its page, tables from word positions."""
 
 from __future__ import annotations
 
-from ...config.models import FieldDef, FieldRule, IngestionConfig
+import re
+
+from ...config.models import FieldDef, FieldRule, IngestionConfig, PageScope
 from ...llm.recorder import ModelClient
 from ...pageindex import Page
 from . import llm_extract
@@ -41,14 +43,31 @@ def _missing(f: FieldDef, rule: FieldRule, reason: str) -> dict:
             "required": f.required, "key_field": bool(rule.key_field) or f.required}
 
 
+def scoped_pages(scopes: list[PageScope], pages: list[Page]) -> list[Page]:
+    """The pages the model reads: the first page, and each configured section (its first match and the pages after it)."""
+    keep = {pages[0].no} if pages else set()
+    for sc in scopes:
+        rx = re.compile(sc.match, re.I)
+        for i, p in enumerate(pages):
+            if rx.search(p.text()):
+                keep.update(q.no for q in pages[i:i + sc.span])
+                break
+    return [p for p in pages if p.no in keep]
+
+
 def extract_instance(cfg: IngestionConfig, doc_type: str, pages: list[Page], model: ModelClient | None) -> dict:
     td = cfg.document_types.by_id()[doc_type]
     rules = cfg.fields.types.get(doc_type)
     rules_f = rules.fields if rules else {}
     out_fields: dict[str, dict] = {}
     pending: list[FieldDef] = []
+    model_first = bool(rules and rules.extraction == "model" and model is not None)
     for f in td.schema_.fields:
         rule = rules_f.get(f.name, FieldRule())
+        if model_first and not rule.identifier and rule.llm is not False:
+            out_fields[f.name] = _missing(f, rule, "not_found")
+            pending.append(f)
+            continue
         accept = None if f.type == "array" else (lambda c, k=_kind(f, rule): normalise(str(c.raw), k)[1] is None)
         found = extract_scalar(rule, pages, accept) if (rule.identifier or rule.aliases or rule.patterns) else None
         if found:
@@ -64,7 +83,8 @@ def extract_instance(cfg: IngestionConfig, doc_type: str, pages: list[Page], mod
     trace: list[dict] = []
     if pending and model is not None:
         hints = {f.name: rules_f.get(f.name, FieldRule()).llm_hint for f in pending}
-        found, reasons, trace = llm_extract.fill(cfg, td.display_name, pending, hints, pages, model)
+        read = scoped_pages(rules.model_pages, pages) if model_first and rules.model_pages else pages
+        found, reasons, trace = llm_extract.fill(cfg, td.display_name, pending, hints, read, model)
         for f in pending:
             rule = rules_f.get(f.name, FieldRule())
             if f.name in found:

@@ -70,7 +70,6 @@ caseFlow:
 spreadPage:
   title: Financials
   purpose: The audited years laid out line by line, turnover from every source side by side, and the working-capital assessment; the norms below test the ratios. Every figure carries the document and page it was read from.
-  interim: This spread uses an interim layout. It will follow RBL's spread template, with an Excel export, when the template is available.
   emptyTitle: No spread yet
   emptyDescription: The spread is laid out once audited financial statements have been read.
   period: Period
@@ -85,6 +84,8 @@ spreadPage:
     open: Take this to Cross-verification
     more: "(and {n} more)"
   tabs:
+    banking: Banking Analysis
+    bankingOpen: "{n} unclassified"
     turnover: Turnover by year
     profit_and_loss: Profit and loss
     balance_sheet: Balance sheet
@@ -1719,6 +1720,7 @@ reviewKind:
   split: Uncertain split
   manual_entry: Manual entry
   finding: Finding
+  transactions: Transaction classification
 
 reviewDecision:
   confirm: Confirm
@@ -1843,3 +1845,124 @@ comparison:
     differ: "Differ ({n})"
     new: "New ({n})"
     missed: "Missed ({n})"
+
+# The Banking view of the Financials section: statement transactions filed under categories, and the conduct of the accounts.
+banking:
+  title: Banking Analysis
+  purpose: Bank statement transactions classified by nature, the basis of each classification, and the observed conduct of the accounts.
+  emptyTitle: No bank statement transactions
+  emptyDescription: Transactions are analysed once a bank statement has been processed.
+  counts:
+    total: Transactions analysed
+    rule: Rule-classified
+    model: Model-classified
+    person: Manually classified
+    open: Unclassified
+  openNote: Unclassified credits are included in business inflow until classified.
+  rail:
+    title: Classification status
+    accounts: Accounts
+    period: Period covered
+    observations: Observations
+    observationCounts: "{concern} adverse · {watch} watch · {info} other"
+  modelError: "Model classification could not be completed: {error}"
+  severity:
+    concern: Adverse
+    watch: Watch
+    info: Observation
+  flags:
+    title: Account Conduct Observations
+    subtitle: Observations for the credit reviewer, each referenced to its source page. None is a decision.
+    none: No observations against the configured thresholds.
+    more: "Show all {n}"
+    less: Show fewer
+    open: View source page
+  months:
+    title: Monthly Analysis
+    subtitle: INR lakh · all accounts combined
+    month: Month
+    credits: Gross credits
+    business: Net business credits
+    cash: Cash deposits
+    returns: Cheque returns
+    salary: Salary outflow
+    promoters: Promoter drawings
+  categories:
+    title: Category-wise Summary
+    subtitle: INR lakh · credits and debits by nature of transaction
+    category: Category
+    total: Total
+    credits: Credits
+    debits: Debits
+  customers:
+    title: Customer Concentration
+    subtitle: Receipts from customers, in descending order
+    party: Customer
+    amount: Receipts
+    share: Share
+    count: Entries
+    top1: "Top customer: {pct}%"
+    top5: "Top 5 customers: {pct}%"
+    none: No identifiable customers among the receipts.
+  trips:
+    title: Circular (Round-trip) Transactions
+    subtitle: Funds paid to and received back from the same counterparty within days, for a similar amount
+    none: None identified.
+    party: Counterparty
+    paid: Paid
+    received: Received
+  balances:
+    title: Monthly Balance Analysis
+    subtitle: INR lakh
+    account: Account
+    month: Month
+    average: Average balance
+    minimum: Minimum balance
+    monthEnd: Month-end balance
+    spike: Month-end spike
+  txn:
+    title: Transaction Register
+    subtitle: "{shown} of {total}"
+    legend: Model and manual classifications are tagged
+    empty: No transaction matches.
+    date: Date
+    narration: Narration
+    debit: Debit
+    credit: Credit
+    category: Category
+    filters:
+      category: Category
+      month: Month
+      account: Account
+      search: Search
+      searchHint: Narration or counterparty
+      all: All
+      status: Show
+      statusAll: All transactions
+      statusOpen: Unclassified
+      statusPerson: Manually classified
+    method:
+      rule: Rule
+      model: Model
+      manual: Manual
+    suggested: "Suggested category: {label}"
+    reason: "Basis: {reason}"
+    flag:
+      recurring: Recurring
+      round_amount: Round sum
+    more: Show more
+    page: View source page
+    file: Reclassify…
+    change: Reclassify
+  file:
+    title: Classify transaction
+    narration: Narration
+    category: Category
+    choose: Select a category
+    reason: Basis for classification
+    reasonHint: Record what was verified (minimum three characters).
+    save: Save
+    cancel: Cancel
+    remove: Remove manual classification
+    recorded: Classification saved.
+    removed: Manual classification removed.

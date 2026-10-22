@@ -178,6 +178,9 @@ class AccountCredits(BaseModel):
     months: list[str]
     exclusions: list[Exclusion]
     by_month: list[AccountMonth] = Field(default_factory=list)
+    unsettled: float = 0
+    """Credits nothing has filed under a category yet: counted as business inflow until a person or the model does."""
+    unsettled_count: int = 0
 
 
 class Obligation(BaseModel):

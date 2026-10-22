@@ -288,9 +288,8 @@ class CreditExclusion(BaseModel):
 
     id: str
     label: str
-    narration_any: list[str] = Field(default_factory=list)
-    own_account: bool = False
-    """Also match a narration naming another account in the account set."""
+    categories: list[str]
+    """The transaction categories (config/txn_classification.yaml) this rule removes from credits."""
 
 
 class AlignmentSection(BaseModel):
@@ -298,10 +297,169 @@ class AlignmentSection(BaseModel):
 
     financial_year_start_month: int = Field(ge=1, le=12)
     bank_credit_exclusions: list[CreditExclusion]
-    obligation_narration_any: list[str]
     name_noise_words: list[str]
     own_bank_names: list[str] = Field(default_factory=list)
     """The names a board resolution in favour of this bank may use (BR-03)."""
+
+
+TxnDirection = Literal["credit", "debit"]
+TxnLookup = Literal["own_account_number", "borrower_name", "lender_name", "director_name"]
+
+
+class TxnCategory(BaseModel):
+    id: str
+    direction: TxnDirection
+    label: str
+
+
+class TxnChannel(BaseModel):
+    id: str
+    pattern: str
+
+
+class TxnCounterparty(BaseModel):
+    strip: list[str]
+    noise_words: list[str]
+    lender_cues: list[str]
+
+
+class TxnPairing(BaseModel):
+    days: int = Field(ge=0)
+
+
+class TxnModel(BaseModel):
+    """The model pass over what the rules could not settle."""
+
+    enabled: bool = True
+    accept: list[Literal["high", "medium", "low"]]
+    confidence: dict[Literal["high", "medium", "low"], float]
+    max_narrations: int = Field(gt=0)
+    withhold: list[str] = Field(default_factory=list)
+    """Categories the model is never offered: only the case's own facts can decide them."""
+    high_only: list[str] = Field(default_factory=list)
+    """Categories the model's answer settles only at high confidence."""
+
+
+class TxnRule(BaseModel):
+    """One narration rule (config/txn_classification.yaml). It matches when the direction agrees, some
+    `any` pattern is found (or none is asked for), no `none` pattern is found, and, when `lookup`
+    names something the case supplies, the narration mentions it."""
+
+    id: str
+    category: str
+    tier: int = Field(ge=1, le=3)
+    direction: TxnDirection
+    any: list[str] = Field(default_factory=list)
+    none: list[str] = Field(default_factory=list)
+    lookup: TxnLookup | None = None
+    counterparty: str = "none"
+    """`none`, `auto` (what is left after the strip patterns), or a pattern with one capture group."""
+    confidence: float = Field(gt=0, le=1)
+
+
+class TxnClassificationSection(BaseModel):
+    """config/txn_classification.yaml: the deterministic pass over bank-statement transactions."""
+
+    categories: list[TxnCategory]
+    channels: list[TxnChannel]
+    counterparty: TxnCounterparty
+    recurring_mandate_channels: list[str] = Field(default_factory=list)
+    round_amount_multiple: int = Field(gt=0)
+    pairing: TxnPairing
+    model_threshold: float = Field(ge=0, le=1)
+    model: TxnModel
+    rules: list[TxnRule]
+
+    def problems(self) -> list[str]:
+        out: list[str] = []
+        cats = {c.id: c for c in self.categories}
+        if len(cats) != len(self.categories):
+            out.append("txn_classification: duplicate category ids")
+        for fallback in ("other_credit", "other_debit"):
+            if fallback not in cats:
+                out.append(f"txn_classification: needs the category {fallback!r}")
+        ids = [r.id for r in self.rules]
+        if len(ids) != len(set(ids)):
+            out.append("txn_classification: duplicate rule ids")
+        for name, listed in (("withhold", self.model.withhold), ("high_only", self.model.high_only)):
+            out += [f"txn_classification.model.{name}: unknown category {c!r}" for c in listed if c not in cats]
+        if set(self.model.confidence) != {"high", "medium", "low"}:
+            out.append("txn_classification.model: needs a confidence for high, medium and low")
+
+        def compiles(where: str, pattern: str, groups: int | None = None) -> None:
+            try:
+                rx = re.compile(pattern, re.I)
+            except re.error as e:
+                out.append(f"{where}: bad pattern {pattern!r} ({e})")
+                return
+            if groups is not None and rx.groups != groups:
+                out.append(f"{where}: pattern {pattern!r} needs exactly {groups} capture group(s)")
+
+        for ch in self.channels:
+            compiles(f"txn_classification.channels.{ch.id}", ch.pattern)
+        for p in self.counterparty.strip:
+            compiles("txn_classification.counterparty.strip", p)
+        for r in self.rules:
+            where = f"txn_classification.rules.{r.id}"
+            cat = cats.get(r.category)
+            if cat is None:
+                out.append(f"{where}: unknown category {r.category!r}")
+            elif cat.direction != r.direction:
+                out.append(f"{where}: a {r.direction} rule cannot give the {cat.direction} category {r.category!r}")
+            if not r.any and not r.lookup:
+                out.append(f"{where}: needs `any` patterns or a `lookup`")
+            for p in [*r.any, *r.none]:
+                compiles(where, p)
+            if r.counterparty not in ("none", "auto"):
+                compiles(f"{where}.counterparty", r.counterparty, groups=1)
+        return out
+
+
+class BankConductSection(BaseModel):
+    """config/bank_conduct.yaml: thresholds for reading the conduct of the bank accounts."""
+
+    class Cash(BaseModel):
+        share_flag_pct: float = Field(ge=0)
+        large_deposit: float = Field(ge=0)
+
+    class Returns(BaseModel):
+        flag_per_month: int = Field(ge=1)
+
+    class Concentration(BaseModel):
+        top1_flag_pct: float = Field(ge=0)
+        top5_flag_pct: float = Field(ge=0)
+        min_parties: int = Field(ge=1)
+
+    class RoundTrip(BaseModel):
+        window_days: int = Field(ge=0)
+        amount_match_pct: float = Field(ge=0)
+        min_amount: float = Field(ge=0)
+
+    class Balance(BaseModel):
+        spike_ratio: float = Field(gt=1)
+        drop_pct: float = Field(ge=0, le=100)
+        drop_days: int = Field(ge=1)
+
+    class Promoter(BaseModel):
+        drawings_flag_pct: float = Field(ge=0)
+
+    class Unusual(BaseModel):
+        multiple_of_median: float = Field(gt=1)
+        min_amount: float = Field(ge=0)
+        weekend_min_amount: float = Field(ge=0)
+
+    class Integrity(BaseModel):
+        balance_tolerance: float = Field(ge=0)
+
+    cash: Cash
+    returns: Returns
+    concentration: Concentration
+    round_trip: RoundTrip
+    balance: Balance
+    statutory_due_day: dict[str, int]
+    promoter: Promoter
+    unusual: Unusual
+    integrity: Integrity
 
 
 CrossCheckVariable = Literal[
@@ -636,6 +794,8 @@ SECTION_MODELS: dict[str, type[BaseModel]] = {
     "document_ages": DocumentAgesSection,
     "tolerances": TolerancesSection,
     "alignment": AlignmentSection,
+    "txn_classification": TxnClassificationSection,
+    "bank_conduct": BankConductSection,
     "crosschecks": CrossChecksSection,
     "cam": CamSectionConfig,
     "statements": StatementsSection,
@@ -647,6 +807,19 @@ def cross_check(sections: dict[str, BaseModel], ingestion: dict[str, dict] | Non
                 facilities: set[str] | None = None) -> list[str]:
     """References between sections that must resolve. Returns problems."""
     problems: list[str] = []
+    txn = sections.get("txn_classification")
+    if isinstance(txn, TxnClassificationSection):
+        problems += txn.problems()
+        conduct = sections.get("bank_conduct")
+        if isinstance(conduct, BankConductSection):
+            debit_ids = {c.id for c in txn.categories if c.direction == "debit"}
+            problems += [f"bank_conduct.statutory_due_day: {c!r} is not a debit category of txn_classification"
+                         for c in conduct.statutory_due_day if c not in debit_ids]
+        align = sections.get("alignment")
+        credit_ids = {c.id for c in txn.categories if c.direction == "credit"}
+        for ex in getattr(align, "bank_credit_exclusions", []):
+            problems += [f"alignment.bank_credit_exclusions.{ex.id}: {c!r} is not a credit category of txn_classification"
+                         for c in ex.categories if c not in credit_ids]
     checklist = sections["checklist_taxonomy"]
     types = sections["document_types"]
     assert isinstance(checklist, ChecklistTaxonomySection) and isinstance(types, DocumentTypesSection)

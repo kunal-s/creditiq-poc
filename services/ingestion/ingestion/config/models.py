@@ -88,12 +88,20 @@ class InstanceRule(Strict):
 
     start: str | None = None
     key_pattern: str | None = None  # one capture group: the value that tells instances apart
+    first_key_pattern: str | None = None
+    """Tried before `key_pattern`: when it finds a key on any page it alone splits the file (an identifier printed
+    in every page header is a steadier key than a value that schedules also mention)."""
     keys: list[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def _one_way(self) -> "InstanceRule":
         if bool(self.start) == bool(self.key_pattern):
             raise ValueError("instances: give exactly one of `start` and `key_pattern`")
+        if self.first_key_pattern:
+            if not self.key_pattern:
+                raise ValueError("instances: `first_key_pattern` goes with `key_pattern`")
+            if re.compile(self.first_key_pattern).groups != 1:
+                raise ValueError("instances: first_key_pattern needs exactly one capture group")
         return self
 
 
@@ -236,6 +244,7 @@ class TableRule(Strict):
     skip_rows: list[str] = Field(default_factory=list)
     max_attach: float = 24.0   # points; a line farther than this from every row is not part of the table
     multi_page: bool = False
+    optional: bool = False   # a statement the document type may legitimately lack: still reported missing, but not a reason for review
     y_tol: float | None = None
     repair: dict | None = None  # {kind: running_balance, debit, credit, balance}: arithmetic repair, recorded
 
@@ -243,7 +252,18 @@ class TableRule(Strict):
 IDENTITY_KEYS = {"name", "pan", "din", "dob", "gstin", "cin"}
 
 
+class PageScope(Strict):
+    """A section the model reads: the first page whose text matches, and the pages that follow it."""
+
+    match: str
+    span: int = 1
+
+
 class TypeFields(Strict):
+    extraction: Literal["rules", "model"] = "rules"
+    """`model`: the model reads every field that has no identifier rule (and is not `llm: false`) from the
+    pages in `model_pages`, plus the first page; code verifies each value on its page. Validators then check it."""
+    model_pages: list[PageScope] = Field(default_factory=list)
     fields: dict[str, FieldRule] = Field(default_factory=dict)
     identity: dict[str, str] = Field(default_factory=dict)  # identity key (name, pan, din, dob, gstin, cin) -> schema field
     tables: dict[str, TableRule | list[TableRule]] = Field(default_factory=dict)   # a list is layout variants, tried in order
@@ -323,6 +343,12 @@ class Prompt(Strict):
     user: str
 
 
+class TransactionsLlm(Strict):
+    """How bank-statement transactions are put to the model (`POST /v1/classify-transactions`)."""
+
+    batch_size: int = Field(default=40, ge=1, le=200)
+
+
 class LlmConfig(Strict):
     """The model layer (FRD AD-5a). Prompt text and sampling settings are part of the published version."""
 
@@ -339,6 +365,7 @@ class LlmConfig(Strict):
     seed: int | None = None
     fill: Literal["missing", "flagged"] = "missing"  # which unfilled fields the model may read
     prompts: dict[str, Prompt]
+    transactions: TransactionsLlm = Field(default_factory=TransactionsLlm)
 
 
 # --- confidence.yaml, decision.yaml ------------------------------------------------------------
@@ -447,7 +474,7 @@ class IngestionConfig(Strict):
             for t in r.types:
                 if t not in types:
                     problems.append(f"validators.{r.id}: unknown type {t}")
-        for name in ("classify", "extract"):
+        for name in ("classify", "extract", "transactions"):
             if name not in self.llm.prompts:
                 problems.append(f"llm.prompts: missing '{name}'")
         for rx in self.routing.reading.boilerplate:

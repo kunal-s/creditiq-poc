@@ -38,14 +38,14 @@ rules:
   - id: balance_sheet_balances
     types: [audited_financial_statements]
     kind: rows_equal
-    params: {table: balance_sheet, label_column: particulars, pattern: '^TOTAL$', column: current_period, compare: [0, 1]}
+    params: {table: balance_sheet, label_column: particulars, pattern: '^(?:TOTAL|Total (?:Equity (?:&|and) Liabilities|Assets))$', column: current_period, compare: [0, 1]}
     severity: fail
     label: Balance sheet totals agree
 
   - id: balance_sheet_balances_previous
     types: [audited_financial_statements]
     kind: rows_equal
-    params: {table: balance_sheet, label_column: particulars, pattern: '^TOTAL$', column: previous_period, compare: [0, 1]}
+    params: {table: balance_sheet, label_column: particulars, pattern: '^(?:TOTAL|Total (?:Equity (?:&|and) Liabilities|Assets))$', column: previous_period, compare: [0, 1]}
     severity: fail
     label: Balance sheet totals agree (previous year)
 
@@ -80,3 +80,45 @@ rules:
     severity: warn
     label: Issued on the lender's letterhead
     defect: plain_paper
+
+  - id: itr_assessment_year_form
+    types: [income_tax_return]
+    kind: field_pattern
+    params: {field: assessment_year, pattern: '20\d{2}-\d{2}'}
+    severity: fail
+    label: Assessment year is written as 2024-25
+
+  - id: itr_financial_year_form
+    types: [income_tax_return]
+    kind: field_pattern
+    params: {field: financial_year, pattern: '(?:FY\s*)?20\d{2}(?:-\d{2})?'}
+    severity: fail
+    label: Financial year is written as 2023-24 or FY2024
+
+  - id: itr_years_consecutive
+    types: [income_tax_return]
+    kind: year_pair
+    params: {financial_year: financial_year, assessment_year: assessment_year}
+    severity: fail
+    label: Assessment year follows the financial year
+
+  - id: itr_gross_not_below_total
+    types: [income_tax_return]
+    kind: amount_order
+    params: {larger: gross_total_income, smaller: total_income}
+    severity: fail
+    label: Total income does not exceed gross total income
+
+  - id: itr_amounts_not_negative
+    types: [income_tax_return]
+    kind: non_negative
+    params: {fields: [gross_total_income, total_income, tax_payable, tax_paid, refund_amount]}
+    severity: fail
+    label: No amount is negative
+
+  - id: itr_tax_reconciles
+    types: [income_tax_return]
+    kind: tax_reconciles
+    params: {paid: tax_paid, liability: tax_payable, refund: refund_amount, tolerance: 10}
+    severity: fail
+    label: Taxes paid, liability and refund agree

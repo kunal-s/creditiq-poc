@@ -20,6 +20,9 @@ def dev_config(tmp_path):
     d = tmp_path / "cfg"
     shutil.copytree(CONFIG, d)
     (d / "routing.yaml").write_text(yaml.safe_dump(_merged()))
+    # These tests are about the service contract, not extraction; no recordings exist for the fixtures, so read by rules.
+    f = d / "fields.yaml"
+    f.write_text(f.read_text().replace("extraction: model", "extraction: rules"))
     return d
 
 

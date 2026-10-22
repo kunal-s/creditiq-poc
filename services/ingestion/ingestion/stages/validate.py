@@ -132,10 +132,75 @@ def k_letterhead(r, td, fields, tables, pages):
     return _check(r.id, r.label or r.id, _fail(r.severity), "No letterhead at the top of the first page.", r.severity)
 
 
+def _num(v):
+    return v if isinstance(v, (int, float)) and not isinstance(v, bool) else None
+
+
+def k_field_pattern(r, td, fields, tables, pages):
+    f = r.params["field"]
+    v = _val(fields, f)
+    if v is None:
+        return None
+    ok = re.fullmatch(r.params["pattern"], str(v).strip()) is not None
+    return _check(r.id, r.label or r.id, "pass" if ok else _fail(r.severity),
+                  f"{f} is \"{v}\"; it {'has' if ok else 'does not have'} the expected form.", r.severity, [f])
+
+
+def k_year_pair(r, td, fields, tables, pages):
+    """The assessment year starts the year after the financial year (2023-24 is assessed in 2024-25)."""
+    fy, ay = _val(fields, r.params["financial_year"]), _val(fields, r.params["assessment_year"])
+    # Only a financial year written as a span (2023-24) is compared; "FY2024" alone is read differently by different filers.
+    a, b = re.search(r"(20\d{2})\s*-\s*\d{2}", str(fy or "")), re.search(r"(20\d{2})\s*-\s*\d{2}", str(ay or ""))
+    if not a or not b:
+        return None
+    ok = int(b.group(1)) == int(a.group(1)) + 1
+    return _check(r.id, r.label or r.id, "pass" if ok else _fail(r.severity),
+                  f"Financial year {fy} and assessment year {ay} {'are consecutive' if ok else 'are not consecutive'}.", r.severity,
+                  [r.params["financial_year"], r.params["assessment_year"]])
+
+
+def k_amount_order(r, td, fields, tables, pages):
+    big, small = _num(_val(fields, r.params["larger"])), _num(_val(fields, r.params["smaller"]))
+    if big is None or small is None:
+        return None
+    ok = big >= small
+    return _check(r.id, r.label or r.id, "pass" if ok else _fail(r.severity),
+                  f"{r.params['larger']} ({big:,.0f}) is {'not less than' if ok else 'less than'} {r.params['smaller']} ({small:,.0f}).", r.severity,
+                  [r.params["larger"], r.params["smaller"]])
+
+
+def k_non_negative(r, td, fields, tables, pages):
+    bad = [n for n in r.params["fields"] if (v := _num(_val(fields, n))) is not None and v < 0]
+    seen = [n for n in r.params["fields"] if _num(_val(fields, n)) is not None]
+    if not seen:
+        return None
+    if bad:
+        return _check(r.id, r.label or r.id, _fail(r.severity), "Negative: " + ", ".join(bad) + ".", r.severity, bad)
+    return _check(r.id, r.label or r.id, "pass", "No amount is negative.", r.severity, seen)
+
+
+def k_tax_reconciles(r, td, fields, tables, pages):
+    """Taxes paid less the liability is the refund, to the rounding the return allows; with no refund, taxes paid do not exceed it."""
+    p = r.params
+    paid, due, refund = (_num(_val(fields, p[k])) for k in ("paid", "liability", "refund"))
+    if paid is None or due is None:
+        return None
+    tol = float(p.get("tolerance", 10))
+    if refund:
+        ok = abs((paid - due) - refund) <= tol
+        detail = f"Taxes paid {paid:,.0f} less liability {due:,.0f} is {paid - due:,.0f}; the refund is {refund:,.0f}."
+    else:
+        ok = paid <= due + tol
+        detail = f"Taxes paid {paid:,.0f} against a liability of {due:,.0f}, with no refund claimed."
+    return _check(r.id, r.label or r.id, "pass" if ok else _fail(r.severity), detail, r.severity, [p["paid"], p["liability"], p["refund"]])
+
+
 KINDS: dict[str, Callable] = {
     "required": k_required, "cin_year_matches_date": k_cin_year, "pan_entity_char": k_pan_char,
     "date_order": k_date_order, "balance_continuity": k_balance, "rows_equal": k_rows_equal,
     "blank_after_label": k_blank_after_label, "letterhead": k_letterhead,
+    "field_pattern": k_field_pattern, "year_pair": k_year_pair, "amount_order": k_amount_order,
+    "non_negative": k_non_negative, "tax_reconciles": k_tax_reconciles,
 }
 
 

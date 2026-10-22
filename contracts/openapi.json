@@ -1,6 +1,27 @@
 {
   "components": {
     "schemas": {
+      "AccountBalances": {
+        "properties": {
+          "account": {
+            "title": "Account",
+            "type": "string"
+          },
+          "months": {
+            "items": {
+              "$ref": "#/components/schemas/BalanceMonth"
+            },
+            "title": "Months",
+            "type": "array"
+          }
+        },
+        "required": [
+          "account",
+          "months"
+        ],
+        "title": "AccountBalances",
+        "type": "object"
+      },
       "AccountCredits": {
         "description": "One account's credits, before and after cleansing (F-18.2).",
         "properties": {
@@ -40,6 +61,16 @@
           "net": {
             "title": "Net",
             "type": "number"
+          },
+          "unsettled": {
+            "default": 0,
+            "title": "Unsettled",
+            "type": "number"
+          },
+          "unsettled_count": {
+            "default": 0,
+            "title": "Unsettled Count",
+            "type": "integer"
           }
         },
         "required": [
@@ -920,6 +951,151 @@
           "balance"
         ],
         "title": "BalanceFact",
+        "type": "object"
+      },
+      "BalanceMonth": {
+        "properties": {
+          "average": {
+            "title": "Average",
+            "type": "number"
+          },
+          "minimum": {
+            "title": "Minimum",
+            "type": "number"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "month_end": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Month End"
+          },
+          "spike": {
+            "default": false,
+            "title": "Spike",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "month",
+          "average",
+          "minimum"
+        ],
+        "title": "BalanceMonth",
+        "type": "object"
+      },
+      "BankConduct": {
+        "properties": {
+          "accounts": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Accounts",
+            "type": "array"
+          },
+          "balances": {
+            "items": {
+              "$ref": "#/components/schemas/AccountBalances"
+            },
+            "title": "Balances",
+            "type": "array"
+          },
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "customer_top1_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Top1 Pct"
+          },
+          "customer_top5_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Top5 Pct"
+          },
+          "customers": {
+            "items": {
+              "$ref": "#/components/schemas/PartyShare"
+            },
+            "title": "Customers",
+            "type": "array"
+          },
+          "flags": {
+            "items": {
+              "$ref": "#/components/schemas/ConductFlag"
+            },
+            "title": "Flags",
+            "type": "array"
+          },
+          "months": {
+            "items": {
+              "$ref": "#/components/schemas/MonthConduct"
+            },
+            "title": "Months",
+            "type": "array"
+          },
+          "promoter_in": {
+            "title": "Promoter In",
+            "type": "number"
+          },
+          "promoter_out": {
+            "title": "Promoter Out",
+            "type": "number"
+          },
+          "round_trips": {
+            "items": {
+              "$ref": "#/components/schemas/RoundTrip"
+            },
+            "title": "Round Trips",
+            "type": "array"
+          },
+          "suppliers": {
+            "items": {
+              "$ref": "#/components/schemas/PartyShare"
+            },
+            "title": "Suppliers",
+            "type": "array"
+          },
+          "unsettled_count": {
+            "title": "Unsettled Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "case_id",
+          "accounts",
+          "months",
+          "customers",
+          "suppliers",
+          "round_trips",
+          "balances",
+          "promoter_in",
+          "promoter_out",
+          "flags",
+          "unsettled_count"
+        ],
+        "title": "BankConduct",
         "type": "object"
       },
       "Cam": {
@@ -3158,6 +3334,92 @@
           "scored"
         ],
         "title": "ComparisonItem",
+        "type": "object"
+      },
+      "ConductFlag": {
+        "description": "Something in the accounts for a person to look at. A question, never a decision.",
+        "properties": {
+          "account": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account"
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "cash",
+              "returns",
+              "concentration",
+              "round_trip",
+              "balance_spike",
+              "statutory_late",
+              "statutory_gap",
+              "promoter",
+              "unusual",
+              "weekend",
+              "period_gap",
+              "balance_break",
+              "duplicate",
+              "duplicate_reference",
+              "unsettled"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "month": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Month"
+          },
+          "severity": {
+            "enum": [
+              "info",
+              "watch",
+              "concern"
+            ],
+            "title": "Severity",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "severity",
+          "message"
+        ],
+        "title": "ConductFlag",
         "type": "object"
       },
       "ConfigVersion": {
@@ -5432,6 +5694,92 @@
         "title": "Meta",
         "type": "object"
       },
+      "MonthConduct": {
+        "properties": {
+          "business_credits": {
+            "title": "Business Credits",
+            "type": "number"
+          },
+          "cash_deposits": {
+            "title": "Cash Deposits",
+            "type": "number"
+          },
+          "cash_share_pct": {
+            "title": "Cash Share Pct",
+            "type": "number"
+          },
+          "credits": {
+            "title": "Credits",
+            "type": "number"
+          },
+          "customer_receipts": {
+            "title": "Customer Receipts",
+            "type": "number"
+          },
+          "failed_debits_reversed": {
+            "title": "Failed Debits Reversed",
+            "type": "number"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          },
+          "promoter_in": {
+            "title": "Promoter In",
+            "type": "number"
+          },
+          "promoter_out": {
+            "title": "Promoter Out",
+            "type": "number"
+          },
+          "returns_amount": {
+            "title": "Returns Amount",
+            "type": "number"
+          },
+          "returns_count": {
+            "title": "Returns Count",
+            "type": "integer"
+          },
+          "salary": {
+            "title": "Salary",
+            "type": "number"
+          },
+          "salary_day": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Salary Day"
+          },
+          "statutory": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Statutory",
+            "type": "object"
+          }
+        },
+        "required": [
+          "month",
+          "credits",
+          "business_credits",
+          "customer_receipts",
+          "cash_deposits",
+          "cash_share_pct",
+          "returns_count",
+          "returns_amount",
+          "failed_debits_reversed",
+          "salary",
+          "promoter_in",
+          "promoter_out"
+        ],
+        "title": "MonthConduct",
+        "type": "object"
+      },
       "MonthFigure": {
         "description": "GST outward supplies and cleansed bank credits for one month (TO-05).",
         "properties": {
@@ -6138,6 +6486,34 @@
           "field"
         ],
         "title": "PartyList",
+        "type": "object"
+      },
+      "PartyShare": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "number"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "party": {
+            "title": "Party",
+            "type": "string"
+          },
+          "share_pct": {
+            "title": "Share Pct",
+            "type": "number"
+          }
+        },
+        "required": [
+          "party",
+          "amount",
+          "count",
+          "share_pct"
+        ],
+        "title": "PartyShare",
         "type": "object"
       },
       "PdNote": {
@@ -7787,7 +8163,8 @@
               "party",
               "split",
               "manual_entry",
-              "finding"
+              "finding",
+              "transactions"
             ],
             "title": "Kind",
             "type": "string"
@@ -7841,6 +8218,46 @@
           "status"
         ],
         "title": "ReviewItem",
+        "type": "object"
+      },
+      "RoundTrip": {
+        "properties": {
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "in_amount": {
+            "title": "In Amount",
+            "type": "number"
+          },
+          "in_date": {
+            "title": "In Date",
+            "type": "string"
+          },
+          "out_amount": {
+            "title": "Out Amount",
+            "type": "number"
+          },
+          "out_date": {
+            "title": "Out Date",
+            "type": "string"
+          },
+          "party": {
+            "title": "Party",
+            "type": "string"
+          }
+        },
+        "required": [
+          "party",
+          "out_date",
+          "out_amount",
+          "in_date",
+          "in_amount"
+        ],
+        "title": "RoundTrip",
         "type": "object"
       },
       "RuleChange": {
@@ -8688,6 +9105,422 @@
           "figures"
         ],
         "title": "TurnoverYear",
+        "type": "object"
+      },
+      "TxnCategoryRef": {
+        "properties": {
+          "direction": {
+            "enum": [
+              "credit",
+              "debit"
+            ],
+            "title": "Direction",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "direction"
+        ],
+        "title": "TxnCategoryRef",
+        "type": "object"
+      },
+      "TxnCategoryRequest": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "reason": {
+            "minLength": 3,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "reason"
+        ],
+        "title": "TxnCategoryRequest",
+        "type": "object"
+      },
+      "TxnCategoryTotal": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "number"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "direction": {
+            "enum": [
+              "credit",
+              "debit"
+            ],
+            "title": "Direction",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "label",
+          "direction",
+          "count",
+          "amount"
+        ],
+        "title": "TxnCategoryTotal",
+        "type": "object"
+      },
+      "TxnMonthTotal": {
+        "properties": {
+          "by_category": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "By Category",
+            "type": "object"
+          },
+          "credits": {
+            "title": "Credits",
+            "type": "number"
+          },
+          "debits": {
+            "title": "Debits",
+            "type": "number"
+          },
+          "month": {
+            "title": "Month",
+            "type": "string"
+          }
+        },
+        "required": [
+          "month",
+          "credits",
+          "debits",
+          "by_category"
+        ],
+        "title": "TxnMonthTotal",
+        "type": "object"
+      },
+      "TxnPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TxnRow"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "TxnPage",
+        "type": "object"
+      },
+      "TxnRow": {
+        "description": "One statement transaction and how it was classified.",
+        "properties": {
+          "account": {
+            "title": "Account",
+            "type": "string"
+          },
+          "candidates": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Candidates",
+            "type": "array"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "category_label": {
+            "title": "Category Label",
+            "type": "string"
+          },
+          "channel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel"
+          },
+          "confidence": {
+            "title": "Confidence",
+            "type": "number"
+          },
+          "counterparty": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Counterparty"
+          },
+          "credit": {
+            "title": "Credit",
+            "type": "number"
+          },
+          "date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date"
+          },
+          "debit": {
+            "title": "Debit",
+            "type": "number"
+          },
+          "direction": {
+            "enum": [
+              "credit",
+              "debit"
+            ],
+            "title": "Direction",
+            "type": "string"
+          },
+          "document_id": {
+            "title": "Document Id",
+            "type": "string"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "flags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Flags",
+            "type": "array"
+          },
+          "method": {
+            "enum": [
+              "rule",
+              "model",
+              "manual"
+            ],
+            "title": "Method",
+            "type": "string"
+          },
+          "narration": {
+            "title": "Narration",
+            "type": "string"
+          },
+          "needs_review": {
+            "default": false,
+            "title": "Needs Review",
+            "type": "boolean"
+          },
+          "paired_with": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paired With"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "rule_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule Id"
+          },
+          "seq": {
+            "title": "Seq",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "matched",
+              "ambiguous",
+              "unmatched"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "txn_id": {
+            "title": "Txn Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "txn_id",
+          "document_id",
+          "account",
+          "seq",
+          "narration",
+          "debit",
+          "credit",
+          "category",
+          "category_label",
+          "direction",
+          "status",
+          "method",
+          "confidence"
+        ],
+        "title": "TxnRow",
+        "type": "object"
+      },
+      "TxnSummary": {
+        "properties": {
+          "accounts": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Accounts",
+            "type": "array"
+          },
+          "by_model": {
+            "default": 0,
+            "title": "By Model",
+            "type": "integer"
+          },
+          "by_person": {
+            "title": "By Person",
+            "type": "integer"
+          },
+          "by_rule": {
+            "title": "By Rule",
+            "type": "integer"
+          },
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "catalogue": {
+            "items": {
+              "$ref": "#/components/schemas/TxnCategoryRef"
+            },
+            "title": "Catalogue",
+            "type": "array"
+          },
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/TxnCategoryTotal"
+            },
+            "title": "Categories",
+            "type": "array"
+          },
+          "config_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config Version"
+          },
+          "model_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Error"
+          },
+          "months": {
+            "items": {
+              "$ref": "#/components/schemas/TxnMonthTotal"
+            },
+            "title": "Months",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "unsettled": {
+            "title": "Unsettled",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "case_id",
+          "total",
+          "by_rule",
+          "by_person",
+          "unsettled",
+          "categories",
+          "months",
+          "accounts"
+        ],
+        "title": "TxnSummary",
         "type": "object"
       },
       "UploadResult": {
@@ -12105,6 +12938,463 @@
           }
         },
         "summary": "Case Spread"
+      }
+    },
+    "/api/cases/{case_id}/transactions": {
+      "get": {
+        "description": "The case's statement transactions with their categories, filtered; behind the assessment gate.",
+        "operationId": "case_transactions_api_cases__case_id__transactions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
+            "in": "query",
+            "name": "account",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Account"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "month",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Month"
+            }
+          },
+          {
+            "in": "query",
+            "name": "counterparty",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Counterparty"
+            }
+          },
+          {
+            "in": "query",
+            "name": "flag",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Flag"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "needs_review",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Needs Review"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 200,
+              "maximum": 1000,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TxnPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Transactions"
+      }
+    },
+    "/api/cases/{case_id}/transactions/conduct": {
+      "get": {
+        "description": "Cash, returns, concentration, round trips, balances, salary and statutory payments, promoter flows,\nunusual entries and the integrity of the statements, with thresholds from configuration.",
+        "operationId": "case_bank_conduct_api_cases__case_id__transactions_conduct_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankConduct"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Bank Conduct"
+      }
+    },
+    "/api/cases/{case_id}/transactions/summary": {
+      "get": {
+        "description": "Totals by category and by month, and how many rows the rules settled, a person settled, or nothing has.",
+        "operationId": "case_transactions_summary_api_cases__case_id__transactions_summary_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TxnSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Transactions Summary"
+      }
+    },
+    "/api/cases/{case_id}/transactions/{txn_id}/category": {
+      "delete": {
+        "description": "Take a person's decision off a transaction; it returns to how the rules (or the model) read it.",
+        "operationId": "case_transaction_clear_api_cases__case_id__transactions__txn_id__category_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "txn_id",
+            "required": true,
+            "schema": {
+              "title": "Txn Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TxnRow"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Transaction Clear"
+      },
+      "put": {
+        "description": "A person files one transaction under a category, with the reason. The rules are not changed.",
+        "operationId": "case_transaction_categorise_api_cases__case_id__transactions__txn_id__category_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "txn_id",
+            "required": true,
+            "schema": {
+              "title": "Txn Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TxnCategoryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TxnRow"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Transaction Categorise"
       }
     },
     "/api/config/approval-matrix": {

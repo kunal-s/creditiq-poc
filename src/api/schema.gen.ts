@@ -808,6 +808,91 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/cases/{case_id}/transactions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Case Transactions
+     * @description The case's statement transactions with their categories, filtered; behind the assessment gate.
+     */
+    get: operations["case_transactions_api_cases__case_id__transactions_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/cases/{case_id}/transactions/conduct": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Case Bank Conduct
+     * @description Cash, returns, concentration, round trips, balances, salary and statutory payments, promoter flows,
+     *     unusual entries and the integrity of the statements, with thresholds from configuration.
+     */
+    get: operations["case_bank_conduct_api_cases__case_id__transactions_conduct_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/cases/{case_id}/transactions/summary": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Case Transactions Summary
+     * @description Totals by category and by month, and how many rows the rules settled, a person settled, or nothing has.
+     */
+    get: operations["case_transactions_summary_api_cases__case_id__transactions_summary_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/cases/{case_id}/transactions/{txn_id}/category": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Case Transaction Categorise
+     * @description A person files one transaction under a category, with the reason. The rules are not changed.
+     */
+    put: operations["case_transaction_categorise_api_cases__case_id__transactions__txn_id__category_put"];
+    post?: never;
+    /**
+     * Case Transaction Clear
+     * @description Take a person's decision off a transaction; it returns to how the rules (or the model) read it.
+     */
+    delete: operations["case_transaction_clear_api_cases__case_id__transactions__txn_id__category_delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/config/approval-matrix": {
     parameters: {
       query?: never;
@@ -1003,6 +1088,13 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** AccountBalances */
+    AccountBalances: {
+      /** Account */
+      account: string;
+      /** Months */
+      months: components["schemas"]["BalanceMonth"][];
+    };
     /**
      * AccountCredits
      * @description One account's credits, before and after cleansing (F-18.2).
@@ -1022,6 +1114,16 @@ export interface components {
       months: string[];
       /** Net */
       net: number;
+      /**
+       * Unsettled
+       * @default 0
+       */
+      unsettled: number;
+      /**
+       * Unsettled Count
+       * @default 0
+       */
+      unsettled_count: number;
     };
     /**
      * AccountFact
@@ -1357,6 +1459,51 @@ export interface components {
       date: string;
       /** Evidence */
       evidence?: components["schemas"]["Evidence"][];
+    };
+    /** BalanceMonth */
+    BalanceMonth: {
+      /** Average */
+      average: number;
+      /** Minimum */
+      minimum: number;
+      /** Month */
+      month: string;
+      /** Month End */
+      month_end?: number | null;
+      /**
+       * Spike
+       * @default false
+       */
+      spike: boolean;
+    };
+    /** BankConduct */
+    BankConduct: {
+      /** Accounts */
+      accounts: string[];
+      /** Balances */
+      balances: components["schemas"]["AccountBalances"][];
+      /** Case Id */
+      case_id: string;
+      /** Customer Top1 Pct */
+      customer_top1_pct?: number | null;
+      /** Customer Top5 Pct */
+      customer_top5_pct?: number | null;
+      /** Customers */
+      customers: components["schemas"]["PartyShare"][];
+      /** Flags */
+      flags: components["schemas"]["ConductFlag"][];
+      /** Months */
+      months: components["schemas"]["MonthConduct"][];
+      /** Promoter In */
+      promoter_in: number;
+      /** Promoter Out */
+      promoter_out: number;
+      /** Round Trips */
+      round_trips: components["schemas"]["RoundTrip"][];
+      /** Suppliers */
+      suppliers: components["schemas"]["PartyShare"][];
+      /** Unsettled Count */
+      unsettled_count: number;
     };
     /**
      * Cam
@@ -2151,6 +2298,47 @@ export interface components {
        * @enum {string}
        */
       status: "agree" | "differ" | "new" | "missed";
+    };
+    /**
+     * ConductFlag
+     * @description Something in the accounts for a person to look at. A question, never a decision.
+     */
+    ConductFlag: {
+      /** Account */
+      account?: string | null;
+      /** Amount */
+      amount?: number | null;
+      /** Evidence */
+      evidence?: components["schemas"]["Evidence"][];
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind:
+        | "cash"
+        | "returns"
+        | "concentration"
+        | "round_trip"
+        | "balance_spike"
+        | "statutory_late"
+        | "statutory_gap"
+        | "promoter"
+        | "unusual"
+        | "weekend"
+        | "period_gap"
+        | "balance_break"
+        | "duplicate"
+        | "duplicate_reference"
+        | "unsettled";
+      /** Message */
+      message: string;
+      /** Month */
+      month?: string | null;
+      /**
+       * Severity
+       * @enum {string}
+       */
+      severity: "info" | "watch" | "concern";
     };
     /** ConfigVersion */
     ConfigVersion: {
@@ -2985,6 +3173,39 @@ export interface components {
       /** Facilities */
       facilities: components["schemas"]["Option"][];
     };
+    /** MonthConduct */
+    MonthConduct: {
+      /** Business Credits */
+      business_credits: number;
+      /** Cash Deposits */
+      cash_deposits: number;
+      /** Cash Share Pct */
+      cash_share_pct: number;
+      /** Credits */
+      credits: number;
+      /** Customer Receipts */
+      customer_receipts: number;
+      /** Failed Debits Reversed */
+      failed_debits_reversed: number;
+      /** Month */
+      month: string;
+      /** Promoter In */
+      promoter_in: number;
+      /** Promoter Out */
+      promoter_out: number;
+      /** Returns Amount */
+      returns_amount: number;
+      /** Returns Count */
+      returns_count: number;
+      /** Salary */
+      salary: number;
+      /** Salary Day */
+      salary_day?: number | null;
+      /** Statutory */
+      statutory?: {
+        [key: string]: number;
+      };
+    };
     /**
      * MonthFigure
      * @description GST outward supplies and cleansed bank credits for one month (TO-05).
@@ -3232,6 +3453,17 @@ export interface components {
       pan_key?: string | null;
       /** Role */
       role?: string | null;
+    };
+    /** PartyShare */
+    PartyShare: {
+      /** Amount */
+      amount: number;
+      /** Count */
+      count: number;
+      /** Party */
+      party: string;
+      /** Share Pct */
+      share_pct: number;
     };
     /**
      * PdNote
@@ -3818,7 +4050,15 @@ export interface components {
        * Kind
        * @enum {string}
        */
-      kind: "type" | "field" | "quality" | "party" | "split" | "manual_entry" | "finding";
+      kind:
+        | "type"
+        | "field"
+        | "quality"
+        | "party"
+        | "split"
+        | "manual_entry"
+        | "finding"
+        | "transactions";
       /** Maker */
       maker?: string | null;
       /** Reason */
@@ -3832,6 +4072,21 @@ export interface components {
       status: "open" | "decided";
       /** Summary */
       summary: string;
+    };
+    /** RoundTrip */
+    RoundTrip: {
+      /** Evidence */
+      evidence?: components["schemas"]["Evidence"][];
+      /** In Amount */
+      in_amount: number;
+      /** In Date */
+      in_date: string;
+      /** Out Amount */
+      out_amount: number;
+      /** Out Date */
+      out_date: string;
+      /** Party */
+      party: string;
     };
     /** RuleChange */
     RuleChange: {
@@ -4174,6 +4429,159 @@ export interface components {
       fy: string;
       /** Fy End */
       fy_end: string;
+    };
+    /** TxnCategoryRef */
+    TxnCategoryRef: {
+      /**
+       * Direction
+       * @enum {string}
+       */
+      direction: "credit" | "debit";
+      /** Id */
+      id: string;
+      /** Label */
+      label: string;
+    };
+    /** TxnCategoryRequest */
+    TxnCategoryRequest: {
+      /** Category */
+      category: string;
+      /** Reason */
+      reason: string;
+    };
+    /** TxnCategoryTotal */
+    TxnCategoryTotal: {
+      /** Amount */
+      amount: number;
+      /** Category */
+      category: string;
+      /** Count */
+      count: number;
+      /**
+       * Direction
+       * @enum {string}
+       */
+      direction: "credit" | "debit";
+      /** Label */
+      label: string;
+    };
+    /** TxnMonthTotal */
+    TxnMonthTotal: {
+      /** By Category */
+      by_category: {
+        [key: string]: number;
+      };
+      /** Credits */
+      credits: number;
+      /** Debits */
+      debits: number;
+      /** Month */
+      month: string;
+    };
+    /** TxnPage */
+    TxnPage: {
+      /** Items */
+      items: components["schemas"]["TxnRow"][];
+      /** Limit */
+      limit: number;
+      /** Offset */
+      offset: number;
+      /** Total */
+      total: number;
+    };
+    /**
+     * TxnRow
+     * @description One statement transaction and how it was classified.
+     */
+    TxnRow: {
+      /** Account */
+      account: string;
+      /** Candidates */
+      candidates?: string[];
+      /** Category */
+      category: string;
+      /** Category Label */
+      category_label: string;
+      /** Channel */
+      channel?: string | null;
+      /** Confidence */
+      confidence: number;
+      /** Counterparty */
+      counterparty?: string | null;
+      /** Credit */
+      credit: number;
+      /** Date */
+      date?: string | null;
+      /** Debit */
+      debit: number;
+      /**
+       * Direction
+       * @enum {string}
+       */
+      direction: "credit" | "debit";
+      /** Document Id */
+      document_id: string;
+      /** Evidence */
+      evidence?: components["schemas"]["Evidence"][];
+      /** Flags */
+      flags?: string[];
+      /**
+       * Method
+       * @enum {string}
+       */
+      method: "rule" | "model" | "manual";
+      /** Narration */
+      narration: string;
+      /**
+       * Needs Review
+       * @default false
+       */
+      needs_review: boolean;
+      /** Paired With */
+      paired_with?: string | null;
+      /** Reason */
+      reason?: string | null;
+      /** Rule Id */
+      rule_id?: string | null;
+      /** Seq */
+      seq: number;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "matched" | "ambiguous" | "unmatched";
+      /** Txn Id */
+      txn_id: string;
+    };
+    /** TxnSummary */
+    TxnSummary: {
+      /** Accounts */
+      accounts: string[];
+      /**
+       * By Model
+       * @default 0
+       */
+      by_model: number;
+      /** By Person */
+      by_person: number;
+      /** By Rule */
+      by_rule: number;
+      /** Case Id */
+      case_id: string;
+      /** Catalogue */
+      catalogue?: components["schemas"]["TxnCategoryRef"][];
+      /** Categories */
+      categories: components["schemas"]["TxnCategoryTotal"][];
+      /** Config Version */
+      config_version?: string | null;
+      /** Model Error */
+      model_error?: string | null;
+      /** Months */
+      months: components["schemas"]["TxnMonthTotal"][];
+      /** Total */
+      total: number;
+      /** Unsettled */
+      unsettled: number;
     };
     /**
      * UploadResult
@@ -5971,6 +6379,188 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Spread"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  case_transactions_api_cases__case_id__transactions_get: {
+    parameters: {
+      query?: {
+        category?: string | null;
+        account?: string | null;
+        status?: string | null;
+        month?: string | null;
+        counterparty?: string | null;
+        flag?: string | null;
+        q?: string | null;
+        needs_review?: boolean | null;
+        limit?: number;
+        offset?: number;
+      };
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TxnPage"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  case_bank_conduct_api_cases__case_id__transactions_conduct_get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BankConduct"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  case_transactions_summary_api_cases__case_id__transactions_summary_get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TxnSummary"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  case_transaction_categorise_api_cases__case_id__transactions__txn_id__category_put: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+        txn_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TxnCategoryRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TxnRow"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  case_transaction_clear_api_cases__case_id__transactions__txn_id__category_delete: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+        txn_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TxnRow"];
         };
       };
       /** @description Validation Error */

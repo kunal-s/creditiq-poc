@@ -22,8 +22,8 @@ def run(cfg, store, mode, name, answerer=model_answers.answerer):
     return r, client
 
 
-def test_model_fills_only_what_the_page_pattern_pass_left_empty(cfg):
-    r, client = run(cfg, Store(), "record", BR)
+def test_model_fills_only_what_the_page_pattern_pass_left_empty(rules_cfg):
+    r, client = run(rules_cfg, Store(), "record", BR)
     d = r.documents[0]
     assert d.fields["authorized_signatories"].method == "model" and d.fields["authorized_signatories"].value == ["Lakshmi Iyer", "Venkat Iyer"]
     assert d.fields["authorized_signatories"].source.page == 1 and d.fields["authorized_signatories"].source.bbox

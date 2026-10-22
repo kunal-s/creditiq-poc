@@ -26,3 +26,12 @@ from engine.util import period_months
 ])
 def test_period_months(value, fy, expected):
     assert period_months(value, fy) == expected
+
+
+def test_a_month_named_without_its_year_is_placed_by_the_financial_year():
+    assert period_months("Sep", "2026-27") == [(2026, 9)]
+    assert period_months("Feb", "2025-26") == [(2026, 2)]
+    assert period_months("Apr", "2025-26") == [(2025, 4)]
+    assert period_months("Sep") == []                       # no year to place it by
+    assert period_months("Oct-Dec", "2025-26") == [(2025, 10), (2025, 11), (2025, 12)]
+    assert period_months("Sep 2026") == [(2026, 9)]

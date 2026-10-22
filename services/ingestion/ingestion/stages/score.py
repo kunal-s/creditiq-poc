@@ -80,8 +80,12 @@ def decide(cfg: IngestionConfig, doc_grade: str, cls: dict, fields: dict, checks
         for c in checks:
             if c["outcome"] == "fail":
                 reasons.append({"kind": "failed_check", "check": c["id"], "detail": c["detail"]})
+    trules = cfg.fields.types.get(cls["type"]) if cls["type"] else None
     for n, t in tables.items():
         if t["status"] == "missing" and t["reason"] == "table_not_found":
+            tr = trules.tables.get(n) if trules else None
+            if tr is not None and all(v.optional for v in (tr if isinstance(tr, list) else [tr])):
+                continue
             reasons.append({"kind": "table_missing", "table": n})
     if doc_grade in dc.reject_grades:
         decision = "reject"

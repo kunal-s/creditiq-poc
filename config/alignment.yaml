@@ -6,31 +6,18 @@
 # bank figures are brought to this window (F-18.1).
 financial_year_start_month: 4
 
-# Credits removed before the remainder counts as business inflow (F-18.2).
-# Applied in order; a credit takes the first rule it matches. Every
-# exclusion is kept with its transaction.
+# Credits removed before the remainder counts as business inflow (F-18.2). A credit is filed under a
+# category by config/txn_classification.yaml (the rules, then the model, then a person); the categories
+# listed here are the ones removed. Every exclusion is kept with its transaction.
 bank_credit_exclusions:
-  - id: own_account_transfer
-    label: Transfer between the borrower's own accounts
-    # Matches when the narration carries the last digits of another account
-    # in the account set (F-18.5), or one of these cues with the borrower's name.
-    own_account: true
-    narration_any: ["self transfer", "own account", "sweep"]
-  - id: loan_disbursal
-    label: Loan disbursal
-    narration_any: ["loan disb", "disbursal", "disbursement", "ln disb", "tl disb", "loan a/c", "loan account"]
-  - id: reversal
-    label: Reversal or refund
-    narration_any: ["reversal", "reversed", "refund", "rev "]
-  - id: returned_cheque
-    label: Returned cheque or failed debit
-    narration_any: ["chq ret", "cheque return", "returned", "rtn", "bounce", "unpaid", "insufficient funds"]
+  - {id: own_account_transfer, label: Transfer between the borrower's own accounts, categories: [own_transfer_in]}
+  - {id: loan_disbursal, label: Loan disbursal, categories: [loan_disbursal]}
+  - {id: reversal, label: Reversal or refund, categories: [reversal_refund]}
+  - {id: returned_cheque, label: Returned cheque or failed debit, categories: [failed_debit_reversal]}
 
-# Debits that suggest a loan instalment (F-18.4). A counterparty debited in
-# at least `emi_min_occurrences` months, with amounts within
-# `emi_amount_match` of each other (config/tolerances.yaml), is an inferred
-# obligation.
-obligation_narration_any: ["nach", "ecs", "emi", "ach dr", "ach-dr", "si-", "standing instruction", "loan repay"]
+# A debit filed under loan_emi is a loan instalment. A lender debited in at least `emi_min_occurrences`
+# months, with amounts within `emi_amount_match` of each other (config/tolerances.yaml), is an inferred
+# obligation (F-18.4).
 
 # The names under which a board resolution for borrowing is in favour of
 # this bank (BR-03). Compared after the noise words below are removed.

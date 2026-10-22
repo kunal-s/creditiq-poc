@@ -5,7 +5,7 @@ import { Panel } from "@/components/common/Panel";
 import { Details } from "@/components/common/Details";
 import { ErrorState, LoadingBlock } from "@/components/common/States";
 import { FieldValueButton } from "@/components/common/FieldValueButton";
-import { ConfidenceChip } from "@/components/common/ConfidenceChip";
+import { AverageConfidence } from "@/components/common/ConfidenceChip";
 import { FieldStatusChip, GradeChip } from "@/components/documents/chips";
 import { FieldRowDecision } from "@/components/review/FieldDecision";
 import { useDocViewer } from "@/components/docviewer/DocViewer";
@@ -201,6 +201,7 @@ function DocumentFields({
       }
       action={
         <span className="flex items-center gap-2">
+          <AverageConfidence fields={fields} />
           {(doc.grade === "C" || doc.grade === "U") && <GradeChip grade={doc.grade} />}
           <button
             type="button"
@@ -219,7 +220,6 @@ function DocumentFields({
               <tr className="border-b border-border text-left text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">
                 <th className="px-4 py-2 font-medium">{t("data.col.field")}</th>
                 <th className="px-3 py-2 font-medium">{t("data.col.value")}</th>
-                <th className="px-3 py-2 font-medium">{t("data.col.confidence")}</th>
                 <th className="px-4 py-2 font-medium">{t("data.col.status")}</th>
               </tr>
             </thead>
@@ -229,13 +229,6 @@ function DocumentFields({
                   <td className="px-4 py-2 text-muted-foreground">{fieldLabel(f.field)}</td>
                   <td className="px-3 py-2">
                     <FieldValueButton caseId={caseId} field={f} />
-                  </td>
-                  <td className="px-3 py-2">
-                    <ConfidenceChip
-                      confidence={f.confidence}
-                      components={f.confidence_components}
-                      flagged={f.status === "in_review"}
-                    />
                   </td>
                   <td className="px-4 py-2">
                     <FieldStatusChip status={f.status} />
@@ -316,11 +309,6 @@ function FieldTableView({ caseId, table }: { caseId: string; table: FieldTable }
                       <>
                         <FieldValueButton caseId={caseId} field={f} />
                         <div className="mt-1 flex flex-wrap items-center gap-1">
-                          <ConfidenceChip
-                            confidence={f.confidence}
-                            components={f.confidence_components}
-                            flagged={f.status === "in_review"}
-                          />
                           {f.status !== "accepted" && <FieldStatusChip status={f.status} />}
                         </div>
                         <FieldRowDecision field={f} />

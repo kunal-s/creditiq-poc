@@ -16,6 +16,8 @@ type = forbidden
 source_modules =
     engine.approval
     engine.auth
+    engine.bank_conduct
+    engine.bank_txns
     engine.cam
     engine.cam_copilot
     engine.cam_review
@@ -53,6 +55,8 @@ source_modules =
     engine.spread
     engine.statements
     engine.store
+    engine.txn_intel
+    engine.txn_labels
     engine.uploads
     engine.util
     engine.xlsx

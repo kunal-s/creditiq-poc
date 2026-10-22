@@ -512,7 +512,8 @@ def _director_identifiers(ctx: Context, rule: CrossCheckRule) -> list[Finding]:
                 issues.append(f"DIN {k.din} on the KYC against {m.din} in the memorandum")
         if k.pan:
             compared += 1
-            if len(k.pan) == 10 and k.pan[3] != "P":
+            masked = re.fullmatch(r"[A-Z][X*]{4}\d{4}[A-Z]", k.pan) is not None   # a masked PAN does not show its fourth character
+            if len(k.pan) == 10 and not masked and k.pan[3] != "P":
                 issues.append(f"PAN {k.pan} is not an individual's PAN")
             elif k.pan in entity_pans:
                 issues.append(f"PAN {k.pan} is the company's PAN")

@@ -127,18 +127,20 @@ def test_maker_cannot_check_their_own_entry(published_data_root):
         conn.close()
 
 
-def test_store_migrates_to_version_11(published_data_root):
+def test_store_migrates_to_version_13(published_data_root):
     from engine import db
 
     conn = db.connect(published_data_root)
     try:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == len(db.MIGRATIONS) == 11
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == len(db.MIGRATIONS) == 13
         tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
         finding_columns = {r["name"] for r in conn.execute("PRAGMA table_info(findings)")}
         case_columns = {r["name"] for r in conn.execute("PRAGMA table_info(cases)")}
     finally:
         conn.close()
     assert {"reference_records", "reference_items", "comparison_adjudications"} <= tables
+    # 12: classified bank-statement transactions.
+    assert {"txn_class", "txn_class_basis", "txn_class_overrides", "txn_model_labels"} <= tables   # 13: the model's answers
     # 7: the cross-verification board.
     assert {"finding_refs", "crosscheck_runs", "query_additions"} <= tables and "card" in finding_columns
     # 9: the assessment gate.

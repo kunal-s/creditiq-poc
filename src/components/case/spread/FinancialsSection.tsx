@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { AlertCircle, ArrowRight, Eye, FileText } from "lucide-react";
 import { useState } from "react";
 import type { CaseDetail, CrossVerificationView, Spread } from "@/api/types";
+import { BankingPanel, BankingRail } from "@/components/case/banking/BankingPanel";
 import { RailPanel, RailRows, RailStats } from "@/components/common/RailPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { QueryView } from "@/components/common/States";
@@ -12,6 +13,7 @@ import { useCrossVerification } from "@/domain/crossVerification";
 import { useCaseDocuments, useDocumentTypes } from "@/domain/documents";
 import { useFacts, useSpread } from "@/domain/findings";
 import { FINANCIALS_HEADING_ID, FINANCIALS_SECTION_ID } from "@/domain/policy";
+import { useTxnSummary } from "@/domain/transactions";
 import {
   differingFigures,
   manualFigures,
@@ -32,8 +34,8 @@ import { WorkingCapital } from "./WorkingCapital";
 //   financials              the section (element id `financials`)
 //   spread-period           the year picker; spread-period-<fy> each year
 //   spread-banner           an open turnover discrepancy, with the way to it on Cross-checks
-//   financials-tabs         the three tables, one at a time: financials-tab-<turnover|
-//                           profit_and_loss|balance_sheet> each, with financials-tab-count
+//   financials-tabs         the tables and the Banking view, one at a time: financials-tab-<turnover|
+//                           profit_and_loss|balance_sheet|banking> each, with financials-tab-count
 //   spread-turnover         turnover by year: spread-turnover-row (data-source) and
 //                           spread-turnover-cell (data-fy, data-verdict)
 //   spread-profit_and_loss, spread-balance_sheet   the statements; spread-row (data-row)
@@ -43,7 +45,7 @@ import { WorkingCapital } from "./WorkingCapital";
 //   spread-status, spread-source   the rail
 
 /** The tables of the section, one per tab, in this order. */
-const TABS = ["turnover", "profit_and_loss", "balance_sheet"] as const;
+const TABS = ["turnover", "profit_and_loss", "balance_sheet", "banking"] as const;
 
 export function FinancialsSection({
   caseId,
@@ -86,6 +88,15 @@ export function FinancialsSection({
   );
 }
 
+/** What the badge on a tab counts. */
+function tabCountKey(key: (typeof TABS)[number]): string {
+  return key === "turnover"
+    ? "spreadPage.tabs.differing"
+    : key === "banking"
+      ? "spreadPage.tabs.bankingOpen"
+      : "spreadPage.tabs.manual";
+}
+
 function FinancialsBody({
   caseId,
   spread,
@@ -105,26 +116,26 @@ function FinancialsBody({
   const years = facts.data ? turnoverYears(facts.data) : [];
   const [tab, setTab] = useState<string>("turnover");
   const differing = differingFigures(years, board.data);
+  const unfiled = useTxnSummary(caseId).data?.unsettled ?? 0;
 
   return (
     <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_17rem]">
       <div className="min-w-0 space-y-4">
-        {spread.interim && (
-          <p
-            className="rounded border border-info/40 bg-info-soft px-3 py-2 text-[12px] text-info"
-            data-testid="spread-interim"
-          >
-            {t("spreadPage.interim")}
-          </p>
+        {tab !== "banking" && (
+          <PeriodPicker spread={spread} period={column.fy} onPick={setPeriod} />
         )}
-        <PeriodPicker spread={spread} period={column.fy} onPick={setPeriod} />
         <TurnoverBanner caseId={caseId} board={board.data} />
         {/* One table at a time, to keep the section short; the year and the picked figure
             carry across the tabs, and a badge says what a tab holds that needs a look. */}
         <Tabs value={tab} onValueChange={setTab} data-testid="financials-tabs">
           <TabsList className="h-auto flex-wrap justify-start gap-1 rounded border border-border bg-surface p-1">
             {TABS.map((key) => {
-              const count = key === "turnover" ? differing : manualFigures(spread, key);
+              const count =
+                key === "turnover"
+                  ? differing
+                  : key === "banking"
+                    ? unfiled
+                    : manualFigures(spread, key);
               return (
                 <TabsTrigger
                   key={key}
@@ -142,21 +153,10 @@ function FinancialsBody({
                           : "bg-flag-soft text-flag-foreground",
                       )}
                       data-testid="financials-tab-count"
-                      title={t(
-                        key === "turnover" ? "spreadPage.tabs.differing" : "spreadPage.tabs.manual",
-                        { n: count },
-                      )}
+                      title={t(tabCountKey(key), { n: count })}
                     >
                       {count}
-                      <span className="sr-only">
-                        {" "}
-                        {t(
-                          key === "turnover"
-                            ? "spreadPage.tabs.differing"
-                            : "spreadPage.tabs.manual",
-                          { n: count },
-                        )}
-                      </span>
+                      <span className="sr-only"> {t(tabCountKey(key), { n: count })}</span>
                     </span>
                   )}
                 </TabsTrigger>
@@ -171,6 +171,9 @@ function FinancialsBody({
               picked={picked?.id ?? null}
               onPick={setPicked}
             />
+          </TabsContent>
+          <TabsContent value="banking">
+            <BankingPanel caseId={caseId} />
           </TabsContent>
           {(["profit_and_loss", "balance_sheet"] as const).map((section) => (
             <TabsContent key={section} value={section}>
@@ -188,8 +191,14 @@ function FinancialsBody({
         <TrendNotes spread={spread} />
       </div>
       <aside className="order-first grid min-w-0 grid-cols-1 content-start gap-4 sm:grid-cols-2 xl:sticky xl:top-4 xl:order-none xl:grid-cols-1 xl:self-start">
-        <StatusPanel spread={spread} header={header.data} period={assessed} />
-        <SourcePanel caseId={caseId} picked={picked} />
+        {tab === "banking" ? (
+          <BankingRail caseId={caseId} />
+        ) : (
+          <>
+            <StatusPanel spread={spread} header={header.data} period={assessed} />
+            <SourcePanel caseId={caseId} picked={picked} />
+          </>
+        )}
       </aside>
     </div>
   );

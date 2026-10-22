@@ -113,6 +113,22 @@ class Value:
     manual: bool
     pending: bool = False
     """Still waiting for a person's review (F-17.2)."""
+    raw: str | None = None
+    """The text as the document prints it ("3,586", "-")."""
+
+
+@dataclass
+class StatementEdit:
+    """A person's figure for a statement line, in the unit the statement prints (see statement_edits)."""
+
+    id: str
+    line: str
+    column: str
+    original: float | None
+    value: float
+    reason: str
+    edited_by: str
+    edited_at: str
 
 
 @dataclass
@@ -123,6 +139,8 @@ class Doc:
     page_from: int
     fields: dict[str, Value]
     party_id: str | None = None
+    edits: dict[tuple[str, str], StatementEdit] = field(default_factory=dict)
+    """The live edits of this document's statement lines, by line and column."""
 
     @property
     def label(self) -> str:
@@ -177,7 +195,7 @@ def load_documents(conn: sqlite3.Connection, root: Path, case_id: str) -> list[D
             continue
         fields: dict[str, Value] = {}
         for fv in conn.execute(
-            "SELECT id, field, value, corrected_value, status, evidence, method FROM field_values WHERE document_id = ?",
+            "SELECT id, field, value, corrected_value, status, evidence, method, raw FROM field_values WHERE document_id = ?",
             (row["id"],),
         ):
             if fv["status"] in ("missing", "rejected"):
@@ -188,7 +206,14 @@ def load_documents(conn: sqlite3.Connection, root: Path, case_id: str) -> list[D
                 evidence=json.loads(fv["evidence"]) if fv["evidence"] else None,
                 manual=fv["method"] == "manual" or fv["status"] == "corrected",
                 pending=fv["status"] == "in_review",
+                raw=fv["raw"],
             )
+        edits = {
+            (e["line"], e["column_name"]): StatementEdit(e["id"], e["line"], e["column_name"], e["original"], e["value"],
+                                                          e["reason"], e["edited_by"], e["edited_at"])
+            for e in conn.execute(
+                "SELECT * FROM statement_edits WHERE document_id = ? AND superseded_at IS NULL", (row["id"],))
+        }
         docs.append(
             Doc(
                 id=row["id"],
@@ -197,6 +222,7 @@ def load_documents(conn: sqlite3.Connection, root: Path, case_id: str) -> list[D
                 page_from=row["page_from"],
                 fields=fields,
                 party_id=row["party_id"] if "party_id" in row.keys() else None,
+                edits=edits,
             )
         )
     return docs

@@ -83,12 +83,12 @@ class Inputs:
 
     def put(self, name: str, value: float | None, evidence: list[Evidence] | None = None, manual: bool = False,
             pending: bool = False, basis: str = "document", refs: list[str] | None = None,
-            components: list[NormComponent] | None = None) -> None:
+            components: list[NormComponent] | None = None, working=None) -> None:
         if value is None:
             return
         self.values[name] = NormInput(name=name, label=INPUT_LABELS[name], value=float(value), evidence=evidence or [],
                                       relies_on_manual=manual, awaiting_review=pending, basis=basis,  # type: ignore[arg-type]
-                                      refs=refs or [], components=components or [])
+                                      refs=refs or [], components=components or [], working=working)
 
 
 def number(v: facts_module.Value | None) -> float | None:
@@ -180,18 +180,24 @@ def gather(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> Inputs:
         end = audited[-1][0]
         inputs.period = facts_module.fy_name(facts_module.fy_of(end.year, end.month, start), start)
         # More than one copy of the latest year's statements: each figure from the first copy that has it.
-        copies = [statements.lines(d, cfg) for e, d in audited if e == end]
+        from . import workings  # imports this module for the labels, so it is read here
+
+        latest_docs = [d for e, d in audited if e == end]
+        copies = [statements.lines(d, cfg) for d in latest_docs]
         for name in FINANCIAL_INPUTS:
-            line = next((c[name] for c in copies if name in c), None)
+            at = next((i for i, c in enumerate(copies) if name in c), None)
+            line = copies[at][name] if at is not None else None
             if line:
                 # A derived figure (net worth, current assets) carries the lines it was summed
                 # from, so the screen can show the arithmetic rather than only the total.
                 inputs.put(name, line.value, line.evidence, line.manual, pending=line.pending,
                            components=[
                                NormComponent(label=INPUT_LABELS.get(part.name, part.name), sign=part.sign,
-                                             value=part.value, evidence=part.evidence)
+                                             value=part.value, evidence=part.evidence,
+                                             working=workings.line_working(part.line, latest_docs[at], part.name, True)
+                                             if part.line is not None else None)
                                for part in line.parts
-                           ])
+                           ], working=workings.line_working(line, latest_docs[at], name, name in cfg.lines))
 
     # The amount asked for: the case record, citing the sourcing message where it came from.
     requested = facts.requested_amount

@@ -23,9 +23,9 @@ def test_the_year_end_reads_in_filed_accounts_forms(printed):
 
 
 def _statement(rows):
-    cells = {f"balance_sheet[{i}].{k}": SimpleNamespace(value=v, manual=False, field_id=f"F{i}{k}", pending=False)
+    cells = {f"balance_sheet[{i}].{k}": SimpleNamespace(value=v, manual=False, field_id=f"F{i}{k}", pending=False, raw=str(v))
              for i, (label, amount) in enumerate(rows) for k, v in (("particulars", label), ("current_period", amount)) if v is not None}
-    doc = SimpleNamespace(get=lambda name: None, evidence=lambda *a: [])
+    doc = SimpleNamespace(id="DOC-1", edits={}, get=lambda name: None, evidence=lambda *a: [])
     import re
     def table_rows(table):
         out = {}

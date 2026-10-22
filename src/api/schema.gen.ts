@@ -808,6 +808,47 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/cases/{case_id}/statement-edits": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Edit Statement Line
+     * @description F-22.3: set a statement line to a person's figure, in the unit the statement prints, with a
+     *     reason. The document's own figure is kept beside it; the norms, the memo and the spread all follow.
+     */
+    post: operations["edit_statement_line_api_cases__case_id__statement_edits_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/cases/{case_id}/statement-edits/{edit_id}/revert": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Revert Statement Edit
+     * @description Put the statement's own figure back; the edit stays in the history.
+     */
+    post: operations["revert_statement_edit_api_cases__case_id__statement_edits__edit_id__revert_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/cases/{case_id}/transactions": {
     parameters: {
       query?: never;
@@ -2143,6 +2184,105 @@ export interface components {
         | "Outputs"
         | "Completed";
     };
+    /**
+     * CellEdit
+     * @description A person's figure standing in place of the statement's (the printed one stays beside it).
+     */
+    CellEdit: {
+      /** Edited At */
+      edited_at: string;
+      /** Edited By */
+      edited_by: string;
+      /** Id */
+      id: string;
+      /** Original */
+      original?: number | null;
+      /** Reason */
+      reason: string;
+      /** Value */
+      value: number;
+    };
+    /**
+     * CellInput
+     * @description One figure a derived figure or ratio rests on, with the figures it rests on in turn.
+     */
+    CellInput: {
+      edit?: components["schemas"]["CellEdit"] | null;
+      /** Key */
+      key: string;
+      /** Label */
+      label: string;
+      /** Parts */
+      parts?: components["schemas"]["CellInput"][];
+      /**
+       * Sign
+       * @default 1
+       */
+      sign: number;
+      source?: components["schemas"]["CellSource"] | null;
+      /**
+       * State
+       * @default printed
+       * @enum {string}
+       */
+      state: "printed" | "nil" | "not_printed" | "edited" | "derived" | "ratio" | "missing";
+      target?: components["schemas"]["EditTarget"] | null;
+      /**
+       * Unit
+       * @default inr
+       * @enum {string}
+       */
+      unit: "inr" | "x" | "%" | "days";
+      /** Value */
+      value?: number | null;
+    };
+    /**
+     * CellSource
+     * @description Where a figure the statement prints was read, and in what unit.
+     */
+    CellSource: {
+      /** Column */
+      column: string;
+      /** Document */
+      document: string;
+      /** Document Id */
+      document_id: string;
+      /** Page */
+      page?: number | null;
+      /** Printed */
+      printed?: string | null;
+      /** Printed Value */
+      printed_value?: number | null;
+      /** Row Label */
+      row_label?: string | null;
+      /**
+       * Scale
+       * @default 1
+       */
+      scale: number;
+      /** Unit Label */
+      unit_label?: string | null;
+    };
+    /**
+     * CellWorking
+     * @description How one spread figure was arrived at (F-22.3): where it was read, or what it was worked out from.
+     */
+    CellWorking: {
+      edit?: components["schemas"]["CellEdit"] | null;
+      /** Formula */
+      formula?: string | null;
+      /** Inputs */
+      inputs?: components["schemas"]["CellInput"][];
+      source?: components["schemas"]["CellSource"] | null;
+      /**
+       * State
+       * @enum {string}
+       */
+      state: "printed" | "nil" | "not_printed" | "edited" | "derived" | "ratio" | "missing";
+      /** Substituted */
+      substituted?: string | null;
+      target?: components["schemas"]["EditTarget"] | null;
+    };
     /** ChecklistItemDef */
     ChecklistItemDef: {
       /** Basis */
@@ -2520,6 +2660,18 @@ export interface components {
     DocumentTypesSection: {
       /** Types */
       types: components["schemas"]["DocumentTypeDef"][];
+    };
+    /**
+     * EditTarget
+     * @description What an edit of this figure names.
+     */
+    EditTarget: {
+      /** Column */
+      column: string;
+      /** Document Id */
+      document_id: string;
+      /** Line */
+      line: string;
     };
     /** EditableAuthority */
     EditableAuthority: {
@@ -3247,6 +3399,7 @@ export interface components {
       sign: number;
       /** Value */
       value: number;
+      working?: components["schemas"]["CellWorking"] | null;
     };
     /**
      * NormInput
@@ -3281,6 +3434,7 @@ export interface components {
       relies_on_manual: boolean;
       /** Value */
       value: number | null;
+      working?: components["schemas"]["CellWorking"] | null;
     };
     /** NormResult */
     NormResult: {
@@ -4280,6 +4434,7 @@ export interface components {
       relies_on_manual: boolean;
       /** Value */
       value?: number | null;
+      working?: components["schemas"]["CellWorking"] | null;
     };
     /**
      * SpreadColumn
@@ -4356,6 +4511,30 @@ export interface components {
        * @default 0
        */
       total: number;
+    };
+    /**
+     * StatementEditRequest
+     * @description Set a statement line to a person's figure, entered in the unit the statement prints.
+     */
+    StatementEditRequest: {
+      /**
+       * Column
+       * @default current_period
+       */
+      column: string;
+      /** Document Id */
+      document_id: string;
+      /** Line */
+      line: string;
+      /** Reason */
+      reason: string;
+      /** Value */
+      value: number;
+    };
+    /** StatementRevertRequest */
+    StatementRevertRequest: {
+      /** Reason */
+      reason: string;
     };
     /**
      * StrippedSpan
@@ -6380,6 +6559,79 @@ export interface operations {
         content: {
           "application/json": components["schemas"]["Spread"];
         };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  edit_statement_line_api_cases__case_id__statement_edits_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StatementEditRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CellEdit"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  revert_statement_edit_api_cases__case_id__statement_edits__edit_id__revert_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+        edit_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StatementRevertRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Validation Error */
       422: {

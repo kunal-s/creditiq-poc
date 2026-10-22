@@ -402,3 +402,20 @@ test("dates read as elsewhere in the appraisal, and months are written Sep, not 
   await expect(page.getByTestId("banking-categories")).toContainText("Sep 2025");
   await expect(page.getByTestId("banking-categories")).not.toContainText("Sept");
 });
+
+test("on this tab the rail reports the classification and the year picker steps aside", async ({
+  page,
+}) => {
+  await openBanking(page);
+  const rail = page.getByTestId("banking-counts");
+  await expect(rail).toContainText("Classification status");
+  await expect(rail).toContainText("1 adverse");
+  await expect(rail).toContainText("Apr 2025 – May 2025");
+  await expect(page.getByTestId("spread-status")).toHaveCount(0);
+  await expect(page.getByTestId("spread-period")).toHaveCount(0);
+  // Back on a table tab, the spread's own rail and year picker return.
+  await page.getByTestId("financials-tab-turnover").click();
+  await expect(page.getByTestId("spread-status")).toBeVisible();
+  await expect(page.getByTestId("spread-period")).toBeVisible();
+  await expect(page.getByTestId("banking-counts")).toHaveCount(0);
+});

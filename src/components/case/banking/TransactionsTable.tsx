@@ -1,4 +1,4 @@
-import { Eye } from "lucide-react";
+import { Eye, Pencil } from "lucide-react";
 import { useDeferredValue, useState } from "react";
 import { toast } from "sonner";
 import type { TxnCategoryRef, TxnRow, TxnSummary } from "@/api/types";
@@ -81,7 +81,7 @@ export function TransactionsTable({ caseId, summary }: { caseId: string; summary
       title={t("banking.txn.title")}
       subtitle={
         list.data
-          ? t("banking.txn.subtitle", { shown: list.data.items.length, total: list.data.total })
+          ? `${t("banking.txn.subtitle", { shown: list.data.items.length, total: list.data.total })} · ${t("banking.txn.legend")}`
           : undefined
       }
       testId="banking-transactions"
@@ -90,7 +90,7 @@ export function TransactionsTable({ caseId, summary }: { caseId: string; summary
         <label className="block">
           <span className="field-label">{t("banking.txn.filters.category")}</span>
           <select
-            className={cn(selectClass, "mt-1 block")}
+            className={cn(selectClass, "mt-1 block max-w-[11rem]")}
             value={category}
             onChange={(e) => narrow(setCategory)(e.target.value)}
             data-testid="banking-filter-category"
@@ -154,11 +154,12 @@ export function TransactionsTable({ caseId, summary }: { caseId: string; summary
             </option>
           </select>
         </label>
-        <label className="block min-w-[12rem] flex-1">
+        <label className="block min-w-[8rem] flex-1">
           <span className="field-label">{t("banking.txn.filters.search")}</span>
           <input
             type="search"
             className={cn(selectClass, "mt-1 block w-full")}
+            placeholder={t("banking.txn.filters.searchHint")}
             value={search}
             onChange={(e) => narrow(setSearch)(e.target.value)}
             data-testid="banking-filter-search"
@@ -179,7 +180,7 @@ export function TransactionsTable({ caseId, summary }: { caseId: string; summary
         </p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[46rem] text-[13px]" data-testid="banking-table">
+          <table className="w-full min-w-[40rem] text-[13px]" data-testid="banking-table">
             <thead>
               <tr className={TH}>
                 <th scope="col" className="px-3 py-1.5 text-left font-medium">
@@ -197,7 +198,7 @@ export function TransactionsTable({ caseId, summary }: { caseId: string; summary
                 <th scope="col" className="px-3 py-1.5 text-left font-medium">
                   {t("banking.txn.category")}
                 </th>
-                <th scope="col" className="w-20" />
+                <th scope="col" className="w-16" />
               </tr>
             </thead>
             <tbody>
@@ -232,7 +233,7 @@ export function TransactionsTable({ caseId, summary }: { caseId: string; summary
                   </td>
                   <td className={td}>{r.debit ? rupees(r.debit) : ""}</td>
                   <td className={td}>{r.credit ? rupees(r.credit) : ""}</td>
-                  <td className="min-w-[13rem] px-3 py-1.5">
+                  <td className="min-w-[9.5rem] px-3 py-1.5">
                     <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
                       <span
                         className="font-medium text-foreground"
@@ -243,9 +244,12 @@ export function TransactionsTable({ caseId, summary }: { caseId: string; summary
                       {r.needs_review ? (
                         <Chip tone="flag">{t("banking.counts.open")}</Chip>
                       ) : (
-                        <Chip tone={METHOD_TONE[r.method]}>
-                          {t(`banking.txn.method.${r.method}`)}
-                        </Chip>
+                        // A row the rules read is the usual case and carries no tag.
+                        r.method !== "rule" && (
+                          <Chip tone={METHOD_TONE[r.method]}>
+                            {t(`banking.txn.method.${r.method}`)}
+                          </Chip>
+                        )
                       )}
                     </span>
                     {r.needs_review && r.candidates?.[0] && (
@@ -260,10 +264,16 @@ export function TransactionsTable({ caseId, summary }: { caseId: string; summary
                         <button
                           type="button"
                           onClick={() => setFiling(r)}
-                          className="text-[12px] font-medium text-primary hover:underline"
+                          className="inline-flex items-center text-muted-foreground hover:text-primary"
+                          aria-label={t(
+                            r.method === "manual" ? "banking.txn.change" : "banking.txn.file",
+                          )}
+                          title={t(
+                            r.method === "manual" ? "banking.txn.change" : "banking.txn.file",
+                          )}
                           data-testid="banking-file"
                         >
-                          {t(r.method === "manual" ? "banking.txn.change" : "banking.txn.file")}
+                          <Pencil className="h-4 w-4" aria-hidden />
                         </button>
                       )}
                       <button

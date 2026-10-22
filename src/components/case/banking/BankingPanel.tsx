@@ -2,10 +2,11 @@ import { Eye } from "lucide-react";
 import { useState } from "react";
 import type { BankConduct, ConductFlag, TxnSummary } from "@/api/types";
 import { Chip, type Tone } from "@/components/common/Panel";
+import { RailPanel, RailRows } from "@/components/common/RailPanel";
 import { ErrorState, LoadingBlock } from "@/components/common/States";
 import { evidenceRequest, useDocViewer } from "@/components/docviewer/DocViewer";
 import { t } from "@/config/terminology";
-import { formatDate } from "@/domain/cases";
+import { formatDate, useCase } from "@/domain/cases";
 import { lakh, monthLabel, rupees, useBankConduct, useTxnSummary } from "@/domain/transactions";
 import { cn } from "@/lib/utils";
 import { Block } from "./Block";
@@ -54,66 +55,118 @@ export function BankingPanel({ caseId }: { caseId: string }) {
   }
   return (
     <div className="space-y-3" data-testid="banking">
-      <Counts summary={summary.data} />
       <Flags caseId={caseId} flags={conduct.data.flags} />
       <MonthTable conduct={conduct.data} />
       <CategoryTable summary={summary.data} />
-      <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-2">
-        <Customers conduct={conduct.data} />
-        <RoundTrips caseId={caseId} conduct={conduct.data} />
-      </div>
+      <RoundTrips caseId={caseId} conduct={conduct.data} />
       <Balances conduct={conduct.data} />
       <TransactionsTable caseId={caseId} summary={summary.data} />
     </div>
   );
 }
 
-/** How the transactions were classified, in one strip. */
-function Counts({ summary }: { summary: TxnSummary }) {
-  const stats: [string, number][] = [
-    ["total", summary.total],
-    ["rule", summary.by_rule],
-    ["model", summary.by_model],
-    ["person", summary.by_person],
-    ["open", summary.unsettled],
-  ];
+/** The right rail of the Banking tab, where the other tabs show the spread's status: how the transactions were
+ * classified and what the observations number. */
+export function BankingRail({ caseId }: { caseId: string }) {
+  const summary = useTxnSummary(caseId);
+  const conduct = useBankConduct(caseId);
+  const header = useCase(caseId);
+  const s = summary.data;
+  const flags = conduct.data?.flags ?? [];
+  const by = (sev: ConductFlag["severity"]) => flags.filter((f) => f.severity === sev).length;
+  const months = s?.months ?? [];
   return (
-    <section
-      className="rounded border border-border bg-surface px-4 py-2.5"
-      data-testid="banking-counts"
-    >
-      <dl className="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3 lg:grid-cols-5">
-        {stats.map(([k, n]) => (
-          <div key={k} data-testid={`banking-count-${k}`}>
-            <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">
-              {t(`banking.counts.${k}`)}
-            </dt>
-            <dd
-              className={cn(
-                "tabular text-[18px] font-semibold leading-tight",
-                k === "open" && n > 0 ? "text-flag-foreground" : "text-foreground",
-              )}
-            >
-              {n.toLocaleString("en-IN")}
-            </dd>
-          </div>
-        ))}
-      </dl>
-      {summary.unsettled > 0 && (
-        <p className="mt-2 border-t border-border pt-1.5 text-[12px] text-muted-foreground">
-          {t("banking.openNote")}
-        </p>
-      )}
-      {summary.model_error && (
-        <p
-          className="mt-2 rounded border border-flag/40 bg-flag-soft px-3 py-2 text-[12.5px] text-flag-foreground"
-          role="status"
-          data-testid="banking-model-error"
-        >
-          {t("banking.modelError", { error: summary.model_error })}
-        </p>
-      )}
-    </section>
+    <>
+      <RailPanel
+        title={t("banking.rail.title")}
+        subtitle={header.data?.borrower}
+        testId="banking-counts"
+      >
+        {s ? (
+          <>
+            <div className="mt-2 grid grid-cols-2 divide-x divide-border border-y border-border">
+              <div className="px-4 py-3" data-testid="banking-count-total">
+                <p className="tabular text-[22px] font-semibold leading-none">
+                  {s.total.toLocaleString("en-IN")}
+                </p>
+                <p className="mt-1.5 text-[11.5px] text-muted-foreground">
+                  {t("banking.counts.total")}
+                </p>
+              </div>
+              <div className="px-4 py-3" data-testid="banking-count-open">
+                <p
+                  className={cn(
+                    "tabular text-[22px] font-semibold leading-none",
+                    s.unsettled > 0 && "text-flag-foreground",
+                  )}
+                >
+                  {s.unsettled.toLocaleString("en-IN")}
+                </p>
+                <p className="mt-1.5 text-[11.5px] text-muted-foreground">
+                  {t("banking.counts.open")}
+                </p>
+              </div>
+            </div>
+            <dl className="divide-y divide-border">
+              {(
+                [
+                  ["rule", s.by_rule],
+                  ["model", s.by_model],
+                  ["person", s.by_person],
+                ] as const
+              ).map(([k, n]) => (
+                <div
+                  key={k}
+                  className="flex items-baseline justify-between gap-3 px-4 py-2"
+                  data-testid={`banking-count-${k}`}
+                >
+                  <dt className="text-[12px] text-muted-foreground">{t(`banking.counts.${k}`)}</dt>
+                  <dd className="tabular text-right text-[12.5px] text-foreground">{n}</dd>
+                </div>
+              ))}
+            </dl>
+            <RailRows
+              rows={[
+                { label: t("banking.rail.accounts"), value: s.accounts.length },
+                ...(months.length > 0
+                  ? [
+                      {
+                        label: t("banking.rail.period"),
+                        value: `${monthLabel(months[0]!.month)} – ${monthLabel(months[months.length - 1]!.month)}`,
+                      },
+                    ]
+                  : []),
+                {
+                  label: t("banking.rail.observations"),
+                  value: t("banking.rail.observationCounts", {
+                    concern: by("concern"),
+                    watch: by("watch"),
+                    info: by("info"),
+                  }),
+                },
+              ]}
+            />
+            {s.unsettled > 0 && (
+              <p className="border-t border-border px-4 py-2 text-[12px] text-muted-foreground">
+                {t("banking.openNote")}
+              </p>
+            )}
+            {s.model_error && (
+              <p
+                className="border-t border-flag/40 bg-flag-soft px-4 py-2 text-[12px] text-flag-foreground"
+                role="status"
+                data-testid="banking-model-error"
+              >
+                {t("banking.modelError", { error: s.model_error })}
+              </p>
+            )}
+          </>
+        ) : (
+          <p className="px-4 py-4 text-[12px] text-muted-foreground">{t("state.loading")}</p>
+        )}
+      </RailPanel>
+      {conduct.data && <CustomersRail conduct={conduct.data} />}
+    </>
   );
 }
 
@@ -344,10 +397,11 @@ function Group({
   );
 }
 
-function Customers({ conduct }: { conduct: BankConduct }) {
+/** The customers receipts came from, in the rail: a name and a share on each line. */
+function CustomersRail({ conduct }: { conduct: BankConduct }) {
   const top1 = conduct.customer_top1_pct;
   return (
-    <Block
+    <RailPanel
       title={t("banking.customers.title")}
       subtitle={
         top1 !== null && top1 !== undefined
@@ -357,40 +411,34 @@ function Customers({ conduct }: { conduct: BankConduct }) {
       testId="banking-customers"
     >
       {conduct.customers.length === 0 ? (
-        <p className="px-4 py-3 text-[13px] text-muted-foreground">{t("banking.customers.none")}</p>
+        <p className="px-4 py-3 text-[12.5px] text-muted-foreground">
+          {t("banking.customers.none")}
+        </p>
       ) : (
-        <table className="w-full text-[13px]">
-          <thead>
-            <tr className={TH}>
-              <th scope="col" className="px-3 py-1.5 text-left font-medium">
-                {t("banking.customers.party")}
-              </th>
-              <th scope="col" className={th}>
-                {t("banking.customers.amount")}
-              </th>
-              <th scope="col" className={th}>
-                {t("banking.customers.share")}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {conduct.customers.slice(0, 8).map((c) => (
-              <tr
-                key={c.party}
-                className="border-b border-border/60 last:border-b-0"
-                data-testid="banking-customer"
+        <dl className="mt-2 divide-y divide-border border-t border-border">
+          {conduct.customers.slice(0, 6).map((c) => (
+            <div
+              key={c.party}
+              className="flex items-baseline justify-between gap-3 px-4 py-1.5"
+              data-testid="banking-customer"
+            >
+              <dt
+                className="min-w-0 truncate text-[12.5px] font-medium text-foreground"
+                title={c.party}
               >
-                <th scope="row" className="px-3 py-1.5 text-left font-medium text-foreground">
-                  {c.party}
-                </th>
-                <td className={td}>{lakh(c.amount)}</td>
-                <td className={td}>{c.share_pct.toFixed(1)}%</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                {c.party}
+              </dt>
+              <dd className="tabular shrink-0 text-right text-[12.5px] text-foreground">
+                {lakh(c.amount)}
+                <span className="ml-1.5 text-[11.5px] text-muted-foreground">
+                  {c.share_pct.toFixed(1)}%
+                </span>
+              </dd>
+            </div>
+          ))}
+        </dl>
       )}
-    </Block>
+    </RailPanel>
   );
 }
 
@@ -434,13 +482,13 @@ function RoundTrips({ caseId, conduct }: { caseId: string; conduct: BankConduct 
                 </th>
                 <td className={td}>
                   {rupees(r.out_amount)}
-                  <span className="block text-[11.5px] text-muted-foreground">
+                  <span className="block whitespace-nowrap text-[11.5px] text-muted-foreground">
                     {formatDate(r.out_date)}
                   </span>
                 </td>
                 <td className={td}>
                   {rupees(r.in_amount)}
-                  <span className="block text-[11.5px] text-muted-foreground">
+                  <span className="block whitespace-nowrap text-[11.5px] text-muted-foreground">
                     {formatDate(r.in_date)}
                   </span>
                 </td>

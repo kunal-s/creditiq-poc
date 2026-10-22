@@ -1860,6 +1860,12 @@ banking:
     person: Manually classified
     open: Unclassified
   openNote: Unclassified credits are included in business inflow until classified.
+  rail:
+    title: Classification status
+    accounts: Accounts
+    period: Period covered
+    observations: Observations
+    observationCounts: "{concern} adverse · {watch} watch · {info} other"
   modelError: "Model classification could not be completed: {error}"
   severity:
     concern: Adverse
@@ -1894,7 +1900,7 @@ banking:
     subtitle: Receipts from customers, in descending order
     party: Customer
     amount: Receipts
-    share: Share of receipts
+    share: Share
     count: Entries
     top1: "Top customer: {pct}%"
     top5: "Top 5 customers: {pct}%"
@@ -1918,6 +1924,7 @@ banking:
   txn:
     title: Transaction Register
     subtitle: "{shown} of {total}"
+    legend: Model and manual classifications are tagged
     empty: No transaction matches.
     date: Date
     narration: Narration
@@ -1928,7 +1935,8 @@ banking:
       category: Category
       month: Month
       account: Account
-      search: Search narration or counterparty
+      search: Search
+      searchHint: Narration or counterparty
       all: All
       status: Show
       statusAll: All transactions

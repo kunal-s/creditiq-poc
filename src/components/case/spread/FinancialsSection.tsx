@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { AlertCircle, ArrowRight, Eye, FileText } from "lucide-react";
 import { useState } from "react";
 import type { CaseDetail, CrossVerificationView, Spread } from "@/api/types";
-import { BankingPanel } from "@/components/case/banking/BankingPanel";
+import { BankingPanel, BankingRail } from "@/components/case/banking/BankingPanel";
 import { RailPanel, RailRows, RailStats } from "@/components/common/RailPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { QueryView } from "@/components/common/States";
@@ -129,7 +129,9 @@ function FinancialsBody({
             {t("spreadPage.interim")}
           </p>
         )}
-        <PeriodPicker spread={spread} period={column.fy} onPick={setPeriod} />
+        {tab !== "banking" && (
+          <PeriodPicker spread={spread} period={column.fy} onPick={setPeriod} />
+        )}
         <TurnoverBanner caseId={caseId} board={board.data} />
         {/* One table at a time, to keep the section short; the year and the picked figure
             carry across the tabs, and a badge says what a tab holds that needs a look. */}
@@ -197,8 +199,14 @@ function FinancialsBody({
         <TrendNotes spread={spread} />
       </div>
       <aside className="order-first grid min-w-0 grid-cols-1 content-start gap-4 sm:grid-cols-2 xl:sticky xl:top-4 xl:order-none xl:grid-cols-1 xl:self-start">
-        <StatusPanel spread={spread} header={header.data} period={assessed} />
-        <SourcePanel caseId={caseId} picked={picked} />
+        {tab === "banking" ? (
+          <BankingRail caseId={caseId} />
+        ) : (
+          <>
+            <StatusPanel spread={spread} header={header.data} period={assessed} />
+            <SourcePanel caseId={caseId} picked={picked} />
+          </>
+        )}
       </aside>
     </div>
   );

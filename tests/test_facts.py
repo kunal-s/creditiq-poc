@@ -184,3 +184,22 @@ def test_facts_need_the_data_permission(client: TestClient, published_data_root:
     rm = sign_in(client, RM)
     case_id = make_case(client, rm, published_data_root)
     assert client.get(f"/api/cases/{case_id}/facts", headers=rm).status_code == 403
+
+
+def test_a_quarterly_filers_returns_make_up_the_years_gst_turnover(client: TestClient, published_data_root: Path):
+    """A return a quarter (QRMP) is one figure for three months: the year's turnover is the four returns' sum,
+    twelve months covered, and the quarter is never divided among its months."""
+    analyst = sign_in(client, ANALYST)
+    case_id = make_case(client, analyst, published_data_root)
+    for period, taxable in (("Apr-Jun 2025", 7_000_000), ("Jul-Sep 2025", 8_000_000), ("Oct-Dec 2025", 9_000_000),
+                            ("Jan-Mar 2026", 10_000_000)):
+        gstr(published_data_root, case_id, period, taxable)
+    fy = next(y for y in _facts(client, analyst, case_id)["turnover"] if y["fy"] == "FY 2025-26")
+    gst = next(f for f in fy["figures"] if f["source"] == "gst")
+    assert gst["value"] == 34_000_000 and gst["months_covered"] == 12 and gst["months_missing"] == []
+    # Half a year of returns says so rather than passing for a full year.
+    case_id = make_case(client, analyst, published_data_root, duplicate_override_reason="a second case for the same borrower")
+    gstr(published_data_root, case_id, "Apr-Jun 2025", 7_000_000)
+    gstr(published_data_root, case_id, "Jul-Sep 2025", 8_000_000)
+    gst = next(f for y in _facts(client, analyst, case_id)["turnover"] for f in y["figures"] if f["source"] == "gst")
+    assert gst["months_covered"] == 6 and gst["months_missing"][0].startswith("Oct")

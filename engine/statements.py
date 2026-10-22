@@ -27,6 +27,7 @@ class LinePart:
     sign: int
     value: float
     evidence: list[Evidence] = field(default_factory=list)
+    not_printed: bool = False
 
 
 @dataclass
@@ -37,6 +38,9 @@ class Line:
     field_ids: list[str] = field(default_factory=list)
     pending: bool = False
     """A cell it was read from is still waiting for review (F-17.2)."""
+    not_printed: bool = False
+    """The statement does not print this line; it stands as nil because the configuration allows that
+    (absent_is_nil), and the screens say so."""
     parts: list[LinePart] = field(default_factory=list)
     """For a derived line, the lines it was summed from, in the order configured; empty for a
     line the statement prints itself. The screens show the arithmetic from these."""
@@ -51,8 +55,22 @@ def _number(v) -> float | None:
         return None
 
 
+UNIT_SCALE = {"thousand": 1e3, "lakh": 1e5, "lac": 1e5, "crore": 1e7, "million": 1e6}
+
+
+def unit_scale(doc) -> float:
+    """The multiplier from the statement's printed unit ("All Amounts are in INR Thousands") to
+    rupees; 1 when it prints none."""
+    unit = doc.get("amount_unit")
+    if unit is None:
+        return 1.0
+    word = str(unit.value).strip().lower().rstrip("s")
+    return UNIT_SCALE.get(word, 1.0)
+
+
 def _find_all(doc, table: str, row_pattern: str, column: str, label_column: str = "particulars") -> list[tuple[float, object]]:
     rx = re.compile(row_pattern, re.IGNORECASE)
+    scale = unit_scale(doc)
     out = []
     for row in doc.rows(table):
         label = row.get(label_column)
@@ -61,7 +79,7 @@ def _find_all(doc, table: str, row_pattern: str, column: str, label_column: str 
         cell = row.get(column)
         number = _number(cell)
         if number is not None:
-            out.append((number, cell))
+            out.append((number * scale, cell))
     return out
 
 
@@ -100,6 +118,14 @@ def lines(doc, cfg: StatementsSection, *, column: str | None = None) -> dict[str
         found = _find(doc, spec.table, spec.row, spec.column or col, spec.label)
         if found:
             out[key] = _line(doc, *found)
+    for key in cfg.absent_is_nil:
+        spec = cfg.lines.get(key)
+        if key in out or not spec:
+            continue
+        rows = doc.rows(spec.table)
+        listed = any(re.search(spec.row, str(r[spec.label].value or "").strip(), re.IGNORECASE) for r in rows if spec.label in r)
+        if rows and not listed:   # a row that is there but unread is not absent
+            out[key] = Line(0.0, doc.evidence(), not_printed=True)
     for key, expression in cfg.derived.items():
         terms = _terms(expression)
         if all(name in out for _, name in terms):
@@ -109,7 +135,7 @@ def lines(doc, cfg: StatementsSection, *, column: str | None = None) -> dict[str
                 any(out[name].manual for _, name in terms),
                 [i for _, name in terms for i in out[name].field_ids],
                 any(out[name].pending for _, name in terms),
-                [LinePart(name, sign, out[name].value, out[name].evidence[:1]) for sign, name in terms],
+                parts=[LinePart(name, sign, out[name].value, out[name].evidence[:1], out[name].not_printed) for sign, name in terms],
             )
     return out
 

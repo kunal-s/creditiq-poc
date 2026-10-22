@@ -42,7 +42,7 @@ def parse_date(value: object) -> date | None:
     m = re.fullmatch(r"(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})", text)
     if m:
         return _safe_date(int(m[3]), int(m[2]), int(m[1]))
-    m = re.fullmatch(r"(\d{1,2})(?:st|nd|rd|th)?[\s-]+([A-Za-z]+)[\s,.-]+(\d{4})", text)
+    m = re.fullmatch(r"(\d{1,2})(?:st|nd|rd|th)?[\s-]+([A-Za-z]+)[\s,.-]+(\d{4})", text, re.IGNORECASE)
     if m and m[2].lower() in _MONTHS:
         return _safe_date(int(m[3]), _MONTHS[m[2].lower()], int(m[1]))
     m = re.fullmatch(r"([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})", text)

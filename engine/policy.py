@@ -59,6 +59,7 @@ INPUT_LABELS = {
     # Lines that appear only inside a derived figure's breakdown (F-20.2).
     "cash_and_bank_balances": "Cash and bank balances",
     "short_term_loans_and_advances": "Short-term loans and advances",
+    "other_current_assets": "Other current assets",
     "other_current_liabilities": "Other current liabilities",
     "short_term_provisions": "Short-term provisions",
     "current_assets": "Current assets",

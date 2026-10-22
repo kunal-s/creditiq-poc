@@ -8,12 +8,12 @@
 column: current_period
 
 lines:
-  revenue_from_operations: {table: profit_and_loss, row: '^(I\.\s*)?revenue from operations'}
-  other_income:            {table: profit_and_loss, row: '^(II\.\s*)?other income'}
+  revenue_from_operations: {table: profit_and_loss, row: '^([IVX]+\.?\s*)?revenue from operations'}
+  other_income:            {table: profit_and_loss, row: '^([IVX]+\.?\s*)?other income'}
   depreciation:            {table: profit_and_loss, row: '^depreciation'}
   finance_costs:           {table: profit_and_loss, row: '^finance costs?'}
-  profit_before_tax:       {table: profit_and_loss, row: '^(V\.\s*)?profit before tax'}
-  profit_after_tax:        {table: profit_and_loss, row: '^(VII\.\s*)?profit (for the (year|period)|after tax)'}
+  profit_before_tax:       {table: profit_and_loss, row: '^([IVX]+\.?\s*)?profit before tax'}
+  profit_after_tax:        {table: profit_and_loss, row: '^([IVX]+\.?\s*)?(profit\s*[/(]*\s*\(?loss\)?\s*for the (year|period)|profit (for the (year|period)|after tax))'}
   share_capital:           {table: balance_sheet, row: '^\(\w\)\s*share capital'}
   reserves_and_surplus:    {table: balance_sheet, row: '^\(\w\)\s*reserves and surplus'}
   long_term_borrowings:    {table: balance_sheet, row: '^\(\w\)\s*long-term borrowings'}
@@ -23,14 +23,18 @@ lines:
   short_term_provisions:   {table: balance_sheet, row: '^\(\w\)\s*short-term provisions'}
   inventories:             {table: balance_sheet, row: '^\(\w\)\s*inventories'}
   trade_receivables:       {table: balance_sheet, row: '^\(\w\)\s*trade receivables'}
-  cash_and_bank_balances:  {table: balance_sheet, row: '^\(\w\)\s*cash and bank balances'}
+  cash_and_bank_balances:  {table: balance_sheet, row: '^\(\w\)\s*cash and (bank balances|cash equivalents)'}
   short_term_loans_and_advances: {table: balance_sheet, row: '^\(\w\)\s*short-term loans and advances'}
+  other_current_assets:    {table: balance_sheet, row: '^\(\w\)\s*other current assets'}
+
+# Rows a statement may leave out when it has nothing to report; read as nil and marked not printed.
+absent_is_nil: [inventories, other_current_assets]
 
 derived:
   ebitda: profit_before_tax + finance_costs + depreciation
   net_worth: share_capital + reserves_and_surplus
   total_borrowings: long_term_borrowings + short_term_borrowings
-  current_assets: inventories + trade_receivables + cash_and_bank_balances + short_term_loans_and_advances
+  current_assets: inventories + trade_receivables + cash_and_bank_balances + short_term_loans_and_advances + other_current_assets
   current_liabilities: short_term_borrowings + trade_payables + other_current_liabilities + short_term_provisions
 
 # GST turnover from table 3.1 of each GSTR-3B: every matching row is summed.

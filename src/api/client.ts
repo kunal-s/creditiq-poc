@@ -1,5 +1,6 @@
 import type {
   AdjudicationRequest,
+  BankConduct,
   CamDataRequest,
   CamOverrideRequest,
   CamTemplate,
@@ -50,6 +51,10 @@ import type {
   SettingsPublished,
   SettingsPublishRequest,
   Spread,
+  TxnCategoryRequest,
+  TxnPage,
+  TxnRow,
+  TxnSummary,
   UploadResult,
   XvDecisionRequest,
   XvItem,
@@ -217,6 +222,24 @@ export const api = {
       body: JSON.stringify(body),
     }),
   caseSpread: (id: string) => request<Spread>(`/api/cases/${q(id)}/spread`),
+  /** The case's statement transactions, each filed under a category (the Banking view). */
+  caseTransactions: (id: string, filter: Record<string, string | number | boolean | undefined>) => {
+    const params = new URLSearchParams();
+    for (const [k, v] of Object.entries(filter))
+      if (v !== undefined && v !== "") params.set(k, String(v));
+    return request<TxnPage>(`/api/cases/${q(id)}/transactions?${params}`);
+  },
+  caseTransactionsSummary: (id: string) =>
+    request<TxnSummary>(`/api/cases/${q(id)}/transactions/summary`),
+  caseBankConduct: (id: string) => request<BankConduct>(`/api/cases/${q(id)}/transactions/conduct`),
+  /** A person files one transaction under a category, with the reason. */
+  categoriseTransaction: (id: string, txn: string, body: TxnCategoryRequest) =>
+    request<TxnRow>(`/api/cases/${q(id)}/transactions/${q(txn)}/category`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+  clearTransactionCategory: (id: string, txn: string) =>
+    request<TxnRow>(`/api/cases/${q(id)}/transactions/${q(txn)}/category`, { method: "DELETE" }),
   caseCam: (id: string) => request<Cam>(`/api/cases/${q(id)}/cam`),
   /** A CAM section in a person's words, or a copilot redraft a person keeps (F-23). */
   camWords: (id: string, sectionId: string, body: CamWordsRequest) =>

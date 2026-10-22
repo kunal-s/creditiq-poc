@@ -9107,6 +9107,33 @@
         "title": "TurnoverYear",
         "type": "object"
       },
+      "TxnCategoryRef": {
+        "properties": {
+          "direction": {
+            "enum": [
+              "credit",
+              "debit"
+            ],
+            "title": "Direction",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "direction"
+        ],
+        "title": "TxnCategoryRef",
+        "type": "object"
+      },
       "TxnCategoryRequest": {
         "properties": {
           "category": {
@@ -9430,6 +9457,13 @@
           "case_id": {
             "title": "Case Id",
             "type": "string"
+          },
+          "catalogue": {
+            "items": {
+              "$ref": "#/components/schemas/TxnCategoryRef"
+            },
+            "title": "Catalogue",
+            "type": "array"
           },
           "categories": {
             "items": {

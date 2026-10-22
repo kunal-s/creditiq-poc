@@ -41,6 +41,10 @@ import type {
   SettingsChanges,
   SettingsPublishRequest,
   Spread,
+  TxnCategoryRequest,
+  TxnRow,
+  TxnSummary,
+  BankConduct,
   StageProgress,
   UploadResult,
   XvDecisionRequest,
@@ -157,6 +161,9 @@ export class MockApi {
   facts = new Map<string, CaseFacts>([[KESTREL, FACTS]]);
   /** The spread per case; a case without one answers Kestrel's (F-22). */
   spreads = new Map<string, Spread>();
+  /** The classified bank transactions per case, and the conduct of the accounts; a case without any has none. */
+  transactions = new Map<string, TxnRow[]>();
+  conducts = new Map<string, BankConduct>();
   policy = new Map<string, PolicyAssessment>([
     [KESTREL, POLICY],
     [SAFFRON, SAFFRON_POLICY],
@@ -167,6 +174,62 @@ export class MockApi {
   comparisons = new Map<string, CaseComparison>();
   /** The CAM templates made beside the default (FRD decision C.4-12). */
   camTemplates: CamTemplate[] = [];
+  /** The transactions, narrowed as the engine narrows them (category, month, account, status, needs_review, q). */
+  txnList(caseId: string, p: URLSearchParams): Reply {
+    const limit = Number(p.get("limit") ?? 200);
+    const q = (p.get("q") ?? "").toLowerCase();
+    const items = (this.transactions.get(caseId) ?? []).filter(
+      (r) =>
+        (!p.get("category") || r.category === p.get("category")) &&
+        (!p.get("month") || (r.date ?? "").startsWith(p.get("month")!)) &&
+        (!p.get("account") || r.account === p.get("account")) &&
+        (p.get("status") !== "manual" || r.method === "manual") &&
+        (p.get("needs_review") !== "true" || r.needs_review) &&
+        (!q ||
+          r.narration.toLowerCase().includes(q) ||
+          (r.counterparty ?? "").toLowerCase().includes(q)),
+    );
+    return { json: { items: items.slice(0, limit), total: items.length, limit, offset: 0 } };
+  }
+
+  txnFile(caseId: string, txnId: string, body: TxnCategoryRequest): Reply {
+    const row = (this.transactions.get(caseId) ?? []).find((r) => r.txn_id === txnId);
+    if (!row) return refused(404, `no transaction '${txnId}' in this case`);
+    const cat = TXN_CATALOGUE.find((c) => c.id === body.category);
+    if (!cat) return refused(422, `unknown category '${body.category}'`);
+    if (cat.direction !== (row.credit ? "credit" : "debit"))
+      return refused(
+        422,
+        `a ${row.credit ? "credit" : "debit"} cannot be filed under ${cat.label.toLowerCase()}`,
+      );
+    Object.assign(row, {
+      category: cat.id,
+      category_label: cat.label,
+      method: "manual",
+      status: "matched",
+      confidence: 1,
+      needs_review: false,
+      candidates: [],
+      rule_id: null,
+    });
+    return { json: row };
+  }
+
+  txnClear(caseId: string, txnId: string): Reply {
+    const row = (this.transactions.get(caseId) ?? []).find((r) => r.txn_id === txnId);
+    if (!row || row.method !== "manual")
+      return refused(404, "that transaction has no decision to remove");
+    Object.assign(row, {
+      category: row.credit ? "other_credit" : "other_debit",
+      category_label: row.credit ? "Other credit" : "Other debit",
+      method: "rule",
+      status: "unmatched",
+      confidence: 0,
+      needs_review: true,
+    });
+    return { json: row };
+  }
+
   camTemplateList(): CamTemplates {
     const parts = [
       ["snapshot", "Proposal at a glance"],
@@ -459,6 +522,44 @@ export class MockApi {
         "POST",
         new RegExp(`^/api/cases/${id}/cross-verification/findings/${id}/query$`),
         (_req, m) => this.addFindingQuery(decodeURIComponent(m[1]!), decodeURIComponent(m[2]!)),
+      ],
+      [
+        "GET",
+        new RegExp(`^/api/cases/${id}/transactions/summary$`),
+        (_req, m) => ({
+          json: txnSummary(
+            decodeURIComponent(m[1]!),
+            this.transactions.get(decodeURIComponent(m[1]!)) ?? [],
+          ),
+        }),
+      ],
+      [
+        "GET",
+        new RegExp(`^/api/cases/${id}/transactions/conduct$`),
+        (_req, m) => ({
+          json:
+            this.conducts.get(decodeURIComponent(m[1]!)) ?? emptyConduct(decodeURIComponent(m[1]!)),
+        }),
+      ],
+      [
+        "GET",
+        new RegExp(`^/api/cases/${id}/transactions$`),
+        (req, m) => this.txnList(decodeURIComponent(m[1]!), new URL(req.url()).searchParams),
+      ],
+      [
+        "PUT",
+        new RegExp(`^/api/cases/${id}/transactions/${id}/category$`),
+        (req, m) =>
+          this.txnFile(
+            decodeURIComponent(m[1]!),
+            decodeURIComponent(m[2]!),
+            req.postDataJSON() as TxnCategoryRequest,
+          ),
+      ],
+      [
+        "DELETE",
+        new RegExp(`^/api/cases/${id}/transactions/${id}/category$`),
+        (_req, m) => this.txnClear(decodeURIComponent(m[1]!), decodeURIComponent(m[2]!)),
       ],
       [
         "GET",
@@ -1206,4 +1307,73 @@ export async function scrollingBoxes(scope: Locator): Promise<string[]> {
         return `${named?.getAttribute("data-testid") ?? el.tagName}${section ? ` in ${section}` : ""}: ${el.scrollWidth} in ${el.clientWidth}`;
       }),
   );
+}
+
+/** Every category a transaction may be filed under, as the engine publishes them. */
+export const TXN_CATALOGUE = [
+  { id: "customer_receipt", label: "Receipt from a customer", direction: "credit" },
+  { id: "loan_disbursal", label: "Loan disbursal or limit drawdown", direction: "credit" },
+  { id: "cash_deposit", label: "Cash deposit", direction: "credit" },
+  { id: "other_credit", label: "Other credit", direction: "credit" },
+  { id: "supplier_payment", label: "Payment to a supplier", direction: "debit" },
+  { id: "salary", label: "Salary and wages", direction: "debit" },
+  { id: "statutory_gst", label: "GST payment", direction: "debit" },
+  { id: "loan_emi", label: "Loan instalment", direction: "debit" },
+  { id: "bank_charges", label: "Bank charges and penalties", direction: "debit" },
+  { id: "other_debit", label: "Other debit", direction: "debit" },
+] as const satisfies readonly { id: string; label: string; direction: "credit" | "debit" }[];
+
+/** The summary the engine would give for these rows. */
+export function txnSummary(caseId: string, rows: TxnRow[]): TxnSummary {
+  const totals = new Map<string, { count: number; amount: number }>();
+  const months = new Map<string, { credits: number; debits: number; by: Record<string, number> }>();
+  for (const r of rows) {
+    const t = totals.get(r.category) ?? { count: 0, amount: 0 };
+    t.count += 1;
+    t.amount += r.credit || r.debit;
+    totals.set(r.category, t);
+    if (r.date) {
+      const m = months.get(r.date.slice(0, 7)) ?? { credits: 0, debits: 0, by: {} };
+      m[r.credit ? "credits" : "debits"] += r.credit || r.debit;
+      m.by[r.category] = (m.by[r.category] ?? 0) + (r.credit || r.debit);
+      months.set(r.date.slice(0, 7), m);
+    }
+  }
+  return {
+    case_id: caseId,
+    config_version: "mock",
+    total: rows.length,
+    by_rule: rows.filter((r) => r.method === "rule" && !r.needs_review).length,
+    by_model: rows.filter((r) => r.method === "model").length,
+    by_person: rows.filter((r) => r.method === "manual").length,
+    unsettled: rows.filter((r) => r.needs_review).length,
+    categories: TXN_CATALOGUE.filter((c) => totals.has(c.id)).map((c) => ({
+      category: c.id,
+      label: c.label,
+      direction: c.direction,
+      ...totals.get(c.id)!,
+    })),
+    months: [...months.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, m]) => ({ month, credits: m.credits, debits: m.debits, by_category: m.by })),
+    accounts: [...new Set(rows.map((r) => r.account))].sort(),
+    catalogue: TXN_CATALOGUE.map((c) => ({ ...c })),
+    model_error: null,
+  };
+}
+
+export function emptyConduct(caseId: string): BankConduct {
+  return {
+    case_id: caseId,
+    accounts: [],
+    months: [],
+    customers: [],
+    suppliers: [],
+    round_trips: [],
+    balances: [],
+    promoter_in: 0,
+    promoter_out: 0,
+    flags: [],
+    unsettled_count: 0,
+  };
 }

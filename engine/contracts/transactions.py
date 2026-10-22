@@ -59,6 +59,12 @@ class TxnCategoryTotal(BaseModel):
     amount: float
 
 
+class TxnCategoryRef(BaseModel):
+    id: str
+    label: str
+    direction: TxnDirection
+
+
 class TxnMonthTotal(BaseModel):
     month: str
     """YYYY-MM."""
@@ -79,6 +85,8 @@ class TxnSummary(BaseModel):
     categories: list[TxnCategoryTotal]
     months: list[TxnMonthTotal]
     accounts: list[str]
+    catalogue: list[TxnCategoryRef] = Field(default_factory=list)
+    """Every category a transaction may be filed under, in the configured order."""
     model_error: str | None = None
     """Why the last attempt to ask the model failed, if it did."""
 

@@ -4430,6 +4430,18 @@ export interface components {
       /** Fy End */
       fy_end: string;
     };
+    /** TxnCategoryRef */
+    TxnCategoryRef: {
+      /**
+       * Direction
+       * @enum {string}
+       */
+      direction: "credit" | "debit";
+      /** Id */
+      id: string;
+      /** Label */
+      label: string;
+    };
     /** TxnCategoryRequest */
     TxnCategoryRequest: {
       /** Category */
@@ -4556,6 +4568,8 @@ export interface components {
       by_rule: number;
       /** Case Id */
       case_id: string;
+      /** Catalogue */
+      catalogue?: components["schemas"]["TxnCategoryRef"][];
       /** Categories */
       categories: components["schemas"]["TxnCategoryTotal"][];
       /** Config Version */

@@ -84,6 +84,8 @@ def test_the_summary_totals_by_category_and_month(client: TestClient, published_
     assert [m["month"] for m in s["months"]] == ["2025-04", "2025-05"]
     assert s["months"][0]["credits"] == 2_900_000 and s["months"][0]["by_category"]["salary"] == 120_000
     assert s["accounts"] == ["Lotuscrest Bank ·1234"] and s["config_version"]
+    assert s["catalogue"][0] == {"id": "customer_receipt", "label": "Receipt from a customer", "direction": "credit"}
+    assert {c["direction"] for c in s["catalogue"]} == {"credit", "debit"}
 
 
 def test_a_row_the_rules_cannot_settle_raises_one_review_item_that_closes_when_it_is_settled(

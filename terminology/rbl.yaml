@@ -85,6 +85,8 @@ spreadPage:
     open: Take this to Cross-verification
     more: "(and {n} more)"
   tabs:
+    banking: Banking
+    bankingOpen: "{n} not yet filed"
     turnover: Turnover by year
     profit_and_loss: Profit and loss
     balance_sheet: Balance sheet
@@ -1844,3 +1846,113 @@ comparison:
     differ: "Differ ({n})"
     new: "New ({n})"
     missed: "Missed ({n})"
+
+# The Banking view of the Financials section: statement transactions filed under categories, and the conduct of the accounts.
+banking:
+  title: Banking
+  purpose: Every statement transaction filed under a category, how it was read, and what the accounts show.
+  emptyTitle: No bank transactions yet
+  emptyDescription: Transactions appear once a bank statement has been read.
+  counts:
+    total: Transactions
+    rule: Read by the rules
+    model: Read by the model
+    person: Filed by a person
+    open: Not yet filed
+  openNote: These are counted as they stand until they are filed.
+  modelError: "The model could not be asked just now: {error}"
+  severity:
+    concern: Concern
+    watch: Watch
+    info: Note
+  flags:
+    title: What the accounts show
+    subtitle: Questions for a person, each with the page it rests on. None is a decision.
+    none: Nothing in the accounts stands out against the configured thresholds.
+    more: "Show all {n}"
+    less: Show fewer
+    open: Open the page
+  months:
+    title: Month by month
+    subtitle: INR · all accounts together
+    month: Month
+    credits: Credits
+    business: Business credits
+    cash: Cash
+    returns: Returned
+    salary: Salary
+    promoters: To promoters
+  categories:
+    title: By category
+    subtitle: INR · credits and debits filed under each category
+    category: Category
+    total: Total
+    credits: Credits
+    debits: Debits
+  customers:
+    title: Customers
+    subtitle: Receipts from customers, largest first
+    party: Customer
+    amount: Received
+    share: Share
+    count: Entries
+    top1: "Largest: {pct}%"
+    top5: "Five largest: {pct}%"
+    none: No named customers among the receipts.
+  trips:
+    title: Money out and back
+    subtitle: Paid to and received from the same party within days, at about the same amount
+    none: None found.
+    row: "{party}: {out} paid on {outDate}, {in} received on {inDate}"
+  balances:
+    title: Balances by month
+    account: Account
+    month: Month
+    average: Average
+    minimum: Lowest
+    monthEnd: Month end
+    spike: Month-end peak
+  txn:
+    title: Transactions
+    subtitle: "{shown} of {total}"
+    empty: No transaction matches.
+    date: Date
+    narration: Narration
+    debit: Debit
+    credit: Credit
+    category: Category
+    filters:
+      category: Category
+      month: Month
+      account: Account
+      search: Search the narration or the party
+      all: All
+      status: Show
+      statusAll: Every transaction
+      statusOpen: Not yet filed
+      statusPerson: Filed by a person
+    method:
+      rule: Rule
+      model: Model
+      manual: Person
+    suggested: "Suggested: {label}"
+    reason: "Read: {reason}"
+    flag:
+      recurring: Recurring
+      round_amount: Round amount
+    more: Show more
+    page: Open the page
+    file: File under…
+    change: Change
+  file:
+    title: File this transaction
+    narration: Narration
+    category: Category
+    choose: Choose a category
+    reason: Reason
+    reasonHint: What you checked, at least three characters.
+    save: Save
+    cancel: Cancel
+    remove: Remove my decision
+    recorded: Filed.
+    removed: Decision removed.

@@ -20,7 +20,7 @@ from . import facts
 from .configstore import reader
 from .configstore.schema import TxnClassificationSection
 from .contracts import CaseDetail, Evidence, TxnMonthTotal, TxnPage, TxnRow, TxnSummary
-from .contracts.transactions import TxnCategoryTotal
+from .contracts.transactions import TxnCategoryRef, TxnCategoryTotal
 from .db import log_decision, transaction
 from .review_items import close_item, raise_item
 from .ingest_client import IngestError
@@ -306,6 +306,7 @@ def summary(conn: sqlite3.Connection, root: Path, case_id: str) -> TxnSummary:
         months=[TxnMonthTotal(month=m, credits=v["credits"], debits=v["debits"], by_category=dict(v["by"]))
                 for m, v in sorted(months.items())],
         accounts=sorted({r.account for r in rows}),
+        catalogue=[TxnCategoryRef(id=c.id, label=c.label, direction=c.direction) for c in cfg.categories],
         model_error=basis["model_error"] if basis else None,
     )
 

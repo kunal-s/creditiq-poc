@@ -167,7 +167,7 @@ test("Policy: three deviations and two norms that cannot be evaluated", async ()
 test("Financials: the spread has one audited year and says it is interim", async () => {
   await page.goto(`/appraisals/${caseId}/policy`);
   const financials = page.getByTestId("financials");
-  await expect(financials.getByTestId("spread-interim")).toBeVisible();
+  await expect(financials.getByTestId("spread-interim")).toHaveCount(0);
   await financials.getByTestId("financials-tab-profit_and_loss").click();
   await expect(financials.getByTestId("spread-row")).toHaveCount(10);
   // One audited year is on file: the row label column and one figure column.

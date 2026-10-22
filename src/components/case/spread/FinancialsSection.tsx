@@ -121,14 +121,6 @@ function FinancialsBody({
   return (
     <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_17rem]">
       <div className="min-w-0 space-y-4">
-        {spread.interim && (
-          <p
-            className="rounded border border-info/40 bg-info-soft px-3 py-2 text-[12px] text-info"
-            data-testid="spread-interim"
-          >
-            {t("spreadPage.interim")}
-          </p>
-        )}
         {tab !== "banking" && (
           <PeriodPicker spread={spread} period={column.fy} onPick={setPeriod} />
         )}

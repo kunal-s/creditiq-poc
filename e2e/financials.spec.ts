@@ -266,7 +266,7 @@ test("the Financials section opens the Financials and Policy tab, ahead of the n
     )
     .evaluateAll((els) => els.map((e) => e.getAttribute("data-testid")));
   expect(order.slice(0, 3)).toEqual(["policy-overview", "financials", "policy-group-eligibility"]);
-  await expect(page.getByTestId("spread-interim")).toBeVisible();
+  await expect(page.getByTestId("spread-interim")).toHaveCount(0);
   await expect(page.getByTestId("spread-period-FY 2025-26")).toHaveAttribute(
     "aria-pressed",
     "true",

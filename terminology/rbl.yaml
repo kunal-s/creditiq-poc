@@ -70,7 +70,6 @@ caseFlow:
 spreadPage:
   title: Financials
   purpose: The audited years laid out line by line, turnover from every source side by side, and the working-capital assessment; the norms below test the ratios. Every figure carries the document and page it was read from.
-  interim: This spread uses an interim layout. It will follow RBL's spread template, with an Excel export, when the template is available.
   emptyTitle: No spread yet
   emptyDescription: The spread is laid out once audited financial statements have been read.
   period: Period

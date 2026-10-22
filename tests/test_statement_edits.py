@@ -125,3 +125,13 @@ def test_the_policy_norms_follow_an_edit_and_say_so(client: TestClient, publishe
     liabilities = next(i for i in after["inputs"] if i["name"] == "current_liabilities")
     assert liabilities["relies_on_manual"] and liabilities["working"]["state"] == "derived"
     assert any(p["state"] == "edited" for p in liabilities["working"]["inputs"])
+
+
+def test_the_memo_says_which_figures_rest_on_an_edit(client: TestClient, published_data_root: Path):
+    analyst, case_id = _setup(client, published_data_root)
+    payables = _payables(client, analyst, case_id)
+    client.post(f"/api/cases/{case_id}/statement-edits", headers=analyst,
+                json={**payables["working"]["target"], "value": payables["value"] + 1_000_000, "reason": "a note adds to it"})
+    cam = client.get(f"/api/cases/{case_id}/cam", headers=analyst).json()
+    text = " ".join(b["paragraph"]["text"] for s in cam["sections"] for b in s["blocks"] if b.get("paragraph"))
+    assert "Trade payables for" in text and "a note adds to it" in text and "the statements give" in text

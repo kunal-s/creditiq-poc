@@ -9079,6 +9079,13 @@
             "title": "Case Id",
             "type": "string"
           },
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/SpreadCheck"
+            },
+            "title": "Checks",
+            "type": "array"
+          },
           "columns": {
             "items": {
               "$ref": "#/components/schemas/SpreadColumn"
@@ -9148,6 +9155,97 @@
           }
         },
         "title": "SpreadCell",
+        "type": "object"
+      },
+      "SpreadCheck": {
+        "description": "A statement checked against itself or against the next year's report (F-22.3): the balance sheet's two\ntotals, or a figure as one year's statements give it and as the following year's give it as its comparative.",
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "difference": {
+            "title": "Difference",
+            "type": "number"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "fy": {
+            "title": "Fy",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "balance",
+              "comparative"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "left": {
+            "title": "Left",
+            "type": "number"
+          },
+          "left_label": {
+            "title": "Left Label",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "outcome": {
+            "enum": [
+              "agrees",
+              "differs"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "right": {
+            "title": "Right",
+            "type": "number"
+          },
+          "right_label": {
+            "title": "Right Label",
+            "type": "string"
+          },
+          "tolerance": {
+            "title": "Tolerance",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "fy",
+          "label",
+          "outcome",
+          "left_label",
+          "left",
+          "right_label",
+          "right",
+          "difference",
+          "tolerance",
+          "detail"
+        ],
+        "title": "SpreadCheck",
         "type": "object"
       },
       "SpreadColumn": {

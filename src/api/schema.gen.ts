@@ -4412,6 +4412,8 @@ export interface components {
     Spread: {
       /** Case Id */
       case_id: string;
+      /** Checks */
+      checks?: components["schemas"]["SpreadCheck"][];
       /** Columns */
       columns: components["schemas"]["SpreadColumn"][];
       /**
@@ -4435,6 +4437,47 @@ export interface components {
       /** Value */
       value?: number | null;
       working?: components["schemas"]["CellWorking"] | null;
+    };
+    /**
+     * SpreadCheck
+     * @description A statement checked against itself or against the next year's report (F-22.3): the balance sheet's two
+     *     totals, or a figure as one year's statements give it and as the following year's give it as its comparative.
+     */
+    SpreadCheck: {
+      /** Detail */
+      detail: string;
+      /** Difference */
+      difference: number;
+      /** Evidence */
+      evidence?: components["schemas"]["Evidence"][];
+      /** Fy */
+      fy: string;
+      /** Id */
+      id: string;
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: "balance" | "comparative";
+      /** Label */
+      label: string;
+      /** Left */
+      left: number;
+      /** Left Label */
+      left_label: string;
+      /** Lines */
+      lines?: string[];
+      /**
+       * Outcome
+       * @enum {string}
+       */
+      outcome: "agrees" | "differs";
+      /** Right */
+      right: number;
+      /** Right Label */
+      right_label: string;
+      /** Tolerance */
+      tolerance: number;
     };
     /**
      * SpreadColumn

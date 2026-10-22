@@ -151,6 +151,29 @@ class WorkingCapitalAssessment(BaseModel):
     missing: list[str] = Field(default_factory=list)
 
 
+class SpreadCheck(BaseModel):
+    """A statement checked against itself or against the next year's report (F-22.3): the balance sheet's two
+    totals, or a figure as one year's statements give it and as the following year's give it as its comparative."""
+
+    id: str
+    kind: Literal["balance", "comparative"]
+    fy: str
+    """The year the check is about (for a comparative, the earlier year)."""
+    label: str
+    outcome: Literal["agrees", "differs"]
+    left_label: str
+    left: float
+    right_label: str
+    right: float
+    difference: float
+    tolerance: float
+    """The most the two may differ by and still agree: the rounding of the unit the statements print in."""
+    detail: str
+    evidence: list[Evidence] = Field(default_factory=list)
+    lines: list[str] = Field(default_factory=list)
+    """The statement lines it compares, for the screen to mark."""
+
+
 class Spread(BaseModel):
     case_id: str
     interim: bool = True
@@ -158,6 +181,7 @@ class Spread(BaseModel):
     columns: list[SpreadColumn]
     rows: list[SpreadRow]
     working_capital: WorkingCapitalAssessment
+    checks: list[SpreadCheck] = Field(default_factory=list)
 
 
 Severity = Literal["serious", "moderate", "mild"]

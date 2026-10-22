@@ -19,7 +19,7 @@ from pathlib import Path
 
 from . import facts as facts_module
 from . import policy as policy_module
-from . import workings
+from . import reconcile, workings
 from . import statements
 from .configstore import reader
 from .contracts import (
@@ -225,4 +225,5 @@ def build(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> Spread:
                               unit=ratio.unit, formula=ratio.formula,
                               cells=[_derived(norm.expression, lines, "ratio") for lines in lines_by_column]))
     return Spread(case_id=case.id, columns=columns, rows=rows,
-                  working_capital=_working_capital(root, case, columns, lines_by_column))
+                  working_capital=_working_capital(root, case, columns, lines_by_column),
+                  checks=reconcile.checks(columns, groups, cfg))

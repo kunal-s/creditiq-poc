@@ -1082,7 +1082,27 @@ class Draft:
         blocks += [_note(text) for text in dict.fromkeys(named)]
         if any(r[0].text == "DSCR" for r in table):
             blocks.append(_note(f"DSCR as assessed under the policy norms{self.see('policy')}."))
+        blocks += self.edited_figures()
         return blocks
+
+    def edited_figures(self) -> list[CamBlock]:
+        """A figure that rests on a person's edit of a statement line says so, with what the statement gives
+        and the reason, so a reader of the memo is never shown an edited figure as the document's own."""
+        notes = []
+        for row in self.spread.rows:
+            if row.kind != "line":
+                continue
+            for column, cell in zip(self.spread.columns, row.cells):
+                edit = cell.working.edit if cell.working else None
+                if edit is None:
+                    continue
+                scale = cell.working.source.scale if cell.working.source else 1.0
+                given = "no figure" if edit.original is None else inr(edit.original * scale)
+                notes.append(_paragraph(
+                    f"{row.label} for {column.fy} is {inr(edit.value * scale)}, as entered by {edit.edited_by} on "
+                    f"{edit.edited_at[:10]}; the statements give {given}. Reason: {edit.reason}",
+                    cell.evidence))
+        return notes
 
     def restatement(self, fy: str, earlier: str, own: dict[str, tuple[float | None, list[Evidence]]],
                     restated: dict[str, tuple[float, list[Evidence]]]) -> list[CamBlock]:

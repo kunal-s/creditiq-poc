@@ -53,6 +53,7 @@ source_modules =
     engine.review
     engine.review_items
     engine.spread
+    engine.reconcile
     engine.statement_edits
     engine.statements
     engine.workings
@@ -89,6 +90,7 @@ source_modules =
     engine.progress
     engine.review
     engine.spread
+    engine.reconcile
     engine.statement_edits
     engine.statements
     engine.workings

@@ -1,12 +1,14 @@
 import { TrendingDown, TrendingUp, Minus } from "lucide-react";
 import type { Spread } from "@/api/types";
 import { t } from "@/config/terminology";
-import { crore, lastChange, rowByKey } from "@/domain/spread";
+import { lastChange, rowByKey } from "@/domain/spread";
+import { money, useDisplayUnit } from "@/domain/units";
 import { cn } from "@/lib/utils";
 
 /** Two notes on how the latest year moved against the one before: turnover, and the
  * working-capital cycle. Each is the change between two spread figures, nothing more. */
 export function TrendNotes({ spread }: { spread: Spread }) {
+  const unit = useDisplayUnit();
   const turnover = lastChange(rowByKey(spread, "revenue_from_operations"), spread.columns);
   const cycle = lastChange(rowByKey(spread, "wc-cycle"), spread.columns);
   if (!turnover && !cycle) return null;
@@ -21,8 +23,8 @@ export function TrendNotes({ spread }: { spread: Spread }) {
             { pct: Math.abs(turnover.pct).toFixed(1), fy: turnover.to },
           )}
           body={t("spreadPage.trend.turnoverBody", {
-            before: crore(turnover.before),
-            after: crore(turnover.after),
+            before: money(turnover.before, unit),
+            after: money(turnover.after, unit),
             from: turnover.from,
             to: turnover.to,
           })}

@@ -14,6 +14,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from ..units import DEFAULT_UNIT, DisplayUnit
+
 # Provenance tag: where a value comes from. "provisional" marks an interim
 # value awaiting RBL's own artefact; "rbl_supplied" a value RBL supplied.
 Source = Literal["published_policy", "regulatory", "industry_standard", "provisional", "rbl_supplied"]
@@ -677,6 +679,9 @@ class StatementsSection(BaseModel):
     lines: dict[str, StatementLine]
     derived: dict[str, str] = Field(default_factory=dict)
     """Line key to an expression over other lines (summed from the lines it names)."""
+    display_unit: DisplayUnit = DEFAULT_UNIT
+    """The unit financial figures are written in on the screens, the memo and the exports. A version
+    published before this setting existed reads as crore, the unit the statement tables were headed in."""
     absent_is_nil: list[str] = Field(default_factory=list)
     """Lines a statement may leave out when it has nothing to report (inventories on a services company's
     balance sheet). Where the statement's table was read and the row is not on it, the line is 0 and marked

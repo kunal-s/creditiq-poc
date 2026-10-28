@@ -24,10 +24,13 @@ from .configstore.schema import (
     ApprovalMatrixSection,
     CrossChecksSection,
     PolicySection,
+    StatementsSection,
     TolerancesSection,
     cross_check,
 )
 from .contracts.admin import (
+    DisplayUnitOption,
+    EditableDisplay,
     EditableAuthority,
     EditableBand,
     EditableDeviation,
@@ -43,6 +46,7 @@ from .contracts.admin import (
     SettingsPreview,
     SettingsPublished,
 )
+from .units import UNITS, money
 from .util import now_iso
 
 NOTE_MIN = 3
@@ -66,6 +70,7 @@ def editable(root: Path) -> EditableSettings:
     policy = reader.load_policy(root)
     checks = reader.load_crosschecks(root)
     matrix = reader.load_approval_matrix(root)
+    statements = reader.load_statements(root)
     used_by: dict[str, list[str]] = {}
     for rule in checks.rules:
         if rule.tolerance:
@@ -98,6 +103,10 @@ def editable(root: Path) -> EditableSettings:
             deviations=[EditableDeviation(category=d.category, label=categories.get(d.category, d.category),
                                           levels_above=d.levels_above, at_least=d.at_least)
                         for d in matrix.deviations],
+        ),
+        display=EditableDisplay(
+            unit=statements.display_unit,
+            options=[DisplayUnitOption(id=u.id, label=u.label, example=money(4.2e7, u.id)) for u in UNITS.values()],  # type: ignore[arg-type]
         ),
     )
 
@@ -136,6 +145,7 @@ def _apply(root: Path, changes: SettingsChanges) -> tuple[dict[str, BaseModel], 
     policy = reader.load_policy(root).model_copy(deep=True)
     checks = reader.load_crosschecks(root).model_copy(deep=True)
     matrix = reader.load_approval_matrix(root).model_copy(deep=True)
+    statements = reader.load_statements(root).model_copy(deep=True)
     out: list[SettingChange] = []
     problems: list[str] = []
     _tolerances(tolerances, changes, out, problems)
@@ -144,6 +154,7 @@ def _apply(root: Path, changes: SettingsChanges) -> tuple[dict[str, BaseModel], 
     _rules(checks, changes, out, problems)
     _bands(matrix, changes, out, problems)
     _deviations(matrix, policy, changes, out, problems)
+    _display(statements, changes, out, problems)
     if problems:
         return {}, out, problems
     if not out:
@@ -152,7 +163,8 @@ def _apply(root: Path, changes: SettingsChanges) -> tuple[dict[str, BaseModel], 
     try:
         for name, section, model in (("tolerances", tolerances, TolerancesSection), ("policy", policy, PolicySection),
                                      ("crosschecks", checks, CrossChecksSection),
-                                     ("approval_matrix", matrix, ApprovalMatrixSection)):
+                                     ("approval_matrix", matrix, ApprovalMatrixSection),
+                                     ("statements", statements, StatementsSection)):
             if any(c.section == name for c in out):
                 edited[name] = model.model_validate(section.model_dump(mode="json"))
     except ValidationError as e:
@@ -321,3 +333,15 @@ def _deviations(matrix: ApprovalMatrixSection, policy: PolicySection, changes: S
                 _change(out, "approval_matrix", category, label, "at_least",
                         authorities.get(d.at_least) if d.at_least else None, authorities.get(after) if after else None)
                 d.at_least = after
+
+
+def _display(statements: StatementsSection, changes: SettingsChanges, out: list, problems: list) -> None:
+    after = changes.display_unit
+    if after is None or after == statements.display_unit:
+        return
+    if after not in UNITS:
+        problems.append(f"There is no unit {after!r} for financial figures.")
+        return
+    _change(out, "statements", "display_unit", "Unit for financial figures", "display_unit",
+            UNITS[statements.display_unit].label, UNITS[after].label)
+    statements.display_unit = after

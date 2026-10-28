@@ -32,6 +32,8 @@ export const fieldKey = {
     `bands:${product}:${index}:${field}`,
   deviation: (category: string, field: "levels_above" | "at_least") =>
     `deviations:${category}:${field}`,
+  /** The unit financial figures are written in. */
+  displayUnit: "display:unit",
 };
 
 const CRORE = 1e7;
@@ -72,6 +74,7 @@ export function fieldsOf(s: EditableSettings): Map<string, FieldSpec> {
       published: d.at_least ?? "",
     });
   }
+  fields.set(fieldKey.displayUnit, { kind: "choice", published: s.display.unit });
   return fields;
 }
 
@@ -150,7 +153,8 @@ export function changesOf(s: EditableSettings, draft: Draft): SettingsChanges {
   const num = (key: string) => edited(key) as number | undefined;
   const flag = (key: string) => edited(key) as boolean | undefined;
   const choice = (key: string) => edited(key) as string | undefined;
-  const out: Required<SettingsChanges> = {
+  const out: Required<Omit<SettingsChanges, "display_unit">> &
+    Pick<SettingsChanges, "display_unit"> = {
     tolerances: {},
     ratios: {},
     norms: {},
@@ -206,6 +210,8 @@ export function changesOf(s: EditableSettings, draft: Draft): SettingsChanges {
       ...(atLeast !== undefined && { at_least: atLeast }),
     };
   }
+  const unit = choice(fieldKey.displayUnit) as EditableSettings["display"]["unit"] | undefined;
+  if (unit !== undefined) out.display_unit = unit;
   return out;
 }
 

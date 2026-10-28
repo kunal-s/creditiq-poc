@@ -105,6 +105,7 @@ from .contracts import (
     LoginRequest,
     LoginResponse,
     LogicalDocument,
+    DisplayUnit,
     Meta,
     QueryItem,
     Readiness,
@@ -122,6 +123,7 @@ from .contracts import (
 )
 from .deps import bearer_token, current_user, get_conn, require
 from .store import data_root
+from .units import UNITS
 from .util import now_iso
 
 # Keys from git-ignored files (workflow/private/), where the environment does not carry them.
@@ -1121,6 +1123,14 @@ def admin_settings_publish(
         raise HTTPException(status_code=422, detail={"problems": e.problems}) from e
     except configstore_reader.NoPublishedConfig as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
+
+
+@app.get("/api/config/display-unit", response_model=DisplayUnit)
+def config_display_unit(_: dict = Depends(current_user)):
+    """The unit financial figures are written in (config/statements.yaml)."""
+    unit = _config(configstore_reader.load_statements).display_unit
+    spec = UNITS[unit]
+    return {"unit": unit, "label": spec.label, "divisor": spec.divisor, "decimals": spec.decimals, "suffix": spec.suffix}
 
 
 @app.get("/api/config/policy", response_model=PolicySection)

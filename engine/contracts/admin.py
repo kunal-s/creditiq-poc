@@ -51,7 +51,7 @@ class AuditPage(BaseModel):
 
 # --- Settings an Administrator edits on the screen (F-00.6) ---
 
-SettingsSection = Literal["tolerances", "policy", "crosschecks", "approval_matrix"]
+SettingsSection = Literal["tolerances", "policy", "crosschecks", "approval_matrix", "statements"]
 Severity = Literal["serious", "moderate", "mild"]
 SettingValue = float | int | bool | str | None
 
@@ -132,6 +132,20 @@ class EditableMatrix(BaseModel):
     deviations: list[EditableDeviation]
 
 
+class DisplayUnitOption(BaseModel):
+    id: Literal["rupee", "thousand", "lakh", "crore"]
+    label: str
+    example: str
+    """A figure of 4.2 crore written in the unit."""
+
+
+class EditableDisplay(BaseModel):
+    """The unit financial figures are written in."""
+
+    unit: Literal["rupee", "thousand", "lakh", "crore"]
+    options: list[DisplayUnitOption]
+
+
 class EditableSettings(BaseModel):
     """What the Administration screen edits, as the published version has it."""
 
@@ -144,6 +158,7 @@ class EditableSettings(BaseModel):
     norms: list[EditableNorm]
     rules: list[EditableRule]
     matrix: EditableMatrix
+    display: EditableDisplay
 
 
 class RatioChange(BaseModel):
@@ -174,6 +189,8 @@ class SettingsChanges(BaseModel):
     bands: dict[str, list[EditableBand]] = Field(default_factory=dict)
     """Product key to its bands, as many as it has now, lowest first."""
     deviations: dict[str, DeviationChange] = Field(default_factory=dict)
+    display_unit: Literal["rupee", "thousand", "lakh", "crore"] | None = None
+    """The unit financial figures are written in; left out, it stays as published."""
 
 
 class SettingsPublishRequest(BaseModel):
@@ -191,7 +208,7 @@ class SettingChange(BaseModel):
     label: str
     field: str
     """value, acceptable, marginal, threshold, enabled, severity, blocking, up_to_inr, authority,
-    levels_above or at_least."""
+    levels_above, at_least or display_unit."""
     unit: str | None = None
     before: SettingValue
     after: SettingValue

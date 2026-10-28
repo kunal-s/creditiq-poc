@@ -5,6 +5,7 @@ import type { ApprovingAuthority, PolicyAssessment } from "@/api/types";
 import { QueryView } from "@/components/common/States";
 import { FinancialsSection } from "@/components/case/spread/FinancialsSection";
 import { EmptyState } from "@/components/shell/EmptyState";
+import { useDisplayUnit } from "@/domain/units";
 import { t } from "@/config/terminology";
 import { useCrossVerification } from "@/domain/crossVerification";
 import { useFacts, useSpread } from "@/domain/findings";
@@ -85,6 +86,7 @@ export function PolicyPage({
   /** The norm a link names, to open the page at. */
   norm?: string | undefined;
 }) {
+  useDisplayUnit(); // financial figures are drawn again when the unit is published anew
   const policy = usePolicy(caseId);
   const authority = useApprovingAuthority(caseId);
   return (

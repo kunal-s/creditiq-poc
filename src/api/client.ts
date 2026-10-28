@@ -36,6 +36,7 @@ import type {
   Finding,
   LoginResponse,
   LogicalDocument,
+  DisplayUnit,
   Meta,
   OutputFormat,
   Party,
@@ -158,6 +159,7 @@ export const api = {
   session: () => request<SessionUser>("/api/auth/session"),
   logout: () => request<undefined>("/api/auth/logout", { method: "POST" }),
   meta: () => request<Meta>("/api/meta"),
+  displayUnit: () => request<DisplayUnit>("/api/config/display-unit"),
 
   listCases: () => request<CaseSummary[]>("/api/cases"),
   getCase: (id: string) => request<CaseDetail>(`/api/cases/${q(id)}`),

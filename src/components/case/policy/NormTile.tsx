@@ -7,6 +7,7 @@ import { Chip } from "@/components/common/Panel";
 import { useDocViewer } from "@/components/docviewer/DocViewer";
 import { t } from "@/config/terminology";
 import { actualText, inputLabel, inputValue, normElementId } from "@/domain/policy";
+import { useDisplayUnit } from "@/domain/units";
 import { cn } from "@/lib/utils";
 import { NormWorking } from "./NormWorking";
 import { OUTCOME_TEXT } from "./styles";
@@ -217,6 +218,7 @@ export function NormDetail({
   onClose: () => void;
 }) {
   const viewer = useDocViewer();
+  useDisplayUnit();
   const inputs = norm.outcome !== "not_applicable" ? (norm.inputs ?? []) : [];
   return (
     <div
@@ -263,10 +265,10 @@ export function NormDetail({
                     }
                     className="tabular font-medium text-primary underline decoration-dotted underline-offset-2"
                   >
-                    {inputValue(input.name, input.value)}
+                    {inputValue(input, input.value)}
                   </button>
                 ) : (
-                  <span className="tabular font-medium">{inputValue(input.name, input.value)}</span>
+                  <span className="tabular font-medium">{inputValue(input, input.value)}</span>
                 )}
                 <InputBasis caseId={caseId} input={input} />
                 {input.relies_on_manual && <Chip tone="flag">{t("crossCheck.manual")}</Chip>}

@@ -968,6 +968,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/config/display-unit": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Config Display Unit
+     * @description The unit financial figures are written in (config/statements.yaml).
+     */
+    get: operations["config_display_unit_api_config_display_unit_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/config/document-types": {
     parameters: {
       query?: never;
@@ -2607,6 +2627,37 @@ export interface components {
       /** Rolelabel */
       roleLabel: string;
     };
+    /**
+     * DisplayUnit
+     * @description The unit financial figures are written in, from the published configuration.
+     */
+    DisplayUnit: {
+      /** Decimals */
+      decimals: number;
+      /** Divisor */
+      divisor: number;
+      /** Label */
+      label: string;
+      /** Suffix */
+      suffix: string;
+      /**
+       * Unit
+       * @enum {string}
+       */
+      unit: "rupee" | "thousand" | "lakh" | "crore";
+    };
+    /** DisplayUnitOption */
+    DisplayUnitOption: {
+      /** Example */
+      example: string;
+      /**
+       * Id
+       * @enum {string}
+       */
+      id: "rupee" | "thousand" | "lakh" | "crore";
+      /** Label */
+      label: string;
+    };
     /** DocumentTypeDef */
     DocumentTypeDef: {
       /** Description */
@@ -2699,6 +2750,19 @@ export interface components {
       label: string;
       /** Levels Above */
       levels_above: number;
+    };
+    /**
+     * EditableDisplay
+     * @description The unit financial figures are written in.
+     */
+    EditableDisplay: {
+      /** Options */
+      options: components["schemas"]["DisplayUnitOption"][];
+      /**
+       * Unit
+       * @enum {string}
+       */
+      unit: "rupee" | "thousand" | "lakh" | "crore";
     };
     /** EditableMatrix */
     EditableMatrix: {
@@ -2795,6 +2859,7 @@ export interface components {
     EditableSettings: {
       /** Author */
       author: string;
+      display: components["schemas"]["EditableDisplay"];
       matrix: components["schemas"]["EditableMatrix"];
       /** Norms */
       norms: components["schemas"]["EditableNorm"][];
@@ -3432,6 +3497,11 @@ export interface components {
        * @default false
        */
       relies_on_manual: boolean;
+      /**
+       * Statement
+       * @default false
+       */
+      statement: boolean;
       /** Value */
       value: number | null;
       working?: components["schemas"]["CellWorking"] | null;
@@ -4297,7 +4367,7 @@ export interface components {
        * Section
        * @enum {string}
        */
-      section: "tolerances" | "policy" | "crosschecks" | "approval_matrix";
+      section: "tolerances" | "policy" | "crosschecks" | "approval_matrix" | "statements";
       /** Unit */
       unit?: string | null;
     };
@@ -4314,6 +4384,8 @@ export interface components {
       deviations?: {
         [key: string]: components["schemas"]["DeviationChange"];
       };
+      /** Display Unit */
+      display_unit?: ("rupee" | "thousand" | "lakh" | "crore") | null;
       /** Norms */
       norms?: {
         [key: string]: number;
@@ -6924,6 +6996,37 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ChecklistTaxonomySection"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  config_display_unit_api_config_display_unit_get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DisplayUnit"];
         };
       };
       /** @description Validation Error */

@@ -26,6 +26,7 @@ from .configstore import reader
 from .configstore.schema import PolicyNorm, PolicyRatio, unsupported_nodes
 from .contracts import (CaseDetail, Evidence, FacilityFact, NormComponent, NormInput, NormResult, Obligation, PolicyAssessment,
                         PolicyCounts, PolicyGroup)
+from .units import DEFAULT_UNIT, money
 from .util import parse_date
 
 WORKING_CAPITAL = {"cash_credit", "overdraft", "wcdl", "packing_credit", "post_shipment"}
@@ -80,6 +81,8 @@ INPUT_LABELS = {
 class Inputs:
     values: dict[str, NormInput] = field(default_factory=dict)
     period: str | None = None
+    display_unit: str = DEFAULT_UNIT
+    """The unit rupee figures are written in (config/statements.yaml)."""
 
     def put(self, name: str, value: float | None, evidence: list[Evidence] | None = None, manual: bool = False,
             pending: bool = False, basis: str = "document", refs: list[str] | None = None,
@@ -88,7 +91,8 @@ class Inputs:
             return
         self.values[name] = NormInput(name=name, label=INPUT_LABELS[name], value=float(value), evidence=evidence or [],
                                       relies_on_manual=manual, awaiting_review=pending, basis=basis,  # type: ignore[arg-type]
-                                      refs=refs or [], components=components or [], working=working)
+                                      refs=refs or [], components=components or [], working=working,
+                                      statement=name in FINANCIAL_INPUTS)
 
 
 def number(v: facts_module.Value | None) -> float | None:
@@ -166,6 +170,7 @@ def gather(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> Inputs:
 
     # The latest audited statements, and how many years are on file.
     cfg = reader.load_statements(root)
+    inputs.display_unit = cfg.display_unit
     audited = []
     for d in by_type("audited_financial_statements"):
         end = statements.period_end(d)
@@ -313,7 +318,7 @@ def _counted(text: str, word: str) -> str:
     return f"{text} {word}" if text.lstrip("-") == "1" else f"{text} {word}s"
 
 
-def unit_text(value: float, unit: str | None, extra: int = 0) -> str:
+def unit_text(value: float, unit: str | None, extra: int = 0, display_unit: str = DEFAULT_UNIT) -> str:
     if unit == "x":
         return f"{_fixed(value, 2 + extra)}x"
     if unit == "%":
@@ -328,7 +333,7 @@ def unit_text(value: float, unit: str | None, extra: int = 0) -> str:
         parts = ([_counted(str(years), "year")] if years else []) + ([_counted(str(months), "month")] if months else [])
         return " ".join(parts) or "0 years"
     if unit == "inr":
-        return facts_module.inr(value)
+        return money(value, display_unit)
     if unit == "rank":
         return f"rank {value:g}"
     return f"{value:g}"
@@ -337,26 +342,26 @@ def unit_text(value: float, unit: str | None, extra: int = 0) -> str:
 _DECIMALS = {"x": 2, "%": 1, "days": 0}
 
 
-def actual_text(value: float, unit: str | None, threshold: float, outcome: str) -> str:
+def actual_text(value: float, unit: str | None, threshold: float, outcome: str, display_unit: str = DEFAULT_UNIT) -> str:
     """The actual as written; a deviation never reads the same as its norm (20.04% against at
     most 20%, never 20.0%): decimals are added while the two still round to the same number."""
     if outcome != "deviation" or unit not in _DECIMALS:
-        return unit_text(value, unit)
+        return unit_text(value, unit, display_unit=display_unit)
     base, extra = _DECIMALS[unit], 0
     # Up to the 9 decimals the outcome is decided at, so even the smallest deviation shows.
     while base + extra < 9 and round(value, base + extra) == round(threshold, base + extra):
         extra += 1
-    return unit_text(value, unit, extra)
+    return unit_text(value, unit, extra, display_unit)
 
 
-def required_text(kind: str, threshold: float, unit: str | None) -> str:
+def required_text(kind: str, threshold: float, unit: str | None, display_unit: str = DEFAULT_UNIT) -> str:
     """The norm as written: "at least 1.20x". A rupee figure that must be positive, a profit that must
     not be a loss and a count that must be nil read in words, never "at least INR 1" or "at most 0"."""
     if unit == "inr" and kind == "min" and threshold in (0, 1):
         return "positive" if threshold == 1 else "no loss"
     if unit == "count" and kind == "max" and threshold == 0:
         return "none"
-    return f"{'at least' if kind == 'min' else 'at most'} {unit_text(threshold, unit)}"
+    return f"{'at least' if kind == 'min' else 'at most'} {unit_text(threshold, unit, display_unit=display_unit)}"
 
 
 def _applies(norm: PolicyNorm, case: CaseDetail, inputs: Inputs, wc_limit: float) -> bool:
@@ -380,16 +385,17 @@ def evaluate(norm: PolicyNorm, ratio: PolicyRatio | None, case: CaseDetail, inpu
     unit = norm.unit or (ratio.unit if ratio else None)
     kind = norm.kind or (ratio.kind if ratio else "min")
     threshold = norm.threshold if norm.threshold is not None else (ratio.acceptable if ratio else 0.0)
-    required = required_text(kind, threshold, unit)
+    shown = inputs.display_unit
+    required = required_text(kind, threshold, unit, shown)
     status = norm.status or (ratio.status if ratio else None)
     result = NormResult(
         id=norm.id, family=norm.family, label=label, formula=words(norm.expression),
         definition=ratio.formula if ratio else None, source=norm.source or (ratio.source if ratio else None),
-        required=required, comparator=kind, threshold_text=unit_text(threshold, unit),
+        required=required, comparator=kind, threshold_text=unit_text(threshold, unit, display_unit=shown),
         unit=unit, outcome="not_applicable", category=norm.category,
         category_label=categories.get(norm.category, norm.category), note=norm.note or (ratio.note if ratio else None),
         provisional=status == "provisional",
-        marginal_text=unit_text(ratio.marginal, unit) if ratio else None,
+        marginal_text=unit_text(ratio.marginal, unit, display_unit=shown) if ratio else None,
         ratio=ratio.key if ratio else None, threshold=float(threshold) if ratio else None,
         marginal=float(ratio.marginal) if ratio else None,
     )
@@ -437,7 +443,7 @@ def evaluate(norm: PolicyNorm, ratio: PolicyRatio | None, case: CaseDetail, inpu
     value = round(actual, 9)
     ok = value >= threshold if kind == "min" else value <= threshold
     result.outcome = "pass" if ok else "deviation"
-    result.actual_text = actual_text(actual, unit, threshold, result.outcome)
+    result.actual_text = actual_text(actual, unit, threshold, result.outcome, shown)
     if ratio:
         result.band = band(value, kind, ok, ratio.marginal)
     return result

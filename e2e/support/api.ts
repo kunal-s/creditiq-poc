@@ -84,6 +84,7 @@ import {
   SAFFRON,
   SPREAD,
   SAFFRON_CHECKLIST,
+  DISPLAY_UNITS,
   SETTINGS,
   TAXONOMY,
   XV_DECIDED_AT,
@@ -413,6 +414,14 @@ export class MockApi {
       ],
       ["POST", /^\/api\/auth\/logout$/, () => ({ status: 204 })],
       ["GET", /^\/api\/meta$/, () => ({ json: META })],
+      [
+        "GET",
+        /^\/api\/config\/display-unit$/,
+        () => {
+          const spec = DISPLAY_UNITS[this.settings.display.unit];
+          return { json: { unit: this.settings.display.unit, ...spec } };
+        },
+      ],
       ["GET", /^\/api\/config\/document-types$/, () => ({ json: this.documentTypes })],
       ["GET", /^\/api\/config\/checklist-taxonomy$/, () => ({ json: TAXONOMY })],
       ["GET", /^\/api\/config\/policy$/, () => ({ json: POLICY_CONFIG })],
@@ -914,6 +923,18 @@ export class MockApi {
           d.at_least = after;
         }
       }
+    }
+    if (body.display_unit && body.display_unit !== next.display.unit) {
+      const label = (id: string) => next.display.options.find((o) => o.id === id)?.label ?? id;
+      add(
+        "statements",
+        "display_unit",
+        "Unit for financial figures",
+        "display_unit",
+        label(next.display.unit),
+        label(body.display_unit),
+      );
+      next.display.unit = body.display_unit;
     }
     problems.push(...this.settingsProblems);
     if (problems.length === 0 && changes.length === 0) problems.push("Nothing has changed.");

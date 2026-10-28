@@ -9,13 +9,13 @@ import type {
 import { t } from "@/config/terminology";
 import {
   cellText,
-  crore,
   figureFor,
   figureVerdict,
   rowsOf,
   turnoverSources,
   type FigureVerdict,
 } from "@/domain/spread";
+import { inUnit, unitHeading, useDisplayUnit } from "@/domain/units";
 import { cn } from "@/lib/utils";
 
 /** A figure picked for the source panel: what it is, for which year, and where it was read. */
@@ -165,12 +165,13 @@ export function TurnoverByYear({
   picked: string | null;
   onPick: (p: Picked) => void;
 }) {
+  const unit = useDisplayUnit();
   const sources = turnoverSources(years);
   if (sources.length === 0) return null;
   return (
     <Card
       title={t("spreadPage.turnover.title")}
-      subtitle={t("spreadPage.turnover.subtitle")}
+      subtitle={t("spreadPage.turnover.subtitle", { unit: unitHeading(unit) })}
       testId="spread-turnover"
     >
       <div className="relative overflow-x-auto">
@@ -218,8 +219,8 @@ export function TurnoverByYear({
                               id,
                               label,
                               fy: y.fy,
-                              text: crore(f.value),
-                              unit: t("spreadPage.unit.crore"),
+                              text: inUnit(f.value, unit),
+                              unit: unitHeading(unit),
                               evidence: f.evidence ?? [],
                               manual: f.relies_on_manual,
                             }}
@@ -284,6 +285,7 @@ export function StatementTable({
   picked: string | null;
   onPick: (p: Picked) => void;
 }) {
+  const unit = useDisplayUnit();
   const rows = rowsOf(spread, section);
   if (rows.length === 0) return null;
   const years = spread.columns.map((c) => c.fy);
@@ -293,7 +295,7 @@ export function StatementTable({
   return (
     <Card
       title={t(`spreadPage.statement.${section}.title`)}
-      subtitle={t(`spreadPage.statement.${section}.subtitle`)}
+      subtitle={t(`spreadPage.statement.${section}.subtitle`, { unit: unitHeading(unit) })}
       testId={`spread-${section}`}
     >
       <div className="relative overflow-x-auto">
@@ -355,6 +357,7 @@ function StatementRow({
   picked: string | null;
   onPick: (p: Picked) => void;
 }) {
+  const unit = useDisplayUnit();
   const strong = row.kind === "derived";
   return (
     <tr data-testid="spread-row" data-row={row.key}>
@@ -382,7 +385,7 @@ function StatementRow({
                 label: row.label,
                 fy,
                 text: cellText(cell.value, row.unit),
-                unit: row.unit === "inr" ? t("spreadPage.unit.crore") : "",
+                unit: row.unit === "inr" ? unitHeading(unit) : "",
                 evidence: cell.evidence ?? [],
                 manual: cell.relies_on_manual,
                 working: cell.working ?? null,

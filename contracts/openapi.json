@@ -4039,6 +4039,75 @@
         "title": "DirectoryUser",
         "type": "object"
       },
+      "DisplayUnit": {
+        "description": "The unit financial figures are written in, from the published configuration.",
+        "properties": {
+          "decimals": {
+            "title": "Decimals",
+            "type": "integer"
+          },
+          "divisor": {
+            "title": "Divisor",
+            "type": "number"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "suffix": {
+            "title": "Suffix",
+            "type": "string"
+          },
+          "unit": {
+            "enum": [
+              "rupee",
+              "thousand",
+              "lakh",
+              "crore"
+            ],
+            "title": "Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "unit",
+          "label",
+          "divisor",
+          "decimals",
+          "suffix"
+        ],
+        "title": "DisplayUnit",
+        "type": "object"
+      },
+      "DisplayUnitOption": {
+        "properties": {
+          "example": {
+            "title": "Example",
+            "type": "string"
+          },
+          "id": {
+            "enum": [
+              "rupee",
+              "thousand",
+              "lakh",
+              "crore"
+            ],
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "example"
+        ],
+        "title": "DisplayUnitOption",
+        "type": "object"
+      },
       "DocumentTypeDef": {
         "properties": {
           "description": {
@@ -4259,6 +4328,34 @@
           "at_least"
         ],
         "title": "EditableDeviation",
+        "type": "object"
+      },
+      "EditableDisplay": {
+        "description": "The unit financial figures are written in.",
+        "properties": {
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/DisplayUnitOption"
+            },
+            "title": "Options",
+            "type": "array"
+          },
+          "unit": {
+            "enum": [
+              "rupee",
+              "thousand",
+              "lakh",
+              "crore"
+            ],
+            "title": "Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "unit",
+          "options"
+        ],
+        "title": "EditableDisplay",
         "type": "object"
       },
       "EditableMatrix": {
@@ -4495,6 +4592,9 @@
             "title": "Author",
             "type": "string"
           },
+          "display": {
+            "$ref": "#/components/schemas/EditableDisplay"
+          },
           "matrix": {
             "$ref": "#/components/schemas/EditableMatrix"
           },
@@ -4552,7 +4652,8 @@
           "ratios",
           "norms",
           "rules",
-          "matrix"
+          "matrix",
+          "display"
         ],
         "title": "EditableSettings",
         "type": "object"
@@ -6276,6 +6377,11 @@
           "relies_on_manual": {
             "default": false,
             "title": "Relies On Manual",
+            "type": "boolean"
+          },
+          "statement": {
+            "default": false,
+            "title": "Statement",
             "type": "boolean"
           },
           "value": {
@@ -8808,7 +8914,8 @@
               "tolerances",
               "policy",
               "crosschecks",
-              "approval_matrix"
+              "approval_matrix",
+              "statements"
             ],
             "title": "Section",
             "type": "string"
@@ -8855,6 +8962,23 @@
             },
             "title": "Deviations",
             "type": "object"
+          },
+          "display_unit": {
+            "anyOf": [
+              {
+                "enum": [
+                  "rupee",
+                  "thousand",
+                  "lakh",
+                  "crore"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Unit"
           },
           "norms": {
             "additionalProperties": {
@@ -14161,6 +14285,53 @@
           }
         },
         "summary": "Config Checklist Taxonomy"
+      }
+    },
+    "/api/config/display-unit": {
+      "get": {
+        "description": "The unit financial figures are written in (config/statements.yaml).",
+        "operationId": "config_display_unit_api_config_display_unit_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisplayUnit"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Config Display Unit"
       }
     },
     "/api/config/document-types": {

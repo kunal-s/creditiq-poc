@@ -55,6 +55,7 @@ from .contracts import (
 )
 from .crosschecks import _mentions
 from .names import name_parts, normalise_name, same_by_parts, similarity
+from .units import money
 from .util import display_date, parse_date, ranges_label
 
 inr = facts_module.inr
@@ -202,11 +203,6 @@ def _number(value: float, decimals: int) -> str:
 def _count(n: int) -> str:
     """A small count in words ("three"), a larger one in figures."""
     return NUMBER_WORDS[n] if 0 <= n < len(NUMBER_WORDS) else str(n)
-
-
-def _lakh(value: float) -> str:
-    """An amount in lakh whatever its size, so figures set against each other add up as written."""
-    return f"INR {value / 1e5:,.2f} lakh"
 
 
 def plain(text: str) -> str:
@@ -536,6 +532,7 @@ class Draft:
         self.fy_start = alignment.financial_year_start_month
         self.tolerances = {t.key: t.value for t in reader.load_tolerances(root).tolerances}
         self.statements_config = reader.load_statements(root)
+        self.display_unit = self.statements_config.display_unit
         self.threshold = name_match(root)
         self.people = people(root, self.facts)
         self.naming = naming(self.people, self.threshold)
@@ -889,7 +886,7 @@ class Draft:
         verdict = "within" if wc.requested <= wc.eligible else "above"
         figures = re.sub(r"\s*\((\w+)\)$", r" \1", wc.column or "").strip()
         on = f", on the {figures} figures" if figures else ""
-        return _t(f"{inr(wc.eligible)} ({method}{on}); the request of {inr(wc.requested)}{total} is {verdict} it", cites)
+        return _t(f"{self.fin(wc.eligible)} ({method}{on}); the request of {self.fin(wc.requested)}{total} is {verdict} it", cites)
 
     def resolution_limit(self) -> CamText | None:
         """The borrowing limit each board resolution sets, against the amount requested; nothing for a
@@ -1038,6 +1035,10 @@ class Draft:
                           f"use the total of {inr(c.amount_inr)}{including}.",
                           requested.evidence if requested and self.message_doc else [])
 
+    def fin(self, value: float | None) -> str:
+        """A financial figure in the unit configured for financial figures (config/statements.yaml)."""
+        return money(value, self.display_unit)
+
     def financial_performance(self) -> list[CamBlock]:
         t = self.trend
         if t is None:
@@ -1049,7 +1050,7 @@ class Draft:
             if value is None:
                 return NONE
             if unit == "inr":
-                return inr(value)
+                return self.fin(value)
             return f"{_number(value, 2)}x" if unit == "x" else _number(value, 1 if unit == "%" else 0)
 
         def heading(i: int) -> str:
@@ -1097,9 +1098,9 @@ class Draft:
                 if edit is None:
                     continue
                 scale = cell.working.source.scale if cell.working.source else 1.0
-                given = "no figure" if edit.original is None else inr(edit.original * scale)
+                given = "no figure" if edit.original is None else self.fin(edit.original * scale)
                 notes.append(_paragraph(
-                    f"{row.label} for {column.fy} is {inr(edit.value * scale)}, as entered by {edit.edited_by} on "
+                    f"{row.label} for {column.fy} is {self.fin(edit.value * scale)}, as entered by {edit.edited_by} on "
                     f"{edit.edited_at[:10]}; the statements give {given}. Reason: {edit.reason}",
                     cell.evidence))
         return notes
@@ -1114,7 +1115,7 @@ class Draft:
             (value, cites), shown = own.get(key, (None, [])), restated.get(key)
             if value is None or shown is None or abs(value - shown[0]) <= tolerance / 100 * max(abs(value), abs(shown[0])):
                 continue
-            differ.append((f"{label} {inr(shown[0])} against {inr(value)}", shown[1] + cites))
+            differ.append((f"{label} {self.fin(shown[0])} against {self.fin(value)}", shown[1] + cites))
         if not differ:
             return []
         return [_paragraph(f"The {fy} statements give different figures for {earlier}: {_join([t for t, _ in differ])} "
@@ -1134,18 +1135,18 @@ class Draft:
         restated = t.restated.get("revenue_from_operations")
         own = self.figure("revenue_from_operations", t.prior) if t.prior is not None else (None, [])
         if restated and restated[0] and own[0] and self.renamed(t.prior):
-            return (f"Revenue from operations was {inr(now)} in {fy}: {_change(now, restated[0])} on the comparatives in "
-                    f"the {fy} statements ({inr(restated[0])} for {t.earlier_fy}), and {_change(now, own[0])} on the "
-                    f"{columns[t.prior].fy} statements ({inr(own[0])}), which are in another entity's name.",
+            return (f"Revenue from operations was {self.fin(now)} in {fy}: {_change(now, restated[0])} on the comparatives in "
+                    f"the {fy} statements ({self.fin(restated[0])} for {t.earlier_fy}), and {_change(now, own[0])} on the "
+                    f"{columns[t.prior].fy} statements ({self.fin(own[0])}), which are in another entity's name.",
                     cites + restated[1] + own[1])
         before = self.earlier("revenue_from_operations")
         if before and before[1]:
             change = (now - before[1]) / before[1] * 100
             moved = ("was unchanged at" if round(change, 1) == 0
                      else f"{'rose' if change > 0 else 'fell'} {abs(change):.1f}% to")
-            return f"Revenue from operations {moved} {inr(now)} in {fy}, from {inr(before[1])} in {before[0]}.", \
+            return f"Revenue from operations {moved} {self.fin(now)} in {fy}, from {self.fin(before[1])} in {before[0]}.", \
                 cites + before[2]
-        return f"Revenue from operations was {inr(now)} in {fy}.", cites
+        return f"Revenue from operations was {self.fin(now)} in {fy}.", cites
 
     def net_worth_fall(self) -> tuple[str, list[Evidence]] | None:
         """Net worth fallen by FALL_PCT or more on the year before: both figures, the profit it fell
@@ -1155,15 +1156,15 @@ class Draft:
             return None
         latest = self.trend.latest
         (now, cites), before = self.figure("net_worth", latest), self.earlier("net_worth")
-        text = f"Net worth fell from {inr(before[1])} to {inr(now)}"
+        text = f"Net worth fell from {self.fin(before[1])} to {self.fin(now)}"
         cites = cites + before[2]
         profit, profit_cites = self.figure("profit_after_tax", latest)
         if profit is not None and profit > 0:
-            text += f" despite a profit of {inr(profit)}"
+            text += f" despite a profit of {self.fin(profit)}"
             cites += profit_cites
         parts = []
         for label, before, value, found in self.capital_falls():
-            parts.append(f"{label}{'' if parts else ' fell'} from {inr(before)} to {inr(value)}")
+            parts.append(f"{label}{'' if parts else ' fell'} from {self.fin(before)} to {self.fin(value)}")
             cites += found
         return text + (f"; {' and '.join(parts)}." if parts else "."), cites
 
@@ -1199,10 +1200,10 @@ class Draft:
         sentences = []
         ebitda, cites = figures["ebitda"]
         if ebitda is not None:
-            sentences.append((f"EBITDA was {inr(ebitda)}{share('ebitda_margin')}.", cites))
+            sentences.append((f"EBITDA was {self.fin(ebitda)}{share('ebitda_margin')}.", cites))
         profit, cites = figures["profit_after_tax"]
         if profit is not None:
-            sentences.append((f"Profit after tax was {inr(profit)}{share('pat_margin')}"
+            sentences.append((f"Profit after tax was {self.fin(profit)}{share('pat_margin')}"
                               f"{self.against(line('profit_after_tax'))}.", cites))
         coverage, cites = figures["interest-coverage"]
         if coverage is not None:
@@ -1213,8 +1214,8 @@ class Draft:
         sentences = []
         (worth, cites), (borrowings, owed) = figures["net_worth"], figures["total_borrowings"]
         if worth is not None:
-            against = f", against total borrowings of {inr(borrowings)}" if borrowings is not None else ""
-            sentences.append((f"Net worth was {inr(worth)}{self.against(line('net_worth'))}{against}.",
+            against = f", against total borrowings of {self.fin(borrowings)}" if borrowings is not None else ""
+            sentences.append((f"Net worth was {self.fin(worth)}{self.against(line('net_worth'))}{against}.",
                               cites + (owed if borrowings is not None else [])))
         leverage = [(label, key) for key, label in (("debt-equity", "debt / equity"), ("tol-tnw", "TOL / TNW"))
                     if figures[key][0] is not None]
@@ -1245,7 +1246,7 @@ class Draft:
         else:
             inputs = [e for s in wc.steps for e in s.evidence[:1]]
             table = _table(["Step", "Amount", "Basis"], [
-                [_t(s.label), _t(inr(s.value), s.evidence[:2] or inputs), _t(s.basis or "")] for s in wc.steps
+                [_t(s.label), _t(self.fin(s.value), s.evidence[:2] or inputs), _t(s.basis or "")] for s in wc.steps
             ], numeric=[1])
             verdict = "within" if wc.eligible is not None and wc.requested <= wc.eligible else "above"
             other = self.term_facilities()
@@ -1253,11 +1254,11 @@ class Draft:
             if other and len(other) < len(self.case.facilities):
                 limit = self.policy_config.working_capital.mpbf_above_limit_inr
                 total = f" The comparison uses the total request, including the {_join(other)}"
-                total += (f"; on a working-capital amount of {inr(limit)} or less the turnover method would apply."
+                total += (f"; on a working-capital amount of {self.fin(limit)} or less the turnover method would apply."
                           if wc.method == "mpbf" else ".")
             blocks = [_paragraph(wc.reason), table,
-                      _paragraph(f"On the figures for {wc.column}, eligible bank finance is {inr(wc.eligible)}; the "
-                                 f"request of {inr(wc.requested)} is {verdict} it.{total}", inputs)]
+                      _paragraph(f"On the figures for {wc.column}, eligible bank finance is {self.fin(wc.eligible)}; the "
+                                 f"request of {self.fin(wc.requested)} is {verdict} it.{total}", inputs)]
         if set(self.case.facilities) & policy_module.TERM:
             blocks.append(self.term_loan())
         return blocks
@@ -1310,7 +1311,7 @@ class Draft:
                 cells = []
                 for source, _ in TURNOVER_COLUMNS:
                     if source == "financials" and source not in by and stand_in and fy == stand_in[0]:
-                        cells.append(_t(f"{inr(stand_in[1])} (comparatives)", stand_in[2]))
+                        cells.append(_t(f"{self.fin(stand_in[1])} (comparatives)", stand_in[2]))
                     else:
                         cells.append(_figure(by.get(source), self.statements(y) if source == "bank" and y else []))
                 rows.append([_t(fy), *cells])
@@ -1353,7 +1354,7 @@ class Draft:
         if (any(f.outcome == "fail" for f in checks) or any(f.outcome == "incomplete" for f in scoped)
                 or not any(f.outcome == "pass" for f in scoped)):
             return None
-        return _paragraph("All sources agree within tolerance: " + ", ".join(f"{label} {inr(f.value)}" for label, f in named)
+        return _paragraph("All sources agree within tolerance: " + ", ".join(f"{label} {self.fin(f.value)}" for label, f in named)
                           + ".", [e for _, f in named for e in f.evidence[:1]])
 
     def return_profit(self, fy: str) -> CamBlock | None:
@@ -1366,7 +1367,7 @@ class Draft:
             return None
         latest = self.spread.columns[self.trend.latest].fy
         return _paragraph(f"The income tax return for AY {tax.assessment_year} shows profit before tax of "
-                          f"{inr(float(profit.value))}, against {inr(books[0])} for {fy} in the comparatives in the "
+                          f"{self.fin(float(profit.value))}, against {self.fin(books[0])} for {fy} in the comparatives in the "
                           f"{latest} statements.", profit.evidence[:1] + books[1])
 
     def returns_due(self) -> list[tuple[str, date, bool]]:
@@ -1496,8 +1497,8 @@ class Draft:
 
     def cash_position(self) -> tuple[str, list[Evidence], float, float] | None:
         """Each account's balance at the latest audited year end against the cash and bank balances in
-        that year's balance sheet, and the difference either way beyond the tolerance (in lakh, so the
-        figures add up as written): (sentence, pages, statements less the audited figure, the larger of
+        that year's balance sheet, and the difference either way beyond the tolerance (in the unit set for
+        financial figures, so the figures add up as written): (sentence, pages, statements less the audited figure, the larger of
         the two)."""
         year = next((y for y in self.facts.financial_years if y.fy == self.assessment.period), None)
         on = [b for b in self.facts.balances if year and b.date == year.fy_end]
@@ -1515,7 +1516,7 @@ class Draft:
             ending = "; {} of the audited balance is not in any statement on file"
         else:
             ending = ""
-        money = _lakh if ending else inr
+        money = self.fin
         held = _join([f"{money(b.balance)} in {b.account}" for b in on])
         when = display_date(date.fromisoformat(year.fy_end))
         text = (f"At {when} the statements show {held}, {money(total)} in all" if len(on) > 1
@@ -1740,11 +1741,11 @@ class Draft:
         least, share = BORROWINGS_GAP
         if gap < least or gap < share / 100 * total:
             return None
-        against = (f"against {inr(outstanding)} outstanding on the facilities on file" if outstanding
+        against = (f"against {self.fin(outstanding)} outstanding on the facilities on file" if outstanding
                    else "against no outstanding on the facilities on file")
         fy = self.spread.columns[i].fy
-        return (f"Borrowings of {inr(total)} {against}; {inr(gap)} is not explained.",
-                f"The {fy} balance sheet shows borrowings of {inr(total)} {against}; {inr(gap)} is not explained.",
+        return (f"Borrowings of {self.fin(total)} {against}; {self.fin(gap)} is not explained.",
+                f"The {fy} balance sheet shows borrowings of {self.fin(total)} {against}; {self.fin(gap)} is not explained.",
                 cites, gap)
 
     def borrowings(self) -> CamBlock | None:
@@ -1757,11 +1758,11 @@ class Draft:
         figure = lambda key: (rows[key].cells[i].value, rows[key].cells[i].evidence) if key in rows else (None, [])  # noqa: E731
         (total, total_cites), long, short = figure("total_borrowings"), figure("long_term_borrowings"), \
             figure("short_term_borrowings")
-        parts = [(f"{inr(value)} {term}", cites) for term, (value, cites) in (("long-term", long), ("short-term", short))
+        parts = [(f"{self.fin(value)} {term}", cites) for term, (value, cites) in (("long-term", long), ("short-term", short))
                  if value is not None]
         fy = self.spread.columns[i].fy
         if total is not None:
-            text = f"The {fy} balance sheet shows borrowings of {inr(total)}" + (
+            text = f"The {fy} balance sheet shows borrowings of {self.fin(total)}" + (
                 f": {_join([p for p, _ in parts])}." if parts else ".")
         elif parts:
             text = f"The {fy} balance sheet shows {_join([p for p, _ in parts])} borrowings."
@@ -1916,8 +1917,8 @@ class Draft:
         if position and abs(position[2]) >= least and abs(position[2]) >= share / 100 * position[3]:
             gap = position[2]
             question = (f"Why do the year-end statement balances exceed the audited cash and bank balance by "
-                        f"{_lakh(gap)}, and which accounts does the audited figure include?" if gap > 0 else
-                        f"Where is the {_lakh(-gap)} of the audited cash and bank balance that is in no statement on "
+                        f"{self.fin(gap)}, and which accounts does the audited figure include?" if gap > 0 else
+                        f"Where is the {self.fin(-gap)} of the audited cash and bank balance that is in no statement on "
                         f"file held (another account, deposits or cash in hand), and can its statements be provided?")
             observe("banking", "cash", "accounts", "Year-end bank balances differ from the audited figure", position[0],
                     question, position[1])

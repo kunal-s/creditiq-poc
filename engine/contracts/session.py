@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel
 
 
@@ -30,6 +32,18 @@ class LoginResponse(BaseModel):
 class Option(BaseModel):
     id: str
     label: str
+
+
+class DisplayUnit(BaseModel):
+    """The unit financial figures are written in, from the published configuration."""
+
+    unit: Literal["rupee", "thousand", "lakh", "crore"]
+    label: str
+    """"Crore": named under a table's heading and in the Administration screen."""
+    divisor: float
+    decimals: int
+    suffix: str
+    """Written after a figure in a sentence: " cr"."""
 
 
 class Meta(BaseModel):

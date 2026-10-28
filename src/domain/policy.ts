@@ -13,6 +13,7 @@ import type {
 } from "@/api/types";
 import { t, tOr } from "@/config/terminology";
 import { formatInr } from "@/domain/cases";
+import { money } from "@/domain/units";
 import { joinList, scrollBehavior } from "@/domain/crossVerification";
 
 // The Policy checks tab (F-20, F-21): the engine's assessment of every norm, grouped by family
@@ -137,7 +138,7 @@ export function amount(value: number | null | undefined, unit: string | null | u
       return n === 1 ? t("policy.unit.yearOne") : t("policy.unit.years", { n });
     }
     case "inr":
-      return formatInr(value);
+      return money(value);
     case "rank":
       return t("policy.rank", { n: value });
     default:
@@ -146,8 +147,13 @@ export function amount(value: number | null | undefined, unit: string | null | u
 }
 
 /** An input as a reader expects it: rupees, years, a rank or a count. */
-export function inputValue(name: string, value: number | null | undefined): string {
+export function inputValue(
+  input: Pick<NormInput, "name" | "statement">,
+  value: number | null | undefined,
+): string {
+  const name = input.name;
   if (value === null || value === undefined) return "—";
+  if (input.statement) return money(value);
   if (name === "vintage_years" || name === "audited_years") return amount(value, "years");
   if (name === "bureau_rank") return amount(value, "rank");
   if (name === "blocking_items_open") return String(value);

@@ -568,8 +568,8 @@ def test_a_fall_in_revenue_and_net_worth_is_asked_in_the_memos_words(client: Tes
     note = _pd(client, analyst, root, case_id)
     revenue = ("Revenue from operations fell 50.6% to INR 4.96 cr in FY 2025-26, from INR 10.03 cr in FY 2024-25 "
                "(the comparatives in the FY 2025-26 statements).")
-    worth = ("Net worth fell from INR 3.57 cr to INR 1.76 cr despite a profit of INR 26.88 lakh; share capital fell from "
-             "INR 85.00 lakh to INR 42.00 lakh and reserves and surplus from INR 2.72 cr to INR 1.34 cr.")
+    worth = ("Net worth fell from INR 3.57 cr to INR 1.76 cr despite a profit of INR 0.27 cr; share capital fell from "
+             "INR 0.85 cr to INR 0.42 cr and reserves and surplus from INR 2.72 cr to INR 1.34 cr.")
     assert _memo(client, analyst, case_id, "financials")[:2] == [revenue, worth]
     q = _observed(note)["financials:fall"]
     # Half the revenue gone is serious, and asked first in its topic.
@@ -613,13 +613,13 @@ def test_borrowings_no_facility_on_file_explains_are_asked(client: TestClient, p
     case_id, bureau = _borrowings(client, analyst, root)
     q = _observed(_pd(client, analyst, root, case_id))["obligations:borrowings"]
     memo = _memo(client, analyst, case_id, "obligations")
-    assert any(p.endswith("Borrowings of INR 2.70 cr against INR 75.00 lakh outstanding on the facilities on file; "
+    assert any(p.endswith("Borrowings of INR 2.70 cr against INR 0.75 cr outstanding on the facilities on file; "
                           "INR 1.95 cr is not explained.") for p in memo)
     # One lender: said in the singular.
     assert ("Existing sanctioned facilities with Tidewater Finance Limited total INR 1.20 cr; the commercial bureau "
             "report shows INR 75.00 lakh outstanding." in memo)
     _asked_as_observation(q, area="obligations", section=3)
-    assert q["context"] == ("The FY 2025-26 balance sheet shows borrowings of INR 2.70 cr against INR 75.00 lakh "
+    assert q["context"] == ("The FY 2025-26 balance sheet shows borrowings of INR 2.70 cr against INR 0.75 cr "
                             "outstanding on the facilities on file; INR 1.95 cr is not explained.")
     assert q["question"].startswith("Who are the lenders for the INR 1.95 cr of borrowings")
     assert bureau in {e["document_id"] for e in q["evidence"]}
@@ -696,13 +696,13 @@ def test_a_loan_a_facility_on_file_accounts_for_and_a_facility_with_its_limit_ar
 
 @pytest.mark.parametrize("balances,ending,question", [
     # The statements hold more than the balance sheet says: asked why.
-    ([9_000_000, 1_100_000], "; the statements' balances exceed the audited figure by INR 41.00 lakh.",
-     "Why do the year-end statement balances exceed the audited cash and bank balance by INR 41.00 lakh"),
+    ([9_000_000, 1_100_000], "; the statements' balances exceed the audited figure by INR 0.41 cr.",
+     "Why do the year-end statement balances exceed the audited cash and bank balance by INR 0.41 cr"),
     # Part of the audited balance is in no statement: asked where it is held.
-    ([3_000_000], "; INR 30.00 lakh of the audited balance is not in any statement on file.",
-     "Where is the INR 30.00 lakh of the audited cash and bank balance that is in no statement on file held"),
+    ([3_000_000], "; INR 0.30 cr of the audited balance is not in any statement on file.",
+     "Where is the INR 0.30 cr of the audited cash and bank balance that is in no statement on file held"),
     # Stated, but too small to ask about.
-    ([5_800_000], "; INR 2.00 lakh of the audited balance is not in any statement on file.", None),
+    ([5_800_000], "; INR 0.02 cr of the audited balance is not in any statement on file.", None),
 ])
 def test_year_end_balances_apart_from_the_audited_figure_are_asked_either_way(client, published_data_root, balances,
                                                                               ending, question):

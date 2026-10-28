@@ -232,8 +232,9 @@ const POLICY_BANDS = {
   ],
 };
 
-async function openFinancials(page: Page) {
+async function openFinancials(page: Page, unit: "rupee" | "thousand" | "lakh" | "crore" = "crore") {
   const api = new MockApi();
+  api.settings.display.unit = unit;
   api.documents.set(KESTREL, [...DOCUMENTS, ...XV_DOCUMENTS]);
   api.documentTypes = XV_DOCUMENT_TYPES;
   api.spreads.set(KESTREL, SPREAD);
@@ -449,6 +450,23 @@ test("the trend notes describe the move from the year before", async ({ page }) 
   await expect(page.getByTestId("spread-trend-cycle")).toContainText(
     "Working-capital cycle lengthened by 16 days in FY 2025-26",
   );
+});
+
+test("every financial figure is written in the unit set on the Administration screen", async ({
+  page,
+}) => {
+  await openFinancials(page, "lakh");
+  await expect(page.getByTestId("spread-trend-turnover")).toContainText(
+    "went from INR 1,000.00 lakh in FY 2024-25 to INR 1,200.00 lakh in FY 2025-26",
+  );
+  await expect(page.getByTestId("working-capital").getByTestId("wc-verdict")).toHaveText(
+    "Eligible bank finance INR 240.00 lakh against the request of INR 500.00 lakh.",
+  );
+  await page.getByTestId("financials-tab-profit_and_loss").click();
+  const pl = page.getByTestId("spread-profit_and_loss");
+  await expect(pl).toContainText("INR lakh");
+  await expect(pl.locator('[data-row="revenue_from_operations"]')).toContainText("1,000.00");
+  await expect(pl.locator('[data-row="revenue_from_operations"]')).toContainText("1,200.00");
 });
 
 test("on a phone the section reads in one column without scrolling sideways", async ({ page }) => {

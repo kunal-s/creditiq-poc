@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { t } from "@/config/terminology";
 import { actualText, comparison, inputLabel, inputValue, substituted } from "@/domain/policy";
+import { useDisplayUnit } from "@/domain/units";
 import { cn } from "@/lib/utils";
 import { OUTCOME_ICON, OUTCOME_TEXT } from "./styles";
 
@@ -199,7 +200,7 @@ function FigureBlock({
           <Figure
             caseId={caseId}
             label={input.label}
-            value={inputValue(input.name, input.value)}
+            value={inputValue(input, input.value)}
             evidence={input.evidence}
           />
         }
@@ -222,7 +223,7 @@ function FigureBlock({
             <Figure
               caseId={caseId}
               label={c.label}
-              value={inputValue(input.name, c.value)}
+              value={inputValue(input, c.value)}
               evidence={c.evidence}
             />
           }
@@ -251,6 +252,7 @@ function FigureBlock({
  * Every figure links to its page and carries an eye to open it. Nothing here changes an
  * outcome; the norm decided it, and this only shows how. */
 export function NormWorking({ caseId, norm }: { caseId: string; norm: NormResult }) {
+  useDisplayUnit();
   const inputs = norm.inputs ?? [];
   const missing = norm.missing ?? [];
   const evaluated = norm.outcome === "pass" || norm.outcome === "deviation";
@@ -276,7 +278,7 @@ export function NormWorking({ caseId, norm }: { caseId: string; norm: NormResult
                   key={`${piece.name}-${i}`}
                   caseId={caseId}
                   label={piece.label}
-                  value={inputValue(piece.name, piece.value)}
+                  value={inputValue(piece, piece.value)}
                   evidence={piece.evidence}
                   className="font-medium"
                 />

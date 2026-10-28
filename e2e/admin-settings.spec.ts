@@ -299,3 +299,33 @@ test("an analyst sees the settings read-only, with nothing to edit", async ({ pa
   await expect(page.getByTestId("setting-undo")).toHaveCount(0);
   await expect(page.getByTestId("settings-bar")).toHaveCount(0);
 });
+
+test("the unit for financial figures is chosen, reviewed and published like any setting", async ({
+  page,
+}) => {
+  const api = await openSettings(page);
+  const unit = setting(page, "display:unit");
+  await expect(page.getByTestId("settings-display")).toContainText("Financial figures");
+  await expect(unit.getByRole("combobox")).toHaveValue("crore");
+  await expect(page.getByTestId("display-unit")).toContainText("INR 4.20 cr");
+
+  await unit.getByRole("combobox").selectOption("lakh");
+  await expect(unit).toHaveAttribute("data-changed", "true");
+  await expect(unit.getByTestId("setting-was")).toHaveText("was Crore");
+  await expect(page.getByTestId("display-unit")).toContainText("INR 420.00 lakh");
+
+  await page.getByTestId("settings-review").click();
+  const dialog = page.getByTestId("settings-review-dialog");
+  await expect(dialog.getByTestId("settings-change")).toHaveText([
+    "Unit for financial figures · Unit: Crore → Lakh",
+  ]);
+  expect(api.called("POST", "/api/admin/settings/preview")[0]!.body).toEqual({
+    ...NOTHING_ELSE,
+    tolerances: {},
+    display_unit: "lakh",
+  });
+  await dialog.getByTestId("settings-note").fill("Credit prefers lakh for small borrowers");
+  await dialog.getByTestId("settings-publish").click();
+  await expect(page.getByTestId("settings-published")).toBeVisible();
+  await expect(unit.getByRole("combobox")).toHaveValue("lakh");
+});

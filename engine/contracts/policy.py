@@ -43,6 +43,8 @@ class NormInput(BaseModel):
     components: list[NormComponent] = Field(default_factory=list)
     """For a figure derived by summing statement lines, the lines it came from. Empty for a
     figure the statement prints itself."""
+    statement: bool = False
+    """A figure read from the audited statements: written in the unit set for financial figures."""
     working: CellWorking | None = None
     """For a statement figure: how it was read (page, unit, nil or not printed, a person's edit) and, on
     the lines the statement prints, what an edit of it names."""

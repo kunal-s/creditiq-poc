@@ -2145,6 +2145,7 @@ function input(
     awaiting_review: false,
     basis: "document",
     refs: [],
+    statement: name !== "blocking_items_open",
     ...extra,
   };
 }
@@ -3900,6 +3901,14 @@ export const CONFIG_VERSIONS = [
   },
 ];
 
+/** The units financial figures can be written in (GET /api/config/display-unit). */
+export const DISPLAY_UNITS = {
+  rupee: { label: "Rupees", divisor: 1, decimals: 0, suffix: "" },
+  thousand: { label: "Thousand", divisor: 1e3, decimals: 2, suffix: " thousand" },
+  lakh: { label: "Lakh", divisor: 1e5, decimals: 2, suffix: " lakh" },
+  crore: { label: "Crore", divisor: 1e7, decimals: 2, suffix: " cr" },
+} as const;
+
 /** The settings an Administrator edits, as the version in force has them (GET /api/admin/settings). */
 export const SETTINGS: EditableSettings = {
   version: "v2hash",
@@ -4054,6 +4063,15 @@ export const SETTINGS: EditableSettings = {
         at_least: "regional_credit_head",
       },
       { category: "financial", label: "Financial norms", levels_above: 1, at_least: null },
+    ],
+  },
+  display: {
+    unit: "crore",
+    options: [
+      { id: "rupee", label: "Rupees", example: "INR 4,20,00,000" },
+      { id: "thousand", label: "Thousand", example: "INR 42,000.00 thousand" },
+      { id: "lakh", label: "Lakh", example: "INR 420.00 lakh" },
+      { id: "crore", label: "Crore", example: "INR 4.20 cr" },
     ],
   },
 };

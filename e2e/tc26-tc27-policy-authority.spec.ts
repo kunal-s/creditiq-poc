@@ -362,7 +362,7 @@ test("TC-24: each family's norms with the required and actual value and their so
   const profit = norm(page, "EL-04");
   await expect(profit.getByTestId("norm-actual")).toHaveText("INR -40.00 lakh");
   await expect((await detailOf(page, "EL-04")).getByTestId("norm-input")).toContainText(
-    "INR -40.00 lakh",
+    "INR -0.40 cr",
   );
 
   // Why a norm could not be assessed, in words.

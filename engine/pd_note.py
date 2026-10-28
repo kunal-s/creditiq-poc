@@ -27,6 +27,7 @@ from typing import get_args
 from . import facts as facts_module
 from . import output_sources
 from . import policy as policy_module
+from . import units
 from .cam import (NONE, Draft, _join, _lower, _norm_statement, _pages, _unassessed_sentence, _unique, config_label,
                   finding_evidence, finding_title, norm_evidence, plain, status)
 from .config import load_app_config
@@ -147,7 +148,8 @@ def finding_values(f: Finding) -> _Fmt:
                 period=f.scope or "")
 
 
-def norm_values(n: NormResult, norm_config, policy_config, period: str | None, on_file: set[str]) -> _Fmt:
+def norm_values(n: NormResult, norm_config, policy_config, period: str | None, on_file: set[str],
+                display_unit: str = units.DEFAULT_UNIT) -> _Fmt:
     """What a norm's question may name: {label} and {subject} the norm, {actual} and {required}, {period},
     {missing} and {inputs} what is not on file, {reason} why it could not be evaluated, {statement} the
     memo's sentence for it, {figures} each figure it rests on, each figure by its input's name
@@ -157,7 +159,8 @@ def norm_values(n: NormResult, norm_config, policy_config, period: str | None, o
     for i in n.inputs:
         if i.value is None:
             continue
-        figures[i.name] = (facts_module.inr(i.value) if i.name in MONEY
+        figures[i.name] = (units.money(i.value, display_unit) if i.name in policy_module.FINANCIAL_INPUTS
+                           else facts_module.inr(i.value) if i.name in MONEY
                            else policy_module.unit_text(i.value, "years") if i.name == "vintage_years"
                            else policy_module.unit_text(i.value, "rank") if i.name == "bureau_rank" else f"{i.value:g}")
     ratio = next((r for r in policy_config.ratios if norm_config is not None and r.key == norm_config.ratio), None)
@@ -170,7 +173,7 @@ def norm_values(n: NormResult, norm_config, policy_config, period: str | None, o
                   reason=_unassessed_sentence(n, on_file) if n.outcome == "cannot_evaluate" else "",
                   statement=f"{_norm_statement(n)}." if n.outcome == "deviation" else "",
                   figures=_join([f"{_lower(i.label)} {figures[i.name]}" for i in n.inputs if i.name in figures]),
-                  shortfall=policy_module.unit_text(gap, n.unit) if gap is not None else "",
+                  shortfall=policy_module.unit_text(gap, n.unit, display_unit=display_unit) if gap is not None else "",
                   s="" if gap == 1 else "s")
     values.update({name: text for name, text in figures.items() if name not in values})
     return values
@@ -187,6 +190,7 @@ def build(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> PdNote:
     checks = reader.load_crosschecks(root)
     rules = {r.id: r for r in checks.rules}
     policy_config = reader.load_policy(root)
+    display_unit = reader.load_statements(root).display_unit
     draft = Draft(conn, root, case)
     threshold = draft.threshold
     queries: list[QueryItem] = draft.queries
@@ -255,7 +259,7 @@ def build(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> PdNote:
         template = question_template(norm_config, policy_config, n)
         if template is None:
             continue
-        values = norm_values(n, norm_config, policy_config, assessment.period, on_file)
+        values = norm_values(n, norm_config, policy_config, assessment.period, on_file, display_unit)
         deviation = n.outcome == "deviation"
         ask(n.id, *_parts(_clean(template.format_map(values))), severity="moderate" if deviation else "mild",
             source="deviation" if deviation else "gap", ref=n.id, rule=n.id, title=n.label, area="policy",

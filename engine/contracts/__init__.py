@@ -202,7 +202,7 @@ from .transactions import (
     TxnRow,
     TxnSummary,
 )
-from .session import LoginRequest, LoginResponse, Meta, Option, SessionUser
+from .session import DisplayUnit, LoginRequest, LoginResponse, Meta, Option, SessionUser
 
 __all__ = [
     "Adjudication",
@@ -348,6 +348,7 @@ __all__ = [
     "LoginRequest",
     "LoginResponse",
     "LogicalDocument",
+    "DisplayUnit",
     "Meta",
     "Option",
     "PageInfo",

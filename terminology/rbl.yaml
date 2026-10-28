@@ -78,8 +78,6 @@ spreadPage:
     audited: Audited
     provisional: Provisional
     projected: Projected
-  unit:
-    crore: INR crore
   banner:
     open: Take this to Cross-verification
     more: "(and {n} more)"
@@ -93,7 +91,7 @@ spreadPage:
     manual: "{n} relying on a person's entry"
   turnover:
     title: Turnover by year
-    subtitle: INR crore · every source as read from its documents, coloured by what the cross-checks concluded
+    subtitle: "{unit} · every source as read from its documents, coloured by what the cross-checks concluded"
     source: Source
     months: "{n} of 12 months"
   verdict:
@@ -104,17 +102,17 @@ spreadPage:
     lineItem: Line item
     profit_and_loss:
       title: Profit and loss
-      subtitle: INR crore · as reported, laid out in the spread format
+      subtitle: "{unit} · as reported, laid out in the spread format"
     balance_sheet:
       title: Balance sheet
-      subtitle: INR crore · as at the year end
+      subtitle: "{unit} · as at the year end"
     manual: "{label} {fy} relies on a person's entry; confirm it against its document before the spread is relied on."
     manualPage: "{label} {fy} relies on a person's entry; confirm it against page {page} before the spread is relied on."
     footnote: Every figure is selectable; the source panel shows the page it was read from.
   trend:
     turnoverUp: "Turnover grew {pct}% in {fy}"
     turnoverDown: "Turnover fell {pct}% in {fy}"
-    turnoverBody: "Audited revenue from operations went from {before} cr in {from} to {after} cr in {to}."
+    turnoverBody: "Audited revenue from operations went from {before} in {from} to {after} in {to}."
     cycleLonger: "Working-capital cycle lengthened by {n} days in {fy}"
     cycleShorter: "Working-capital cycle shortened by {n} days in {fy}"
     cycleSame: "Working-capital cycle held steady in {fy}"
@@ -1236,6 +1234,13 @@ admin:
       amount: Enter an amount above 0
     unit:
       inr: INR
+    display:
+      title: Financial figures
+      subtitle: "The unit every financial figure is written in: the statement tables, the policy checks, the credit memo and the exports."
+      setting: Setting
+      unit: Unit
+      unitName: Unit for financial figures
+      example: Example
     tolerances:
       title: Tolerances
       subtitle: How far two sources may differ before a cross-check reports a difference.
@@ -1296,6 +1301,7 @@ admin:
       levels_above: Levels above the amount authority
       at_least: At least
       turnover_requirement_pct: Requirement
+      display_unit: Unit
     value:
       flagOn: "on"
       flagOff: "off"

@@ -104,7 +104,7 @@ def publish(*, data_root: Path, author: str, note: str = "", private_dir: Path |
 
 
 # The sections an Administrator edits on the screen (F-00.6).
-EDITABLE_SECTIONS = ("tolerances", "policy", "crosschecks", "approval_matrix")
+EDITABLE_SECTIONS = ("tolerances", "policy", "crosschecks", "approval_matrix", "statements")
 
 
 def publish_edited(*, data_root: Path, author: str, note: str, sections: dict[str, BaseModel],

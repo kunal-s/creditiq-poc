@@ -61,6 +61,7 @@ source_modules =
     engine.txn_intel
     engine.txn_labels
     engine.uploads
+    engine.units
     engine.util
     engine.xlsx
     engine.xv

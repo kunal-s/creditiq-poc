@@ -7,6 +7,10 @@
 
 column: current_period
 
+# The unit financial figures are written in on the screens, the memo and the exports: rupee, thousand,
+# lakh or crore. An Administrator changes it on the Administration screen (a new published version).
+display_unit: crore
+
 lines:
   revenue_from_operations: {table: profit_and_loss, row: '^([IVX]+\.?\s*)?revenue from operations'}
   other_income:            {table: profit_and_loss, row: '^([IVX]+\.?\s*)?other income'}

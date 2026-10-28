@@ -117,6 +117,7 @@ function SettingsForm({ settings: s }: { settings: EditableSettings }) {
     <>
       <Header settings={s} canPublish={canPublish} />
       {published && <Published result={published} />}
+      <DisplayPanel settings={s} edit={edit} />
       <TolerancesPanel settings={s} edit={edit} />
       <PolicyPanel settings={s} edit={edit} />
       <RulesPanel settings={s} edit={edit} />
@@ -232,6 +233,45 @@ function RuleIds({ ids, settings }: { ids: string[]; settings: EditableSettings 
         </Chip>
       ))}
     </span>
+  );
+}
+
+function DisplayPanel({ settings: s, edit }: { settings: EditableSettings; edit: Editor }) {
+  const options = s.display.options.map((o) => ({ value: o.id, label: o.label }));
+  const was = s.display.options.find((o) => o.id === s.display.unit);
+  const chosen = String(edit.current(fieldKey.displayUnit) ?? s.display.unit);
+  const example = s.display.options.find((o) => o.id === chosen)?.example;
+  return (
+    <Panel
+      title={t("admin.settings.display.title")}
+      subtitle={t("admin.settings.display.subtitle")}
+      testId="settings-display"
+    >
+      <table className="w-full text-[12.5px]">
+        <thead>
+          <tr className={HEAD}>
+            <th className="px-4 py-2 font-medium">{t("admin.settings.display.setting")}</th>
+            <th className="px-3 py-2 font-medium">{t("admin.settings.display.unit")}</th>
+            <th className="px-4 py-2 font-medium">{t("admin.settings.display.example")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr className="align-top" data-testid="display-unit">
+            <td className="px-4 py-2">{t("admin.settings.display.unitName")}</td>
+            <td className="px-3 py-2">
+              <ChoiceSetting
+                edit={edit}
+                field={fieldKey.displayUnit}
+                label={t("admin.settings.display.unitName")}
+                was={was?.label ?? s.display.unit}
+                options={options}
+              />
+            </td>
+            <td className="tabular px-4 py-2 text-muted-foreground">{example}</td>
+          </tr>
+        </tbody>
+      </table>
+    </Panel>
   );
 }
 

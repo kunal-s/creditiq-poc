@@ -287,7 +287,7 @@ def test_values_are_worded_with_their_unit(value, unit, text):
 @pytest.mark.parametrize("kind,threshold,unit,text", [
     ("min", 1, "inr", "positive"), ("min", 0, "inr", "no loss"), ("max", 0, "count", "none"),
     ("min", 2, "years", "at least 2 years"), ("max", 6, "rank", "at most rank 6"), ("min", 1.2, "x", "at least 1.20x"),
-    ("max", 2, "count", "at most 2"), ("min", 5_000_000, "inr", "at least INR 50.00 lakh"), ("max", 0, "inr", "at most INR 0"),
+    ("max", 2, "count", "at most 2"), ("min", 5_000_000, "inr", "at least INR 0.50 cr"), ("max", 0, "inr", "at most INR 0.00 cr"),
 ])
 def test_a_norm_of_a_positive_figure_no_loss_or_nothing_open_reads_in_words(kind, threshold, unit, text):
     """Never "at least INR 1" for positive net worth, "at least INR 0" for a profit or "at most 0" open items."""

@@ -37,6 +37,7 @@ from .contracts import (
     Working,
     WorkingCapitalAssessment,
 )
+from .units import money
 from .util import parse_date
 
 BASIS = {"audited_financial_statements": "audited"}
@@ -134,7 +135,7 @@ def _working_capital(root: Path, case: CaseDetail, columns: list[SpreadColumn],
     if not set(case.facilities) & policy_module.WORKING_CAPITAL:
         return WorkingCapitalAssessment(method="not_applicable", requested=requested,
                                         reason="No working-capital facility is requested.")
-    limit = facts_module.inr(wc.mpbf_above_limit_inr)
+    limit = money(wc.mpbf_above_limit_inr, reader.load_statements(root).display_unit)
     # Projected figures first, then provisional, then the latest audited.
     order = sorted(range(len(columns)), key=lambda i: (BASIS_ORDER[columns[i].basis], columns[i].period_end))[::-1]
 

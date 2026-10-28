@@ -38,6 +38,7 @@ export type ReviewDecisionRequest = S["ReviewDecisionRequest"];
 export type SessionUser = S["SessionUser"];
 export type LoginResponse = S["LoginResponse"];
 export type Meta = S["Meta"];
+export type DisplayUnit = S["DisplayUnit"];
 export type Option = S["Option"];
 export type CaseProposal = S["CaseProposal"];
 export type ProposalRequest = S["ProposalRequest"];

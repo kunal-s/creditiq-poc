@@ -7,6 +7,7 @@ import type {
   TurnoverFigure,
   TurnoverYear,
 } from "@/api/types";
+import { inUnit } from "@/domain/units";
 
 // The Spread tab (F-22): the statements year by year, turnover from every source side by side,
 // and the ratios against the policy. Every figure, outcome and band is the engine's; what is
@@ -108,18 +109,11 @@ export function rowByKey(spread: Spread, key: string): SpreadRow | undefined {
   return spread.rows.find((r) => r.key === key);
 }
 
-/** An amount in crore, as the statement tables write it under their "INR crore" heading. */
-export function crore(value: number): string {
-  return (value / 1e7).toLocaleString("en-IN", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
-
-/** A spread figure as its unit reads in a table: amounts in crore, ratios to two places. */
+/** A spread figure as its unit reads in a table: amounts in the unit set for financial figures
+ * (named in the table's heading), ratios to two places. */
 export function cellText(value: number | null | undefined, unit: SpreadRow["unit"]): string {
   if (value === null || value === undefined) return "—";
-  if (unit === "inr") return crore(value);
+  if (unit === "inr") return inUnit(value);
   if (unit === "x") return `${value.toFixed(2)}x`;
   if (unit === "%") return `${value.toFixed(1)}%`;
   return `${Math.round(value)} days`;

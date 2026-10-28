@@ -389,6 +389,7 @@ stateDiagram-v2
   - the policy norms' thresholds (a financial ratio's acceptable and marginal values; the threshold of every other norm). Changing the request-against-turnover norm moves the turnover method's working-capital requirement with it, keeping the margin;
   - each cross-check rule: whether it runs, its severity and whether it blocks submission;
   - the approval matrix: each product's amount bands and their authorities, and each deviation category's steps.
+  - the unit financial figures are written in (rupees, thousand, lakh or crore; crore until changed). It applies to the figures read from the audited statements wherever they are shown: the statement tables, the policy checks, the credit memo, the PD note and the exports. Amounts that are not statement figures (a facility, an instalment, a bank credit) keep the size-based wording.
 
   A change is previewed first, with each value before and after and any reason it cannot be published. It is validated as a publish from the files is, and published with the Administrator's name and a note of at least three characters. It becomes a new immutable version marked as edited on the screen, it is recorded in the audit trail, and every case's checks re-run. Analysts and Credit Managers see the same settings read-only. A later publish from the files refuses to undo a section edited on the screen unless asked to (`--discard-app-edits`).
 

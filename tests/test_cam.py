@@ -581,7 +581,7 @@ def test_financial_performance_tabulates_the_spread_and_sets_each_figure_against
                               "section 4).")
     # The FY 2025-26 statements print other figures for FY 2024-25 than its own statements.
     assert restated == ("The FY 2025-26 statements give different figures for FY 2024-25: revenue from operations "
-                        "INR 10.03 cr against INR 9.44 cr, profit after tax INR 54.40 lakh against INR 51.20 lakh and "
+                        "INR 10.03 cr against INR 9.44 cr, profit after tax INR 0.54 cr against INR 0.51 cr and "
                         "net worth INR 3.57 cr against INR 3.36 cr in the FY 2024-25 statements.")
     assert _cited(_blocks(financials, "paragraph")[4]["paragraph"]) == {docs["fy26"], docs["fy25"]}
     # No DSCR in the table (it could not be assessed), so no note.
@@ -599,7 +599,7 @@ def test_without_the_previous_years_statements_their_comparatives_give_the_trend
                                 "FY 2025-26 (audited)"]
     rows = {r[0]: r[1:] for r in _rows(table)}
     assert rows["Revenue from operations"] == ["INR 10.03 cr", "INR 11.80 cr"]
-    assert rows["Profit after tax"] == ["INR 54.40 lakh", "INR 64.00 lakh"] and rows["Growth in revenue (%)"] == ["—", "17.6"]
+    assert rows["Profit after tax"] == ["INR 0.54 cr", "INR 0.64 cr"] and rows["Growth in revenue (%)"] == ["—", "17.6"]
     assert rows["Current ratio"][0] == "—"
     assert _cited(table["rows"][0][1]) == {statements}
     assert _paragraphs(financials)[0] == ("Revenue from operations rose 17.6% to INR 11.80 cr in FY 2025-26, from "
@@ -727,10 +727,10 @@ def test_year_end_balances_are_set_against_the_audited_cash_and_bank_balance(cli
                                    "balance": 1_100_000}], last4="7777", bank_name="Ironleaf Bank")
     paragraph = next(b["paragraph"] for b in _blocks(_section(_cam(client, analyst, root, case_id), "banking"), "paragraph")
                      if b["paragraph"]["text"].startswith("At 31 Mar 2026"))
-    assert paragraph["text"] == ("At 31 Mar 2026 the statements show INR 90.00 lakh in Lotuscrest Bank ·1234 and "
-                                 "INR 11.00 lakh in Ironleaf Bank ·7777, INR 101.00 lakh in all, against cash and bank "
-                                 "balances of INR 60.00 lakh in the FY 2025-26 balance sheet; the statements' balances "
-                                 "exceed the audited figure by INR 41.00 lakh.")
+    assert paragraph["text"] == ("At 31 Mar 2026 the statements show INR 0.90 cr in Lotuscrest Bank ·1234 and "
+                                 "INR 0.11 cr in Ironleaf Bank ·7777, INR 1.01 cr in all, against cash and bank "
+                                 "balances of INR 0.60 cr in the FY 2025-26 balance sheet; the statements' balances "
+                                 "exceed the audited figure by INR 0.41 cr.")
     assert _cited(paragraph) == {first, second, fy26}
 
 
@@ -1221,8 +1221,8 @@ def test_without_the_previous_years_statements_the_turnover_table_takes_their_co
                              "FY 2024-25 statements are not on file.")
     profit = next(b["paragraph"] for b in _blocks(turnover, "paragraph")
                   if b["paragraph"]["text"].startswith("The income tax return for AY 2025-26"))
-    assert profit["text"] == ("The income tax return for AY 2025-26 shows profit before tax of INR 27.00 lakh, against "
-                              "INR 63.75 lakh for FY 2024-25 in the comparatives in the FY 2025-26 statements.")
+    assert profit["text"] == ("The income tax return for AY 2025-26 shows profit before tax of INR 0.27 cr, against "
+                              "INR 0.64 cr for FY 2024-25 in the comparatives in the FY 2025-26 statements.")
     assert _cited(profit) == {itr, statements}
     # One facility, worked out on the turnover method.
     eligible = _facts(_section(cam, "snapshot")["blocks"][0])["Eligible bank finance (working capital)"]["text"]

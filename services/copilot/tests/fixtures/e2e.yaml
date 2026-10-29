@@ -1,0 +1,56 @@
+# The end-to-end spec's questions (e2e/integration/assistant.spec.ts) against the engine's real output for the two files it
+# uploads (old.xls, broken.pdf). Recorded like the golden set; e2e replays these answers. Re-record: scripts/record_golden.py --write
+hosts:
+  uploaded:
+  - kind: file
+    document: old.xls
+    document_type: null
+    status: rejected
+    reason: Older Office format (.xls or .doc) is not supported; send XLSX, DOCX or PDF.
+    request: null
+    rule: null
+  - kind: file
+    document: broken.pdf
+    document_type: null
+    status: exception
+    reason: The PDF is damaged and cannot be opened.
+    request: The file is damaged and cannot be opened. Please send it again.
+    rule: corrupt
+cases:
+- id: suggestion_rejected
+  say: Why was a document rejected?
+  context:
+    case_id: BBG-E2E
+  host:
+    rows: uploaded
+  expect:
+    terminal: answer
+    use_case: explain_rejections
+    tools:
+    - get_rejection_reasons
+    rows: 2
+- id: suggestion_problems
+  say: Which documents have a problem?
+  context:
+    case_id: BBG-E2E
+  host:
+    rows: uploaded
+  expect:
+    terminal: answer
+    use_case: explain_rejections
+    tools:
+    - get_rejection_reasons
+    rows: 2
+- id: draft_then_send
+  say:
+  - Draft an email to the customer about them
+  - Send it
+  context:
+    case_id: BBG-E2E
+  host:
+    rows: uploaded
+  expect:
+    terminal: confirm
+    use_case: send_followup_email
+    tools:
+    - get_rejection_reasons

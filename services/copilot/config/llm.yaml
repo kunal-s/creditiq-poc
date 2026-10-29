@@ -1,0 +1,10 @@
+# The model id and endpoint are configuration; the key comes from the environment (never from this file).
+provider: openai
+base_url: https://api.openai.com/v1
+api_key_env: OPENAI_API_KEY
+router_model: gpt-5.4-nano     # confirm the exact id against the provider before first live use
+runner_model: gpt-5.4-nano
+temperature: 0
+seed: 1
+timeout_s: 60
+max_retries: 2

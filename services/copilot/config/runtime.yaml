@@ -1,0 +1,26 @@
+router:
+  prompt: router.md
+  confidence_threshold: 0.6
+session:
+  history_token_limit: 6000
+  summary_threshold: 4500
+  pending_action_ttl_s: 600
+  max_message_chars: 2000
+guards:
+  block_repeat_calls: true
+  ground_table_cells: true
+  default_max_steps: 4
+context_wins: true
+messages:
+  reasons:
+    step_limit: the number of lookups allowed for one question was reached
+    repeat_call: the same lookup would have been repeated
+    no_data: no information could be retrieved for it
+    ungrounded: part of the answer could not be tied to the retrieved information
+  decline: I can help with questions about the documents on a case, such as why one was rejected.
+  clarify: Could you say a little more about what you would like to know about this case?
+  cannot_do: "Here is what I found: {found}. I could not complete the request because {missing}."
+  forbidden: You do not have access to that information.
+  context_case_differs: "This conversation is about the case that is open ({open}). Open {named} to ask about it."
+  action_expired: That draft is no longer open. Ask me to draft the email again.
+  action_cancelled: Cancelled. Nothing was sent.

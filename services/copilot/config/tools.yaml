@@ -1,0 +1,29 @@
+# Typed bindings to the host's read endpoints. The host enforces access with the user's own token.
+tools:
+  - name: get_rejection_reasons
+    kind: read
+    description: >-
+      Lists the rejected or held documents on the open case, each with its status, the reason and the rule
+      that raised it. Use it to explain why a document was rejected or held. If the list is empty, nothing was rejected.
+    path: /api/cases/{case_id}/rejections
+    params:
+      case_id: { type: string, description: The open case, from_slot: case_id }
+      document_type: { type: string, description: Narrow to one document type, required: false, from_slot: document_type }
+    row_limit: 200
+    result_fields: [kind, document, document_type, status, reason, request, rule]
+
+  - name: send_customer_email
+    kind: act
+    description: >-
+      Records an email to the customer against the open case for sending. Run only after the user has confirmed
+      the recipient, subject and message on the confirmation card.
+    method: POST
+    path: /api/cases/{case_id}/messages
+    params:
+      case_id: { type: string, description: The open case, from_slot: case_id }
+      to: { type: string, description: The customer's email address }
+      subject: { type: string, description: The subject line }
+      body: { type: string, description: The message }
+      idempotency_key: { type: string, description: Identifies this confirmation so it is recorded once, from_slot: pending_id }
+    timeout_s: 15
+    result_fields: [id, to, subject, status]

@@ -1,6 +1,7 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { AlertTriangle, ArrowRight, ShieldCheck } from "lucide-react";
 import type { CaseDetail, Stage } from "@/api/types";
+import { CaseAssistant } from "@/components/case/CaseAssistant";
 import { CaseScreen } from "@/components/shell/CaseScreen";
 import { DeleteCaseButton } from "@/components/cases/DeleteCaseButton";
 import { StageProgressBar } from "@/components/case/StageProgress";
@@ -66,6 +67,7 @@ function Layout({ c }: { c: CaseDetail }) {
       )}
 
       <Outlet />
+      <CaseAssistant caseId={c.id} borrower={c.borrower} />
     </div>
   );
 }

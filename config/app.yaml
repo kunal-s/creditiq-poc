@@ -131,6 +131,11 @@ query_phrasing:
   party_conflict: "The file \"{file}\" carries the identity number of {party} but the name of {label_party}. Please confirm whose document it is."
   party_unmatched: "The file \"{file}\" ({content}) does not match anyone on this application. Please confirm whose document it is and how they are connected to the borrower."
 
+# What a document held for review is described as, when it has no reason code of its own.
+rejection_phrasing:
+  type_not_recognised: "The document type could not be recognised."
+  held: "The document is held for review."
+
 # Sessions (F-03.3).
 sessions:
   idle_minutes: 480

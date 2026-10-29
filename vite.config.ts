@@ -7,6 +7,7 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import { nitro } from "nitro/vite";
 
 const srcDir = fileURLToPath(new URL("./src", import.meta.url));
+const copilotUi = fileURLToPath(new URL("./services/copilot/ui/src/index.ts", import.meta.url));
 
 export default defineConfig(({ mode, command }) => {
   const env = loadEnv(mode, process.cwd(), "VITE_");
@@ -24,7 +25,7 @@ export default defineConfig(({ mode, command }) => {
       fs: { deny: [".env", ".env.*", "*.{crt,pem}", "**/.git/**", "**/workflow/**"] },
     },
     resolve: {
-      alias: { "@": srcDir },
+      alias: { "@": srcDir, "@copilot-ui": copilotUi },
       dedupe: [
         "react",
         "react-dom",

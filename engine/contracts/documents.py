@@ -114,3 +114,42 @@ class FieldValue(BaseModel):
     status: FieldStatus
     missing_reason: str | None = None
     corrected_value: Scalar = None
+
+
+class RejectionItem(BaseModel):
+    """A file or document that did not pass intake, with the reason and the rule that raised it (read-only)."""
+
+    kind: Literal["file", "document"]
+    id: str
+    document: str
+    """The file name, with the page range for a document inside a file."""
+    document_type: str | None = None
+    status: str
+    reason: str
+    """What is wrong, in plain language."""
+    request: str | None = None
+    """What to ask for, when the reason code has a configured re-scan request."""
+    rule: str | None = None
+    """The reason code, or the review kind that raised it."""
+
+
+class MessageRequest(BaseModel):
+    """A customer message the case assistant asks the host to record for sending."""
+
+    to: str
+    subject: str
+    body: str
+    idempotency_key: str
+    """The same key sent again returns the message already recorded; nothing is recorded twice."""
+
+
+class OutboxMessage(BaseModel):
+    """A customer message recorded for sending. Nothing leaves the bank until a delivery step is configured."""
+
+    id: int
+    case_id: str
+    to: str
+    subject: str
+    status: Literal["recorded"]
+    created_at: str
+    created_by: str

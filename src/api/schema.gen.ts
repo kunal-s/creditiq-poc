@@ -649,6 +649,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/cases/{case_id}/messages": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Case Messages */
+    get: operations["case_messages_api_cases__case_id__messages_get"];
+    put?: never;
+    /**
+     * Send Case Message
+     * @description Record a customer message for sending. The same idempotency key returns the message already recorded.
+     */
+    post: operations["send_case_message_api_cases__case_id__messages_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/cases/{case_id}/parties": {
     parameters: {
       query?: never;
@@ -782,6 +803,26 @@ export interface paths {
      * @description F-25.1: the RBL reviewer confirms the imported record (never the person who imported it).
      */
     post: operations["confirm_reference_api_cases__case_id__reference_confirm_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/cases/{case_id}/rejections": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Case Rejections
+     * @description Files and documents that did not pass intake, each with its reason and rule (read-only).
+     */
+    get: operations["case_rejections_api_cases__case_id__rejections_get"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -3377,6 +3418,20 @@ export interface components {
       status: "active" | "provisional";
     };
     /**
+     * MessageRequest
+     * @description A customer message the case assistant asks the host to record for sending.
+     */
+    MessageRequest: {
+      /** Body */
+      body: string;
+      /** Idempotency Key */
+      idempotency_key: string;
+      /** Subject */
+      subject: string;
+      /** To */
+      to: string;
+    };
+    /**
      * Meta
      * @description Choice lists the screens need, from config/app.yaml.
      */
@@ -3600,6 +3655,29 @@ export interface components {
       id: string;
       /** Label */
       label: string;
+    };
+    /**
+     * OutboxMessage
+     * @description A customer message recorded for sending. Nothing leaves the bank until a delivery step is configured.
+     */
+    OutboxMessage: {
+      /** Case Id */
+      case_id: string;
+      /** Created At */
+      created_at: string;
+      /** Created By */
+      created_by: string;
+      /** Id */
+      id: number;
+      /**
+       * Status
+       * @constant
+       */
+      status: "recorded";
+      /** Subject */
+      subject: string;
+      /** To */
+      to: string;
     };
     /**
      * OutputSource
@@ -4237,6 +4315,31 @@ export interface components {
       workbook_name: string;
       /** Workbook Sha256 */
       workbook_sha256: string;
+    };
+    /**
+     * RejectionItem
+     * @description A file or document that did not pass intake, with the reason and the rule that raised it (read-only).
+     */
+    RejectionItem: {
+      /** Document */
+      document: string;
+      /** Document Type */
+      document_type?: string | null;
+      /** Id */
+      id: string;
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: "file" | "document";
+      /** Reason */
+      reason: string;
+      /** Request */
+      request?: string | null;
+      /** Rule */
+      rule?: string | null;
+      /** Status */
+      status: string;
     };
     /** ReviewDecisionRequest */
     ReviewDecisionRequest: {
@@ -6425,6 +6528,76 @@ export interface operations {
       };
     };
   };
+  case_messages_api_cases__case_id__messages_get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["OutboxMessage"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  send_case_message_api_cases__case_id__messages_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["MessageRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["OutboxMessage"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   case_parties_api_cases__case_id__parties_get: {
     parameters: {
       query?: never;
@@ -6646,6 +6819,41 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ReferenceRecord"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  case_rejections_api_cases__case_id__rejections_get: {
+    parameters: {
+      query?: {
+        document_type?: string | null;
+      };
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RejectionItem"][];
         };
       };
       /** @description Validation Error */

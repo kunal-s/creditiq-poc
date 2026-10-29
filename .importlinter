@@ -39,6 +39,7 @@ source_modules =
     engine.jobs
     engine.keys
     engine.names
+    engine.outbox
     engine.output_sources
     engine.pages
     engine.pd_note
@@ -50,6 +51,7 @@ source_modules =
     engine.queries
     engine.reads
     engine.reference
+    engine.rejections
     engine.review
     engine.review_items
     engine.spread

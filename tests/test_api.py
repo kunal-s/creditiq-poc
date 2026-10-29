@@ -127,18 +127,20 @@ def test_maker_cannot_check_their_own_entry(published_data_root):
         conn.close()
 
 
-def test_store_migrates_to_version_14(published_data_root):
+def test_store_migrates_to_version_15(published_data_root):
     from engine import db
 
     conn = db.connect(published_data_root)
     try:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == len(db.MIGRATIONS) == 14
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == len(db.MIGRATIONS) == 15
         tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
         finding_columns = {r["name"] for r in conn.execute("PRAGMA table_info(findings)")}
         case_columns = {r["name"] for r in conn.execute("PRAGMA table_info(cases)")}
     finally:
         conn.close()
     assert {"reference_records", "reference_items", "comparison_adjudications"} <= tables
+    # 15: customer messages recorded for sending.
+    assert "outbox" in tables
     # 14: a person's edit of a statement line, with the document's own figure beside it.
     assert "statement_edits" in tables
     # 12: classified bank-statement transactions.

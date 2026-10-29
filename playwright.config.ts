@@ -1,4 +1,5 @@
 /// <reference types="node" />
+import { resolve } from "node:path";
 import { defineConfig, devices } from "@playwright/test";
 
 // Two kinds of test run side by side.
@@ -21,7 +22,13 @@ const PORT = Number(process.env["E2E_PORT"] ?? 5173);
 const INTEGRATION_PORT = Number(process.env["E2E_INTEGRATION_PORT"] ?? 4174);
 const ENGINE_PORT = Number(process.env["E2E_ENGINE_PORT"] ?? 8011);
 const ENGINE_URL = process.env["E2E_ENGINE_URL"] ?? `http://localhost:${ENGINE_PORT}`;
+// The case assistant service is answered in the browser too (e2e/assistant.spec.ts).
+const MOCK_ASSISTANT_URL = "http://localhost:8202";
 const DATA_ROOT = process.env["E2E_DATA_ROOT"] ?? "workflow/data-e2e";
+// The real case assistant service for the integration project: it answers from the recorded model answers in
+// services/copilot/tests/fixtures/e2e_recordings.json (replay mode), so no model key is needed.
+const ASSISTANT_PORT = Number(process.env["E2E_ASSISTANT_PORT"] ?? 8021);
+const ASSISTANT_URL = `http://localhost:${ASSISTANT_PORT}`;
 
 export default defineConfig({
   testDir: "e2e",
@@ -32,6 +39,10 @@ export default defineConfig({
   workers: 3,
   reporter: [["list"]],
   use: {
+    // Optional: run on an installed browser instead of Playwright's bundled Chromium (for a machine where that build crashes).
+    ...(process.env["E2E_BROWSER_PATH"]
+      ? { launchOptions: { executablePath: process.env["E2E_BROWSER_PATH"] } }
+      : {}),
     baseURL: `http://localhost:${PORT}`,
     trace: "off",
     screenshot: "off",
@@ -62,7 +73,7 @@ export default defineConfig({
       url: `http://localhost:${PORT}/sign-in`,
       reuseExistingServer: true,
       timeout: 120_000,
-      env: { VITE_API_BASE_URL: "http://localhost:8201" },
+      env: { VITE_API_BASE_URL: "http://localhost:8201", VITE_COPILOT_URL: MOCK_ASSISTANT_URL },
     },
     {
       // The engine under test: stub ingest, isolated data root. Its configuration
@@ -84,7 +95,22 @@ export default defineConfig({
       url: `http://localhost:${INTEGRATION_PORT}/sign-in`,
       reuseExistingServer: true,
       timeout: 120_000,
-      env: { VITE_API_BASE_URL: ENGINE_URL },
+      env: { VITE_API_BASE_URL: ENGINE_URL, VITE_COPILOT_URL: ASSISTANT_URL },
+    },
+    {
+      command:
+        "cd services/copilot && PYTHONPATH=. .venv/bin/python -m copilot.cli import-recordings tests/fixtures/e2e_recordings.json" +
+        " && PYTHONPATH=. .venv/bin/python -m copilot.cli serve",
+      url: `http://127.0.0.1:${ASSISTANT_PORT}/health`,
+      reuseExistingServer: true,
+      timeout: 60_000,
+      env: {
+        COPILOT_DATA_DIR: resolve(DATA_ROOT, "copilot"),
+        COPILOT_HOST_URL: ENGINE_URL,
+        COPILOT_PORT: String(ASSISTANT_PORT),
+        COPILOT_MODEL_MODE: "replay",
+        COPILOT_CORS_ORIGINS: `http://localhost:${INTEGRATION_PORT},http://127.0.0.1:${INTEGRATION_PORT}`,
+      },
     },
   ],
 });

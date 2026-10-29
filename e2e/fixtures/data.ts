@@ -85,6 +85,7 @@ export const ANALYST: SessionUser = {
     "finding.read",
     "output.read",
     "manual.make",
+    "message.send",
   ],
 };
 
@@ -104,6 +105,7 @@ export const RM: SessionUser = {
     "document.upload",
     "checklist.read",
     "query.read",
+    "message.send",
   ],
 };
 

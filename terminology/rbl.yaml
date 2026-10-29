@@ -48,6 +48,43 @@ action:
   cancel: Cancel
   goHome: Go to the workbench
 
+# The assistant that answers questions about the open appraisal.
+assistant:
+  title: Appraisal assistant
+  launcher: Ask about this appraisal
+  placeholder: Ask about this appraisal
+  send: Send
+  newConversation: New conversation
+  close: Close the assistant
+  copy: Copy
+  copied: Copied
+  hint: Enter to send, Shift+Enter for a new line
+  intro: Ask why a document on this appraisal was rejected or held for review, ask for a draft email to the customer, or send that email once you have checked it.
+  thinking: Looking this up…
+  sources: Sources
+  suggestionRejected: Why was a document rejected?
+  suggestionProblems: Which documents have a problem?
+  suggestionDraft: Draft an email to the customer about them
+  column:
+    document: Document
+    status: Status
+    reason: Reason
+    rule: Rule
+  action:
+    field:
+      to: To
+      subject: Subject
+      body: Message
+    confirm: Send
+    cancel: Cancel
+    working: Sending…
+  error:
+    signedOut: Sign in again to use the assistant.
+    unavailable: The assistant is not available right now. Try again in a moment.
+    network: The assistant could not be reached. Check the connection and try again.
+    tooLong: That question is too long. Shorten it and try again.
+    notDone: That could not be done right now. Check the details and try again.
+
 # The case workspace's tabs, in processing order (FRD §6).
 caseTab:
   overview: Overview
@@ -1392,6 +1429,7 @@ admin:
     document_upload: Upload documents
     checklist_read: See the checklist
     query_read: See the query list
+    message_send: Send messages to the customer
     data_read: See extracted data
     review_read: See the review queue
     review_decide: Decide review items

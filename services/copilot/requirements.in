@@ -1,0 +1,11 @@
+# Runtime (all permissive licences; no AGPL/GPL/LGPL, CLAUDE.md rule 10)
+fastapi
+uvicorn
+pydantic
+pydantic-ai-slim[openai]
+pyyaml
+httpx
+# Dev
+pytest
+pytest-asyncio
+import-linter

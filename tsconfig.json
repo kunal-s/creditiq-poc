@@ -3,7 +3,10 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     "e2e/**/*.ts",
+    "services/copilot/ui/**/*.ts",
+    "services/copilot/ui/**/*.tsx",
     "playwright.config.ts",
+    "playwright.unit.config.ts",
     "vite.config.ts",
     "eslint.config.js"
   ],
@@ -29,7 +32,8 @@
     "exactOptionalPropertyTypes": true,
     "noUncheckedSideEffectImports": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@copilot-ui": ["./services/copilot/ui/src/index.ts"]
     }
   }
 }

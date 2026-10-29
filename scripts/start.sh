@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Starts the three processes the app needs: the document-processing service
-# (services/ingestion), the Python engine service, and the React frontend
-# dev server. See README.md "Running the app" for the environment variables
-# this respects. Ctrl+C stops all three.
+# Starts the four processes the app needs: the document-processing service
+# (services/ingestion), the Python engine service, the case assistant service
+# (services/copilot), and the React frontend dev server. See README.md "Running the app" for the environment variables
+# this respects. Ctrl+C stops all four.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -14,28 +14,34 @@ export VITE_API_BASE_URL="${VITE_API_BASE_URL:-http://localhost:${API_PORT}}"
 FRONTEND_PORT="${FRONTEND_PORT:-4173}"
 export INGEST_PORT="${INGEST_PORT:-3102}"
 export CREDITIQ_INGEST_URL="${CREDITIQ_INGEST_URL:-http://127.0.0.1:${INGEST_PORT}}"
+export COPILOT_PORT="${COPILOT_PORT:-8020}"
+export COPILOT_HOST_URL="${COPILOT_HOST_URL:-http://localhost:${API_PORT}}"
+export VITE_COPILOT_URL="${VITE_COPILOT_URL:-http://localhost:${COPILOT_PORT}}"
 
 # Model calls: "replay" (the default) answers only from recordings, so a document nobody has run
 # before has none and its model steps fail. "record" calls the model once, stores the answer, and
 # replays it from then on; "live" calls without storing. Both need a key, taken from the
 # environment, else .env.local, else workflow/private/openai.env.
+# The case assistant has its own switch, COPILOT_MODEL_MODE, with the same three values; in "replay"
+# it can only repeat answers already recorded in its own store, so use "record" to try it by hand.
 export INGEST_MODEL_MODE="${INGEST_MODEL_MODE:-replay}"
-case "$INGEST_MODEL_MODE" in
-  record|live)
+export COPILOT_MODEL_MODE="${COPILOT_MODEL_MODE:-replay}"
+case "$INGEST_MODEL_MODE/$COPILOT_MODEL_MODE" in
+  record/*|live/*|*/record|*/live)
     for KEY_FILE in "$ROOT_DIR/.env.local" "$ROOT_DIR/workflow/private/openai.env"; do
       if [ -z "${OPENAI_API_KEY:-}" ] && [ -f "$KEY_FILE" ]; then
         set -a; . "$KEY_FILE"; set +a
       fi
     done
     if [ -z "${OPENAI_API_KEY:-}" ]; then
-      echo "error: INGEST_MODEL_MODE=$INGEST_MODEL_MODE needs OPENAI_API_KEY (set it, or give it a value in .env.local)." >&2
+      echo "error: INGEST_MODEL_MODE=$INGEST_MODEL_MODE / COPILOT_MODEL_MODE=$COPILOT_MODEL_MODE needs OPENAI_API_KEY (set it, or give it a value in .env.local)." >&2
       exit 1
     fi
     export OPENAI_API_KEY
     ;;
 esac
 
-for need in .venv node_modules services/ingestion/.venv; do
+for need in .venv node_modules services/ingestion/.venv services/copilot/.venv; do
   if [ ! -d "$need" ]; then
     echo "error: $need not found. See README.md, one-time setup." >&2
     exit 1
@@ -73,6 +79,11 @@ echo "Starting engine service on http://localhost:${API_PORT} (CREDITIQ_DATA_ROO
 .venv/bin/uvicorn engine.api:app --port "$API_PORT" &
 PIDS+=($!)
 wait_for "http://localhost:${API_PORT}/api/health" "the engine service"
+
+echo "Starting case assistant service on http://127.0.0.1:${COPILOT_PORT} (model mode: ${COPILOT_MODEL_MODE})"
+(cd services/copilot && PYTHONPATH=. exec .venv/bin/python -m copilot.cli serve) &
+PIDS+=($!)
+wait_for "http://127.0.0.1:${COPILOT_PORT}/health" "the case assistant service"
 
 echo "All services are up."
 echo "Starting frontend on http://localhost:${FRONTEND_PORT}"

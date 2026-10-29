@@ -4,6 +4,7 @@ import { LogOut, Menu } from "lucide-react";
 import { buildNav, type NavGroup, type NavItem } from "./nav";
 import { CaseNav } from "./CaseNav";
 import { useSession, signOut } from "@/domain/session";
+import { AssistantDockProvider, AssistantDockSlot } from "@/components/shell/AssistantDock";
 import { DocViewerProvider } from "@/components/docviewer/DocViewer";
 import { t } from "@/config/terminology";
 import { cn } from "@/lib/utils";
@@ -155,14 +156,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex h-screen w-full flex-col overflow-hidden bg-background">
       <TopBar menu={<MobileMenu />} />
-      <div className="flex min-h-0 flex-1">
-        <SideNav />
-        <div className="flex min-w-0 flex-1 flex-col">
-          <DocViewerProvider>
-            <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
-          </DocViewerProvider>
+      <AssistantDockProvider>
+        <div className="flex min-h-0 flex-1">
+          <SideNav />
+          <div className="flex min-w-0 flex-1 flex-col">
+            <DocViewerProvider>
+              <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
+            </DocViewerProvider>
+          </div>
+          <AssistantDockSlot />
         </div>
-      </div>
+      </AssistantDockProvider>
     </div>
   );
 }

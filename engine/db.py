@@ -508,6 +508,24 @@ MIGRATIONS: list[str] = [
     CREATE INDEX statement_edits_case ON statement_edits(case_id);
     CREATE INDEX statement_edits_doc ON statement_edits(document_id);
     """,
+    # Customer messages recorded for sending (the case assistant's send step). Rows are never edited; deleting a case removes
+    # them with the rest of its rows, and the decision log keeps the `message.send` entry.
+    """
+    CREATE TABLE outbox (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        case_id TEXT NOT NULL REFERENCES cases(id),
+        idempotency_key TEXT NOT NULL UNIQUE,
+        to_address TEXT NOT NULL,
+        subject TEXT NOT NULL,
+        body TEXT NOT NULL,
+        status TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        created_by TEXT NOT NULL
+    );
+    CREATE INDEX outbox_case ON outbox(case_id);
+    CREATE TRIGGER outbox_no_update BEFORE UPDATE ON outbox
+        BEGIN SELECT RAISE(ABORT, 'outbox is append-only'); END;
+    """,
 ]
 
 

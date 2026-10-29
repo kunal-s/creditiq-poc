@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite dev",
     "dev:api": ".venv/bin/uvicorn engine.api:app --reload --reload-dir engine --reload-dir config --port 8010",
+    "dev:copilot": "export CREDITIQ_DATA_ROOT=\"${CREDITIQ_DATA_ROOT:-$PWD/workflow/data}\"; cd services/copilot && PYTHONPATH=. .venv/bin/python -m copilot.cli serve",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
@@ -16,14 +17,17 @@
     "lint:imports": ".venv/bin/lint-imports",
     "lint:ingestion": "cd services/ingestion && PYTHONPATH=. .venv/bin/lint-imports && PYTHONPATH=. .venv/bin/python -m ingestion.cli config-validate ../../config/ingestion",
     "test:ingestion": "cd services/ingestion && PYTHONPATH=. .venv/bin/python -m pytest -q",
+    "test:copilot": "cd services/copilot && PYTHONPATH=. .venv/bin/python -m pytest -q",
+    "lint:copilot": "cd services/copilot && PYTHONPATH=. .venv/bin/lint-imports && PYTHONPATH=. .venv/bin/python -m copilot.cli config-validate config",
     "check:terms": ".venv/bin/python -m engine.cli check excluded-terms --names workflow/private/stakeholder-names.txt --root .",
     "config:publish": ".venv/bin/python -m engine.cli config publish --author",
     "gen:api": ".venv/bin/python scripts/gen_contracts.py && openapi-typescript contracts/openapi.json -o src/api/schema.gen.ts && prettier --write src/api/schema.gen.ts",
     "check:contracts": "npm run gen:api && git diff --exit-code -- contracts src/api/schema.gen.ts",
+    "test:copilot-ui": "playwright test -c playwright.unit.config.ts",
     "test:e2e": "playwright test --project=chromium",
     "test:e2e:integration": "playwright test --project=integration",
     "e2e:setup": "CREDITIQ_DATA_ROOT=workflow/data-e2e .venv/bin/python -m engine.cli config publish --author e2e",
-    "check": "npm run check:contracts && npm run typecheck && npm run lint && npm run test:py && npm run test:ingestion && npm run lint:imports && npm run lint:ingestion && npm run check:terms && npm run build && npm run test:e2e"
+    "check": "npm run check:contracts && npm run typecheck && npm run lint && npm run test:py && npm run test:ingestion && npm run lint:imports && npm run lint:ingestion && npm run test:copilot && npm run lint:copilot && npm run test:copilot-ui && npm run check:terms && npm run build && npm run test:e2e"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.15",

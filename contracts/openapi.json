@@ -6086,6 +6086,35 @@
         "title": "MatrixAuthority",
         "type": "object"
       },
+      "MessageRequest": {
+        "description": "A customer message the case assistant asks the host to record for sending.",
+        "properties": {
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "idempotency_key": {
+            "title": "Idempotency Key",
+            "type": "string"
+          },
+          "subject": {
+            "title": "Subject",
+            "type": "string"
+          },
+          "to": {
+            "title": "To",
+            "type": "string"
+          }
+        },
+        "required": [
+          "to",
+          "subject",
+          "body",
+          "idempotency_key"
+        ],
+        "title": "MessageRequest",
+        "type": "object"
+      },
       "Meta": {
         "description": "Choice lists the screens need, from config/app.yaml.",
         "properties": {
@@ -6730,6 +6759,51 @@
           "label"
         ],
         "title": "Option",
+        "type": "object"
+      },
+      "OutboxMessage": {
+        "description": "A customer message recorded for sending. Nothing leaves the bank until a delivery step is configured.",
+        "properties": {
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "title": "Created By",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "status": {
+            "const": "recorded",
+            "title": "Status",
+            "type": "string"
+          },
+          "subject": {
+            "title": "Subject",
+            "type": "string"
+          },
+          "to": {
+            "title": "To",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "case_id",
+          "to",
+          "subject",
+          "status",
+          "created_at",
+          "created_by"
+        ],
+        "title": "OutboxMessage",
         "type": "object"
       },
       "OutputSource": {
@@ -8505,6 +8579,77 @@
           "areas_not_compared"
         ],
         "title": "ReferenceRecord",
+        "type": "object"
+      },
+      "RejectionItem": {
+        "description": "A file or document that did not pass intake, with the reason and the rule that raised it (read-only).",
+        "properties": {
+          "document": {
+            "title": "Document",
+            "type": "string"
+          },
+          "document_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Type"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "file",
+              "document"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "request": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request"
+          },
+          "rule": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "document",
+          "status",
+          "reason"
+        ],
+        "title": "RejectionItem",
         "type": "object"
       },
       "ReviewDecisionRequest": {
@@ -13129,6 +13274,129 @@
         "summary": "Case Findings"
       }
     },
+    "/api/cases/{case_id}/messages": {
+      "get": {
+        "operationId": "case_messages_api_cases__case_id__messages_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/OutboxMessage"
+                  },
+                  "title": "Response Case Messages Api Cases  Case Id  Messages Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Messages"
+      },
+      "post": {
+        "description": "Record a customer message for sending. The same idempotency key returns the message already recorded.",
+        "operationId": "send_case_message_api_cases__case_id__messages_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutboxMessage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Send Case Message"
+      }
+    },
     "/api/cases/{case_id}/parties": {
       "get": {
         "description": "F-10.2: the case's party set with sources and attributed KYC.",
@@ -13546,6 +13814,82 @@
           }
         },
         "summary": "Confirm Reference"
+      }
+    },
+    "/api/cases/{case_id}/rejections": {
+      "get": {
+        "description": "Files and documents that did not pass intake, each with its reason and rule (read-only).",
+        "operationId": "case_rejections_api_cases__case_id__rejections_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "document_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Document Type"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RejectionItem"
+                  },
+                  "title": "Response Case Rejections Api Cases  Case Id  Rejections Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Rejections"
       }
     },
     "/api/cases/{case_id}/spread": {

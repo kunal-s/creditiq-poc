@@ -1,0 +1,6 @@
+# The application the assistant serves. Replace this file to reuse the service elsewhere.
+base_url: http://127.0.0.1:8010
+identity_path: /api/auth/session
+identity_timeout_s: 5
+cors_origins: ["http://localhost:4173", "http://localhost:3000", "http://localhost:5173"]
+context_keys: [case_id]

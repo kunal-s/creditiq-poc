@@ -1,0 +1,70 @@
+# One entry per capability. Adding a capability means adding an entry here and its tools; no code changes.
+use_cases:
+  - id: explain_rejections
+    title: Explain rejections
+    kind: read
+    examples:
+      - why was the bank statement rejected?
+      - what is wrong with this case?
+      - which documents were rejected and why?
+      - what was rejected?
+      - is anything wrong with the documents?
+      - are there any problems with the files we received?
+    required_slots: [case_id]
+    optional_slots: [document_type]
+    context_slots: { case_id: case_id }
+    slot_questions: { case_id: "Which case do you mean?" }
+    tools: [get_rejection_reasons]
+    max_steps: 4
+    permissions: [case.read]
+    prompt: explain_rejections.md
+    output: { format: table, columns: [document, status, reason, rule] }
+    confirmation: none
+    follow_ups: [Draft an email to the customer about them]
+
+  - id: draft_followup_email
+    title: Draft follow-up email
+    kind: draft
+    examples:
+      - draft an email to the customer asking for the rejected documents
+      - write a follow-up email about the documents we need again
+      - help me chase the customer for corrected copies
+      - draft an email
+      - send the customer an email asking for the missing documents
+      - write an email about these
+    required_slots: [case_id]
+    optional_slots: [document_type]
+    context_slots: { case_id: case_id }
+    slot_questions: { case_id: "Which case do you mean?" }
+    tools: [get_rejection_reasons]
+    max_steps: 2
+    permissions: [case.read]
+    prompt: draft_followup_email.md
+    output: { format: draft }
+    confirmation: none
+    follow_ups: [Send it]
+    empty_message: "There is nothing to ask the customer for: no document on this case has been rejected or held."
+
+
+  - id: send_followup_email
+    title: Send the follow-up email
+    kind: act
+    examples:
+      - send it
+      - send the email to the customer
+      - go ahead and send that
+    required_slots: [case_id]
+    context_slots: { case_id: case_id }
+    slot_questions: { case_id: "Which case do you mean?" }
+    tools: [send_customer_email]
+    max_steps: 1
+    permissions: [message.send]
+    confirmation: user
+    act:
+      tool: send_customer_email
+      from_draft: draft_followup_email
+      blocked_pattern: '\[[^\]]{1,40}\]'
+      confirm_text: Check the message and add the customer's email address. Nothing is sent until you press Send.
+      needs_draft: There is no draft to send. Ask me to draft the email first.
+      done: "The email to {to} has been recorded for sending."
+      blocked: Replace the text in square brackets, such as [Name], before sending.

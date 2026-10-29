@@ -1,0 +1,15 @@
+[importlinter]
+include_external_packages = True
+root_packages =
+    copilot
+
+# The copilot is generic and reusable: it knows nothing of the host application.
+# CLAUDE.md rule 4 also holds: the engine's configstore holds the config writer.
+[importlinter:contract:1]
+name = The service does not depend on the engine or the host application
+type = forbidden
+source_modules =
+    copilot
+forbidden_modules =
+    engine
+    ingestion

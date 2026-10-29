@@ -153,7 +153,19 @@ curl http://localhost:8010/api/health  # {"status":"ok","config_version":"<hash>
 Both must report the same configuration hash that `npm run config:publish`
 printed. An empty `versions` list means step 5 has not been run.
 
-`./scripts/start.sh` runs all three at once; the commands above are what it
+**Terminal 4 (optional) — the case assistant service, on :8020**
+
+```sh
+COPILOT_HOST_URL=http://localhost:8010 npm run dev:copilot
+```
+
+It reads `CREDITIQ_DATA_ROOT` (default `workflow/data`) and keeps its sessions,
+audit trace and recorded model answers in `<data root>/copilot/`. Its behaviour
+is the configuration in `services/copilot/config/`; see
+`services/copilot/README.md`. `curl http://127.0.0.1:8020/health` reports its
+configuration hash and model mode.
+
+`./scripts/start.sh` runs all four at once; the commands above are what it
 does, one process at a time, which is what you want when one of them fails.
 
 ### Model calls
@@ -173,6 +185,10 @@ That needs `OPENAI_API_KEY`, from the environment, `.env.local` or
 `workflow/private/openai.env`. `live` calls without storing. The model is only
 a fallback: most documents are read by the rules alone.
 
+The case assistant has its own switch, `COPILOT_MODEL_MODE` (`replay`,
+`record`, `live`), with the same key lookup. In `replay` it can only repeat
+answers already in its store, so use `record` to try it by hand.
+
 ### Environment variables
 
 | Variable | Default | What it does |
@@ -182,6 +198,11 @@ a fallback: most documents are read by the rules alone.
 | `CREDITIQ_INGEST_URL` | `http://127.0.0.1:3102` | Where the engine looks for the document-processing service. |
 | `INGEST_PORT` | `3102` | The document-processing service's port. |
 | `INGEST_MODEL_MODE` | `replay` | `replay`, `record` or `live`. |
+| `COPILOT_PORT` | `8020` | The case assistant service's port. |
+| `COPILOT_HOST_URL` | `http://localhost:8010` | Where the case assistant looks for the engine (set by `start.sh`; overrides `host.yaml`). |
+| `COPILOT_MODEL_MODE` | `replay` | `replay`, `record` or `live`. |
+| `VITE_COPILOT_URL` | `http://localhost:8020` | Where the frontend looks for the case assistant. |
+| `E2E_ASSISTANT_PORT` | `8021` | The case assistant service the integration screen tests start (answers from recordings). |
 | `E2E_PORT` | `5173` | The dev-server port Playwright uses. |
 
 ## Checks
@@ -233,6 +254,7 @@ Two things to know about that:
 | `terminology/rbl.yaml` | Every on-screen label, read through `t()` |
 | `engine/` | Python service (FastAPI), CLI, config store, checklist, identifiers |
 | `services/ingestion/` | The document-processing service (FastAPI, Python 3.12, SQLite): reads, classifies and extracts; see its README and GUIDE |
+| `services/copilot/` | The case assistant service (FastAPI, Python 3.12, SQLite, Pydantic AI): routes a question to a configured use case and answers from typed lookups; see its README |
 | `config/` | Authored configuration, published as immutable versions to the data root; `config/ingestion/` is the document-processing service's |
 | `tests/` | Python tests |
 | `workflow/` | Local only, never committed: private notes, keys and the data root (`workflow/data`: `cases/` at mode 700, `config_store/`, `audit/`). Never run `git clean -x` or `-X` |

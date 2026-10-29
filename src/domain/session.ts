@@ -91,6 +91,12 @@ export function useSession() {
   );
 }
 
+/** The bearer token for services other than the engine (the case assistant), read at the moment of use. */
+export function sessionToken(): string | null {
+  hydrate();
+  return state?.token ?? null;
+}
+
 /** Whether the signed-in user's role includes a permission (re-renders on change). */
 export function useCan(permission: string): boolean {
   return useSession()?.user.permissions.includes(permission) ?? false;

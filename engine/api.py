@@ -33,6 +33,7 @@ from . import (
     cam_review,
     cam_templates,
     keys,
+    outbox,
     cases,
     comparison,
     db,
@@ -49,6 +50,7 @@ from . import (
     queries,
     reads,
     reference,
+    rejections,
     review,
     spread,
     statement_edits,
@@ -109,6 +111,9 @@ from .contracts import (
     Meta,
     QueryItem,
     Readiness,
+    MessageRequest,
+    OutboxMessage,
+    RejectionItem,
     ReviewItem,
     SessionUser,
     CamDataRequest,
@@ -345,6 +350,44 @@ def case_documents(
 ):
     _case_for(conn, case_id, user)
     return reads.documents(conn, case_id)
+
+
+@app.get("/api/cases/{case_id}/rejections", response_model=list[RejectionItem])
+def case_rejections(
+    case_id: str,
+    document_type: str | None = None,
+    user: dict = Depends(require("case.read")),
+    conn: sqlite3.Connection = Depends(get_conn),
+):
+    """Files and documents that did not pass intake, each with its reason and rule (read-only)."""
+    _case_for(conn, case_id, user)
+    try:
+        return rejections.build(conn, data_root(), case_id, document_type)
+    except configstore_reader.NoPublishedConfig as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+
+
+@app.post("/api/cases/{case_id}/messages", response_model=OutboxMessage)
+def send_case_message(
+    case_id: str,
+    body: MessageRequest,
+    user: dict = Depends(require("message.send")),
+    conn: sqlite3.Connection = Depends(get_conn),
+):
+    """Record a customer message for sending. The same idempotency key returns the message already recorded."""
+    _case_for(conn, case_id, user)
+    try:
+        return outbox.record(conn, case_id, user["id"], body)
+    except outbox.MessageError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+
+
+@app.get("/api/cases/{case_id}/messages", response_model=list[OutboxMessage])
+def case_messages(
+    case_id: str, user: dict = Depends(require("case.read")), conn: sqlite3.Connection = Depends(get_conn)
+):
+    _case_for(conn, case_id, user)
+    return outbox.listing(conn, case_id)
 
 
 @app.get("/api/cases/{case_id}/fields", response_model=list[FieldValue])

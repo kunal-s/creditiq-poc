@@ -70,6 +70,7 @@
   --color-positive-soft: var(--positive-soft);
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
+  --animate-copilot-in: copilot-in 0.2s ease-out both;
   --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 }
@@ -186,4 +187,12 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--color-muted-foreground);
+}
+
+/* A new message in the case assistant eases in. */
+@keyframes copilot-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
 }

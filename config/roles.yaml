@@ -29,13 +29,14 @@ navByRole:
 # What each role may do (F-03.1). The server denies anything not listed.
 # case.read.all: see every case (an RM sees only cases they created).
 # case.delete: delete a case and everything it owns (F-01.5; an RM only their own).
+# message.send: record a message to the customer for sending (the case assistant's send step).
 # finding.escalation: decide a cross-check discrepancy an analyst escalated (the Credit Manager).
 # config.publish: edit settings on the Administration screen and publish them as a new version (F-00.6).
 permissions:
-  rm: [case.create, case.read, case.delete, document.upload, checklist.read, query.read]
+  rm: [case.create, case.read, case.delete, document.upload, checklist.read, query.read, message.send]
   analyst: [case.create, case.read, case.read.all, case.delete, document.upload, checklist.read, query.read,
             data.read, review.read, review.decide, finding.read, output.read, manual.make,
-            audit.read, config.read]
+            audit.read, config.read, message.send]
   credit-manager: [case.read, case.read.all, case.delete, checklist.read, query.read, data.read, review.read,
                    review.decide, finding.read, output.read, manual.check, comparison.adjudicate,
                    finding.escalation, scorecard.read, audit.read, config.read]

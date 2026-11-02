@@ -11,7 +11,7 @@ import yaml
 from ..util import hash_of
 from .models import (
     ConfidenceConfig, DecisionConfig, DocumentTypesConfig, FieldsConfig, IngestionConfig, LlmConfig,
-    QualityConfig, RoutingConfig, SignalsConfig, ValidatorsConfig,
+    IntegrityConfig, QualityConfig, RoutingConfig, SignalsConfig, ValidatorsConfig,
 )
 
 FILES = {
@@ -21,6 +21,7 @@ FILES = {
     "validators": "validators.yaml",
     "quality": "quality.yaml",
     "routing": "routing.yaml",
+    "integrity": "integrity.yaml",
     "llm": "llm.yaml",
     "confidence": "confidence.yaml",
     "decision": "decision.yaml",
@@ -70,6 +71,7 @@ def _build(raw: dict, version: str) -> IngestionConfig:
             validators=ValidatorsConfig.model_validate(raw["validators"]),
             quality=QualityConfig.model_validate(raw["quality"]),
             routing=RoutingConfig.model_validate(raw["routing"]),
+            integrity=IntegrityConfig.model_validate(raw["integrity"]),
             llm=LlmConfig.model_validate(raw["llm"]),
             confidence=ConfidenceConfig.model_validate(raw["confidence"]),
             decision=DecisionConfig.model_validate(raw["decision"]),

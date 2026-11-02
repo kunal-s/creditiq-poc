@@ -543,6 +543,43 @@
           "default": null,
           "title": "Grade"
         },
+        "integrity": {
+          "items": {
+            "$ref": "#/$defs/IngestIntegrityFinding"
+          },
+          "title": "Integrity",
+          "type": "array"
+        },
+        "integrity_facts": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/IngestIntegrityFacts"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "integrity_figures": {
+          "items": {
+            "$ref": "#/$defs/IngestIntegrityFigure"
+          },
+          "title": "Integrity Figures",
+          "type": "array"
+        },
+        "integrity_recommendation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Integrity Recommendation"
+        },
         "name": {
           "title": "Name",
           "type": "string"
@@ -623,6 +660,551 @@
         "status"
       ],
       "title": "IngestFileResult",
+      "type": "object"
+    },
+    "IngestIntegrityEvidence": {
+      "additionalProperties": false,
+      "description": "Where an integrity finding is, and what it was measured against.",
+      "properties": {
+        "locate": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Locate"
+        },
+        "object": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Object"
+        },
+        "observed": {
+          "title": "Observed",
+          "type": "string"
+        },
+        "page": {
+          "title": "Page",
+          "type": "integer"
+        },
+        "rect": {
+          "anyOf": [
+            {
+              "maxItems": 4,
+              "minItems": 4,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rect"
+        },
+        "threshold": {
+          "title": "Threshold",
+          "type": "string"
+        }
+      },
+      "required": [
+        "page",
+        "observed",
+        "threshold"
+      ],
+      "title": "IngestIntegrityEvidence",
+      "type": "object"
+    },
+    "IngestIntegrityFacts": {
+      "additionalProperties": false,
+      "description": "What the file says about itself, as the integrity stage read it (F-07A).",
+      "properties": {
+        "fonts": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Fonts",
+          "type": "array"
+        },
+        "has_xmp": {
+          "default": false,
+          "title": "Has Xmp",
+          "type": "boolean"
+        },
+        "header_offset": {
+          "default": 0,
+          "title": "Header Offset",
+          "type": "integer"
+        },
+        "id_current": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Id Current"
+        },
+        "id_original": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Id Original"
+        },
+        "info": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Info",
+          "type": "object"
+        },
+        "info_dates": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Info Dates",
+          "type": "object"
+        },
+        "made_as": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/IngestIntegrityMadeAs"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "page_sizes": {
+          "items": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array"
+          },
+          "title": "Page Sizes",
+          "type": "array"
+        },
+        "pages": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pages"
+        },
+        "pdf_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pdf Version"
+        },
+        "recovered": {
+          "items": {
+            "$ref": "#/$defs/IngestIntegrityRecovered"
+          },
+          "title": "Recovered",
+          "type": "array"
+        },
+        "revisions": {
+          "items": {
+            "$ref": "#/$defs/IngestIntegrityRevision"
+          },
+          "title": "Revisions",
+          "type": "array"
+        },
+        "signatures": {
+          "default": 0,
+          "title": "Signatures",
+          "type": "integer"
+        },
+        "size_bytes": {
+          "title": "Size Bytes",
+          "type": "integer"
+        },
+        "superseded_objects": {
+          "default": 0,
+          "title": "Superseded Objects",
+          "type": "integer"
+        },
+        "xmp": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Xmp",
+          "type": "object"
+        }
+      },
+      "required": [
+        "size_bytes"
+      ],
+      "title": "IngestIntegrityFacts",
+      "type": "object"
+    },
+    "IngestIntegrityFigure": {
+      "additionalProperties": false,
+      "description": "A figure a page prints, where and how (F-07A phase 2).",
+      "properties": {
+        "column": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Column"
+        },
+        "font": {
+          "title": "Font",
+          "type": "string"
+        },
+        "page": {
+          "title": "Page",
+          "type": "integer"
+        },
+        "rect": {
+          "maxItems": 4,
+          "minItems": 4,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "Rect",
+          "type": "array"
+        },
+        "right": {
+          "default": 0.0,
+          "title": "Right",
+          "type": "number"
+        },
+        "size": {
+          "title": "Size",
+          "type": "number"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "page",
+        "rect",
+        "text",
+        "font",
+        "size"
+      ],
+      "title": "IngestIntegrityFigure",
+      "type": "object"
+    },
+    "IngestIntegrityFinding": {
+      "additionalProperties": false,
+      "description": "One integrity check's result (F-07A): an indicator for a person to look\nat, never a verdict. Every finding says what was measured, what it was\ncompared with, and the limit it crossed.",
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "context": {
+          "default": false,
+          "title": "Context",
+          "type": "boolean"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/IngestIntegrityEvidence"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "family": {
+          "enum": [
+            "metadata",
+            "font",
+            "layout",
+            "visual",
+            "history",
+            "identifier",
+            "arithmetic",
+            "signature"
+          ],
+          "title": "Family",
+          "type": "string"
+        },
+        "finding": {
+          "title": "Finding",
+          "type": "string"
+        },
+        "impact": {
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "title": "Impact",
+          "type": "string"
+        },
+        "method": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Method",
+          "type": "object"
+        },
+        "reads": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reads",
+          "type": "array"
+        },
+        "skipped_for_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Skipped For Type"
+        },
+        "status": {
+          "enum": [
+            "pass",
+            "warning",
+            "review_required",
+            "not_applicable",
+            "unable_to_determine"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "tier": {
+          "enum": [
+            "T0",
+            "T1",
+            "T2",
+            "T3"
+          ],
+          "title": "Tier",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "family",
+        "status",
+        "finding",
+        "tier",
+        "impact"
+      ],
+      "title": "IngestIntegrityFinding",
+      "type": "object"
+    },
+    "IngestIntegrityMadeAs": {
+      "additionalProperties": false,
+      "description": "How the file was made, from its pages (F-07A).",
+      "properties": {
+        "kind": {
+          "enum": [
+            "digital",
+            "mixed",
+            "scanned",
+            "design_tool",
+            "computer_drawn",
+            "screenshot"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "picture_pages": {
+          "default": 0,
+          "title": "Picture Pages",
+          "type": "integer"
+        },
+        "text_pages": {
+          "default": 0,
+          "title": "Text Pages",
+          "type": "integer"
+        },
+        "writer": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Writer"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "title": "IngestIntegrityMadeAs",
+      "type": "object"
+    },
+    "IngestIntegrityObject": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "number": {
+          "title": "Number",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "number",
+        "kind"
+      ],
+      "title": "IngestIntegrityObject",
+      "type": "object"
+    },
+    "IngestIntegrityRecovered": {
+      "additionalProperties": false,
+      "properties": {
+        "now": {
+          "title": "Now",
+          "type": "string"
+        },
+        "object_number": {
+          "title": "Object Number",
+          "type": "integer"
+        },
+        "was": {
+          "title": "Was",
+          "type": "string"
+        }
+      },
+      "required": [
+        "object_number",
+        "was",
+        "now"
+      ],
+      "title": "IngestIntegrityRecovered",
+      "type": "object"
+    },
+    "IngestIntegrityRevision": {
+      "additionalProperties": false,
+      "properties": {
+        "added": {
+          "items": {
+            "$ref": "#/$defs/IngestIntegrityObject"
+          },
+          "title": "Added",
+          "type": "array"
+        },
+        "added_count": {
+          "default": 0,
+          "title": "Added Count",
+          "type": "integer"
+        },
+        "end": {
+          "title": "End",
+          "type": "integer"
+        },
+        "index": {
+          "title": "Index",
+          "type": "integer"
+        },
+        "length": {
+          "title": "Length",
+          "type": "integer"
+        },
+        "replaced": {
+          "items": {
+            "$ref": "#/$defs/IngestIntegrityObject"
+          },
+          "title": "Replaced",
+          "type": "array"
+        },
+        "replaced_count": {
+          "default": 0,
+          "title": "Replaced Count",
+          "type": "integer"
+        },
+        "start": {
+          "title": "Start",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "index",
+        "start",
+        "end",
+        "length"
+      ],
+      "title": "IngestIntegrityRevision",
       "type": "object"
     },
     "IngestPage": {

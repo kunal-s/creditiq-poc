@@ -1,4 +1,5 @@
 import type {
+  IntegrityFigure,
   AdjudicationRequest,
   BankConduct,
   CamDataRequest,
@@ -190,6 +191,32 @@ export const api = {
   /** The rendered page image (PNG); `page` is the absolute page in the source file. */
   pageImage: async (id: string, documentId: string, page: number) => {
     const response = await send(`/api/cases/${q(id)}/documents/${q(documentId)}/pages/${page}`);
+    return response.blob();
+  },
+  /** A file's integrity checks run again under the published configuration, its documents untouched. */
+  recheckIntegrity: (id: string, fileId: string) =>
+    request<{ queued: boolean }>(`/api/cases/${q(id)}/files/${q(fileId)}/integrity/recheck`, {
+      method: "POST",
+    }),
+  /** A person's conclusion on a file's integrity, with the reason (F-07A). */
+  reviewIntegrity: (
+    id: string,
+    fileId: string,
+    body: { decision: "genuine" | "altered" | "unclear" | "not_completed"; reason: string },
+  ) =>
+    request<FileRecord>(`/api/cases/${q(id)}/files/${q(fileId)}/integrity/review`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  /** A file in exception sent through processing again, as received. */
+  readFileAgain: (id: string, fileId: string) =>
+    request<FileRecord>(`/api/cases/${q(id)}/files/${q(fileId)}/read-again`, { method: "POST" }),
+  /** Every figure the integrity page checks read in a file, with its place, font and size. */
+  fileFigures: (id: string, fileId: string) =>
+    request<IntegrityFigure[]>(`/api/cases/${q(id)}/files/${q(fileId)}/figures`),
+  /** A received file's rendered page (PNG), for its integrity view. */
+  filePageImage: async (id: string, fileId: string, page: number) => {
+    const response = await send(`/api/cases/${q(id)}/files/${q(fileId)}/pages/${page}`);
     return response.blob();
   },
   caseParties: (id: string) => request<Party[]>(`/api/cases/${q(id)}/parties`),

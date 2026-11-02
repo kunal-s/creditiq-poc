@@ -37,6 +37,7 @@ import { Route as AppraisalsCaseIdDocumentsRouteImport } from './routes/appraisa
 import { Route as AppraisalsCaseIdExtractionRouteImport } from './routes/appraisals.$caseId.extraction'
 import { Route as AppraisalsCaseIdOutputsRouteImport } from './routes/appraisals.$caseId.outputs'
 import { Route as AppraisalsCaseIdPolicyRouteImport } from './routes/appraisals.$caseId.policy'
+import { Route as AppraisalsCaseIdFilesFileIdIntegrityRouteImport } from './routes/appraisals.$caseId.files.$fileId.integrity'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -183,6 +184,12 @@ const AppraisalsCaseIdPolicyRoute = AppraisalsCaseIdPolicyRouteImport.update({
   path: '/policy',
   getParentRoute: () => AppraisalsCaseIdRoute,
 } as any)
+const AppraisalsCaseIdFilesFileIdIntegrityRoute =
+  AppraisalsCaseIdFilesFileIdIntegrityRouteImport.update({
+    id: '/files/$fileId/integrity',
+    path: '/files/$fileId/integrity',
+    getParentRoute: () => AppraisalsCaseIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -213,6 +220,7 @@ export interface FileRoutesByFullPath {
   '/appraisals/$caseId/outputs': typeof AppraisalsCaseIdOutputsRoute
   '/appraisals/$caseId/policy': typeof AppraisalsCaseIdPolicyRoute
   '/appraisals/$caseId/': typeof AppraisalsCaseIdIndexRoute
+  '/appraisals/$caseId/files/$fileId/integrity': typeof AppraisalsCaseIdFilesFileIdIntegrityRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -241,6 +249,7 @@ export interface FileRoutesByTo {
   '/appraisals/$caseId/outputs': typeof AppraisalsCaseIdOutputsRoute
   '/appraisals/$caseId/policy': typeof AppraisalsCaseIdPolicyRoute
   '/appraisals/$caseId': typeof AppraisalsCaseIdIndexRoute
+  '/appraisals/$caseId/files/$fileId/integrity': typeof AppraisalsCaseIdFilesFileIdIntegrityRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -272,6 +281,7 @@ export interface FileRoutesById {
   '/appraisals/$caseId/outputs': typeof AppraisalsCaseIdOutputsRoute
   '/appraisals/$caseId/policy': typeof AppraisalsCaseIdPolicyRoute
   '/appraisals/$caseId/': typeof AppraisalsCaseIdIndexRoute
+  '/appraisals/$caseId/files/$fileId/integrity': typeof AppraisalsCaseIdFilesFileIdIntegrityRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -304,6 +314,7 @@ export interface FileRouteTypes {
     | '/appraisals/$caseId/outputs'
     | '/appraisals/$caseId/policy'
     | '/appraisals/$caseId/'
+    | '/appraisals/$caseId/files/$fileId/integrity'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -332,6 +343,7 @@ export interface FileRouteTypes {
     | '/appraisals/$caseId/outputs'
     | '/appraisals/$caseId/policy'
     | '/appraisals/$caseId'
+    | '/appraisals/$caseId/files/$fileId/integrity'
   id:
     | '__root__'
     | '/'
@@ -362,6 +374,7 @@ export interface FileRouteTypes {
     | '/appraisals/$caseId/outputs'
     | '/appraisals/$caseId/policy'
     | '/appraisals/$caseId/'
+    | '/appraisals/$caseId/files/$fileId/integrity'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -578,6 +591,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppraisalsCaseIdPolicyRouteImport
       parentRoute: typeof AppraisalsCaseIdRoute
     }
+    '/appraisals/$caseId/files/$fileId/integrity': {
+      id: '/appraisals/$caseId/files/$fileId/integrity'
+      path: '/files/$fileId/integrity'
+      fullPath: '/appraisals/$caseId/files/$fileId/integrity'
+      preLoaderRoute: typeof AppraisalsCaseIdFilesFileIdIntegrityRouteImport
+      parentRoute: typeof AppraisalsCaseIdRoute
+    }
   }
 }
 
@@ -611,6 +631,7 @@ interface AppraisalsCaseIdRouteChildren {
   AppraisalsCaseIdOutputsRoute: typeof AppraisalsCaseIdOutputsRoute
   AppraisalsCaseIdPolicyRoute: typeof AppraisalsCaseIdPolicyRoute
   AppraisalsCaseIdIndexRoute: typeof AppraisalsCaseIdIndexRoute
+  AppraisalsCaseIdFilesFileIdIntegrityRoute: typeof AppraisalsCaseIdFilesFileIdIntegrityRoute
 }
 
 const AppraisalsCaseIdRouteChildren: AppraisalsCaseIdRouteChildren = {
@@ -624,6 +645,8 @@ const AppraisalsCaseIdRouteChildren: AppraisalsCaseIdRouteChildren = {
   AppraisalsCaseIdOutputsRoute: AppraisalsCaseIdOutputsRoute,
   AppraisalsCaseIdPolicyRoute: AppraisalsCaseIdPolicyRoute,
   AppraisalsCaseIdIndexRoute: AppraisalsCaseIdIndexRoute,
+  AppraisalsCaseIdFilesFileIdIntegrityRoute:
+    AppraisalsCaseIdFilesFileIdIntegrityRoute,
 }
 
 const AppraisalsCaseIdRouteWithChildren =

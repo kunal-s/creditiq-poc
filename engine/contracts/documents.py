@@ -7,6 +7,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from .common import Evidence, Grade
+from .ingest import IngestIntegrityFacts, IngestIntegrityFinding
 
 FileStatus = Literal["registered", "duplicate", "ignored", "rejected", "exception"]
 
@@ -27,6 +28,66 @@ DocStatus = Literal[
 ExitTier = Literal["signals", "layout", "model", "person", "none"]
 
 
+IntegrityState = Literal["passed", "review_recommended", "suspicious", "suspicious_high", "incomplete",
+                         "failed", "not_checked", "not_applicable"]
+
+
+class IntegrityStatus(BaseModel):
+    """F-07A: what a file's integrity checks come to, said once (engine.integrity_status)."""
+
+    state: IntegrityState
+    suspicious: list[str] = Field(default_factory=list)
+    """Checks that stand out and count: evidence from the file itself."""
+    informational: list[str] = Field(default_factory=list)
+    """Listed-only observations, such as the program that made the file."""
+    pending: list[str] = Field(default_factory=list)
+    """Checks that have not run on this file."""
+    unconfigured: list[str] = Field(default_factory=list)
+    """Of those, the ones the configuration the file ran under did not name: publishing the
+    configuration comes before running them."""
+    failed: list[str] = Field(default_factory=list)
+    """Checks that could not run."""
+    stopped: bool = False
+    """Processing of the file stopped before it finished."""
+    passed: int = 0
+    not_applicable: int = 0
+    score: int | None = None
+    """Evidence strength, 0 to the configured cap (never 100): how strongly the file
+    contradicts itself. Uncalibrated, and not the chance a document was altered.
+    None when the published configuration sets no scoring."""
+    band: Literal["none", "weak", "moderate", "strong"] | None = None
+    score_parts: list[ScorePart] = Field(default_factory=list)
+
+
+class ScorePart(BaseModel):
+    """One suspicious indicator's share of the evidence strength."""
+
+    code: str
+    family: str
+    points: float
+    """Its impact times its tier, before it is combined."""
+    adds: float
+    """What it adds to the strength once combined with the others."""
+
+
+IntegrityDecision = Literal["genuine", "altered", "unclear", "not_completed"]
+
+
+class IntegrityReview(BaseModel):
+    """F-07A: a person's conclusion on a file, after looking at its evidence. Never set by
+    the checks; the latest recorded is shown, every one is kept."""
+
+    decision: IntegrityDecision
+    reason: str
+    decided_by: str
+    decided_at: str
+
+
+class IntegrityReviewRequest(BaseModel):
+    decision: IntegrityDecision
+    reason: str = ""
+
+
 class FileRecord(BaseModel):
     """Bytes as received (F-05). Every file ends in a visible state (F-05.5)."""
 
@@ -44,6 +105,16 @@ class FileRecord(BaseModel):
     reason: str | None = None
     duplicate_of: str | None = None
     label_hint: str | None = None
+    integrity: list[IngestIntegrityFinding] = Field(default_factory=list)
+    """F-07A: what the file's own bytes said about its history, checked before
+    anything was read from it. Empty until the file has been processed."""
+    integrity_recommendation: str | None = None
+    integrity_facts: IngestIntegrityFacts | None = None
+    """What the file says about itself: the records its integrity checks read."""
+    integrity_status: IntegrityStatus | None = None
+    """What its integrity checks come to, against the published configuration."""
+    integrity_review: IntegrityReview | None = None
+    """A person's latest conclusion on the file, if any."""
 
 
 class PageInfo(BaseModel):
@@ -70,6 +141,12 @@ class Classification(BaseModel):
     exit_tier: ExitTier
     signals: list[str] = Field(default_factory=list)
     candidates: list[Candidate] = Field(default_factory=list, max_length=3)
+    why_unclassified: Literal["model_unavailable", "no_model", "model_found_none", "model_blocked",
+                              "signals_weak"] | None = None
+    """Why no type was decided, so a reader is told rather than left to guess:
+    the classifier's model gave no answer, none is set up, it found none of the
+    listed types, it suggested one the document lacks the marks of, or the
+    document's own words matched no type well enough. None once classified."""
 
 
 class LogicalDocument(BaseModel):

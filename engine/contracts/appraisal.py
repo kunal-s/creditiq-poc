@@ -327,7 +327,8 @@ class XvQueryRequest(BaseModel):
     """The finding's id (incomplete checks have no XV reference)."""
 
 
-ReviewKind = Literal["type", "field", "quality", "party", "split", "manual_entry", "finding", "transactions"]
+ReviewKind = Literal["type", "field", "quality", "party", "split", "manual_entry", "finding", "transactions",
+                     "integrity"]
 ReviewDecision = Literal["confirm", "correct", "waive", "assign"]
 
 

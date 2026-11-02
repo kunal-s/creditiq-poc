@@ -15,22 +15,33 @@ from __future__ import annotations
 from typing import Any
 
 from ..config.models import IntegrityConfig
-from ..contracts import IntegrityFinding
+from ..contracts import IntegrityFacts, IntegrityFinding
 from ..integrity import file_checks, recommend
+from ..integrity.facts import file_facts
+from ..integrity.forensics import examine
+from ..integrity.meta import read_meta
 
 __all__ = ["run_integrity_file", "IntegrityResult"]
 
 
 class IntegrityResult:
-    __slots__ = ("findings", "recommendation")
+    __slots__ = ("findings", "recommendation", "facts", "meta", "figures")
 
-    def __init__(self, findings: list[IntegrityFinding], recommendation: dict[str, Any]):
+    def __init__(self, findings: list[IntegrityFinding], recommendation: dict[str, Any],
+                 facts: IntegrityFacts | None = None, meta=None, figures=None):
         self.findings = findings
         self.recommendation = recommendation
+        self.facts = facts
+        self.meta = meta
+        """The file's records as read, for the checks that need its type (not serialised)."""
+        self.figures = figures or []
+        """Every figure the page checks read (phase 2)."""
 
     def to_json(self) -> dict[str, Any]:
         return {"recommendation": self.recommendation,
-                "findings": [f.model_dump(mode="json") for f in self.findings]}
+                "findings": [f.model_dump(mode="json") for f in self.findings],
+                "facts": self.facts.model_dump(mode="json") if self.facts else None,
+                "figures": len(self.figures)}
 
 
 def run_integrity_file(data: bytes, kind: str | None, cfg: IntegrityConfig,
@@ -47,5 +58,8 @@ def run_integrity_file(data: bytes, kind: str | None, cfg: IntegrityConfig,
                                     "families": [], "signals": [],
                                     "why": f"Integrity from the file's structure applies to a PDF; this is a {kind or 'file of unknown kind'}.",
                                     "policy_version": cfg.version})
-    found = file_checks(data, policy, doc_type)
-    return IntegrityResult(found, recommend(found, policy))
+    meta = read_meta(data)
+    f = None if meta.unreadable else examine(data)
+    found = file_checks(data, policy, doc_type, meta=meta, f=f)
+    facts = file_facts(data, meta, f) if f else None
+    return IntegrityResult(found, recommend(found, policy), facts, meta)

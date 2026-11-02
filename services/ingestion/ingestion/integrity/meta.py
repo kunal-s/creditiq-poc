@@ -49,7 +49,7 @@ _NS = {
 
 #: "D:20261007074141Z", "D:20251225103000+05'30'", or the same without the D:.
 _PDF_DATE = re.compile(
-    r"D?:?(\d{4})(\d{2})?(\d{2})?(\d{2})?(\d{2})?(\d{2})?(?:([Zz+-])(\d{2})'?(\d{2})?'?)?")
+    r"D?:?(\d{4})(\d{2})?(\d{2})?(\d{2})?(\d{2})?(\d{2})?(?:([Zz+-])(\d{2})?'?(\d{2})?'?)?")
 
 
 def _iso(value: str | None) -> str | None:
@@ -101,6 +101,9 @@ class FileMeta:
     has_xmp: bool = False
     unreadable: str | None = None
     """Why nothing could be read, when nothing could."""
+    pages: int | None = None
+    page_sizes: list[tuple[float, float]] = field(default_factory=list)
+    """Each distinct page size in points, width by height, in page order."""
 
     # --- what the records say, preferring the information dictionary ---
     @property
@@ -130,14 +133,34 @@ class FileMeta:
         out: list[str] = []
         for word, a, b in (("the producer", self.info.get("Producer"), self.xmp.get("producer")),
                            ("the creating program", self.info.get("Creator"), self.xmp.get("creator_tool"))):
-            if a and b and a.strip() != b.strip():
-                out.append(f"{word}: “{a.strip()}” in the information dictionary against “{b.strip()}” in XMP")
+            if a and b and _norm(a) != _norm(b):
+                out.append(f"{word}: “{_clean(a)}” in the information dictionary against “{_clean(b)}” in XMP")
         for word, a, b in (("the created date", self.info.get("CreationDate"), self.xmp.get("create_date")),
                            ("the modified date", self.info.get("ModDate"), self.xmp.get("modify_date"))):
             one, two = _moment(_iso(a)), _moment(_iso(b))
             if one and two and abs(one - two) > DATE_SLACK:
                 out.append(f"{word}: {one.isoformat()} in the information dictionary against {two.isoformat()} in XMP")
         return out
+
+    def xmp_is_template(self) -> bool:
+        """The XMP is a template's record the writer left in place: it names no
+        program and no change of its own, and is older than the file. A form
+        filler (such as iText) writes a new information dictionary when it fills
+        a template and leaves the template's XMP as it was."""
+        made, xmp_made = _moment(_iso(self.info.get("CreationDate"))), _moment(_iso(self.xmp.get("create_date")))
+        return (not self.xmp.get("producer") and not self.xmp.get("creator_tool")
+                and not self.xmp.get("modify_date") and made is not None and xmp_made is not None
+                and xmp_made < made - DATE_SLACK)
+
+
+def _norm(value: str) -> str:
+    # A trailing NUL or other control character, as some scanners' drivers
+    # write into the information dictionary, is not a different value.
+    return re.sub(r"\s+", " ", re.sub(r"[\x00-\x1f\x7f]", " ", value)).strip().lower()
+
+
+def _clean(value: str) -> str:
+    return re.sub(r"\s+", " ", re.sub(r"[\x00-\x1f\x7f]", " ", value)).strip()
 
 
 def _read_xmp(data: bytes) -> tuple[dict[str, str], bool]:
@@ -183,6 +206,12 @@ def read_meta(data: bytes) -> FileMeta:
                 continue
             if value:
                 meta.info[key] = str(value).strip()
+        meta.pages = len(doc)
+        for i in range(min(len(doc), 300)):
+            w, h = doc[i].get_size()
+            size = (round(w, 1), round(h, 1))
+            if size not in meta.page_sizes:
+                meta.page_sizes.append(size)
     finally:
         doc.close()
     meta.xmp, meta.has_xmp = _read_xmp(data)

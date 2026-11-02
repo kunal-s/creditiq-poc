@@ -30,7 +30,7 @@ import re
 import zlib
 from dataclasses import dataclass, field
 
-__all__ = ["Revision", "RecoveredValue", "Forensics", "examine"]
+__all__ = ["Revision", "RevisedObject", "RecoveredValue", "Forensics", "examine"]
 
 #: End-of-file markers. Each one closes a revision.
 _EOF = re.compile(rb"%%EOF")
@@ -43,6 +43,15 @@ _OBJ = re.compile(rb"(?:^|[\s>])(\d{1,8})\s+(\d{1,5})\s+obj\b")
 
 #: A signature dictionary.
 _SIG = re.compile(rb"/Type\s*/Sig\b")
+
+#: A font the file names: /BaseFont /ABCDEF+Helvetica-Bold. Objects packed into a
+#: compressed object stream (PDF 1.5 and later) are read once inflated.
+_BASEFONT = re.compile(rb"/BaseFont\s*/([A-Za-z0-9+\-_,.#]+)")
+_SUBSET = re.compile(r"^[A-Z]{6}\+")
+_OBJSTM = re.compile(rb"/Type\s*/ObjStm\b")
+
+#: The most font names kept: a statement names a handful; hundreds is a report.
+MAX_FONTS = 40
 
 #: A money figure as it appears inside a content stream's text operators.
 _MONEY_IN_STREAM = re.compile(rb"\(([^()\\]*\d[\d,]*\.\d{2}[^()\\]*)\)")
@@ -70,6 +79,41 @@ FILE_INFLATE_LIMIT = 500 << 20
 MAX_SUPERSEDED_READ = 400
 MAX_RECOVERED = 20
 
+#: The most objects listed for one save. A save that wrote hundreds rewrote the
+#: file; the count says so, and a reader cannot use a longer list.
+MAX_OBJECTS_LISTED = 60
+
+#: What an object is, from its own dictionary, in the order tried. A page and the
+#: things it draws come first: they are what a reader sees.
+_KINDS = (
+    ("page", re.compile(rb"/Type\s*/Page\b")),
+    ("image", re.compile(rb"/Subtype\s*/Image\b")),
+    ("form", re.compile(rb"/Subtype\s*/Form\b")),
+    ("font", re.compile(rb"/Type\s*/Font\b")),
+    ("signature", re.compile(rb"/Type\s*/Sig\b")),
+    ("annotation", re.compile(rb"/Type\s*/Annot\b|/Subtype\s*/Widget\b")),
+    ("pages", re.compile(rb"/Type\s*/Pages\b")),
+    ("catalog", re.compile(rb"/Type\s*/Catalog\b")),
+    ("metadata", re.compile(rb"/Type\s*/Metadata\b")),
+    ("info", re.compile(rb"/Producer\b|/ModDate\b|/CreationDate\b")),
+    ("xref", re.compile(rb"/Type\s*/XRef\b")),
+    ("objstm", re.compile(rb"/Type\s*/ObjStm\b")),
+)
+
+#: A soft mask named by an image: /SMask 12 0 R.
+_SMASK = re.compile(rb"/SMask\s+(\d+)\s+\d+\s+R")
+
+#: Kinds a page draws: replacing or adding one changes what a reader sees.
+DRAWN = ("page", "image", "form", "font", "annotation")
+
+
+@dataclass(frozen=True, slots=True)
+class RevisedObject:
+    """An object a later save wrote: its number and what it is."""
+
+    number: int
+    kind: str
+
 
 @dataclass(frozen=True, slots=True)
 class Revision:
@@ -78,6 +122,13 @@ class Revision:
     index: int
     start: int
     end: int
+    replaced: tuple[RevisedObject, ...] = ()
+    """Objects this save defined again, having been defined by an earlier one."""
+    added: tuple[RevisedObject, ...] = ()
+    """Objects this save defined for the first time. Empty for the first save,
+    which defines everything."""
+    replaced_count: int = 0
+    added_count: int = 0
 
     @property
     def length(self) -> int:
@@ -104,6 +155,8 @@ class Forensics:
     recovered: list[RecoveredValue] = field(default_factory=list)
     content_revised: list[int] = field(default_factory=list)
     """Object numbers a later revision replaced that a page draws."""
+    fonts: list[str] = field(default_factory=list)
+    """Fonts the file names, subset prefixes removed, in the order first met."""
     streams_over_limit: int = 0
 
     @property
@@ -202,6 +255,41 @@ def _objects_by_number(data: bytes) -> dict[int, list[int]]:
     return found
 
 
+def _kind(head: bytes) -> str:
+    for kind, pattern in _KINDS:
+        if pattern.search(head):
+            return kind
+    return "stream" if b"/Length" in head else "other"
+
+
+def _what_each_save_wrote(data: bytes, revisions: list[Revision],
+                          offsets: dict[int, list[int]]) -> list[Revision]:
+    """Each later save with the objects it replaced and the ones it added.
+
+    An object counts once per save however often that save defines it. Objects
+    packed into a compressed object stream are not seen one by one; the stream
+    itself is.
+    """
+    # An image named as another's /SMask is its transparency, not a picture a
+    # page paints: it is drawn only through the image that names it.
+    masks = {int(m[1]) for m in _SMASK.finditer(data)}
+    out = [revisions[0]]
+    for rev in revisions[1:]:
+        replaced: list[RevisedObject] = []
+        added: list[RevisedObject] = []
+        for number, positions in sorted(offsets.items()):
+            here = [at for at in positions if rev.start <= at < rev.end]
+            if not here:
+                continue
+            kind = _kind(_object_head(data, here[-1]))
+            obj = RevisedObject(number, "mask" if kind == "image" and number in masks else kind)
+            (replaced if any(at < rev.start for at in positions) else added).append(obj)
+        out.append(Revision(rev.index, rev.start, rev.end,
+                            tuple(replaced[:MAX_OBJECTS_LISTED]), tuple(added[:MAX_OBJECTS_LISTED]),
+                            len(replaced), len(added)))
+    return out
+
+
 def _object_head(data: bytes, at: int) -> bytes:
     """The dictionary of the object at `at`, up to its stream or its end."""
     stop = data.find(b"stream", at)
@@ -240,6 +328,28 @@ def _recover(data: bytes, offsets: dict[int, list[int]], budget: _Budget) -> tup
     return superseded, recovered, content
 
 
+def _font_name(raw: bytes) -> str:
+    name = raw.decode("latin-1")
+    name = re.sub(r"#([0-9A-Fa-f]{2})", lambda m: chr(int(m[1], 16)), name)  # #20 is a space
+    return _SUBSET.sub("", name)
+
+
+def _fonts(data: bytes, budget: _Budget) -> list[str]:
+    """Every font the file names, in the order first met: in its plain objects,
+    and in compressed object streams once inflated."""
+    found: dict[str, None] = {}
+    for m in _BASEFONT.finditer(data):
+        found.setdefault(_font_name(m[1]))
+    for m in _OBJ.finditer(data):
+        if len(found) >= MAX_FONTS:
+            break
+        at = m.start(1)
+        if _OBJSTM.search(_object_head(data, at)):
+            for f in _BASEFONT.finditer(_stream_text(data, at, budget)):
+                found.setdefault(_font_name(f[1]))
+    return list(found)[:MAX_FONTS]
+
+
 def examine(data: bytes) -> Forensics:
     """Read the file's structure and say what it implies about its history."""
     report = Forensics(total_bytes=len(data))
@@ -255,7 +365,10 @@ def examine(data: bytes) -> Forensics:
 
     budget = _Budget()
     if report.revision_count > 1:
+        offsets = _objects_by_number(data)
+        report.revisions = _what_each_save_wrote(data, report.revisions, offsets)
         report.superseded_objects, report.recovered, report.content_revised = _recover(
-            data, _objects_by_number(data), budget)
+            data, offsets, budget)
+    report.fonts = _fonts(data, budget)
     report.streams_over_limit = budget.refused
     return report

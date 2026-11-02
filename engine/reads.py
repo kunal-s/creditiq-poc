@@ -12,6 +12,7 @@ import sqlite3
 from pathlib import Path
 
 from . import completeness
+from .contracts.ingest import IngestIntegrityFigure, IngestIntegrityFinding
 from .contracts import (
     CaseDetail,
     Classification,
@@ -31,9 +32,31 @@ def _json(text: str | None):
     return None if text is None else json.loads(text)
 
 
-def files(conn: sqlite3.Connection, case_id: str) -> list[FileRecord]:
-    rows = conn.execute("SELECT * FROM files WHERE case_id = ? ORDER BY uploaded_at, rowid", (case_id,))
-    return [FileRecord(**dict(row)) for row in rows]
+def files(conn: sqlite3.Connection, case_id: str, root: Path | None = None) -> list[FileRecord]:
+    """The case's files. With the data root, each carries its integrity status against the
+    published configuration (F-07A) and a person's latest conclusion on it."""
+    from . import integrity_review, integrity_status
+
+    checks = integrity_status.configured_checks(root) if root else {}
+    score = integrity_status.score_settings(root) if root else None
+    reviews = integrity_review.latest(conn, case_id)
+    out = []
+    for row in conn.execute("SELECT * FROM files WHERE case_id = ? ORDER BY uploaded_at, rowid", (case_id,)):
+        found = [IngestIntegrityFinding(**f) for f in _json(row["integrity"]) or []]
+        out.append(FileRecord(**{**{k: row[k] for k in row.keys() if k != "integrity_figures"},
+                                 "integrity": found,
+                                 "integrity_facts": _json(row["integrity_facts"]),
+                                 "integrity_status": integrity_status.assess(row, found, checks, score),
+                                 "integrity_review": reviews.get(row["id"])}))
+    return out
+
+
+def file_figures(conn: sqlite3.Connection, case_id: str, file_id: str) -> list[IngestIntegrityFigure] | None:
+    """Every figure the page checks read in a file (F-07A); None when no such file."""
+    row = conn.execute("SELECT integrity_figures FROM files WHERE id = ? AND case_id = ?", (file_id, case_id)).fetchone()
+    if row is None:
+        return None
+    return [IngestIntegrityFigure(**f) for f in _json(row["integrity_figures"]) or []]
 
 
 def documents(conn: sqlite3.Connection, case_id: str) -> list[LogicalDocument]:

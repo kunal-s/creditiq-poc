@@ -311,6 +311,180 @@ class QualityConfig(Strict):
     reason_codes: dict[str, str] = Field(default_factory=dict)
 
 
+# --- integrity.yaml (FRD F-07A) ----------------------------------------------------------------
+
+
+class IntegrityCheck(Strict):
+    family: Literal["metadata", "font", "layout", "visual", "history", "identifier", "arithmetic", "signature"]
+    tier: Literal["T0", "T1", "T2", "T3"]
+    impact: Literal["low", "medium", "high"]
+    library: str = ""
+    rule: str = ""
+    limitations: str = ""
+    next_step: str = ""
+    context: bool = False
+    """Listed for a reader, never counted as a signal."""
+    prompts_review: bool = False
+    """For a context check: when it observes something, a person should look
+    (review recommended), though it is never a signal and never queues the file."""
+
+
+class EditingTool(Strict):
+    match: str
+    name: str
+
+
+class EditingTools(Strict):
+    version: str = "editing_tools_v1"
+    editors: list[EditingTool] = Field(default_factory=list)
+    re_renderers: list[EditingTool] = Field(default_factory=list)
+
+
+class MetadataPeriod(Strict):
+    grace_days: int = 0
+
+
+class IntegrityRouting(Strict):
+    strong_tiers: list[str] = Field(default_factory=lambda: ["T0", "T1"])
+    multi_family_min_impact: Literal["low", "medium", "high"] = "medium"
+
+
+class ScanRegions(Strict):
+    tile_px: int = 48
+    min_ink_share: float = 0.03
+    noise_z: float = 4.0
+    sharpness_z: float = 4.0
+    min_tiles: int = 2
+    min_page_grain: float = 1.5
+    max_regions_per_page: int = 3
+
+
+class ScanTextLayer(Strict):
+    min_dpi: float = 200.0
+    confirm_confidence: float = 0.80
+    min_agreement: float = 0.5
+
+
+class ScanFigurePicture(Strict):
+    max_page_fraction: float = 0.05
+    min_digits: int = 4
+    max_words: int = 3
+
+
+class ScanOrigin(Strict):
+    dpi_differ: float = 0.15
+    dpi_agree: float = 0.05
+    max_odd_pages: int = 2
+
+
+class ScanTypeStyle(Strict):
+    bold_ratio: float = 1.3
+    italic_deg: float = 8.0
+    min_confidence: float = 0.80
+    max_words: int = 120
+    column_tol_pt: float = 2.0
+    column_min: int = 3
+    column_majority: float = 0.6
+
+
+class IntegrityScan(Strict):
+    """Thresholds for the checks that read a scan's pixels (use case 2)."""
+
+    max_pages: int = 10
+    render_dpi_max: float = 300.0
+    regions: ScanRegions = Field(default_factory=ScanRegions)
+    text_layer: ScanTextLayer = Field(default_factory=ScanTextLayer)
+    figure_picture: ScanFigurePicture = Field(default_factory=ScanFigurePicture)
+    origin: ScanOrigin = Field(default_factory=ScanOrigin)
+    type_style: ScanTypeStyle = Field(default_factory=ScanTypeStyle)
+
+
+class ArithmeticColumns(Strict):
+    debit: str = "debit"
+    credit: str = "credit"
+    balance: str = "balance"
+
+
+class ArithmeticLabels(Strict):
+    total_credits: str = r"\btotal\s+(?:credits?|deposits?|cr\b)"
+    total_debits: str = r"\btotal\s+(?:debits?|withdrawals?|dr\b)"
+    count: str = r"\b(?:no\.?|number|count)\s+of\s+(?:transactions|txns?|entries)\b"
+    brought_forward: str = r"\b(?:brought\s+forward|b/f)\b"
+    carried_forward: str = r"\b(?:carried\s+forward|c/f)\b"
+
+
+class IntegrityArithmetic(Strict):
+    """Whether a statement's printed figures and a balance sheet's totals add up (T0)."""
+
+    statement_types: list[str] = Field(default_factory=lambda: ["bank_statement"])
+    statement_table: str = "transactions"
+    columns: ArithmeticColumns = Field(default_factory=ArithmeticColumns)
+    opening_field: str = "opening_balance"
+    closing_field: str = "closing_balance"
+    tolerance_paise: int = 0
+    max_breaks: int = 3
+    max_break_share: float = 0.05
+    labels: ArithmeticLabels = Field(default_factory=ArithmeticLabels)
+    balance_sheet_types: list[str] = Field(default_factory=lambda: ["audited_financial_statements"])
+    balance_sheet_table: str = "balance_sheet"
+    balance_sheet_totals: str = (r"^\s*total(?:\s+(?:equity\s+(?:&|and)\s+liabilities|assets|liabilities|"
+                                 r"sources\s+of\s+funds|application\s+of\s+funds|funds\s+employed))?\s*$")
+    balance_sheet_columns: list[str] = Field(default_factory=lambda: ["current_period", "previous_period"])
+    balance_sheet_tolerance_units: float = 1.0
+
+
+class IntegritySignatures(Strict):
+    trust_roots: str | None = None
+
+
+class IntegrityScore(Strict):
+    """Evidence strength, 0 to `cap`: worked out by the engine for a reader (uncalibrated)."""
+
+    impact_points: dict[str, float] = Field(default_factory=lambda: {"high": 60, "medium": 35, "low": 15})
+    tier_factor: dict[str, float] = Field(default_factory=lambda: {"T0": 1.0, "T1": 1.0, "T2": 0.75, "T3": 0.5})
+    same_family_share: float = 0.25
+    other_family_share: float = 0.75
+    cap: int = 95
+    bands: dict[str, int] = Field(default_factory=lambda: {"strong": 70, "moderate": 40})
+
+
+class IntegrityPage(Strict):
+    """Thresholds for the checks that read what each page draws (phase 2)."""
+
+    max_pages: int = 60
+    tiny_pt: float = 2.0
+    writer_credits: list[str] = Field(default_factory=lambda: ["poweredbytcpdf"])
+    picture_max_page_fraction: float = 0.10
+    picture_min_chars_under: int = 3
+    word_gap_em: float = 0.15
+    baseline_tol_pt: float = 0.5
+    superscript_size_ratio: float = 0.75
+    max_offset_line_ratio: float = 0.5
+    layout_style_min: int = 3
+    layout_style_ratio: float = 2
+    column_tolerance_pt: float = 2.5
+    column_min_values: int = 4
+    column_majority: float = 0.75
+    column_size_tol_pt: float = 0.3
+
+
+class IntegrityConfig(Strict):
+    """What a file says about its own history, before anything is extracted."""
+
+    version: str
+    checks: dict[str, IntegrityCheck]
+    metadata_period: MetadataPeriod = Field(default_factory=MetadataPeriod)
+    expected_producers: dict[str, list[str]] = Field(default_factory=dict)
+    skip_for_type: dict[str, dict[str, str]] = Field(default_factory=dict)
+    routing: IntegrityRouting = Field(default_factory=IntegrityRouting)
+    editing_tools: EditingTools = Field(default_factory=EditingTools)
+    page: IntegrityPage = Field(default_factory=IntegrityPage)
+    score: IntegrityScore = Field(default_factory=IntegrityScore)
+    scan: IntegrityScan = Field(default_factory=IntegrityScan)
+    arithmetic: IntegrityArithmetic = Field(default_factory=IntegrityArithmetic)
+    signatures: IntegritySignatures = Field(default_factory=IntegritySignatures)
+
+
 class OcrConfig(Strict):
     engine: Literal["paddle", "none"] = "paddle"
     dpi: int = 200
@@ -410,6 +584,7 @@ class IngestionConfig(Strict):
     validators: ValidatorsConfig
     quality: QualityConfig
     routing: RoutingConfig
+    integrity: IntegrityConfig
     llm: LlmConfig
     confidence: ConfidenceConfig
     decision: DecisionConfig

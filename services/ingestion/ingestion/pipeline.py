@@ -18,6 +18,10 @@ from .stages import classify as classify_stage
 from .stages import instances as instances_stage
 from .stages import route as route_stage
 from .stages.extract.run import extract_instance
+from .integrity.locate import locate as locate_on_pages
+from .integrity.locate import place_objects
+from .stages.integrity_file import run_integrity_file
+from .stages.integrity_page import run_integrity_arithmetic, run_integrity_page
 from .stages.quality import run_gate
 from .stages.read import document_grade, read_document
 from .stages.score import decide, score_field, score_table
@@ -26,6 +30,25 @@ from .store import Store
 from .util import hash_of, sha256_hex
 
 RANK = {"reject": 2, "human_review": 1, "auto_accept": 0}
+
+
+#: Integrity recommendations that send a document to a person. A single
+#: low-impact observation (`needs_review`) is recorded as a reason so a reader
+#: sees it, but it does not hold up a document on its own: a bank's own system
+#: saves a file again, and a portal writes to it on download.
+INTEGRITY_ESCALATES = ("needs_review_priority", "high_risk_indicators")
+
+
+def _integrity_reason(integrity, reasons: list[dict]) -> str:
+    """Record what integrity found, whatever it was, and give back its code.
+
+    Every recommendation with a signal behind it is written down. Nothing the
+    stage found is dropped because it was not severe enough to escalate.
+    """
+    code = integrity.recommendation["code"]
+    if code not in ("no_notable_issue", "not_applicable"):
+        reasons.append({"kind": "integrity", "code": code, "detail": integrity.recommendation["why"]})
+    return code
 
 
 def run_id_for(case_ref: str, sha256: str, cfg: IngestionConfig) -> str:
@@ -74,11 +97,15 @@ class Ingestor:
         self.store.begin_run(run_id, case_ref, spec.sha256, spec.original_name, self.cfg.version, self.cfg.hash, ENGINE_VERSION)
         tr = _Trace(self.store, run_id, spec.sha256)
         stage = "quality"
+        # What a stage has already established, so a later crash does not throw
+        # it away: integrity reads the bytes before the file is read at all, and
+        # a file that cannot be read is exactly one worth saying that about.
+        carry: dict = {}
         try:
-            res = self._run(case_ref, spec, data, run_id, tr, base)
+            res = self._run(case_ref, spec, data, run_id, tr, base, carry)
         except Exception as e:  # a stage crashed: say which, never return a half answer as if it were whole
             res = FileResult(**base, status="failed", run_id=run_id, error={"stage": stage if tr.seq == 0 else tr.entries[-1]["stage"] + "+1", "type": type(e).__name__, "message": str(e)[:300]},
-                             trace=tr.entries)
+                             trace=tr.entries, **carry)
         self.store.finish_run(run_id, res.status, res.decision, res.model_dump(mode="json"))
         return res
 
@@ -90,7 +117,7 @@ class Ingestor:
             self.on_stage(name)
         return out
 
-    def _run(self, case_ref: str, spec: FileSpec, data: bytes, run_id: str, tr: _Trace, base: dict) -> FileResult:
+    def _run(self, case_ref: str, spec: FileSpec, data: bytes, run_id: str, tr: _Trace, base: dict, carry: dict) -> FileResult:
         cfg = self.cfg
         gate = self._timed(tr, "quality_gate", lambda: ((g := run_gate(data, spec.original_name, spec.content_type, cfg.quality, cfg.routing)), g.to_json()))
         if gate.status == "rejected":
@@ -98,12 +125,30 @@ class Ingestor:
                               reject={"code": gate.reason or "unsupported", "message": gate.message or "", "rescan_request": gate.rescan_request},
                               decision="reject", trace=tr.entries)
 
+        # F-07A: what the file says about its own history, before it is read.
+        # Deterministic, bytes only, and it never rejects: its findings are
+        # indicators for a person and at most move the decision to review.
+        stage = "integrity_file"
+        integrity = self._timed(tr, "integrity_file",
+                                lambda: ((i := run_integrity_file(data, gate.kind, cfg.integrity)), i.to_json()))
+        carry["integrity"] = integrity.findings
+        carry["integrity_recommendation"] = integrity.recommendation["code"]
+        carry["integrity_facts"] = integrity.facts
+
         def read():
             pages = read_document(data, gate.kind, cfg.quality, cfg.routing, self.ocr, self.store)
             return pages, [{**p.summary(), "text_sha": sha256_hex(p.text())} for p in pages]
 
         pages: list[Page] = self._timed(tr, "read", read)
         self.store.save_pages(run_id, pages)
+        # F-07A: now that the pages are read, place on them what the integrity
+        # checks found in the bytes (a recovered figure is printed somewhere; an
+        # image a later save added is drawn somewhere).
+        if any(e.locate or e.object is not None for f in integrity.findings for e in f.evidence):
+            integrity.findings = self._timed(tr, "integrity_locate", lambda: (
+                (located := place_objects(locate_on_pages(integrity.findings, pages), data)),
+                [e.model_dump(mode="json") for f in located for e in f.evidence if e.locate or e.object is not None]))
+            carry["integrity"] = integrity.findings
         grade = document_grade(pages)
         route = self._timed(tr, "route", lambda: ((r := route_stage.profile(pages)), r))
 
@@ -117,11 +162,23 @@ class Ingestor:
         else:
             cls = self._timed(tr, "classify", lambda: ((c := classify_stage.classify(cfg, pages, self.model)), c))
         self.store.save_classification(run_id, cls)
+        # F-07A phase 2: what each page draws, now that the pages are read (a
+        # page read by OCR has no text of its own) and the type is known.
+        scanned = {p.no for p in pages if p.source == "ocr"}
+        integrity = self._timed(tr, "integrity_page", lambda: (
+            (i := run_integrity_page(data, gate.kind, integrity, cfg.integrity, cls["type"], scanned,
+                                     pages, self.ocr, self.store)), i.to_json()))
+        carry["integrity"] = integrity.findings
+        carry["integrity_recommendation"] = integrity.recommendation["code"]
+        carry["integrity_figures"] = integrity.figures
         page_infos = [p.summary() for p in pages]
         common = dict(**base, status="processed", run_id=run_id, source={"kind": gate.kind, "pages": gate.pages}, grade=grade, route=route,
-                      pages=page_infos, classification=cls)
+                      pages=page_infos, classification=cls,
+                      integrity=integrity.findings, integrity_recommendation=integrity.recommendation["code"],
+                      integrity_facts=integrity.facts, integrity_figures=integrity.figures)
         if cls["type"] is None:
             reasons = [{"kind": "type_unassigned", "detail": cls.get("reason")}]
+            _integrity_reason(integrity, reasons)
             return FileResult(**common, decision="reject" if grade == "U" else "human_review", review_reasons=reasons, trace=tr.entries)
 
         front, groups = self._timed(tr, "instances", lambda: ((r := instances_stage.split_instances(cfg, cls["type"], pages)), {"front_matter": r[0], "instances": [[p.no for p in g] for g in r[1]]}))
@@ -133,6 +190,12 @@ class Ingestor:
 
         checks_all = [validate_instance(cfg, cls["type"], g, e["fields"], e["tables"]) for g, e in zip(groups, extracted)]
         self._timed(tr, "validate", lambda: (None, checks_all))
+        # F-07A: whether the printed figures add up, now that they are read.
+        integrity = self._timed(tr, "integrity_arithmetic", lambda: (
+            (i := run_integrity_arithmetic(integrity, cfg.integrity, cls["type"], pages, extracted)), i.to_json()))
+        common.update(integrity=integrity.findings, integrity_recommendation=integrity.recommendation["code"])
+        carry["integrity"] = integrity.findings
+        carry["integrity_recommendation"] = integrity.recommendation["code"]
 
         docs, decisions, reasons = [], [], []
         rule = cfg.signals.types[cls["type"]].instances
@@ -162,4 +225,8 @@ class Ingestor:
         decision = max(decisions, key=RANK.get) if decisions else "human_review"
         if not docs:
             reasons.append({"kind": "no_pages", "detail": "no readable page"})
+        # F-07A: integrity never rejects, and the extraction above has already
+        # run. A file whose own structure contradicts itself goes to a person.
+        if _integrity_reason(integrity, reasons) in INTEGRITY_ESCALATES:
+            decision = max(decision, "human_review", key=RANK.get)
         return FileResult(**common, front_matter_pages=front, documents=docs, decision=decision, review_reasons=reasons, trace=tr.entries)

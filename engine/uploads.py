@@ -29,9 +29,9 @@ from . import filetypes, jobs
 from .config import load_app_config
 from .contracts import FileRecord, UploadResult
 from .db import log_decision, transaction
-from .review_items import raise_item
+from .review_items import close_item, raise_item
 from .store import case_files_dir, cases_dir
-from .util import dumps, now_iso
+from .util import dumps, now_iso, stable_id
 
 MB = 1024 * 1024
 BIG_MEMBER = 1 * MB
@@ -579,3 +579,51 @@ def register_parts(
 
 def spool_dir(root: Path, case_id: str) -> Path:
     return cases_dir(root) / case_id / "incoming"
+
+
+class ReadAgainError(ValueError):
+    pass
+
+
+def read_again(conn: sqlite3.Connection, root: Path, *, case_id: str, file_id: str, user_id: str) -> None:
+    """Send a file in exception through processing again, as it was received.
+
+    A file whose processing stopped (a step failed, or the configuration of the
+    day could not read it) is not a judgement on the file, and uploading it again
+    would be taken as a duplicate. Its earlier outcome is cleared, the quality
+    item it raised is closed as read again, and the file is queued like a new one.
+    """
+    row = conn.execute("SELECT * FROM files WHERE id = ? AND case_id = ?", (file_id, case_id)).fetchone()
+    if row is None:
+        raise LookupError(f"no file {file_id!r} in case {case_id!r}")
+    if row["status"] != "exception":
+        raise ReadAgainError("only a file in exception is read again")
+    if not row["stored_name"] or not (case_files_dir(case_id, root) / row["stored_name"]).is_file():
+        raise ReadAgainError("the file's bytes are not held, so it cannot be read again")
+    with transaction(conn):
+        conn.execute(
+            """UPDATE files SET status = 'registered', reason = NULL, reason_code = NULL, processed_at = NULL,
+                   integrity = '[]', integrity_recommendation = NULL, integrity_facts = NULL, integrity_figures = NULL
+               WHERE id = ?""",
+            (file_id,),
+        )
+        close_item(conn, item_id=stable_id("RV", case_id, "quality", f"file:{file_id}"), decision="waive",
+                   reason="Read again", decided_by=user_id)
+        jobs.enqueue(conn, case_id=case_id, kind="process", payload={"file_ids": [file_id]})
+        log_decision(conn, at=now_iso(), actor=user_id, case_id=case_id, action="file.read_again",
+                     detail=dumps({"file_id": file_id, "was": row["reason"], "reason_code": row["reason_code"]}))
+
+
+def recheck_integrity(conn: sqlite3.Connection, root: Path, *, case_id: str, file_id: str, user_id: str) -> None:
+    """Queue a file's integrity checks to run again, its documents untouched (F-07A)."""
+    row = conn.execute("SELECT * FROM files WHERE id = ? AND case_id = ?", (file_id, case_id)).fetchone()
+    if row is None:
+        raise LookupError(f"no file {file_id!r} in case {case_id!r}")
+    if row["status"] != "registered" or row["processed_at"] is None:
+        raise ReadAgainError("only a file that has been read can have its checks run again")
+    if not row["stored_name"] or not (case_files_dir(case_id, root) / row["stored_name"]).is_file():
+        raise ReadAgainError("the file's bytes are not held, so its checks cannot run again")
+    with transaction(conn):
+        jobs.enqueue(conn, case_id=case_id, kind="integrity", payload={"file_id": file_id})
+        log_decision(conn, at=now_iso(), actor=user_id, case_id=case_id, action="integrity.recheck_requested",
+                     detail=dumps({"file_id": file_id, "was": row["integrity_recommendation"]}))

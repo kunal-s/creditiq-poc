@@ -165,6 +165,105 @@ class IngestReject(_C):
     rescan_request: str | None = None
 
 
+class IngestIntegrityEvidence(_C):
+    """Where an integrity finding is, and what it was measured against."""
+
+    page: int
+    rect: tuple[float, float, float, float] | None = None
+    """left, top, right, bottom as fractions of the rendered page."""
+    observed: str
+    threshold: str
+    locate: str | None = None
+    """Text printed on the page this evidence points at; placed once the pages are read."""
+    object: int | None = None
+    """An object of the file this evidence points at; placed on the page that draws it."""
+
+
+class IngestIntegrityFinding(_C):
+    """One integrity check's result (F-07A): an indicator for a person to look
+    at, never a verdict. Every finding says what was measured, what it was
+    compared with, and the limit it crossed."""
+
+    code: str
+    family: Literal["metadata", "font", "layout", "visual", "history", "identifier", "arithmetic", "signature"]
+    status: Literal["pass", "warning", "review_required", "not_applicable", "unable_to_determine"]
+    finding: str
+    evidence: list[IngestIntegrityEvidence] = Field(default_factory=list)
+    tier: Literal["T0", "T1", "T2", "T3"]
+    impact: Literal["low", "medium", "high"]
+    context: bool = False
+    """Listed for a reader, never counted as a signal."""
+    method: dict[str, str] = Field(default_factory=dict)
+    skipped_for_type: str | None = None
+    reads: list[str] = Field(default_factory=list)
+    """The file facts this check read (keys of IngestIntegrityFacts)."""
+
+
+class IngestIntegrityFigure(_C):
+    """A figure a page prints, where and how (F-07A phase 2)."""
+
+    page: int
+    rect: tuple[float, float, float, float]
+    text: str
+    font: str
+    size: float
+    right: float = 0.0
+    column: int | None = None
+
+
+class IngestIntegrityObject(_C):
+    number: int
+    kind: str
+
+
+class IngestIntegrityRevision(_C):
+    index: int
+    start: int
+    end: int
+    length: int
+    replaced: list[IngestIntegrityObject] = Field(default_factory=list)
+    added: list[IngestIntegrityObject] = Field(default_factory=list)
+    replaced_count: int = 0
+    added_count: int = 0
+
+
+class IngestIntegrityRecovered(_C):
+    object_number: int
+    was: str
+    now: str
+
+
+class IngestIntegrityMadeAs(_C):
+    """How the file was made, from its pages (F-07A)."""
+
+    kind: Literal["digital", "mixed", "scanned", "design_tool", "computer_drawn", "screenshot"]
+    text_pages: int = 0
+    picture_pages: int = 0
+    writer: str | None = None
+
+
+class IngestIntegrityFacts(_C):
+    """What the file says about itself, as the integrity stage read it (F-07A)."""
+
+    size_bytes: int
+    pdf_version: str | None = None
+    header_offset: int = 0
+    pages: int | None = None
+    page_sizes: list[tuple[float, float]] = Field(default_factory=list)
+    info: dict[str, str] = Field(default_factory=dict)
+    info_dates: dict[str, str] = Field(default_factory=dict)
+    has_xmp: bool = False
+    xmp: dict[str, str] = Field(default_factory=dict)
+    id_original: str | None = None
+    id_current: str | None = None
+    revisions: list[IngestIntegrityRevision] = Field(default_factory=list)
+    signatures: int = 0
+    superseded_objects: int = 0
+    recovered: list[IngestIntegrityRecovered] = Field(default_factory=list)
+    fonts: list[str] = Field(default_factory=list)
+    made_as: IngestIntegrityMadeAs | None = None
+
+
 class IngestFileResult(_C):
     file_id: str
     sha256: str
@@ -180,6 +279,11 @@ class IngestFileResult(_C):
     front_matter_pages: list[int] = Field(default_factory=list)
     classification: IngestClassification | None = None
     documents: list[IngestDocument] = Field(default_factory=list)
+    integrity: list[IngestIntegrityFinding] = Field(default_factory=list)
+    """F-07A: what the file says about its own history, before anything is extracted."""
+    integrity_recommendation: str | None = None
+    integrity_facts: IngestIntegrityFacts | None = None
+    integrity_figures: list[IngestIntegrityFigure] = Field(default_factory=list)
     decision: Literal["auto_accept", "human_review", "reject"] | None = None
     review_reasons: list[dict[str, Any]] = Field(default_factory=list)
     trace: list[IngestTrace] = Field(default_factory=list)

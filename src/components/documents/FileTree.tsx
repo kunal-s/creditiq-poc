@@ -7,6 +7,7 @@ import {
   FileText,
   Folder,
   HelpCircle,
+  RotateCw,
 } from "lucide-react";
 import type { ChecklistItemState, FileRecord, LogicalDocument, ReviewItem } from "@/api/types";
 import { useDocViewer } from "@/components/docviewer/DocViewer";
@@ -18,6 +19,7 @@ import {
   instanceLabel,
   pageRange,
   useDocumentTypes,
+  useReadAgain,
   type TreeFile,
   type TreeNode,
 } from "@/domain/documents";
@@ -25,6 +27,8 @@ import { Chip } from "@/components/common/Panel";
 import { DocumentActions } from "./DocumentActions";
 import { DocumentDetail } from "./DocumentDetail";
 import { FileStatusChip, GradeChip } from "./chips";
+import { IntegrityChip, IntegrityPanel } from "./IntegrityPanel";
+import { hasIntegrity, integrityStandsOut } from "@/domain/integrity";
 import { StageTrack } from "./StageTrack";
 
 /** What every row of the register needs to know about the case. */
@@ -137,6 +141,11 @@ function FileRow({
   const { file, documents } = node;
   const original = file.duplicate_of ? files.find((f) => f.id === file.duplicate_of) : undefined;
   const reading = file.status === "registered" && documents.length === 0;
+  // F-07A: open by default when something stands out, so it is not missed.
+  const integrity = hasIntegrity(file);
+  const [showIntegrity, setShowIntegrity] = useState(integrityStandsOut(file));
+  const canUpload = useCan("document.upload");
+  const readAgain = useReadAgain(caseId);
 
   return (
     <li data-testid="tree-file" data-status={file.status}>
@@ -164,8 +173,31 @@ function FileRow({
           </p>
         </div>
         {reading && <StageTrack doc={undefined} />}
+        {integrity && (
+          <IntegrityChip
+            file={file}
+            open={showIntegrity}
+            onToggle={() => setShowIntegrity((v) => !v)}
+          />
+        )}
+        {file.status === "exception" && canUpload && (
+          <button
+            type="button"
+            onClick={() => readAgain.mutate(file.id)}
+            disabled={readAgain.isPending}
+            title={t("documents.readAgainHelp")}
+            data-testid="read-again"
+            className="inline-flex shrink-0 items-center gap-1 rounded border border-primary/40 bg-primary/5 px-1.5 py-0.5 text-[11px] font-medium text-primary hover:bg-primary/10 disabled:opacity-50"
+          >
+            <RotateCw className={readAgain.isPending ? "h-3 w-3 animate-spin" : "h-3 w-3"} />
+            {t(readAgain.isPending ? "documents.readingAgain" : "documents.readAgain")}
+          </button>
+        )}
         <FileStatusChip status={file.status} />
       </div>
+      {integrity && showIntegrity && (
+        <IntegrityPanel caseId={caseId} file={file} documents={documents} depth={depth} />
+      )}
       {documents.length > 0 && (
         <ul className="pb-2">
           {documents.map((doc) => (

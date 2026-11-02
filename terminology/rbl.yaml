@@ -872,6 +872,23 @@ page:
     purpose: What each step of an appraisal does, what the statuses mean and what is asked of you.
     stepsTitle: The steps
     statusTitle: What the statuses mean
+    fileLabelsTitle: What the labels on a file mean
+    fileLabel:
+      integrity:
+        title: "Integrity: checks passed, worth a look, stands out"
+        body: What the file says about itself, checked before anything is read from it - its saves, its dates and makers; on pages of text, anything laid over the text, hidden, or set in another typeface; and on scans and photos, a patch with another grain, a value off its line, a text layer that says another number than the picture, a figure pasted as a picture, or a page made differently from the rest. It is a reason for a person to look, never proof of an edit, and it never rejects a document. Select the chip to see every check; "Open integrity view" shows the pages with each spot marked.
+      integrityView:
+        title: Integrity view
+        body: The file's pages with every place a check points at drawn on them and labelled, beside what stands out, the fonts the file uses, and every check - applied, with nothing to look at, or not run for this kind of document - with the records each one read.
+      track:
+        title: "Received, Quality, Split, Classified, Extracted"
+        body: The five steps each document inside a file goes through. A step shown in amber is waiting for a person, and the row says why.
+      notIdentified:
+        title: "Not identified · Needs a person: document type"
+        body: The kind of document could not be decided with enough confidence. The row offers the nearest types to assign; picking one reads the file again as that type. Until a type is assigned the document is not counted against the checklist.
+      different:
+        title: Why a file can be clear and still need a person
+        body: The integrity chip is about the file itself; the steps are about reading it. A file can be untouched (nothing stands out) and still have a type nobody could decide, or the other way round. Each label says which of the two it is about.
     step:
       documents:
         title: Files
@@ -1181,6 +1198,9 @@ documents:
   details: Show the checks on this document
   defects: "{n} defect(s)"
   waitingReview: Waiting for credit review
+  readAgain: Read again
+  readAgainHelp: Send this file through processing again, as it was received. Its earlier outcome is cleared and the action is recorded in the audit trail.
+  readingAgain: Reading again…
   checkValues: Check the extracted values
   assignAs: "Assign as:"
   otherType: Other type…
@@ -1192,6 +1212,353 @@ documents:
     processing: "Processing ({n})"
 
 # A document's track through quality, classification and extraction.
+# F-07A: what a file's own bytes say about its history, checked before anything
+# is read from it. Indicators for a person, never a verdict.
+fileIntegrity:
+  title: File integrity
+  intro: Checked from the file itself, before anything was read from it.
+  caveat: A reason for a person to look, not proof of an edit.
+  show: Show the integrity checks
+  hide: Hide the integrity checks
+  counts: "{passed} passed · {flagged} stand out · {notApplicable} not applicable · {unknown} could not be checked"
+  context: listed only
+  note: Noted
+  showOnPage: "Show on page {page}"
+  showPage: "Show page {page}"
+  trace: Trace
+  untrace: Hide
+  because: "Because"
+  meaning:
+    no_notable_issue: Every integrity check came back clean or had nothing to look at. Nothing in the file's records or on its pages suggests it was changed after it was made.
+    needs_review: One thing with low impact stands out. It is recorded as a reason on the file and does not hold the document up on its own.
+    needs_review_priority: Something in the file or on its pages stands out with high impact. The document goes to a person, and a file integrity item is raised in the review queue.
+    high_risk_indicators: More than one kind of evidence stands out. The document goes to a person first, and a file integrity item is raised in the review queue.
+    could_not_be_assessed: The file's own records could not be read, so nothing could be checked.
+    incomplete: Only the checks on the file's own records ran, and they found nothing. The checks on what its pages draw did not run, so nothing is said about the pages yet; read the file again to run them.
+  inRecords: In the file's own records, not printed on a page.
+  notPlaced: Not yet placed on a page.
+  observed: Measured
+  threshold: Limit
+  where: Where in the file
+  touch: Select a check to see the records it read.
+  facts:
+    title: What the file says about itself
+    show: Show the file's records
+    hide: Hide the file's records
+    group:
+      file: The file
+      info: Information dictionary
+      xmp: XMP record
+      id: Identifiers
+      revisions: Saves
+      fonts: Fonts
+    notStated: not stated
+    size: Size
+    pdfVersion: PDF version
+    headerOffset: PDF begins at
+    headerAt0: byte 0
+    headerWrapped: "byte {n}: something sits before the PDF itself"
+    pages: Pages
+    pageSizes: Page size
+    info:
+      Producer: Producer
+      Creator: Creator
+      CreationDate: Created
+      ModDate: Modified
+      Title: Title
+      Author: Author
+      Subject: Subject
+      Keywords: Keywords
+    xmp: XMP
+    noXmp: The file carries no XMP record.
+    xmpKey:
+      producer: Producer
+      creator_tool: Creator tool
+      create_date: Created
+      modify_date: Modified
+      metadata_date: Metadata date
+    id: Identifier pair
+    noId: The file carries no identifier pair.
+    idOriginal: When it was made
+    idCurrent: Now
+    revision: "Save {n}"
+    revisionValue: "bytes {start} to {end} ({length} bytes)"
+    revisionReplaced: "Save {n} replaced"
+    revisionAdded: "Save {n} added"
+    more: "and {n} more"
+    object: "{kind} ({n})"
+    kind:
+      page: page
+      image: image
+      mask: image mask
+      form: drawing
+      font: font
+      annotation: annotation
+      signature: signature
+      pages: page list
+      catalog: catalogue
+      metadata: XMP record
+      info: information dictionary
+      xref: cross-reference
+      objstm: object stream
+      stream: content stream
+      other: other object
+    signatures: Digital signatures
+    superseded: Objects a later save replaced
+    recovered: Earlier figure
+    recoveredValue: "“{was}”, now “{now}”"
+    fonts: Fonts the file names
+    noFonts: none named
+  origin:
+    title: Digital or scanned
+    digital: Digital PDF
+    scanned: Scanned PDF
+    mixed: Digital and scanned PDF
+    image: Scanned image
+    explain:
+      digital: Every page carries its own text.
+      scanned: Every page is a picture of the page, read by OCR.
+      mixed: Some pages carry their own text and some are pictures of pages.
+      image: The file is a picture of a page, read by OCR.
+    digitalFinding: Every page carries its own text, so the figures were read from the file itself, not from a picture of it. All the checks below can look inside it.
+    scannedFinding: Every page is a picture of the page, so the figures were read by OCR. The checks below on the file's own records still apply; it has no text of its own to compare.
+    mixedFinding: "{digital} page(s) carry their own text and {scanned} are pictures read by OCR. A file of both kinds can come from more than one source."
+    measured: "{digital} page(s) with their own text · {scanned} page(s) read from a picture"
+  chip:
+    no_notable_issue: "Integrity: checks passed"
+    needs_review: "Integrity: worth a look"
+    needs_review_priority: "Integrity: stands out"
+    high_risk_indicators: "Integrity: several things stand out"
+    could_not_be_assessed: "Integrity: could not be checked"
+    incomplete: "Integrity: not fully checked"
+  status:
+    pass: Passed
+    warning: Stands out
+    review_required: Needs review
+    not_applicable: Not applicable
+    unable_to_determine: Could not be checked
+  check:
+    PDF_INCREMENTAL_UPDATE: Saved only once, or every later save explained
+    PDF_PRIOR_VALUE_RECOVERABLE: No earlier figure left behind in the file
+    REVISIONS_TOUCH_CONTENT: Later saves left the page content alone
+    PDF_ID_PAIR_DIFFERS: File identifier unchanged since it was made
+    METADATA_DATE_ORDER: Created and modified dates in a possible order
+    METADATA_INFO_XMP: The file's two records of itself agree
+    PDF_MAKER_NAMED: Names the program that made it
+    PDF_WRITTEN_BY_EDITING_TOOL: Not last written by a design or editing tool
+    METADATA_PRODUCER_EXPECTED: Made by the program this kind of document comes from
+    PDF_COVERED_TEXT: No block hides what is printed under it
+    PDF_PICTURE_OVER_TEXT: No picture is pasted over printed text
+    HIDDEN_TEXT: No text is hidden from a reader
+    PDF_TEXT_OUTSIDE_VISIBLE_AREA: All text is inside the page
+    FONT_WITHIN_VALUE: Every value is set in one typeface
+    PDF_FIGURE_TYPESET_DIFFERENTLY: Every figure is set like the rest of its column
+    LAYOUT_OFF_LINE: Every value sits on its line
+    VISUAL_REGIONS_INCONSISTENT: Every part of a scan has the page's grain and sharpness
+    IMG_VALUE_IN_LINE: Every value on a scan sits on its line
+    TEXT_LAYER_MATCHES_PAGE: The scan's text says what its picture shows
+    PDF_FIGURE_IS_PICTURE: No figure is a pasted picture
+    PAGES_SAME_ORIGIN: All pages were made alike
+    IMG_PAGE_ORIGIN: How each page picture was made
+    IMG_TYPE_IN_COLUMN: Every figure on a scan is set like its column
+    BALANCE_CHAIN: Every balance follows from the one before
+    OPENING_BALANCE: The opening balance leads into the first row
+    CLOSING_BALANCE: The closing balance is the last row's
+    SUMMARY_TOTALS: The printed totals are the rows' sums
+    HEADER_ARITHMETIC: The printed summary adds up
+    PAGE_CARRY: Each carried figure is the balance it carries
+    BS_BALANCES: The balance sheet balances
+    SIGNATURE_PRESENT: The file's digital signatures
+    SIGNATURE_VALID: Each signature still covers the file
+  mark:
+    PDF_COVERED_TEXT: block over print
+    PDF_PICTURE_OVER_TEXT: picture over text
+    HIDDEN_TEXT: hidden text
+    PDF_TEXT_OUTSIDE_VISIBLE_AREA: outside the page
+    FONT_WITHIN_VALUE: two typefaces
+    LAYOUT_OFF_LINE: off its line
+    PDF_FIGURE_TYPESET_DIFFERENTLY: figure font
+    REVISIONS_TOUCH_CONTENT: added by a later save
+    VISUAL_REGIONS_INCONSISTENT: other grain
+    IMG_VALUE_IN_LINE: off its line
+    TEXT_LAYER_MATCHES_PAGE: text differs
+    PDF_FIGURE_IS_PICTURE: pasted figure
+    IMG_TYPE_IN_COLUMN: other weight or slant
+    BALANCE_CHAIN: balance does not follow
+    OPENING_BALANCE: opening balance
+    CLOSING_BALANCE: closing balance
+    SUMMARY_TOTALS: printed total
+    HEADER_ARITHMETIC: summary
+    PAGE_CARRY: carried figure
+    BS_BALANCES: grand total
+    PDF_PRIOR_VALUE_RECOVERABLE: earlier figure in the file
+  family:
+    history: Saves
+    metadata: Metadata
+    layout: Layout
+    font: Fonts
+    visual: Picture
+    identifier: Identifier
+    arithmetic: Figures add up
+    signature: Signatures
+  pagesNotRun: The checks on what its pages draw did not run on this file (it was read before they were added or published, or its processing stopped), so nothing is said about its pages yet.
+  recheck: Run the checks again
+  rechecking: Running the checks again…
+  recheckHelp: Run every integrity check on this file again under the published configuration. Its documents and extracted values are not touched, and the action is recorded in the audit trail.
+  overlay:
+    marks: Integrity marks
+    figures: Show every figure read
+    noFigures: No figures were read on this file's pages.
+    figure: Figure read
+    setIn: "Set in {font} {size} pt"
+    column: "Its column: {count} figures, mostly {font} {size} pt"
+    noColumn: Not part of a column of amounts.
+    apart: Set apart from its column
+    hint: Point at a mark or a figure to see what it says.
+    recordsOnly: "Suspicious, in the file's records rather than on this page: {checks}."
+    metadataOnly: "Informational, from the file's records (not a mark on the page): {checks}."
+    pending: "{n} check(s) have not run on this file, so the page may not show everything yet."
+    page: "Page {page}"
+    whyFlagged: Why it was flagged
+    bearInMind: Bear in mind
+  state:
+    passed: No suspicious indicators detected
+    review_recommended: Review recommended
+    suspicious: Suspicious indicators detected
+    suspicious_high: Suspicious indicators detected, of several kinds
+    incomplete: Integrity check incomplete
+    failed: Checks could not be completed
+    not_checked: Not yet checked
+    not_applicable: Integrity checks do not apply
+  headline:
+    passed: "Nothing found. All {n} checks ran."
+    review_recommended: No evidence of an edit, but one thing needs a look.
+    suspicious: Evidence found in the file itself. Check it before relying on the document.
+    suspicious_high: Several kinds of evidence found in the file itself. Check it before relying on the document.
+    incomplete: "Nothing found so far, but {n} check(s) have not run. Not a pass yet."
+    failed: Some checks could not run. Not a pass.
+    not_checked: The file has not been read yet.
+    not_applicable: Integrity checks apply to PDF files only.
+  short:
+    PDF_INCREMENTAL_UPDATE: Saved again after it was issued
+    PDF_PRIOR_VALUE_RECOVERABLE: Earlier figure left in the file
+    REVISIONS_TOUCH_CONTENT: Page changed by a later save
+    PDF_ID_PAIR_DIFFERS: Saved again since it was made
+    METADATA_DATE_ORDER: Dates out of order
+    METADATA_INFO_XMP: The file's two records disagree
+    PDF_MAKER_NAMED: Maker not named
+    PDF_WRITTEN_BY_EDITING_TOOL: Made with a design or editing tool
+    METADATA_PRODUCER_EXPECTED: Unexpected producing program
+    PDF_COVERED_TEXT: Block over what is printed
+    PDF_PICTURE_OVER_TEXT: Picture pasted over printed text
+    HIDDEN_TEXT: Hidden text
+    PDF_TEXT_OUTSIDE_VISIBLE_AREA: Text outside the page
+    FONT_WITHIN_VALUE: Two typefaces in one value
+    PDF_FIGURE_TYPESET_DIFFERENTLY: Figure set unlike its column
+    LAYOUT_OFF_LINE: Value off its line
+    VISUAL_REGIONS_INCONSISTENT: Patch with another grain or sharpness
+    IMG_VALUE_IN_LINE: Value off its line on the scan
+    TEXT_LAYER_MATCHES_PAGE: Text layer differs from the picture
+    PDF_FIGURE_IS_PICTURE: Figure pasted as a picture
+    PAGES_SAME_ORIGIN: Page made differently from the rest
+    IMG_PAGE_ORIGIN: A picture of a page
+    IMG_TYPE_IN_COLUMN: Figure in another weight or slant
+    BALANCE_CHAIN: Running balance breaks
+    OPENING_BALANCE: Opening balance does not lead in
+    CLOSING_BALANCE: Closing balance does not follow
+    SUMMARY_TOTALS: Printed total differs from the rows
+    HEADER_ARITHMETIC: Summary does not add up
+    PAGE_CARRY: Carried figure differs
+    BS_BALANCES: Balance sheet does not balance
+    SIGNATURE_PRESENT: Digitally signed
+    SIGNATURE_VALID: Signature no longer holds
+  score:
+    label: Evidence strength
+    short: Score
+    band:
+      none: none found
+      weak: weak
+      moderate: moderate
+      strong: strong
+    explain: How strongly the file contradicts itself, from what stands out. Not the chance it was altered; a person decides.
+    part: "{check}: {points} points, adds {adds}"
+  summary:
+    title: Integrity · automated check
+    count:
+      passed: passed
+      suspicious: suspicious
+      informational: to note
+      notApplicable: not applicable
+      notRun: not run
+      failed: could not run
+    suspiciousTitle: Suspicious indicators
+    informationalTitle: Informational observations
+    notRunTitle: Not run yet
+    failedTitle: Checks that could not run
+    stopped: "Processing stopped: {reason}"
+    unconfigured: "{n} of these are not in the configuration this file was checked under. Once the configuration is published, run the remaining checks."
+    whyMatters: Why this matters
+    nextStep: Next step
+    nextAction: Next action
+    runRemaining: Run remaining checks
+    openEvidence: Open detailed evidence
+  kind:
+    passed: Passed
+    suspicious: Suspicious indicator
+    informational: Informational observation
+    not_applicable: Not applicable
+    not_run: Not run
+    failed: Execution failed
+  review:
+    title: Human review decision
+    pending: Pending review
+    decision:
+      genuine: Genuine
+      altered: Altered
+      unclear: Unclear
+      not_completed: Review not completed
+    reason: Reason or supporting explanation
+    reasonHint: What you looked at and what it showed. Required for genuine, altered and unclear.
+    save: Record decision
+    saving: Recording…
+    by: "{decision} · {who} · {when}"
+    separate: The checks never set this; it is a person's conclusion after looking at the evidence.
+    cannot: Only a reviewer can record a decision.
+  view:
+    open: Open integrity view
+    back: Files
+    pages: "{n} page(s)"
+    marksOnPage: "{n} mark(s) on this page"
+    noMarksOnPage: No mark on this page
+    showAll: Show every mark
+    zoomIn: Zoom in
+    zoomOut: Zoom out
+    fit: Fit width
+    page: "Page {page} of {pages}"
+    prev: Previous page
+    next: Next page
+    standOut: "{n} thing(s) stand out"
+    nothingStandsOut: Nothing stands out
+    marks: "{n} mark(s)"
+    pageReplaced: A later save replaced this page.
+    fonts: Fonts
+    fontsNamed: Fonts the file names
+    noFonts: The file names no font.
+    checksTitle: Checks for this file
+    applied: applied to this file
+    nothingToLook: had nothing to look at
+    notRun: not run for this kind of document
+    unknown: could not be checked
+    limits: limits
+    appliedList: Checks that applied, and their result
+    nothingList: Had nothing to look at, and why
+    notRunList: Not run for this kind of document, and why
+    unknownList: Could not be checked, and why
+    limitsList: Limits used
+    limitsSource: "Set in the published configuration ({version}); a change applies to the next analysis."
+    noPages: This file has no pages to show.
+    selectMark: Select a mark or a check to see what it found.
+
 documentTrack:
   running:
     received: Reading…
@@ -1200,6 +1567,8 @@ documentTrack:
     classified: Classifying…
     extracted: Extracting…
   attention: "{step}: needs a person"
+  attentionStep:
+    classified: "Needs a person: document type"
   complete: Extracted
   step:
     received: Received
@@ -1842,6 +2211,7 @@ reviewKind:
   manual_entry: Manual entry
   finding: Finding
   transactions: Transaction classification
+  integrity: File integrity
 
 reviewDecision:
   confirm: Confirm

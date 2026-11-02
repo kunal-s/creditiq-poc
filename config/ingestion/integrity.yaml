@@ -1,0 +1,187 @@
+# Document integrity (FRD F-07A), use case 1: a digitally generated PDF edited
+# after it was issued. Ported from RBL/fault_detection policy integrity_policy_v3.
+#
+# Every check is deterministic code plus a threshold held here. No model is
+# called, so a file analysed twice under one configuration version gives the
+# same answer with no recording (CLAUDE.md rule 6).
+#
+# A finding is an indicator for a person to look at, never a verdict. Words:
+# "stands out", "altered", "indicator" — never "fraud", "forged" or "fake".
+
+version: integrity_v1
+
+# ---------------------------------------------------------------- the checks
+# tier   T0 arithmetic · T1 the file contradicts itself · T2 image · T3 provenance
+# context: true  listed for a reader, never counted as a signal
+checks:
+  PDF_INCREMENTAL_UPDATE:
+    family: history
+    tier: T1
+    impact: medium
+    library: bytes (%%EOF revisions)
+    rule: incremental_update@v1
+    limitations: Saving a file again, as many systems do on download, adds a revision without changing its content.
+    next_step: Look at what the later revision changed.
+
+  PDF_PRIOR_VALUE_RECOVERABLE:
+    family: history
+    tier: T1
+    impact: high
+    library: bytes (superseded objects)
+    rule: prior_value_recoverable@v1
+    limitations: Found only when the editor saved incrementally; a rewritten file keeps no earlier version.
+    next_step: Compare the earlier figure with the current one.
+
+  REVISIONS_TOUCH_CONTENT:
+    family: history
+    tier: T1
+    impact: high
+    library: bytes (%%EOF revisions) + pikepdf
+    rule: revisions_touch_content@v1
+    limitations: Only a file saved incrementally keeps its earlier revisions; a rewritten file shows none.
+    next_step: Compare the replaced content with the earlier revision.
+
+  PDF_ID_PAIR_DIFFERS:
+    family: history
+    tier: T1
+    impact: low
+    context: true
+    library: pikepdf
+    rule: id_pair_differs@v1
+    limitations: Many portals write to a file on download; a changed identifier says only that it was saved again.
+    next_step: None on its own.
+
+  METADATA_DATE_ORDER:
+    family: metadata
+    tier: T1
+    impact: medium
+    library: pikepdf (Info dictionary, XMP)
+    rule: date_order@v1
+    limitations: Metadata is self-reported and editable; equal dates are not evidence of anything.
+    next_step: Compare the dates with when the issuer says it issued the document.
+
+  METADATA_INFO_XMP:
+    family: metadata
+    tier: T1
+    impact: medium
+    library: pikepdf (Info dictionary, XMP)
+    rule: info_xmp_agree@v1
+    limitations: Some programs update one record and not the other when they save.
+    next_step: Look at which program last wrote each record.
+
+  PDF_MAKER_NAMED:
+    family: metadata
+    tier: T3
+    impact: low
+    context: true
+    library: pikepdf
+    rule: maker_named@v1
+    limitations: Some genuine generators name no program.
+    next_step: None on its own.
+
+  PDF_WRITTEN_BY_EDITING_TOOL:
+    family: metadata
+    tier: T3
+    impact: low
+    context: true
+    library: pikepdf (Producer, Creator) + editing_tools
+    rule: editing_tool@v1
+    limitations: The producer string is self-reported and editable; it says how the file was made, not what it says.
+    next_step: Obtain the file from the issuer's own channel.
+
+  METADATA_PRODUCER_EXPECTED:
+    family: metadata
+    tier: T3
+    impact: low
+    context: true
+    library: pikepdf (Producer) + expected_producers
+    rule: producer_expected@v1
+    limitations: A new portal is not an edit; the expected list is observed, not published by the issuer.
+    next_step: Confirm with the issuer which system produces this document.
+
+# ------------------------------------------------------------- the thresholds
+metadata_period:
+  # Days a file may be dated before the period it reports closed. Zero: a
+  # statement cannot be produced before its last day. Used by METADATA_VS_PERIOD,
+  # which needs the document's text and so arrives with integrity_page (phase 2).
+  grace_days: 0
+
+# ------------------------------------------------- what each type comes from
+# Observed on the PoC document set, to be confirmed with RBL. Context only.
+expected_producers:
+  gstr_3b: [pdfmake]
+  gstr_1: [pdfmake]
+  # The e-filing portal emits the Qt string of the wkhtmltopdf that renders it;
+  # all four returns in the PoC set name Qt 4.8.7.
+  income_tax_return: [Qt, wkhtmltopdf]
+  gst_registration_certificate: [iText]
+
+# ------------------------------------------------- checks a type does not run
+skip_for_type:
+  # A type listed here skips the check, with the reason shown to the reader.
+  # Empty while every check in this version applies to every type; the two
+  # checks that vary by type arrive with integrity_page (phase 2).
+  {}
+
+# ---------------------------------------------------------------- the routing
+# A signal is a check with status warning or review_required and context false.
+# Each family counts once, as its strongest signal.
+routing:
+  strong_tiers: [T0, T1]
+  multi_family_min_impact: medium
+
+# ------------------------------------------ design and editing tools, version 1
+# Matched case-insensitively against the file's Producer and Creator. A name on
+# `editors` is a reason to look, never a finding about the figures: a producer
+# string is trivially changed, and a genuine document can be opened in an editor
+# for an innocent reason. A name on `re_renderers` is not even that: printing
+# again does not edit a document, it only loses what the original could show.
+editing_tools:
+  version: editing_tools_v1
+  editors:
+    - {match: canva, name: Canva}
+    - {match: photoshop, name: Adobe Photoshop}
+    - {match: illustrator, name: Adobe Illustrator}
+    - {match: indesign, name: Adobe InDesign}
+    - {match: inkscape, name: Inkscape}
+    - {match: gimp, name: GIMP}
+    - {match: coreldraw, name: CorelDRAW}
+    - {match: affinity, name: Affinity}
+    - {match: figma, name: Figma}
+    - {match: "microsoft® word", name: Microsoft Word}
+    - {match: microsoft word, name: Microsoft Word}
+    - {match: "microsoft® excel", name: Microsoft Excel}
+    - {match: microsoft excel, name: Microsoft Excel}
+    - {match: libreoffice, name: LibreOffice}
+    - {match: openoffice, name: OpenOffice}
+    - {match: google docs, name: Google Docs}
+    - {match: wps, name: WPS Office}
+    - {match: ilovepdf, name: iLovePDF}
+    - {match: smallpdf, name: Smallpdf}
+    - {match: sejda, name: Sejda}
+    - {match: pdfescape, name: PDFescape}
+    - {match: pdffiller, name: pdfFiller}
+    - {match: dochub, name: DocHub}
+    - {match: pdf candy, name: PDF Candy}
+    - {match: soda pdf, name: Soda PDF}
+    - {match: pdf-xchange editor, name: PDF-XChange Editor}
+    - {match: foxit phantompdf, name: Foxit PhantomPDF}
+    - {match: foxit pdf editor, name: Foxit PDF Editor}
+    - {match: nitro pro, name: Nitro Pro}
+    - {match: nitro pdf, name: Nitro PDF}
+    - {match: pdfelement, name: PDFelement}
+    - {match: acrobat pro, name: Adobe Acrobat Pro}
+    - {match: sumatra, name: SumatraPDF}
+    - {match: xournal, name: Xournal++}
+    - {match: okular, name: Okular}
+  re_renderers:
+    - {match: "microsoft: print to pdf", name: Microsoft Print to PDF}
+    - {match: skia/pdf, name: a web browser's print to PDF}
+    - {match: quartz pdfcontext, name: macOS print to PDF}
+    - {match: cairo, name: cairo}
+    - {match: pdfium, name: PDFium}
+    - {match: cups-pdf, name: CUPS-PDF}
+    - {match: pdfcreator, name: PDFCreator}
+    - {match: bullzip, name: Bullzip PDF Printer}
+    - {match: cutepdf, name: CutePDF}
+    - {match: dopdf, name: doPDF}

@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import type {
   CellWorking,
   CrossVerificationView,
@@ -143,6 +144,11 @@ function YearHeads({ years, selected }: { years: string[]; selected: string }) {
 
 const TH = "border-y border-border text-[11px] uppercase tracking-wide text-muted-foreground";
 
+/** A year table is as wide as its years need: one year fits a phone, more scroll in their box. */
+function yearsWide(years: number): CSSProperties {
+  return { minWidth: `${13 + years * 7.5}rem` };
+}
+
 const VERDICT_TONE: Record<Exclude<FigureVerdict, null>, string> = {
   agrees: "text-positive",
   differs: "text-destructive",
@@ -175,7 +181,7 @@ export function TurnoverByYear({
       testId="spread-turnover"
     >
       <div className="relative overflow-x-auto">
-        <table className="w-full min-w-[480px] text-[13px]">
+        <table className="table-pin-first w-full text-[13px]" style={yearsWide(years.length)}>
           <thead>
             <tr className={TH}>
               <th scope="col" className="px-4 py-2 text-left font-medium">
@@ -299,7 +305,7 @@ export function StatementTable({
       testId={`spread-${section}`}
     >
       <div className="relative overflow-x-auto">
-        <table className="w-full min-w-[520px] text-[13px]">
+        <table className="table-pin-first w-full text-[13px]" style={yearsWide(years.length)}>
           <thead>
             <tr className={TH}>
               <th scope="col" className="px-4 py-2 text-left font-medium">

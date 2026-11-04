@@ -22,7 +22,7 @@ const IDENTITY_GROUPS = new Set(["constitution", "registration", "kyc"]);
 /** Identifiers and parties, each with its source (F-10, F-15). */
 export function IdentitySection({ c }: { c: CaseDetail }) {
   return (
-    <div className="grid gap-4 px-4 py-5 sm:px-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+    <div className="grid gap-4 px-4 py-5 sm:px-6 @min-[65rem]/main:grid-cols-[minmax(0,1fr)_320px]">
       <div className="min-w-0 space-y-4">
         <Identifiers c={c} />
         <Parties caseId={c.id} />

@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ComparisonPanel } from "@/components/case/Comparison";
 import { TabSection } from "@/components/case/TabSection";
+import { stepKicker } from "@/domain/steps";
 import { t } from "@/config/terminology";
 
 // RBL's record beside CreditIQ's output, for adjudication (FRD F-25): the
@@ -19,6 +20,7 @@ function ComparisonTab() {
     <div className="pb-10">
       <TabSection
         id="comparison"
+        kicker={stepKicker(caseId, "comparison")}
         title={t("page.comparison.title")}
         purpose={t("page.comparison.purpose")}
       >

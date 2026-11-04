@@ -64,6 +64,10 @@ export async function signedInAs(page: Page, role: Role): Promise<Session> {
     (s) => window.localStorage.setItem("creditiq.session", JSON.stringify(s)),
     session,
   );
+  await page.addInitScript(() => {
+    if (window.sessionStorage.getItem("creditiq.assistant.open") === null)
+      window.sessionStorage.setItem("creditiq.assistant.open", "0");
+  });
   return session;
 }
 

@@ -21,8 +21,11 @@ function Tile({
   testId: string;
 }) {
   return (
-    <div className="min-w-0 rounded border border-border bg-surface px-4 py-3" data-testid={testId}>
-      <div className="flex items-start justify-between gap-2">
+    <div
+      className="min-w-0 rounded border border-border bg-surface px-3 py-3 sm:px-4"
+      data-testid={testId}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-1">
         <p className="field-label">{label}</p>
         {chip && <Chip tone="critical">{chip}</Chip>}
       </div>
@@ -55,10 +58,7 @@ function runNote(run: XvRun | null | undefined): string {
 export function SeverityTiles({ view }: { view: CrossVerificationView }) {
   const c = view.counts;
   return (
-    <div
-      className="grid gap-3 px-4 pt-4 sm:px-6 sm:grid-cols-2 xl:grid-cols-4"
-      data-testid="xv-severity-tiles"
-    >
+    <div className="grid grid-cols-2 gap-3 xl:grid-cols-4" data-testid="xv-severity-tiles">
       <Tile
         testId="xv-tile-serious"
         label={t("crossVerification.tiles.serious")}

@@ -298,6 +298,9 @@ export function RatioTable({
                         className={cn(
                           "tabular text-[13px] lg:text-right",
                           latest ? "font-semibold" : "font-normal",
+                          // On a phone the latest year is the large figure below; a ratio with no
+                          // line in the spread has no years to show.
+                          (latest || !row) && "max-lg:hidden",
                           v === null
                             ? "text-muted-foreground"
                             : band

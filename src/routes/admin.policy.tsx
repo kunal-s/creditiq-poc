@@ -3,6 +3,7 @@ import { Chip, Panel } from "@/components/common/Panel";
 import { QueryView } from "@/components/common/States";
 import { t } from "@/config/terminology";
 import { requirementText, usePolicyConfig } from "@/domain/admin";
+import { StackTable } from "@/components/common/StackTable";
 
 export const Route = createFileRoute("/admin/policy")({ component: PolicyNorms });
 
@@ -28,7 +29,7 @@ function PolicyNorms() {
                 testId={`admin-norms-${family}`}
               >
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[520px] text-[12.5px]">
+                  <StackTable className="w-full min-w-[520px] text-[12.5px]">
                     <thead>
                       <tr className="border-b border-border text-left text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">
                         <th className="px-4 py-2 font-medium">{t("admin.policy.norm")}</th>
@@ -63,7 +64,7 @@ function PolicyNorms() {
                         );
                       })}
                     </tbody>
-                  </table>
+                  </StackTable>
                 </div>
               </Panel>
             );

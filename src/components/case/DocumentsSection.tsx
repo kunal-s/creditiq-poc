@@ -1,10 +1,10 @@
-import { useMemo, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { useMemo, useState, type ReactNode } from "react";
+import { AlertTriangle, CheckCircle2, ChevronDown, ChevronRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import type { FileRecord, FileStatus, LogicalDocument, ReviewItem } from "@/api/types";
 import { Panel } from "@/components/common/Panel";
 import { ErrorState, LoadingBlock } from "@/components/common/States";
-import { FileTree, type RegisterContext } from "@/components/documents/FileTree";
+import { FileTree, RegisterHead, type RegisterContext } from "@/components/documents/FileTree";
 import { UploadZone } from "@/components/documents/UploadZone";
 import { FileStatusChip } from "@/components/documents/chips";
 import { t } from "@/config/terminology";
@@ -12,18 +12,18 @@ import { useCase } from "@/domain/cases";
 import { useChecklist } from "@/domain/checklist";
 import {
   buildFileTree,
-  filterTree,
-  isDocumentInProgress,
+  countFiles,
+  fileGroup,
+  partitionTree,
   useCaseRegister,
   useUpload,
+  type FileGroup,
 } from "@/domain/documents";
+import { integrityNeedsPerson } from "@/domain/integrity";
 import { errorKind } from "@/domain/errors";
 import { reviewTarget, useReviewQueue } from "@/domain/review";
 import { useCan, useSession } from "@/domain/session";
 import { cn } from "@/lib/utils";
-
-type Filter = "all" | "attention" | "processing";
-const FILTERS: Filter[] = ["all", "attention", "processing"];
 
 /** Open review items and checklist defects by document, for the register rows. */
 function useRegisterContext(caseId: string): RegisterContext {
@@ -43,15 +43,17 @@ function useRegisterContext(caseId: string): RegisterContext {
       borrower: c?.borrower ?? "",
       itemsFor: (id) => byDoc.get(id) ?? [],
       defectsFor: (id) => items.filter((i) => i.deficiency && (i.document_ids ?? []).includes(id)),
+      satisfiesFor: (id) => items.filter((i) => (i.document_ids ?? []).includes(id)),
     };
   }, [canReview, review.data, checklist.data, c?.borrower]);
 }
 
-/** A document a person should look at: an open review item, a flag, or a defect. */
+/** A document a person should act on here: an open review item, a flag, or a status that
+ * waits on someone. A gap in the checklist item it counts towards is not one: it is said on
+ * the row and resolved on the completeness step. */
 function needsAttention(doc: LogicalDocument, context: RegisterContext): boolean {
   return (
     context.itemsFor(doc.id).length > 0 ||
-    context.defectsFor(doc.id).length > 0 ||
     doc.label_mismatch === true ||
     doc.status === "unclassified" ||
     doc.status === "in_exception" ||
@@ -59,37 +61,128 @@ function needsAttention(doc: LogicalDocument, context: RegisterContext): boolean
   );
 }
 
-function FilterChips({
-  value,
-  onChange,
-  counts,
+/** One section of the register: its heading, then its files. */
+function Section({
+  title,
+  tone,
+  testId,
+  children,
 }: {
-  value: Filter;
-  onChange: (f: Filter) => void;
-  counts: Record<Filter, number>;
+  title: ReactNode;
+  tone?: "attention" | "quiet";
+  testId: string;
+  children: ReactNode;
 }) {
   return (
-    <div
-      className="flex flex-wrap gap-1.5 border-b border-border px-4 py-2"
-      data-testid="document-filters"
-    >
-      {FILTERS.map((f) => (
-        <button
-          key={f}
-          type="button"
-          aria-pressed={value === f}
-          onClick={() => onChange(f)}
-          data-testid={`filter-${f}`}
-          className={cn(
-            "rounded border px-2 py-0.5 text-[11.5px] font-medium transition-colors",
-            value === f
-              ? "border-primary bg-primary text-primary-foreground"
-              : "border-border bg-surface text-muted-foreground hover:bg-muted",
-          )}
+    <section data-testid={testId}>
+      <h3
+        className={cn(
+          "flex items-center gap-1.5 border-b border-border px-4 py-1.5 text-[11.5px] font-semibold",
+          tone === "attention" ? "bg-flag-soft/40 text-flag-foreground" : "text-muted-foreground",
+        )}
+      >
+        {title}
+      </h3>
+      {children}
+    </section>
+  );
+}
+
+/** The register in three sections: what needs a person first, then what is
+ * still being read, then everything ready, folded into one line. */
+function Register({
+  caseId,
+  files,
+  documents,
+  context,
+}: {
+  caseId: string;
+  files: FileRecord[];
+  documents: LogicalDocument[];
+  context: RegisterContext;
+}) {
+  const groups = partitionTree(buildFileTree(files, documents), (f) =>
+    fileGroup(f, (d) => needsAttention(d, context), integrityNeedsPerson),
+  );
+  const n = {
+    attention: countFiles(groups.attention),
+    reading: countFiles(groups.reading),
+    ready: countFiles(groups.ready),
+  };
+  const [showReady, setShowReady] = useState<boolean | null>(null);
+  // Nothing waiting and nothing being read: the ready files are the register.
+  const readyOpen = showReady ?? (n.attention === 0 && n.reading === 0);
+  const tree = (key: FileGroup) => (
+    <FileTree
+      caseId={caseId}
+      files={files}
+      context={context}
+      nodes={groups[key]}
+      testId={`files-${key}`}
+    />
+  );
+  return (
+    <div data-testid="file-tree">
+      <RegisterHead />
+      {n.attention > 0 && (
+        <Section
+          tone="attention"
+          testId="section-attention"
+          title={
+            <>
+              <AlertTriangle className="h-3.5 w-3.5" />
+              {t("documents.section.attention", { n: n.attention })}
+            </>
+          }
         >
-          {t(`documents.filter.${f}`, { n: counts[f] })}
-        </button>
-      ))}
+          {tree("attention")}
+        </Section>
+      )}
+      {n.reading > 0 && (
+        <Section
+          testId="section-reading"
+          title={
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              {t("documents.section.reading", { n: n.reading })}
+            </>
+          }
+        >
+          {tree("reading")}
+        </Section>
+      )}
+      {n.ready > 0 && (
+        <section data-testid="section-ready">
+          <button
+            type="button"
+            onClick={() => setShowReady(!readyOpen)}
+            aria-expanded={readyOpen}
+            data-testid="show-ready"
+            className="flex w-full items-center justify-between gap-2 border-b border-border px-4 py-2 text-left text-[12px] text-muted-foreground hover:bg-surface-muted/60"
+          >
+            <span className="inline-flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              {t(
+                n.attention + n.reading > 0
+                  ? "documents.section.readyQuiet"
+                  : "documents.section.ready",
+                {
+                  n: n.ready,
+                },
+              )}
+            </span>
+            <span className="inline-flex items-center gap-1 font-medium text-primary">
+              {t(readyOpen ? "documents.section.hide" : "documents.section.show")}
+              {readyOpen ? (
+                <ChevronDown className="h-3.5 w-3.5" />
+              ) : (
+                <ChevronRight className="h-3.5 w-3.5" />
+              )}
+            </span>
+          </button>
+          {readyOpen && tree("ready")}
+        </section>
+      )}
     </div>
   );
 }
@@ -103,7 +196,6 @@ export function DocumentsSection({ caseId }: { caseId: string }) {
   const { files, documents, polling } = useCaseRegister(caseId);
   const upload = useUpload(caseId);
   const context = useRegisterContext(caseId);
-  const [filter, setFilter] = useState<Filter>("all");
 
   const onFiles = (list: File[]) => {
     upload.mutate(list, {
@@ -116,8 +208,8 @@ export function DocumentsSection({ caseId }: { caseId: string }) {
   };
 
   return (
-    <div className="grid gap-4 px-4 py-5 sm:px-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-      <div className="order-2 min-w-0 space-y-4 lg:order-1">
+    <div className="grid gap-4 px-4 py-5 sm:px-6 @min-[49rem]/main:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="order-2 min-w-0 space-y-4 @min-[49rem]/main:order-1">
         <Panel
           title={t("documents.received")}
           subtitle={
@@ -150,50 +242,31 @@ export function DocumentsSection({ caseId }: { caseId: string }) {
               {t("documents.none")}
             </p>
           ) : (
-            <>
-              <FilterChips
-                value={filter}
-                onChange={setFilter}
-                counts={{
-                  all: documents.data.length,
-                  attention: documents.data.filter((d) => needsAttention(d, context)).length,
-                  processing: documents.data.filter(isDocumentInProgress).length,
-                }}
-              />
-              <FileTree
-                caseId={caseId}
-                files={files.data}
-                context={context}
-                nodes={
-                  filter === "all"
-                    ? buildFileTree(files.data, documents.data)
-                    : filterTree(
-                        buildFileTree(files.data, documents.data),
-                        filter === "attention"
-                          ? (d) => needsAttention(d, context)
-                          : isDocumentInProgress,
-                        (f) =>
-                          filter === "attention"
-                            ? f.status === "exception" || f.status === "rejected"
-                            : f.status === "registered",
-                      )
-                }
-              />
-            </>
+            <Register
+              caseId={caseId}
+              files={files.data}
+              documents={documents.data}
+              context={context}
+            />
           )}
         </Panel>
       </div>
 
-      <div className="order-1 min-w-0 space-y-4 lg:order-2 lg:sticky lg:top-4 lg:self-start">
+      {/* On a phone: adding files first, then the files, then the counts. */}
+      <div className="min-w-0 space-y-4 @max-[49rem]/main:contents @min-[49rem]/main:order-2 @min-[49rem]/main:sticky @min-[49rem]/main:top-4 @min-[49rem]/main:self-start">
         {canUpload && (
-          <Panel title={t("documents.add")} testId="add-documents">
-            <div className="space-y-2 p-3">
-              <UploadZone compact onFiles={onFiles} busy={upload.isPending} />
-              {upload.isError && <ErrorState error={upload.error} compact />}
-            </div>
-          </Panel>
+          <div className="order-1 min-w-0">
+            <Panel title={t("documents.add")} testId="add-documents">
+              <div className="space-y-2 p-3">
+                <UploadZone compact onFiles={onFiles} busy={upload.isPending} />
+                {upload.isError && <ErrorState error={upload.error} compact />}
+              </div>
+            </Panel>
+          </div>
         )}
-        <Summary files={files.data} documents={documents.data} context={context} />
+        <div className="order-3 min-w-0">
+          <Summary files={files.data} documents={documents.data} context={context} />
+        </div>
       </div>
     </div>
   );

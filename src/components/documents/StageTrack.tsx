@@ -28,7 +28,7 @@ export function StageTrack({ doc }: { doc: LogicalDocument | undefined }) {
             );
   return (
     <span
-      className="inline-flex items-center gap-1.5"
+      className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5"
       data-testid="stage-track"
       data-step={state === "done" ? "complete" : DOC_STEPS[current]}
       data-state={state}

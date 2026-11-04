@@ -3,6 +3,7 @@ import type { Spread } from "@/api/types";
 import { useDocViewer } from "@/components/docviewer/DocViewer";
 import { t } from "@/config/terminology";
 import { money, useDisplayUnit } from "@/domain/units";
+import { StackTable } from "@/components/common/StackTable";
 
 /** The working-capital assessment (F-22.2), as the engine worked it out: the method and why it
  * applies, each step with its basis and the page its figure was read from, and the eligible bank
@@ -31,7 +32,7 @@ export function WorkingCapital({ caseId, spread }: { caseId: string; spread: Spr
       ) : (
         <>
           <div className="relative overflow-x-auto border-t border-border">
-            <table className="w-full min-w-[480px] text-[13px]">
+            <StackTable className="w-full min-w-[480px] text-[13px]">
               <tbody className="divide-y divide-border">
                 {(wc.steps ?? []).map((step) => {
                   const e = step.evidence?.[0];
@@ -72,7 +73,7 @@ export function WorkingCapital({ caseId, spread }: { caseId: string; spread: Spr
                   );
                 })}
               </tbody>
-            </table>
+            </StackTable>
           </div>
           <p
             className="border-t border-border px-4 py-2.5 text-[13px] font-medium text-foreground"

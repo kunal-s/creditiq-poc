@@ -14,7 +14,7 @@ export function FieldValueButton({ caseId, field }: { caseId: string; field: Fie
       <span className="text-[12px] text-muted-foreground">
         {t("fieldStatus.missing")}
         {field.missing_reason &&
-          `: ${tOr(`missingReason.${field.missing_reason}`, field.missing_reason)}`}
+          `: ${tOr(`missingReason.${field.missing_reason.split(":")[0]}`, field.missing_reason)}`}
       </span>
     );
   }

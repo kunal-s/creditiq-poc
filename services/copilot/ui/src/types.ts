@@ -11,6 +11,11 @@ export interface ChatLabels {
   hint: string;
   /** Shown above an empty conversation. */
   intro: string;
+  /** Heading over the suggested first questions; without it they are listed bare. */
+  startingActions?: string;
+  /** A note under the suggestions on what the answers rest on: a heading and its text. */
+  groundingTitle?: string;
+  grounding?: string;
   thinking: string;
   sources: string;
   /** Table header per column key the service returns; an unlisted key is shown as it comes. */

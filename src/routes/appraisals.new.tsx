@@ -1,12 +1,16 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   AlertTriangle,
   ArrowRight,
   Check,
   ClipboardPaste,
+  Files,
+  KeyRound,
+  MessageSquareText,
   Paperclip,
   Pencil,
+  ShieldCheck,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -18,7 +22,7 @@ import { ErrorState } from "@/components/common/States";
 import { ProposedStatusChip } from "@/components/documents/chips";
 import { UploadZone } from "@/components/documents/UploadZone";
 import { t } from "@/config/terminology";
-import { formatInr, useCreateCase, useMeta, useProposeCase } from "@/domain/cases";
+import { formatInr, useCases, useCreateCase, useMeta, useProposeCase } from "@/domain/cases";
 import { errorKind } from "@/domain/errors";
 import {
   draftFrom,
@@ -51,6 +55,7 @@ function NewApplication() {
   const create = useCreateCase();
   const [channel, setChannel] = useState<string>("");
   const [text, setText] = useState("");
+  const [ids, setIds] = useState("");
   const [proposal, setProposal] = useState<CaseProposal | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
@@ -61,9 +66,18 @@ function NewApplication() {
 
   const channelId = channel || meta.data?.channels[0]?.id || "";
 
+  // What is read: the message, with any identifiers typed on their own after it.
+  const combined = ids.trim()
+    ? text.trim()
+      ? `${text.trimEnd()}\n${ids.trim()}`
+      : ids.trim()
+    : text;
+
   async function read() {
     try {
-      const result = await propose.mutateAsync({ channel: channelId, text });
+      setText(combined);
+      setIds("");
+      const result = await propose.mutateAsync({ channel: channelId, text: combined });
       setProposal(result);
       setDraft(draftFrom(result, meta.data));
       setSelected(null);
@@ -130,28 +144,40 @@ function NewApplication() {
         eyebrow={t("page.newApplication.eyebrow")}
         title={t("page.newApplication.title")}
         purpose={t("page.newApplication.purpose")}
+        actions={
+          !proposal && (
+            <button
+              type="button"
+              disabled={!combined.trim() || propose.isPending || !channelId}
+              onClick={() => void read()}
+              className="flex h-9 items-center gap-1.5 rounded bg-primary px-3.5 text-[12.5px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
+            >
+              <ClipboardPaste className="h-3.5 w-3.5" />
+              {propose.isPending ? t("newApplication.reading") : t("newApplication.read")}
+            </button>
+          )
+        }
       />
 
       <div className="space-y-4 px-4 py-5 sm:px-6">
-        <label className="block max-w-xs">
-          <span className="field-label">{t("newApplication.channel")}</span>
-          <select
-            className={inputClass}
-            value={channelId}
-            onChange={(e) => setChannel(e.target.value)}
-            disabled={Boolean(proposal) || !meta.data}
-            data-testid="channel"
-          >
-            {(meta.data?.channels ?? []).map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        {!proposal && (
+          <IntakeStart
+            text={text}
+            onText={setText}
+            ids={ids}
+            onIds={setIds}
+            attachments={attachments}
+            onAttach={(files) => setAttachments((prev) => [...prev, ...files])}
+            onRemove={(i) => setAttachments((prev) => prev.filter((_, j) => j !== i))}
+            channels={meta.data?.channels ?? []}
+            channel={channelId}
+            onChannel={setChannel}
+            error={propose.isError ? propose.error : null}
+          />
+        )}
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          {proposal && draft ? (
+        {proposal && draft && (
+          <div className="grid gap-4 lg:grid-cols-2">
             <MessagePanel
               text={text}
               proposal={proposal}
@@ -159,60 +185,31 @@ function NewApplication() {
               selected={selected}
               onEdit={discardProposalKeepText}
             />
-          ) : (
-            <Panel title={t("newApplication.message")} subtitle={t("newApplication.messageHelp")}>
-              <div className="space-y-3 p-4">
-                <textarea
-                  rows={12}
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  placeholder={t("newApplication.messagePlaceholder")}
-                  aria-label={t("newApplication.message")}
-                  data-testid="message-input"
-                  className="w-full resize-y rounded border border-border bg-surface p-2.5 text-[12.5px] leading-relaxed outline-none focus:ring-1 focus:ring-ring"
-                />
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    disabled={!text.trim() || propose.isPending || !channelId}
-                    onClick={() => void read()}
-                    className="flex h-9 items-center gap-1.5 rounded bg-primary px-3.5 text-[12.5px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
-                  >
-                    <ClipboardPaste className="h-3.5 w-3.5" />
-                    {propose.isPending ? t("newApplication.reading") : t("newApplication.read")}
-                  </button>
-                  <span className="text-[11.5px] text-muted-foreground">
-                    {t("newApplication.nothingStored")}
-                  </span>
-                </div>
-                {propose.isError && <ErrorState error={propose.error} compact />}
-              </div>
-            </Panel>
-          )}
 
-          {proposal && draft && meta.data ? (
-            <ProposedCase
-              proposal={proposal}
-              draft={draft}
-              meta={meta.data}
-              selected={selected}
-              onSelect={setSelected}
-              onChange={setDraft}
-            />
-          ) : (
-            <Panel title={t("newApplication.proposed")}>
-              {meta.isError ? (
-                <div className="p-4">
-                  <ErrorState error={meta.error} compact />
-                </div>
-              ) : (
-                <p className="px-4 py-8 text-center text-[12.5px] text-muted-foreground">
-                  {t("newApplication.proposedEmpty")}
-                </p>
-              )}
-            </Panel>
-          )}
-        </div>
+            {meta.data ? (
+              <ProposedCase
+                proposal={proposal}
+                draft={draft}
+                meta={meta.data}
+                selected={selected}
+                onSelect={setSelected}
+                onChange={setDraft}
+              />
+            ) : (
+              <Panel title={t("newApplication.proposed")}>
+                {meta.isError ? (
+                  <div className="p-4">
+                    <ErrorState error={meta.error} compact />
+                  </div>
+                ) : (
+                  <p className="px-4 py-8 text-center text-[12.5px] text-muted-foreground">
+                    {t("newApplication.proposedEmpty")}
+                  </p>
+                )}
+              </Panel>
+            )}
+          </div>
+        )}
 
         {proposal && draft && meta.data && (
           <>
@@ -680,6 +677,193 @@ function CreateBar({
           {creating ? t("newApplication.creating") : t("newApplication.create")}
           <ArrowRight className="h-3.5 w-3.5" />
         </button>
+      </div>
+    </div>
+  );
+}
+
+/** The start of an application, as the original design: three ways in (paste the message, drop
+ * the documents, type an identifier), where it came from, how reading works, and the borrowers
+ * already on the desk. */
+function IntakeStart({
+  text,
+  onText,
+  ids,
+  onIds,
+  attachments,
+  onAttach,
+  onRemove,
+  channels,
+  channel,
+  onChannel,
+  error,
+}: {
+  text: string;
+  onText: (v: string) => void;
+  ids: string;
+  onIds: (v: string) => void;
+  attachments: File[];
+  onAttach: (files: File[]) => void;
+  onRemove: (i: number) => void;
+  channels: Meta["channels"];
+  channel: string;
+  onChannel: (id: string) => void;
+  error: unknown;
+}) {
+  const cases = useCases();
+  const recent = [...(cases.data ?? [])]
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))
+    .slice(0, 4);
+  const step = (n: number, icon: ReactNode, title: string, help: string, body: ReactNode) => (
+    <div className="flex min-w-0 flex-col rounded border border-border bg-surface p-3">
+      <div className="flex items-start gap-2">
+        <span className="grid h-7 w-7 shrink-0 place-items-center rounded bg-accent text-primary">
+          {icon}
+        </span>
+        <div className="min-w-0">
+          <p className="text-[13px] font-semibold text-foreground">
+            {n}. {title}
+          </p>
+          <p className="text-[11.5px] text-muted-foreground">{help}</p>
+        </div>
+      </div>
+      <div className="mt-3 flex-1">{body}</div>
+    </div>
+  );
+  return (
+    <div className="grid items-start gap-4 @min-[60rem]/main:grid-cols-[minmax(0,1fr)_minmax(0,20rem)]">
+      <div className="min-w-0 space-y-4">
+        <div className="grid gap-3 @min-[42rem]/main:grid-cols-3">
+          {step(
+            1,
+            <MessageSquareText className="h-3.5 w-3.5" />,
+            t("newApplication.start.message"),
+            t("newApplication.messageHelp"),
+            <textarea
+              rows={8}
+              value={text}
+              onChange={(e) => onText(e.target.value)}
+              placeholder={t("newApplication.messagePlaceholder")}
+              aria-label={t("newApplication.message")}
+              data-testid="message-input"
+              className="h-full w-full resize-y rounded border border-border bg-surface p-2.5 text-[12.5px] leading-relaxed outline-none focus:ring-1 focus:ring-ring"
+            />,
+          )}
+          {step(
+            2,
+            <Files className="h-3.5 w-3.5" />,
+            t("newApplication.start.documents"),
+            t("newApplication.attachmentsHelp"),
+            <div className="space-y-2">
+              <UploadZone compact onFiles={onAttach} />
+              {attachments.length > 0 && (
+                <ul className="space-y-1 text-[12px]" data-testid="attachments">
+                  {attachments.map((f, i) => (
+                    <li key={`${f.name}-${i}`} className="flex items-center gap-2">
+                      <Paperclip className="h-3 w-3 shrink-0 text-muted-foreground" />
+                      <span className="min-w-0 flex-1 break-all">{f.name}</span>
+                      <button
+                        type="button"
+                        aria-label={t("action.remove")}
+                        onClick={() => onRemove(i)}
+                        className="rounded p-0.5 text-muted-foreground hover:bg-muted"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>,
+          )}
+          {step(
+            3,
+            <KeyRound className="h-3.5 w-3.5" />,
+            t("newApplication.start.identifiers"),
+            t("newApplication.start.identifiersHelp"),
+            <input
+              value={ids}
+              onChange={(e) => onIds(e.target.value)}
+              placeholder={t("newApplication.start.identifiersPlaceholder")}
+              aria-label={t("newApplication.start.identifiers")}
+              data-testid="identifiers-input"
+              className={inputClass}
+            />,
+          )}
+        </div>
+        <Panel
+          title={t("newApplication.start.provenance")}
+          subtitle={t("newApplication.start.provenanceHelp")}
+        >
+          <div className="px-4 py-3">
+            <p className="field-label">{t("newApplication.channel")}</p>
+            <div
+              className="mt-1.5 flex flex-wrap gap-1.5"
+              role="radiogroup"
+              aria-label={t("newApplication.channel")}
+            >
+              {channels.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={c.id === channel}
+                  onClick={() => onChannel(c.id)}
+                  data-testid={`channel-${c.id}`}
+                  className={cn(
+                    "rounded border px-2.5 py-1 text-[12px] font-medium transition-colors",
+                    c.id === channel
+                      ? "border-primary bg-accent text-primary"
+                      : "border-border bg-surface text-muted-foreground hover:bg-muted",
+                  )}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+            <p className="mt-3 text-[11.5px] text-muted-foreground">
+              {t("newApplication.nothingStored")}
+            </p>
+          </div>
+        </Panel>
+        {error ? <ErrorState error={error} compact /> : null}
+      </div>
+      <div className="min-w-0 space-y-4">
+        <div className="rounded border border-primary/20 bg-accent px-4 py-3">
+          <p className="flex items-center gap-1.5 text-[13px] font-semibold text-accent-foreground">
+            <ShieldCheck className="h-4 w-4" aria-hidden /> {t("newApplication.start.howTitle")}
+          </p>
+          <p className="mt-1.5 text-[12px] leading-relaxed text-muted-foreground">
+            {t("newApplication.start.how")}
+          </p>
+        </div>
+        <Panel
+          title={t("newApplication.start.recent")}
+          subtitle={t("newApplication.start.recentHelp")}
+        >
+          {recent.length === 0 ? (
+            <p className="px-4 py-3 text-[12px] text-muted-foreground">
+              {t("newApplication.start.recentNone")}
+            </p>
+          ) : (
+            <ul className="divide-y divide-border" data-testid="recent-borrowers">
+              {recent.map((c) => (
+                <li key={c.id} className="px-4 py-2.5">
+                  <Link
+                    to="/appraisals/$caseId"
+                    params={{ caseId: c.id }}
+                    className="text-[13px] font-medium text-foreground hover:text-primary hover:underline"
+                  >
+                    {c.borrower}
+                  </Link>
+                  <p className="tabular text-[11px] text-muted-foreground">
+                    {c.id} · {formatInr(c.amount_inr)} · {c.rm}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
       </div>
     </div>
   );

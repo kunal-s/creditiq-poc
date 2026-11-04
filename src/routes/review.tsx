@@ -8,11 +8,12 @@ import { ErrorState, LoadingBlock } from "@/components/common/States";
 import { DecisionDialog } from "@/components/review/DecisionDialog";
 import { reviewItemPath } from "@/components/review/reviewLinks";
 import { t } from "@/config/terminology";
-import { formatDate, useCases } from "@/domain/cases";
+import { formatDate, stageLabel, useCases } from "@/domain/cases";
 import { formatValue, useFields } from "@/domain/extraction";
 import { DECISIONS_BY_KIND, REVIEW_KINDS, reviewTarget, useReviewQueue } from "@/domain/review";
 import { useSession } from "@/domain/session";
 import { cn } from "@/lib/utils";
+import { StackTable } from "@/components/common/StackTable";
 
 export const Route = createFileRoute("/review")({
   head: () => ({
@@ -33,6 +34,10 @@ function ExceptionQueue() {
   const queue = useReviewQueue({ includeDecided: showDecided });
   const cases = useCases();
   const borrower = (id: string) => cases.data?.find((c) => c.id === id)?.borrower ?? id;
+  const stageOf = (id: string) => {
+    const c = cases.data?.find((x) => x.id === id);
+    return c ? stageLabel(c.stage) : "—";
+  };
 
   const all = queue.data ?? [];
   const open = all.filter((i) => i.status === "open");
@@ -60,7 +65,7 @@ function ExceptionQueue() {
           <LoadingBlock />
         ) : (
           <>
-            <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               <Kpi
                 label={t("exceptions.kpi.open")}
                 value={open.length}
@@ -88,8 +93,21 @@ function ExceptionQueue() {
               <header className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2.5">
                 <h2 className="text-[14px] font-semibold">{t("term.reviewQueue")}</h2>
                 <div className="flex flex-wrap items-center gap-2">
+                  {/* On a phone the kinds are one list to choose from, not four rows of buttons. */}
+                  <select
+                    value={kind}
+                    onChange={(e) => setKind(e.target.value as ReviewKind | "all")}
+                    className="h-8 rounded border border-border bg-surface px-2 text-[12px] sm:hidden"
+                    aria-label={t("exceptions.kindFilter")}
+                  >
+                    {(["all", ...REVIEW_KINDS] as const).map((k) => (
+                      <option key={k} value={k}>
+                        {k === "all" ? t("exceptions.allKinds") : t(`reviewKind.${k}`)}
+                      </option>
+                    ))}
+                  </select>
                   <div
-                    className="flex flex-wrap items-center gap-1 rounded border border-border p-0.5"
+                    className="flex flex-wrap items-center gap-0.5 rounded bg-muted p-0.5 max-sm:hidden"
                     role="group"
                     aria-label={t("exceptions.kindFilter")}
                   >
@@ -101,9 +119,10 @@ function ExceptionQueue() {
                         data-testid={`kind-${k}`}
                         className={cn(
                           "rounded px-2 py-1 text-[11.5px] font-medium",
+                          // As the original's segmented control: the chosen one raised, in white.
                           kind === k
-                            ? "bg-accent text-accent-foreground"
-                            : "text-muted-foreground hover:bg-muted",
+                            ? "bg-surface text-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground",
                         )}
                       >
                         {k === "all" ? t("exceptions.allKinds") : t(`reviewKind.${k}`)}
@@ -136,14 +155,19 @@ function ExceptionQueue() {
               </header>
 
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[880px] text-[12.5px]">
+                <StackTable className="review-cards w-full min-w-[960px] text-[12.5px]">
                   <thead>
+                    {/* The original's order: what it is and whose, then its kind, the
+                        appraisal's stage, when it was raised, the decision and the action. */}
                     <tr className="border-b border-border bg-surface-muted text-left">
                       <th className="px-4 py-2 font-medium text-muted-foreground">
+                        {t("exceptions.col.item")}
+                      </th>
+                      <th className="px-3 py-2 font-medium text-muted-foreground">
                         {t("exceptions.col.kind")}
                       </th>
                       <th className="px-3 py-2 font-medium text-muted-foreground">
-                        {t("exceptions.col.item")}
+                        {t("term.stage")}
                       </th>
                       <th className="px-3 py-2 font-medium text-muted-foreground">
                         {t("exceptions.col.raised")}
@@ -166,6 +190,17 @@ function ExceptionQueue() {
                         data-status={item.status}
                       >
                         <td className="px-4 py-2.5">
+                          <Link
+                            to={reviewItemPath(item.kind, item.case_id)}
+                            className="text-[13px] font-medium text-foreground hover:text-primary hover:underline"
+                          >
+                            {item.summary}
+                          </Link>
+                          <p className="mt-1 text-[11px] text-muted-foreground">
+                            {borrower(item.case_id)} · {item.case_id}
+                          </p>
+                        </td>
+                        <td className="px-3 py-2.5">
                           <span className="flex flex-wrap items-center gap-1">
                             <Chip
                               tone={
@@ -185,16 +220,8 @@ function ExceptionQueue() {
                             )}
                           </span>
                         </td>
-                        <td className="px-3 py-2.5">
-                          <Link
-                            to={reviewItemPath(item.kind, item.case_id)}
-                            className="text-[13px] font-medium text-foreground hover:text-primary hover:underline"
-                          >
-                            {item.summary}
-                          </Link>
-                          <p className="mt-1 text-[11px] text-muted-foreground">
-                            {borrower(item.case_id)} · {item.case_id}
-                          </p>
+                        <td className="px-3 py-2.5 text-[12px] text-muted-foreground">
+                          {stageOf(item.case_id)}
                         </td>
                         <td className="px-3 py-2.5 tabular text-muted-foreground">
                           {formatDate(item.created_at)}
@@ -222,7 +249,7 @@ function ExceptionQueue() {
                     {rows.length === 0 && (
                       <tr>
                         <td
-                          colSpan={5}
+                          colSpan={6}
                           className="px-4 py-8 text-center text-[12.5px] text-muted-foreground"
                         >
                           {t("exceptions.none")}
@@ -230,7 +257,7 @@ function ExceptionQueue() {
                       </tr>
                     )}
                   </tbody>
-                </table>
+                </StackTable>
               </div>
             </section>
           </>

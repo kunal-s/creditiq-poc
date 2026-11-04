@@ -8,6 +8,8 @@ import { reviewItemPath } from "@/components/review/reviewLinks";
 import { CaseScreen } from "@/components/shell/CaseScreen";
 import { caseTabPath, tabForStage } from "@/components/shell/nav";
 import { t } from "@/config/terminology";
+import { StepHeader } from "@/components/case/TabSection";
+import { stepKicker } from "@/domain/steps";
 import { nextStage, stageDetail, useCaseProgress } from "@/domain/progress";
 import { useChecklist } from "@/domain/checklist";
 import { useReviewQueue } from "@/domain/review";
@@ -28,15 +30,22 @@ function OverviewTab() {
   const { caseId } = Route.useParams();
   const progress = useCaseProgress(caseId);
   return (
-    <div className="px-4 py-5 sm:px-6">
-      <QueryView query={progress}>
-        {(p) => (
-          <CaseScreen caseId={caseId}>
-            {(c) => <Overview progress={p} openReview={c.open_review_items} />}
-          </CaseScreen>
-        )}
-      </QueryView>
-    </div>
+    <>
+      <StepHeader
+        kicker={stepKicker(caseId, "overview")}
+        title={t("page.overview.title")}
+        purpose={t("page.overview.purpose")}
+      />
+      <div className="px-4 py-5 sm:px-6">
+        <QueryView query={progress}>
+          {(p) => (
+            <CaseScreen caseId={caseId}>
+              {(c) => <Overview progress={p} openReview={c.open_review_items} />}
+            </CaseScreen>
+          )}
+        </QueryView>
+      </div>
+    </>
   );
 }
 
@@ -53,7 +62,7 @@ function Overview({ progress, openReview }: { progress: CaseProgress; openReview
     <div className="space-y-4">
       <NextAction progress={progress} canOpen={canOpen} />
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <Kpi
           label={t("progress.stage.documents")}
           value={docs.total ? `${docs.done}/${docs.total}` : "—"}
@@ -83,7 +92,7 @@ function Overview({ progress, openReview }: { progress: CaseProgress; openReview
         />
       </div>
 
-      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="grid items-start gap-4 @min-[65rem]/main:grid-cols-[minmax(0,1fr)_380px]">
         <Panel title={t("progress.label")} testId="overview-stages">
           <ol className="divide-y divide-border">
             {progress.stages.map((s, i) => (

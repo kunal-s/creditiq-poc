@@ -58,6 +58,10 @@ test("Files: the six documents are registered and read", async () => {
   await page.goto(`/appraisals/${caseId}/documents`);
   const tree = page.getByTestId("file-tree");
   // Six uploads plus the sourcing message kept as the case's first document.
+  // Files that need nothing are folded into one line when others need a person; open it.
+  const ready = tree.getByTestId("show-ready");
+  if ((await ready.count()) > 0 && (await ready.getAttribute("aria-expanded")) === "false")
+    await ready.click();
   await expect(tree.getByTestId("tree-file")).toHaveCount(7);
   await expect(tree.getByTestId("tree-document")).toHaveCount(14);
 });

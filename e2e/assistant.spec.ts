@@ -82,6 +82,19 @@ async function service(
   return sent;
 }
 
+test("on a laptop the panel is open on arrival at an appraisal, greeting the user by name", async ({
+  page,
+}) => {
+  await signedIn(page, new MockApi());
+  await page.addInitScript(() => window.sessionStorage.removeItem("creditiq.assistant.open"));
+  await service(page, {});
+  await page.goto(`/appraisals/${KESTREL}/completeness`);
+  const panel = page.getByTestId("copilot-panel");
+  await expect(panel).toBeVisible();
+  await expect(panel).toContainText(/Good (morning|afternoon|evening), Ananya\./);
+  await expect(page.getByTestId("assistant-launcher")).toHaveAttribute("aria-pressed", "true");
+});
+
 async function openPanel(page: Page) {
   await page.goto(`/appraisals/${KESTREL}/completeness`);
   await page.getByTestId("assistant-launcher").click();
@@ -95,7 +108,7 @@ test("the launcher opens the panel with the intro and the suggested questions", 
   await service(page, {});
   await openPanel(page);
   const panel = page.getByTestId("copilot-panel");
-  await expect(panel.getByRole("heading", { name: "Appraisal assistant" })).toBeVisible();
+  await expect(panel.getByRole("heading", { name: "CreditIQ Copilot" })).toBeVisible();
   await expect(panel).toContainText(
     "Ask why a document on this appraisal was rejected or held for review, ask for a draft email to the customer, or send that email once you have checked it.",
   );
@@ -273,7 +286,8 @@ test("the panel docks beside the page: the page stays visible and usable, and cl
   await page.getByTestId("assistant-launcher").click();
   const panel = page.getByTestId("copilot-panel");
   await expect(panel).toBeVisible();
-  await expect(page.getByTestId("assistant-launcher")).toHaveCount(0);
+  // The top bar's button stays, pressed while the panel is open.
+  await expect(page.getByTestId("assistant-launcher")).toHaveAttribute("aria-pressed", "true");
 
   // Side by side: the page is narrower, not covered, and the panel starts where the page ends.
   const during = await header.boundingBox();

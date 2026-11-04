@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
+  ChevronDown,
+  ChevronRight,
   CircleAlert,
   Clock,
   FileText,
@@ -227,10 +229,31 @@ function FindingLine({
 }) {
   const placed = (f.evidence ?? []).find((e) => e.rect);
   const measured = f.evidence?.[0]?.observed;
+  const [open, setOpen] = useState(false);
   return (
     <li className="text-[11px]">
       <span className="flex flex-wrap items-baseline gap-x-1.5">
-        <span className={cn("mt-1 h-1.5 w-1.5 shrink-0 self-start rounded-full", tone)} />
+        {detail ? (
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            aria-label={t(open ? "fileIntegrity.summary.less" : "fileIntegrity.summary.more")}
+            data-testid="finding-toggle"
+            className="self-start text-muted-foreground hover:text-foreground"
+          >
+            {open ? (
+              <ChevronDown className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronRight className="h-3.5 w-3.5" />
+            )}
+          </button>
+        ) : (
+          <span className={cn("mt-1 h-1.5 w-1.5 shrink-0 self-start rounded-full", tone)} />
+        )}
+        {detail && (
+          <span className={cn("mt-1 h-1.5 w-1.5 shrink-0 self-start rounded-full", tone)} />
+        )}
         <span className="font-semibold text-foreground">{short(f.code)}</span>
         {measured && <span className="text-muted-foreground">— {humanTimes(measured)}</span>}
         {onShow && placed && (
@@ -243,8 +266,8 @@ function FindingLine({
           </button>
         )}
       </span>
-      {detail && (
-        <span className="block pl-3">
+      {detail && open && (
+        <span className="block pl-7">
           <span className="block text-[10.5px] text-muted-foreground">{humanTimes(f.finding)}</span>
           <WhyItMatters f={f} />
         </span>
@@ -440,6 +463,7 @@ export function HumanReview({ caseId, file }: { caseId: string; file: FileRecord
   const save = useReviewIntegrity(caseId);
   const [decision, setDecision] = useState<Decision | null>(null);
   const [reason, setReason] = useState("");
+  const [open, setOpen] = useState(false);
   const error = save.error instanceof Error ? save.error.message : null;
 
   return (
@@ -448,10 +472,21 @@ export function HumanReview({ caseId, file }: { caseId: string; file: FileRecord
       data-testid="integrity-review"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="flex items-center gap-1 text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          data-testid="integrity-review-toggle"
+          className="flex items-center gap-1 text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground"
+        >
+          {open ? (
+            <ChevronDown className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronRight className="h-3.5 w-3.5" />
+          )}
           <UserCheck className="h-3.5 w-3.5" />
           {t("fileIntegrity.review.title")}
-        </p>
+        </button>
         {review ? (
           <span
             className={cn(
@@ -480,10 +515,12 @@ export function HumanReview({ caseId, file }: { caseId: string; file: FileRecord
           </span>
         </p>
       )}
-      <p className="mt-1 text-[10.5px] text-muted-foreground">
-        {t("fileIntegrity.review.separate")}
-      </p>
-      {canDecide ? (
+      {open && (
+        <p className="mt-1 text-[10.5px] text-muted-foreground">
+          {t("fileIntegrity.review.separate")}
+        </p>
+      )}
+      {!open ? null : canDecide ? (
         <form
           className="mt-2 space-y-1.5"
           onSubmit={(e) => {

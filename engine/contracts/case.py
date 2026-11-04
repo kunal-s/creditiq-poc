@@ -61,6 +61,10 @@ class CaseSummary(BaseModel):
     rm: str
     created_at: str
     open_review_items: int
+    files_attention: int = 0
+    """Files that need a person: unread or refused, checks that found something, a document waiting."""
+    files_altered: int = 0
+    """Of those, files whose checks found signs of an edit."""
 
 
 class CaseDetail(CaseSummary):

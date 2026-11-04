@@ -110,7 +110,7 @@ export function IntegrityChip({
       data-state={stateOf(file)}
       className="shrink-0"
     >
-      <StateChip file={file} className="cursor-pointer hover:opacity-80" />
+      <StateChip file={file} className="cursor-pointer whitespace-nowrap hover:opacity-80" />
     </button>
   );
 }

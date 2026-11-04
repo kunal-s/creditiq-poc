@@ -104,6 +104,46 @@ function Card({ children, className }: { children: React.ReactNode; className?: 
   );
 }
 
+/** A card that folds to its title and a one-line summary, opening on a click. */
+function FoldCard({
+  title,
+  icon,
+  summary,
+  children,
+  testId,
+}: {
+  title: string;
+  icon?: React.ReactNode;
+  summary?: React.ReactNode;
+  children: React.ReactNode;
+  testId?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Card>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        data-testid={testId}
+        className="flex w-full flex-wrap items-center gap-x-1.5 gap-y-0.5 text-left"
+      >
+        {open ? (
+          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+        ) : (
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+        )}
+        <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          {icon}
+          {title}
+        </span>
+        {summary && <span className="ml-auto text-[11px] text-muted-foreground">{summary}</span>}
+      </button>
+      {open && <div className="mt-2">{children}</div>}
+    </Card>
+  );
+}
+
 function Fold({
   title,
   children,
@@ -306,7 +346,7 @@ function View({
           <ChevronLeft className="h-3.5 w-3.5" />
           {t("fileIntegrity.view.back")}
         </Link>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-[12rem] flex-1">
           <p className="break-all text-[14px] font-semibold text-foreground">
             {file.original_name}
           </p>
@@ -319,7 +359,7 @@ function View({
         <StateChip file={file} />
       </Card>
 
-      <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_420px]">
+      <div className="grid gap-3 @min-[65rem]/main:grid-cols-[minmax(0,1fr)_420px]">
         {/* The pages, with every place a check points at. */}
         <Card className="flex min-h-[520px] flex-col gap-2 p-0">
           <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2 text-[11.5px]">
@@ -450,11 +490,12 @@ function View({
           />
           <HumanReview caseId={caseId} file={file} />
 
-          <Card>
-            <p className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              <Type className="h-3.5 w-3.5" />
-              {t("fileIntegrity.view.fonts")}
-            </p>
+          <FoldCard
+            title={t("fileIntegrity.view.fonts")}
+            icon={<Type className="h-3.5 w-3.5" />}
+            summary={fonts && t(`fileIntegrity.status.${fonts.status}`)}
+            testId="integrity-view-fonts"
+          >
             {fonts && (
               <p
                 className={cn(
@@ -472,12 +513,16 @@ function View({
               <span className="font-medium">{t("fileIntegrity.view.fontsNamed")}:</span>{" "}
               {facts?.fonts?.length ? facts.fonts.join(", ") : t("fileIntegrity.view.noFonts")}
             </p>
-          </Card>
+          </FoldCard>
 
-          <Card>
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              {t("fileIntegrity.view.checksTitle")}
-            </p>
+          <FoldCard
+            title={t("fileIntegrity.view.checksTitle")}
+            summary={t("fileIntegrity.view.checksSummary", {
+              applied: applied.length,
+              nothing: nothing.length,
+            })}
+            testId="integrity-view-checks"
+          >
             <div
               className="mb-2 flex flex-wrap gap-1.5 text-[11px]"
               data-testid="integrity-view-counts"
@@ -532,7 +577,7 @@ function View({
                 </p>
               </Fold>
             </div>
-          </Card>
+          </FoldCard>
         </div>
       </div>
       {facts && (

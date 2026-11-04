@@ -45,6 +45,11 @@ export const SOURCING_MESSAGE = [
 
 /** Sign in through the form and land on the workbench. */
 export async function signIn(page: Page, role: Role): Promise<void> {
+  // Screens are tested with the assistant closed unless the test opens it.
+  await page.addInitScript(() => {
+    if (window.sessionStorage.getItem("creditiq.assistant.open") === null)
+      window.sessionStorage.setItem("creditiq.assistant.open", "0");
+  });
   await page.goto("/sign-in");
   const submit = page.getByRole("button", { name: "Sign in" });
   await expect(submit).toBeEnabled();

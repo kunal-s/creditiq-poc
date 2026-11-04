@@ -428,6 +428,11 @@ export class MockApi {
       ["GET", /^\/api\/config\/versions$/, () => ({ json: this.configVersions })],
       [
         "GET",
+        /^\/api\/config\/version$/,
+        () => ({ json: { published_at: "2026-10-01T09:30:00Z", author: "admin" } }),
+      ],
+      [
+        "GET",
         /^\/api\/admin\/settings$/,
         () => (this.can("config.read") ? { json: this.settings } : this.denied("config.read")),
       ],
@@ -996,6 +1001,8 @@ export class MockApi {
       rm: this.user.name,
       created_at: "2026-09-29T09:00:00Z",
       open_review_items: 0,
+      files_attention: 0,
+      files_altered: 0,
     };
     this.cases.unshift(s);
     const d = detail(s, {
@@ -1284,6 +1291,12 @@ export async function signedIn(page: Page, api: MockApi, user: SessionUser = api
     (session) => window.localStorage.setItem("creditiq.session", JSON.stringify(session)),
     { token: "session-token", user },
   );
+  // The assistant opens on arrival on a laptop; screens are tested with it closed unless the
+  // test opens it.
+  await page.addInitScript(() => {
+    if (window.sessionStorage.getItem("creditiq.assistant.open") === null)
+      window.sessionStorage.setItem("creditiq.assistant.open", "0");
+  });
 }
 
 /** Select an area's tab on the Cross-checks board, which shows one area's section at a time. */

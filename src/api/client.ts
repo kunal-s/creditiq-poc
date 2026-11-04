@@ -344,6 +344,8 @@ export const api = {
   policyConfig: () => request<PolicyConfig>("/api/config/policy"),
   approvalMatrixConfig: () => request<ApprovalMatrixConfig>("/api/config/approval-matrix"),
   configVersions: () => request<ConfigVersion[]>("/api/config/versions"),
+  /** The configuration in force: when and by whom it was published. */
+  configInForce: () => request<{ published_at: string; author: string }>("/api/config/version"),
   /** The settings an Administrator edits, as the version in force has them (F-00.6). */
   adminSettings: () => request<EditableSettings>("/api/admin/settings"),
   /** What the changes would change and why they could not be published; publishes nothing. */

@@ -158,6 +158,29 @@
 }
 
 @layer base {
+  /* A box that scrolls sideways holds what it positions too: screen-reader text inside a wide
+     table would otherwise escape the box and widen the whole page. Any position utility wins. */
+  :where(.overflow-x-auto) {
+    position: relative;
+  }
+
+  /* On a touch screen a small chip, link or icon button is easy to hit: its tap area reaches past
+     its edges, so nothing on the page moves. Controls that draw their own ::after (a card made
+     clickable by its title) are left alone, and any position utility wins. */
+  @media (pointer: coarse) {
+    :where(button, a[href], [role="button"], summary):not([class*="after:"]) {
+      position: relative;
+    }
+    :where(button, a[href], [role="button"], summary):not([class*="after:"])::after {
+      content: "";
+      position: absolute;
+      inset: -6px -3px;
+    }
+    :where(input[type="checkbox"], input[type="radio"]) {
+      width: 18px;
+      height: 18px;
+    }
+  }
   * {
     border-color: var(--color-border);
   }
@@ -195,4 +218,143 @@
     opacity: 0;
     transform: translateY(4px);
   }
+}
+
+/* A table that stacks on a phone (common/StackTable): each row a card, each cell labelled with
+   its column's heading, so nothing is cut off at the edge of the screen. */
+@media (max-width: 639px) {
+  .table-stack {
+    display: block;
+    width: 100%;
+    min-width: 0 !important;
+  }
+  .table-stack thead {
+    display: none;
+  }
+  .table-stack tbody,
+  .table-stack tr,
+  .table-stack td,
+  .table-stack tbody th {
+    display: block;
+    width: 100%;
+  }
+  .table-stack tr {
+    padding: 0.5rem 0;
+  }
+  .table-stack td,
+  .table-stack tbody th {
+    padding: 0.3rem 1rem !important;
+    text-align: left !important;
+  }
+  /* Each value beside its column's name, the names in a narrow column on the left: half the
+     height of a name above every value. */
+  .table-stack td[data-label] {
+    position: relative;
+    min-height: 1.9rem;
+    padding-left: 7.75rem !important;
+  }
+  .table-stack td[data-label]::before {
+    content: attr(data-label);
+    position: absolute;
+    left: 1rem;
+    top: 0.45rem;
+    width: 6.25rem;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-muted-foreground);
+  }
+
+  /* The review queue on a phone: one compact card an item, no column names. Its kind and when it
+     was raised on the first line, the item and its case below, its decision and the action last;
+     the appraisal's stage is left to the appraisal. */
+  .table-stack.review-cards tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.4rem 0.75rem;
+    padding: 0.75rem 1rem;
+  }
+  .table-stack.review-cards td,
+  .table-stack.review-cards td[data-label] {
+    min-height: 0;
+    padding: 0 !important;
+  }
+  .table-stack.review-cards td::before {
+    display: none;
+  }
+  .table-stack.review-cards td:nth-child(1) {
+    grid-area: 2 / 1 / 3 / 3;
+  }
+  .table-stack.review-cards td:nth-child(2) {
+    grid-area: 1 / 1;
+  }
+  .table-stack.review-cards td:nth-child(3) {
+    display: none;
+  }
+  .table-stack.review-cards td:nth-child(4) {
+    grid-area: 1 / 2;
+    font-size: 11px;
+    text-align: right !important;
+  }
+  .table-stack.review-cards td:nth-child(5) {
+    grid-area: 3 / 1;
+    align-self: center;
+  }
+  .table-stack.review-cards td:nth-child(6) {
+    grid-area: 3 / 2;
+    text-align: right !important;
+  }
+  .table-stack.review-cards td[colspan] {
+    grid-area: 1 / 1 / 2 / 3;
+  }
+
+  /* Extracted values on a phone: the field's name and its status on the first line, the value
+     below, no column names. */
+  .table-stack.field-cards tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.15rem 0.75rem;
+    padding: 0.6rem 1rem;
+  }
+  .table-stack.field-cards td,
+  .table-stack.field-cards td[data-label] {
+    min-height: 0;
+    padding: 0 !important;
+  }
+  .table-stack.field-cards td::before {
+    display: none;
+  }
+  .table-stack.field-cards td:nth-child(1) {
+    grid-area: 1 / 1;
+    font-size: 11.5px;
+  }
+  .table-stack.field-cards td:nth-child(2) {
+    grid-area: 2 / 1;
+  }
+  .table-stack.field-cards td:nth-child(3) {
+    grid-area: 1 / 2 / 3 / 3;
+    max-width: 11rem;
+    text-align: right !important;
+  }
+}
+
+/* A phone zooms the page into a field whose text is under 16 px when it is tapped, and leaves it
+   zoomed; at 16 px it does not. Unlayered, so it wins over the size utilities on small touch screens only. */
+@media (max-width: 639px) and (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* A grid of figures that scrolls sideways keeps its row names in view: the first column stays
+   put while the years scroll past it. */
+.table-pin-first :is(th, td):first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--color-surface);
 }

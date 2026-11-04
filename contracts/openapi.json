@@ -2483,6 +2483,16 @@
             "title": "Facilities",
             "type": "array"
           },
+          "files_altered": {
+            "default": 0,
+            "title": "Files Altered",
+            "type": "integer"
+          },
+          "files_attention": {
+            "default": 0,
+            "title": "Files Attention",
+            "type": "integer"
+          },
           "gstin": {
             "anyOf": [
               {
@@ -2843,6 +2853,16 @@
             },
             "title": "Facilities",
             "type": "array"
+          },
+          "files_altered": {
+            "default": 0,
+            "title": "Files Altered",
+            "type": "integer"
+          },
+          "files_attention": {
+            "default": 0,
+            "title": "Files Attention",
+            "type": "integer"
           },
           "id": {
             "title": "Id",

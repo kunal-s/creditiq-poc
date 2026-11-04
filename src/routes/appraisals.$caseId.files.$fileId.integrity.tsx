@@ -14,5 +14,10 @@ export const Route = createFileRoute("/appraisals/$caseId/files/$fileId/integrit
 
 function IntegrityRoute() {
   const { caseId, fileId } = Route.useParams();
-  return <IntegrityView caseId={caseId} fileId={fileId} />;
+  // The page's margins, as on every other step of the case.
+  return (
+    <div className="px-4 py-5 sm:px-6">
+      <IntegrityView caseId={caseId} fileId={fileId} />
+    </div>
+  );
 }

@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { DocumentsSection } from "@/components/case/DocumentsSection";
 import { TabSection } from "@/components/case/TabSection";
+import { stepKicker } from "@/domain/steps";
 import { t } from "@/config/terminology";
 
 // Stage 1, quality and classification (FRD §5, §6): upload, then one row per
@@ -19,6 +20,7 @@ function DocumentsTab() {
     <div className="pb-10">
       <TabSection
         id="files"
+        kicker={stepKicker(caseId, "documents")}
         title={t("page.documents.title")}
         purpose={t("page.documents.purpose")}
       >

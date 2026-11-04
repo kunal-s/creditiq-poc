@@ -27,8 +27,8 @@ test("TC-15: sections in published order with weights", async ({ page }) => {
   );
 
   const coi = page.locator('[data-item="coi"]');
-  await expect(coi).toContainText("Blocking");
   await coi.getByRole("button").first().click();
+  await expect(coi.getByTestId("item-blocking")).toContainText("Blocking");
   await expect(coi).toContainText(
     "Certificate of incorporation is required for this constitution and facility.",
   );

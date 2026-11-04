@@ -52,16 +52,21 @@ test("TC-21: every field carries a confidence and a page link; corrections show 
   // Every extracted (non-missing) value is a link to its page with a confidence.
   await expect(fields.getByTestId("field-value")).toHaveCount(5);
   await expect(fields.getByTestId("confidence")).toHaveCount(0);
-  await expect(fields.getByTestId("average-confidence")).toHaveCount(1);
+  // One average per document, in its card's header (its lowest value on hover).
+  const groups = fields.getByTestId("field-group");
+  await expect(groups.first()).toBeVisible();
+  await expect(fields.getByTestId("average-confidence")).toHaveCount(await groups.count());
+  await expect(groups.first().getByTestId("average-confidence")).toHaveCount(1);
 
   const corrected = page.locator('[data-testid="field-value"][data-field="monthly[1].credits"]');
   await expect(corrected).toContainText("39,85,000");
   await expect(corrected.getByTestId("system-value")).toHaveText("38,95,000");
 
-  // The average sits in the document header, with the lowest value on hover.
-  await expect(page.getByTestId("average-confidence").first()).toHaveAttribute(
+  // The average sits in each document's header, with that document's lowest value on hover.
+  const firstValues = await groups.first().getByTestId("field-value").count();
+  await expect(groups.first().getByTestId("average-confidence")).toHaveAttribute(
     "title",
-    /lowest of 5/,
+    new RegExp(`lowest of ${firstValues}$`),
   );
 
   // The same correction in the review queue, both values shown.

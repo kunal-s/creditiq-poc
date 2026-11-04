@@ -49,6 +49,8 @@ interface Dock {
   setOpen: (open: boolean) => void;
   /** A screen with an assistant calls this on mount and with false on unmount. */
   setAvailable: (available: boolean) => void;
+  /** The open screen has an assistant (the top bar offers it). */
+  available: boolean;
   // for the slot
   hostRef: (el: HTMLElement | null) => void;
   visible: boolean;
@@ -64,7 +66,13 @@ export function useAssistantDock(): Dock | null {
 
 export function AssistantDockProvider({ children }: { children: ReactNode }) {
   const [node, setNode] = useState<HTMLElement | null>(null);
-  const [open, setOpenState] = useState(() => remembered(OPEN_KEY, "session") === "1");
+  // Open on arrival where there is room beside the page, as the original design; once the user
+  // closes or opens it, that choice holds for the tab.
+  const [open, setOpenState] = useState(() => {
+    const kept = remembered(OPEN_KEY, "session");
+    if (kept !== null) return kept === "1";
+    return typeof window !== "undefined" && window.matchMedia?.("(min-width: 768px)").matches;
+  });
   const [available, setAvailable] = useState(false);
   const [width, setWidth] = useState(() =>
     clamp(Number(remembered(WIDTH_KEY, "local")) || DEFAULT_WIDTH),
@@ -82,8 +90,18 @@ export function AssistantDockProvider({ children }: { children: ReactNode }) {
 
   const visible = available && open;
   const value = useMemo<Dock>(
-    () => ({ node, open, setOpen, setAvailable, hostRef: setNode, visible, width, resize }),
-    [node, open, setOpen, visible, width, resize],
+    () => ({
+      node,
+      open,
+      setOpen,
+      setAvailable,
+      available,
+      hostRef: setNode,
+      visible,
+      width,
+      resize,
+    }),
+    [node, open, setOpen, available, visible, width, resize],
   );
   return <DockContext.Provider value={value}>{children}</DockContext.Provider>;
 }

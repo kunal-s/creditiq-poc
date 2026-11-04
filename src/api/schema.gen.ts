@@ -2208,6 +2208,16 @@ export interface components {
       created_by: string;
       /** Facilities */
       facilities: string[];
+      /**
+       * Files Altered
+       * @default 0
+       */
+      files_altered: number;
+      /**
+       * Files Attention
+       * @default 0
+       */
+      files_attention: number;
       /** Gstin */
       gstin: string | null;
       /** Header */
@@ -2330,6 +2340,16 @@ export interface components {
       created_at: string;
       /** Facilities */
       facilities: string[];
+      /**
+       * Files Altered
+       * @default 0
+       */
+      files_altered: number;
+      /**
+       * Files Attention
+       * @default 0
+       */
+      files_attention: number;
       /** Id */
       id: string;
       /** Open Review Items */

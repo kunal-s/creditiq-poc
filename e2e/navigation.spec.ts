@@ -18,16 +18,18 @@ test("a case's steps are reached from the side menu and the stage bar", async ({
   await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}/extraction$`));
 });
 
-test("the side menu lists the open case's flows and statuses", async ({ page }) => {
+test("the side menu lists the open case's steps under New appraisal, each with its status", async ({
+  page,
+}) => {
   const api = new MockApi();
   await signedIn(page, api);
   await page.goto("/");
   await expect(page.getByTestId("case-nav")).toHaveCount(0);
   await page.goto(`/appraisals/${KESTREL}/completeness`);
   const nav = page.getByTestId("case-nav");
-  await expect(nav).toContainText("Documents and data");
-  await expect(nav).toContainText("Verification and policy");
+  await expect(nav.getByRole("link", { name: "Identity" })).toBeVisible();
   await expect(nav.getByRole("link", { name: "Policy" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "Submission" })).toBeVisible();
   await nav.getByRole("link", { name: "Cross-verification" }).click();
   await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}/cross-verification$`));
 });

@@ -3,6 +3,7 @@ import { AssessmentStage } from "@/components/case/gate/AssessmentStage";
 import { CamReviewView } from "@/components/case/cam/CamReview";
 import { PdNoteView } from "@/components/case/Outputs";
 import { TabSection } from "@/components/case/TabSection";
+import { stepKicker } from "@/domain/steps";
 import { t } from "@/config/terminology";
 import { cn } from "@/lib/utils";
 
@@ -35,26 +36,33 @@ function OutputsTab() {
   return (
     <AssessmentStage caseId={caseId}>
       <div className="pb-10">
-        <nav className="flex gap-1 px-4 pt-4 sm:px-6" aria-label={t("caseTab.outputs")}>
-          {VIEWS.map((v) => (
-            <Link
-              key={v}
-              to="/appraisals/$caseId/outputs"
-              params={{ caseId }}
-              search={{ view: v }}
-              data-testid={`view-${v}`}
-              className={cn(
-                "rounded px-2.5 py-1 text-[12px] font-medium transition-colors",
-                v === view
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted",
-              )}
-            >
-              {t(`outputs.view.${v}`)}
-            </Link>
-          ))}
-        </nav>
-        <TabSection id={view} title={t("page.draft.title")} purpose={t("page.draft.purpose")}>
+        <TabSection
+          id={view}
+          kicker={stepKicker(caseId, "outputs")}
+          title={t("page.draft.title")}
+          purpose={t("page.draft.purpose")}
+          actions={
+            <nav className="flex gap-1" aria-label={t("caseTab.outputs")}>
+              {VIEWS.map((v) => (
+                <Link
+                  key={v}
+                  to="/appraisals/$caseId/outputs"
+                  params={{ caseId }}
+                  search={{ view: v }}
+                  data-testid={`view-${v}`}
+                  className={cn(
+                    "rounded px-2.5 py-1 text-[12px] font-medium transition-colors",
+                    v === view
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted",
+                  )}
+                >
+                  {t(`outputs.view.${v}`)}
+                </Link>
+              ))}
+            </nav>
+          }
+        >
           <div className="px-4 py-4 sm:px-6">
             {view === "cam" ? <CamReviewView caseId={caseId} /> : <PdNoteView caseId={caseId} />}
           </div>

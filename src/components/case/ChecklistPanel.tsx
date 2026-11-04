@@ -158,11 +158,6 @@ function Item({
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-2">
             <span className="text-[13px] font-medium text-foreground">{item.name}</span>
-            {item.blocking && (
-              <Chip tone="critical" upper>
-                {t("checklist.blocking")}
-              </Chip>
-            )}
           </span>
           {item.deficiency && (
             <span
@@ -187,6 +182,11 @@ function Item({
             <p className="mt-0.5 max-w-3xl text-[12.5px] leading-relaxed text-foreground">
               {item.why}
             </p>
+            {item.blocking && (
+              <p className="mt-1 text-[11.5px] text-muted-foreground" data-testid="item-blocking">
+                {t("checklist.blockingNote")}
+              </p>
+            )}
           </div>
           {def?.request && item.status !== "satisfied" && item.status !== "waived" && (
             <div>

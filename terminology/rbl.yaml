@@ -18,25 +18,34 @@ tenant:
     metaDescription: CreditIQ credit workbench
 
 nav:
+  home: Home
+  myAppraisals: My Appraisals
+  readinessConsole: Readiness Console
+  memoLibrary: Memo Library
+  footer: "Every check runs under the configuration published {date}"
   group:
     workbench: Workbench
+    docready: DocReady
+    appraisal: Appraisal
+    portfolio: Portfolio
     governance: Governance
-    administration: Administration
+    administration: Admin
     help: Help
     thisCase: "Appraisal {id}"
-  help: Guide to the steps
+  help: Guide to the Steps
   cases: Appraisals
   newCase: New appraisal
-  reviewQueue: Review queue
+  reviewQueue: Review Queue
   scorecard: Scorecard
-  audit: Audit trail
+  audit: Audit Trail
   admin:
     configuration: Configuration
     settings: Settings
-    policy: Policy norms
+    policy: Policy Norms
     checklist: Checklist
-    documentTypes: Document types
-    users: Users and roles
+    documentTypes: Document Types
+    templates: Template Designer
+    users: Users and Roles
 
 action:
   retry: Try again
@@ -49,8 +58,24 @@ action:
   goHome: Go to the workbench
 
 # The assistant that answers questions about the open appraisal.
+search:
+  label: Search appraisals
+  placeholder: Search borrower, RM or appraisal number
+  none: No appraisal matches
+notifications:
+  open: "{n} open review item(s)"
+  none: No open review items
+copilot:
+  workbench:
+    context: "Context: {screen}"
+    state: "{n} appraisal(s) are in progress and {items} item(s) wait for a decision. Open an appraisal to ask about its documents."
+    start: Start an appraisal
+    attention: Open what needs my attention
+    pressing: "Open {borrower}, the most pressing"
+    readiness: Open the readiness console
+    ask: Open an appraisal to ask about it…
 assistant:
-  title: Appraisal assistant
+  title: CreditIQ Copilot
   launcher: Ask about this appraisal
   placeholder: Ask about this appraisal
   send: Send
@@ -60,6 +85,15 @@ assistant:
   copied: Copied
   hint: Enter to send, Shift+Enter for a new line
   intro: Ask why a document on this appraisal was rejected or held for review, ask for a draft email to the customer, or send that email once you have checked it.
+  greeting:
+    morning: "Good morning, {name}."
+    afternoon: "Good afternoon, {name}."
+    evening: "Good evening, {name}."
+  startingActions: Starting actions
+  groundingTitle: Grounding
+  grounding: Answers name the document and the rule they came from. The assistant never changes a figure or a decision; you do.
+  context: "Context: {borrower} · {id}"
+  topBar: Copilot
   thinking: Looking this up…
   sources: Sources
   suggestionRejected: Why was a document rejected?
@@ -86,14 +120,20 @@ assistant:
     notDone: That could not be done right now. Check the details and try again.
 
 # The case workspace's tabs, in processing order (FRD §6).
+caseStep:
+  kicker: "Appraisal {id} · {step}"
+
 caseTab:
   overview: Overview
+  identity: Identity
   documents: Files
   extraction: Extracted data
   completeness: Completeness
   crossVerification: Cross-verification
   policy: Financials and Policy
   outputs: Outputs
+  rating: Rating and recommendation
+  submission: Submission
   comparison: Comparison
 
 # The two processing flows of a case; each groups sub-tabs (caseTab.*).
@@ -821,6 +861,7 @@ missingReason:
   not_found_on_page: not found on the page it points to
   model_unavailable: not read yet; automatic reading is unavailable for this field
   model_error: could not be read
+  table_not_found: the table was not found on the document
 
 # Confirming or correcting an extracted value (F-17.5).
 fieldDecision:
@@ -916,13 +957,28 @@ page:
   home:
     title: Credit Workbench
     purpose: Every application in progress, with its stage and the items waiting for review.
-    greeting: "Welcome, {name}"
+    greeting:
+      morning: "Good morning, {name}"
+      afternoon: "Good afternoon, {name}"
+      evening: "Good evening, {name}"
+    waiting: "{n} item(s) wait for a decision"
+    note: "{borrower} is the most pressing: {n} item(s) wait for a decision. Inside the appraisal the copilot explains why a document was turned away and drafts the follow-up email."
+    noteOpen: Open it
     counter:
       inProgress: Applications in progress
       inProgressSub: "Borrowers: {n}"
       review: Open review items
       reviewSub: waiting for a decision
-    inFlight: Appraisals
+    inFlight: In-flight appraisals
+    portfolio:
+      title: Portfolio at a glance
+      open: Appraisals open
+      openNote: "of {n} on the book"
+      ready: Ready for credit
+      blocking: Blocking gaps
+      blockingNote: across the open appraisals
+      byStage: Appraisals by stage
+    viewAll: View all
     inFlightSub: Every appraisal you can see, with its stage and review items
     attention: Needs attention
     attentionCount: "{n} open"
@@ -931,12 +987,106 @@ page:
       open: All open appraisals
       mine: Mine
       review: With review items
+  rating:
+    title: Recommendation and risk rating
+    purpose: "Where the rating stands, what the recommendation rests on, the recommendation credit writes, and who must approve the case."
+    toDraft: Draft
+    ratingTitle: Internal risk rating
+    noRating: No rating model is configured; the rating is left to credit.
+    restsOn: What the recommendation rests on
+    facility: Facility on the table
+  submission:
+    title: Submission and routing
+    purpose: "What must hold before the memo leaves your desk, each read from this appraisal as it stands, and who it goes to."
+    closed: "Submission is closed. {n} item(s) on the checklist are not met: {items}."
+    open: Every item that blocks submission is met.
+    checklist: Pre-submission checklist
+    checklistSub: Read from the appraisal as it stands.
+    advisory: advisory
+    check:
+      serious: All blocking cross-verification findings adjudicated
+      advisory: Other findings dealt with
+      readiness: Readiness gate met
+      recommendation: Recommendation written
+    seriousDone: Every blocking finding has a decision.
+    seriousOpen: "{n} blocking finding(s) still open; submission waits for each."
+    advisoryDone: Every other finding has a decision.
+    advisoryOpen: "{n} finding(s) still open. They do not block, but they go to credit as open."
+    readinessDone: The review gate is met and nothing blocking remains.
+    readinessOpen: "Readiness {score}% against a {gate}% gate; {n} blocking item(s) open."
+    recommendationDone: The recommendation is written.
+    recommendationOpen: The recommendation is still blank.
+    openBoard: Open the discrepancy board
+    openReadiness: Open readiness
+    openRecommendation: Open the recommendation
+    routing: Routing
+    routingNote: The approving authority the matrix requires for this case.
+    routingUnknown: The approving authority cannot be determined yet.
+    travels: What travels with the memo
+    memo: Memo
+    memoValue: "{n} sections, {template}; {edited} in a person's words"
+    findings: Findings
+    findingsValue: "{n} cross-verification finding(s), {decided} decided"
+    asOf: Data as of
+  memos:
+    purpose: Every appraisal on the book with where its credit memo stands. Open a memo to read it, edit it in your words or download it.
+    kpi:
+      book: Borrowers on the book
+      bookNote: "{n} appraisal(s)"
+      drafted: Memos drafted
+      draftedNote: "of {n} appraisal(s); the rest open once the appraisal is created"
+      recommended: Recommendation written
+      recommendedNote: memos ready for the approving authority
+    table: Borrowers and memos
+    tableSub: "{n} appraisal(s) shown"
+    col:
+      memo: Latest memo
+      status: Status
+      exposure: Proposal
+      asOf: Data as of
+    sections: "{n} sections · {edited} in a person's words"
+    notDrafted: Not drafted yet
+    status:
+      recommended: Recommendation written
+      drafting: Drafting
+      none: Not started
+  readinessConsole:
+    eyebrow: DocReady
+    purpose: Document collection for every appraisal still in progress. An appraisal leaves this console when its file is complete enough for credit review.
+    kpi:
+      open: Open appraisals
+      openNote: in collection
+      blocking: Blocking gaps
+      blockingNote: stop an appraisal reaching credit review
+      ready: Ready for credit review
+      readyNote: gate met, nothing blocking
+      outstanding: Requirements outstanding
+      outstandingNote: insufficient or missing
+    table: Appraisals in collection
+    tableSub: Readiness is weighted by document importance, not a plain count.
+    search: Search borrower, RM or appraisal number
+    show:
+      all: All appraisals
+      blocking: Blocking gaps
+      ready: Ready for credit review
+    col:
+      ask: Product and ask
+      outstanding: Outstanding
+    satisfied: "{n} of {total} satisfied · {gate}% gate"
+    outstanding: "{insufficient} insufficient · {missing} missing"
+    nothingBlocking: Nothing blocking
+    none: No appraisal matches
+    noneHelp: Change the search or the filter.
+  myAppraisals:
+    title: My appraisals
+    purpose: "Every appraisal open to {name}, from the first message to the credit decision."
   newApplication:
     eyebrow: Appraisals
     title: New appraisal
     purpose: Paste the sourcing email or notes. CreditIQ proposes the application; nothing is created until you confirm it.
   overview:
     title: Overview
+    purpose: "Where the appraisal stands: the next step, each stage, what is still needed and what waits for a decision."
     next: Next
     nextNone: Nothing is waiting. Processing is up to date.
     nextUpload: Upload the borrower's documents to start processing.
@@ -947,6 +1097,9 @@ page:
     waiting: Waiting for a decision
     waitingCount: "{n} open review item(s) on this appraisal"
     more: "{n} more"
+  completeness:
+    title: Validation and completeness
+    purpose: "The documents received against those this constitution and facility need, the readiness gate, and the list to send the customer."
   checklist:
     title: Required document set
     purpose: The checklist derived from the case's constitution and facilities, with each item satisfied, insufficient or missing.
@@ -1108,17 +1261,31 @@ caseDelete:
 
 cases:
   col:
-    proposal: Facilities and amount
+    proposal: Proposal
     rm: RM
-    created: Created
-    review: Review items
+    created: Started
+    review: Flags
     amount: Amount
   reviewOpen: "{n} open"
+  filesAttention: "{n} file(s) need attention"
   clear: Clear
 
 # New application from a pasted message (FRD F-04).
 newApplication:
   channel: Channel
+  start:
+    message: Paste a message
+    documents: Drop documents
+    identifiers: Enter identifiers
+    identifiersHelp: PAN, GSTIN, CIN or Udyam; optional, read with the message.
+    identifiersPlaceholder: e.g. AAACK1234K
+    provenance: Provenance
+    provenanceHelp: Where the request came from; it is kept with the application.
+    howTitle: How reading works
+    how: "CreditIQ proposes the borrower, the facilities, the amount and the identifiers it finds, each marked where it came from; a person confirms or corrects every value before anything is created. Documents dropped here are uploaded once the application is created."
+    recent: Recent borrowers
+    recentHelp: Appraisals already on the desk.
+    recentNone: No appraisal yet.
   message: Message
   messageHelp: The sourcing email, WhatsApp message or call notes, as received.
   messagePlaceholder: Paste the email, message or notes here…
@@ -1178,6 +1345,44 @@ upload:
   camera: Take a photo
 
 documents:
+  table:
+    file: File
+    pages: Pages
+    type: Document type
+    confidence: Confidence
+    integrity: Integrity check
+    satisfies: Satisfies
+    # The same columns named beside each value on a phone, where the row is a short card.
+    phone:
+      file: File
+      pages: Pages
+      type: Type
+      confidence: Confidence
+      integrity: Integrity
+      satisfies: Satisfies
+    none: "—"
+    part: "part {n}"
+    sameFile: Same file
+    needsPerson: Needs a person
+    docStatus:
+      duplicate: Duplicate
+      superseded: Superseded
+    integrityState:
+      passed: Passed
+      incomplete: Not run yet
+      review_recommended: Review recommended
+      suspicious: Suspicious
+      suspicious_high: Suspicious
+      failed: Could not run
+      not_checked: Not yet checked
+      not_applicable: Does not apply
+  section:
+    attention: "Needs attention · {n}"
+    reading: "Reading {n} file(s)"
+    ready: "{n} file(s), all ready"
+    readyQuiet: "{n} file(s) ready, nothing to look at"
+    show: Show
+    hide: Hide
   add: Add documents
   addHelp: Single files, several files or a ZIP archive. Each file is registered and read.
   needsAttention: Need attention
@@ -1483,6 +1688,8 @@ fileIntegrity:
     explain: How strongly the file contradicts itself, from what stands out. Not the chance it was altered; a person decides.
     part: "{check}: {points} points, adds {adds}"
   summary:
+    more: Show why this matters
+    less: Hide why this matters
     title: Integrity · automated check
     count:
       passed: passed
@@ -1545,6 +1752,7 @@ fileIntegrity:
     fontsNamed: Fonts the file names
     noFonts: The file names no font.
     checksTitle: Checks for this file
+    checksSummary: "{applied} applied · {nothing} with nothing to look at"
     applied: applied to this file
     nothingToLook: had nothing to look at
     notRun: not run for this kind of document
@@ -1585,6 +1793,9 @@ details:
 
 audit:
   entries: Activity
+  readOnly: "Read-only for {name}, {role}"
+  export: Export the record
+  cardCounts: "{n} recorded event(s) · {decisions} decision(s) by a person"
   none: No activity matches these filters.
   filterAction: Filter by activity
   filterPerson: Filter by person
@@ -1609,6 +1820,14 @@ audit:
     output_downloaded: Downloaded the draft CAM or the PD note
 
 admin:
+  templates:
+    default: "The configured template · {n} sections"
+    made: "{n} sections · made by {by}, {at}"
+    inUse: Default
+    parts: "drafted from {parts}"
+    analystWrites: left for the analyst to write
+    none: No memo template
+    noneHelp: The configured template appears once the configuration is published.
   config:
     current: In force now
     publishedOn: Published
@@ -1879,6 +2098,7 @@ checklist:
     blocking: "Blocking ({n})"
     satisfied: "Satisfied ({n})"
   blocking: Blocking
+  blockingNote: "Blocking: credit review waits for this item."
   documentsLinked: "linked documents: {n}"
   why: Why it is required
   basis: Basis
@@ -1983,6 +2203,23 @@ assessment:
   createdBy: "Case created by {who}"
   gateTitle: Ready to create the case
   gateTitleBlocked: Not ready to create the case yet
+  gateTitleOpen: Case created
+  conditionsMet: "{met} of {total} conditions met"
+  createBlocked: Every condition below must be met first.
+  tile:
+    met: Met
+    notMet: Not met
+    reviewGate: Review gate
+    score: "Readiness {score}%"
+    needs: "Needs {gate}%"
+    toGo: "{n} points to go"
+    blocking: Blocking items
+    blockingOpen: still open
+    blockingDone: "{done} of {total} blocking items satisfied"
+    showItems: Show them
+    files: Files read
+    filesUnread: file(s) could not be read
+    showFiles: Open the files
   gateIntro: The cross-checks, the policy checks and the outputs open once the case is created.
   lockedTitle: Opens once the case is created
   lockedBody: This step runs after intake. Finish the checklist on the completeness step, then create the case.
@@ -2004,7 +2241,7 @@ readiness:
   met: Met
   notMet: Not met
   threshold: "threshold {threshold}% · now {score}%"
-  notReady: "Not ready for credit review: {score}% against a {gate}% gate"
+  notReady: Not ready for credit review
   withBlocking: "(blocking open: {n})"
   notReadyHelp: The gate is met only when the weighted score reaches the threshold and every blocking item is satisfied or waived with a reason.
   readyHelp: "The {gate}% gate is met and nothing blocking remains."

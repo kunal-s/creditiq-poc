@@ -39,6 +39,20 @@ export function integrityStandsOut(file: FileRecord) {
   );
 }
 
+/** States in which a person should look at the file: the checks found something,
+ * or they could not run. (A file whose checks are pending a re-run is not one.) */
+export function integrityNeedsPerson(file: FileRecord) {
+  return ["suspicious", "suspicious_high", "review_recommended", "failed"].includes(stateOf(file));
+}
+
+/** The one reason, in a few words, that the file's checks want a person: the
+ * first check that stands out, or failed, or prompts a look. */
+export function integrityReason(file: FileRecord): string | null {
+  const s = file.integrity_status;
+  const code = s?.suspicious?.[0] ?? s?.failed?.[0] ?? s?.informational?.[0];
+  return code ? tOr(`fileIntegrity.short.${code}`, code) : null;
+}
+
 /** One check's result, as a reader is told it. */
 export type CheckKind =
   "passed" | "suspicious" | "informational" | "not_applicable" | "not_run" | "failed";

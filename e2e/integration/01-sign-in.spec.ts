@@ -60,11 +60,11 @@ test("the relationship manager's menu holds neither Governance nor Administratio
 }) => {
   await signIn(page, "rm");
   const names = await navLinkNames(page);
-  expect(names).toContain("Appraisals");
+  expect(names).toContain("My Appraisals");
   expect(names).toContain("New appraisal");
-  expect(names).toContain("Guide to the steps");
-  expect(names).not.toContain("Review queue");
-  expect(names).not.toContain("Audit trail");
+  expect(names).toContain("Guide to the Steps");
+  expect(names).not.toContain("Review Queue");
+  expect(names).not.toContain("Audit Trail");
   expect(names).not.toContain("Configuration");
   expect(names).not.toContain("Scorecard");
 });
@@ -74,13 +74,13 @@ test("the analyst's menu holds Governance and Administration but not the Scoreca
 }) => {
   await signIn(page, "analyst");
   const names = await navLinkNames(page);
-  expect(names).toContain("Review queue");
-  expect(names).toContain("Audit trail");
+  expect(names).toContain("Review Queue");
+  expect(names).toContain("Audit Trail");
   expect(names).toContain("Configuration");
-  expect(names).toContain("Policy norms");
+  expect(names).toContain("Policy Norms");
   expect(names).toContain("Checklist");
-  expect(names).toContain("Document types");
-  expect(names).toContain("Users and roles");
+  expect(names).toContain("Document Types");
+  expect(names).toContain("Users and Roles");
   expect(names).not.toContain("Scorecard");
 });
 
@@ -90,7 +90,7 @@ test("the credit manager's menu holds the Scorecard and cannot create an apprais
   await signIn(page, "manager");
   const names = await navLinkNames(page);
   expect(names).toContain("Scorecard");
-  expect(names).toContain("Review queue");
-  expect(names).toContain("Audit trail");
+  expect(names).toContain("Review Queue");
+  expect(names).toContain("Audit Trail");
   expect(names).not.toContain("New appraisal");
 });

@@ -7,15 +7,13 @@ import { MockApi, signedIn } from "./support/api";
 const C = `/appraisals/${KESTREL}`;
 
 const REDIRECTS: [string, string][] = [
-  ["/appraisals", "/"],
-  ["/docready", "/"],
   ["/exceptions", "/review"],
   ["/appraisals/new", "/appraisals/new"],
   [`/appraisals/${KESTREL}`, C],
   [`/docready/${KESTREL}`, C],
   [`/appraisals/${KESTREL}/upload`, `${C}/documents`],
   [`/docready/${KESTREL}/validation`, `${C}/documents`],
-  [`/appraisals/${KESTREL}/identity`, `${C}/extraction#identity`],
+  [`/appraisals/${KESTREL}/identity`, `${C}/identity`],
   [`/appraisals/${KESTREL}/data`, `${C}/extraction#fields`],
   [`/docready/${KESTREL}/checklist`, `${C}/completeness#checklist`],
   [`/docready/${KESTREL}/readiness`, `${C}/completeness#readiness`],

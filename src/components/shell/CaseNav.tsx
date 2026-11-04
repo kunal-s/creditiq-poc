@@ -1,13 +1,13 @@
 import { Link } from "@tanstack/react-router";
 import type { StageStatus } from "@/api/types";
-import { caseTabPath, topTabs, type CaseTab } from "./nav";
+import { CASE_TABS, caseTabPath, type CaseTab } from "./nav";
 import { t } from "@/config/terminology";
 import { useCaseProgress } from "@/domain/progress";
 import { useSession } from "@/domain/session";
 import { cn } from "@/lib/utils";
 
-// The open appraisal's own steps in the side menu: its two flows with their
-// sub-tabs and where each stands. Shown only inside a case.
+// The open appraisal's own steps in the side menu, under New appraisal as in the original design:
+// each step with a dot for where its stage stands. Shown only inside a case.
 
 const DOT: Record<StageStatus, string> = {
   not_started: "bg-sidebar-foreground/25",
@@ -71,45 +71,25 @@ export function CaseNav({
   const isActive = (tab: CaseTab) =>
     decodeURIComponent(pathname) === decodeURIComponent(caseTabPath(caseId, tab));
 
+  const tabs = CASE_TABS.filter((tab) => permissions.includes(tab.permission));
   return (
-    <div className="mb-4 px-2.5" data-testid="case-nav">
-      <p className="truncate px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.09em] text-sidebar-foreground/45">
+    <div className="mt-1" data-testid="case-nav">
+      <p className="truncate px-2 pb-1 pl-5 text-[10.5px] text-sidebar-foreground/50">
         {t("nav.group.thisCase", { id: caseId })}
       </p>
       <ul className="space-y-px">
-        {topTabs(permissions).map((o) =>
-          o.kind === "tab" ? (
-            <li key={o.tab.key}>
-              <Row
-                to={caseTabPath(caseId, o.tab)}
-                label={t(`caseTab.${o.tab.key}`)}
-                active={isActive(o.tab)}
-                status={statusOf(o.tab)}
-                onNavigate={onNavigate}
-              />
-            </li>
-          ) : (
-            <li key={o.flow.id} className="pt-1.5">
-              <p className="px-2 pb-0.5 text-[11px] font-medium text-sidebar-foreground/55">
-                {t(`caseFlow.${o.flow.id}`)}
-              </p>
-              <ul className="space-y-px">
-                {o.tabs.map((tab) => (
-                  <li key={tab.key}>
-                    <Row
-                      to={caseTabPath(caseId, tab)}
-                      label={t(`caseTab.${tab.key}`)}
-                      active={isActive(tab)}
-                      status={statusOf(tab)}
-                      indent
-                      onNavigate={onNavigate}
-                    />
-                  </li>
-                ))}
-              </ul>
-            </li>
-          ),
-        )}
+        {tabs.map((tab) => (
+          <li key={tab.key}>
+            <Row
+              to={caseTabPath(caseId, tab)}
+              label={t(`caseTab.${tab.key}`)}
+              active={isActive(tab)}
+              status={statusOf(tab) ?? "not_started"}
+              indent
+              onNavigate={onNavigate}
+            />
+          </li>
+        ))}
       </ul>
     </div>
   );

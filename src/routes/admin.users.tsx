@@ -3,6 +3,7 @@ import { Panel } from "@/components/common/Panel";
 import { QueryView } from "@/components/common/States";
 import { t } from "@/config/terminology";
 import { permissionLabel, useUsers } from "@/domain/admin";
+import { StackTable } from "@/components/common/StackTable";
 
 export const Route = createFileRoute("/admin/users")({ component: Users });
 
@@ -17,7 +18,7 @@ function Users() {
             <>
               <Panel title={t("admin.users.people")} testId="admin-users">
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[480px] text-[12.5px]">
+                  <StackTable className="w-full min-w-[480px] text-[12.5px]">
                     <thead>
                       <tr className="border-b border-border text-left text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">
                         <th className="px-4 py-2 font-medium">{t("admin.users.name")}</th>
@@ -36,7 +37,7 @@ function Users() {
                         </tr>
                       ))}
                     </tbody>
-                  </table>
+                  </StackTable>
                 </div>
               </Panel>
               <Panel title={t("admin.users.roles")} subtitle={t("admin.users.rolesHelp")}>

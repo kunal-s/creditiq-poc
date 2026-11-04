@@ -11,6 +11,11 @@ export type CaseCreate = S["CaseCreate"];
 export type HeaderField = S["HeaderField"];
 export type Stage = CaseSummary["stage"];
 export type FileRecord = S["FileRecord"];
+/** One integrity check on a file (F-07A): an indicator for a person, never a verdict. */
+export type IntegrityFinding = S["IngestIntegrityFinding"];
+/** What a file says about itself, as the integrity stage read it (F-07A). */
+export type IntegrityFacts = S["IngestIntegrityFacts"];
+export type IntegrityFigure = S["IngestIntegrityFigure"];
 export type FileStatus = FileRecord["status"];
 export type LogicalDocument = S["LogicalDocument"];
 export type DocumentStatus = LogicalDocument["status"];

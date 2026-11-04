@@ -209,6 +209,12 @@ def decide(
             _require(decision in ("confirm", "waive"), "a finding is confirmed as valid or waived with a reason")
             finding_id = detail.get("finding_id") or item["ref"].removeprefix("finding:")
             resolve_escalation(conn, case_id=case_id, finding_id=finding_id, resolved_by=decided_by)
+        elif kind == "integrity":
+            # F-07A: what the file's own bytes said about its history. A person
+            # confirms the file stands out (and asks for the issuer's copy) or
+            # waives it with the reason it is explained. The findings stay on the file.
+            _require(decision in ("confirm", "waive"),
+                     "a file's integrity is confirmed as standing out or waived with a reason")
         else:
             raise ReviewError(422, f"{kind} items are decided elsewhere")
 

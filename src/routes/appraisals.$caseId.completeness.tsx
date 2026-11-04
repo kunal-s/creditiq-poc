@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { ChecklistPanel } from "@/components/case/ChecklistPanel";
-import { CreateCasePanel } from "@/components/case/gate/CreateCasePanel";
+import { ReadinessPanel } from "@/components/case/gate/CreateCasePanel";
 import { QueriesPanel } from "@/components/case/QueriesPanel";
-import { ReadinessSummary } from "@/components/case/ReadinessSummary";
 import { QueryView } from "@/components/common/States";
 import { t } from "@/config/terminology";
+import { StepHeader } from "@/components/case/TabSection";
+import { stepKicker } from "@/domain/steps";
 import { useAnchor } from "@/domain/anchor";
 import { useChecklist } from "@/domain/checklist";
 import { useFindings } from "@/domain/findings";
@@ -54,33 +55,44 @@ function CompletenessTab() {
     ? (findings.data ?? []).filter((f) => f.outcome === "fail" && f.blocking).length
     : 0;
   return (
-    <div className="space-y-4 px-4 py-5 pb-10 sm:px-6">
-      <QueryView
-        query={checklist}
-        isEmpty={(r) => r.items.length === 0}
-        empty={{ title: t("checklist.emptyTitle"), description: t("checklist.emptyDescription") }}
-      >
-        {(r) => (
-          <>
-            <Anchor id="readiness">
-              <ReadinessSummary r={r} caseId={caseId} blockingFindings={blockingFindings} />
-            </Anchor>
-            <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
-              <Anchor id="checklist" className="min-w-0">
-                <ChecklistPanel caseId={caseId} r={r} />
+    <>
+      <StepHeader
+        kicker={stepKicker(caseId, "completeness")}
+        title={t("page.completeness.title")}
+        purpose={t("page.completeness.purpose")}
+      />
+      <div className="space-y-4 px-4 py-5 pb-10 sm:px-6">
+        <QueryView
+          query={checklist}
+          isEmpty={(r) => r.items.length === 0}
+          empty={{ title: t("checklist.emptyTitle"), description: t("checklist.emptyDescription") }}
+        >
+          {(r) => (
+            <>
+              {/* Where the case stands, once: the readiness, the gates and the action. */}
+              <Anchor id="readiness">
+                <ReadinessPanel
+                  caseId={caseId}
+                  r={r}
+                  gate={gate}
+                  blockingFindings={blockingFindings}
+                />
               </Anchor>
-              <Anchor id="queries" className="min-w-0 xl:sticky xl:top-4">
-                <QueriesPanel caseId={caseId} />
-              </Anchor>
-            </div>
-            {gate && (
-              <Anchor id="create-case">
-                <CreateCasePanel caseId={caseId} gate={gate} />
-              </Anchor>
-            )}
-          </>
-        )}
-      </QueryView>
-    </div>
+              <div className="grid items-start gap-4 @min-[65rem]/main:grid-cols-[minmax(0,1fr)_380px]">
+                <Anchor id="checklist" className="min-w-0">
+                  <ChecklistPanel caseId={caseId} r={r} />
+                </Anchor>
+                <Anchor
+                  id="queries"
+                  className="min-w-0 @min-[65rem]/main:sticky @min-[65rem]/main:top-4"
+                >
+                  <QueriesPanel caseId={caseId} />
+                </Anchor>
+              </div>
+            </>
+          )}
+        </QueryView>
+      </div>
+    </>
   );
 }

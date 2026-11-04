@@ -1,6 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { AlertTriangle, Check, ChevronDown, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { AlertTriangle, Check, Loader2 } from "lucide-react";
 import type { CaseProgress, StageProgress as Stage, StageStatus } from "@/api/types";
 import { caseTabPath, tabForStage } from "@/components/shell/nav";
 import { t } from "@/config/terminology";
@@ -56,18 +55,23 @@ function StageItem({
   const body = (
     <>
       <StatusMark n={n} status={stage.status} />
+      {/* The stage's name in full, over two lines where the strip is narrow; its detail in one
+          line, whole on hover. */}
       <span className="min-w-0">
-        <span className="block truncate text-[12px] font-medium text-foreground">
+        <span className="line-clamp-2 block text-[12px] font-medium leading-snug text-foreground">
           {t(`progress.stage.${stage.key}`)}
         </span>
-        <span className="block truncate text-[11px] text-muted-foreground">
+        <span
+          className="block truncate text-[11px] text-muted-foreground"
+          title={stageDetail(stage)}
+        >
           {stageDetail(stage)}
         </span>
       </span>
     </>
   );
   const className = cn(
-    "flex min-w-0 items-center gap-2 rounded px-2 py-1.5",
+    "flex min-w-0 items-start gap-2 rounded px-2 py-1.5",
     active && "bg-muted",
     canOpen && "transition-colors hover:bg-muted",
   );
@@ -87,6 +91,56 @@ function StageItem({
   );
 }
 
+const PILL_TONE: Record<StageStatus, string> = {
+  done: "bg-positive-soft text-positive",
+  needs_attention: "bg-flag-soft text-flag-foreground",
+  in_progress: "bg-info-soft text-info",
+  not_started: "text-muted-foreground",
+};
+
+/** One stage as a pill: its name, coloured by where it stands; its detail on hover. */
+function StagePill({
+  caseId,
+  stage,
+  active,
+  canOpen,
+}: {
+  caseId: string;
+  stage: Stage;
+  active: boolean;
+  canOpen: boolean;
+}) {
+  const className = cn(
+    "inline-flex items-center whitespace-nowrap rounded px-2 py-1 text-[11.5px] font-medium transition-colors",
+    active ? "bg-primary text-primary-foreground" : PILL_TONE[stage.status],
+    canOpen && !active && "hover:bg-muted hover:text-foreground",
+  );
+  // The step's short name, as in the side menu; the stage's full name and detail on hover.
+  const label = t(`caseTab.${tabForStage(stage.key).key}`);
+  const title = `${t(`progress.stage.${stage.key}`)} · ${stageDetail(stage)}`;
+  return canOpen ? (
+    <Link
+      to={caseTabPath(caseId, tabForStage(stage.key))}
+      className={className}
+      title={title}
+      aria-current={active ? "page" : undefined}
+      data-testid={`stage-${stage.key}`}
+      data-status={stage.status}
+    >
+      {label}
+    </Link>
+  ) : (
+    <span
+      className={className}
+      title={title}
+      data-testid={`stage-${stage.key}`}
+      data-status={stage.status}
+    >
+      {label}
+    </span>
+  );
+}
+
 export function StageProgressBar({
   caseId,
   progress,
@@ -97,12 +151,7 @@ export function StageProgressBar({
   activeStage?: string | undefined;
 }) {
   const permissions = useSession()?.user.permissions ?? [];
-  const [open, setOpen] = useState(false);
   const stages = progress.stages;
-  const current = Math.max(
-    0,
-    stages.findIndex((s) => s.status !== "done"),
-  );
   const items = stages.map((stage, i) => (
     <li key={stage.key} className="min-w-0">
       <StageItem
@@ -117,26 +166,19 @@ export function StageProgressBar({
 
   return (
     <nav aria-label={t("progress.label")} data-testid="stage-progress">
-      {/* Phones: the current stage, with the full list on demand. */}
-      <button
-        type="button"
-        className="flex w-full items-center gap-2 rounded border border-border bg-surface px-3 py-2 text-left md:hidden"
-        onClick={() => setOpen(!open)}
-        aria-expanded={open}
-      >
-        <StatusMark n={current + 1} status={stages[current]!.status} />
-        <span className="min-w-0 flex-1">
-          <span className="block text-[11px] text-muted-foreground">
-            {t("progress.stageOf", { n: current + 1, total: stages.length })}
-          </span>
-          <span className="block truncate text-[12.5px] font-medium">
-            {t(`progress.stage.${stages[current]!.key}`)}
-          </span>
-        </span>
-        <ChevronDown className={cn("h-4 w-4 transition-transform", open && "rotate-180")} />
-      </button>
-      {open && <ol className="mt-1 space-y-0.5 md:hidden">{items}</ol>}
-      <ol className="hidden grid-cols-6 gap-1 md:grid">{items}</ol>
+      {/* A pill a stage, as the original design: done tinted, the open one dark. */}
+      <ol className="flex flex-wrap items-center gap-1 md:justify-end">
+        {stages.map((stage) => (
+          <li key={stage.key}>
+            <StagePill
+              caseId={caseId}
+              stage={stage}
+              active={activeStage === stage.key}
+              canOpen={permissions.includes(tabForStage(stage.key).permission)}
+            />
+          </li>
+        ))}
+      </ol>
     </nav>
   );
 }

@@ -20,6 +20,9 @@ test("TC-03: upload a ZIP, then files including a duplicate", async ({ page }) =
 
   // The archive as a tree, with its folders and members.
   const tree = page.getByTestId("file-tree");
+  // Files that need nothing are folded into one line while others are read; open it.
+  const ready = tree.getByTestId("show-ready");
+  if ((await ready.getAttribute("aria-expanded")) === "false") await ready.click();
   await expect(tree.getByTestId("tree-folder").first()).toContainText("case-file.zip");
   await expect(tree.getByTestId("tree-folder").nth(1)).toContainText("KYC");
   await expect(tree.getByTestId("tree-file")).toHaveCount(4);
@@ -29,7 +32,10 @@ test("TC-03: upload a ZIP, then files including a duplicate", async ({ page }) =
 
   // Documents are read in the background; the list updates without a reload.
   await expect(page.getByTestId("polling")).toBeVisible();
-  await expect(tree.getByTestId("tree-document").first()).toContainText("PAN (individual)", {
+  // Sections put what needs a person first, so the document is found by what it is.
+  await expect(
+    tree.getByTestId("tree-document").filter({ hasText: "PAN (individual)" }),
+  ).toBeVisible({
     timeout: 15_000,
   });
   await expect(tree.locator('[data-document-id="doc-gst"]')).toContainText("p1–2");

@@ -526,6 +526,39 @@ MIGRATIONS: list[str] = [
     CREATE TRIGGER outbox_no_update BEFORE UPDATE ON outbox
         BEGIN SELECT RAISE(ABORT, 'outbox is append-only'); END;
     """,
+    # 16: document integrity (F-07A). What a file's own bytes say about its
+    # history, found before anything is extracted. Held on the file, because it
+    # is a fact about the file and not about any document inside it.
+    """
+    ALTER TABLE files ADD COLUMN integrity TEXT NOT NULL DEFAULT '[]';
+    ALTER TABLE files ADD COLUMN integrity_recommendation TEXT;
+    """,
+    # 17: what a file says about itself (F-07A): its metadata, identifiers,
+    # revisions and fonts as the integrity stage read them, so a reader can see
+    # the records each integrity answer rests on.
+    """
+    ALTER TABLE files ADD COLUMN integrity_facts TEXT;
+    """,
+    # 18: every figure the page checks read, with its place, font and size, so a
+    # reader can see each one on the page (F-07A). Kept apart from the file
+    # list, which does not carry it: a statement prints thousands.
+    """
+    ALTER TABLE files ADD COLUMN integrity_figures TEXT;
+    """,
+    # 19: a person's conclusion on a file's integrity (F-07A): genuine, altered,
+    # unclear or not completed, with the reason. Kept in full; the latest is shown.
+    """
+    CREATE TABLE integrity_reviews (
+        id TEXT PRIMARY KEY,
+        case_id TEXT NOT NULL,
+        file_id TEXT NOT NULL REFERENCES files(id),
+        decision TEXT NOT NULL,
+        reason TEXT NOT NULL,
+        decided_by TEXT NOT NULL,
+        decided_at TEXT NOT NULL
+    );
+    CREATE INDEX integrity_reviews_file ON integrity_reviews(file_id, decided_at);
+    """,
 ]
 
 

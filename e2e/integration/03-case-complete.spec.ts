@@ -74,6 +74,10 @@ test("Files: every uploaded file is registered and read into documents", async (
   await page.goto(`/appraisals/${caseId}/documents`);
   const tree = page.getByTestId("file-tree");
   await expect(tree).toBeVisible();
+  // Files that need nothing are folded into one line when others need a person; open it.
+  const ready = tree.getByTestId("show-ready");
+  if ((await ready.count()) > 0 && (await ready.getAttribute("aria-expanded")) === "false")
+    await ready.click();
   // The 14 uploaded documents, plus the sourcing message kept as the first
   // document of the case (F-04.8).
   await expect(tree.getByTestId("tree-file")).toHaveCount(15);
@@ -98,7 +102,8 @@ test("Extracted data: the fields read from the documents, with their evidence", 
   await page.goto(`/appraisals/${caseId}/extraction`);
   await expect(page.getByTestId("field-table").first()).toBeVisible();
   await expect(page.getByTestId("field-table-row")).not.toHaveCount(0);
-  // The three people the documents name (two directors and the KYC subject).
+  // The three people the documents name (two directors and the KYC subject), on Identity.
+  await page.goto(`/appraisals/${caseId}/identity`);
   await expect(page.getByTestId("party")).toHaveCount(3);
 
   // A value opens the page it was read from.

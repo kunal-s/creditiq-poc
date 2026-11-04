@@ -1,0 +1,508 @@
+# Document integrity (FRD F-07A), use case 1: a digitally generated PDF edited
+# after it was issued. Ported from RBL/fault_detection policy integrity_policy_v3.
+#
+# Every check is deterministic code plus a threshold held here. No model is
+# called, so a file analysed twice under one configuration version gives the
+# same answer with no recording (CLAUDE.md rule 6).
+#
+# A finding is an indicator for a person to look at, never a verdict. Words:
+# "stands out", "altered", "indicator" — never "fraud", "forged" or "fake".
+
+version: integrity_v1
+
+# ---------------------------------------------------------------- the checks
+# tier   T0 arithmetic · T1 the file contradicts itself · T2 image · T3 provenance
+# context: true  listed for a reader, never counted as a signal
+checks:
+  PDF_INCREMENTAL_UPDATE:
+    family: history
+    tier: T1
+    impact: medium
+    library: bytes (%%EOF revisions)
+    rule: incremental_update@v1
+    limitations: Saving a file again, as many systems do on download, adds a revision without changing its content.
+    next_step: Look at what the later revision changed.
+
+  PDF_PRIOR_VALUE_RECOVERABLE:
+    family: history
+    tier: T1
+    impact: high
+    library: bytes (superseded objects)
+    rule: prior_value_recoverable@v1
+    limitations: Found only when the editor saved incrementally; a rewritten file keeps no earlier version.
+    next_step: Compare the earlier figure with the current one.
+
+  REVISIONS_TOUCH_CONTENT:
+    family: history
+    tier: T1
+    impact: high
+    library: bytes (%%EOF revisions) + pikepdf
+    rule: revisions_touch_content@v1
+    limitations: Only a file saved incrementally keeps its earlier revisions; a rewritten file shows none.
+    next_step: Compare the replaced content with the earlier revision.
+
+  PDF_ID_PAIR_DIFFERS:
+    family: history
+    tier: T1
+    impact: low
+    context: true
+    library: pikepdf
+    rule: id_pair_differs@v1
+    limitations: Many portals write to a file on download; a changed identifier says only that it was saved again.
+    next_step: None on its own.
+
+  METADATA_DATE_ORDER:
+    family: metadata
+    tier: T1
+    impact: medium
+    library: pikepdf (Info dictionary, XMP)
+    rule: date_order@v1
+    limitations: Metadata is self-reported and editable; equal dates are not evidence of anything.
+    next_step: Compare the dates with when the issuer says it issued the document.
+
+  METADATA_INFO_XMP:
+    family: metadata
+    tier: T1
+    impact: medium
+    library: pikepdf (Info dictionary, XMP)
+    rule: info_xmp_agree@v2
+    limitations: Some programs update one record and not the other when they save.
+    next_step: Look at which program last wrote each record.
+
+  PDF_MAKER_NAMED:
+    family: metadata
+    tier: T3
+    impact: low
+    context: true
+    library: pikepdf
+    rule: maker_named@v1
+    limitations: Some genuine generators name no program.
+    next_step: None on its own.
+
+  PDF_WRITTEN_BY_EDITING_TOOL:
+    family: metadata
+    tier: T3
+    impact: low
+    context: true
+    prompts_review: true    # an observation, never a signal, but a person should check the source
+    library: pikepdf (Producer, Creator) + editing_tools
+    rule: editing_tool@v1
+    limitations: The producer string is self-reported and editable; it says how the file was made, not what it says.
+    next_step: Obtain the file from the issuer's own channel.
+
+  METADATA_PRODUCER_EXPECTED:
+    family: metadata
+    tier: T3
+    impact: low
+    context: true
+    library: pikepdf (Producer) + expected_producers
+    rule: producer_expected@v1
+    limitations: A new portal is not an edit; the expected list is observed, not published by the issuer.
+    next_step: Confirm with the issuer which system produces this document.
+
+  # --- phase 2: what each page draws (stage integrity_page, after classify).
+  # A page read by OCR has no text of its own and is left out of these.
+  PDF_COVERED_TEXT:
+    family: layout
+    tier: T1
+    impact: high
+    library: pypdfium2 (paint order)
+    rule: covered_text@v2
+    limitations: A form's own boxes can be painted over a field left blank; text that shows through a highlight is not counted. On a page that is a picture, only a solid dark mark drawn over the picture is seen; what lies beneath it cannot be read.
+    next_step: Compare the text the file holds under the block with what the page shows.
+
+  PDF_PICTURE_OVER_TEXT:
+    family: layout
+    tier: T1
+    impact: high
+    library: pypdfium2 (paint order)
+    rule: picture_over_text@v1
+    limitations: A stamp or signature placed over a printed line also lies over text; what the picture shows is not read.
+    next_step: Look at what the picture shows against the text the file holds under it.
+
+  HIDDEN_TEXT:
+    family: layout
+    tier: T1
+    impact: medium
+    library: pypdfium2 (text render mode, size)
+    rule: hidden_text@v1
+    limitations: A scanner's OCR layer is invisible by design, so scanned pages are left out.
+    next_step: Read the hidden text against what the page shows.
+
+  PDF_TEXT_OUTSIDE_VISIBLE_AREA:
+    family: layout
+    tier: T1
+    impact: medium
+    library: pypdfium2 (page box)
+    rule: text_outside_visible_area@v1
+    limitations: Some writers leave layout scraps just off the page.
+    next_step: Read the text that sits off the page.
+
+  FONT_WITHIN_VALUE:
+    family: font
+    tier: T1
+    impact: medium
+    library: pypdfium2 (font per character)
+    rule: font_within_value@v1
+    limitations: Families are compared, not styles; a font the writer names F1 or TT2 gives no family and is not compared.
+    next_step: Look at the value set in two typefaces.
+
+  PDF_FIGURE_TYPESET_DIFFERENTLY:
+    family: font
+    tier: T1
+    impact: medium
+    library: pypdfium2 (font and size per character)
+    rule: figure_typeset_differently@v1
+    limitations: A total or a heading set larger in a column of figures is a design; a column set two ways throughout is not compared.
+    next_step: Look at the figure set unlike the rest of its column.
+
+  LAYOUT_OFF_LINE:
+    family: layout
+    tier: T2
+    impact: medium
+    # Listed, not counted: on the 55 real documents 7 genuine forms set one date
+    # or reference 1.5-2 pt low; on the edited samples it never stood out alone.
+    context: true
+    library: pypdfium2 (character boxes)
+    rule: off_line@v1
+    limitations: Forms set off their baselines throughout are recognised as layout; superscripts are left out.
+    next_step: Look at the value sitting off its line.
+
+  # --- use case 2: a scan or photo that was edited (stage integrity_page).
+  # Read from the pixels and from where the words sit; a page drawn as text is
+  # checked by the page checks above instead.
+  VISUAL_REGIONS_INCONSISTENT:
+    family: visual
+    tier: T2
+    impact: medium
+    context: true    # listed only, as in fault_detection: it fired on genuine grainy report pages
+    library: numpy (grain and sharpness per tile)
+    rule: visual_regions@v1
+    limitations: Stamps, signatures, logos and photographs differ from a page's print by nature; only regions holding text are compared.
+    next_step: Look at the marked region; a patch pasted from another picture has another grain or sharpness.
+
+  IMG_VALUE_IN_LINE:
+    family: visual
+    tier: T2
+    impact: medium
+    library: OCR word boxes (Theil-Sen trend)
+    rule: value_in_line@v1
+    limitations: Measured only on scans laid out as labels and values, or as rows of figures.
+    next_step: Look at the value placed off its line.
+
+  TEXT_LAYER_MATCHES_PAGE:
+    family: visual
+    tier: T2
+    impact: high
+    library: OCR against the scan's text layer
+    rule: text_layer_matches_page@v2
+    limitations: Optical reading can misread; a difference counts only when two readings agree on it, at 200 dpi or more.
+    next_step: Compare what the page shows with what the file's text says.
+
+  PDF_FIGURE_IS_PICTURE:
+    family: layout
+    tier: T1
+    impact: high
+    library: pypdfium2 (pictures) + OCR of the picture
+    rule: figure_is_picture@v1
+    limitations: A seal or a stamp carrying a number is a picture by nature; only small pictures showing a figure or an identifier are counted.
+    next_step: Look at the picture; the file holds no text for that figure.
+
+  PAGES_SAME_ORIGIN:
+    family: visual
+    tier: T2
+    impact: medium
+    library: numpy (how each page picture was made)
+    rule: pages_same_origin@v1
+    limitations: A document can legitimately combine pages from two sources.
+    next_step: Look at the page made differently from the rest.
+
+  IMG_TYPE_IN_COLUMN:
+    family: visual
+    tier: T2
+    impact: medium
+    context: true
+    library: numpy (stroke width and slant from the pixels)
+    rule: type_in_column@v1
+    limitations: A column's totals or headings can be bold by design; measured only on figures OCR reads with confidence, in columns of three or more.
+    next_step: Look at the figure set in another weight or slant than its column.
+
+  IMG_PAGE_ORIGIN:
+    family: visual
+    tier: T2
+    impact: low
+    context: true
+    library: numpy (paper evenness, skew, sheet proportions)
+    rule: page_origin@v1
+    limitations: A picture of a page keeps none of the file's history; it is not evidence of an edit by itself.
+    next_step: Obtain the original file rather than a picture of it.
+
+  # ---- F-07A phase 2: a statement's printed figures add up (T0) --------------
+  BALANCE_CHAIN:
+    family: arithmetic
+    tier: T0
+    impact: high
+    library: the printed transactions, in whole paise
+    rule: balance_chain@v1
+    limitations: Read from the printed rows; on a page read by OCR a break that one misread cell explains is listed, not counted. Columns read out of place break every row and are said so, not counted.
+    next_step: Look at the row where the balance stops following.
+
+  OPENING_BALANCE:
+    family: arithmetic
+    tier: T0
+    impact: high
+    library: the printed transactions and the opening balance
+    rule: opening_balance@v1
+    limitations: Needs the opening balance to have been read from the statement.
+    next_step: Compare the printed opening balance with the first row.
+
+  CLOSING_BALANCE:
+    family: arithmetic
+    tier: T0
+    impact: high
+    library: the printed transactions and the closing balance
+    rule: closing_balance@v1
+    limitations: Needs the closing balance to have been read from the statement.
+    next_step: Compare the printed closing balance with the last row.
+
+  SUMMARY_TOTALS:
+    family: arithmetic
+    tier: T0
+    impact: high
+    library: printed totals found by their labels
+    rule: summary_totals@v1
+    limitations: Only totals printed under the labels configured below are read.
+    next_step: Add up the column the printed total stands for.
+
+  HEADER_ARITHMETIC:
+    family: arithmetic
+    tier: T0
+    impact: medium
+    library: the printed summary
+    rule: header_arithmetic@v1
+    limitations: Needs the opening balance, both totals and the closing balance printed.
+    next_step: Add up the printed summary.
+
+  PAGE_CARRY:
+    family: arithmetic
+    tier: T0
+    impact: high
+    library: printed carried and brought forward figures
+    rule: page_carry@v1
+    limitations: Only figures printed under the carried or brought forward labels are read.
+    next_step: Compare the carried figure with the balance it carries.
+
+  BS_BALANCES:
+    family: arithmetic
+    tier: T0
+    impact: high
+    library: the extracted balance sheet
+    rule: bs_balances@v1
+    limitations: Compares the first two grand totals the balance sheet prints, within one printed unit.
+    next_step: Compare total assets with total equity and liabilities.
+
+  # ---- F-07A phase 2: digital signatures (pyHanko) ---------------------------
+  SIGNATURE_PRESENT:
+    family: signature
+    tier: T1
+    impact: low
+    context: true
+    library: pyHanko (MIT)
+    rule: signature_present@v1
+    limitations: A picture of a signature on the page is not a digital signature.
+    next_step: Note who signed the file.
+
+  SIGNATURE_VALID:
+    family: signature
+    tier: T0
+    impact: high
+    library: pyHanko (MIT), offline
+    rule: signature_valid@v1
+    limitations: Checked offline against the file's own bytes, without revocation data; whether the signer is trusted is said, not counted.
+    next_step: Look at what was changed after the file was signed.
+
+# ------------------------------------------------------------- the thresholds
+# Phase 2, what each page draws. Ported from fault_detection policy `typography`.
+page:
+  max_pages: 60                  # pages looked at; a long file is judged on its first pages
+  tiny_pt: 2.0                   # visible type smaller than this is not readable by a person
+  # Invisible text that is only the writing program naming itself, compared in
+  # lower case with everything but letters and digits removed. TCPDF writes
+  # "Powered by TCPDF (www.tcpdf.org)" invisibly on every file (an e-PAN, 30 Oct).
+  writer_credits: [poweredbytcpdf]
+  picture_max_page_fraction: 0.10  # a picture bigger than this share of the page is a scan, a watermark or a background
+  picture_min_chars_under: 3     # letters or digits a picture must lie over to be over printed text
+  word_gap_em: 0.15              # a gap this wide (of the type size) between two characters ends a word
+  baseline_tol_pt: 0.5           # a value this far off its line's baseline is reported
+  superscript_size_ratio: 0.75   # type this much smaller than its line, raised or lowered, is a super/subscript
+  max_offset_line_ratio: 0.5     # further off than half the line's type size is another line, not a displaced value
+  layout_style_min: 3            # more words than this off their lines, and
+  layout_style_ratio: 2          # more than this many times the values off theirs: the layout, not one value moved
+  column_tolerance_pt: 2.5       # amounts whose right edges line up within this are one column
+  column_min_values: 4           # a column of fewer figures is not compared (4: a short debit column; 0 false alarms on the 55 real documents at 4 or 5)
+  column_majority: 0.75          # the share of a column set one way for that to be its style
+  column_size_tol_pt: 0.3        # a figure this much larger or smaller than its column is set apart (fault_detection TYPESET_SIZE_TOLERANCE)
+
+metadata_period:
+  # Days a file may be dated before the period it reports closed. Zero: a
+  # statement cannot be produced before its last day. Used by METADATA_VS_PERIOD,
+  # which needs the document's text and so arrives with integrity_page (phase 2).
+  grace_days: 0
+
+# ------------------------------------------------- what each type comes from
+# Observed on the PoC document set, to be confirmed with RBL. Context only.
+expected_producers:
+  gstr_3b: [pdfmake]
+  gstr_1: [pdfmake]
+  # The e-filing portal emits the Qt string of the wkhtmltopdf that renders it;
+  # all four returns in the PoC set name Qt 4.8.7.
+  income_tax_return: [Qt, wkhtmltopdf]
+  gst_registration_certificate: [iText]
+
+# ------------------------------------------------- checks a type does not run
+skip_for_type:
+  # A type listed here skips the check, with the reason shown to the reader.
+  # Empty while every check in this version applies to every type; the two
+  # checks that vary by type arrive with integrity_page (phase 2).
+  {}
+
+# ---------------------------------------------------------------- the routing
+# A signal is a check with status warning or review_required and context false.
+# Each family counts once, as its strongest signal.
+routing:
+  strong_tiers: [T0, T1]
+  multi_family_min_impact: medium
+
+# Use case 2, a scan or photo. Ported from fault_detection policy `visual_regions`
+# and its raster/textlayer constants (calibrated on the same corpus).
+scan:
+  max_pages: 10                  # picture pages looked at per file
+  render_dpi_max: 300            # a page drawn for measuring is drawn no finer than this
+  regions:
+    tile_px: 48                  # the page is compared in tiles this size
+    min_ink_share: 0.03          # a tile with less ink than this holds no text to compare
+    noise_z: 4.0                 # a tile this many robust deviations cleaner than its page stands apart
+    sharpness_z: 4.0             # ...or half as much cleaner and this many sharper
+    min_tiles: 2                 # a region needs this many adjoining odd tiles
+    min_page_grain: 1.5          # a page whose paper has less grain than this is not compared
+    max_regions_per_page: 3      # more regions apart than this: the page varies by nature
+  text_layer:
+    min_dpi: 200                 # below this a scanner's own reading misreads digits too often to compare
+    confirm_confidence: 0.80     # both readings of the pixels must be at least this sure
+    min_agreement: 0.5           # a reading agreeing with fewer of the text's numbers is not of this page
+  figure_picture:
+    max_page_fraction: 0.05      # a picture bigger than this is a page, a photo or a background
+    min_digits: 4                # it must show a figure or identifier: one word carrying this many digits
+    max_words: 3                 # and read as one value: a stamp or seal with a sentence and a date is not one
+  origin:
+    dpi_differ: 0.15             # a page whose resolution differs by more than this share...
+    dpi_agree: 0.05              # ...from others that agree within this, came from elsewhere
+    max_odd_pages: 2             # more pages than this made differently: several documents put
+                                 # together (a compiled file), listed but not counted
+  type_style:                    # weight and slant of a scan's type (fault_detection typestyle)
+    bold_ratio: 1.3              # bold: a stroke this many times the document's usual or more
+    italic_deg: 8.0              # italic: a slant to the right of this many degrees or more
+    min_confidence: 0.80         # only words OCR reads at least this sure of
+    max_words: 120               # words measured on each page
+    column_tol_pt: 2.0           # figures whose right edges (on the ink) agree within this form a column
+    column_min: 3                # figures, on as many lines, that make a column
+    column_majority: 0.6         # the share of a column that sets its usual style
+
+# ---------------------------------------------------------- figures add up (T0)
+# A statement's printed figures and a balance sheet's totals (fault_detection
+# reconcile / selfcheck / annual). Read from what is printed, in whole paise.
+arithmetic:
+  statement_types: [bank_statement]
+  statement_table: transactions
+  columns: {debit: debit, credit: credit, balance: balance}
+  opening_field: opening_balance
+  closing_field: closing_balance
+  tolerance_paise: 0               # printed figures agree exactly
+  max_breaks: 3                    # more breaks than this, and more than
+  max_break_share: 0.05            # this share of rows, is columns read out of place
+  labels:
+    total_credits: '\btotal\s+(?:credits?|deposits?|cr\b)'
+    total_debits: '\btotal\s+(?:debits?|withdrawals?|dr\b)'
+    count: '\b(?:no\.?|number|count)\s+of\s+(?:transactions|txns?|entries)\b'
+    brought_forward: '\b(?:brought\s+forward|b/f)\b'
+    carried_forward: '\b(?:carried\s+forward|c/f)\b'
+  balance_sheet_types: [audited_financial_statements]
+  balance_sheet_table: balance_sheet
+  balance_sheet_totals: '^\s*total(?:\s+(?:equity\s+(?:&|and)\s+liabilities|assets|liabilities|sources\s+of\s+funds|application\s+of\s+funds|funds\s+employed))?\s*$'
+  balance_sheet_columns: [current_period, previous_period]
+  balance_sheet_tolerance_units: 1 # one unit of the printed unit (rupees, thousands, lakhs)
+
+# ---------------------------------------------------------- digital signatures
+signatures:
+  trust_roots: null                # a folder of PEM or DER root certificates; none: who signed is named, not confirmed
+
+# ------------------------------------------------- evidence strength (0-100)
+# How strongly the file contradicts itself, for a reader: each suspicious
+# indicator scores its impact times its tier; a family scores its strongest plus
+# a share of the rest; a second, independent family adds more than a repeat of
+# the same kind. Never 100: a file cannot prove its own edit. Uncalibrated: it
+# orders the strength of evidence, it is not the chance a document was altered.
+# Observations (context checks) score nothing.
+score:
+  impact_points: {high: 60, medium: 35, low: 15}
+  tier_factor: {T0: 1.0, T1: 1.0, T2: 0.75, T3: 0.5}
+  same_family_share: 0.25      # each further indicator of the same kind adds this share of its points
+  other_family_share: 0.75     # each further independent kind adds this share of its family's points
+  cap: 95
+  bands: {strong: 70, moderate: 40}   # at or above: strong; at or above: moderate; else weak
+
+# ------------------------------------------ design and editing tools, version 1
+# Matched case-insensitively against the file's Producer and Creator. A name on
+# `editors` is a reason to look, never a finding about the figures: a producer
+# string is trivially changed, and a genuine document can be opened in an editor
+# for an innocent reason. A name on `re_renderers` is not even that: printing
+# again does not edit a document, it only loses what the original could show.
+editing_tools:
+  version: editing_tools_v1
+  editors:
+    - {match: canva, name: Canva}
+    - {match: photoshop, name: Adobe Photoshop}
+    - {match: illustrator, name: Adobe Illustrator}
+    - {match: indesign, name: Adobe InDesign}
+    - {match: inkscape, name: Inkscape}
+    - {match: gimp, name: GIMP}
+    - {match: coreldraw, name: CorelDRAW}
+    - {match: affinity, name: Affinity}
+    - {match: figma, name: Figma}
+    - {match: "microsoft® word", name: Microsoft Word}
+    - {match: microsoft word, name: Microsoft Word}
+    - {match: "microsoft® excel", name: Microsoft Excel}
+    - {match: microsoft excel, name: Microsoft Excel}
+    - {match: libreoffice, name: LibreOffice}
+    - {match: openoffice, name: OpenOffice}
+    - {match: google docs, name: Google Docs}
+    - {match: wps, name: WPS Office}
+    - {match: ilovepdf, name: iLovePDF}
+    - {match: smallpdf, name: Smallpdf}
+    - {match: sejda, name: Sejda}
+    - {match: pdfescape, name: PDFescape}
+    - {match: pdffiller, name: pdfFiller}
+    - {match: dochub, name: DocHub}
+    - {match: pdf candy, name: PDF Candy}
+    - {match: soda pdf, name: Soda PDF}
+    - {match: pdf-xchange editor, name: PDF-XChange Editor}
+    - {match: foxit phantompdf, name: Foxit PhantomPDF}
+    - {match: foxit pdf editor, name: Foxit PDF Editor}
+    - {match: nitro pro, name: Nitro Pro}
+    - {match: nitro pdf, name: Nitro PDF}
+    - {match: pdfelement, name: PDFelement}
+    - {match: acrobat pro, name: Adobe Acrobat Pro}
+    - {match: sumatra, name: SumatraPDF}
+    - {match: xournal, name: Xournal++}
+    - {match: okular, name: Okular}
+  re_renderers:
+    - {match: "microsoft: print to pdf", name: Microsoft Print to PDF}
+    - {match: skia/pdf, name: a web browser's print to PDF}
+    - {match: quartz pdfcontext, name: macOS print to PDF}
+    - {match: cairo, name: cairo}
+    - {match: pdfium, name: PDFium}
+    - {match: cups-pdf, name: CUPS-PDF}
+    - {match: pdfcreator, name: PDFCreator}
+    - {match: bullzip, name: Bullzip PDF Printer}
+    - {match: cutepdf, name: CutePDF}
+    - {match: dopdf, name: doPDF}

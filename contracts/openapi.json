@@ -2483,6 +2483,16 @@
             "title": "Facilities",
             "type": "array"
           },
+          "files_altered": {
+            "default": 0,
+            "title": "Files Altered",
+            "type": "integer"
+          },
+          "files_attention": {
+            "default": 0,
+            "title": "Files Attention",
+            "type": "integer"
+          },
           "gstin": {
             "anyOf": [
               {
@@ -2843,6 +2853,16 @@
             },
             "title": "Facilities",
             "type": "array"
+          },
+          "files_altered": {
+            "default": 0,
+            "title": "Files Altered",
+            "type": "integer"
+          },
+          "files_attention": {
+            "default": 0,
+            "title": "Files Attention",
+            "type": "integer"
           },
           "id": {
             "title": "Id",
@@ -3444,6 +3464,24 @@
             },
             "title": "Types",
             "type": "array"
+          },
+          "why_unclassified": {
+            "anyOf": [
+              {
+                "enum": [
+                  "model_unavailable",
+                  "no_model",
+                  "model_found_none",
+                  "model_blocked",
+                  "signals_weak"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Why Unclassified"
           }
         },
         "required": [
@@ -5187,6 +5225,54 @@
             "title": "Id",
             "type": "string"
           },
+          "integrity": {
+            "items": {
+              "$ref": "#/components/schemas/IngestIntegrityFinding"
+            },
+            "title": "Integrity",
+            "type": "array"
+          },
+          "integrity_facts": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IngestIntegrityFacts"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "integrity_recommendation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Integrity Recommendation"
+          },
+          "integrity_review": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IntegrityReview"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "integrity_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IntegrityStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "label_hint": {
             "anyOf": [
               {
@@ -5873,6 +5959,708 @@
           }
         },
         "title": "IncorporationFact",
+        "type": "object"
+      },
+      "IngestIntegrityEvidence": {
+        "additionalProperties": false,
+        "description": "Where an integrity finding is, and what it was measured against.",
+        "properties": {
+          "locate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locate"
+          },
+          "object": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Object"
+          },
+          "observed": {
+            "title": "Observed",
+            "type": "string"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "rect": {
+            "anyOf": [
+              {
+                "maxItems": 4,
+                "minItems": 4,
+                "prefixItems": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rect"
+          },
+          "threshold": {
+            "title": "Threshold",
+            "type": "string"
+          }
+        },
+        "required": [
+          "page",
+          "observed",
+          "threshold"
+        ],
+        "title": "IngestIntegrityEvidence",
+        "type": "object"
+      },
+      "IngestIntegrityFacts": {
+        "additionalProperties": false,
+        "description": "What the file says about itself, as the integrity stage read it (F-07A).",
+        "properties": {
+          "fonts": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Fonts",
+            "type": "array"
+          },
+          "has_xmp": {
+            "default": false,
+            "title": "Has Xmp",
+            "type": "boolean"
+          },
+          "header_offset": {
+            "default": 0,
+            "title": "Header Offset",
+            "type": "integer"
+          },
+          "id_current": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id Current"
+          },
+          "id_original": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id Original"
+          },
+          "info": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Info",
+            "type": "object"
+          },
+          "info_dates": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Info Dates",
+            "type": "object"
+          },
+          "made_as": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IngestIntegrityMadeAs"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "page_sizes": {
+            "items": {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            "title": "Page Sizes",
+            "type": "array"
+          },
+          "pages": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pages"
+          },
+          "pdf_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pdf Version"
+          },
+          "recovered": {
+            "items": {
+              "$ref": "#/components/schemas/IngestIntegrityRecovered"
+            },
+            "title": "Recovered",
+            "type": "array"
+          },
+          "revisions": {
+            "items": {
+              "$ref": "#/components/schemas/IngestIntegrityRevision"
+            },
+            "title": "Revisions",
+            "type": "array"
+          },
+          "signatures": {
+            "default": 0,
+            "title": "Signatures",
+            "type": "integer"
+          },
+          "size_bytes": {
+            "title": "Size Bytes",
+            "type": "integer"
+          },
+          "superseded_objects": {
+            "default": 0,
+            "title": "Superseded Objects",
+            "type": "integer"
+          },
+          "xmp": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Xmp",
+            "type": "object"
+          }
+        },
+        "required": [
+          "size_bytes"
+        ],
+        "title": "IngestIntegrityFacts",
+        "type": "object"
+      },
+      "IngestIntegrityFigure": {
+        "additionalProperties": false,
+        "description": "A figure a page prints, where and how (F-07A phase 2).",
+        "properties": {
+          "column": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Column"
+          },
+          "font": {
+            "title": "Font",
+            "type": "string"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "rect": {
+            "maxItems": 4,
+            "minItems": 4,
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Rect",
+            "type": "array"
+          },
+          "right": {
+            "default": 0.0,
+            "title": "Right",
+            "type": "number"
+          },
+          "size": {
+            "title": "Size",
+            "type": "number"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "page",
+          "rect",
+          "text",
+          "font",
+          "size"
+        ],
+        "title": "IngestIntegrityFigure",
+        "type": "object"
+      },
+      "IngestIntegrityFinding": {
+        "additionalProperties": false,
+        "description": "One integrity check's result (F-07A): an indicator for a person to look\nat, never a verdict. Every finding says what was measured, what it was\ncompared with, and the limit it crossed.",
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "context": {
+            "default": false,
+            "title": "Context",
+            "type": "boolean"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/IngestIntegrityEvidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "family": {
+            "enum": [
+              "metadata",
+              "font",
+              "layout",
+              "visual",
+              "history",
+              "identifier",
+              "arithmetic",
+              "signature"
+            ],
+            "title": "Family",
+            "type": "string"
+          },
+          "finding": {
+            "title": "Finding",
+            "type": "string"
+          },
+          "impact": {
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ],
+            "title": "Impact",
+            "type": "string"
+          },
+          "method": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Method",
+            "type": "object"
+          },
+          "reads": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Reads",
+            "type": "array"
+          },
+          "skipped_for_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skipped For Type"
+          },
+          "status": {
+            "enum": [
+              "pass",
+              "warning",
+              "review_required",
+              "not_applicable",
+              "unable_to_determine"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "tier": {
+            "enum": [
+              "T0",
+              "T1",
+              "T2",
+              "T3"
+            ],
+            "title": "Tier",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "family",
+          "status",
+          "finding",
+          "tier",
+          "impact"
+        ],
+        "title": "IngestIntegrityFinding",
+        "type": "object"
+      },
+      "IngestIntegrityMadeAs": {
+        "additionalProperties": false,
+        "description": "How the file was made, from its pages (F-07A).",
+        "properties": {
+          "kind": {
+            "enum": [
+              "digital",
+              "mixed",
+              "scanned",
+              "design_tool",
+              "computer_drawn",
+              "screenshot"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "picture_pages": {
+            "default": 0,
+            "title": "Picture Pages",
+            "type": "integer"
+          },
+          "text_pages": {
+            "default": 0,
+            "title": "Text Pages",
+            "type": "integer"
+          },
+          "writer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Writer"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "IngestIntegrityMadeAs",
+        "type": "object"
+      },
+      "IngestIntegrityObject": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "number",
+          "kind"
+        ],
+        "title": "IngestIntegrityObject",
+        "type": "object"
+      },
+      "IngestIntegrityRecovered": {
+        "additionalProperties": false,
+        "properties": {
+          "now": {
+            "title": "Now",
+            "type": "string"
+          },
+          "object_number": {
+            "title": "Object Number",
+            "type": "integer"
+          },
+          "was": {
+            "title": "Was",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object_number",
+          "was",
+          "now"
+        ],
+        "title": "IngestIntegrityRecovered",
+        "type": "object"
+      },
+      "IngestIntegrityRevision": {
+        "additionalProperties": false,
+        "properties": {
+          "added": {
+            "items": {
+              "$ref": "#/components/schemas/IngestIntegrityObject"
+            },
+            "title": "Added",
+            "type": "array"
+          },
+          "added_count": {
+            "default": 0,
+            "title": "Added Count",
+            "type": "integer"
+          },
+          "end": {
+            "title": "End",
+            "type": "integer"
+          },
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "length": {
+            "title": "Length",
+            "type": "integer"
+          },
+          "replaced": {
+            "items": {
+              "$ref": "#/components/schemas/IngestIntegrityObject"
+            },
+            "title": "Replaced",
+            "type": "array"
+          },
+          "replaced_count": {
+            "default": 0,
+            "title": "Replaced Count",
+            "type": "integer"
+          },
+          "start": {
+            "title": "Start",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "index",
+          "start",
+          "end",
+          "length"
+        ],
+        "title": "IngestIntegrityRevision",
+        "type": "object"
+      },
+      "IntegrityReview": {
+        "description": "F-07A: a person's conclusion on a file, after looking at its evidence. Never set by\nthe checks; the latest recorded is shown, every one is kept.",
+        "properties": {
+          "decided_at": {
+            "title": "Decided At",
+            "type": "string"
+          },
+          "decided_by": {
+            "title": "Decided By",
+            "type": "string"
+          },
+          "decision": {
+            "enum": [
+              "genuine",
+              "altered",
+              "unclear",
+              "not_completed"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "decision",
+          "reason",
+          "decided_by",
+          "decided_at"
+        ],
+        "title": "IntegrityReview",
+        "type": "object"
+      },
+      "IntegrityReviewRequest": {
+        "properties": {
+          "decision": {
+            "enum": [
+              "genuine",
+              "altered",
+              "unclear",
+              "not_completed"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "reason": {
+            "default": "",
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "decision"
+        ],
+        "title": "IntegrityReviewRequest",
+        "type": "object"
+      },
+      "IntegrityStatus": {
+        "description": "F-07A: what a file's integrity checks come to, said once (engine.integrity_status).",
+        "properties": {
+          "band": {
+            "anyOf": [
+              {
+                "enum": [
+                  "none",
+                  "weak",
+                  "moderate",
+                  "strong"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Band"
+          },
+          "failed": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Failed",
+            "type": "array"
+          },
+          "informational": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Informational",
+            "type": "array"
+          },
+          "not_applicable": {
+            "default": 0,
+            "title": "Not Applicable",
+            "type": "integer"
+          },
+          "passed": {
+            "default": 0,
+            "title": "Passed",
+            "type": "integer"
+          },
+          "pending": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Pending",
+            "type": "array"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "score_parts": {
+            "items": {
+              "$ref": "#/components/schemas/ScorePart"
+            },
+            "title": "Score Parts",
+            "type": "array"
+          },
+          "state": {
+            "enum": [
+              "passed",
+              "review_recommended",
+              "suspicious",
+              "suspicious_high",
+              "incomplete",
+              "failed",
+              "not_checked",
+              "not_applicable"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "stopped": {
+            "default": false,
+            "title": "Stopped",
+            "type": "boolean"
+          },
+          "suspicious": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Suspicious",
+            "type": "array"
+          },
+          "unconfigured": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Unconfigured",
+            "type": "array"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "title": "IntegrityStatus",
         "type": "object"
       },
       "LogicalDocument": {
@@ -8800,7 +9588,8 @@
               "split",
               "manual_entry",
               "finding",
-              "transactions"
+              "transactions",
+              "integrity"
             ],
             "title": "Kind",
             "type": "string"
@@ -8938,6 +9727,35 @@
           }
         },
         "title": "RuleChange",
+        "type": "object"
+      },
+      "ScorePart": {
+        "description": "One suspicious indicator's share of the evidence strength.",
+        "properties": {
+          "adds": {
+            "title": "Adds",
+            "type": "number"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "family": {
+            "title": "Family",
+            "type": "string"
+          },
+          "points": {
+            "title": "Points",
+            "type": "number"
+          }
+        },
+        "required": [
+          "code",
+          "family",
+          "points",
+          "adds"
+        ],
+        "title": "ScorePart",
         "type": "object"
       },
       "SessionUser": {
@@ -13213,6 +14031,349 @@
           }
         },
         "summary": "Upload Files"
+      }
+    },
+    "/api/cases/{case_id}/files/{file_id}/figures": {
+      "get": {
+        "description": "F-07A: every figure the page checks read in a file, with its place on\nthe page, its font and size, and the column it is set in.",
+        "operationId": "file_figures_api_cases__case_id__files__file_id__figures_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "file_id",
+            "required": true,
+            "schema": {
+              "title": "File Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/IngestIntegrityFigure"
+                  },
+                  "title": "Response File Figures Api Cases  Case Id  Files  File Id  Figures Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "File Figures"
+      }
+    },
+    "/api/cases/{case_id}/files/{file_id}/integrity/recheck": {
+      "post": {
+        "description": "F-07A: run a file's integrity checks again under the published\nconfiguration, its documents and values untouched (audited).",
+        "operationId": "recheck_file_integrity_api_cases__case_id__files__file_id__integrity_recheck_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "file_id",
+            "required": true,
+            "schema": {
+              "title": "File Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Recheck File Integrity Api Cases  Case Id  Files  File Id  Integrity Recheck Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Recheck File Integrity"
+      }
+    },
+    "/api/cases/{case_id}/files/{file_id}/integrity/review": {
+      "post": {
+        "description": "F-07A: a person's conclusion on a file's integrity (genuine, altered, unclear or not\ncompleted) with the reason; kept in full and audited. Never set by the checks.",
+        "operationId": "review_file_integrity_api_cases__case_id__files__file_id__integrity_review_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "file_id",
+            "required": true,
+            "schema": {
+              "title": "File Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntegrityReviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileRecord"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Review File Integrity"
+      }
+    },
+    "/api/cases/{case_id}/files/{file_id}/pages/{page}": {
+      "get": {
+        "description": "F-07A: the rendered page image (PNG) of a received file, for its\nintegrity view; `page` is the page in the file.",
+        "operationId": "file_page_api_cases__case_id__files__file_id__pages__page__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "file_id",
+            "required": true,
+            "schema": {
+              "title": "File Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "page",
+            "required": true,
+            "schema": {
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "File Page"
+      }
+    },
+    "/api/cases/{case_id}/files/{file_id}/read-again": {
+      "post": {
+        "description": "A file in exception sent through processing again, as received (its\nearlier outcome cleared, audited). Uploading it again would be a duplicate.",
+        "operationId": "read_file_again_api_cases__case_id__files__file_id__read_again_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "file_id",
+            "required": true,
+            "schema": {
+              "title": "File Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileRecord"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read File Again"
       }
     },
     "/api/cases/{case_id}/findings": {

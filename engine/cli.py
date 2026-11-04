@@ -165,6 +165,9 @@ def _cmd_config_version(args: argparse.Namespace) -> int:
 def _cmd_config_diff(args: argparse.Namespace) -> int:
     sections = writer.load_authored_sections(_private(args))
     dumps = {name: model.model_dump(mode="json") for name, model in sections.items()}
+    # The document service's sections are published beside these (writer.publish):
+    # leaving them out reported every one as removed, and hid a changed one.
+    dumps.update({f"ingestion.{name}": data for name, data in writer.load_ingestion_sections().items()})
     authored_hashes = {name: writer.section_hash(dump) for name, dump in dumps.items()}
     try:
         published = reader.published_version(Path(args.data_root))
@@ -172,7 +175,7 @@ def _cmd_config_diff(args: argparse.Namespace) -> int:
         print("no published version yet — every authored section is new:")
         for name in sorted(authored_hashes):
             print(f"  + {name}")
-        return 0
+        return 3 if args.check else 0
 
     published_hashes = published["section_hashes"]
     changed = False
@@ -189,7 +192,7 @@ def _cmd_config_diff(args: argparse.Namespace) -> int:
             print(f"  ~ {name} (changed)")
     if not changed:
         print("no changes since the published version")
-    return 0
+    return 3 if args.check and changed else 0
 
 
 def _cmd_reference_template(args: argparse.Namespace) -> int:
@@ -298,6 +301,8 @@ def build_parser() -> argparse.ArgumentParser:
     config_diff = config_sub.add_parser("diff", help="diff authored config against the published version")
     config_diff.add_argument("--data-root", default=DEFAULT_DATA_ROOT)
     config_diff.add_argument("--private-config", help=private_help)
+    config_diff.add_argument("--check", action="store_true",
+                             help="exit 3 when the authored configuration differs from the published one")
     config_diff.set_defaults(func=_cmd_config_diff)
 
     ref = sub.add_parser("reference", help="RBL's reference record for a case (F-25.1)")

@@ -19,7 +19,10 @@ function cellText(cell: Cell): string {
 export function LineByLine({ detail }: { detail: FindingDetail }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-[12px]" data-testid="xv-detail-table">
+      <table
+        className="table-pin-first w-full border-collapse text-[12px]"
+        data-testid="xv-detail-table"
+      >
         <thead>
           <tr className="text-left text-[11px] text-muted-foreground">
             <th className="px-2 py-1 font-medium" />

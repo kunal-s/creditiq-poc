@@ -12,7 +12,7 @@ test("TC-01: paste, verify every field, confirm, create", async ({ page }) => {
   await signedIn(page, api);
   await page.goto("/appraisals/new");
 
-  await page.getByTestId("channel").selectOption("email");
+  await page.getByTestId("channel-email").click();
   await page.getByTestId("message-input").fill(MESSAGE);
   await page.getByRole("button", { name: "Read the message" }).click();
 

@@ -35,7 +35,7 @@ test("the Administrator lands on Settings after signing in and sees only adminis
   const menu = page.getByRole("navigation").first();
   await expect(menu.getByRole("link", { name: "Settings" })).toBeVisible();
   await expect(menu.getByRole("link", { name: "Configuration" })).toBeVisible();
-  await expect(menu.getByRole("link", { name: "Appraisals" })).toHaveCount(0);
+  await expect(menu.getByRole("link", { name: "My appraisals" })).toHaveCount(0);
   await expect(menu.getByRole("link", { name: "New appraisal" })).toHaveCount(0);
   await expect(menu.getByRole("link", { name: "Review queue" })).toHaveCount(0);
   await expect(menu.getByRole("link", { name: "Audit trail" })).toHaveCount(0);

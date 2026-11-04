@@ -458,7 +458,7 @@ export function Sources({ caseId, sources }: { caseId: string; sources: OutputSo
               <th scope="col" className={columnHead}>
                 {t("outputs.sources.document")}
               </th>
-              <th scope="col" className={columnHead}>
+              <th scope="col" className={cn(columnHead, "max-sm:hidden")}>
                 {t("outputs.sources.file")}
               </th>
               <th scope="col" className={columnHead}>
@@ -492,8 +492,14 @@ export function Sources({ caseId, sources }: { caseId: string; sources: OutputSo
                     >
                       {s.label}
                     </button>
+                    {/* On a phone the file goes under its document, not in a narrow column. */}
+                    {s.file_name && (
+                      <span className="block break-all text-[11.5px] text-muted-foreground sm:hidden">
+                        {s.file_name}
+                      </span>
+                    )}
                   </td>
-                  <td className={cn(cell, "break-all text-muted-foreground")}>
+                  <td className={cn(cell, "break-all text-muted-foreground max-sm:hidden")}>
                     {s.file_name ?? "—"}
                   </td>
                   <td className={cn(cell, "tabular")}>{s.pages.join(", ")}</td>
@@ -1178,7 +1184,7 @@ function RecordFields({ fields }: { fields: string[] }) {
         {fields.map((f) => (
           <div key={f} className="flex min-w-0 items-end gap-2" data-testid="pd-record-field">
             <dt className="shrink-0 text-[12.5px] text-muted-foreground">{f}</dt>
-            <dd className="h-5 min-w-16 flex-1 border-b border-dashed border-border" />
+            <dd className="h-5 min-w-10 flex-1 border-b border-dashed border-border" />
           </div>
         ))}
       </dl>

@@ -11,6 +11,7 @@ export const Route = createFileRoute("/help")({
 
 const STEPS = ["documents", "extraction", "completeness", "crossVerification", "policy", "outputs"];
 const STATUSES = ["not_started", "in_progress", "needs_attention", "done"];
+const FILE_LABELS = ["integrity", "integrityView", "track", "notIdentified", "different"];
 
 function Help() {
   return (
@@ -40,6 +41,23 @@ function Help() {
               </li>
             ))}
           </ol>
+        </section>
+        <section aria-labelledby="help-file-labels">
+          <h2 id="help-file-labels" className="text-[15px] font-semibold tracking-tight">
+            {t("page.help.fileLabelsTitle")}
+          </h2>
+          <dl className="mt-3 space-y-3">
+            {FILE_LABELS.map((key) => (
+              <div key={key} data-testid={`help-file-label-${key}`}>
+                <dt className="text-[13.5px] font-medium">
+                  {t(`page.help.fileLabel.${key}.title`)}
+                </dt>
+                <dd className="text-[13px] text-muted-foreground">
+                  {t(`page.help.fileLabel.${key}.body`)}
+                </dd>
+              </div>
+            ))}
+          </dl>
         </section>
         <section aria-labelledby="help-status">
           <h2 id="help-status" className="text-[15px] font-semibold tracking-tight">

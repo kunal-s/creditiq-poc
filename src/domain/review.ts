@@ -46,6 +46,7 @@ export const DECISIONS_BY_KIND: Record<ReviewKind, ReviewDecision[]> = {
   split: ["confirm"],
   manual_entry: ["confirm"],
   finding: ["confirm", "waive"],
+  integrity: ["confirm", "waive"],
   // Decided row by row on the Banking view of the Financials section, not from the queue.
   transactions: [],
 };
@@ -78,6 +79,7 @@ export const REVIEW_KINDS: ReviewKind[] = [
   "manual_entry",
   "finding",
   "transactions",
+  "integrity",
 ];
 
 /** The open field review item for this value, if the user may see it. */

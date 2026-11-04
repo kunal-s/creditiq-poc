@@ -6,7 +6,6 @@ export type Target = { to: string; hash?: string; search?: Record<string, string
 
 const APPRAISAL: Record<string, Target> = {
   upload: { to: "documents" },
-  identity: { to: "extraction", hash: "identity" },
   data: { to: "extraction", hash: "fields" },
   spread: { to: "policy", hash: "financials" },
   draft: { to: "outputs", search: { view: "cam" } },

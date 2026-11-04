@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
-import { AlertTriangle, ArrowUpRight, FileSearch, Plus } from "lucide-react";
+import { AlertTriangle, ArrowUpRight, FileSearch, Plus, Sparkles } from "lucide-react";
 import { useState } from "react";
 import type { CaseSummary, ReviewItem, Stage } from "@/api/types";
 import { stageLabel, useCases } from "@/domain/cases";
@@ -51,7 +51,7 @@ function Counter({
     <Link
       to={to}
       data-testid={testId}
-      className="group flex min-w-[9.5rem] flex-1 items-start gap-3 rounded border border-border bg-surface px-4 py-3 transition-colors hover:border-primary/40"
+      className="group flex min-w-0 items-start gap-3 rounded border border-border bg-surface px-4 py-3 transition-colors hover:border-primary/40 sm:w-44"
     >
       <span
         className={cn(
@@ -69,6 +69,12 @@ function Counter({
       <ArrowUpRight className="ml-auto h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
     </Link>
   );
+}
+
+/** The part of the day by the user's own clock, for the greeting only. */
+function dayPart(): "morning" | "afternoon" | "evening" {
+  const hour = new Date().getHours();
+  return hour < 12 ? "morning" : hour < 17 ? "afternoon" : "evening";
 }
 
 function Workbench() {
@@ -96,18 +102,30 @@ function Workbench() {
   );
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-5 px-4 py-5 sm:px-6">
+    <div className="space-y-5 px-4 py-5 sm:px-6">
       <section className="flex flex-wrap items-center gap-4">
+        {/* As the original: a greeting by the hour, today and where the desk stands. */}
         <div className="min-w-0 flex-1 sm:min-w-[16rem]">
-          <p className="field-label">{t("tenant.bank.unit")}</p>
           <h1 className="text-[20px] font-semibold tracking-tight">
-            {t("page.home.greeting", { name: firstName })}
+            {t(`page.home.greeting.${dayPart()}`, { name: firstName })}
           </h1>
           <p className="mt-0.5 text-[13px] text-muted-foreground">
-            {session ? `${session.user.roleLabel} · ${session.user.branch}` : ""}
+            {[
+              new Date().toLocaleDateString("en-IN", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              }),
+              session?.user.branch,
+              openItems ? t("page.home.waiting", { n: openItems }) : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
           </p>
         </div>
-        <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:flex-1">
+        {/* The counts in a row between the greeting and the action, as the original design. */}
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
           <Counter
             testId="counter-in-progress"
             value={cases.data ? inProgress.length : "…"}
@@ -141,13 +159,20 @@ function Workbench() {
         )}
       </section>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)]">
+      <div className="grid gap-5 @min-[65rem]/main:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)]">
         <section className="min-w-0 rounded border border-border bg-surface">
-          <header className="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5">
-            <div className="min-w-0">
+          <header className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2.5">
+            {/* On a phone the filters go below the title, in one row. */}
+            <div className="min-w-0 flex-1 basis-56">
               <h2 className="text-[14px] font-semibold">{t("page.home.inFlight")}</h2>
               <p className="text-[11.5px] text-muted-foreground">{t("page.home.inFlightSub")}</p>
             </div>
+            <Link
+              to="/appraisals"
+              className="order-last text-[12px] font-medium text-primary hover:underline sm:order-none"
+            >
+              {t("page.home.viewAll")}
+            </Link>
             <CaseFilters
               value={filter}
               onChange={setFilter}
@@ -187,6 +212,93 @@ function Workbench() {
           onRetry={() => void review.refetch()}
         />
       </div>
+      {cases.data && list.length > 0 && (
+        <Portfolio
+          stages={stages}
+          list={list}
+          ready={ready}
+          blocking={checklists.reduce((n, q) => n + (q.data?.blocking_open ?? 0), 0)}
+        />
+      )}
+    </div>
+  );
+}
+
+/** The book at a glance, as the original design: what is open, ready and blocked, and how the
+ * appraisals spread across the stages. */
+function Portfolio({
+  stages,
+  list,
+  ready,
+  blocking,
+}: {
+  stages: Stage[];
+  list: CaseSummary[];
+  ready: number;
+  blocking: number;
+}) {
+  const byStage = stages.map((st) => ({ st, n: list.filter((c) => c.stage === st).length }));
+  const max = Math.max(1, ...byStage.map((b) => b.n));
+  const open = list.filter((c) => c.stage !== "Completed").length;
+  return (
+    <section className="rounded border border-border bg-surface" data-testid="portfolio">
+      <header className="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5">
+        <h2 className="text-[14px] font-semibold">{t("page.home.portfolio.title")}</h2>
+        <Link to="/memos" className="text-[12px] font-medium text-primary hover:underline">
+          {t("nav.memoLibrary")}
+        </Link>
+      </header>
+      <div className="grid gap-x-6 gap-y-4 px-4 py-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Glance
+          label={t("page.home.portfolio.open")}
+          value={open}
+          note={t("page.home.portfolio.openNote", { n: list.length })}
+        />
+        <Glance
+          label={t("page.home.portfolio.ready")}
+          value={ready}
+          note={t("console.kpi.readyNote")}
+        />
+        <Glance
+          label={t("page.home.portfolio.blocking")}
+          value={blocking}
+          note={t("page.home.portfolio.blockingNote")}
+        />
+        <div className="min-w-0">
+          <p className="field-label">{t("page.home.portfolio.byStage")}</p>
+          <ul
+            className="mt-2 flex h-16 items-end gap-1.5"
+            aria-label={t("page.home.portfolio.byStage")}
+          >
+            {byStage.map(({ st, n }) => (
+              <li
+                key={st}
+                className="flex min-w-0 flex-1 flex-col items-center gap-0.5"
+                title={`${stageLabel(st)} · ${n}`}
+              >
+                <span className="tabular text-[10.5px] text-muted-foreground">{n}</span>
+                <span
+                  className="w-full rounded-sm bg-primary/70"
+                  style={{ height: `${(n / max) * 40 + 2}px` }}
+                />
+                <span className="w-full truncate text-center text-[9.5px] text-muted-foreground">
+                  {stageLabel(st)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Glance({ label, value, note }: { label: string; value: number; note: string }) {
+  return (
+    <div className="min-w-0">
+      <p className="field-label">{label}</p>
+      <p className="tabular mt-1 text-[24px] font-semibold leading-none text-foreground">{value}</p>
+      <p className="mt-1 text-[11.5px] text-muted-foreground">{note}</p>
     </div>
   );
 }
@@ -246,7 +358,8 @@ function CaseFilters({
   );
 }
 
-const MAX_ATTENTION = 8;
+/** As the original: the three most pressing, the rest in the queue. */
+const MAX_ATTENTION = 3;
 
 function NeedsAttention({
   canReview,
@@ -265,6 +378,7 @@ function NeedsAttention({
 }) {
   const borrower = (id: string) => cases.find((c) => c.id === id)?.borrower ?? id;
   const flagged = cases.filter((c) => c.open_review_items > 0);
+  const pressingCase = [...flagged].sort((a, b) => b.open_review_items - a.open_review_items)[0];
   const count = canReview ? (review?.length ?? 0) : flagged.length;
 
   return (
@@ -359,6 +473,25 @@ function NeedsAttention({
             </li>
           ))}
         </ul>
+      )}
+      {/* As the original: a note on the most pressing appraisal and what the copilot does there. */}
+      {pressingCase && (
+        <p className="flex gap-2 border-t border-border bg-surface-muted/60 px-4 py-3 text-[12px] leading-relaxed text-muted-foreground">
+          <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
+          <span>
+            {t("page.home.note", {
+              borrower: pressingCase.borrower,
+              n: pressingCase.open_review_items,
+            })}{" "}
+            <Link
+              to="/appraisals/$caseId"
+              params={{ caseId: pressingCase.id }}
+              className="font-medium text-primary hover:underline"
+            >
+              {t("page.home.noteOpen")}
+            </Link>
+          </span>
+        </p>
       )}
     </section>
   );

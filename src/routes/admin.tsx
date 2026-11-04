@@ -21,6 +21,7 @@ const SECTIONS = [
   { to: "/admin/policy", key: "policy" },
   { to: "/admin/checklist", key: "checklist" },
   { to: "/admin/document-types", key: "documentTypes" },
+  { to: "/admin/templates", key: "templates" },
   { to: "/admin/users", key: "users" },
 ] as const;
 

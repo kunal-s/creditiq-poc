@@ -4,6 +4,7 @@ Decides whether a file can be read at all, and says why not in plain language.""
 from __future__ import annotations
 
 import io
+import re
 from dataclasses import dataclass
 
 from PIL import Image, UnidentifiedImageError
@@ -27,8 +28,24 @@ class GateResult:
                 "rescan_request": self.rescan_request, "pages": self.pages}
 
 
+#: How far into a file the PDF header may sit. A portal that serves a PDF out of
+#: a Java object stream prefixes it: every income tax return downloaded from the
+#: e-filing portal carries 247 bytes of `ac ed 00 05 ...` before `%PDF-`. The
+#: readers tolerate it (both pdfplumber and pypdfium2 scan for the header), so
+#: only the sniff has to. Bounded, so a file that merely mentions the string
+#: somewhere inside is still not a PDF.
+PDF_HEADER_SEARCH_BYTES = 4096
+_PDF_HEADER = re.compile(rb"%PDF-[12]\.\d")
+
+
+def pdf_header_at(data: bytes) -> int | None:
+    """Where the PDF header starts, or None. Zero for an ordinary file."""
+    m = _PDF_HEADER.search(data[:PDF_HEADER_SEARCH_BYTES])
+    return m.start() if m else None
+
+
 def sniff(data: bytes) -> str | None:
-    if data[:5] == b"%PDF-":
+    if pdf_header_at(data) is not None:
         return "pdf"
     if data[:8] == b"\x89PNG\r\n\x1a\n":
         return "png"

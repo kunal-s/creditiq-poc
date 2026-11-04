@@ -185,7 +185,22 @@ def _classification(fr: IngestFileResult) -> Classification:
         exit_tier=c.tier,
         signals=[*sig.get("required", []), *sig.get("supporting", [])],
         candidates=[Candidate(type_id=x.type, confidence=x.score) for x in c.candidates[:3]],
+        why_unclassified=None if c.type else _why_unclassified(c),
     )
+
+
+def _why_unclassified(c) -> str:
+    """The classifier's reason, as one of the cases a reader is told about."""
+    reason = c.reason or ""
+    if c.model_error:
+        return "model_unavailable"
+    if "no model configured" in reason:
+        return "no_model"
+    if reason.startswith("the model found none"):
+        return "model_found_none"
+    if reason.startswith("the model suggested"):
+        return "model_blocked"
+    return "signals_weak"
 
 
 def units_of(fr: IngestFileResult) -> list[Unit]:
@@ -317,15 +332,54 @@ def _store_document(conn: sqlite3.Connection, ctx: Context, case_id: str, file_r
     return doc_id
 
 
+#: Integrity recommendations a reviewer is asked to look at. A single
+#: low-impact observation is recorded on the file and shown there, but it does
+#: not raise an item of its own: a bank's own system saves a file again, and a
+#: portal writes to one on download.
+INTEGRITY_RAISES = ("needs_review_priority", "high_risk_indicators")
+
+
+def _store_integrity(conn: sqlite3.Connection, case_id: str, file_row: sqlite3.Row, fr) -> None:
+    """Keep what the integrity stage found, and ask for a person when it matters."""
+    found = [f.model_dump(mode="json") for f in fr.integrity]
+    facts = fr.integrity_facts.model_dump(mode="json") if fr.integrity_facts else None
+    figures = [f.model_dump(mode="json") for f in fr.integrity_figures]
+    conn.execute("UPDATE files SET integrity = ?, integrity_recommendation = ?, integrity_facts = ?, "
+                 "integrity_figures = ? WHERE id = ?",
+                 (json.dumps(found), fr.integrity_recommendation, json.dumps(facts) if facts else None,
+                  json.dumps(figures) if figures else None, file_row["id"]))
+    if fr.integrity_recommendation not in INTEGRITY_RAISES:
+        return
+    said = [f.finding for f in fr.integrity
+            if f.status in ("warning", "review_required") and not f.context]
+    raise_item(conn, case_id=case_id, kind="integrity", ref=f"file:{file_row['id']}",
+               summary=f"{_file_label(file_row)}: {said[0] if said else 'the file contradicts itself'}",
+               detail={"file_id": file_row["id"], "recommendation": fr.integrity_recommendation,
+                       "findings": [f["code"] for f in found
+                                    if f["status"] in ("warning", "review_required") and not f["context"]]})
+
+
 def _store_file_result(conn: sqlite3.Connection, ctx: Context, case_id: str, file_row: sqlite3.Row, result: IngestResult, started_at: str) -> None:
     t0 = time.perf_counter()
     with transaction(conn):
         fr = next((f for f in result.files if f.file_id == file_row["id"]), None)
         if fr is None:
             raise IngestError(f"the service returned nothing for file {file_row['original_name']}")
+        # F-07A: what the file's own bytes said about its history, found before
+        # anything was extracted. Kept whatever became of the file afterwards:
+        # a file that could not be read is one worth saying this about.
+        _store_integrity(conn, case_id, file_row, fr)
         if fr.status in ("rejected", "failed"):
             reason = (fr.reject.message if fr.reject else None) or (fr.error or {}).get("message") or "cannot be read"
             code = (fr.reject.code if fr.reject else "corrupt")
+            if fr.status == "failed":
+                # A step that stopped is not a judgement on the file: say which
+                # step, never present the error as the file being damaged.
+                err = fr.error or {}
+                after = str(err.get("stage", "")).removesuffix("+1").replace("_", " ")
+                reason = (f"Processing stopped{f' after the {after} step' if after else ''} "
+                          f"({err.get('type', 'error')}); the file itself was not judged. Read it again from its row.")
+                code = "processing_failed"
             conn.execute(
                 "UPDATE files SET status = ?, reason = ?, reason_code = COALESCE(reason_code, ?) WHERE id = ?",
                 ("exception" if fr.status == "failed" or code in ("corrupt", "encrypted", "empty") else "rejected", reason, code, file_row["id"]),
@@ -401,6 +455,9 @@ def reextract_document(conn: sqlite3.Connection, root: Path, job_id: str, case_i
     if mine is None:
         raise IngestError(f"the service returned no document for {file_row['original_name']} read as {types[0]}")
     with transaction(conn):
+        # The service read the whole file again, integrity included, now with the type a
+        # person gave it: keep that, so the integrity shown is the one the type was read under.
+        _store_integrity(conn, case_id, file_row, fr)
         conn.execute("DELETE FROM field_values WHERE document_id = ? AND method <> 'manual'", (document_id,))
         status = _store_fields(conn, ctx, case_id, document_id, mine, types)
         conn.execute(
@@ -417,6 +474,35 @@ def reextract_document(conn: sqlite3.Connection, root: Path, job_id: str, case_i
             conn, at=now_iso(), actor="system", case_id=case_id, action="processing.reextract",
             detail=dumps({"job_id": job_id, "document_id": document_id, "type_id": types[0], "config_version": result.config.version}),
         )
+    refresh_case(conn, root, case_id, running_job=job_id, client=client)
+
+
+def recheck_integrity(conn: sqlite3.Connection, root: Path, job_id: str, case_id: str, file_id: str, client) -> None:
+    """Run a file's integrity checks again under the published configuration (F-07A),
+    leaving its documents and values as they are: a file read before a check existed,
+    or before the configuration naming it was published, gets it. Its documents'
+    type is passed when they share one, so the checks that depend on the type run."""
+    file_row = conn.execute("SELECT * FROM files WHERE id = ? AND case_id = ?", (file_id, case_id)).fetchone()
+    if file_row is None:
+        return
+    kinds = set()
+    for d in conn.execute("SELECT assigned_types, classification FROM documents WHERE file_id = ?", (file_id,)):
+        types = json.loads(d["assigned_types"]) if d["assigned_types"] else \
+            (json.loads(d["classification"]).get("types", []) if d["classification"] else [])
+        kinds.add(types[0] if types else None)
+    the_type = next(iter(kinds)) if len(kinds) == 1 else None
+    ctx = Context.load(root)
+    request = IngestRequest(case_ref=case_id, config_version=ctx.version,
+                            files=[_ingest_file(file_row, assigned_type=the_type)])
+    payloads = {file_row["id"]: (case_files_dir(case_id, root) / file_row["stored_name"]).read_bytes()}
+    result = client.process(request, payloads)
+    _check_version(result, ctx)
+    fr = result.files[0]
+    with transaction(conn):
+        _store_integrity(conn, case_id, file_row, fr)
+        log_decision(conn, at=now_iso(), actor="system", case_id=case_id, action="integrity.rechecked",
+                     detail=dumps({"job_id": job_id, "file_id": file_id, "config_version": result.config.version,
+                                   "recommendation": fr.integrity_recommendation, "checks": len(fr.integrity)}))
     refresh_case(conn, root, case_id, running_job=job_id, client=client)
 
 

@@ -61,11 +61,9 @@ export function BoardHeader({
   const canQueue = useCan("review.read");
   const meta = view ? metaLine(view) : "";
   return (
-    <div
-      className="flex flex-wrap items-end justify-between gap-3 border-b border-border bg-surface px-4 py-4 sm:px-6"
-      data-testid="xv-header"
-    >
-      <div className="min-w-0 flex-1 basis-[26rem]">
+    <div className="border-b border-border bg-surface px-4 py-4 sm:px-6" data-testid="xv-header">
+      {/* As every step's header: what it is, then its actions under it. */}
+      <div className="min-w-0">
         <p className="field-label break-words">{t("crossVerification.kicker", { id: caseId })}</p>
         <h2 className="text-[19px] font-semibold tracking-tight text-foreground">
           {t("page.crossVerification.title")}
@@ -88,7 +86,7 @@ export function BoardHeader({
         )}
       </div>
       {view && (
-        <div className="flex max-w-full flex-wrap items-center gap-2">
+        <div className="mt-3 flex max-w-full flex-wrap items-center gap-2">
           {canOutputs && (
             <Link
               to="/appraisals/$caseId/policy"

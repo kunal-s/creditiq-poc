@@ -54,12 +54,14 @@ from . import (
     review,
     spread,
     statement_edits,
+    integrity_review,
     uploads,
     xv,
 )
 from .config import load_app_config, load_roles_config, option_ids, role_label, find_user_by_id
 from .configstore import reader as configstore_reader
 from .configstore.schema import ApprovalMatrixSection, ChecklistTaxonomySection, DocumentTypesSection, PolicySection
+from .contracts.ingest import IngestIntegrityFigure
 from .contracts import (
     BankConduct,
     CellEdit,
@@ -103,6 +105,7 @@ from .contracts import (
     UploadResult,
     FieldValue,
     FileRecord,
+    IntegrityReviewRequest,
     Finding,
     LoginRequest,
     LoginResponse,
@@ -341,7 +344,7 @@ def delete_case(
 @app.get("/api/cases/{case_id}/files", response_model=list[FileRecord])
 def case_files(case_id: str, user: dict = Depends(require("case.read")), conn: sqlite3.Connection = Depends(get_conn)):
     _case_for(conn, case_id, user)
-    return reads.files(conn, case_id)
+    return reads.files(conn, case_id, data_root())
 
 
 @app.get("/api/cases/{case_id}/documents", response_model=list[LogicalDocument])
@@ -1006,6 +1009,101 @@ def document_page(
     except pages.PageError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     return Response(content=data, media_type=media_type, headers={"Cache-Control": "private, max-age=3600"})
+
+
+@app.get("/api/cases/{case_id}/files/{file_id}/pages/{page}", response_class=Response)
+def file_page(
+    case_id: str,
+    file_id: str,
+    page: int,
+    user: dict = Depends(require("case.read")),
+    conn: sqlite3.Connection = Depends(get_conn),
+):
+    """F-07A: the rendered page image (PNG) of a received file, for its
+    integrity view; `page` is the page in the file."""
+    _case_for(conn, case_id, user)
+    try:
+        data, media_type = pages.file_page_image(conn, data_root(), case_id, file_id, page)
+    except pages.PageError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    return Response(content=data, media_type=media_type, headers={"Cache-Control": "private, max-age=3600"})
+
+
+@app.post("/api/cases/{case_id}/files/{file_id}/read-again", response_model=FileRecord)
+def read_file_again(
+    case_id: str,
+    file_id: str,
+    user: dict = Depends(require("document.upload")),
+    conn: sqlite3.Connection = Depends(get_conn),
+):
+    """A file in exception sent through processing again, as received (its
+    earlier outcome cleared, audited). Uploading it again would be a duplicate."""
+    _case_for(conn, case_id, user)
+    try:
+        uploads.read_again(conn, data_root(), case_id=case_id, file_id=file_id, user_id=user["id"])
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except uploads.ReadAgainError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    pipeline.refresh_case(conn, data_root(), case_id)
+    return next(f for f in reads.files(conn, case_id, data_root()) if f.id == file_id)
+
+
+@app.post("/api/cases/{case_id}/files/{file_id}/integrity/recheck", status_code=202)
+def recheck_file_integrity(
+    case_id: str,
+    file_id: str,
+    user: dict = Depends(require("document.upload")),
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> dict:
+    """F-07A: run a file's integrity checks again under the published
+    configuration, its documents and values untouched (audited)."""
+    _case_for(conn, case_id, user)
+    try:
+        uploads.recheck_integrity(conn, data_root(), case_id=case_id, file_id=file_id, user_id=user["id"])
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except uploads.ReadAgainError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    return {"queued": True}
+
+
+@app.post("/api/cases/{case_id}/files/{file_id}/integrity/review", response_model=FileRecord)
+def review_file_integrity(
+    case_id: str,
+    file_id: str,
+    body: IntegrityReviewRequest,
+    user: dict = Depends(require("review.decide")),
+    conn: sqlite3.Connection = Depends(get_conn),
+):
+    """F-07A: a person's conclusion on a file's integrity (genuine, altered, unclear or not
+    completed) with the reason; kept in full and audited. Never set by the checks."""
+    _case_for(conn, case_id, user)
+    try:
+        integrity_review.record(conn, case_id=case_id, file_id=file_id, decision=body.decision,
+                                reason=body.reason, user_id=user["id"])
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except integrity_review.IntegrityReviewError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    pipeline.refresh_case(conn, data_root(), case_id)
+    return next(f for f in reads.files(conn, case_id, data_root()) if f.id == file_id)
+
+
+@app.get("/api/cases/{case_id}/files/{file_id}/figures", response_model=list[IngestIntegrityFigure])
+def file_figures(
+    case_id: str,
+    file_id: str,
+    user: dict = Depends(require("case.read")),
+    conn: sqlite3.Connection = Depends(get_conn),
+):
+    """F-07A: every figure the page checks read in a file, with its place on
+    the page, its font and size, and the column it is set in."""
+    _case_for(conn, case_id, user)
+    found = reads.file_figures(conn, case_id, file_id)
+    if found is None:
+        raise HTTPException(status_code=404, detail=f"no file {file_id!r} in case {case_id!r}")
+    return found
 
 
 @app.get("/api/cases/{case_id}/parties", response_model=list[Party])

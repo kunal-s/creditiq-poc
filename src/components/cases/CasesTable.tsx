@@ -31,11 +31,35 @@ export function StageLink({ c }: { c: CaseSummary }) {
     <Link
       to={to}
       className={cn(
-        "inline-block rounded px-1.5 py-0.5 text-[11.5px] font-medium",
+        "inline-block whitespace-nowrap rounded px-1.5 py-0.5 text-[11.5px] font-medium",
         stageTone[c.stage],
       )}
     >
       {stageLabel(c.stage)}
+    </Link>
+  );
+}
+
+/** Files of the case that need a person, said only when there are any: red when
+ * a file's checks found signs of an edit, amber otherwise. Opens the Files page. */
+export function FilesFlag({ c }: { c: CaseSummary }) {
+  const n = c.files_attention ?? 0;
+  if (n === 0) return null;
+  const altered = (c.files_altered ?? 0) > 0;
+  return (
+    <Link
+      to="/appraisals/$caseId/documents"
+      params={{ caseId: c.id }}
+      data-testid="files-attention"
+      className={cn(
+        "inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[11.5px] font-medium",
+        altered
+          ? "border-critical/40 bg-critical-soft text-critical"
+          : "border-flag/40 bg-flag-soft text-flag-foreground",
+      )}
+    >
+      <AlertTriangle className="h-3 w-3" />
+      {t("cases.filesAttention", { n })}
     </Link>
   );
 }
@@ -66,6 +90,11 @@ export function ReviewFlag({ count }: { count: number }) {
 /** The prototype's in-flight table on wide screens, cards on phones (F-06.1). */
 export function CasesTable({ cases }: { cases: CaseSummary[] }) {
   const labels = useLabels();
+  // The most pressing appraisal: one with a file showing signs of an edit, else the most open items.
+  const pressing = (c: CaseSummary) =>
+    (c.files_altered ?? 0) * 1000 + (c.files_attention ?? 0) * 10 + c.open_review_items;
+  const top = cases.reduce((best, c, i) => (pressing(c) > pressing(cases[best]!) ? i : best), 0);
+  const urgent = cases.length > 0 && pressing(cases[top]!) > 0 ? top : -1;
   return (
     <>
       <ul className="divide-y divide-border md:hidden" data-testid="cases-cards">
@@ -92,7 +121,10 @@ export function CasesTable({ cases }: { cases: CaseSummary[] }) {
               <span>
                 {c.rm} · {formatDate(c.created_at)}
               </span>
-              <ReviewFlag count={c.open_review_items} />
+              <span className="flex flex-wrap items-center gap-1.5">
+                <FilesFlag c={c} />
+                <ReviewFlag count={c.open_review_items} />
+              </span>
             </div>
           </li>
         ))}
@@ -110,12 +142,16 @@ export function CasesTable({ cases }: { cases: CaseSummary[] }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {cases.map((c) => (
+            {cases.map((c, i) => (
               <tr
                 key={c.id}
                 className={cn(
                   "align-top transition-colors hover:bg-surface-muted",
-                  c.open_review_items >= 2 && "bg-flag-soft/50 hover:bg-flag-soft",
+                  // As the original: only the most pressing row is tinted; the flags say the rest.
+                  i === urgent &&
+                    ((c.files_altered ?? 0) > 0
+                      ? "bg-critical-soft/40 hover:bg-critical-soft"
+                      : "bg-flag-soft/50 hover:bg-flag-soft"),
                 )}
               >
                 <td className="px-4 py-3">
@@ -144,7 +180,10 @@ export function CasesTable({ cases }: { cases: CaseSummary[] }) {
                   {formatDate(c.created_at)}
                 </td>
                 <td className="px-4 py-3">
-                  <ReviewFlag count={c.open_review_items} />
+                  <span className="flex flex-wrap items-center gap-1.5">
+                    <FilesFlag c={c} />
+                    <ReviewFlag count={c.open_review_items} />
+                  </span>
                 </td>
               </tr>
             ))}

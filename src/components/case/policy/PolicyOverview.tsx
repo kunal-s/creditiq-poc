@@ -208,7 +208,7 @@ function KeyNorm({ norm, onOpen }: { norm: NormResult; onOpen: () => void }) {
         {norm.label}
       </span>
       <span
-        className="mt-0.5 block min-w-0 break-words leading-snug"
+        className="mt-0.5 flex min-w-0 flex-wrap items-baseline gap-x-1.5 break-words leading-snug"
         data-testid="policy-highlight-fact"
       >
         <span
@@ -226,9 +226,10 @@ function KeyNorm({ norm, onOpen }: { norm: NormResult; onOpen: () => void }) {
         >
           {actualText(norm)}
         </span>
-        {/* The required value wraps as a whole, to the next line where the card is narrow. */}{" "}
-        <span className="inline-block max-w-full text-[11px] text-muted-foreground">
-          {"· "}
+        {/* The required value wraps as a whole, to the next line where the card is narrow; the
+            separator is read out but not drawn, so a wrapped line never starts with it. */}{" "}
+        <span className="max-w-full text-[11px] text-muted-foreground">
+          <span className="sr-only">{"· "}</span>
           <span className="tabular" data-testid="policy-highlight-required">
             {norm.required}
           </span>

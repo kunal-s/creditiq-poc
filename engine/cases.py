@@ -279,7 +279,26 @@ def _open_reviews(conn: sqlite3.Connection, case_id: str) -> int:
     ).fetchone()[0]
 
 
+#: What makes a file need a person on the Files page (src/domain/documents.ts `fileGroup`):
+#: it could not be read or was refused, its checks found something, or one of its
+#: documents waits on a person.
+_ALTERED = ("needs_review_priority", "high_risk_indicators")
+
+
+def _files_attention(conn: sqlite3.Connection, case_id: str) -> tuple[int, int]:
+    """Files of the case that need a person, and of those, files whose checks found signs of an edit."""
+    rows = conn.execute(
+        """SELECT f.id, f.integrity_recommendation AS rec,
+                  f.status IN ('exception', 'rejected')
+                  OR f.integrity_recommendation IN ('needs_review', 'needs_review_priority', 'high_risk_indicators')
+                  OR EXISTS (SELECT 1 FROM documents d WHERE d.file_id = f.id
+                             AND d.status IN ('unclassified', 'in_exception', 'in_review')) AS attention
+           FROM files f WHERE f.case_id = ?""", (case_id,)).fetchall()
+    return sum(1 for r in rows if r["attention"]), sum(1 for r in rows if r["rec"] in _ALTERED)
+
+
 def _summary_fields(conn: sqlite3.Connection, row: sqlite3.Row) -> dict:
+    attention, altered = _files_attention(conn, row["id"])
     return {
         "id": row["id"],
         "borrower": row["borrower"],
@@ -290,6 +309,8 @@ def _summary_fields(conn: sqlite3.Connection, row: sqlite3.Row) -> dict:
         "rm": (find_user_by_id(row["created_by"]) or {}).get("name", row["created_by"]),
         "created_at": row["created_at"],
         "open_review_items": _open_reviews(conn, row["id"]),
+        "files_attention": attention,
+        "files_altered": altered,
     }
 
 

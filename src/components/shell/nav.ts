@@ -6,7 +6,8 @@ import { t } from "@/config/terminology";
 // and per item by permission. A case's tabs appear only inside the case.
 
 export type NavItem = { label: string; to: string; permission?: string };
-export type NavGroup = { id: string; group: string; items: NavItem[] };
+/** A group of the side menu; `gate` is the role's menu group it shows under (its own id when absent). */
+export type NavGroup = { id: string; group: string; items: NavItem[]; gate?: string };
 
 export type CaseTab = {
   /** Path under /appraisals/$caseId; "" is the Overview. */
@@ -20,6 +21,7 @@ export type CaseTab = {
 /** The case workspace's tabs, in processing order (FRD §6). */
 export const CASE_TABS: CaseTab[] = [
   { to: "", key: "overview", permission: "case.read" },
+  { to: "identity", key: "identity", permission: "data.read" },
   { to: "documents", key: "documents", stage: "documents", permission: "case.read" },
   { to: "extraction", key: "extraction", stage: "extraction", permission: "data.read" },
   { to: "completeness", key: "completeness", stage: "completeness", permission: "checklist.read" },
@@ -31,6 +33,8 @@ export const CASE_TABS: CaseTab[] = [
   },
   { to: "policy", key: "policy", stage: "policy", permission: "finding.read" },
   { to: "outputs", key: "outputs", stage: "outputs", permission: "output.read" },
+  { to: "rating", key: "rating", permission: "output.read" },
+  { to: "submission", key: "submission", permission: "output.read" },
   { to: "comparison", key: "comparison", permission: "comparison.adjudicate" },
 ];
 
@@ -92,9 +96,28 @@ export function buildNav(): NavGroup[] {
       id: "workbench",
       group: t("nav.group.workbench"),
       items: [
-        { label: t("nav.cases"), to: "/" },
-        { label: t("nav.newCase"), to: "/appraisals/new", permission: "case.create" },
+        { label: t("nav.home"), to: "/" },
+        { label: t("nav.myAppraisals"), to: "/appraisals", permission: "case.read" },
       ],
+    },
+    {
+      id: "docready",
+      gate: "workbench",
+      group: t("nav.group.docready"),
+      items: [{ label: t("nav.readinessConsole"), to: "/docready", permission: "checklist.read" }],
+    },
+    {
+      // The open appraisal's steps follow New appraisal (AppShell).
+      id: "appraisal",
+      gate: "workbench",
+      group: t("nav.group.appraisal"),
+      items: [{ label: t("nav.newCase"), to: "/appraisals/new", permission: "case.create" }],
+    },
+    {
+      id: "portfolio",
+      gate: "workbench",
+      group: t("nav.group.portfolio"),
+      items: [{ label: t("nav.memoLibrary"), to: "/memos", permission: "output.read" }],
     },
     {
       id: "governance",
@@ -116,6 +139,11 @@ export function buildNav(): NavGroup[] {
         {
           label: t("nav.admin.documentTypes"),
           to: "/admin/document-types",
+          permission: "config.read",
+        },
+        {
+          label: t("nav.admin.templates"),
+          to: "/admin/templates",
           permission: "config.read",
         },
         { label: t("nav.admin.users"), to: "/admin/users", permission: "config.read" },

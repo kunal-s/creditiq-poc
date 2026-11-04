@@ -18,25 +18,34 @@ tenant:
     metaDescription: CreditIQ credit workbench
 
 nav:
+  home: Home
+  myAppraisals: My Appraisals
+  readinessConsole: Readiness Console
+  memoLibrary: Memo Library
+  footer: "Every check runs under the configuration published {date}"
   group:
     workbench: Workbench
+    docready: DocReady
+    appraisal: Appraisal
+    portfolio: Portfolio
     governance: Governance
-    administration: Administration
+    administration: Admin
     help: Help
     thisCase: "Appraisal {id}"
-  help: Guide to the steps
+  help: Guide to the Steps
   cases: Appraisals
   newCase: New appraisal
-  reviewQueue: Review queue
+  reviewQueue: Review Queue
   scorecard: Scorecard
-  audit: Audit trail
+  audit: Audit Trail
   admin:
     configuration: Configuration
     settings: Settings
-    policy: Policy norms
+    policy: Policy Norms
     checklist: Checklist
-    documentTypes: Document types
-    users: Users and roles
+    documentTypes: Document Types
+    templates: Template Designer
+    users: Users and Roles
 
 action:
   retry: Try again
@@ -49,8 +58,24 @@ action:
   goHome: Go to the workbench
 
 # The assistant that answers questions about the open appraisal.
+search:
+  label: Search appraisals
+  placeholder: Search borrower, RM or appraisal number
+  none: No appraisal matches
+notifications:
+  open: "{n} open review item(s)"
+  none: No open review items
+copilot:
+  workbench:
+    context: "Context: {screen}"
+    state: "{n} appraisal(s) are in progress and {items} item(s) wait for a decision. Open an appraisal to ask about its documents."
+    start: Start an appraisal
+    attention: Open what needs my attention
+    pressing: "Open {borrower}, the most pressing"
+    readiness: Open the readiness console
+    ask: Open an appraisal to ask about it…
 assistant:
-  title: Appraisal assistant
+  title: CreditIQ Copilot
   launcher: Ask about this appraisal
   placeholder: Ask about this appraisal
   send: Send
@@ -60,6 +85,15 @@ assistant:
   copied: Copied
   hint: Enter to send, Shift+Enter for a new line
   intro: Ask why a document on this appraisal was rejected or held for review, ask for a draft email to the customer, or send that email once you have checked it.
+  greeting:
+    morning: "Good morning, {name}."
+    afternoon: "Good afternoon, {name}."
+    evening: "Good evening, {name}."
+  startingActions: Starting actions
+  groundingTitle: Grounding
+  grounding: Answers name the document and the rule they came from. The assistant never changes a figure or a decision; you do.
+  context: "Context: {borrower} · {id}"
+  topBar: Copilot
   thinking: Looking this up…
   sources: Sources
   suggestionRejected: Why was a document rejected?
@@ -86,14 +120,20 @@ assistant:
     notDone: That could not be done right now. Check the details and try again.
 
 # The case workspace's tabs, in processing order (FRD §6).
+caseStep:
+  kicker: "Appraisal {id} · {step}"
+
 caseTab:
   overview: Overview
+  identity: Identity
   documents: Files
   extraction: Extracted data
   completeness: Completeness
   crossVerification: Cross-verification
   policy: Financials and Policy
   outputs: Outputs
+  rating: Rating and recommendation
+  submission: Submission
   comparison: Comparison
 
 # The two processing flows of a case; each groups sub-tabs (caseTab.*).
@@ -821,6 +861,7 @@ missingReason:
   not_found_on_page: not found on the page it points to
   model_unavailable: not read yet; automatic reading is unavailable for this field
   model_error: could not be read
+  table_not_found: the table was not found on the document
 
 # Confirming or correcting an extracted value (F-17.5).
 fieldDecision:
@@ -872,6 +913,23 @@ page:
     purpose: What each step of an appraisal does, what the statuses mean and what is asked of you.
     stepsTitle: The steps
     statusTitle: What the statuses mean
+    fileLabelsTitle: What the labels on a file mean
+    fileLabel:
+      integrity:
+        title: "Integrity: checks passed, worth a look, stands out"
+        body: What the file says about itself, checked before anything is read from it - its saves, its dates and makers; on pages of text, anything laid over the text, hidden, or set in another typeface; and on scans and photos, a patch with another grain, a value off its line, a text layer that says another number than the picture, a figure pasted as a picture, or a page made differently from the rest. It is a reason for a person to look, never proof of an edit, and it never rejects a document. Select the chip to see every check; "Open integrity view" shows the pages with each spot marked.
+      integrityView:
+        title: Integrity view
+        body: The file's pages with every place a check points at drawn on them and labelled, beside what stands out, the fonts the file uses, and every check - applied, with nothing to look at, or not run for this kind of document - with the records each one read.
+      track:
+        title: "Received, Quality, Split, Classified, Extracted"
+        body: The five steps each document inside a file goes through. A step shown in amber is waiting for a person, and the row says why.
+      notIdentified:
+        title: "Not identified · Needs a person: document type"
+        body: The kind of document could not be decided with enough confidence. The row offers the nearest types to assign; picking one reads the file again as that type. Until a type is assigned the document is not counted against the checklist.
+      different:
+        title: Why a file can be clear and still need a person
+        body: The integrity chip is about the file itself; the steps are about reading it. A file can be untouched (nothing stands out) and still have a type nobody could decide, or the other way round. Each label says which of the two it is about.
     step:
       documents:
         title: Files
@@ -899,13 +957,28 @@ page:
   home:
     title: Credit Workbench
     purpose: Every application in progress, with its stage and the items waiting for review.
-    greeting: "Welcome, {name}"
+    greeting:
+      morning: "Good morning, {name}"
+      afternoon: "Good afternoon, {name}"
+      evening: "Good evening, {name}"
+    waiting: "{n} item(s) wait for a decision"
+    note: "{borrower} is the most pressing: {n} item(s) wait for a decision. Inside the appraisal the copilot explains why a document was turned away and drafts the follow-up email."
+    noteOpen: Open it
     counter:
       inProgress: Applications in progress
       inProgressSub: "Borrowers: {n}"
       review: Open review items
       reviewSub: waiting for a decision
-    inFlight: Appraisals
+    inFlight: In-flight appraisals
+    portfolio:
+      title: Portfolio at a glance
+      open: Appraisals open
+      openNote: "of {n} on the book"
+      ready: Ready for credit
+      blocking: Blocking gaps
+      blockingNote: across the open appraisals
+      byStage: Appraisals by stage
+    viewAll: View all
     inFlightSub: Every appraisal you can see, with its stage and review items
     attention: Needs attention
     attentionCount: "{n} open"
@@ -914,12 +987,106 @@ page:
       open: All open appraisals
       mine: Mine
       review: With review items
+  rating:
+    title: Recommendation and risk rating
+    purpose: "Where the rating stands, what the recommendation rests on, the recommendation credit writes, and who must approve the case."
+    toDraft: Draft
+    ratingTitle: Internal risk rating
+    noRating: No rating model is configured; the rating is left to credit.
+    restsOn: What the recommendation rests on
+    facility: Facility on the table
+  submission:
+    title: Submission and routing
+    purpose: "What must hold before the memo leaves your desk, each read from this appraisal as it stands, and who it goes to."
+    closed: "Submission is closed. {n} item(s) on the checklist are not met: {items}."
+    open: Every item that blocks submission is met.
+    checklist: Pre-submission checklist
+    checklistSub: Read from the appraisal as it stands.
+    advisory: advisory
+    check:
+      serious: All blocking cross-verification findings adjudicated
+      advisory: Other findings dealt with
+      readiness: Readiness gate met
+      recommendation: Recommendation written
+    seriousDone: Every blocking finding has a decision.
+    seriousOpen: "{n} blocking finding(s) still open; submission waits for each."
+    advisoryDone: Every other finding has a decision.
+    advisoryOpen: "{n} finding(s) still open. They do not block, but they go to credit as open."
+    readinessDone: The review gate is met and nothing blocking remains.
+    readinessOpen: "Readiness {score}% against a {gate}% gate; {n} blocking item(s) open."
+    recommendationDone: The recommendation is written.
+    recommendationOpen: The recommendation is still blank.
+    openBoard: Open the discrepancy board
+    openReadiness: Open readiness
+    openRecommendation: Open the recommendation
+    routing: Routing
+    routingNote: The approving authority the matrix requires for this case.
+    routingUnknown: The approving authority cannot be determined yet.
+    travels: What travels with the memo
+    memo: Memo
+    memoValue: "{n} sections, {template}; {edited} in a person's words"
+    findings: Findings
+    findingsValue: "{n} cross-verification finding(s), {decided} decided"
+    asOf: Data as of
+  memos:
+    purpose: Every appraisal on the book with where its credit memo stands. Open a memo to read it, edit it in your words or download it.
+    kpi:
+      book: Borrowers on the book
+      bookNote: "{n} appraisal(s)"
+      drafted: Memos drafted
+      draftedNote: "of {n} appraisal(s); the rest open once the appraisal is created"
+      recommended: Recommendation written
+      recommendedNote: memos ready for the approving authority
+    table: Borrowers and memos
+    tableSub: "{n} appraisal(s) shown"
+    col:
+      memo: Latest memo
+      status: Status
+      exposure: Proposal
+      asOf: Data as of
+    sections: "{n} sections · {edited} in a person's words"
+    notDrafted: Not drafted yet
+    status:
+      recommended: Recommendation written
+      drafting: Drafting
+      none: Not started
+  readinessConsole:
+    eyebrow: DocReady
+    purpose: Document collection for every appraisal still in progress. An appraisal leaves this console when its file is complete enough for credit review.
+    kpi:
+      open: Open appraisals
+      openNote: in collection
+      blocking: Blocking gaps
+      blockingNote: stop an appraisal reaching credit review
+      ready: Ready for credit review
+      readyNote: gate met, nothing blocking
+      outstanding: Requirements outstanding
+      outstandingNote: insufficient or missing
+    table: Appraisals in collection
+    tableSub: Readiness is weighted by document importance, not a plain count.
+    search: Search borrower, RM or appraisal number
+    show:
+      all: All appraisals
+      blocking: Blocking gaps
+      ready: Ready for credit review
+    col:
+      ask: Product and ask
+      outstanding: Outstanding
+    satisfied: "{n} of {total} satisfied · {gate}% gate"
+    outstanding: "{insufficient} insufficient · {missing} missing"
+    nothingBlocking: Nothing blocking
+    none: No appraisal matches
+    noneHelp: Change the search or the filter.
+  myAppraisals:
+    title: My appraisals
+    purpose: "Every appraisal open to {name}, from the first message to the credit decision."
   newApplication:
     eyebrow: Appraisals
     title: New appraisal
     purpose: Paste the sourcing email or notes. CreditIQ proposes the application; nothing is created until you confirm it.
   overview:
     title: Overview
+    purpose: "Where the appraisal stands: the next step, each stage, what is still needed and what waits for a decision."
     next: Next
     nextNone: Nothing is waiting. Processing is up to date.
     nextUpload: Upload the borrower's documents to start processing.
@@ -930,6 +1097,9 @@ page:
     waiting: Waiting for a decision
     waitingCount: "{n} open review item(s) on this appraisal"
     more: "{n} more"
+  completeness:
+    title: Validation and completeness
+    purpose: "The documents received against those this constitution and facility need, the readiness gate, and the list to send the customer."
   checklist:
     title: Required document set
     purpose: The checklist derived from the case's constitution and facilities, with each item satisfied, insufficient or missing.
@@ -1091,17 +1261,31 @@ caseDelete:
 
 cases:
   col:
-    proposal: Facilities and amount
+    proposal: Proposal
     rm: RM
-    created: Created
-    review: Review items
+    created: Started
+    review: Flags
     amount: Amount
   reviewOpen: "{n} open"
+  filesAttention: "{n} file(s) need attention"
   clear: Clear
 
 # New application from a pasted message (FRD F-04).
 newApplication:
   channel: Channel
+  start:
+    message: Paste a message
+    documents: Drop documents
+    identifiers: Enter identifiers
+    identifiersHelp: PAN, GSTIN, CIN or Udyam; optional, read with the message.
+    identifiersPlaceholder: e.g. AAACK1234K
+    provenance: Provenance
+    provenanceHelp: Where the request came from; it is kept with the application.
+    howTitle: How reading works
+    how: "CreditIQ proposes the borrower, the facilities, the amount and the identifiers it finds, each marked where it came from; a person confirms or corrects every value before anything is created. Documents dropped here are uploaded once the application is created."
+    recent: Recent borrowers
+    recentHelp: Appraisals already on the desk.
+    recentNone: No appraisal yet.
   message: Message
   messageHelp: The sourcing email, WhatsApp message or call notes, as received.
   messagePlaceholder: Paste the email, message or notes here…
@@ -1161,6 +1345,44 @@ upload:
   camera: Take a photo
 
 documents:
+  table:
+    file: File
+    pages: Pages
+    type: Document type
+    confidence: Confidence
+    integrity: Integrity check
+    satisfies: Satisfies
+    # The same columns named beside each value on a phone, where the row is a short card.
+    phone:
+      file: File
+      pages: Pages
+      type: Type
+      confidence: Confidence
+      integrity: Integrity
+      satisfies: Satisfies
+    none: "—"
+    part: "part {n}"
+    sameFile: Same file
+    needsPerson: Needs a person
+    docStatus:
+      duplicate: Duplicate
+      superseded: Superseded
+    integrityState:
+      passed: Passed
+      incomplete: Not run yet
+      review_recommended: Review recommended
+      suspicious: Suspicious
+      suspicious_high: Suspicious
+      failed: Could not run
+      not_checked: Not yet checked
+      not_applicable: Does not apply
+  section:
+    attention: "Needs attention · {n}"
+    reading: "Reading {n} file(s)"
+    ready: "{n} file(s), all ready"
+    readyQuiet: "{n} file(s) ready, nothing to look at"
+    show: Show
+    hide: Hide
   add: Add documents
   addHelp: Single files, several files or a ZIP archive. Each file is registered and read.
   needsAttention: Need attention
@@ -1181,6 +1403,9 @@ documents:
   details: Show the checks on this document
   defects: "{n} defect(s)"
   waitingReview: Waiting for credit review
+  readAgain: Read again
+  readAgainHelp: Send this file through processing again, as it was received. Its earlier outcome is cleared and the action is recorded in the audit trail.
+  readingAgain: Reading again…
   checkValues: Check the extracted values
   assignAs: "Assign as:"
   otherType: Other type…
@@ -1192,6 +1417,356 @@ documents:
     processing: "Processing ({n})"
 
 # A document's track through quality, classification and extraction.
+# F-07A: what a file's own bytes say about its history, checked before anything
+# is read from it. Indicators for a person, never a verdict.
+fileIntegrity:
+  title: File integrity
+  intro: Checked from the file itself, before anything was read from it.
+  caveat: A reason for a person to look, not proof of an edit.
+  show: Show the integrity checks
+  hide: Hide the integrity checks
+  counts: "{passed} passed · {flagged} stand out · {notApplicable} not applicable · {unknown} could not be checked"
+  context: listed only
+  note: Noted
+  showOnPage: "Show on page {page}"
+  showPage: "Show page {page}"
+  trace: Trace
+  untrace: Hide
+  because: "Because"
+  meaning:
+    no_notable_issue: Every integrity check came back clean or had nothing to look at. Nothing in the file's records or on its pages suggests it was changed after it was made.
+    needs_review: One thing with low impact stands out. It is recorded as a reason on the file and does not hold the document up on its own.
+    needs_review_priority: Something in the file or on its pages stands out with high impact. The document goes to a person, and a file integrity item is raised in the review queue.
+    high_risk_indicators: More than one kind of evidence stands out. The document goes to a person first, and a file integrity item is raised in the review queue.
+    could_not_be_assessed: The file's own records could not be read, so nothing could be checked.
+    incomplete: Only the checks on the file's own records ran, and they found nothing. The checks on what its pages draw did not run, so nothing is said about the pages yet; read the file again to run them.
+  inRecords: In the file's own records, not printed on a page.
+  notPlaced: Not yet placed on a page.
+  observed: Measured
+  threshold: Limit
+  where: Where in the file
+  touch: Select a check to see the records it read.
+  facts:
+    title: What the file says about itself
+    show: Show the file's records
+    hide: Hide the file's records
+    group:
+      file: The file
+      info: Information dictionary
+      xmp: XMP record
+      id: Identifiers
+      revisions: Saves
+      fonts: Fonts
+    notStated: not stated
+    size: Size
+    pdfVersion: PDF version
+    headerOffset: PDF begins at
+    headerAt0: byte 0
+    headerWrapped: "byte {n}: something sits before the PDF itself"
+    pages: Pages
+    pageSizes: Page size
+    info:
+      Producer: Producer
+      Creator: Creator
+      CreationDate: Created
+      ModDate: Modified
+      Title: Title
+      Author: Author
+      Subject: Subject
+      Keywords: Keywords
+    xmp: XMP
+    noXmp: The file carries no XMP record.
+    xmpKey:
+      producer: Producer
+      creator_tool: Creator tool
+      create_date: Created
+      modify_date: Modified
+      metadata_date: Metadata date
+    id: Identifier pair
+    noId: The file carries no identifier pair.
+    idOriginal: When it was made
+    idCurrent: Now
+    revision: "Save {n}"
+    revisionValue: "bytes {start} to {end} ({length} bytes)"
+    revisionReplaced: "Save {n} replaced"
+    revisionAdded: "Save {n} added"
+    more: "and {n} more"
+    object: "{kind} ({n})"
+    kind:
+      page: page
+      image: image
+      mask: image mask
+      form: drawing
+      font: font
+      annotation: annotation
+      signature: signature
+      pages: page list
+      catalog: catalogue
+      metadata: XMP record
+      info: information dictionary
+      xref: cross-reference
+      objstm: object stream
+      stream: content stream
+      other: other object
+    signatures: Digital signatures
+    superseded: Objects a later save replaced
+    recovered: Earlier figure
+    recoveredValue: "“{was}”, now “{now}”"
+    fonts: Fonts the file names
+    noFonts: none named
+  origin:
+    title: Digital or scanned
+    digital: Digital PDF
+    scanned: Scanned PDF
+    mixed: Digital and scanned PDF
+    image: Scanned image
+    explain:
+      digital: Every page carries its own text.
+      scanned: Every page is a picture of the page, read by OCR.
+      mixed: Some pages carry their own text and some are pictures of pages.
+      image: The file is a picture of a page, read by OCR.
+    digitalFinding: Every page carries its own text, so the figures were read from the file itself, not from a picture of it. All the checks below can look inside it.
+    scannedFinding: Every page is a picture of the page, so the figures were read by OCR. The checks below on the file's own records still apply; it has no text of its own to compare.
+    mixedFinding: "{digital} page(s) carry their own text and {scanned} are pictures read by OCR. A file of both kinds can come from more than one source."
+    measured: "{digital} page(s) with their own text · {scanned} page(s) read from a picture"
+  chip:
+    no_notable_issue: "Integrity: checks passed"
+    needs_review: "Integrity: worth a look"
+    needs_review_priority: "Integrity: stands out"
+    high_risk_indicators: "Integrity: several things stand out"
+    could_not_be_assessed: "Integrity: could not be checked"
+    incomplete: "Integrity: not fully checked"
+  status:
+    pass: Passed
+    warning: Stands out
+    review_required: Needs review
+    not_applicable: Not applicable
+    unable_to_determine: Could not be checked
+  check:
+    PDF_INCREMENTAL_UPDATE: Saved only once, or every later save explained
+    PDF_PRIOR_VALUE_RECOVERABLE: No earlier figure left behind in the file
+    REVISIONS_TOUCH_CONTENT: Later saves left the page content alone
+    PDF_ID_PAIR_DIFFERS: File identifier unchanged since it was made
+    METADATA_DATE_ORDER: Created and modified dates in a possible order
+    METADATA_INFO_XMP: The file's two records of itself agree
+    PDF_MAKER_NAMED: Names the program that made it
+    PDF_WRITTEN_BY_EDITING_TOOL: Not last written by a design or editing tool
+    METADATA_PRODUCER_EXPECTED: Made by the program this kind of document comes from
+    PDF_COVERED_TEXT: No block hides what is printed under it
+    PDF_PICTURE_OVER_TEXT: No picture is pasted over printed text
+    HIDDEN_TEXT: No text is hidden from a reader
+    PDF_TEXT_OUTSIDE_VISIBLE_AREA: All text is inside the page
+    FONT_WITHIN_VALUE: Every value is set in one typeface
+    PDF_FIGURE_TYPESET_DIFFERENTLY: Every figure is set like the rest of its column
+    LAYOUT_OFF_LINE: Every value sits on its line
+    VISUAL_REGIONS_INCONSISTENT: Every part of a scan has the page's grain and sharpness
+    IMG_VALUE_IN_LINE: Every value on a scan sits on its line
+    TEXT_LAYER_MATCHES_PAGE: The scan's text says what its picture shows
+    PDF_FIGURE_IS_PICTURE: No figure is a pasted picture
+    PAGES_SAME_ORIGIN: All pages were made alike
+    IMG_PAGE_ORIGIN: How each page picture was made
+    IMG_TYPE_IN_COLUMN: Every figure on a scan is set like its column
+    BALANCE_CHAIN: Every balance follows from the one before
+    OPENING_BALANCE: The opening balance leads into the first row
+    CLOSING_BALANCE: The closing balance is the last row's
+    SUMMARY_TOTALS: The printed totals are the rows' sums
+    HEADER_ARITHMETIC: The printed summary adds up
+    PAGE_CARRY: Each carried figure is the balance it carries
+    BS_BALANCES: The balance sheet balances
+    SIGNATURE_PRESENT: The file's digital signatures
+    SIGNATURE_VALID: Each signature still covers the file
+  mark:
+    PDF_COVERED_TEXT: block over print
+    PDF_PICTURE_OVER_TEXT: picture over text
+    HIDDEN_TEXT: hidden text
+    PDF_TEXT_OUTSIDE_VISIBLE_AREA: outside the page
+    FONT_WITHIN_VALUE: two typefaces
+    LAYOUT_OFF_LINE: off its line
+    PDF_FIGURE_TYPESET_DIFFERENTLY: figure font
+    REVISIONS_TOUCH_CONTENT: added by a later save
+    VISUAL_REGIONS_INCONSISTENT: other grain
+    IMG_VALUE_IN_LINE: off its line
+    TEXT_LAYER_MATCHES_PAGE: text differs
+    PDF_FIGURE_IS_PICTURE: pasted figure
+    IMG_TYPE_IN_COLUMN: other weight or slant
+    BALANCE_CHAIN: balance does not follow
+    OPENING_BALANCE: opening balance
+    CLOSING_BALANCE: closing balance
+    SUMMARY_TOTALS: printed total
+    HEADER_ARITHMETIC: summary
+    PAGE_CARRY: carried figure
+    BS_BALANCES: grand total
+    PDF_PRIOR_VALUE_RECOVERABLE: earlier figure in the file
+  family:
+    history: Saves
+    metadata: Metadata
+    layout: Layout
+    font: Fonts
+    visual: Picture
+    identifier: Identifier
+    arithmetic: Figures add up
+    signature: Signatures
+  pagesNotRun: The checks on what its pages draw did not run on this file (it was read before they were added or published, or its processing stopped), so nothing is said about its pages yet.
+  recheck: Run the checks again
+  rechecking: Running the checks again…
+  recheckHelp: Run every integrity check on this file again under the published configuration. Its documents and extracted values are not touched, and the action is recorded in the audit trail.
+  overlay:
+    marks: Integrity marks
+    figures: Show every figure read
+    noFigures: No figures were read on this file's pages.
+    figure: Figure read
+    setIn: "Set in {font} {size} pt"
+    column: "Its column: {count} figures, mostly {font} {size} pt"
+    noColumn: Not part of a column of amounts.
+    apart: Set apart from its column
+    hint: Point at a mark or a figure to see what it says.
+    recordsOnly: "Suspicious, in the file's records rather than on this page: {checks}."
+    metadataOnly: "Informational, from the file's records (not a mark on the page): {checks}."
+    pending: "{n} check(s) have not run on this file, so the page may not show everything yet."
+    page: "Page {page}"
+    whyFlagged: Why it was flagged
+    bearInMind: Bear in mind
+  state:
+    passed: No suspicious indicators detected
+    review_recommended: Review recommended
+    suspicious: Suspicious indicators detected
+    suspicious_high: Suspicious indicators detected, of several kinds
+    incomplete: Integrity check incomplete
+    failed: Checks could not be completed
+    not_checked: Not yet checked
+    not_applicable: Integrity checks do not apply
+  headline:
+    passed: "Nothing found. All {n} checks ran."
+    review_recommended: No evidence of an edit, but one thing needs a look.
+    suspicious: Evidence found in the file itself. Check it before relying on the document.
+    suspicious_high: Several kinds of evidence found in the file itself. Check it before relying on the document.
+    incomplete: "Nothing found so far, but {n} check(s) have not run. Not a pass yet."
+    failed: Some checks could not run. Not a pass.
+    not_checked: The file has not been read yet.
+    not_applicable: Integrity checks apply to PDF files only.
+  short:
+    PDF_INCREMENTAL_UPDATE: Saved again after it was issued
+    PDF_PRIOR_VALUE_RECOVERABLE: Earlier figure left in the file
+    REVISIONS_TOUCH_CONTENT: Page changed by a later save
+    PDF_ID_PAIR_DIFFERS: Saved again since it was made
+    METADATA_DATE_ORDER: Dates out of order
+    METADATA_INFO_XMP: The file's two records disagree
+    PDF_MAKER_NAMED: Maker not named
+    PDF_WRITTEN_BY_EDITING_TOOL: Made with a design or editing tool
+    METADATA_PRODUCER_EXPECTED: Unexpected producing program
+    PDF_COVERED_TEXT: Block over what is printed
+    PDF_PICTURE_OVER_TEXT: Picture pasted over printed text
+    HIDDEN_TEXT: Hidden text
+    PDF_TEXT_OUTSIDE_VISIBLE_AREA: Text outside the page
+    FONT_WITHIN_VALUE: Two typefaces in one value
+    PDF_FIGURE_TYPESET_DIFFERENTLY: Figure set unlike its column
+    LAYOUT_OFF_LINE: Value off its line
+    VISUAL_REGIONS_INCONSISTENT: Patch with another grain or sharpness
+    IMG_VALUE_IN_LINE: Value off its line on the scan
+    TEXT_LAYER_MATCHES_PAGE: Text layer differs from the picture
+    PDF_FIGURE_IS_PICTURE: Figure pasted as a picture
+    PAGES_SAME_ORIGIN: Page made differently from the rest
+    IMG_PAGE_ORIGIN: A picture of a page
+    IMG_TYPE_IN_COLUMN: Figure in another weight or slant
+    BALANCE_CHAIN: Running balance breaks
+    OPENING_BALANCE: Opening balance does not lead in
+    CLOSING_BALANCE: Closing balance does not follow
+    SUMMARY_TOTALS: Printed total differs from the rows
+    HEADER_ARITHMETIC: Summary does not add up
+    PAGE_CARRY: Carried figure differs
+    BS_BALANCES: Balance sheet does not balance
+    SIGNATURE_PRESENT: Digitally signed
+    SIGNATURE_VALID: Signature no longer holds
+  score:
+    label: Evidence strength
+    short: Score
+    band:
+      none: none found
+      weak: weak
+      moderate: moderate
+      strong: strong
+    explain: How strongly the file contradicts itself, from what stands out. Not the chance it was altered; a person decides.
+    part: "{check}: {points} points, adds {adds}"
+  summary:
+    more: Show why this matters
+    less: Hide why this matters
+    title: Integrity · automated check
+    count:
+      passed: passed
+      suspicious: suspicious
+      informational: to note
+      notApplicable: not applicable
+      notRun: not run
+      failed: could not run
+    suspiciousTitle: Suspicious indicators
+    informationalTitle: Informational observations
+    notRunTitle: Not run yet
+    failedTitle: Checks that could not run
+    stopped: "Processing stopped: {reason}"
+    unconfigured: "{n} of these are not in the configuration this file was checked under. Once the configuration is published, run the remaining checks."
+    whyMatters: Why this matters
+    nextStep: Next step
+    nextAction: Next action
+    runRemaining: Run remaining checks
+    openEvidence: Open detailed evidence
+  kind:
+    passed: Passed
+    suspicious: Suspicious indicator
+    informational: Informational observation
+    not_applicable: Not applicable
+    not_run: Not run
+    failed: Execution failed
+  review:
+    title: Human review decision
+    pending: Pending review
+    decision:
+      genuine: Genuine
+      altered: Altered
+      unclear: Unclear
+      not_completed: Review not completed
+    reason: Reason or supporting explanation
+    reasonHint: What you looked at and what it showed. Required for genuine, altered and unclear.
+    save: Record decision
+    saving: Recording…
+    by: "{decision} · {who} · {when}"
+    separate: The checks never set this; it is a person's conclusion after looking at the evidence.
+    cannot: Only a reviewer can record a decision.
+  view:
+    open: Open integrity view
+    back: Files
+    pages: "{n} page(s)"
+    marksOnPage: "{n} mark(s) on this page"
+    noMarksOnPage: No mark on this page
+    showAll: Show every mark
+    zoomIn: Zoom in
+    zoomOut: Zoom out
+    fit: Fit width
+    page: "Page {page} of {pages}"
+    prev: Previous page
+    next: Next page
+    standOut: "{n} thing(s) stand out"
+    nothingStandsOut: Nothing stands out
+    marks: "{n} mark(s)"
+    pageReplaced: A later save replaced this page.
+    fonts: Fonts
+    fontsNamed: Fonts the file names
+    noFonts: The file names no font.
+    checksTitle: Checks for this file
+    checksSummary: "{applied} applied · {nothing} with nothing to look at"
+    applied: applied to this file
+    nothingToLook: had nothing to look at
+    notRun: not run for this kind of document
+    unknown: could not be checked
+    limits: limits
+    appliedList: Checks that applied, and their result
+    nothingList: Had nothing to look at, and why
+    notRunList: Not run for this kind of document, and why
+    unknownList: Could not be checked, and why
+    limitsList: Limits used
+    limitsSource: "Set in the published configuration ({version}); a change applies to the next analysis."
+    noPages: This file has no pages to show.
+    selectMark: Select a mark or a check to see what it found.
+
 documentTrack:
   running:
     received: Reading…
@@ -1200,6 +1775,8 @@ documentTrack:
     classified: Classifying…
     extracted: Extracting…
   attention: "{step}: needs a person"
+  attentionStep:
+    classified: "Needs a person: document type"
   complete: Extracted
   step:
     received: Received
@@ -1216,6 +1793,9 @@ details:
 
 audit:
   entries: Activity
+  readOnly: "Read-only for {name}, {role}"
+  export: Export the record
+  cardCounts: "{n} recorded event(s) · {decisions} decision(s) by a person"
   none: No activity matches these filters.
   filterAction: Filter by activity
   filterPerson: Filter by person
@@ -1240,6 +1820,14 @@ audit:
     output_downloaded: Downloaded the draft CAM or the PD note
 
 admin:
+  templates:
+    default: "The configured template · {n} sections"
+    made: "{n} sections · made by {by}, {at}"
+    inUse: Default
+    parts: "drafted from {parts}"
+    analystWrites: left for the analyst to write
+    none: No memo template
+    noneHelp: The configured template appears once the configuration is published.
   config:
     current: In force now
     publishedOn: Published
@@ -1510,6 +2098,7 @@ checklist:
     blocking: "Blocking ({n})"
     satisfied: "Satisfied ({n})"
   blocking: Blocking
+  blockingNote: "Blocking: credit review waits for this item."
   documentsLinked: "linked documents: {n}"
   why: Why it is required
   basis: Basis
@@ -1614,6 +2203,23 @@ assessment:
   createdBy: "Case created by {who}"
   gateTitle: Ready to create the case
   gateTitleBlocked: Not ready to create the case yet
+  gateTitleOpen: Case created
+  conditionsMet: "{met} of {total} conditions met"
+  createBlocked: Every condition below must be met first.
+  tile:
+    met: Met
+    notMet: Not met
+    reviewGate: Review gate
+    score: "Readiness {score}%"
+    needs: "Needs {gate}%"
+    toGo: "{n} points to go"
+    blocking: Blocking items
+    blockingOpen: still open
+    blockingDone: "{done} of {total} blocking items satisfied"
+    showItems: Show them
+    files: Files read
+    filesUnread: file(s) could not be read
+    showFiles: Open the files
   gateIntro: The cross-checks, the policy checks and the outputs open once the case is created.
   lockedTitle: Opens once the case is created
   lockedBody: This step runs after intake. Finish the checklist on the completeness step, then create the case.
@@ -1635,7 +2241,7 @@ readiness:
   met: Met
   notMet: Not met
   threshold: "threshold {threshold}% · now {score}%"
-  notReady: "Not ready for credit review: {score}% against a {gate}% gate"
+  notReady: Not ready for credit review
   withBlocking: "(blocking open: {n})"
   notReadyHelp: The gate is met only when the weighted score reaches the threshold and every blocking item is satisfied or waived with a reason.
   readyHelp: "The {gate}% gate is met and nothing blocking remains."
@@ -1842,6 +2448,7 @@ reviewKind:
   manual_entry: Manual entry
   finding: Finding
   transactions: Transaction classification
+  integrity: File integrity
 
 reviewDecision:
   confirm: Confirm

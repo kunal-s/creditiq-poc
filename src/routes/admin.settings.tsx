@@ -36,6 +36,7 @@ import {
   type Draft,
   type Editor,
 } from "@/domain/settings";
+import { StackTable } from "@/components/common/StackTable";
 
 // Settings (F-00.6): the tolerances, policy norm thresholds, cross-check rules and approval matrix
 // an Administrator changes on screen. Edits stay in a draft until they are reviewed with the
@@ -247,7 +248,7 @@ function DisplayPanel({ settings: s, edit }: { settings: EditableSettings; edit:
       subtitle={t("admin.settings.display.subtitle")}
       testId="settings-display"
     >
-      <table className="w-full text-[12.5px]">
+      <StackTable className="w-full text-[12.5px]">
         <thead>
           <tr className={HEAD}>
             <th className="px-4 py-2 font-medium">{t("admin.settings.display.setting")}</th>
@@ -270,7 +271,7 @@ function DisplayPanel({ settings: s, edit }: { settings: EditableSettings; edit:
             <td className="tabular px-4 py-2 text-muted-foreground">{example}</td>
           </tr>
         </tbody>
-      </table>
+      </StackTable>
     </Panel>
   );
 }
@@ -283,7 +284,7 @@ function TolerancesPanel({ settings: s, edit }: { settings: EditableSettings; ed
       testId="settings-tolerances"
     >
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[600px] text-[12.5px]">
+        <StackTable className="w-full min-w-[600px] text-[12.5px]">
           <thead>
             <tr className={HEAD}>
               <th className="px-4 py-2 font-medium">{t("admin.settings.tolerances.setting")}</th>
@@ -316,7 +317,7 @@ function TolerancesPanel({ settings: s, edit }: { settings: EditableSettings; ed
               </tr>
             ))}
           </tbody>
-        </table>
+        </StackTable>
       </div>
     </Panel>
   );
@@ -333,7 +334,7 @@ function PolicyPanel({ settings: s, edit }: { settings: EditableSettings; edit: 
       <h3 className={SUBHEAD}>{t("admin.settings.policy.ratios")}</h3>
       <p className={HELP}>{t("admin.settings.policy.ratiosHelp")}</p>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[640px] text-[12.5px]">
+        <StackTable className="w-full min-w-[640px] text-[12.5px]">
           <thead>
             <tr className={HEAD}>
               <th className="px-4 py-2 font-medium">{t("admin.settings.policy.ratio")}</th>
@@ -374,12 +375,12 @@ function PolicyPanel({ settings: s, edit }: { settings: EditableSettings; edit: 
               </tr>
             ))}
           </tbody>
-        </table>
+        </StackTable>
       </div>
 
       <h3 className={SUBHEAD}>{t("admin.settings.policy.own")}</h3>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[520px] text-[12.5px]">
+        <StackTable className="w-full min-w-[520px] text-[12.5px]">
           <thead>
             <tr className={HEAD}>
               <th className="px-4 py-2 font-medium">{t("admin.settings.policy.norm")}</th>
@@ -419,7 +420,7 @@ function PolicyPanel({ settings: s, edit }: { settings: EditableSettings; edit: 
               </tbody>
             );
           })}
-        </table>
+        </StackTable>
       </div>
     </Panel>
   );
@@ -435,7 +436,7 @@ function RulesPanel({ settings: s, edit }: { settings: EditableSettings; edit: E
       testId="settings-rules"
     >
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[680px] text-[12.5px]">
+        <StackTable className="w-full min-w-[680px] text-[12.5px]">
           <thead>
             <tr className={HEAD}>
               <th className="px-4 py-2 font-medium">{t("admin.settings.rules.rule")}</th>
@@ -496,7 +497,7 @@ function RulesPanel({ settings: s, edit }: { settings: EditableSettings; edit: E
                 ))}
             </tbody>
           ))}
-        </table>
+        </StackTable>
       </div>
     </Panel>
   );
@@ -522,7 +523,7 @@ function MatrixPanel({ settings: s, edit }: { settings: EditableSettings; edit: 
         <section key={p.key} data-testid={`matrix-${p.key}`}>
           <h3 className={SUBHEAD}>{p.label}</h3>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[520px] text-[12.5px]">
+            <StackTable className="w-full min-w-[520px] text-[12.5px]">
               <thead>
                 <tr className={HEAD}>
                   <th className="w-24 px-4 py-2 font-medium">{t("admin.settings.matrix.band")}</th>
@@ -569,7 +570,7 @@ function MatrixPanel({ settings: s, edit }: { settings: EditableSettings; edit: 
                   );
                 })}
               </tbody>
-            </table>
+            </StackTable>
           </div>
         </section>
       ))}
@@ -577,7 +578,7 @@ function MatrixPanel({ settings: s, edit }: { settings: EditableSettings; edit: 
       <h3 className={SUBHEAD}>{t("admin.settings.matrix.deviations")}</h3>
       <p className={HELP}>{t("admin.settings.matrix.deviationsHelp")}</p>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[520px] text-[12.5px]">
+        <StackTable className="w-full min-w-[520px] text-[12.5px]">
           <thead>
             <tr className={HEAD}>
               <th className="px-4 py-2 font-medium">{t("admin.settings.matrix.category")}</th>
@@ -610,7 +611,7 @@ function MatrixPanel({ settings: s, edit }: { settings: EditableSettings; edit: 
               </tr>
             ))}
           </tbody>
-        </table>
+        </StackTable>
       </div>
     </Panel>
   );

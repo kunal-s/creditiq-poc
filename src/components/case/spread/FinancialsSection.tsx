@@ -121,7 +121,7 @@ function FinancialsBody({
   const unfiled = useTxnSummary(caseId).data?.unsettled ?? 0;
 
   return (
-    <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_17rem]">
+    <div className="grid min-w-0 grid-cols-1 gap-4 @min-[65rem]/main:grid-cols-[minmax(0,1fr)_17rem]">
       <div className="min-w-0 space-y-4">
         {tab !== "banking" && (
           <PeriodPicker spread={spread} period={column.fy} onPick={setPeriod} />
@@ -195,7 +195,7 @@ function FinancialsBody({
         <WorkingCapital caseId={caseId} spread={spread} />
         <TrendNotes spread={spread} />
       </div>
-      <aside className="order-first grid min-w-0 grid-cols-1 content-start gap-4 sm:grid-cols-2 xl:sticky xl:top-4 xl:order-none xl:grid-cols-1 xl:self-start">
+      <aside className="order-first grid min-w-0 grid-cols-1 content-start gap-4 sm:grid-cols-2 @min-[65rem]/main:sticky @min-[65rem]/main:top-4 @min-[65rem]/main:order-none @min-[65rem]/main:grid-cols-1 @min-[65rem]/main:self-start">
         {tab === "banking" ? (
           <BankingRail caseId={caseId} />
         ) : (

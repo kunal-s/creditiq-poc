@@ -1,4 +1,4 @@
-import { t } from "@/config/terminology";
+import { t, tOr } from "@/config/terminology";
 import { DOC_STEPS, docTrack } from "@/domain/documents";
 import type { LogicalDocument } from "@/api/types";
 import { cn } from "@/lib/utils";
@@ -22,10 +22,13 @@ export function StageTrack({ doc }: { doc: LogicalDocument | undefined }) {
         ? t("documentTrack.complete")
         : state === "running"
           ? t(`documentTrack.running.${DOC_STEPS[current]}`)
-          : t("documentTrack.attention", { step: t(`documentTrack.step.${DOC_STEPS[current]}`) });
+          : tOr(
+              `documentTrack.attentionStep.${DOC_STEPS[current]}`,
+              t("documentTrack.attention", { step: t(`documentTrack.step.${DOC_STEPS[current]}`) }),
+            );
   return (
     <span
-      className="inline-flex items-center gap-1.5"
+      className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5"
       data-testid="stage-track"
       data-step={state === "done" ? "complete" : DOC_STEPS[current]}
       data-state={state}

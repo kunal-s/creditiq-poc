@@ -30,15 +30,17 @@ test("TC-09: unclassified document with candidates, routed for review", async ({
   await page.goto(`/appraisals/${KESTREL}/documents`);
   const unc = page.getByTestId("section-files").locator('[data-document-id="doc-unc"]');
   await expect(unc.getByTestId("unclassified")).toHaveText("Not identified");
-  await expect(unc.getByTestId("stage-track")).toHaveAttribute("data-state", "attention");
+  // Waiting on a person, it is listed first, under what needs attention, with no progress track.
+  await expect(
+    page.getByTestId("section-attention").locator('[data-document-id="doc-unc"]'),
+  ).toBeVisible();
+  await expect(unc.getByTestId("stage-track")).toHaveCount(0);
   // Its top candidates are offered on the row, for a person to assign.
   await expect(unc.getByTestId("assign-candidate")).toHaveText([
     "Utility bill 41%",
     "ITR acknowledgement 22%",
     "Bank statement 10%",
   ]);
-  await page.getByTestId("filter-attention").click();
-  await expect(unc).toBeVisible();
 
   await unc.getByTestId("document-toggle").click();
   await expect(unc.getByTestId("doc-summary")).toContainText("Not identified");

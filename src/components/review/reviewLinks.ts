@@ -7,6 +7,7 @@ export function reviewItemPath(kind: ReviewKind, caseId: string): string {
     case "type":
     case "quality":
     case "split":
+    case "integrity":
       return `/appraisals/${id}/documents`;
     case "party":
       return `/appraisals/${id}/extraction`;

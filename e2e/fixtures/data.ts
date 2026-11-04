@@ -197,6 +197,8 @@ function summary(
     rm: "Arjun Deshpande",
     created_at: "2026-09-20T10:00:00Z",
     open_review_items: open,
+    files_attention: 0,
+    files_altered: 0,
     ...extra,
   };
 }

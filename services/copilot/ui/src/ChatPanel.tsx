@@ -47,9 +47,10 @@ const Arrow = () => (
     <path d="M12 19V5M5 12l7-7 7 7" />
   </Icon>
 );
-const Chevron = () => (
+const Doc = () => (
   <Icon size={14}>
-    <path d="M9 6l6 6-6 6" />
+    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+    <path d="M14 3v5h5M9 13h6M9 17h4" />
   </Icon>
 );
 const Check = () => (
@@ -380,7 +381,7 @@ export function ChatPanel({ endpoint, getToken, context, labels, suggestions, st
       className={"flex h-full min-h-0 flex-col bg-surface text-foreground " + (className ?? "")}
     >
       <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border px-3">
-        <span className="grid h-7 w-7 place-items-center rounded-md bg-primary text-primary-foreground">
+        <span className="grid h-7 w-7 place-items-center text-primary">
           <Spark />
         </span>
         <div className="min-w-0 flex-1">
@@ -407,31 +408,38 @@ export function ChatPanel({ endpoint, getToken, context, labels, suggestions, st
 
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4">
         {empty && (
-          <div className="flex flex-col gap-5 pt-4">
-            <div className="flex flex-col items-start gap-3">
-              <span className="grid h-10 w-10 place-items-center rounded-xl bg-accent text-accent-foreground">
-                <Spark />
-              </span>
-              <p className="text-[13px] leading-relaxed text-muted-foreground">{labels.intro}</p>
-            </div>
+          <div className="flex flex-col gap-4">
+            {/* What the assistant can do here, the questions to start with, and what its answers rest on. */}
+            <p className="rounded border border-border bg-muted/60 px-3 py-3 text-[13px] leading-relaxed text-foreground">{labels.intro}</p>
             {suggestions && suggestions.length > 0 && (
-              <ul className="flex flex-col gap-2">
-                {suggestions.map((s) => (
-                  <li key={s}>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void send(s)}
-                      className="group flex w-full items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2.5 text-left text-[13px] transition-colors hover:border-primary/40 hover:bg-accent/50 disabled:opacity-50"
-                    >
-                      <span>{s}</span>
-                      <span className="text-muted-foreground transition-transform group-hover:translate-x-0.5">
-                        <Chevron />
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+              <div>
+                {labels.startingActions && (
+                  <p className="mb-2 text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">{labels.startingActions}</p>
+                )}
+                <ul className="flex flex-col gap-2">
+                  {suggestions.map((s) => (
+                    <li key={s}>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void send(s)}
+                        className="flex w-full items-center gap-2.5 rounded border border-border bg-surface px-3 py-2.5 text-left text-[13px] text-foreground transition-colors hover:border-primary/40 hover:bg-accent/50 disabled:opacity-50"
+                      >
+                        <span className="text-muted-foreground"><Doc /></span>
+                        <span>{s}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {labels.grounding && (
+              <div className="rounded border border-primary/20 bg-accent px-3 py-3">
+                {labels.groundingTitle && (
+                  <p className="text-[10.5px] font-semibold uppercase tracking-wide text-accent-foreground">{labels.groundingTitle}</p>
+                )}
+                <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{labels.grounding}</p>
+              </div>
             )}
           </div>
         )}

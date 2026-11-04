@@ -632,6 +632,111 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/cases/{case_id}/files/{file_id}/figures": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * File Figures
+     * @description F-07A: every figure the page checks read in a file, with its place on
+     *     the page, its font and size, and the column it is set in.
+     */
+    get: operations["file_figures_api_cases__case_id__files__file_id__figures_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/cases/{case_id}/files/{file_id}/integrity/recheck": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Recheck File Integrity
+     * @description F-07A: run a file's integrity checks again under the published
+     *     configuration, its documents and values untouched (audited).
+     */
+    post: operations["recheck_file_integrity_api_cases__case_id__files__file_id__integrity_recheck_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/cases/{case_id}/files/{file_id}/integrity/review": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Review File Integrity
+     * @description F-07A: a person's conclusion on a file's integrity (genuine, altered, unclear or not
+     *     completed) with the reason; kept in full and audited. Never set by the checks.
+     */
+    post: operations["review_file_integrity_api_cases__case_id__files__file_id__integrity_review_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/cases/{case_id}/files/{file_id}/pages/{page}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * File Page
+     * @description F-07A: the rendered page image (PNG) of a received file, for its
+     *     integrity view; `page` is the page in the file.
+     */
+    get: operations["file_page_api_cases__case_id__files__file_id__pages__page__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/cases/{case_id}/files/{file_id}/read-again": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Read File Again
+     * @description A file in exception sent through processing again, as received (its
+     *     earlier outcome cleared, audited). Uploading it again would be a duplicate.
+     */
+    post: operations["read_file_again_api_cases__case_id__files__file_id__read_again_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/cases/{case_id}/findings": {
     parameters: {
       query?: never;
@@ -2103,6 +2208,16 @@ export interface components {
       created_by: string;
       /** Facilities */
       facilities: string[];
+      /**
+       * Files Altered
+       * @default 0
+       */
+      files_altered: number;
+      /**
+       * Files Attention
+       * @default 0
+       */
+      files_attention: number;
       /** Gstin */
       gstin: string | null;
       /** Header */
@@ -2225,6 +2340,16 @@ export interface components {
       created_at: string;
       /** Facilities */
       facilities: string[];
+      /**
+       * Files Altered
+       * @default 0
+       */
+      files_altered: number;
+      /**
+       * Files Attention
+       * @default 0
+       */
+      files_attention: number;
       /** Id */
       id: string;
       /** Open Review Items */
@@ -2436,6 +2561,10 @@ export interface components {
       signals?: string[];
       /** Types */
       types: string[];
+      /** Why Unclassified */
+      why_unclassified?:
+        | ("model_unavailable" | "no_model" | "model_found_none" | "model_blocked" | "signals_weak")
+        | null;
     };
     /**
      * ComparisonCounts
@@ -3105,6 +3234,13 @@ export interface components {
       duplicate_of?: string | null;
       /** Id */
       id: string;
+      /** Integrity */
+      integrity?: components["schemas"]["IngestIntegrityFinding"][];
+      integrity_facts?: components["schemas"]["IngestIntegrityFacts"] | null;
+      /** Integrity Recommendation */
+      integrity_recommendation?: string | null;
+      integrity_review?: components["schemas"]["IntegrityReview"] | null;
+      integrity_status?: components["schemas"]["IntegrityStatus"] | null;
       /** Label Hint */
       label_hint?: string | null;
       /** Original Name */
@@ -3331,6 +3467,304 @@ export interface components {
     IncorporationFact: {
       company_type?: components["schemas"]["FactValue"] | null;
       date_of_incorporation?: components["schemas"]["FactValue"] | null;
+    };
+    /**
+     * IngestIntegrityEvidence
+     * @description Where an integrity finding is, and what it was measured against.
+     */
+    IngestIntegrityEvidence: {
+      /** Locate */
+      locate?: string | null;
+      /** Object */
+      object?: number | null;
+      /** Observed */
+      observed: string;
+      /** Page */
+      page: number;
+      /** Rect */
+      rect?: [number, number, number, number] | null;
+      /** Threshold */
+      threshold: string;
+    };
+    /**
+     * IngestIntegrityFacts
+     * @description What the file says about itself, as the integrity stage read it (F-07A).
+     */
+    IngestIntegrityFacts: {
+      /** Fonts */
+      fonts?: string[];
+      /**
+       * Has Xmp
+       * @default false
+       */
+      has_xmp: boolean;
+      /**
+       * Header Offset
+       * @default 0
+       */
+      header_offset: number;
+      /** Id Current */
+      id_current?: string | null;
+      /** Id Original */
+      id_original?: string | null;
+      /** Info */
+      info?: {
+        [key: string]: string;
+      };
+      /** Info Dates */
+      info_dates?: {
+        [key: string]: string;
+      };
+      made_as?: components["schemas"]["IngestIntegrityMadeAs"] | null;
+      /** Page Sizes */
+      page_sizes?: [number, number][];
+      /** Pages */
+      pages?: number | null;
+      /** Pdf Version */
+      pdf_version?: string | null;
+      /** Recovered */
+      recovered?: components["schemas"]["IngestIntegrityRecovered"][];
+      /** Revisions */
+      revisions?: components["schemas"]["IngestIntegrityRevision"][];
+      /**
+       * Signatures
+       * @default 0
+       */
+      signatures: number;
+      /** Size Bytes */
+      size_bytes: number;
+      /**
+       * Superseded Objects
+       * @default 0
+       */
+      superseded_objects: number;
+      /** Xmp */
+      xmp?: {
+        [key: string]: string;
+      };
+    };
+    /**
+     * IngestIntegrityFigure
+     * @description A figure a page prints, where and how (F-07A phase 2).
+     */
+    IngestIntegrityFigure: {
+      /** Column */
+      column?: number | null;
+      /** Font */
+      font: string;
+      /** Page */
+      page: number;
+      /** Rect */
+      rect: [number, number, number, number];
+      /**
+       * Right
+       * @default 0
+       */
+      right: number;
+      /** Size */
+      size: number;
+      /** Text */
+      text: string;
+    };
+    /**
+     * IngestIntegrityFinding
+     * @description One integrity check's result (F-07A): an indicator for a person to look
+     *     at, never a verdict. Every finding says what was measured, what it was
+     *     compared with, and the limit it crossed.
+     */
+    IngestIntegrityFinding: {
+      /** Code */
+      code: string;
+      /**
+       * Context
+       * @default false
+       */
+      context: boolean;
+      /** Evidence */
+      evidence?: components["schemas"]["IngestIntegrityEvidence"][];
+      /**
+       * Family
+       * @enum {string}
+       */
+      family:
+        | "metadata"
+        | "font"
+        | "layout"
+        | "visual"
+        | "history"
+        | "identifier"
+        | "arithmetic"
+        | "signature";
+      /** Finding */
+      finding: string;
+      /**
+       * Impact
+       * @enum {string}
+       */
+      impact: "low" | "medium" | "high";
+      /** Method */
+      method?: {
+        [key: string]: string;
+      };
+      /** Reads */
+      reads?: string[];
+      /** Skipped For Type */
+      skipped_for_type?: string | null;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "pass" | "warning" | "review_required" | "not_applicable" | "unable_to_determine";
+      /**
+       * Tier
+       * @enum {string}
+       */
+      tier: "T0" | "T1" | "T2" | "T3";
+    };
+    /**
+     * IngestIntegrityMadeAs
+     * @description How the file was made, from its pages (F-07A).
+     */
+    IngestIntegrityMadeAs: {
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: "digital" | "mixed" | "scanned" | "design_tool" | "computer_drawn" | "screenshot";
+      /**
+       * Picture Pages
+       * @default 0
+       */
+      picture_pages: number;
+      /**
+       * Text Pages
+       * @default 0
+       */
+      text_pages: number;
+      /** Writer */
+      writer?: string | null;
+    };
+    /** IngestIntegrityObject */
+    IngestIntegrityObject: {
+      /** Kind */
+      kind: string;
+      /** Number */
+      number: number;
+    };
+    /** IngestIntegrityRecovered */
+    IngestIntegrityRecovered: {
+      /** Now */
+      now: string;
+      /** Object Number */
+      object_number: number;
+      /** Was */
+      was: string;
+    };
+    /** IngestIntegrityRevision */
+    IngestIntegrityRevision: {
+      /** Added */
+      added?: components["schemas"]["IngestIntegrityObject"][];
+      /**
+       * Added Count
+       * @default 0
+       */
+      added_count: number;
+      /** End */
+      end: number;
+      /** Index */
+      index: number;
+      /** Length */
+      length: number;
+      /** Replaced */
+      replaced?: components["schemas"]["IngestIntegrityObject"][];
+      /**
+       * Replaced Count
+       * @default 0
+       */
+      replaced_count: number;
+      /** Start */
+      start: number;
+    };
+    /**
+     * IntegrityReview
+     * @description F-07A: a person's conclusion on a file, after looking at its evidence. Never set by
+     *     the checks; the latest recorded is shown, every one is kept.
+     */
+    IntegrityReview: {
+      /** Decided At */
+      decided_at: string;
+      /** Decided By */
+      decided_by: string;
+      /**
+       * Decision
+       * @enum {string}
+       */
+      decision: "genuine" | "altered" | "unclear" | "not_completed";
+      /** Reason */
+      reason: string;
+    };
+    /** IntegrityReviewRequest */
+    IntegrityReviewRequest: {
+      /**
+       * Decision
+       * @enum {string}
+       */
+      decision: "genuine" | "altered" | "unclear" | "not_completed";
+      /**
+       * Reason
+       * @default
+       */
+      reason: string;
+    };
+    /**
+     * IntegrityStatus
+     * @description F-07A: what a file's integrity checks come to, said once (engine.integrity_status).
+     */
+    IntegrityStatus: {
+      /** Band */
+      band?: ("none" | "weak" | "moderate" | "strong") | null;
+      /** Failed */
+      failed?: string[];
+      /** Informational */
+      informational?: string[];
+      /**
+       * Not Applicable
+       * @default 0
+       */
+      not_applicable: number;
+      /**
+       * Passed
+       * @default 0
+       */
+      passed: number;
+      /** Pending */
+      pending?: string[];
+      /** Score */
+      score?: number | null;
+      /** Score Parts */
+      score_parts?: components["schemas"]["ScorePart"][];
+      /**
+       * State
+       * @enum {string}
+       */
+      state:
+        | "passed"
+        | "review_recommended"
+        | "suspicious"
+        | "suspicious_high"
+        | "incomplete"
+        | "failed"
+        | "not_checked"
+        | "not_applicable";
+      /**
+       * Stopped
+       * @default false
+       */
+      stopped: boolean;
+      /** Suspicious */
+      suspicious?: string[];
+      /** Unconfigured */
+      unconfigured?: string[];
     };
     /**
      * LogicalDocument
@@ -4391,7 +4825,8 @@ export interface components {
         | "split"
         | "manual_entry"
         | "finding"
-        | "transactions";
+        | "transactions"
+        | "integrity";
       /** Maker */
       maker?: string | null;
       /** Reason */
@@ -4429,6 +4864,20 @@ export interface components {
       enabled?: boolean | null;
       /** Severity */
       severity?: ("serious" | "moderate" | "mild") | null;
+    };
+    /**
+     * ScorePart
+     * @description One suspicious indicator's share of the evidence strength.
+     */
+    ScorePart: {
+      /** Adds */
+      adds: number;
+      /** Code */
+      code: string;
+      /** Family */
+      family: string;
+      /** Points */
+      points: number;
     };
     /** SessionUser */
     SessionUser: {
@@ -6482,6 +6931,181 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["UploadResult"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  file_figures_api_cases__case_id__files__file_id__figures_get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+        file_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IngestIntegrityFigure"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  recheck_file_integrity_api_cases__case_id__files__file_id__integrity_recheck_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+        file_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  review_file_integrity_api_cases__case_id__files__file_id__integrity_review_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+        file_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["IntegrityReviewRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FileRecord"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  file_page_api_cases__case_id__files__file_id__pages__page__get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+        file_id: string;
+        page: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  read_file_again_api_cases__case_id__files__file_id__read_again_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+        file_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FileRecord"];
         };
       };
       /** @description Validation Error */

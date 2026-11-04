@@ -25,7 +25,7 @@ test("TC-02: sign in at 375 px", async ({ page }) => {
 
   // Navigation is a menu button; the side navigation is hidden (F-06.2).
   await page.getByRole("button", { name: "Open menu" }).click();
-  await expect(page.getByRole("dialog").getByRole("link", { name: "Appraisals" })).toBeVisible();
+  await expect(page.getByRole("dialog").getByRole("link", { name: "My appraisals" })).toBeVisible();
   // An RM does not see the governance group.
   await expect(page.getByRole("dialog").getByRole("link", { name: "Review queue" })).toHaveCount(0);
 });
@@ -58,7 +58,6 @@ test("TC-02: create a case and upload documents at 375 px", async ({ page }) => 
   await expect(page).toHaveURL(/\/appraisals\/BBG-2026-000031$/);
   await expect(page.getByTestId("stage-progress")).toBeVisible();
   expect(await scrollsSideways(page)).toBe(false);
-  await page.getByRole("button", { name: /Stage 1 of 6/ }).click();
   await page.getByTestId("stage-documents").first().click();
   await expect(page.getByTestId("tree-file")).toHaveCount(2);
   await expect(page.getByTestId("count-registered")).toHaveText("2");

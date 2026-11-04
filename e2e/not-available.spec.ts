@@ -21,7 +21,7 @@ test("501 from the Wave 1 endpoints reads as not available yet", async ({ page }
   await page.getByRole("button", { name: "Read the message" }).click();
   await expect(page.getByTestId("state-notAvailable")).toContainText("Not available yet");
 
-  await page.goto(`/appraisals/${KESTREL}/extraction`);
+  await page.goto(`/appraisals/${KESTREL}/identity`);
   await expect(page.getByTestId("parties").getByTestId("state-notAvailable")).toBeVisible();
 
   await page.goto(`/appraisals/${KESTREL}/extraction`);

@@ -1,3 +1,4 @@
+import { t } from "@/config/terminology";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/api/client";
@@ -102,6 +103,26 @@ export function usePageImage(caseId: string, documentId: string, page: number) {
   const query = useQuery({
     queryKey: ["cases", caseId, "documents", documentId, "pages", page],
     queryFn: () => api.pageImage(caseId, documentId, page),
+    staleTime: Infinity,
+  });
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!query.data) {
+      setUrl(null);
+      return;
+    }
+    const next = URL.createObjectURL(query.data);
+    setUrl(next);
+    return () => URL.revokeObjectURL(next);
+  }, [query.data]);
+  return { ...query, url };
+}
+
+/** A received file's page as an object URL, for its integrity view. */
+export function useFilePageImage(caseId: string, fileId: string, page: number) {
+  const query = useQuery({
+    queryKey: ["cases", caseId, "files", fileId, "pages", page],
+    queryFn: () => api.filePageImage(caseId, fileId, page),
     staleTime: Infinity,
   });
   const [url, setUrl] = useState<string | null>(null);
@@ -226,6 +247,53 @@ export function docTrack(doc: LogicalDocument | undefined): { done: number; stat
 
 /** Filter a file tree to the documents that pass; files and folders left
  * empty are dropped. Files without documents pass through `keepFile`. */
+/** The sections of the Files page: what needs a person, what is still being
+ * read, and what is ready and needs nothing. */
+export type FileGroup = "attention" | "reading" | "ready";
+export const FILE_GROUPS: FileGroup[] = ["attention", "reading", "ready"];
+
+/** Which section a file belongs in. A person is needed when the file could not
+ * be read or was refused, its checks found something, or one of its documents
+ * waits on someone (`docNeeds`). */
+export function fileGroup(
+  node: TreeFile,
+  docNeeds: (doc: LogicalDocument) => boolean,
+  integrityNeeds: (file: FileRecord) => boolean,
+): FileGroup {
+  const { file, documents } = node;
+  if (
+    file.status === "exception" ||
+    file.status === "rejected" ||
+    integrityNeeds(file) ||
+    documents.some(docNeeds)
+  )
+    return "attention";
+  if (
+    file.status === "registered" &&
+    (documents.length === 0 || documents.some(isDocumentInProgress))
+  )
+    return "reading";
+  return "ready";
+}
+
+/** The tree split into its sections, each keeping the folders its files sit in. */
+export function partitionTree(
+  nodes: TreeNode[],
+  groupOf: (file: TreeFile) => FileGroup,
+): Record<FileGroup, TreeNode[]> {
+  const out: Record<FileGroup, TreeNode[]> = { attention: [], reading: [], ready: [] };
+  for (const node of nodes) {
+    if (node.kind === "folder") {
+      const inner = partitionTree(node.children, groupOf);
+      for (const g of FILE_GROUPS)
+        if (inner[g].length > 0) out[g].push({ ...node, children: inner[g] });
+    } else {
+      out[groupOf(node)].push(node);
+    }
+  }
+  return out;
+}
+
 export function filterTree(
   nodes: TreeNode[],
   keep: (doc: LogicalDocument) => boolean,
@@ -286,4 +354,54 @@ export function instanceLabel(key: string | null | undefined): string | undefine
         .map((x) => x.trim())
         .join(" · ")
     : undefined;
+}
+
+/** Run a file's integrity checks again (F-07A). The checks run as a job, so the file is
+ * fetched again a few times while they do. */
+export function useRecheckIntegrity(caseId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (fileId: string) => api.recheckIntegrity(caseId, fileId),
+    onSuccess: () => {
+      for (const ms of [2000, 5000, 9000, 15000, 25000])
+        setTimeout(() => void client.invalidateQueries({ queryKey: ["cases", caseId] }), ms);
+    },
+  });
+}
+
+/** Record a person's conclusion on a file's integrity (F-07A). */
+export function useReviewIntegrity(caseId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (v: {
+      fileId: string;
+      decision: "genuine" | "altered" | "unclear" | "not_completed";
+      reason: string;
+    }) => api.reviewIntegrity(caseId, v.fileId, { decision: v.decision, reason: v.reason }),
+    onSettled: () => {
+      void client.invalidateQueries({ queryKey: ["cases", caseId] });
+      void client.invalidateQueries({ queryKey: ["review"] });
+    },
+  });
+}
+
+/** Send a file in exception through processing again (its row's "Read again"). */
+export function useReadAgain(caseId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (fileId: string) => api.readFileAgain(caseId, fileId),
+    onSettled: () => {
+      void client.invalidateQueries({ queryKey: ["cases", caseId] });
+    },
+  });
+}
+
+/** Every figure the integrity page checks read in a file, fetched when first asked for. */
+export function useFileFigures(caseId: string, fileId: string | undefined, enabled: boolean) {
+  return useQuery({
+    queryKey: ["cases", caseId, "files", fileId, "figures"],
+    queryFn: () => api.fileFigures(caseId, fileId!),
+    enabled: enabled && Boolean(fileId),
+    staleTime: Infinity,
+  });
 }

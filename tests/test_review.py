@@ -70,6 +70,43 @@ def test_tc09_unclassified_goes_to_review_with_candidates_and_is_not_mapped(clie
     assert _checklist(client, rm, case_id)["pan_entity"]["status"] == "satisfied"
 
 
+def test_f07a_assigning_a_type_keeps_the_integrity_read_under_it(client, published_data_root, monkeypatch):
+    """Assigning a type sends the whole file back through the service, integrity
+    included, now under that type (the producing program is compared with it,
+    and a file read before the page checks existed gets them). What it says then
+    is what the file shows, not what was read before the type was known."""
+    from engine.contracts.ingest import IngestIntegrityFinding
+    from engine.ingest_client import StubIngestClient
+
+    read_again = [IngestIntegrityFinding(code="PDF_COVERED_TEXT", family="layout", status="pass",
+                                         finding="No opaque block is painted over printed text.",
+                                         tier="T1", impact="high")]
+    plain = StubIngestClient.process
+
+    def process(self, request, payloads):
+        result = plain(self, request, payloads)
+        files = [f.model_copy(update={"integrity": read_again, "integrity_recommendation": "no_notable_issue"})
+                 if any(r.file_id == f.file_id and r.assigned_type for r in request.files) else f
+                 for f in result.files]
+        return result.model_copy(update={"files": files})
+
+    monkeypatch.setattr(StubIngestClient, "process", process)
+    rm, analyst, case_id = _case(client, published_data_root, PARTIAL + ["scan_0412.pdf"])
+    [item] = _items(client, analyst, case_id, "type")
+    unknown = next(d for d in client.get(f"/api/cases/{case_id}/documents", headers=rm).json()
+                   if d["status"] == "unclassified")
+    before = next(f for f in client.get(f"/api/cases/{case_id}/files", headers=rm).json()
+                  if f["id"] == unknown["file_id"])
+    assert all(f["code"] != "PDF_COVERED_TEXT" for f in before["integrity"])
+
+    _decide(client, analyst, item["id"], decision="assign", value="company_pan", reason="PAN letter")
+    assert run_jobs(published_data_root) == 1
+    after = next(f for f in client.get(f"/api/cases/{case_id}/files", headers=rm).json()
+                 if f["id"] == unknown["file_id"])
+    assert [f["code"] for f in after["integrity"]] == ["PDF_COVERED_TEXT"]
+    assert after["integrity_recommendation"] == "no_notable_issue"
+
+
 def test_f17_correction_keeps_both_values(client: TestClient, published_data_root: Path):
     rm, analyst, case_id = _case(client, published_data_root, ["gst_sep_photo.pdf"])
     field_items = _items(client, analyst, case_id, "field")
@@ -185,3 +222,50 @@ def test_f17_decision_permissions(client: TestClient, published_data_root: Path)
     assert client.post(f"/api/review/{item['id']}/decision", json={"decision": "confirm"}).status_code == 401
     assert _decide(client, rm, item["id"], decision="confirm").status_code == 403
     assert _decide(client, analyst, "RV-NOPE", decision="confirm").status_code == 404
+
+
+def _integrity_item(root: Path, case_id: str) -> None:
+    """An integrity item as engine/pipeline.py raises one (F-07A): a file whose
+    own bytes say it was saved again after it was written."""
+    from engine.pipeline import raise_item
+
+    conn = db.connect(root)
+    try:
+        with db.transaction(conn):
+            raise_item(conn, case_id=case_id, kind="integrity", ref="file:F-INTEGRITY",
+                       summary="statement.pdf: saved again after it was first written",
+                       detail={"file_id": "F-INTEGRITY", "recommendation": "needs_review_priority",
+                               "findings": ["PDF_INCREMENTAL_UPDATE", "PDF_PRIOR_VALUE_RECOVERABLE"]})
+    finally:
+        conn.close()
+
+
+def test_f07a_an_integrity_item_is_served_by_the_queue(client: TestClient, published_data_root: Path):
+    """One item of a kind the queue's contract does not know broke the whole queue
+    with a 500, for every case. The integrity layer raises its own kind."""
+    rm = sign_in(client, RM)
+    case_id = make_case(client, rm, published_data_root)
+    _integrity_item(published_data_root, case_id)
+    analyst = sign_in(client, ANALYST)
+
+    assert client.get("/api/review", headers=analyst).status_code == 200
+    items = _items(client, analyst, case_id, kind="integrity")
+    assert len(items) == 1 and items[0]["status"] == "open"
+    stages = client.get(f"/api/cases/{case_id}/progress", headers=analyst).json()["stages"]
+    documents = next(s for s in stages if s["key"] == "documents")
+    assert documents["attention"] >= 1
+
+
+def test_f07a_an_integrity_item_is_confirmed_or_waived_with_a_reason(client: TestClient, published_data_root: Path):
+    """A person confirms the file stands out, or waives it with the reason it is
+    explained. Correcting is not a decision on a file's history."""
+    rm = sign_in(client, RM)
+    case_id = make_case(client, rm, published_data_root)
+    _integrity_item(published_data_root, case_id)
+    analyst = sign_in(client, ANALYST)
+    item = _items(client, analyst, case_id, kind="integrity")[0]
+
+    assert _decide(client, analyst, item["id"], decision="correct", reason="x").status_code == 422
+    assert _decide(client, analyst, item["id"], decision="waive").status_code == 422
+    done = _decide(client, analyst, item["id"], decision="waive", reason="the portal re-saves every download")
+    assert done.status_code == 200 and done.json()["status"] == "decided"

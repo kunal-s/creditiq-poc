@@ -45,7 +45,13 @@ def page_image(conn: sqlite3.Connection, root: Path, case_id: str, document_id: 
     doc = conn.execute("SELECT * FROM documents WHERE id = ? AND case_id = ?", (document_id, case_id)).fetchone()
     if doc is None:
         raise PageError(f"no document {document_id!r} in case {case_id!r}")
-    file_row = conn.execute("SELECT * FROM files WHERE id = ?", (doc["file_id"],)).fetchone()
+    return file_page_image(conn, root, case_id, doc["file_id"], page)
+
+
+def file_page_image(conn: sqlite3.Connection, root: Path, case_id: str, file_id: str, page: int) -> tuple[bytes, str]:
+    """(image bytes, media type) of page `page` of a received file, whatever
+    documents it was split into: what the file's integrity checks point at."""
+    file_row = conn.execute("SELECT * FROM files WHERE id = ? AND case_id = ?", (file_id, case_id)).fetchone()
     if file_row is None or not file_row["stored_name"]:
         raise PageError("the source file is not held")
     source = case_files_dir(case_id, root) / file_row["stored_name"]

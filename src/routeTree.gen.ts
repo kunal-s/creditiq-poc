@@ -14,6 +14,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuditRouteImport } from './routes/audit'
 import { Route as ExceptionsRouteImport } from './routes/exceptions'
 import { Route as HelpRouteImport } from './routes/help'
+import { Route as MemosRouteImport } from './routes/memos'
 import { Route as ReviewRouteImport } from './routes/review'
 import { Route as ScorecardRouteImport } from './routes/scorecard'
 import { Route as SignInRouteImport } from './routes/sign-in'
@@ -22,6 +23,7 @@ import { Route as AdminChecklistRouteImport } from './routes/admin.checklist'
 import { Route as AdminDocumentTypesRouteImport } from './routes/admin.document-types'
 import { Route as AdminPolicyRouteImport } from './routes/admin.policy'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
+import { Route as AdminTemplatesRouteImport } from './routes/admin.templates'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AppraisalsIndexRouteImport } from './routes/appraisals.index'
 import { Route as AppraisalsCaseIdRouteImport } from './routes/appraisals.$caseId'
@@ -35,8 +37,12 @@ import { Route as AppraisalsCaseIdCompletenessRouteImport } from './routes/appra
 import { Route as AppraisalsCaseIdCrossVerificationRouteImport } from './routes/appraisals.$caseId.cross-verification'
 import { Route as AppraisalsCaseIdDocumentsRouteImport } from './routes/appraisals.$caseId.documents'
 import { Route as AppraisalsCaseIdExtractionRouteImport } from './routes/appraisals.$caseId.extraction'
+import { Route as AppraisalsCaseIdIdentityRouteImport } from './routes/appraisals.$caseId.identity'
 import { Route as AppraisalsCaseIdOutputsRouteImport } from './routes/appraisals.$caseId.outputs'
 import { Route as AppraisalsCaseIdPolicyRouteImport } from './routes/appraisals.$caseId.policy'
+import { Route as AppraisalsCaseIdRatingRouteImport } from './routes/appraisals.$caseId.rating'
+import { Route as AppraisalsCaseIdSubmissionRouteImport } from './routes/appraisals.$caseId.submission'
+import { Route as AppraisalsCaseIdFilesFileIdIntegrityRouteImport } from './routes/appraisals.$caseId.files.$fileId.integrity'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -61,6 +67,11 @@ const ExceptionsRoute = ExceptionsRouteImport.update({
 const HelpRoute = HelpRouteImport.update({
   id: '/help',
   path: '/help',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MemosRoute = MemosRouteImport.update({
+  id: '/memos',
+  path: '/memos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReviewRoute = ReviewRouteImport.update({
@@ -101,6 +112,11 @@ const AdminPolicyRoute = AdminPolicyRouteImport.update({
 const AdminSettingsRoute = AdminSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminTemplatesRoute = AdminTemplatesRouteImport.update({
+  id: '/templates',
+  path: '/templates',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
@@ -173,6 +189,12 @@ const AppraisalsCaseIdExtractionRoute =
     path: '/extraction',
     getParentRoute: () => AppraisalsCaseIdRoute,
   } as any)
+const AppraisalsCaseIdIdentityRoute =
+  AppraisalsCaseIdIdentityRouteImport.update({
+    id: '/identity',
+    path: '/identity',
+    getParentRoute: () => AppraisalsCaseIdRoute,
+  } as any)
 const AppraisalsCaseIdOutputsRoute = AppraisalsCaseIdOutputsRouteImport.update({
   id: '/outputs',
   path: '/outputs',
@@ -183,6 +205,23 @@ const AppraisalsCaseIdPolicyRoute = AppraisalsCaseIdPolicyRouteImport.update({
   path: '/policy',
   getParentRoute: () => AppraisalsCaseIdRoute,
 } as any)
+const AppraisalsCaseIdRatingRoute = AppraisalsCaseIdRatingRouteImport.update({
+  id: '/rating',
+  path: '/rating',
+  getParentRoute: () => AppraisalsCaseIdRoute,
+} as any)
+const AppraisalsCaseIdSubmissionRoute =
+  AppraisalsCaseIdSubmissionRouteImport.update({
+    id: '/submission',
+    path: '/submission',
+    getParentRoute: () => AppraisalsCaseIdRoute,
+  } as any)
+const AppraisalsCaseIdFilesFileIdIntegrityRoute =
+  AppraisalsCaseIdFilesFileIdIntegrityRouteImport.update({
+    id: '/files/$fileId/integrity',
+    path: '/files/$fileId/integrity',
+    getParentRoute: () => AppraisalsCaseIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -190,6 +229,7 @@ export interface FileRoutesByFullPath {
   '/audit': typeof AuditRoute
   '/exceptions': typeof ExceptionsRoute
   '/help': typeof HelpRoute
+  '/memos': typeof MemosRoute
   '/review': typeof ReviewRoute
   '/scorecard': typeof ScorecardRoute
   '/sign-in': typeof SignInRoute
@@ -197,6 +237,7 @@ export interface FileRoutesByFullPath {
   '/admin/document-types': typeof AdminDocumentTypesRoute
   '/admin/policy': typeof AdminPolicyRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/templates': typeof AdminTemplatesRoute
   '/admin/users': typeof AdminUsersRoute
   '/appraisals/$caseId': typeof AppraisalsCaseIdRouteWithChildren
   '/appraisals/new': typeof AppraisalsNewRoute
@@ -210,15 +251,20 @@ export interface FileRoutesByFullPath {
   '/appraisals/$caseId/cross-verification': typeof AppraisalsCaseIdCrossVerificationRoute
   '/appraisals/$caseId/documents': typeof AppraisalsCaseIdDocumentsRoute
   '/appraisals/$caseId/extraction': typeof AppraisalsCaseIdExtractionRoute
+  '/appraisals/$caseId/identity': typeof AppraisalsCaseIdIdentityRoute
   '/appraisals/$caseId/outputs': typeof AppraisalsCaseIdOutputsRoute
   '/appraisals/$caseId/policy': typeof AppraisalsCaseIdPolicyRoute
+  '/appraisals/$caseId/rating': typeof AppraisalsCaseIdRatingRoute
+  '/appraisals/$caseId/submission': typeof AppraisalsCaseIdSubmissionRoute
   '/appraisals/$caseId/': typeof AppraisalsCaseIdIndexRoute
+  '/appraisals/$caseId/files/$fileId/integrity': typeof AppraisalsCaseIdFilesFileIdIntegrityRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/audit': typeof AuditRoute
   '/exceptions': typeof ExceptionsRoute
   '/help': typeof HelpRoute
+  '/memos': typeof MemosRoute
   '/review': typeof ReviewRoute
   '/scorecard': typeof ScorecardRoute
   '/sign-in': typeof SignInRoute
@@ -226,6 +272,7 @@ export interface FileRoutesByTo {
   '/admin/document-types': typeof AdminDocumentTypesRoute
   '/admin/policy': typeof AdminPolicyRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/templates': typeof AdminTemplatesRoute
   '/admin/users': typeof AdminUsersRoute
   '/appraisals/new': typeof AppraisalsNewRoute
   '/docready/$': typeof DocreadySplatRoute
@@ -238,9 +285,13 @@ export interface FileRoutesByTo {
   '/appraisals/$caseId/cross-verification': typeof AppraisalsCaseIdCrossVerificationRoute
   '/appraisals/$caseId/documents': typeof AppraisalsCaseIdDocumentsRoute
   '/appraisals/$caseId/extraction': typeof AppraisalsCaseIdExtractionRoute
+  '/appraisals/$caseId/identity': typeof AppraisalsCaseIdIdentityRoute
   '/appraisals/$caseId/outputs': typeof AppraisalsCaseIdOutputsRoute
   '/appraisals/$caseId/policy': typeof AppraisalsCaseIdPolicyRoute
+  '/appraisals/$caseId/rating': typeof AppraisalsCaseIdRatingRoute
+  '/appraisals/$caseId/submission': typeof AppraisalsCaseIdSubmissionRoute
   '/appraisals/$caseId': typeof AppraisalsCaseIdIndexRoute
+  '/appraisals/$caseId/files/$fileId/integrity': typeof AppraisalsCaseIdFilesFileIdIntegrityRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -249,6 +300,7 @@ export interface FileRoutesById {
   '/audit': typeof AuditRoute
   '/exceptions': typeof ExceptionsRoute
   '/help': typeof HelpRoute
+  '/memos': typeof MemosRoute
   '/review': typeof ReviewRoute
   '/scorecard': typeof ScorecardRoute
   '/sign-in': typeof SignInRoute
@@ -256,6 +308,7 @@ export interface FileRoutesById {
   '/admin/document-types': typeof AdminDocumentTypesRoute
   '/admin/policy': typeof AdminPolicyRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/templates': typeof AdminTemplatesRoute
   '/admin/users': typeof AdminUsersRoute
   '/appraisals/$caseId': typeof AppraisalsCaseIdRouteWithChildren
   '/appraisals/new': typeof AppraisalsNewRoute
@@ -269,9 +322,13 @@ export interface FileRoutesById {
   '/appraisals/$caseId/cross-verification': typeof AppraisalsCaseIdCrossVerificationRoute
   '/appraisals/$caseId/documents': typeof AppraisalsCaseIdDocumentsRoute
   '/appraisals/$caseId/extraction': typeof AppraisalsCaseIdExtractionRoute
+  '/appraisals/$caseId/identity': typeof AppraisalsCaseIdIdentityRoute
   '/appraisals/$caseId/outputs': typeof AppraisalsCaseIdOutputsRoute
   '/appraisals/$caseId/policy': typeof AppraisalsCaseIdPolicyRoute
+  '/appraisals/$caseId/rating': typeof AppraisalsCaseIdRatingRoute
+  '/appraisals/$caseId/submission': typeof AppraisalsCaseIdSubmissionRoute
   '/appraisals/$caseId/': typeof AppraisalsCaseIdIndexRoute
+  '/appraisals/$caseId/files/$fileId/integrity': typeof AppraisalsCaseIdFilesFileIdIntegrityRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -281,6 +338,7 @@ export interface FileRouteTypes {
     | '/audit'
     | '/exceptions'
     | '/help'
+    | '/memos'
     | '/review'
     | '/scorecard'
     | '/sign-in'
@@ -288,6 +346,7 @@ export interface FileRouteTypes {
     | '/admin/document-types'
     | '/admin/policy'
     | '/admin/settings'
+    | '/admin/templates'
     | '/admin/users'
     | '/appraisals/$caseId'
     | '/appraisals/new'
@@ -301,15 +360,20 @@ export interface FileRouteTypes {
     | '/appraisals/$caseId/cross-verification'
     | '/appraisals/$caseId/documents'
     | '/appraisals/$caseId/extraction'
+    | '/appraisals/$caseId/identity'
     | '/appraisals/$caseId/outputs'
     | '/appraisals/$caseId/policy'
+    | '/appraisals/$caseId/rating'
+    | '/appraisals/$caseId/submission'
     | '/appraisals/$caseId/'
+    | '/appraisals/$caseId/files/$fileId/integrity'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/audit'
     | '/exceptions'
     | '/help'
+    | '/memos'
     | '/review'
     | '/scorecard'
     | '/sign-in'
@@ -317,6 +381,7 @@ export interface FileRouteTypes {
     | '/admin/document-types'
     | '/admin/policy'
     | '/admin/settings'
+    | '/admin/templates'
     | '/admin/users'
     | '/appraisals/new'
     | '/docready/$'
@@ -329,9 +394,13 @@ export interface FileRouteTypes {
     | '/appraisals/$caseId/cross-verification'
     | '/appraisals/$caseId/documents'
     | '/appraisals/$caseId/extraction'
+    | '/appraisals/$caseId/identity'
     | '/appraisals/$caseId/outputs'
     | '/appraisals/$caseId/policy'
+    | '/appraisals/$caseId/rating'
+    | '/appraisals/$caseId/submission'
     | '/appraisals/$caseId'
+    | '/appraisals/$caseId/files/$fileId/integrity'
   id:
     | '__root__'
     | '/'
@@ -339,6 +408,7 @@ export interface FileRouteTypes {
     | '/audit'
     | '/exceptions'
     | '/help'
+    | '/memos'
     | '/review'
     | '/scorecard'
     | '/sign-in'
@@ -346,6 +416,7 @@ export interface FileRouteTypes {
     | '/admin/document-types'
     | '/admin/policy'
     | '/admin/settings'
+    | '/admin/templates'
     | '/admin/users'
     | '/appraisals/$caseId'
     | '/appraisals/new'
@@ -359,9 +430,13 @@ export interface FileRouteTypes {
     | '/appraisals/$caseId/cross-verification'
     | '/appraisals/$caseId/documents'
     | '/appraisals/$caseId/extraction'
+    | '/appraisals/$caseId/identity'
     | '/appraisals/$caseId/outputs'
     | '/appraisals/$caseId/policy'
+    | '/appraisals/$caseId/rating'
+    | '/appraisals/$caseId/submission'
     | '/appraisals/$caseId/'
+    | '/appraisals/$caseId/files/$fileId/integrity'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -370,6 +445,7 @@ export interface RootRouteChildren {
   AuditRoute: typeof AuditRoute
   ExceptionsRoute: typeof ExceptionsRoute
   HelpRoute: typeof HelpRoute
+  MemosRoute: typeof MemosRoute
   ReviewRoute: typeof ReviewRoute
   ScorecardRoute: typeof ScorecardRoute
   SignInRoute: typeof SignInRoute
@@ -415,6 +491,13 @@ declare module '@tanstack/react-router' {
       path: '/help'
       fullPath: '/help'
       preLoaderRoute: typeof HelpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/memos': {
+      id: '/memos'
+      path: '/memos'
+      fullPath: '/memos'
+      preLoaderRoute: typeof MemosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/review': {
@@ -471,6 +554,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/admin/settings'
       preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/templates': {
+      id: '/admin/templates'
+      path: '/templates'
+      fullPath: '/admin/templates'
+      preLoaderRoute: typeof AdminTemplatesRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/users': {
@@ -564,6 +654,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppraisalsCaseIdExtractionRouteImport
       parentRoute: typeof AppraisalsCaseIdRoute
     }
+    '/appraisals/$caseId/identity': {
+      id: '/appraisals/$caseId/identity'
+      path: '/identity'
+      fullPath: '/appraisals/$caseId/identity'
+      preLoaderRoute: typeof AppraisalsCaseIdIdentityRouteImport
+      parentRoute: typeof AppraisalsCaseIdRoute
+    }
     '/appraisals/$caseId/outputs': {
       id: '/appraisals/$caseId/outputs'
       path: '/outputs'
@@ -578,6 +675,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppraisalsCaseIdPolicyRouteImport
       parentRoute: typeof AppraisalsCaseIdRoute
     }
+    '/appraisals/$caseId/rating': {
+      id: '/appraisals/$caseId/rating'
+      path: '/rating'
+      fullPath: '/appraisals/$caseId/rating'
+      preLoaderRoute: typeof AppraisalsCaseIdRatingRouteImport
+      parentRoute: typeof AppraisalsCaseIdRoute
+    }
+    '/appraisals/$caseId/submission': {
+      id: '/appraisals/$caseId/submission'
+      path: '/submission'
+      fullPath: '/appraisals/$caseId/submission'
+      preLoaderRoute: typeof AppraisalsCaseIdSubmissionRouteImport
+      parentRoute: typeof AppraisalsCaseIdRoute
+    }
+    '/appraisals/$caseId/files/$fileId/integrity': {
+      id: '/appraisals/$caseId/files/$fileId/integrity'
+      path: '/files/$fileId/integrity'
+      fullPath: '/appraisals/$caseId/files/$fileId/integrity'
+      preLoaderRoute: typeof AppraisalsCaseIdFilesFileIdIntegrityRouteImport
+      parentRoute: typeof AppraisalsCaseIdRoute
+    }
   }
 }
 
@@ -586,6 +704,7 @@ interface AdminRouteChildren {
   AdminDocumentTypesRoute: typeof AdminDocumentTypesRoute
   AdminPolicyRoute: typeof AdminPolicyRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
+  AdminTemplatesRoute: typeof AdminTemplatesRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
@@ -595,6 +714,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminDocumentTypesRoute: AdminDocumentTypesRoute,
   AdminPolicyRoute: AdminPolicyRoute,
   AdminSettingsRoute: AdminSettingsRoute,
+  AdminTemplatesRoute: AdminTemplatesRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
@@ -608,9 +728,13 @@ interface AppraisalsCaseIdRouteChildren {
   AppraisalsCaseIdCrossVerificationRoute: typeof AppraisalsCaseIdCrossVerificationRoute
   AppraisalsCaseIdDocumentsRoute: typeof AppraisalsCaseIdDocumentsRoute
   AppraisalsCaseIdExtractionRoute: typeof AppraisalsCaseIdExtractionRoute
+  AppraisalsCaseIdIdentityRoute: typeof AppraisalsCaseIdIdentityRoute
   AppraisalsCaseIdOutputsRoute: typeof AppraisalsCaseIdOutputsRoute
   AppraisalsCaseIdPolicyRoute: typeof AppraisalsCaseIdPolicyRoute
+  AppraisalsCaseIdRatingRoute: typeof AppraisalsCaseIdRatingRoute
+  AppraisalsCaseIdSubmissionRoute: typeof AppraisalsCaseIdSubmissionRoute
   AppraisalsCaseIdIndexRoute: typeof AppraisalsCaseIdIndexRoute
+  AppraisalsCaseIdFilesFileIdIntegrityRoute: typeof AppraisalsCaseIdFilesFileIdIntegrityRoute
 }
 
 const AppraisalsCaseIdRouteChildren: AppraisalsCaseIdRouteChildren = {
@@ -621,9 +745,14 @@ const AppraisalsCaseIdRouteChildren: AppraisalsCaseIdRouteChildren = {
     AppraisalsCaseIdCrossVerificationRoute,
   AppraisalsCaseIdDocumentsRoute: AppraisalsCaseIdDocumentsRoute,
   AppraisalsCaseIdExtractionRoute: AppraisalsCaseIdExtractionRoute,
+  AppraisalsCaseIdIdentityRoute: AppraisalsCaseIdIdentityRoute,
   AppraisalsCaseIdOutputsRoute: AppraisalsCaseIdOutputsRoute,
   AppraisalsCaseIdPolicyRoute: AppraisalsCaseIdPolicyRoute,
+  AppraisalsCaseIdRatingRoute: AppraisalsCaseIdRatingRoute,
+  AppraisalsCaseIdSubmissionRoute: AppraisalsCaseIdSubmissionRoute,
   AppraisalsCaseIdIndexRoute: AppraisalsCaseIdIndexRoute,
+  AppraisalsCaseIdFilesFileIdIntegrityRoute:
+    AppraisalsCaseIdFilesFileIdIntegrityRoute,
 }
 
 const AppraisalsCaseIdRouteWithChildren =
@@ -635,6 +764,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuditRoute: AuditRoute,
   ExceptionsRoute: ExceptionsRoute,
   HelpRoute: HelpRoute,
+  MemosRoute: MemosRoute,
   ReviewRoute: ReviewRoute,
   ScorecardRoute: ScorecardRoute,
   SignInRoute: SignInRoute,

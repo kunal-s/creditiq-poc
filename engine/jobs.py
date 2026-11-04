@@ -80,6 +80,8 @@ def run_job(conn: sqlite3.Connection, root: Path, job: sqlite3.Row, client=None)
             pipeline.process_files(conn, root, job["id"], job["case_id"], payload["file_ids"], client)
         elif job["kind"] == "reextract":
             pipeline.reextract_document(conn, root, job["id"], job["case_id"], payload["document_id"], client)
+        elif job["kind"] == "integrity":
+            pipeline.recheck_integrity(conn, root, job["id"], job["case_id"], payload["file_id"], client)
         else:
             raise ValueError(f"unknown job kind {job['kind']!r}")
     except Exception as e:  # recorded on the job; retried until MAX_ATTEMPTS

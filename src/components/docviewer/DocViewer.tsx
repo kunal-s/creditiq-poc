@@ -7,20 +7,26 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { ChevronLeft, ChevronRight, FileText, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText, Maximize2, RotateCw, X } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import type { FieldValue } from "@/api/types";
 import { ErrorState } from "@/components/common/States";
 import { Chip } from "@/components/common/Panel";
 import { Skeleton } from "@/components/ui/skeleton";
-import { t } from "@/config/terminology";
+import { t, tOr } from "@/config/terminology";
 import {
   pageGrade,
   pageRange,
   useCaseDocuments,
   useCaseFiles,
   useDocumentTypes,
+  useFileFigures,
   usePageImage,
+  useRecheckIntegrity,
 } from "@/domain/documents";
+import { marksOf, stateOf } from "@/domain/integrity";
+import { IntegrityOverlay } from "@/components/documents/IntegrityOverlay";
+import { StateChip } from "@/components/documents/IntegritySummary";
 import { confidencePct, effectiveValue, fieldLabel, formatValue } from "@/domain/extraction";
 import { GradeChip } from "@/components/documents/chips";
 import { cn } from "@/lib/utils";
@@ -161,6 +167,27 @@ function ViewerPanel({
     ? doc.classification.types.map(types.name).join(" + ")
     : t("document.unclassified");
   const field = request.field;
+  // F-07A: what the file's integrity checks found, drawn on the page shown.
+  const found = file?.integrity;
+  const { marks, pagesReplaced } = useMemo(() => marksOf(found ?? []), [found]);
+  const [showMarks, setShowMarks] = useState(true);
+  const [showFigures, setShowFigures] = useState(false);
+  const [focus, setFocus] = useState<string | null>(null);
+  const figures = useFileFigures(request.caseId, file?.id, showFigures);
+  const marksHere = marks.filter((m) => m.page === page);
+  const onPage = showMarks ? marksHere : [];
+  const figuresHere = showFigures ? (figures.data ?? []).filter((f) => f.page === page) : undefined;
+  // Kept apart on the page: suspicious marks, what is only in the file's records
+  // (metadata observations), and checks that have not run.
+  const status = file?.integrity_status;
+  const onRecordsOnly = (codes: readonly string[]) =>
+    codes.filter((c) => !(found ?? []).find((f) => f.code === c)?.evidence?.some((e) => e.rect));
+  const recordsOnly = onRecordsOnly(status?.suspicious ?? []);
+  const metadataOnly = onRecordsOnly(status?.informational ?? []);
+  const pending = status?.pending ?? [];
+  const recheck = useRecheckIntegrity(request.caseId);
+  const canRecheck = file?.status === "registered" && pending.length > 0;
+  const title = (c: string) => tOr(`fileIntegrity.check.${c}`, c);
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end" data-testid="evidence-viewer">
@@ -274,6 +301,101 @@ function ViewerPanel({
               </button>
             )}
           </div>
+          {file && stateOf(file) !== "not_applicable" && stateOf(file) !== "not_checked" && (
+            <div
+              className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border pt-2 text-[11.5px]"
+              data-testid="viewer-integrity"
+            >
+              {file && <StateChip file={file} />}
+              <label className="inline-flex cursor-pointer items-center gap-1.5 text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={showMarks}
+                  onChange={(e) => setShowMarks(e.target.checked)}
+                  className="h-3.5 w-3.5"
+                  data-testid="viewer-show-marks"
+                />
+                {t("fileIntegrity.overlay.marks")} ({marksHere.length})
+              </label>
+              <label className="inline-flex cursor-pointer items-center gap-1.5 text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={showFigures}
+                  onChange={(e) => setShowFigures(e.target.checked)}
+                  className="h-3.5 w-3.5"
+                  data-testid="viewer-show-figures"
+                />
+                {t("fileIntegrity.overlay.figures")}
+              </label>
+              <Link
+                to="/appraisals/$caseId/files/$fileId/integrity"
+                params={{ caseId: request.caseId, fileId: file.id }}
+                onClick={onClose}
+                className="ml-auto inline-flex items-center gap-1 font-medium text-primary hover:underline"
+              >
+                <Maximize2 className="h-3 w-3" />
+                {t("fileIntegrity.view.open")}
+              </Link>
+              {recordsOnly.length > 0 && (
+                <p
+                  className="w-full text-[11px] text-destructive"
+                  data-testid="viewer-records-only"
+                >
+                  {t("fileIntegrity.overlay.recordsOnly", {
+                    checks: recordsOnly.map(title).join(", "),
+                  })}
+                </p>
+              )}
+              {metadataOnly.length > 0 && (
+                <p
+                  className="w-full text-[11px] text-flag-foreground"
+                  data-testid="viewer-metadata-only"
+                >
+                  {t("fileIntegrity.overlay.metadataOnly", {
+                    checks: metadataOnly.map(title).join(", "),
+                  })}
+                </p>
+              )}
+              {pending.length > 0 && (
+                <p
+                  className="flex w-full flex-wrap items-center gap-2 text-[11px] text-muted-foreground"
+                  data-testid="viewer-pending"
+                >
+                  {t("fileIntegrity.overlay.pending", { n: pending.length })}
+                  {canRecheck && (
+                    <button
+                      type="button"
+                      onClick={() => recheck.mutate(file.id)}
+                      disabled={recheck.isPending || recheck.isSuccess}
+                      className="inline-flex items-center gap-1 rounded border border-primary/40 px-1.5 py-0.5 font-medium text-primary hover:bg-primary/10 disabled:opacity-60"
+                    >
+                      <RotateCw
+                        className={cn(
+                          "h-3 w-3",
+                          (recheck.isPending || recheck.isSuccess) && "animate-spin",
+                        )}
+                      />
+                      {t(
+                        recheck.isPending || recheck.isSuccess
+                          ? "fileIntegrity.rechecking"
+                          : "fileIntegrity.summary.runRemaining",
+                      )}
+                    </button>
+                  )}
+                </p>
+              )}
+              {pagesReplaced.has(page) && (
+                <p className="w-full text-[11px] text-flag-foreground">
+                  {t("fileIntegrity.view.pageReplaced")}
+                </p>
+              )}
+              {showFigures && figures.data && figures.data.length === 0 && (
+                <p className="w-full text-[11px] text-muted-foreground">
+                  {t("fileIntegrity.overlay.noFigures")}
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="min-h-0 flex-1 overflow-auto bg-surface-muted px-4 py-4">
@@ -282,8 +404,42 @@ function ViewerPanel({
             documentId={request.documentId}
             page={page}
             bbox={page === evidencePage ? (request.bbox ?? null) : null}
+            overlay={
+              <IntegrityOverlay
+                marks={onPage}
+                figures={figuresHere}
+                focus={focus}
+                onPick={(m) => setFocus((k) => (k === m.key ? null : m.key))}
+              />
+            }
           />
         </div>
+        {onPage.length > 0 && (
+          <footer
+            className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border bg-surface px-4 py-2 text-[11px]"
+            data-testid="viewer-mark-dock"
+          >
+            <span className="font-medium text-foreground">
+              {t("fileIntegrity.view.marksOnPage", { n: onPage.length })}
+            </span>
+            {onPage.map((m) => (
+              <button
+                key={m.key}
+                type="button"
+                onClick={() => setFocus((k) => (k === m.key ? null : m.key))}
+                className={cn(
+                  "rounded px-1.5 py-0.5 text-[10.5px] font-medium",
+                  focus === m.key
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted hover:bg-muted/70",
+                )}
+              >
+                {tOr(`fileIntegrity.mark.${m.finding.code}`, m.finding.code)}
+              </button>
+            ))}
+            <span className="ml-auto text-muted-foreground">{t("fileIntegrity.overlay.hint")}</span>
+          </footer>
+        )}
       </aside>
     </div>
   );
@@ -465,11 +621,14 @@ export function PageImage({
   documentId,
   page,
   bbox,
+  overlay,
 }: {
   caseId: string;
   documentId: string;
   page: number;
   bbox: [number, number, number, number] | null;
+  /** Drawn over the page once it has loaded, in the page's own box (F-07A marks). */
+  overlay?: ReactNode;
 }) {
   const image = usePageImage(caseId, documentId, page);
   if (image.isError) return <ErrorState error={image.error} compact />;
@@ -493,6 +652,7 @@ export function PageImage({
         className="block w-full rounded border border-border bg-white shadow-sm"
         data-testid="viewer-image"
       />
+      {overlay}
       {bbox && (
         <span
           aria-hidden

@@ -307,3 +307,20 @@ def test_private_config_overrides_the_committed_section(tmp_path: Path):
     assert overridden["version"] != default["version"]
     published = reader.load_policy(tmp_path / "b")
     assert next(n for n in published.norms if n.id == "FR-01").threshold == 1.3
+
+
+def test_every_authored_ingestion_file_is_published():
+    """A file under config/ingestion that the writer does not know about is
+    never published, and the only symptom is the service refusing the version
+    at run time with "has no ingestion section ...". The list must be complete.
+    """
+    from pathlib import Path
+
+    from engine.configstore import writer
+
+    authored = {p.name for p in (Path(__file__).resolve().parents[1] / "config" / "ingestion").iterdir()
+                if p.is_file() and p.suffix in (".yaml", ".json")}
+    published = set(writer.INGESTION_SECTIONS.values())
+    assert authored == published, (
+        f"authored but never published: {sorted(authored - published)}; "
+        f"published but not authored: {sorted(published - authored)}")

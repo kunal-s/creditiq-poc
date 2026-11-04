@@ -48,6 +48,20 @@ for need in .venv node_modules services/ingestion/.venv services/copilot/.venv; 
   fi
 done
 
+# The app runs the published configuration, not the files on disk. Changed
+# files not yet published mean new checks or settings silently do not apply.
+if ! CONFIG_DIFF="$(.venv/bin/python -m engine.cli config diff --data-root "$CREDITIQ_DATA_ROOT" --check 2>&1)"; then
+  {
+    echo
+    echo "WARNING: the configuration on disk is not the published one. The app will run the published one,"
+    echo "so these changes will NOT apply:"
+    echo "$CONFIG_DIFF"
+    echo "Publish first (then start again):"
+    echo "  CREDITIQ_DATA_ROOT=$CREDITIQ_DATA_ROOT .venv/bin/python -m engine.cli config publish --author <your name>"
+    echo
+  } >&2
+fi
+
 PIDS=()
 cleanup() {
   for pid in "${PIDS[@]:-}"; do

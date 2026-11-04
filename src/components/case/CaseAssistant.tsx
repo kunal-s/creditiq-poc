@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { Sparkles } from "lucide-react";
 import { ChatPanel, type ChatLabels, type Tone } from "@copilot-ui";
-import { Button } from "@/components/ui/button";
 import { useAssistantDock } from "@/components/shell/AssistantDock";
 import { t } from "@/config/terminology";
-import { sessionToken, useCan } from "@/domain/session";
+import { sessionToken, useCan, useSession } from "@/domain/session";
 
 // The assistant for the open appraisal: a launcher, and a panel docked beside the page (shell/AssistantDock) so the
 // appraisal stays visible and usable while it is open. The panel itself is the reusable one in
@@ -22,7 +20,14 @@ const STATUS_TONES: Record<string, Tone> = {
   unclassified: "warning",
 };
 
-function assistantLabels(): ChatLabels {
+/** "Good morning, Ananya." by the hour of the user's own clock: a greeting, nothing more. */
+function greeting(name: string): string {
+  const hour = new Date().getHours();
+  const part = hour < 12 ? "morning" : hour < 17 ? "afternoon" : "evening";
+  return t(`assistant.greeting.${part}`, { name });
+}
+
+function assistantLabels(name: string): ChatLabels {
   return {
     title: t("assistant.title"),
     placeholder: t("assistant.placeholder"),
@@ -32,7 +37,10 @@ function assistantLabels(): ChatLabels {
     copy: t("assistant.copy"),
     copied: t("assistant.copied"),
     hint: t("assistant.hint"),
-    intro: t("assistant.intro"),
+    intro: name ? `${greeting(name)} ${t("assistant.intro")}` : t("assistant.intro"),
+    startingActions: t("assistant.startingActions"),
+    groundingTitle: t("assistant.groundingTitle"),
+    grounding: t("assistant.grounding"),
     thinking: t("assistant.thinking"),
     sources: t("assistant.sources"),
     columns: {
@@ -64,7 +72,8 @@ function assistantLabels(): ChatLabels {
 export function CaseAssistant({ caseId, borrower }: { caseId: string; borrower: string }) {
   const allowed = useCan("case.read");
   const dock = useAssistantDock();
-  const labels = useMemo(assistantLabels, []);
+  const firstName = useSession()?.user.name.split(" ")[0] ?? "";
+  const labels = useMemo(() => assistantLabels(firstName), [firstName]);
   const suggestions = useMemo(
     () => [
       t("assistant.suggestionRejected"),
@@ -91,16 +100,6 @@ export function CaseAssistant({ caseId, borrower }: { caseId: string; borrower: 
   if (!enabled || !ASSISTANT_URL || !dock) return null;
   return (
     <>
-      {!open && (
-        <Button
-          className="fixed bottom-4 right-4 z-40 rounded-full shadow-lg"
-          data-testid="assistant-launcher"
-          onClick={() => dock.setOpen(true)}
-        >
-          <Sparkles />
-          {t("assistant.launcher")}
-        </Button>
-      )}
       {dock.node &&
         opened &&
         createPortal(
@@ -111,7 +110,7 @@ export function CaseAssistant({ caseId, borrower }: { caseId: string; borrower: 
             labels={labels}
             suggestions={suggestions}
             storageKey="creditiq.assistant"
-            contextLabel={`${borrower} · ${caseId}`}
+            contextLabel={t("assistant.context", { borrower, id: caseId })}
             tones={STATUS_TONES}
             onClose={() => dock.setOpen(false)}
             autoFocus={open}

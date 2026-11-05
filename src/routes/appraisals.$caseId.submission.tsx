@@ -6,7 +6,7 @@ import { StepHeader } from "@/components/case/TabSection";
 import { stepKicker } from "@/domain/steps";
 import { Panel } from "@/components/common/Panel";
 import { t } from "@/config/terminology";
-import { readyForCredit, useChecklist } from "@/domain/checklist";
+import { readyForCredit, scoreText, useChecklist } from "@/domain/checklist";
 import { useCrossVerification } from "@/domain/crossVerification";
 import { useCam } from "@/domain/findings";
 import { useApprovingAuthority } from "@/domain/policy";
@@ -101,7 +101,7 @@ function SubmissionBody({ caseId }: { caseId: string }) {
       detail: readyForCredit(checklist)
         ? t("page.submission.readinessDone")
         : t("page.submission.readinessOpen", {
-            score: Math.round(checklist.score_pct),
+            score: scoreText(checklist.score_pct, checklist.gate_pct),
             gate: Math.round(checklist.gate_pct),
             n: checklist.blocking_open,
           }),

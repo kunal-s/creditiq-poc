@@ -1,4 +1,8 @@
 import { t } from "@/config/terminology";
+
+/** Accepted on the picker; the engine decides the true type from content (F-05.3). */
+export const ACCEPT =
+  ".pdf,.jpg,.jpeg,.png,.tif,.tiff,.xlsx,.xls,.csv,.docx,.zip,application/pdf,image/*,application/zip";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/api/client";

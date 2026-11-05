@@ -17,7 +17,7 @@ const MARK: Record<StageStatus, string> = {
   done: "border-positive/50 bg-positive-soft text-positive",
 };
 
-function StatusMark({ n, status }: { n: number; status: StageStatus }) {
+export function StatusMark({ n, status }: { n: number; status: StageStatus }) {
   return (
     <span
       className={cn(

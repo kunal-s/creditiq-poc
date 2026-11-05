@@ -9,7 +9,7 @@ test("Overview lists what is still needed and what waits for a decision", async 
   const api = new MockApi();
   await signedIn(page, api);
   await page.goto(`/appraisals/${KESTREL}`);
-  const needed = page.getByTestId("still-needed");
+  const needed = page.getByTestId("document-checklist");
   await expect(needed).toContainText("KYC of directors");
   await expect(needed).toContainText("Valuation report");
   const waiting = page.getByTestId("waiting-decision");
@@ -93,7 +93,7 @@ test("when processing finishes, the rest of the appraisal refreshes", async ({ p
   });
   await signedIn(page, api);
   await page.goto(`/appraisals/${KESTREL}`);
-  await expect(page.getByTestId("still-needed")).toBeVisible();
+  await expect(page.getByTestId("document-checklist")).toBeVisible();
   const before = api.called("GET", `/api/cases/${KESTREL}/checklist`).length;
   await expect.poll(() => calls, { timeout: 15_000 }).toBeGreaterThan(2);
   await expect

@@ -81,6 +81,7 @@ function CaseHeader({
     [t("identifier.pan"), c.pan],
     [t("identifier.gstin"), c.gstin],
     [t("identifier.udyam"), c.udyam],
+    [t("identifier.applicationId"), c.application_id],
   ];
 
   return (
@@ -93,6 +94,10 @@ function CaseHeader({
           {c.borrower}
         </h1>
         <div className="tabular mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
+          <span data-testid="header-product">
+            {labels.product(c.product)} · {labels.caseType(c.case_type)}
+          </span>
+          <span className="text-border">|</span>
           <span>{labels.constitution(c.constitution)}</span>
           {ids.map(([label, value]) =>
             value ? (
@@ -143,7 +148,13 @@ function CaseHeader({
           <Fact label={t("term.stage")} testId="header-stage">
             {stageLabel(stage)}
           </Fact>
-          <Fact label={t("term.rm")}>{c.rm}</Fact>
+          <Fact label={t("caseHeader.bankStage")} testId="header-bank-stage">
+            {labels.bankStage(c.bank_stage)}
+          </Fact>
+          <Fact label={t("term.rm")} testId="header-rm">
+            {c.rm}
+            {c.branch ? ` · ${labels.branch(c.branch)}` : ""}
+          </Fact>
           {r && r.blocking_open > 0 ? (
             <Link
               to="/appraisals/$caseId/completeness"

@@ -70,6 +70,9 @@ function MyAppraisals() {
                   <p className="tabular mt-0.5 text-[11px] text-muted-foreground">
                     {c.id} · {labels.constitution(c.constitution)}
                   </p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground" data-testid="case-kind">
+                    {labels.caseKind(c)}
+                  </p>
                   <p className="mt-2 text-[12.5px] text-foreground">
                     {labels.facilities(c.facilities)} ·{" "}
                     <span className="tabular">{formatInr(c.amount_inr)}</span>
@@ -77,6 +80,10 @@ function MyAppraisals() {
                   <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1">
                     <Fact label={t("cases.col.rm")} value={c.rm} />
                     <Fact label={t("cases.col.created")} value={formatDate(c.created_at)} />
+                    <Fact
+                      label={t("caseHeader.bankStage")}
+                      value={labels.bankStage(c.bank_stage)}
+                    />
                   </dl>
                   <div className="mt-3 flex flex-wrap items-center gap-1.5">
                     <FilesFlag c={c} />

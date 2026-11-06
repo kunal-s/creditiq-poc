@@ -219,16 +219,24 @@ function summary(
     open_review_items: open,
     files_attention: 0,
     files_altered: 0,
+    // Every case is business banking (migration 20); case type and bank stage are set per case.
+    product: "bbg",
     ...extra,
   };
 }
 
 export const CASES: CaseSummary[] = [
-  summary(KESTREL, "Kestrel Polymers Pvt Ltd", "Completeness", 3),
+  summary(KESTREL, "Kestrel Polymers Pvt Ltd", "Completeness", 3, {
+    case_type: "renewal",
+    bank_stage: "pd",
+  }),
   summary(SAFFRON, "Saffron Loom Textiles Pvt Ltd", "CrossVerification", 0, {
     facilities: ["cash_credit"],
     amount_inr: 25_000_000,
+    case_type: "new",
+    bank_stage: "login",
   }),
+  // Created before case types were recorded: product only.
   summary(ORIEL, "Oriel Castings", "Intake", 0, { constitution: "unknown" }),
 ];
 
@@ -241,6 +249,9 @@ export function detail(s: CaseSummary, extra: Partial<CaseDetail> = {}): CaseDet
     udyam: null,
     collateral_present: true,
     channel: "email",
+    application_id: s.id === KESTREL ? "LA123456" : null,
+    customer_id: null,
+    branch: s.case_type ? "mumbai_hub" : null,
     as_of: "2026-09-20",
     created_by: "arjun-deshpande",
     config_version: "v3",

@@ -1232,6 +1232,7 @@ term:
   rm: Relationship manager
   reviewItemsOpen: open review items
   notConfirmed: Not yet confirmed
+  notRecorded: Not recorded
   "yes": "Yes"
   "no": "No"
 
@@ -1241,6 +1242,7 @@ identifier:
   cin: CIN
   udyam: Udyam
   din: DIN
+  applicationId: Application ID
 
 # Deleting an application and everything it holds (FRD F-01.5).
 caseDelete:
@@ -1338,7 +1340,7 @@ proposalField:
   application_id: Application ID
   customer_id: Customer ID
   branch: Branch
-  bank_stage: Stage
+  bank_stage: Bank stage
 
 proposedStatus:
   found: Found
@@ -2160,6 +2162,7 @@ caseHeader:
   blockingGaps: "{n} blocking"
   tabs: Appraisal tabs
   stage: Stage
+  bankStage: Bank stage
 
 checklist:
   derivedFrom: "{n} requirements derived from the {constitution} constitution and the {facilities} ask. Blocking items stop credit review; the rest do not."

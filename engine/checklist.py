@@ -54,11 +54,19 @@ class CaseAttributes:
         facility_sets: dict[str, str | None],
         mpbf_above_limit_inr: int,
         existing_facilities_declared: bool = False,
+        product: str | None = None,
+        case_type: str | None = None,
     ) -> "CaseAttributes":
         """F-12.2: attributes from the case header. `facility_sets` maps each
         facility id to the attribute it sets (config/app.yaml); MPBF applies
-        to working-capital requests above the policy limit."""
+        to working-capital requests above the policy limit. The product and a
+        confirmed case type set `product_<id>` and `case_type_<id>` (T2.1),
+        so an item can require them; no item does yet (T3.10)."""
         flags = {name: True for fac in facilities if (name := facility_sets.get(fac))}
+        if product:
+            flags[f"product_{product}"] = True
+        if case_type and case_type != "unknown":
+            flags[f"case_type_{case_type}"] = True
         working_capital = flags.get("cash_credit_requested", False)
         return cls(
             **flags,

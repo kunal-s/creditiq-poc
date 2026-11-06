@@ -62,3 +62,31 @@ def test_section_weights_partition_by_category(published_data_root: Path):
     weights = section_weights(items)
     assert set(weights) <= {"Constitution and KYC", "Financials", "Banking and operations"}
     assert sum(weights.values()) == sum(i.weight for i in items)
+
+
+def _from_case(**extra) -> CaseAttributes:
+    return CaseAttributes.from_case(
+        facilities=["cash_credit"], amount_inr=10_000_000, collateral_present=False,
+        facility_sets={"cash_credit": "cash_credit_requested"}, mpbf_above_limit_inr=50_000_000, **extra,
+    )
+
+
+def test_product_and_confirmed_case_type_set_attributes():
+    """T2.1: product and case type reach the checklist as attributes an item can require."""
+    attrs = _from_case(product="bbg", case_type="renewal")
+    assert attrs.has("product_bbg") and attrs.has("case_type_renewal")
+    assert attrs.has("cash_credit_requested") and not attrs.has("case_type_new")
+
+
+def test_unknown_or_unrecorded_case_type_sets_nothing():
+    for case_type in ("unknown", None):
+        attrs = _from_case(product=None, case_type=case_type)
+        assert not any(name.startswith(("case_type_", "product_")) for name in attrs.flags)
+
+
+def test_no_published_item_requires_a_case_field_attribute_yet(published_data_root: Path):
+    """Until T3.10, the case fields change no checklist: no item names them."""
+    from engine.configstore.reader import load_checklist_taxonomy
+
+    for item in load_checklist_taxonomy(published_data_root).items:
+        assert not any(a.startswith(("product_", "case_type_")) for a in item.requires_attributes), item.id

@@ -641,6 +641,8 @@ def applicable_items(root: Path, case: CaseDetail, data: CaseData | None) -> tup
         facility_sets=facility_sets,
         mpbf_above_limit_inr=policy.working_capital.mpbf_above_limit_inr,
         existing_facilities_declared=data.existing_facilities_declared if data else False,
+        product=case.product,
+        case_type=case.case_type,
     )
     provisional = case.constitution not in ALL_CONSTITUTIONS
     if provisional:

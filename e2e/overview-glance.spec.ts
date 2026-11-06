@@ -1,9 +1,10 @@
-// The Overview opens with the readiness glance: the verdict and the gate conditions, the score
-// against the gate (the same figure as the case header), what blocks the case by name, the
-// requirements counted by status (each count a filter for the checklist below), the requirements
-// by section, and a rail with what to do next and what to ask the customer. The checklist follows
-// in bands: what blocks the case, what does not, what waits for a person, what came in that no
-// requirement asks for, and what is done.
+// The Overview opens with the readiness glance: the verdict and the gate conditions; document
+// readiness as one hierarchy (satisfied of all, satisfied and not satisfied, why the rest are not,
+// how many of them block), the same as on the Document readiness step; the weighted score the
+// review gate uses (the same figure as the case header); every document named under its section
+// with a tick or a cross; and a rail with what to do next and what to ask the customer. The
+// checklist follows in bands: what blocks the case, what does not, what waits for a person,
+// what came in that no requirement asks for, and what is satisfied.
 import { expect, test, type Page } from "@playwright/test";
 import type { CaseProgress, Readiness } from "@/api/types";
 import { KESTREL, MANAGER, ORIEL, SAFFRON } from "./fixtures/data";
@@ -41,27 +42,28 @@ test("the verdict, the gate conditions and the score answer whether the case can
   await overview(page);
   const hero = page.getByTestId("journey-verdict");
   await expect(hero).toHaveAttribute("data-state", "blocked");
-  await expect(hero.locator("> div").first()).toHaveClass(/bg-destructive/);
+  // The card stays white: no coloured rule or wash; the verdict's colour is on its icon.
+  await expect(hero.locator("> div").first()).not.toHaveClass(/bg-destructive|bg-critical/);
   await expect(hero.getByRole("heading", { level: 2 })).toHaveText("Not ready for credit review");
 
   const conditions = page.getByTestId("journey-conditions").getByRole("listitem");
   await expect(conditions).toHaveCount(2);
   await expect(conditions.nth(0)).toContainText("Review gate · 27 points to go");
   await expect(conditions.nth(0)).toHaveAttribute("data-met", "false");
-  await expect(conditions.nth(1)).toContainText("Blocking items · 2 still open");
+  await expect(conditions.nth(1)).toContainText("Blocking requirements · 2 not satisfied");
 
   await expect(page.getByTestId("journey-score")).toHaveText("58%");
-  expect(await scoreOf(page, "journey-score")).toBe(await scoreOf(page, "header-readiness"));
+  expect(await scoreOf(page, "journey-score")).toBe(await scoreOf(page, "header-readiness-score"));
   const meter = page.getByTestId("journey-meter");
   await expect(meter).toHaveAttribute("aria-valuenow", "58");
   await expect(meter).toHaveAttribute(
     "aria-valuetext",
-    "Readiness score 58%, review gate 85%, 27 points to go",
+    "Weighted score 58%, review gate 85%, 27 points to go",
   );
   await expect(meter).toContainText("Review gate 85%");
 
-  // The whole card, the rail included, fits the first screen.
-  const box = (await hero.boundingBox())!;
+  // The verdict and document readiness are read on the first screen.
+  const box = (await page.getByTestId("document-readiness").boundingBox())!;
   expect(box.y + box.height).toBeLessThanOrEqual(900);
 });
 
@@ -73,7 +75,7 @@ test("near the gate the score keeps a decimal, in the header and the hero alike"
   await overview(page, api);
   await expect(page.getByTestId("journey-score")).toHaveText("84.6%");
   // The header prints the same figure, never the gate's.
-  expect(await scoreOf(page, "header-readiness")).toBe("84.6");
+  expect(await scoreOf(page, "header-readiness-score")).toBe("84.6");
   await expect(page.getByTestId("journey-conditions")).toContainText(
     "Review gate · 0.4 points to go",
   );
@@ -85,18 +87,16 @@ test("near the gate the score keeps a decimal, in the header and the hero alike"
   await expect(page.getByTestId("journey-conditions")).toContainText("Review gate · 1 point to go");
   await expect(page.getByTestId("journey-meter")).toHaveAttribute(
     "aria-valuetext",
-    "Readiness score 84%, review gate 85%, 1 point to go",
+    "Weighted score 84%, review gate 85%, 1 point to go",
   );
 });
 
-test("what blocks the case is named, and each name opens its row", async ({ page }) => {
+test("every document is named under its section, and each name opens its row", async ({ page }) => {
   await overview(page);
-  const chips = page.getByTestId("journey-blocker");
-  await expect(chips).toHaveCount(2);
-  await expect(chips.nth(0)).toHaveText("KYC of directors · Missing");
-  await expect(chips.nth(1)).toHaveText("Board resolution · Insufficient");
-
-  await chips.nth(1).click();
+  const status = page.getByTestId("document-status");
+  await expect(status.getByTestId("document-status-item")).toHaveCount(9);
+  const board = status.getByRole("button", { name: "Board resolution" });
+  await board.click();
   const row = page.locator("#req-board_resolution");
   await expect(row).toBeInViewport();
   await expect(row).toHaveClass(/bg-accent/);
@@ -109,7 +109,7 @@ test("what blocks the case is named, and each name opens its row", async ({ page
   expect(await page.evaluate(() => document.documentElement.scrollTop)).toBe(0);
 
   // From the keyboard the name it lands on shows its focus ring.
-  await chips.nth(0).focus();
+  await status.getByRole("button", { name: "KYC of directors" }).focus();
   await page.keyboard.press("Enter");
   await expect
     .poll(() => page.evaluate(() => document.activeElement?.id))
@@ -126,76 +126,131 @@ test("the page itself never scrolls: only the content beside the menu does", asy
   await page.getByTestId("journey-done-toggle").click();
   expect(await pageOverflow(page)).toBeLessThanOrEqual(0);
   await page.goto(`/appraisals/${KESTREL}/documents`);
-  await expect(page.getByTestId("journey-done-toggle")).toBeVisible();
+  await expect(page.getByTestId("files-received")).toBeVisible();
   expect(await pageOverflow(page)).toBeLessThanOrEqual(0);
 });
 
-test("the status tiles count the requirements and filter the checklist", async ({ page }) => {
+test("document readiness counts every requirement once, and each count filters the checklist", async ({
+  page,
+}) => {
   await overview(page);
-  await expect(page.getByTestId("journey-filter-blocking")).toContainText(
-    /Blocking gaps\s*2\s*cannot reach credit review yet/,
+  await expect(page.getByTestId("document-readiness-total")).toHaveText("2 / 9");
+  const satisfied = page.getByTestId("journey-filter-satisfied");
+  const notSatisfied = page.getByTestId("journey-filter-not_satisfied");
+  await expect(satisfied).toContainText(/2\s*Satisfied/);
+  await expect(notSatisfied).toContainText(/7\s*Not satisfied/);
+  // The not satisfied, broken down: parts of the seven, not counts beside them.
+  const breakdown = page.getByTestId("document-readiness-breakdown");
+  await expect(breakdown).toContainText("Of the 7 not satisfied");
+  await expect(page.getByTestId("journey-filter-missing")).toContainText(/Missing\s*2/);
+  await expect(page.getByTestId("journey-filter-insufficient")).toContainText(/Insufficient\s*4/);
+  await expect(page.getByTestId("journey-filter-in_review")).toContainText(/In review\s*1/);
+  await expect(page.getByTestId("document-readiness-blocking")).toHaveText(
+    "Blocking credit review: 2",
   );
-  await expect(page.getByTestId("journey-filter-todo")).toContainText(
-    /Outstanding\s*6\s*Missing 2 · Insufficient 4/,
-  );
-  await expect(page.getByTestId("journey-filter-in_review")).toContainText(
-    /In review\s*1\s*waiting for a person/,
-  );
-  await expect(page.getByTestId("journey-filter-satisfied")).toContainText(/Satisfied\s*2\s*of 9/);
+  // No count of its own for blocking or outstanding: nothing adds up past the total.
+  await expect(page.getByTestId("journey-verdict")).not.toContainText("Outstanding");
+  await expect(page.getByTestId("journey-verdict")).not.toContainText("Blocking gaps");
 
   const items = page.getByTestId("journey-item");
-  const todo = page.getByTestId("journey-filter-todo");
-  await todo.click();
-  await expect(todo).toHaveAttribute("aria-pressed", "true");
-  await expect(items).toHaveCount(6);
+  await notSatisfied.click();
+  await expect(notSatisfied).toHaveAttribute("aria-pressed", "true");
+  await expect(items).toHaveCount(7);
   for (const status of await items.evaluateAll((els) => els.map((e) => e.dataset["status"])))
-    expect(["missing", "insufficient"]).toContain(status);
-  await expect(page.getByTestId("journey-showing")).toContainText("Showing: Outstanding");
-  await expect(page.getByTestId("journey-showing-live")).toHaveText(
-    "Showing: Outstanding, 6 in the list",
-  );
-  await expect(page.getByTestId("journey-filter-all")).toHaveText("Show all (9)");
-  await expect(page.getByTestId("journey-filter-all")).not.toHaveAttribute("aria-pressed");
+    expect(["missing", "insufficient", "in_review"]).toContain(status);
+  await expect(page.getByTestId("journey-showing")).toContainText("Showing: Not satisfied");
   await expect(page.getByTestId("journey-unmatched")).toHaveCount(0);
 
-  // Pressed again, the tile clears its filter.
-  await todo.click();
-  await expect(todo).toHaveAttribute("aria-pressed", "false");
+  // Pressed again, the count clears its filter.
+  await notSatisfied.click();
+  await expect(notSatisfied).toHaveAttribute("aria-pressed", "false");
   await expect(page.getByTestId("journey-showing")).toHaveCount(0);
-  await expect(page.getByTestId("journey-unmatched")).toBeVisible();
 
-  // So does the cross on the indicator.
-  await todo.click();
-  await page.getByTestId("journey-filter-clear").click();
-  await expect(todo).toHaveAttribute("aria-pressed", "false");
+  // One part of the breakdown.
+  await page.getByTestId("journey-filter-missing").click();
+  await expect(items).toHaveCount(2);
+  await page.getByTestId("document-readiness-clear").click();
   await expect(items.filter({ hasText: "Bank statements" })).toHaveCount(1);
 
-  // The satisfied filter opens what is done.
-  await page.getByTestId("journey-filter-satisfied").click();
+  // The satisfied count opens what is done.
+  await satisfied.click();
   await expect(page.getByTestId("journey-done-toggle")).toHaveAttribute("aria-expanded", "true");
   await expect(items).toHaveCount(2);
-  await page.getByTestId("journey-filter-all").click();
-  await expect(page.getByTestId("journey-filter-satisfied")).toHaveAttribute(
-    "aria-pressed",
-    "false",
-  );
 });
 
-test("the section map draws every requirement, done first, with its glyph", async ({ page }) => {
+test("the Overview and the Document readiness step count the same requirements in the same words", async ({
+  page,
+}) => {
+  const api = new MockApi();
+  withProgress(api, (p) => ({
+    ...p,
+    gate: {
+      open: false,
+      can_open: false,
+      open_exceptions: 0,
+      blocking_open: 2,
+      score_pct: 58,
+      gate_pct: 85,
+      blockers: ["review_gate", "blocking_items"],
+    },
+  }));
+  await overview(page, api);
+  await expect(page.getByTestId("document-readiness-total")).toHaveText("2 / 9");
+  await expect(page.getByTestId("journey-filter-satisfied")).toContainText("2");
+  await expect(page.getByTestId("journey-filter-not_satisfied")).toContainText("7");
+  await expect(page.getByTestId("document-readiness-blocking")).toHaveText(
+    "Blocking credit review: 2",
+  );
+
+  // The step keeps to the required document set: its filters are the same counts, in the same
+  // words; the summary stays on the Overview.
+  await page.goto(`/appraisals/${KESTREL}/completeness`);
+  await expect(page.getByTestId("step-header").getByRole("heading", { level: 1 })).toHaveText(
+    "Document readiness",
+  );
+  await expect(page.getByTestId("checklist-filter-all")).toHaveText("All (9)");
+  await expect(page.getByTestId("checklist-filter-not_satisfied")).toHaveText("Not satisfied (7)");
+  await expect(page.getByTestId("checklist-filter-satisfied")).toHaveText("Satisfied (2)");
+  await expect(page.getByTestId("checklist-filter-blocking")).toHaveText(
+    "Blocks credit review (2)",
+  );
+  await expect(page.getByTestId("document-readiness")).toHaveCount(0);
+  await expect(page.getByTestId("create-case-panel")).toHaveCount(0);
+  // Creating the case stays at the head of the set, shut until every condition is met.
+  const checklist = page.getByTestId("checklist");
+  await expect(checklist.getByTestId("gate-progress")).toContainText("1 of 3 conditions met");
+  await expect(checklist.getByTestId("create-case")).toBeDisabled();
+});
+
+test("document status names every document under its section, with its mark and its word", async ({
+  page,
+}) => {
   await overview(page);
-  const cells = page.getByTestId("journey-cell");
-  await expect(cells).toHaveCount(9);
-  for (const svgs of await cells.evaluateAll((els) =>
-    els.map((e) => e.querySelectorAll("svg").length),
-  ))
+  const sections = page.getByTestId("document-status-section");
+  expect(await sections.evaluateAll((els) => els.map((e) => e.dataset["section"]))).toEqual([
+    "Constitution and KYC",
+    "Financials",
+    "Banking and operations",
+    "Collateral and security",
+  ]);
+  const kyc = sections.filter({ hasText: "Constitution and KYC" });
+  const rows = kyc.getByTestId("document-status-item");
+  expect(await rows.evaluateAll((els) => els.map((e) => e.dataset["status"]))).toEqual([
+    "satisfied",
+    "insufficient",
+    "missing",
+  ]);
+  await expect(rows.nth(0)).toContainText("Certificate of incorporation");
+  await expect(rows.nth(0)).toContainText("Satisfied");
+  await expect(rows.nth(2)).toContainText("KYC of directors");
+  await expect(rows.nth(2)).toContainText("Missing");
+  await expect(rows.nth(2)).toContainText("Blocks credit review");
+  // Every row has its mark; no section says "x of y satisfied" instead of naming them.
+  for (const svgs of await page
+    .getByTestId("document-status-item")
+    .evaluateAll((els) => els.map((e) => e.querySelectorAll("svg").length)))
     expect(svgs).toBe(1);
-  const kyc = page
-    .getByRole("listitem")
-    .filter({ hasText: "Constitution and KYC: 1 of 3 satisfied" });
-  expect(
-    await kyc.getByTestId("journey-cell").evaluateAll((els) => els.map((e) => e.dataset["status"])),
-  ).toEqual(["satisfied", "insufficient", "missing"]);
-  await expect(kyc).toContainText("1 of 3 satisfied");
+  await expect(page.getByTestId("journey-verdict")).not.toContainText(/\d+ of \d+ satisfied/);
 });
 
 test("the checklist is banded by what each requirement does to the case", async ({ page }) => {
@@ -299,15 +354,16 @@ test("a case ready for credit reads as finished throughout", async ({ page }) =>
   await expect(hero.getByRole("heading", { level: 2 })).toHaveText("Ready for credit");
   await expect(page.getByTestId("journey-meter-fill")).toHaveAttribute("style", /width: 100%/);
   await expect(page.getByTestId("journey-meter-fill")).toHaveClass(/bg-positive/);
-  const cells = page.getByTestId("journey-cell");
-  await expect(cells).toHaveCount(9);
-  for (const status of await cells.evaluateAll((els) => els.map((e) => e.dataset["status"])))
+  const rows = page.getByTestId("document-status-item");
+  await expect(rows).toHaveCount(9);
+  for (const status of await rows.evaluateAll((els) => els.map((e) => e.dataset["status"])))
     expect(status).toBe("satisfied");
-  await expect(page.getByTestId("journey-filter-blocking")).toContainText(/0\s*nothing blocking/);
-  await expect(page.getByTestId("journey-filter-todo")).toContainText(/0\s*nothing outstanding/);
-  await expect(page.getByTestId("journey-blocker")).toHaveCount(0);
+  await expect(page.getByTestId("document-readiness-total")).toHaveText("9 / 9");
+  await expect(page.getByTestId("document-readiness")).toContainText(
+    "Every requirement is satisfied.",
+  );
   await expect(page.getByTestId("journey-band-blocking")).toHaveText(
-    "No blocking gap remains on this case.",
+    "No blocking requirement remains on this case.",
   );
   await expect(page.getByTestId("journey-done-toggle")).toHaveAttribute("aria-expanded", "true");
   await expect(page.getByTestId("journey-ask")).toContainText(
@@ -360,7 +416,9 @@ test("with the assessment gate known, the files condition joins the verdict", as
   await expect(third).toHaveAttribute("data-met", "true");
   // Ready to create the case: the next step says so.
   await expect(page.getByTestId("next-action")).toContainText("Ready to create the case");
-  await expect(page.getByTestId("next-action").getByRole("link")).toHaveText("Go to completeness");
+  await expect(page.getByTestId("next-action").getByRole("link")).toHaveText(
+    "Go to Document readiness",
+  );
 
   const opened = new MockApi();
   withProgress(opened, (p) => ({ ...p, gate: { ...gate, open_exceptions: 0, open: true } }));
@@ -425,7 +483,7 @@ test("a file sent from a blocking row keeps the row in place while the score mov
   await expect(row).toContainText("Satisfied");
   await expect(page.getByTestId("journey-score")).toHaveText("70%");
   await expect(page.getByTestId("journey-meter-fill")).toHaveAttribute("style", /width: 70%/);
-  await expect(live).toHaveText("Readiness score 70%. Not ready for credit review");
+  await expect(live).toHaveText("Weighted score 70%. Not ready for credit review");
   // The Upload button went with the open requirement; the focus is on the row's name.
   await expect
     .poll(() => page.evaluate(() => document.activeElement?.id))
@@ -438,18 +496,19 @@ test("a file sent from a blocking row keeps the row in place while the score mov
   await expect(row).not.toHaveClass(/border-l-destructive/);
   await expect(page.locator("#req-board_resolution")).toHaveClass(/border-l-destructive/);
   const items = page.getByTestId("journey-item");
-  await page.getByTestId("journey-filter-blocking").click();
-  await expect(page.getByTestId("journey-filter-blocking")).toContainText(/Blocking gaps\s*1/);
-  await expect(items).toHaveCount(1);
-  await page.getByTestId("journey-filter-todo").click();
-  await expect(page.getByTestId("journey-filter-todo")).toContainText(/Outstanding\s*5/);
-  await expect(items).toHaveCount(5);
+  await expect(page.getByTestId("document-readiness-blocking")).toHaveText(
+    "Blocking credit review: 1",
+  );
+  const notSatisfied = page.getByTestId("journey-filter-not_satisfied");
+  await notSatisfied.click();
+  await expect(notSatisfied).toContainText(/6\s*Not satisfied/);
+  await expect(items).toHaveCount(6);
   // Back in the full list the row is where the file was sent, its outcome with it.
   await page.getByTestId("journey-filter-clear").click();
   await expect(band.locator("#req-kyc_directors")).toHaveCount(1);
   await expect(row.getByTestId("journey-outcome")).toHaveAttribute("data-state", "counted");
   // The done band counts it too, as the Satisfied tile does, and says where its row is.
-  await expect(page.getByTestId("journey-filter-satisfied")).toContainText(/Satisfied\s*3/);
+  await expect(page.getByTestId("journey-filter-satisfied")).toContainText(/3\s*Satisfied/);
   await expect(page.getByTestId("journey-done-count")).toHaveText("3");
   await expect(page.getByTestId("journey-done-toggle")).toContainText("KYC of directors");
   await page.getByTestId("journey-done-toggle").click();
@@ -493,10 +552,10 @@ test("once nothing blocks, the band says so above the rows kept in it", async ({
   });
   const band = page.getByTestId("journey-band-blocking");
   await expect(band).toHaveAttribute("data-clear", "true", { timeout: 15_000 });
-  await expect(band).toContainText("No blocking gap remains on this case.");
+  await expect(band).toContainText("No blocking requirement remains on this case.");
   await expect(band).not.toContainText("stops the case");
   await expect(band.getByTestId("journey-item")).toHaveCount(2);
-  await expect(page.getByTestId("journey-filter-blocking")).toContainText(/0\s*nothing blocking/);
+  await expect(page.getByTestId("document-readiness-blocking")).toHaveCount(0);
 });
 
 test("when the checklist cannot be read, or there is none, the rail still says what is next", async ({
@@ -511,7 +570,7 @@ test("when the checklist cannot be read, or there is none, the rail still says w
   await page.goto(`/appraisals/${KESTREL}`);
   const hero = page.getByTestId("journey-verdict");
   await expect(hero).toHaveAttribute("data-state", "error");
-  await expect(hero).toContainText("Readiness not available");
+  await expect(hero).toContainText("Document readiness not available");
   await expect(hero.getByRole("button", { name: "Try again" })).toBeVisible();
   await expect(page.getByTestId("next-action")).toBeVisible();
   await expect(page.getByTestId("journey-meter")).toHaveCount(0);
@@ -586,9 +645,7 @@ for (const [width, height] of [
   [1440, 900],
   [1366, 768],
 ] as const) {
-  test(`at ${width} px the hero keeps its height while the checklist is read`, async ({
-    page,
-  }) => {
+  test(`at ${width} px the hero keeps its height while the checklist is read`, async ({ page }) => {
     await page.setViewportSize({ width, height });
     await signedIn(page, new MockApi());
     let release!: () => void;
@@ -604,48 +661,23 @@ for (const [width, height] of [
     const loading = (await hero.boundingBox())!.height;
     release();
     await expect(hero).toHaveAttribute("data-state", "blocked");
-    await expect(page.getByTestId("journey-blocker").first()).toBeVisible();
+    await expect(page.getByTestId("document-readiness")).toBeVisible();
     const loaded = (await hero.boundingBox())!.height;
     expect(Math.abs(loaded - loading)).toBeLessThanOrEqual(8);
   });
 }
 
-test("with the assistant open the tiles go four across and stay on the first screen", async ({
-  page,
-}) => {
+test("with the assistant open document readiness stays on the first screen", async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 768 });
   await overview(page);
   await page.getByTestId("assistant-launcher").click();
-  const tiles = page.locator(
-    "[data-testid^='journey-filter-']:not([data-testid='journey-filter-all'])",
-  );
-  await expect(tiles).toHaveCount(4);
-  await expect
-    .poll(
-      async () =>
-        new Set(
-          await tiles.evaluateAll((els) =>
-            els.map((e) => Math.round(e.getBoundingClientRect().top)),
-          ),
-        ).size,
-    )
-    .toBe(1);
-  const tile = (await tiles.first().boundingBox())!;
-  expect(tile.y + tile.height).toBeLessThanOrEqual(768);
-  // One column: the verdict and the score share a row, and the section map waits for room.
-  const hero = page.getByTestId("journey-verdict");
-  expect((await hero.boundingBox())!.height).toBeLessThanOrEqual(470);
-  await expect(page.getByTestId("journey-cell").first()).toBeHidden();
-
-  // On a 1440 x 900 laptop the whole card, what to do next and what to ask included, fits.
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await expect
-    .poll(async () => {
-      const box = (await hero.boundingBox())!;
-      return box.y + box.height;
-    })
-    .toBeLessThanOrEqual(900);
+  // The two halves side by side, on the first screen.
+  const satisfied = (await page.getByTestId("journey-filter-satisfied").boundingBox())!;
+  const notSatisfied = (await page.getByTestId("journey-filter-not_satisfied").boundingBox())!;
+  expect(Math.round(satisfied.y)).toBe(Math.round(notSatisfied.y));
+  expect(notSatisfied.y + notSatisfied.height).toBeLessThanOrEqual(768);
   // The counts of what to ask keep their room; the copy buttons never sit over them.
+  await page.setViewportSize({ width: 1440, height: 900 });
   const counts = (await page.getByTestId("journey-ask-counts").boundingBox())!;
   for (const id of ["journey-copy-list", "journey-copy-email", "journey-requests-toggle"]) {
     const box = (await page.getByTestId(id).boundingBox())!;
@@ -695,31 +727,13 @@ for (const width of [375, 320]) {
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth - innerWidth),
     ).toBeLessThanOrEqual(0);
-    // Two by two.
-    const tops = await page
-      .locator("[data-testid^='journey-filter-']:not([data-testid='journey-filter-all'])")
-      .evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
-    expect(tops[0]).toBe(tops[1]);
-    expect(tops[2]).toBe(tops[3]);
-    expect(tops[2]).toBeGreaterThan(tops[0]!);
-    // By section waits for a wider screen; the rows say their section.
-    await expect(page.getByTestId("journey-cell").first()).toBeHidden();
-    // A tile's note is read in full, on a second line where the tile is narrow (no pointer to
-    // hover for the rest).
-    const note = page
-      .getByTestId("journey-filter-blocking")
-      .getByText("cannot reach credit review yet");
-    expect(
-      await note.evaluate(
-        (e) => e.scrollWidth <= e.clientWidth + 0.5 && e.scrollHeight <= e.clientHeight + 0.5,
-      ),
-    ).toBe(true);
-    // Kept short: at most two lines a tile note, the next step's link on its label's line.
-    expect((await page.getByTestId("journey-verdict").boundingBox())!.height).toBeLessThanOrEqual(
-      width === 375 ? 755 : 825,
-    );
-    // From the keyboard a tile filters without taking the screen away from it.
-    const todo = page.getByTestId("journey-filter-todo");
+    // The two halves side by side, and every document named.
+    const s = (await page.getByTestId("journey-filter-satisfied").boundingBox())!;
+    const n = (await page.getByTestId("journey-filter-not_satisfied").boundingBox())!;
+    expect(Math.round(s.y)).toBe(Math.round(n.y));
+    await expect(page.getByTestId("document-status-item")).toHaveCount(9);
+    // From the keyboard a count filters without taking the screen away from it.
+    const todo = page.getByTestId("journey-filter-not_satisfied");
     await todo.focus();
     await page.keyboard.press("Enter");
     await expect(todo).toHaveAttribute("aria-pressed", "true");
@@ -730,9 +744,9 @@ for (const width of [375, 320]) {
     const droppable = page.locator(
       '[data-testid="journey-item"]:is([data-status="missing"], [data-status="insufficient"])',
     );
-    const n = await droppable.count();
-    expect(n).toBe(6);
-    for (let i = 0; i < n; i++) {
+    const rowsToUpload = await droppable.count();
+    expect(rowsToUpload).toBe(6);
+    for (let i = 0; i < rowsToUpload; i++) {
       const row = droppable.nth(i);
       const name = await row.locator("[id$='-name']").textContent();
       await expect(row.getByTestId("journey-upload")).toHaveCount(1);

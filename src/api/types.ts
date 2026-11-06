@@ -155,8 +155,8 @@ export type PdArea = PdQuestion["area"];
 export type PdTopic = S["PdTopic"];
 export type PdPerson = S["PdPerson"];
 export type PdRef = S["PdRef"];
-/** The files the draft CAM and the PD note download as (F-23.5, F-24.3). */
-export type OutputFormat = "docx" | "pdf";
+/** The files the draft CAM and the PD note download as (F-23.5, F-24.3); only the CAM is a workbook. */
+export type OutputFormat = "docx" | "pdf" | "xlsx";
 /** The outputs that download, as the decision log names them. */
 export type OutputKind = "cam" | "pd_note";
 export type NormInput = S["NormInput"];

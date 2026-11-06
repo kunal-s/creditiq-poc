@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { AlertTriangle, Check, Loader2 } from "lucide-react";
 import type { CaseProgress, StageProgress as Stage, StageStatus } from "@/api/types";
-import { caseTabPath, tabForStage } from "@/components/shell/nav";
+import { CASE_TABS, caseTabPath, tabForStage } from "@/components/shell/nav";
 import { t } from "@/config/terminology";
 import { stageDetail } from "@/domain/progress";
 import { useSession } from "@/domain/session";
@@ -145,10 +145,13 @@ export function StageProgressBar({
   caseId,
   progress,
   activeStage,
+  onOverview = false,
 }: {
   caseId: string;
   progress: CaseProgress;
   activeStage?: string | undefined;
+  /** The Overview is open: its pill, first in the row, is the dark one. */
+  onOverview?: boolean;
 }) {
   const permissions = useSession()?.user.permissions ?? [];
   const stages = progress.stages;
@@ -168,6 +171,22 @@ export function StageProgressBar({
     <nav aria-label={t("progress.label")} data-testid="stage-progress">
       {/* A pill a stage, as the original design: done tinted, the open one dark. */}
       <ol className="flex flex-wrap items-center gap-1 md:justify-end">
+        {/* The way back to the Overview from any step. */}
+        <li>
+          <Link
+            to={caseTabPath(caseId, CASE_TABS[0]!)}
+            // Every step's path starts with the Overview's: only the Overview itself is current.
+            activeOptions={{ exact: true }}
+            className={cn(
+              "inline-flex items-center whitespace-nowrap rounded px-2 py-1 text-[11.5px] font-medium transition-colors",
+              onOverview ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted",
+            )}
+            aria-current={onOverview ? "page" : undefined}
+            data-testid="stage-overview"
+          >
+            {t("caseTab.overview")}
+          </Link>
+        </li>
         {stages.map((stage) => (
           <li key={stage.key}>
             <StagePill

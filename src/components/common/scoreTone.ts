@@ -5,8 +5,8 @@ export function scoreTone(score: number, gate: number, blocking?: number): strin
   return score >= gate && !blocking
     ? "bg-positive"
     : blocking
-      ? "bg-destructive"
+      ? "bg-destructive/40"
       : score >= gate * 0.75
-        ? "bg-flag"
-        : "bg-destructive";
+        ? "bg-flag/60"
+        : "bg-destructive/40";
 }

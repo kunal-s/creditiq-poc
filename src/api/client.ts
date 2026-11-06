@@ -320,7 +320,7 @@ export const api = {
       body: JSON.stringify(body),
     }),
   casePdNote: (id: string) => request<PdNote>(`/api/cases/${q(id)}/pd-note`),
-  /** The draft CAM as a file: Word, for credit to complete, or PDF (F-23.5). */
+  /** The draft CAM as a file: an Excel workbook, a sheet a section, or PDF (F-23.5). */
   camFile: (id: string, format: OutputFormat) =>
     download(`/api/cases/${q(id)}/cam/download?format=${q(format)}`),
   /** The PD question note as a file, with space to record each answer (F-24.3). */

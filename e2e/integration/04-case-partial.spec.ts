@@ -74,8 +74,7 @@ test("Completeness: four requirements are missing and four are insufficient", as
   expect(statuses.filter((s) => s === "insufficient")).toHaveLength(4);
   expect(statuses.filter((s) => s === "satisfied")).toHaveLength(2);
 
-  await expect(page.getByTestId("gate-banner")).toHaveAttribute("data-ready", "false");
-  await expect(page.getByTestId("blocking-gaps")).toBeVisible();
+  await expect(page.getByTestId("header-blocking")).toBeVisible();
   await expect(page.getByTestId("header-ready")).toHaveCount(0);
 });
 

@@ -16,6 +16,22 @@ test("a case's steps are reached from the side menu and the stage bar", async ({
   await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}/documents$`));
   await page.getByTestId("stage-extraction").click();
   await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}/extraction$`));
+  await expect(page.getByTestId("stage-overview")).not.toHaveAttribute("aria-current");
+});
+
+test("the stage bar leads back to the Overview from every step", async ({ page }) => {
+  const api = new MockApi();
+  await signedIn(page, api);
+  await page.goto(`/appraisals/${KESTREL}`);
+  const overview = page.getByTestId("stage-overview");
+  await expect(overview).toHaveAttribute("aria-current", "page");
+  for (const stage of ["documents", "extraction", "completeness", "cross_verification"]) {
+    await page.getByTestId(`stage-${stage}`).click();
+    await expect(page.getByTestId(`stage-${stage}`)).toHaveAttribute("aria-current", "page");
+    await overview.click();
+    await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}$`));
+    await expect(page.getByTestId("document-status")).toBeVisible();
+  }
 });
 
 test("the side menu lists the open case's steps under New appraisal, each with its status", async ({

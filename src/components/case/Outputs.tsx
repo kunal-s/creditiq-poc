@@ -102,7 +102,7 @@ const chip =
  * them: by source number, a source's pages together ("6 pp.3, 5"), and three or more sources in a
  * row cited at the same pages as one run ("13-23 p.1") that opens into its sources. Each source
  * opens its first cited page. */
-function Citations({
+export function Citations({
   caseId,
   evidence,
   className,
@@ -384,7 +384,7 @@ export function Downloads({ caseId, output }: { caseId: string; output: OutputKi
   const id = DOWNLOAD_ID[output];
   return (
     <div className="flex flex-wrap items-center gap-2" data-testid={`${id}-downloads`}>
-      {OUTPUT_FORMATS.map((format) => {
+      {OUTPUT_FORMATS[output].map((format) => {
         const busy = download.isPending && download.variables === format;
         return (
           <button
@@ -822,7 +822,7 @@ function SummaryRef({ caseId, item }: { caseId: string; item: CamSummaryItem }) 
 /** A line of the summary. A finding is a register entry (reference, severity, title cited,
  * status, whether it blocks submission); its explanation is in section 10. A check not completed
  * says why and what would complete it; a norm, its sentence; a query, its text. */
-function SummaryItem({ caseId, item }: { caseId: string; item: CamSummaryItem }) {
+export function SummaryItem({ caseId, item }: { caseId: string; item: CamSummaryItem }) {
   const citations = item.citations ?? [];
   const detail = item.kind === "query" || (item.text && item.text !== item.title) ? item.text : "";
   return (

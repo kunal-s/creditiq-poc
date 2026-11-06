@@ -52,12 +52,7 @@ function Overview({ progress }: { progress: CaseProgress }) {
     <div className="space-y-4">
       {/* The readiness glance (verdict, score against the gate, what blocks it, the counts, what
           to do next and what to ask the customer), then what this appraisal needs, row by row. */}
-      <DocumentChecklist
-        caseId={progress.case_id}
-        variant="overview"
-        progress={progress}
-        canOpen={canOpen}
-      />
+      <DocumentChecklist caseId={progress.case_id} progress={progress} canOpen={canOpen} />
 
       <div className="grid items-start gap-4 @min-[65rem]/main:grid-cols-[minmax(0,1fr)_380px]">
         <Panel title={t("progress.label")} testId="overview-stages">

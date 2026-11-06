@@ -692,12 +692,12 @@ test("a note with nothing to ask still names whom to meet, the record and the do
   await expect(page.getByTestId("pd-sign-off")).toBeVisible();
 });
 
-test("the memo and the note download as Word and as PDF, fetched with the session's token", async ({
+test("the memo downloads as Excel and PDF, the note as Word and PDF, fetched with the session's token", async ({
   page,
 }) => {
   const api = await openView(page, "cam");
   const files: [string, string, string][] = [
-    ["cam-download-docx", `CAM-draft-${KESTREL}.docx`, "PK"],
+    ["cam-download-xlsx", `CAM-draft-${KESTREL}.xlsx`, "PK"],
     ["cam-download-pdf", `CAM-draft-${KESTREL}.pdf`, "%PDF"],
   ];
   for (const [button, name, magic] of files) {
@@ -706,8 +706,9 @@ test("the memo and the note download as Word and as PDF, fetched with the sessio
     const bytes = await readFile(await file.path());
     expect(bytes.subarray(0, magic.length).toString("latin1")).toBe(magic);
   }
-  await expect(page.getByTestId("cam-download-docx")).toHaveText("Download Word");
+  await expect(page.getByTestId("cam-download-xlsx")).toHaveText("Download Excel");
   await expect(page.getByTestId("cam-download-pdf")).toHaveText("Download PDF");
+  await expect(page.getByTestId("cam-download-docx")).toHaveCount(0);
 
   await page.getByTestId("view-pd").click();
   for (const format of ["docx", "pdf"] as const) {
@@ -715,7 +716,7 @@ test("the memo and the note download as Word and as PDF, fetched with the sessio
     expect(file.suggestedFilename()).toBe(`PD-note-${KESTREL}.${format}`);
   }
   expect(api.downloads).toEqual([
-    { output: "cam", format: "docx", authorization: "Bearer session-token" },
+    { output: "cam", format: "xlsx", authorization: "Bearer session-token" },
     { output: "cam", format: "pdf", authorization: "Bearer session-token" },
     { output: "pd_note", format: "docx", authorization: "Bearer session-token" },
     { output: "pd_note", format: "pdf", authorization: "Bearer session-token" },
@@ -768,11 +769,11 @@ test("the file takes the name the engine gives it, or the same pattern when the 
 }) => {
   const api = new MockApi();
   api.on("GET", /\/cam\/download$/, (req) =>
-    new URL(req.url()).searchParams.get("format") === "docx"
+    new URL(req.url()).searchParams.get("format") === "xlsx"
       ? {
-          ...attachment("cam", KESTREL, "docx"),
+          ...attachment("cam", KESTREL, "xlsx"),
           headers: {
-            "content-disposition": `attachment; filename="memo.docx"; filename*=UTF-8''CAM%20draft%20${KESTREL}.docx`,
+            "content-disposition": `attachment; filename="memo.xlsx"; filename*=UTF-8''CAM%20draft%20${KESTREL}.xlsx`,
             "access-control-expose-headers": "content-disposition",
           },
         }
@@ -782,8 +783,8 @@ test("the file takes the name the engine gives it, or the same pattern when the 
         },
   );
   await openView(page, "cam", api);
-  const named = await download(page, page.getByTestId("cam-download-docx"));
-  expect(named.suggestedFilename()).toBe(`CAM draft ${KESTREL}.docx`);
+  const named = await download(page, page.getByTestId("cam-download-xlsx"));
+  expect(named.suggestedFilename()).toBe(`CAM draft ${KESTREL}.xlsx`);
   const unread = await download(page, page.getByTestId("cam-download-pdf"));
   expect(unread.suggestedFilename()).toBe(`CAM-draft-${KESTREL}.pdf`);
 });

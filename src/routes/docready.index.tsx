@@ -6,11 +6,12 @@ import { QueryView } from "@/components/common/States";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { t } from "@/config/terminology";
 import { formatDate, formatInr, useCases, useLabels } from "@/domain/cases";
-import { countItems, readyForCredit, scoreText, useChecklists } from "@/domain/checklist";
+import { readinessBreakdown, readyForCredit, scoreText, useChecklists } from "@/domain/checklist";
 import { cn } from "@/lib/utils";
 
 // The readiness console, as the original design: every appraisal still collecting documents,
-// how complete its file is against the review gate, and what is still outstanding.
+// its document readiness (satisfied of all, the weighted score against the review gate), and
+// what is not satisfied yet, by why.
 
 export const Route = createFileRoute("/docready/")({
   head: () => ({
@@ -34,8 +35,8 @@ function ReadinessConsole() {
   const blockingGaps = read.reduce((n, x) => n + (x.r?.blocking_open ?? 0), 0);
   const ready = read.filter((x) => x.r && readyForCredit(x.r)).length;
   const outstanding = read.reduce((n, x) => {
-    const k = countItems(x.r!.items);
-    return n + k.insufficient + k.missing;
+    const k = readinessBreakdown(x.r!.items);
+    return n + k.notSatisfied;
   }, 0);
   const q = query.trim().toLowerCase();
   const shown = rows
@@ -147,7 +148,7 @@ function ReadinessConsole() {
                   </thead>
                   <tbody className="divide-y divide-border">
                     {shown.map(({ c, r }) => {
-                      const k = r ? countItems(r.items) : null;
+                      const k = r ? readinessBreakdown(r.items) : null;
                       return (
                         <tr key={c.id} className="align-top" data-testid="readiness-row">
                           <td className="px-4 py-2.5">
@@ -171,6 +172,8 @@ function ReadinessConsole() {
                           <td className="w-48 px-3 py-2.5">
                             {r && k ? (
                               <>
+                                {/* Satisfied of all first, as every screen says it; the weighted
+                                    score the review gate uses under it. */}
                                 <div className="flex items-center gap-2">
                                   <ScoreBar
                                     className="flex-1"
@@ -179,13 +182,15 @@ function ReadinessConsole() {
                                     blocking={r.blocking_open}
                                   />
                                   <span className="tabular min-w-9 text-right font-semibold">
-                                    {scoreText(r.score_pct, r.gate_pct)}%
+                                    {t("journey.readiness.ofTotal", {
+                                      n: k.satisfied,
+                                      total: k.total,
+                                    })}
                                   </span>
                                 </div>
                                 <p className="mt-1 text-[11px] text-muted-foreground">
-                                  {t("page.readinessConsole.satisfied", {
-                                    n: k.satisfied,
-                                    total: r.items.length,
+                                  {t("caseHeader.outstandingGate", {
+                                    score: scoreText(r.score_pct, r.gate_pct),
                                     gate: Math.round(r.gate_pct),
                                   })}
                                 </p>
@@ -198,10 +203,14 @@ function ReadinessConsole() {
                             {r && k && (
                               <>
                                 <p>
-                                  {t("page.readinessConsole.outstanding", {
-                                    insufficient: k.insufficient,
-                                    missing: k.missing,
-                                  })}
+                                  <span className="tabular font-semibold">{k.notSatisfied}</span>{" "}
+                                  <span className="text-[11.5px] text-muted-foreground">
+                                    {t("page.readinessConsole.outstanding", {
+                                      missing: k.missing,
+                                      insufficient: k.insufficient,
+                                      inReview: k.inReview,
+                                    })}
+                                  </span>
                                 </p>
                                 {r.blocking_open > 0 ? (
                                   <span className="mt-1 inline-flex items-center gap-1 rounded border border-destructive/30 bg-destructive/10 px-1.5 py-0.5 text-[11px] font-medium text-destructive">

@@ -68,10 +68,10 @@ export const BAND: Record<
   { rule: string; glyph: LucideIcon; tone: string; pill: string }
 > = {
   blocking: {
-    rule: "border-l-destructive",
+    rule: "border-l-destructive/40",
     glyph: OctagonX,
     tone: "text-destructive",
-    pill: "bg-destructive text-destructive-foreground",
+    pill: "bg-critical-soft text-destructive ring-1 ring-destructive/30",
   },
   nonblocking: {
     rule: "border-l-flag",
@@ -99,13 +99,18 @@ export const BAND: Record<
   },
 };
 
-/** The name of a filter, as its tile says it. */
+/** The name of a filter, as the readiness summary says it. */
 export function filterLabel(f: Exclude<Filter, "all">): string {
   switch (f) {
     case "blocking":
-      return t("console.kpi.blocking");
+      return t("journey.status.blocks");
     case "todo":
-      return t("console.outstanding");
+    case "not_satisfied":
+      return t("journey.readiness.notSatisfied");
+    case "missing":
+      return t("docStatus.missing");
+    case "insufficient":
+      return t("docStatus.insufficient");
     case "in_review":
       return t("docStatus.in_review");
     case "satisfied":

@@ -23,6 +23,9 @@ from .db import log_decision
 from .util import now_iso, stable_id
 
 DEFAULT = "default"
+BUILT_IN = {DEFAULT: "Default Template One", "default_two": "Default Template Two"}
+"""The templates every bank-wide list starts with, both the configured layout; a case follows the first
+until another is chosen. Each may take a layout of its own as RBL's templates arrive."""
 MAX_SECTIONS = 15
 
 # A part's title where the configured layout does not use it.
@@ -54,9 +57,13 @@ def _name(user_id: str | None) -> str | None:
     return user.get("name") if user else None
 
 
-def _default(config: CamSectionConfig) -> dict:
-    return {"id": DEFAULT, "name": "Default template", "description": config.template_note or "",
+def _built_in(config: CamSectionConfig, template_id: str = DEFAULT) -> dict:
+    return {"id": template_id, "name": BUILT_IN[template_id], "description": config.template_note or "",
             "default": True, "sections": config.sections, "created_by": None, "created_at": None}
+
+
+def _default(config: CamSectionConfig) -> dict:
+    return _built_in(config)
 
 
 def _row(r: sqlite3.Row, parts: dict[str, CamPartDef]) -> dict:
@@ -69,7 +76,7 @@ def _row(r: sqlite3.Row, parts: dict[str, CamPartDef]) -> dict:
 
 def templates(conn: sqlite3.Connection, config: CamSectionConfig) -> list[dict]:
     parts = {p.kind: p for p in catalogue(config)}
-    return [_default(config)] + [_row(r, parts) for r in conn.execute(
+    return [_built_in(config, tid) for tid in BUILT_IN] + [_row(r, parts) for r in conn.execute(
         "SELECT * FROM cam_templates ORDER BY created_at")]
 
 

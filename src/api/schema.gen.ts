@@ -299,8 +299,9 @@ export interface paths {
     };
     /**
      * Case Cam Download
-     * @description F-23.5: the draft CAM as a Word or PDF file, the same content as the screen, with numbered
-     *     citations and the sources; the recommendation is left blank for credit.
+     * @description F-23.5: the draft CAM as a Word, PDF or Excel file, the same content as the screen, with numbered
+     *     citations and the sources; the recommendation is left blank for credit. The workbook has a sheet a
+     *     section, the figures a person overrode in their cells, noted.
      */
     get: operations["case_cam_download_api_cases__case_id__cam_download_get"];
     put?: never;
@@ -6271,7 +6272,7 @@ export interface operations {
   case_cam_download_api_cases__case_id__cam_download_get: {
     parameters: {
       query: {
-        format: "docx" | "pdf";
+        format: "docx" | "pdf" | "xlsx";
       };
       header?: {
         authorization?: string | null;
@@ -6290,6 +6291,7 @@ export interface operations {
         };
         content: {
           "application/pdf": string;
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
           "application/vnd.openxmlformats-officedocument.wordprocessingml.document": string;
         };
       };
@@ -7310,6 +7312,7 @@ export interface operations {
         };
         content: {
           "application/pdf": string;
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
           "application/vnd.openxmlformats-officedocument.wordprocessingml.document": string;
         };
       };

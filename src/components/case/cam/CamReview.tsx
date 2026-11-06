@@ -1,30 +1,27 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { History, Pencil, RotateCcw, ShieldAlert, Sparkles, X } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import type { Cam, CamBlock, CamReview as Review, CamSection, CamSummaryItem } from "@/api/types";
-import {
-  Block,
-  CamMemo,
-  Downloads,
-  Recommendation,
-  Sources,
-  SourcesContext,
-  Summary,
-} from "@/components/case/Outputs";
+import type { Cam, CamBlock, CamReview as Review, CamSummaryItem } from "@/api/types";
+import { CamMemo, Downloads, Sources, SourcesContext } from "@/components/case/Outputs";
 import { QueryView } from "@/components/common/States";
 import { t } from "@/config/terminology";
 import { api } from "@/api/client";
+import { camSheets, type Sheet } from "@/domain/camSheet";
 import { useCam, useCamChange, useCamRegenerate } from "@/domain/findings";
 import { camSectionAnchor, configLabel, formatDay, sourcesById } from "@/domain/outputs";
+import { useCan } from "@/domain/session";
 import { cn } from "@/lib/utils";
+import { CamSheet } from "./CamSheet";
 import { TemplatePicker } from "./CamTemplates";
 
-// The CAM draft and review (F-23): the memo's eight sections, one at a time, chosen from the list
-// on the left, with the draft's state under it. Each section says whether its words are the
-// engine's, a person's or a copilot redraft a person kept, and offers: Edit in my words,
-// Regenerate with copilot (a redraft to read, then keep or discard), Override a figure (kept with
-// the value drafted and the reason) and Request more data (it goes on the query list). The
-// engine drafts and keeps every change with who and when; the screen sends what a person did.
+// The CAM draft and review (F-23): the memo's eight sections, one at a time, each as a sheet of a
+// workbook (its tabs at the foot of the grid; the list on the left too), with the draft's state
+// under the list. Each section says whether its words are the engine's, a person's or a copilot
+// redraft a person kept, and offers: Edit in my words, Regenerate with copilot (a redraft to read,
+// then keep or discard), Override a figure (kept with the value drafted and the reason) and
+// Request more data (it goes on the query list); a paragraph or a figure can also be changed in its
+// cell. The engine drafts and keeps every change with who and when; the screen sends what a person
+// did.
 //
 // Test ids:
 //   cam-review               the view: cam-review-meta (as of, configuration, run) with the
@@ -40,9 +37,8 @@ import { TemplatePicker } from "./CamTemplates";
 //                            cam-regenerate-panel (cam-regenerate-preview, cam-regenerate-keep),
 //                            cam-override-panel (cam-override-figure, -original, -value, -reason,
 //                            cam-override-save), cam-request-panel (cam-request-text,
-//                            cam-request-save), cam-action-error; then its body (the memo's
-//                            blocks, the summary or the recommendation), cam-section-overrides
-//                            and cam-section-requests
+//                            cam-request-save), cam-action-error; then the section's sheet
+//                            (CamSheet.tsx), cam-section-overrides and cam-section-requests
 
 type Shown = {
   id: string;
@@ -50,7 +46,6 @@ type Shown = {
   title: string;
   purpose: string | null | undefined;
   review: Review;
-  body: ReactNode;
 };
 
 const SUMMARY = "summary";
@@ -147,48 +142,9 @@ export function CamReviewView({ caseId }: { caseId: string }) {
 }
 
 function ReviewBody({ caseId, m }: { caseId: string; m: Cam }) {
-  const shown: Shown[] = useMemo(
-    () => [
-      ...m.sections.map((s) => ({
-        id: s.id,
-        number: s.number,
-        title: s.title,
-        purpose: s.purpose,
-        review: s.review ?? { state: "machine" as const },
-        body: <SectionBody caseId={caseId} section={s} />,
-      })),
-      {
-        id: SUMMARY,
-        number: m.summary_number,
-        title: m.summary_title,
-        purpose: m.summary_purpose,
-        review: m.summary_review ?? { state: "machine" as const },
-        body: (
-          <div className="space-y-3">
-            <Words paragraphs={m.summary_review?.paragraphs ?? []} />
-            {m.rating_note && (
-              <p
-                className="rounded border border-border bg-surface-muted/50 px-3 py-2 text-[12.5px] text-muted-foreground"
-                data-testid="cam-rating-note"
-              >
-                {m.rating_note}
-              </p>
-            )}
-            <Summary caseId={caseId} m={m} headed={false} />
-          </div>
-        ),
-      },
-      {
-        id: RECOMMENDATION,
-        number: m.recommendation_number,
-        title: m.recommendation_title,
-        purpose: m.recommendation_purpose,
-        review: m.recommendation_review ?? { state: "machine" as const },
-        body: <Recommendation m={m} headed={false} />,
-      },
-    ],
-    [caseId, m],
-  );
+  const sheets = useMemo(() => camSheets(m), [m]);
+  const shown: Shown[] = sheets;
+  const canEdit = useCan("review.decide");
 
   // A link to a section or one of its parts (#cam-section-<id>, from the PD note) shows it.
   const hash = useRouterState({ select: (s) => s.location.hash });
@@ -334,57 +290,18 @@ function ReviewBody({ caseId, m }: { caseId: string; m: Cam }) {
           </section>
         </aside>
 
-        <ReviewSection key={current.id} caseId={caseId} m={m} s={current} total={total} />
+        <ReviewSection key={current.id} caseId={caseId} m={m} s={current} total={total}>
+          <CamSheet
+            caseId={caseId}
+            m={m}
+            sheet={sheets.find((x) => x.id === current.id) as Sheet}
+            sheets={sheets}
+            onSelect={setSelected}
+            canEdit={canEdit}
+          />
+        </ReviewSection>
       </div>
       <Sources caseId={caseId} sources={m.sources ?? []} />
-    </div>
-  );
-}
-
-/** A drafted section's blocks: its parts each under its subheading, each with its anchor. */
-function SectionBody({ caseId, section }: { caseId: string; section: CamSection }) {
-  const blocks = section.blocks ?? [];
-  const parts = section.parts ?? [];
-  if (blocks.length === 0)
-    return (
-      <p className="text-[12.5px] text-muted-foreground" data-testid="cam-section-empty">
-        {section.empty}
-      </p>
-    );
-  // The subheadings are the parts' titles, in order: each carries its part's anchor.
-  let part = 0;
-  return (
-    <div className="space-y-2.5">
-      {blocks.map((block, i) => {
-        if (block.kind === "subheading" && parts.length > 1) {
-          const p = parts[part++];
-          return (
-            <h4
-              key={i}
-              id={p ? camSectionAnchor(p.id) : undefined}
-              className="scroll-mt-4 pt-1 text-[13px] font-semibold"
-              data-testid="cam-subheading"
-              data-part={p?.id}
-            >
-              {block.text}
-            </h4>
-          );
-        }
-        return <Block key={i} caseId={caseId} block={block} />;
-      })}
-    </div>
-  );
-}
-
-function Words({ paragraphs }: { paragraphs: string[] }) {
-  if (paragraphs.length === 0) return null;
-  return (
-    <div className="space-y-2.5">
-      {paragraphs.map((p, i) => (
-        <p key={i} className="text-[13px] leading-relaxed" data-testid="cam-paragraph">
-          {p}
-        </p>
-      ))}
     </div>
   );
 }
@@ -396,11 +313,14 @@ function ReviewSection({
   m,
   s,
   total,
+  children,
 }: {
   caseId: string;
   m: Cam;
   s: Shown;
   total: number;
+  /** The section's sheet. */
+  children: ReactNode;
 }) {
   const [panel, setPanel] = useState<Panel>(null);
   const toggle = (p: Panel) => setPanel((now) => (now === p ? null : p));
@@ -518,8 +438,8 @@ function ReviewSection({
       )}
       {panel === "request" && <RequestPanel caseId={caseId} s={s} onDone={() => setPanel(null)} />}
 
-      <div className="space-y-4 px-5 py-4">
-        {s.body}
+      <div className="space-y-4 px-3 py-3 sm:px-4">
+        {children}
         {(review.overrides?.length ?? 0) > 0 && !anchor && (
           <ul className="space-y-1 text-[12px]" data-testid="cam-section-overrides">
             {review.overrides!.map((o) => (

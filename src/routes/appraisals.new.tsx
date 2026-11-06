@@ -25,17 +25,21 @@ import { t } from "@/config/terminology";
 import { formatInr, useCases, useCreateCase, useMeta, useProposeCase } from "@/domain/cases";
 import { errorKind } from "@/domain/errors";
 import {
+  APPLICATION_FIELDS,
   draftFrom,
   fieldKeys,
+  isDefaulted,
   markRuns,
   missingMinimum,
   normalise,
+  optionsFor,
   toCaseCreate,
   unsettled,
   type Draft,
   type Mark,
 } from "@/domain/proposal";
 import { formatBytes } from "@/domain/documents";
+import { useSession } from "@/domain/session";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/appraisals/new")({
@@ -51,6 +55,7 @@ const inputClass =
 function NewApplication() {
   const navigate = useNavigate();
   const meta = useMeta();
+  const session = useSession();
   const propose = useProposeCase();
   const create = useCreateCase();
   const [channel, setChannel] = useState<string>("");
@@ -79,7 +84,7 @@ function NewApplication() {
       setIds("");
       const result = await propose.mutateAsync({ channel: channelId, text: combined });
       setProposal(result);
-      setDraft(draftFrom(result, meta.data));
+      setDraft(draftFrom(result, meta.data, session?.user.branch));
       setSelected(null);
       setOverride(false);
       setOverrideReason("");
@@ -427,6 +432,7 @@ function ProposedCase({
 
   const set = (key: string, value: string, span?: { start: number; end: number } | null) =>
     onChange({
+      ...draft,
       values: { ...draft.values, [key]: value },
       spans: span !== undefined ? { ...draft.spans, [key]: span } : draft.spans,
       settled: { ...draft.settled, [key]: true },
@@ -434,91 +440,117 @@ function ProposedCase({
   const settle = (key: string) =>
     onChange({ ...draft, settled: { ...draft.settled, [key]: true } });
 
+  const app: string[] = [...APPLICATION_FIELDS];
+  const groups = [
+    { id: "application", keys: keys.filter((k) => app.includes(k)) },
+    { id: "borrower", keys: keys.filter((k) => !app.includes(k)) },
+  ];
+
   return (
     <Panel title={t("newApplication.proposed")} testId="proposed-case">
-      <ul className="divide-y divide-border">
-        {keys.map((key) => {
-          const f = proposal.fields[key]!;
-          const value = draft.values[key] ?? "";
-          const needs = pending.includes(key);
-          return (
-            <li
-              key={key}
-              data-field={key}
-              data-testid={`field-${key}`}
-              onClick={() => onSelect(key)}
-              className={cn(
-                "cursor-pointer px-4 py-2.5",
-                selected === key ? "bg-primary/5" : "hover:bg-surface-muted/60",
-                needs && "border-l-2 border-l-flag",
-              )}
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-[12px] font-medium text-muted-foreground">
-                  {t(`proposalField.${key}`)}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  {draft.settled[key] && (f.status === "unclear" || f.status === "invalid") && (
-                    <Chip tone="positive">
-                      <Check className="h-3 w-3" /> {t("newApplication.confirmedByYou")}
-                    </Chip>
+      {groups.map((group) => (
+        <section key={group.id} data-testid={`group-${group.id}`}>
+          <h3 className="border-b border-border bg-surface-muted/60 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            {t(`newApplication.group.${group.id}`)}
+          </h3>
+          <ul className="divide-y divide-border">
+            {group.keys.map((key) => {
+              // Product and stage are never read from the message: they have no proposal of their own.
+              const f = proposal.fields[key] ?? null;
+              const value = draft.values[key] ?? "";
+              const needs = pending.includes(key);
+              const defaulted = isDefaulted(draft, key);
+              return (
+                <li
+                  key={key}
+                  data-field={key}
+                  data-testid={`field-${key}`}
+                  onClick={() => onSelect(key)}
+                  className={cn(
+                    "cursor-pointer px-4 py-2.5",
+                    selected === key ? "bg-primary/5" : "hover:bg-surface-muted/60",
+                    needs && "border-l-2 border-l-flag",
                   )}
-                  <ProposedStatusChip status={f.status} />
-                </span>
-              </div>
-              <FieldEditor
-                field={key}
-                value={value}
-                meta={meta}
-                onChange={(v) => set(key, v)}
-                onFocus={() => onSelect(key)}
-              />
-              {key === "amount_inr" && Number(value) > 0 && (
-                <p className="mt-0.5 text-[11px] text-muted-foreground tabular">
-                  {formatInr(Number(value))}
-                </p>
-              )}
-              {f.note && <p className="mt-1 text-[11.5px] text-flag-foreground">{f.note}</p>}
-              {(f.status === "unclear" || f.status === "invalid") &&
-                (f.candidates ?? []).length > 0 && (
-                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                    <span className="text-[11px] text-muted-foreground">
-                      {t("newApplication.candidates")}
-                    </span>
-                    {(f.candidates ?? []).map((c) => (
-                      <button
-                        key={`${c.span.start}-${c.value}`}
-                        type="button"
-                        data-testid="candidate"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onSelect(key);
-                          set(key, normalise(key, c.value, meta), c.span);
-                        }}
-                        className="rounded border border-flag/40 bg-surface px-1.5 py-0.5 text-[11.5px] font-medium text-foreground hover:bg-flag-soft"
-                      >
-                        {candidateLabel(key, c.value, meta)}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              {needs && (
-                <button
-                  type="button"
-                  data-testid={`confirm-${key}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    settle(key);
-                  }}
-                  className="mt-1.5 inline-flex items-center gap-1 rounded border border-border bg-surface px-2 py-0.5 text-[11.5px] font-medium text-foreground hover:bg-muted"
                 >
-                  <Check className="h-3 w-3" /> {t("newApplication.confirmValue")}
-                </button>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-[12px] font-medium text-muted-foreground">
+                      {t(`proposalField.${key}`)}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      {f &&
+                        draft.settled[key] &&
+                        (f.status === "unclear" || f.status === "invalid") && (
+                          <Chip tone="positive">
+                            <Check className="h-3 w-3" /> {t("newApplication.confirmedByYou")}
+                          </Chip>
+                        )}
+                      {defaulted ? (
+                        <Chip tone="muted">
+                          <span data-testid="prefilled">
+                            {t(`newApplication.prefilled.${draft.defaults[key]!.source}`)}
+                          </span>
+                        </Chip>
+                      ) : f ? (
+                        <ProposedStatusChip status={f.status} />
+                      ) : null}
+                    </span>
+                  </div>
+                  <FieldEditor
+                    field={key}
+                    value={value}
+                    meta={meta}
+                    onChange={(v) => set(key, v)}
+                    onFocus={() => onSelect(key)}
+                  />
+                  {key === "amount_inr" && Number(value) > 0 && (
+                    <p className="mt-0.5 text-[11px] text-muted-foreground tabular">
+                      {formatInr(Number(value))}
+                    </p>
+                  )}
+                  {f?.note && <p className="mt-1 text-[11.5px] text-flag-foreground">{f.note}</p>}
+                  {f &&
+                    (f.status === "unclear" || f.status === "invalid") &&
+                    (f.candidates ?? []).length > 0 && (
+                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                        <span className="text-[11px] text-muted-foreground">
+                          {t("newApplication.candidates")}
+                        </span>
+                        {(f.candidates ?? []).map((c) => (
+                          <button
+                            key={`${c.span.start}-${c.value}`}
+                            type="button"
+                            data-testid="candidate"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onSelect(key);
+                              set(key, normalise(key, c.value, meta), c.span);
+                            }}
+                            className="rounded border border-flag/40 bg-surface px-1.5 py-0.5 text-[11.5px] font-medium text-foreground hover:bg-flag-soft"
+                          >
+                            {candidateLabel(key, c.value, meta)}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  {needs && (
+                    <button
+                      type="button"
+                      data-testid={`confirm-${key}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        settle(key);
+                      }}
+                      className="mt-1.5 inline-flex items-center gap-1 rounded border border-border bg-surface px-2 py-0.5 text-[11.5px] font-medium text-foreground hover:bg-muted"
+                    >
+                      <Check className="h-3 w-3" /> {t("newApplication.confirmValue")}
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))}
       {pending.length > 0 && (
         <p
           className="flex items-center gap-1.5 border-t border-border bg-flag-soft px-4 py-2 text-[12px] text-flag-foreground"
@@ -534,10 +566,11 @@ function ProposedCase({
 
 /** A candidate as the RM reads it: a configured id shows its label. */
 function candidateLabel(field: string, value: string, meta: Meta): string {
-  const list =
-    field === "constitution" ? meta.constitutions : field === "facilities" ? meta.facilities : [];
-  return list.find((o) => o.id === value)?.label ?? value.replace(/_/g, " ");
+  return optionsFor(field, meta).find((o) => o.id === value)?.label ?? value.replace(/_/g, " ");
 }
+
+/** Lists a case cannot be created without (product, stage) offer no empty choice. */
+const ALWAYS_CHOSEN = new Set(["product", "bank_stage"]);
 
 function FieldEditor({
   field,
@@ -553,17 +586,21 @@ function FieldEditor({
   onFocus: () => void;
 }) {
   const label = t(`proposalField.${field}`);
-  if (field === "constitution") {
+  const options = field === "facilities" ? [] : optionsFor(field, meta);
+  if (options.length > 0) {
     return (
       <select
         aria-label={label}
         className={inputClass}
         value={value}
         onFocus={onFocus}
+        onClick={(e) => e.stopPropagation()}
         onChange={(e) => onChange(e.target.value)}
       >
-        <option value="">{t("term.notConfirmed")}</option>
-        {meta.constitutions
+        {!ALWAYS_CHOSEN.has(field) || value === "" ? (
+          <option value="">{t("term.notConfirmed")}</option>
+        ) : null}
+        {options
           .filter((c) => c.id !== "unknown")
           .map((c) => (
             <option key={c.id} value={c.id}>
@@ -645,7 +682,10 @@ function CreateBar({
   onDiscard: () => void;
   onCreate: () => void;
 }) {
-  const missing = missingMinimum(meta.case_create_minimum, draft);
+  const missing = missingMinimum(meta.case_create_minimum, draft, {
+    product: meta.product_default,
+    bank_stage: meta.bank_stage_default,
+  });
   const pending = unsettled(proposal, draft);
   const blocked = missing.length > 0 || pending.length > 0 || duplicateBlocked;
 

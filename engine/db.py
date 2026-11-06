@@ -559,6 +559,20 @@ MIGRATIONS: list[str] = [
     );
     CREATE INDEX integrity_reviews_file ON integrity_reviews(file_id, decided_at);
     """,
+    # 20: the case's place in the bank's process (T2.1): product, case type,
+    # the loan origination system's application and customer identifiers,
+    # branch and bank stage. Every case before this one is a business-banking
+    # case; its case type, branch and stage were never recorded and stay NULL.
+    """
+    ALTER TABLE cases ADD COLUMN product TEXT;
+    ALTER TABLE cases ADD COLUMN case_type TEXT;
+    ALTER TABLE cases ADD COLUMN application_id TEXT;
+    ALTER TABLE cases ADD COLUMN customer_id TEXT;
+    ALTER TABLE cases ADD COLUMN branch TEXT;
+    ALTER TABLE cases ADD COLUMN bank_stage TEXT;
+    UPDATE cases SET product = 'bbg';
+    CREATE INDEX cases_application_id ON cases(application_id);
+    """,
 ]
 
 

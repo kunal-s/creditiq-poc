@@ -261,3 +261,65 @@ def test_the_proposed_instalment_is_asked_of_the_rm(client: TestClient, publishe
     analyst = sign_in(client, ANALYST)
     facts = client.get(f"/api/cases/{created.json()['id']}/facts", headers=analyst).json()
     assert facts["proposed_emi"]["value"] == 320000.0 and facts["proposed_emi"]["relies_on_manual"] is True
+
+
+# --- Case fields (T2.1) ---
+
+RENEWAL = """Subject: CC renewal - Kestrel Fabricators Pvt Ltd
+Annual review and renewal of the CC limit of Rs. 50 lakh, booked at Mumbai hub.
+"""
+
+
+def test_case_type_and_branch_are_read_with_their_span(client: TestClient):
+    p = _propose(client, sign_in(client, RM), RENEWAL)
+    f = p["fields"]
+    _every_value_has_a_span(RENEWAL, p)
+    assert f["case_type"]["status"] == "found" and f["case_type"]["value"] == "renewal"
+    assert _source(RENEWAL, f["case_type"]).lower() == "renewal"
+    assert f["branch"]["value"] == "mumbai_hub" and _source(RENEWAL, f["branch"]) == "Mumbai hub"
+
+
+def test_two_case_types_are_unclear_with_both_candidates(client: TestClient):
+    text = "Kestrel Fabricators Pvt Ltd: renewal of CC 50L with enhancement to 80L, PAN AAACK1234F"
+    f = _propose(client, sign_in(client, RM), text)["fields"]
+    assert f["case_type"]["status"] == "unclear" and f["case_type"]["value"] is None
+    assert {c["value"] for c in f["case_type"]["candidates"]} == {"renewal", "enhancement"}
+
+
+def test_takeover_in_capitals_and_new_is_not_a_case_type_word(client: TestClient):
+    rm = sign_in(client, RM)
+    assert _propose(client, rm, "Kestrel Fabricators Pvt Ltd, BT of TL 1 cr from another bank")["fields"][
+        "case_type"]["value"] == "takeover"
+    # "bt" in lower case is not the takeover abbreviation; "new" alone is too common to read as a case type.
+    f = _propose(client, rm, WHATSAPP, channel="whatsapp")["fields"]
+    assert f["case_type"]["status"] == "not_found"
+
+
+def test_case_fields_absent_from_the_message_are_not_found(client: TestClient):
+    p = _propose(client, sign_in(client, RM), CLEAN_EMAIL)
+    for name in ("case_type", "branch", "application_id", "customer_id"):
+        assert p["fields"][name]["status"] == "not_found", name
+    # Product is required but has a configured default, so it is never missing.
+    assert "product" not in p["missing_minimum"]
+
+
+def test_application_and_customer_ids_are_read_only_with_a_configured_pattern(client: TestClient, monkeypatch):
+    import copy
+
+    from engine import proposal
+    from engine.config import load_app_config
+
+    cfg = copy.deepcopy(load_app_config())
+    cfg["case_identifiers"] = {
+        "application_id": {"pattern": r"\bApp(?:lication)?\s*(?:ID|No\.?)?\s*[:\-]?\s*([A-Z]{2}\d{6})\b"},
+        "customer_id": {"pattern": r"\bCust(?:omer)?\s*ID\s*[:\-]?\s*(\d{8})\b"},
+    }
+    monkeypatch.setattr(proposal, "load_app_config", lambda: cfg)
+    text = "Kestrel Fabricators Pvt Ltd, CC 50L. Application ID: LA123456, Customer ID 40012345."
+    p = _propose(client, sign_in(client, RM), text)
+    f = p["fields"]
+    _every_value_has_a_span(text, p)
+    assert f["application_id"]["value"] == "LA123456" and _source(text, f["application_id"]) == "LA123456"
+    assert f["customer_id"]["value"] == "40012345"
+    two = _propose(client, sign_in(client, RM), text + " App No LA654321")["fields"]["application_id"]
+    assert two["status"] == "unclear" and len(two["candidates"]) == 2

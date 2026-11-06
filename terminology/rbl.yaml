@@ -1297,6 +1297,12 @@ newApplication:
   proposedEmpty: The proposed application appears here once the message has been read.
   candidates: "Could be:"
   confirmValue: Confirm this value
+  group:
+    application: Application
+    borrower: Borrower
+  prefilled:
+    "default:config": Default
+    "default:rm": Your branch
   confirmedByYou: Confirmed by you
   needConfirmation: "To confirm before creating: {n}"
   duplicate: "An application for this borrower already exists: {id} · {borrower}"
@@ -1327,6 +1333,12 @@ proposalField:
   existing_banking: Existing banking
   contact: Contact
   proposed_emi_inr: Proposed monthly instalment on the term loan (INR)
+  product: Product
+  case_type: Case type
+  application_id: Application ID
+  customer_id: Customer ID
+  branch: Branch
+  bank_stage: Stage
 
 proposedStatus:
   found: Found

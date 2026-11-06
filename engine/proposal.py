@@ -24,7 +24,7 @@ from pathlib import Path
 
 from . import identifiers
 from .cases import find_duplicates
-from .config import load_app_config
+from .config import load_app_config, option_default, option_list
 from .contracts import CaseProposal, ProposedCandidate, ProposedField, Span, StrippedSpan
 from .names import normalise_name, similarity
 from .parties import name_tolerance
@@ -292,6 +292,9 @@ def _amounts(masked: str) -> list[Amount]:
 @dataclass
 class Lexicon:
     facilities: list[tuple[str, re.Pattern]]
+    case_types: list[tuple[str, re.Pattern]]
+    branches: list[tuple[str, re.Pattern]]
+    id_patterns: dict[str, re.Pattern | None]
     turnover: list[re.Pattern]
     request: re.Pattern
     existing: re.Pattern
@@ -307,15 +310,17 @@ class Lexicon:
     def load(cls) -> "Lexicon":
         cfg = load_app_config()
         p = cfg["proposal"]
-        facilities = []
-        for f in cfg["facilities"]:
-            for alias in f.get("aliases", []):
-                capitals = alias == alias.upper() and any(c.isalpha() for c in alias)
-                facilities.append((f["id"], _words([alias], case_sensitive=capitals)))
+        facilities = _alias_patterns(cfg["facilities"])
         suffixes = p["company_suffixes"] + p["firm_suffixes"]
         suffix_alts = "|".join(re.escape(s) for s in sorted(suffixes, key=len, reverse=True))
         return cls(
             facilities=facilities,
+            case_types=_alias_patterns(option_list("case_types")),
+            branches=_alias_patterns(option_list("branches")),
+            id_patterns={
+                key: re.compile(spec["pattern"]) if spec.get("pattern") else None
+                for key, spec in cfg["case_identifiers"].items()
+            },
             turnover=[_words(p["turnover_words"]), _words(p["turnover_capitals"], case_sensitive=True)],
             request=_words(p["request_words"]),
             existing=_words(p["existing_words"]),
@@ -331,6 +336,48 @@ class Lexicon:
             honorifics={w.lower() for w in p["honorifics"]},
             roles=p["role_words"],
         )
+
+
+def _alias_patterns(options: list[dict]) -> list[tuple[str, re.Pattern]]:
+    """One whole-word pattern per alias. An alias written in capitals only
+    (CC, BT) matches in capitals only; any other alias regardless of case."""
+    out = []
+    for option in options:
+        for alias in option.get("aliases") or []:
+            capitals = alias == alias.upper() and any(c.isalpha() for c in alias)
+            out.append((option["id"], _words([alias], case_sensitive=capitals)))
+    return out
+
+
+def _alias_hits(masked: str, patterns: list[tuple[str, re.Pattern]], kind: str) -> list[Hit]:
+    return _dedupe_overlaps([Hit(oid, m.start(), m.end(), kind=kind) for oid, pat in patterns for m in pat.finditer(masked)])
+
+
+def _option_field(hits: list[Hit], note: str) -> ProposedField:
+    """T2.1: one configured option named in the message is found, with its
+    span; two different ones are unclear, each with its span."""
+    if not hits:
+        return _not_found()
+    firsts: dict[str, Hit] = {}
+    for h in hits:
+        firsts.setdefault(h.value, h)
+    if len(firsts) == 1:
+        return _found(hits[0])
+    return ProposedField(value=None, status="unclear", candidates=[h.candidate() for h in firsts.values()], note=note)
+
+
+def _pattern_field(masked: str, pattern: re.Pattern | None, label: str) -> ProposedField:
+    """An identifier from the loan origination system, read only when its
+    pattern is configured. The first capture group is the value, else the
+    whole match."""
+    if pattern is None:
+        return _not_found()
+    hits = []
+    for m in pattern.finditer(masked):
+        group = 1 if pattern.groups else 0
+        if m.group(group):
+            hits.append(Hit(m.group(group), m.start(group), m.end(group), kind=label))
+    return _identifier_field(hits, label)
 
 
 def _facility_hits(masked: str, lex: Lexicon) -> list[Hit]:
@@ -722,6 +769,10 @@ def _facilities_field(hits: list[Hit], zones: list[tuple[int, int]]) -> Proposed
     )
 
 
+# Case fields never read from the message: a new case takes the configured
+# default unless the RM chooses otherwise (T2.1), so they are never missing.
+DEFAULTED = {"product": "products", "bank_stage": "bank_stages"}
+
 FIELD_ALIASES = {"borrower": "borrower", "facilities": "facilities", "amount_inr": "amount_inr"}
 
 
@@ -757,6 +808,15 @@ def parse(text: str) -> tuple[dict[str, ProposedField], list[StrippedSpan]]:
         "declared_turnover_inr": _figure_field([a for a in amounts if a.kind == "turnover"], "turnover"),
         "existing_banking": _existing_field(masked, zones),
         "contact": _contact_field(masked),
+        "case_type": _option_field(
+            _alias_hits(masked, lex.case_types, "case_type"),
+            "The message describes the case in more than one way; confirm the case type.",
+        ),
+        "branch": _option_field(
+            _alias_hits(masked, lex.branches, "branch"), "The message names more than one branch; confirm which."
+        ),
+        "application_id": _pattern_field(masked, lex.id_patterns.get("application_id"), "application ID"),
+        "customer_id": _pattern_field(masked, lex.id_patterns.get("customer_id"), "customer ID"),
     }
     return fields, norm.stripped
 
@@ -777,6 +837,7 @@ def propose(conn: sqlite3.Connection, root: Path, text: str) -> CaseProposal:
     minimum = load_app_config()["case_create_minimum"]
     missing = [
         name for name in minimum
+        if name not in DEFAULTED or option_default(DEFAULTED[name]) is None
         if name not in fields or fields[name].value is None or fields[name].status in ("not_found", "invalid")
     ]
     return CaseProposal(

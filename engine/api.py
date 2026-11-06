@@ -58,7 +58,15 @@ from . import (
     uploads,
     xv,
 )
-from .config import load_app_config, load_roles_config, option_ids, role_label, find_user_by_id
+from .config import (
+    find_user_by_id,
+    load_app_config,
+    load_roles_config,
+    option_default,
+    option_ids,
+    option_list,
+    role_label,
+)
 from .configstore import reader as configstore_reader
 from .configstore.schema import ApprovalMatrixSection, ChecklistTaxonomySection, DocumentTypesSection, PolicySection
 from .contracts.ingest import IngestIntegrityFigure
@@ -236,6 +244,12 @@ def meta(_: dict = Depends(current_user)) -> dict:
         "channels": [{"id": c["id"], "label": c["label"]} for c in cfg["channels"]],
         "constitutions": [{"id": c["id"], "label": c["label"]} for c in cfg["constitutions"]],
         "facilities": [{"id": f["id"], "label": f["label"]} for f in cfg["facilities"]],
+        "products": [{"id": o["id"], "label": o["label"]} for o in option_list("products")],
+        "product_default": option_default("products"),
+        "case_types": [{"id": o["id"], "label": o["label"]} for o in option_list("case_types")],
+        "branches": [{"id": o["id"], "label": o["label"]} for o in option_list("branches")],
+        "bank_stages": [{"id": o["id"], "label": o["label"]} for o in option_list("bank_stages")],
+        "bank_stage_default": option_default("bank_stages"),
         "case_create_minimum": cfg["case_create_minimum"],
     }
 

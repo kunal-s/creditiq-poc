@@ -2273,9 +2273,47 @@
             "title": "Amount Inr",
             "type": "integer"
           },
+          "application_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Application Id"
+          },
+          "bank_stage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bank Stage"
+          },
           "borrower": {
             "minLength": 1,
             "title": "Borrower",
+            "type": "string"
+          },
+          "branch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Branch"
+          },
+          "case_type": {
+            "default": "unknown",
+            "title": "Case Type",
             "type": "string"
           },
           "channel": {
@@ -2302,6 +2340,17 @@
             "default": "unknown",
             "title": "Constitution",
             "type": "string"
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Id"
           },
           "duplicate_override_reason": {
             "anyOf": [
@@ -2362,6 +2411,17 @@
             ],
             "title": "Pan"
           },
+          "product": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product"
+          },
           "udyam": {
             "anyOf": [
               {
@@ -2404,6 +2464,17 @@
             "title": "Amount Inr",
             "type": "integer"
           },
+          "application_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Application Id"
+          },
           "as_of": {
             "title": "As Of",
             "type": "string"
@@ -2430,9 +2501,42 @@
             ],
             "title": "Assessment Opened By"
           },
+          "bank_stage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bank Stage"
+          },
           "borrower": {
             "title": "Borrower",
             "type": "string"
+          },
+          "branch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Branch"
+          },
+          "case_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Case Type"
           },
           "channel": {
             "title": "Channel",
@@ -2475,6 +2579,17 @@
           "created_by": {
             "title": "Created By",
             "type": "string"
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Id"
           },
           "facilities": {
             "items": {
@@ -2529,6 +2644,17 @@
               }
             ],
             "title": "Pan"
+          },
+          "product": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product"
           },
           "rm": {
             "title": "Rm",
@@ -2835,9 +2961,31 @@
             "title": "Amount Inr",
             "type": "integer"
           },
+          "bank_stage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bank Stage"
+          },
           "borrower": {
             "title": "Borrower",
             "type": "string"
+          },
+          "case_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Case Type"
           },
           "constitution": {
             "title": "Constitution",
@@ -2871,6 +3019,17 @@
           "open_review_items": {
             "title": "Open Review Items",
             "type": "integer"
+          },
+          "product": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product"
           },
           "rm": {
             "title": "Rm",
@@ -6906,11 +7065,43 @@
       "Meta": {
         "description": "Choice lists the screens need, from config/app.yaml.",
         "properties": {
+          "bank_stage_default": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bank Stage Default"
+          },
+          "bank_stages": {
+            "items": {
+              "$ref": "#/components/schemas/Option"
+            },
+            "title": "Bank Stages",
+            "type": "array"
+          },
+          "branches": {
+            "items": {
+              "$ref": "#/components/schemas/Option"
+            },
+            "title": "Branches",
+            "type": "array"
+          },
           "case_create_minimum": {
             "items": {
               "type": "string"
             },
             "title": "Case Create Minimum",
+            "type": "array"
+          },
+          "case_types": {
+            "items": {
+              "$ref": "#/components/schemas/Option"
+            },
+            "title": "Case Types",
             "type": "array"
           },
           "channels": {
@@ -6933,12 +7124,34 @@
             },
             "title": "Facilities",
             "type": "array"
+          },
+          "product_default": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Default"
+          },
+          "products": {
+            "items": {
+              "$ref": "#/components/schemas/Option"
+            },
+            "title": "Products",
+            "type": "array"
           }
         },
         "required": [
           "channels",
           "constitutions",
           "facilities",
+          "products",
+          "case_types",
+          "branches",
+          "bank_stages",
           "case_create_minimum"
         ],
         "title": "Meta",

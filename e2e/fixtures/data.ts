@@ -170,7 +170,27 @@ export const META: Meta = {
     { id: "term_loan", label: "Term loan" },
     { id: "bank_guarantee", label: "Bank guarantee" },
   ],
-  case_create_minimum: ["borrower", "facilities", "amount_inr"],
+  products: [{ id: "bbg", label: "Business banking" }],
+  product_default: "bbg",
+  case_types: [
+    { id: "new", label: "New" },
+    { id: "renewal", label: "Renewal" },
+    { id: "enhancement", label: "Enhancement" },
+    { id: "takeover", label: "Takeover" },
+    { id: "unknown", label: "Not yet confirmed" },
+  ],
+  branches: [
+    { id: "mumbai_hub", label: "Mumbai hub" },
+    { id: "head_office", label: "Head office" },
+  ],
+  bank_stages: [
+    { id: "login", label: "Login" },
+    { id: "pd", label: "Personal discussion" },
+    { id: "sanction", label: "Sanction" },
+    { id: "post_sanction", label: "Post-sanction" },
+  ],
+  bank_stage_default: "login",
+  case_create_minimum: ["borrower", "product", "facilities", "amount_inr"],
 };
 
 // --- Cases ---
@@ -770,6 +790,10 @@ export function proposal(duplicates: CaseSummary[] = []): CaseProposal {
         status: "found",
         span: spanOf("Kabir Rao and Leela Varghese"),
       },
+      case_type: { value: "renewal", status: "found", span: spanOf("renewal") },
+      branch: { value: null, status: "not_found" },
+      application_id: { value: null, status: "not_found" },
+      customer_id: { value: null, status: "not_found" },
     },
   };
 }

@@ -16,7 +16,7 @@ import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .config import find_user_by_id, load_app_config, option_ids
+from .config import branch_for_label, find_user_by_id, load_app_config, option_default, option_ids
 from .contracts import CaseCreate, CaseDetail, CaseSummary, HeaderField
 from .db import log_decision, transaction
 from .names import normalise_name, similarity
@@ -50,6 +50,45 @@ def _validate(data: CaseCreate) -> None:
     unknown = set(data.facilities) - option_ids("facilities")
     if unknown:
         raise CaseError(f"unknown facilities {sorted(unknown)}")
+    if data.case_type not in option_ids("case_types"):
+        raise CaseError(f"unknown case type {data.case_type!r}")
+    for value, key, label in (
+        (data.product, "products", "product"),
+        (data.branch, "branches", "branch"),
+        (data.bank_stage, "bank_stages", "bank stage"),
+    ):
+        if value is not None and value not in option_ids(key):
+            raise CaseError(f"unknown {label} {value!r}")
+
+
+def _clean_id(value: str | None) -> str | None:
+    value = (value or "").strip()
+    return value or None
+
+
+def _with_defaults(data: CaseCreate, created_by: str) -> CaseCreate:
+    """T2.1: fill product and bank stage from their configured defaults and the
+    branch from the RM's own, recording each in the header with where it came
+    from, so a default is never mistaken for a confirmed value (F-01.2)."""
+    header = dict(data.header)
+    filled: dict[str, str | None] = {}
+    rm_branch = branch_for_label((find_user_by_id(created_by) or {}).get("branch"))
+    for name, current, default, source in (
+        ("product", data.product, option_default("products"), "default:config"),
+        ("bank_stage", data.bank_stage, option_default("bank_stages"), "default:config"),
+        ("branch", data.branch, rm_branch, "default:rm"),
+    ):
+        if current is not None or default is None:
+            continue
+        filled[name] = default
+        if name not in header:
+            header[name] = HeaderField(value=default, proposed=default, source=source)
+    return data.model_copy(update={
+        **filled,
+        "application_id": _clean_id(data.application_id),
+        "customer_id": _clean_id(data.customer_id),
+        "header": header,
+    })
 
 
 class DuplicateCase(CaseError):
@@ -68,14 +107,20 @@ def find_duplicates(
     gstin: str | None,
     borrower: str | None,
     name_threshold: float,
+    application_id: str | None = None,
 ) -> list[CaseSummary]:
-    """F-04.5: existing cases matching on PAN, GSTIN or normalised name."""
+    """F-04.5: existing cases matching on PAN, GSTIN, application ID (T2.1) or normalised name."""
     pan = (pan or "").strip().upper() or None
     gstin = (gstin or "").strip().upper() or None
+    application_id = (application_id or "").strip().upper() or None
     target = normalise_name(borrower)
     out = []
     for row in conn.execute("SELECT * FROM cases ORDER BY created_at"):
-        same = (pan and (row["pan"] or "").upper() == pan) or (gstin and (row["gstin"] or "").upper() == gstin)
+        same = (
+            (pan and (row["pan"] or "").upper() == pan)
+            or (gstin and (row["gstin"] or "").upper() == gstin)
+            or (application_id and (row["application_id"] or "").upper() == application_id)
+        )
         if not same and target:
             same = normalise_name(row["borrower"]) == target or similarity(row["borrower"], borrower) >= name_threshold
         if same:
@@ -162,8 +207,10 @@ def create_case(
 ) -> CaseDetail:
     _validate(data)
     _check_message_sources(data)
+    data = _with_defaults(data, created_by)
     duplicates = find_duplicates(
-        conn, pan=data.pan, gstin=data.gstin, borrower=data.borrower, name_threshold=name_threshold
+        conn, pan=data.pan, gstin=data.gstin, borrower=data.borrower, name_threshold=name_threshold,
+        application_id=data.application_id,
     )
     if duplicates and not (data.duplicate_override_reason or "").strip():
         raise DuplicateCase(duplicates)
@@ -173,8 +220,9 @@ def create_case(
         case_id = _next_case_id(conn, now.year)
         conn.execute(
             """INSERT INTO cases (id, borrower, constitution, facilities, amount_inr, pan, gstin, cin, udyam,
-                   collateral_present, channel, stage, as_of, created_by, created_at, config_version, header)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Intake', ?, ?, ?, ?, ?)""",
+                   collateral_present, channel, stage, as_of, created_by, created_at, config_version, header,
+                   product, case_type, application_id, customer_id, branch, bank_stage)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Intake', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 case_id,
                 data.borrower.strip(),
@@ -192,6 +240,12 @@ def create_case(
                 now.isoformat(timespec="seconds"),
                 config_version,
                 json.dumps({k: v.model_dump() for k, v in data.header.items()}),
+                data.product,
+                data.case_type,
+                data.application_id,
+                data.customer_id,
+                data.branch,
+                data.bank_stage,
             ),
         )
         log_decision(
@@ -203,6 +257,12 @@ def create_case(
             detail=json.dumps(
                 {
                     "channel": data.channel,
+                    "product": data.product,
+                    "case_type": data.case_type,
+                    "application_id": data.application_id,
+                    "customer_id": data.customer_id,
+                    "branch": data.branch,
+                    "bank_stage": data.bank_stage,
                     "config_version": config_version,
                     "duplicate_override_reason": data.duplicate_override_reason,
                     "duplicates": [d.id for d in duplicates],
@@ -306,6 +366,9 @@ def _summary_fields(conn: sqlite3.Connection, row: sqlite3.Row) -> dict:
         "facilities": json.loads(row["facilities"]),
         "amount_inr": row["amount_inr"],
         "stage": row["stage"],
+        "product": row["product"],
+        "case_type": row["case_type"],
+        "bank_stage": row["bank_stage"],
         "rm": (find_user_by_id(row["created_by"]) or {}).get("name", row["created_by"]),
         "created_at": row["created_at"],
         "open_review_items": _open_reviews(conn, row["id"]),
@@ -336,6 +399,9 @@ def get_case(conn: sqlite3.Connection, case_id: str) -> CaseDetail | None:
         udyam=row["udyam"],
         collateral_present=bool(row["collateral_present"]),
         channel=row["channel"],
+        application_id=row["application_id"],
+        customer_id=row["customer_id"],
+        branch=row["branch"],
         as_of=row["as_of"],
         created_by=row["created_by"],
         config_version=row["config_version"],

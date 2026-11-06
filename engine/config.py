@@ -54,6 +54,28 @@ def find_user_by_id(user_id: str) -> dict | None:
     return None
 
 
+def option_list(key: str) -> list[dict]:
+    """An option list in app.yaml. Lists with a default (products,
+    bank_stages) keep their options under `options`."""
+    node = load_app_config()[key]
+    return node["options"] if isinstance(node, dict) else node
+
+
 def option_ids(key: str) -> set[str]:
-    """Ids of an option list in app.yaml (channels, constitutions, facilities)."""
-    return {item["id"] for item in load_app_config()[key]}
+    """Ids of an option list in app.yaml (channels, constitutions, facilities,
+    products, case_types, branches, bank_stages)."""
+    return {item["id"] for item in option_list(key)}
+
+
+def option_default(key: str) -> str | None:
+    """The configured default of an option list, or None if it has none."""
+    node = load_app_config()[key]
+    return node.get("default") if isinstance(node, dict) else None
+
+
+def branch_for_label(label: str | None) -> str | None:
+    """The branch id whose label matches a user's branch (case-insensitive)."""
+    if not label:
+        return None
+    needle = label.strip().lower()
+    return next((b["id"] for b in option_list("branches") if b["label"].lower() == needle), None)

@@ -27,6 +27,21 @@ test("TC-01: paste, verify every field, confirm, create", async ({ page }) => {
   );
   await expect(page.getByTestId("field-amount_inr").getByRole("textbox")).toHaveValue("5000000");
 
+  // The application group comes first (T2.1): a case type read from the message, product and
+  // stage at their configured defaults, the branch at the RM's own.
+  const app = page.getByTestId("group-application");
+  await expect(app.getByTestId("field-case_type").getByRole("combobox")).toHaveValue("renewal");
+  await expect(status("case_type")).toHaveText("Found");
+  await expect(app.getByTestId("field-product").getByRole("combobox")).toHaveValue("bbg");
+  await expect(app.getByTestId("field-product").getByTestId("prefilled")).toHaveText("Default");
+  await expect(app.getByTestId("field-branch").getByRole("combobox")).toHaveValue("mumbai_hub");
+  await expect(app.getByTestId("field-branch").getByTestId("prefilled")).toHaveText("Your branch");
+  await expect(app.getByTestId("field-bank_stage").getByRole("combobox")).toHaveValue("login");
+  await expect(page.getByTestId("group-borrower").getByTestId("field-borrower")).toBeVisible();
+  // The RM moves the case to another stage: no longer a default.
+  await app.getByTestId("field-bank_stage").getByRole("combobox").selectOption("pd");
+  await expect(app.getByTestId("field-bank_stage").getByTestId("prefilled")).toHaveCount(0);
+
   // Headers set aside before reading are shown greyed, never proposed from.
   await expect(page.locator('mark[data-mark="stripped"]').first()).toContainText("From: RM desk");
 
@@ -73,6 +88,20 @@ test("TC-01: paste, verify every field, confirm, create", async ({ page }) => {
     proposed: "5000000",
     source: `message:${amount.start}-${amount.end}`,
   });
+  expect(body.product).toBe("bbg");
+  expect(body.case_type).toBe("renewal");
+  expect(body.branch).toBe("mumbai_hub");
+  expect(body.bank_stage).toBe("pd");
+  expect(body.application_id).toBeNull();
+  expect(body.header?.["product"]).toEqual({
+    value: "bbg",
+    proposed: "bbg",
+    source: "default:config",
+  });
+  expect(body.header?.["branch"]?.source).toBe("default:rm");
+  expect(body.header?.["bank_stage"]).toEqual({ value: "pd", proposed: null, source: "person" });
+  const renewal = spanOf("renewal");
+  expect(body.header?.["case_type"]?.source).toBe(`message:${renewal.start}-${renewal.end}`);
   const pvt = spanOf("Pvt Ltd", 1);
   expect(body.header?.["constitution"]?.source).toBe(`message:${pvt.start}-${pvt.end}`);
 });

@@ -2139,8 +2139,19 @@ export interface components {
     CaseCreate: {
       /** Amount Inr */
       amount_inr: number;
+      /** Application Id */
+      application_id?: string | null;
+      /** Bank Stage */
+      bank_stage?: string | null;
       /** Borrower */
       borrower: string;
+      /** Branch */
+      branch?: string | null;
+      /**
+       * Case Type
+       * @default unknown
+       */
+      case_type: string;
       /** Channel */
       channel: string;
       /** Cin */
@@ -2155,6 +2166,8 @@ export interface components {
        * @default unknown
        */
       constitution: string;
+      /** Customer Id */
+      customer_id?: string | null;
       /** Duplicate Override Reason */
       duplicate_override_reason?: string | null;
       /** Facilities */
@@ -2169,6 +2182,8 @@ export interface components {
       message_text?: string | null;
       /** Pan */
       pan?: string | null;
+      /** Product */
+      product?: string | null;
       /** Udyam */
       udyam?: string | null;
     };
@@ -2184,14 +2199,22 @@ export interface components {
     CaseDetail: {
       /** Amount Inr */
       amount_inr: number;
+      /** Application Id */
+      application_id?: string | null;
       /** As Of */
       as_of: string;
       /** Assessment Opened At */
       assessment_opened_at?: string | null;
       /** Assessment Opened By */
       assessment_opened_by?: string | null;
+      /** Bank Stage */
+      bank_stage?: string | null;
       /** Borrower */
       borrower: string;
+      /** Branch */
+      branch?: string | null;
+      /** Case Type */
+      case_type?: string | null;
       /** Channel */
       channel: string;
       /** Cin */
@@ -2206,6 +2229,8 @@ export interface components {
       created_at: string;
       /** Created By */
       created_by: string;
+      /** Customer Id */
+      customer_id?: string | null;
       /** Facilities */
       facilities: string[];
       /**
@@ -2230,6 +2255,8 @@ export interface components {
       open_review_items: number;
       /** Pan */
       pan: string | null;
+      /** Product */
+      product?: string | null;
       /** Rm */
       rm: string;
       /**
@@ -2332,8 +2359,12 @@ export interface components {
     CaseSummary: {
       /** Amount Inr */
       amount_inr: number;
+      /** Bank Stage */
+      bank_stage?: string | null;
       /** Borrower */
       borrower: string;
+      /** Case Type */
+      case_type?: string | null;
       /** Constitution */
       constitution: string;
       /** Created At */
@@ -2354,6 +2385,8 @@ export interface components {
       id: string;
       /** Open Review Items */
       open_review_items: number;
+      /** Product */
+      product?: string | null;
       /** Rm */
       rm: string;
       /**
@@ -3870,14 +3903,26 @@ export interface components {
      * @description Choice lists the screens need, from config/app.yaml.
      */
     Meta: {
+      /** Bank Stage Default */
+      bank_stage_default?: string | null;
+      /** Bank Stages */
+      bank_stages: components["schemas"]["Option"][];
+      /** Branches */
+      branches: components["schemas"]["Option"][];
       /** Case Create Minimum */
       case_create_minimum: string[];
+      /** Case Types */
+      case_types: components["schemas"]["Option"][];
       /** Channels */
       channels: components["schemas"]["Option"][];
       /** Constitutions */
       constitutions: components["schemas"]["Option"][];
       /** Facilities */
       facilities: components["schemas"]["Option"][];
+      /** Product Default */
+      product_default?: string | null;
+      /** Products */
+      products: components["schemas"]["Option"][];
     };
     /** MonthConduct */
     MonthConduct: {

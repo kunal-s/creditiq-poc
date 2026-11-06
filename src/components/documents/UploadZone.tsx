@@ -1,11 +1,8 @@
 import { useRef, useState } from "react";
 import { Camera, FileUp, UploadCloud } from "lucide-react";
 import { t } from "@/config/terminology";
+import { ACCEPT } from "@/domain/documents";
 import { cn } from "@/lib/utils";
-
-/** Accepted on the picker; the engine decides the true type from content (F-05.3). */
-const ACCEPT =
-  ".pdf,.jpg,.jpeg,.png,.tif,.tiff,.xlsx,.xls,.csv,.docx,.zip,application/pdf,image/*,application/zip";
 
 /** Drop zone and pickers for files, several files or ZIP archives (F-05.1),
  * with a camera input for phones (F-06.1). */

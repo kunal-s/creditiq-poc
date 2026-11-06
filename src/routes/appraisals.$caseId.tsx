@@ -10,7 +10,7 @@ import { CASE_TABS, caseTabPath } from "@/components/shell/nav";
 import { ScoreBar } from "@/components/common/Panel";
 import { t } from "@/config/terminology";
 import { formatInr, stageLabel, useLabels } from "@/domain/cases";
-import { countItems, readyForCredit, useChecklist } from "@/domain/checklist";
+import { countItems, readyForCredit, scoreText, useChecklist } from "@/domain/checklist";
 import { useCaseProgress } from "@/domain/progress";
 import { useCan, useSession } from "@/domain/session";
 import { cn } from "@/lib/utils";
@@ -116,7 +116,7 @@ function CaseHeader({
             <div className="flex items-baseline justify-between gap-2">
               <span className="field-label">{t("caseHeader.readiness")}</span>
               <span className="tabular text-[12.5px] font-semibold leading-none text-foreground">
-                {r ? `${Math.round(r.score_pct)}%` : "—"}
+                {r ? `${scoreText(r.score_pct, r.gate_pct)}%` : "—"}
               </span>
             </div>
             <ScoreBar

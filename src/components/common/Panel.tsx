@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { scoreTone } from "./scoreTone";
 
 /** The prototype's titled panel. */
 export function Panel({
@@ -9,6 +10,7 @@ export function Panel({
   children,
   className,
   testId,
+  id,
 }: {
   title: string;
   subtitle?: ReactNode;
@@ -16,9 +18,11 @@ export function Panel({
   children: ReactNode;
   className?: string;
   testId?: string;
+  id?: string;
 }) {
   return (
     <section
+      id={id}
       className={cn("min-w-0 rounded border border-border bg-surface", className)}
       data-testid={testId}
     >
@@ -123,14 +127,7 @@ export function ScoreBar({
   blocking?: number;
   className?: string;
 }) {
-  const tone =
-    score >= gate && !blocking
-      ? "bg-positive"
-      : blocking
-        ? "bg-destructive"
-        : score >= gate * 0.75
-          ? "bg-flag"
-          : "bg-destructive";
+  const tone = scoreTone(score, gate, blocking);
   return (
     <div className={cn("h-1.5 overflow-hidden rounded-full bg-muted", className)}>
       <div

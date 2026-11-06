@@ -14,7 +14,14 @@ import type { AssessmentGate, Readiness } from "@/api/types";
 import { Chip, Panel } from "@/components/common/Panel";
 import { t } from "@/config/terminology";
 import { useOpenAssessment } from "@/domain/cases";
-import { countItems, readyForCredit, useTaxonomy } from "@/domain/checklist";
+import {
+  countItems,
+  pointsToGo,
+  readyForCredit,
+  scoreText,
+  toGoText,
+  useTaxonomy,
+} from "@/domain/checklist";
 import { useCan } from "@/domain/session";
 import { cn } from "@/lib/utils";
 import { gateConditions } from "./conditions";
@@ -42,7 +49,8 @@ export function ReadinessPanel({
   const mayCreate = useCan("review.decide");
   const taxonomy = useTaxonomy();
   const ready = readyForCredit(r);
-  const score = Math.round(r.score_pct);
+  // As printed everywhere: never the gate's figure while the gate is unmet.
+  const score = scoreText(r.score_pct, r.gate_pct);
   const counts = countItems(r.items);
   const blocking = r.items.filter((i) => i.blocking);
   const blockingDone = blocking.filter((i) => DONE.has(i.status)).length;
@@ -177,19 +185,13 @@ export function ReadinessPanel({
           >
             <div className="flex items-center gap-3">
               {/* The score is shown once, in the ring. */}
-              <Ring value={r.score_pct} target={r.gate_pct} met={r.gate_met} />
+              <Ring value={r.score_pct} text={score} target={r.gate_pct} met={r.gate_met} />
               <div className="text-[12px]">
                 <p className="font-medium text-foreground">{t("readiness.score")}</p>
                 <p className="text-muted-foreground">
                   {t("assessment.tile.needs", { gate: Math.round(r.gate_pct) })}
                 </p>
-                {!r.gate_met && (
-                  <p className="text-muted-foreground">
-                    {t("assessment.tile.toGo", {
-                      n: Math.max(0, Math.round(r.gate_pct - r.score_pct)),
-                    })}
-                  </p>
-                )}
+                {!r.gate_met && <p className="text-muted-foreground">{toGoText(pointsToGo(r))}</p>}
               </div>
             </div>
           </Tile>
@@ -368,7 +370,18 @@ function Tile({
 
 /** The score as a ring: the solid arc is the score, the pale arc after it is the way still
  * to go to the gate, and the rest of the ring is grey. */
-function Ring({ value, target, met }: { value: number; target: number; met: boolean }) {
+function Ring({
+  value,
+  text,
+  target,
+  met,
+}: {
+  value: number;
+  /** The score as printed. */
+  text: string;
+  target: number;
+  met: boolean;
+}) {
   const r = 20;
   const c = 2 * Math.PI * r;
   const clamp = (pct: number) => Math.min(100, Math.max(0, pct)) / 100;
@@ -376,7 +389,7 @@ function Ring({ value, target, met }: { value: number; target: number; met: bool
   const gap = Math.max(0, clamp(target) * c - done);
   const arc = { cx: 26, cy: 26, r, fill: "none", strokeWidth: 5, transform: "rotate(-90 26 26)" };
   return (
-    <svg width="52" height="52" viewBox="0 0 52 52" role="img" aria-label={`${Math.round(value)}%`}>
+    <svg width="52" height="52" viewBox="0 0 52 52" role="img" aria-label={`${text}%`}>
       <circle {...arc} className="stroke-border" />
       {!met && gap > 0 && (
         <circle
@@ -394,7 +407,7 @@ function Ring({ value, target, met }: { value: number; target: number; met: bool
         className="tabular fill-foreground text-[11px] font-semibold"
         data-testid="readiness-score"
       >
-        {Math.round(value)}%
+        {text}%
       </text>
     </svg>
   );

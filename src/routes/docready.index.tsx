@@ -6,7 +6,7 @@ import { QueryView } from "@/components/common/States";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { t } from "@/config/terminology";
 import { formatDate, formatInr, useCases, useLabels } from "@/domain/cases";
-import { countItems, readyForCredit, useChecklists } from "@/domain/checklist";
+import { countItems, readyForCredit, scoreText, useChecklists } from "@/domain/checklist";
 import { cn } from "@/lib/utils";
 
 // The readiness console, as the original design: every appraisal still collecting documents,
@@ -178,8 +178,8 @@ function ReadinessConsole() {
                                     gate={r.gate_pct}
                                     blocking={r.blocking_open}
                                   />
-                                  <span className="tabular w-9 text-right font-semibold">
-                                    {Math.round(r.score_pct)}%
+                                  <span className="tabular min-w-9 text-right font-semibold">
+                                    {scoreText(r.score_pct, r.gate_pct)}%
                                   </span>
                                 </div>
                                 <p className="mt-1 text-[11px] text-muted-foreground">

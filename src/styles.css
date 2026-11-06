@@ -212,6 +212,15 @@
   color: var(--color-muted-foreground);
 }
 
+/* A provisional readiness score: the meter's fill is striped, so it never reads as final. */
+@utility pattern-stripes {
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgb(255 255 255 / 0.35) 0 4px,
+    transparent 4px 8px
+  );
+}
+
 /* A new message in the case assistant eases in. */
 @keyframes copilot-in {
   from {

@@ -1091,9 +1091,6 @@ page:
     nextNone: Nothing is waiting. Processing is up to date.
     nextUpload: Upload the borrower's documents to start processing.
     open: Open
-    stillNeeded: Still needed
-    stillNeededCount: "{n} checklist item(s) missing or insufficient"
-    nothingNeeded: Every checklist item is satisfied or waived.
     waiting: Waiting for a decision
     waitingCount: "{n} open review item(s) on this appraisal"
     more: "{n} more"
@@ -1117,7 +1114,8 @@ page:
     purpose: The borrower's identifiers and the promoters, directors or partners, each with the document it came from.
   documents:
     title: Documents
-    purpose: Every file received, how it was split, and where each document is. Anything that needs a person is flagged on its row, with what to do.
+    purpose: "What this appraisal needs, what has come in for each document and what is still missing, with an upload on each one still needed; every file received is listed below with its checks."
+    purposeRead: "What this appraisal needs, what has come in for each document and what is still missing; every file received is listed below with its checks."
   data:
     title: Extracted data
     purpose: Key fields by source, each with its confidence and a link to the page it came from.
@@ -1343,6 +1341,72 @@ upload:
   formats: PDF, JPG, PNG, TIFF, XLSX, CSV, DOCX or ZIP archives
   browse: Choose files
   camera: Take a photo
+
+journey:
+  title: Document checklist
+  subtitle: "Documents this appraisal needs: {n}. Upload on a row that still needs one, or drop files on it."
+  subtitleRead: "Documents this appraisal needs: {n}."
+  stale: The checklist could not be read again just now; this is the last read.
+  files: "{n} file(s) received"
+  filesAttention: "{n} need a person"
+  filterEmpty: Nothing here under this filter.
+  notReceived: Nothing received for this yet.
+  ask: "Ask:"
+  copy: Copy the request
+  copyRequest: "Copy request {n}"
+  copied: Copied
+  upload: Upload
+  uploadHelp: Upload files for this requirement, or drop them on its row
+  dropHere: "Drop to upload for {name}"
+  uploading: Uploading…
+  uploadingFor: "Uploading for {name}"
+  filterLabel: Show requirements
+  why: Why this is needed
+  outcome:
+    reading: received; reading it now. Its content decides where it counts.
+    counted: "read as {type}; counts toward {items}."
+    unasked: "read as {type}; no requirement asks for it."
+    unidentified: its type could not be told; it waits for a person in the files below.
+    turnedAway: "turned away: {reason}"
+  unmatched: On file, not asked for
+  unmatchedHelp: Kept with the appraisal; open one to check what it is.
+  # The readiness glance at the top of the Overview, and the compact summary on Files.
+  verdict:
+    gateMet: Review gate met
+    conditions: Gate conditions
+  live: "Readiness score {score}%. {verdict}"
+  meter: "Readiness score {score}%, review gate {gate}%, {toGo}"
+  meterMet: "Readiness score {score}%, review gate {gate}%, met"
+  scoreHelpToggle: What the readiness score means
+  blockedBy: Blocked by
+  requirements: "Requirements · {n}"
+  showAll: "Show all ({n})"
+  bySection: By section
+  sectionMap: Requirements by section
+  tile:
+    nothingBlocking: nothing blocking
+    nothingOutstanding: nothing outstanding
+    ofTotal: "of {n}"
+    waived: "{n} waived"
+  band:
+    done: Satisfied and waived
+    doneFlagged: "{n} on a file that needs a person"
+    doneAbove: "Shown above, where a file was sent from it: {names}"
+    inReviewHelp: On file and waiting for a person.
+    clearNonblocking: No non-blocking gap remains on this case.
+    clearInReview: Nothing on this case waits for a person.
+  waitingPerson: Waiting for a person.
+  askCustomer: Ask the customer
+  askOpen: "{n} open"
+  askResolved: "{n} resolved"
+  copyList: Copy the list
+  showRequests: Show the requests
+  hideRequests: Hide the requests
+  showing: "Showing: {filter}"
+  showingLive: "Showing: {filter}, {n} in the list"
+  clearFilter: Show all requirements
+  uploadFor: "Upload for {name}"
+  jumpTo: Show
 
 documents:
   table:
@@ -2213,6 +2277,7 @@ assessment:
     score: "Readiness {score}%"
     needs: "Needs {gate}%"
     toGo: "{n} points to go"
+    toGoOne: 1 point to go
     blocking: Blocking items
     blockingOpen: still open
     blockingDone: "{done} of {total} blocking items satisfied"

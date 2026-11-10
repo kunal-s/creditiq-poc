@@ -61,8 +61,59 @@ facilities:
     sets: null
     aliases: [LC, L/C, ILC, FLC, letter of credit]
 
+# Products a case can be opened under. Only products the checklist, norms
+# and outputs support are listed; `default` is pre-selected on a new case.
+products:
+  default: bbg
+  options:
+    - {id: bbg, label: Business banking}
+
+# Case types (new, renewal, enhancement, takeover). `aliases` are the words a
+# sourcing message uses for the type (F-04), matched like facility aliases:
+# an alias in capitals only matches as a whole word in capitals. A case whose
+# type is not yet confirmed carries "unknown". Provisional list.
+case_types:
+  - id: new
+    label: New
+    aliases: [fresh, new to bank, new-to-bank, NTB, first time]
+  - id: renewal
+    label: Renewal
+    aliases: [renewal, renew, annual review, review and renewal]
+  - id: enhancement
+    label: Enhancement
+    aliases: [enhancement, enhance, limit increase, increase in limit, additional limit]
+  - id: takeover
+    label: Takeover
+    aliases: [takeover, take over, take-over, balance transfer, BT]
+  - id: unknown
+    label: Not yet confirmed
+    aliases: []
+
+# Branches a case can be booked at. A new case starts at the RM's branch
+# (matched on label). `aliases` are the words a sourcing message uses for it.
+branches:
+  - {id: mumbai_hub, label: Mumbai hub, aliases: [Mumbai hub]}
+  - {id: head_office, label: Head office, aliases: [Head office]}
+
+# The bank's processing stages a case can be at. `default` is the stage a new
+# case starts at. Provisional list.
+bank_stages:
+  default: login
+  options:
+    - {id: login, label: Login}
+    - {id: pd, label: Personal discussion}
+    - {id: sanction, label: Sanction}
+    - {id: post_sanction, label: Post-sanction}
+
+# Application and customer identifiers issued by the loan origination system.
+# `pattern` is a regular expression for reading the identifier from a
+# sourcing message (F-04); null means it is never read, only typed.
+case_identifiers:
+  application_id: {pattern: null}
+  customer_id: {pattern: null}
+
 # Fields a case must have before it can be created (F-04.6).
-case_create_minimum: [borrower, facilities, amount_inr]
+case_create_minimum: [borrower, product, facilities, amount_inr]
 
 # Upload limits (F-05.1, F-05.2). An archive is refused as a decompression
 # bomb when it expands beyond max_archive_mb, or when any member expands

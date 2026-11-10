@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowRight, Eye } from "lucide-react";
+import { ArrowRight, ChevronRight, Eye } from "lucide-react";
 import type { FieldStatus, FieldValue, LogicalDocument } from "@/api/types";
 import { Panel } from "@/components/common/Panel";
 import { Details } from "@/components/common/Details";
@@ -184,7 +184,13 @@ function DocumentFields({
   const files = useCaseFiles(caseId);
   const viewer = useDocViewer();
   const file = files.data?.find((f) => f.id === doc.file_id);
-  const { plain, tables } = groupFields(fields);
+  const { plain: all, tables } = groupFields(fields);
+  // Fields the document does not carry are counted, and listed only when asked for.
+  const [showMissing, setShowMissing] = useState(false);
+  const notFound = all.filter((f) => f.status === "missing");
+  // Under the "Not found" filter every field shown is one of them: they are listed.
+  const onlyMissing = notFound.length === all.length;
+  const plain = showMissing || onlyMissing ? all : all.filter((f) => f.status !== "missing");
   const title = doc.classification?.types.length
     ? doc.classification.types.map(types.name).join(" + ")
     : t("document.unclassified");
@@ -241,6 +247,21 @@ function DocumentFields({
             </tbody>
           </StackTable>
         </div>
+      )}
+      {notFound.length > 0 && !onlyMissing && (
+        <button
+          type="button"
+          aria-expanded={showMissing}
+          onClick={() => setShowMissing((v) => !v)}
+          className="flex w-full items-center gap-1.5 border-t border-border px-4 py-2 text-left text-[12px] text-muted-foreground hover:bg-surface-muted hover:text-foreground"
+          data-testid="field-missing-toggle"
+        >
+          <ChevronRight
+            className={cn("h-3 w-3 transition-transform", showMissing && "rotate-90")}
+            aria-hidden
+          />
+          {showMissing ? t("data.hideNotFound") : t("data.showNotFound", { n: notFound.length })}
+        </button>
       )}
       {tables.map((table) => (
         <FieldTableView key={table.name} caseId={caseId} table={table} />

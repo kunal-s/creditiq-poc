@@ -90,6 +90,7 @@ export function ReviewFlag({ count }: { count: number }) {
 /** The prototype's in-flight table on wide screens, cards on phones (F-06.1). */
 export function CasesTable({ cases }: { cases: CaseSummary[] }) {
   const labels = useLabels();
+  const caseKind = labels.caseKind;
   // The most pressing appraisal: one with a file showing signs of an edit, else the most open items.
   const pressing = (c: CaseSummary) =>
     (c.files_altered ?? 0) * 1000 + (c.files_attention ?? 0) * 10 + c.open_review_items;
@@ -109,7 +110,9 @@ export function CasesTable({ cases }: { cases: CaseSummary[] }) {
                 >
                   {c.borrower}
                 </Link>
-                <p className="mt-0.5 text-[11px] text-muted-foreground tabular">{c.id}</p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground tabular">
+                  {c.id} · {caseKind(c)}
+                </p>
               </div>
               <StageLink c={c} />
             </div>
@@ -164,6 +167,9 @@ export function CasesTable({ cases }: { cases: CaseSummary[] }) {
                   </Link>
                   <div className="mt-0.5 text-[11px] text-muted-foreground">
                     {c.id} · {labels.constitution(c.constitution)}
+                  </div>
+                  <div className="mt-0.5 text-[11px] text-muted-foreground" data-testid="case-kind">
+                    {caseKind(c)}
                   </div>
                 </td>
                 <td className="px-3 py-3">

@@ -52,4 +52,11 @@ class Meta(BaseModel):
     channels: list[Option]
     constitutions: list[Option]
     facilities: list[Option]
+    products: list[Option]
+    product_default: str | None = None
+    case_types: list[Option]
+    branches: list[Option]
+    bank_stages: list[Option]
+    bank_stage_default: str | None = None
+    """The stage a new case starts at (T2.1)."""
     case_create_minimum: list[str]

@@ -12,9 +12,9 @@ test("the Files step leads with what the appraisal needs, has and lacks", async 
   await expect(panel).toBeVisible();
   const items = panel.getByTestId("journey-item");
   await expect(items).toHaveCount(9);
-  // The compact summary counts the requirements by status. The percentage lives in the case
-  // header and the Overview's readiness glance, never in the summary on the Files step.
-  await expect(page.getByTestId("journey-summary")).toContainText(/Missing\s*2/);
+  // A row of filters counts the requirements by status. The percentage lives in the case header
+  // and the Overview's status line, never in the summary on the Files step.
+  await expect(page.getByTestId("journey-summary")).toContainText(/Outstanding\s*6/);
   await expect(page.getByTestId("journey-summary")).not.toContainText("58%");
   await expect(page.getByTestId("header-readiness")).toContainText("58%");
 

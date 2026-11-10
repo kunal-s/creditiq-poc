@@ -157,6 +157,7 @@ def build_table(rule: TableRule, defs: list[ColumnDef], pages: list[Page], readi
     end_rx = re.compile(rule.end, re.I) if rule.end else None
     start_rx = re.compile(rule.start, re.I)
     row_rx = re.compile(rule.row_start, re.I) if rule.row_start else None
+    drop = [re.compile(x, re.I) for x in rule.drop_lines]
     label_col = cols[0].name
 
     dls: list[_DL] = []
@@ -173,8 +174,10 @@ def build_table(rule: TableRule, defs: list[ColumnDef], pages: list[Page], readi
         else:
             hdr = next((i for i, l in enumerate(lines) if start_rx.search(l.text)), None)
             if hdr is not None:
+                if end_rx and any(end_rx.search(l.text) for l in lines[:hdr]):
+                    break   # the table ended above this page's header (the next statement repeats the same heading)
                 block = lines[hdr:hdr + 1 + rule.header_lines]
-                anchors = _anchor(cols, block, gap) or anchors
+                anchors = {**anchors, **_anchor(cols, block, gap)}   # a column the repeated header does not head keeps its anchor
                 data = lines[hdr + 1 + rule.header_lines:]
             else:
                 data = lines
@@ -184,6 +187,8 @@ def build_table(rule: TableRule, defs: list[ColumnDef], pages: list[Page], readi
             if end_rx and end_rx.search(line.text):
                 stop = True
                 break
+            if any(rx.search(line.text) for rx in drop):
+                continue
             cells: dict[str, list[Seg]] = {}
             segs = split_at_numeric_columns(segments(line, gap), cols, anchors)
             if rule.attach == "heading" and not any(NUM_RX.match(sg.text) for sg in segs):

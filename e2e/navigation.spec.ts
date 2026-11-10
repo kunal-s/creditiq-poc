@@ -1,7 +1,7 @@
 // Navigation: a case's steps are in the side menu and the stage bar;
 // Help explains the steps.
 import { expect, test } from "@playwright/test";
-import { KESTREL } from "./fixtures/data";
+import { KESTREL, RM } from "./fixtures/data";
 import { MockApi, showArea, signedIn } from "./support/api";
 
 test("a case's steps are reached from the side menu and the stage bar", async ({ page }) => {
@@ -32,6 +32,34 @@ test("the side menu lists the open case's steps under New appraisal, each with i
   await expect(nav.getByRole("link", { name: "Submission" })).toBeVisible();
   await nav.getByRole("link", { name: "Cross-verification" }).click();
   await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}/cross-verification$`));
+});
+
+test("the six processing steps sit in two groups, and a step the role may not open is locked", async ({
+  page,
+}) => {
+  // The credit analyst opens every step.
+  const api = new MockApi();
+  await signedIn(page, api);
+  await page.goto(`/appraisals/${KESTREL}`);
+  const nav = page.getByTestId("case-nav");
+  const docs = nav.getByTestId("case-nav-group-documents");
+  await expect(docs).toHaveText("Documents and data");
+  await expect(nav.getByTestId("case-nav-group-assessment")).toHaveText("Assessment and outputs");
+  for (const name of ["Files", "Extracted data", "Completeness", "Cross-verification", "Outputs"])
+    await expect(nav.getByRole("link", { name })).toBeVisible();
+  await expect(nav.locator("[data-locked]")).toHaveCount(0);
+
+  // The RM sees the same steps; those outside the role are listed but locked, in the menu and the
+  // tab strip alike.
+  await signedIn(page, new MockApi(), RM);
+  await page.goto(`/appraisals/${KESTREL}`);
+  for (const name of ["Extracted data", "Cross-verification", "Financials and Policy", "Outputs"]) {
+    const row = nav.locator("[data-locked]", { hasText: name });
+    await expect(row).toBeVisible();
+    await expect(row).toHaveAttribute("title", /your role does not include this step/);
+  }
+  await expect(nav.getByRole("link", { name: "Files" })).toBeVisible();
+  await expect(page.getByTestId("stage-extraction")).toHaveAttribute("aria-disabled", "true");
 });
 
 test("Help explains each step and status", async ({ page }) => {

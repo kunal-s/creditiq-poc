@@ -41,6 +41,15 @@ def test_role_without_permission_gets_403(client: TestClient):
     assert client.get("/api/review", headers=rm).status_code == 403
 
 
+def test_meta_carries_the_case_field_lists(client: TestClient):
+    meta = client.get("/api/meta", headers=sign_in(client, RM)).json()
+    assert [o["id"] for o in meta["products"]] == ["bbg"]
+    assert meta["product_default"] == "bbg"
+    assert {"new", "renewal", "enhancement", "takeover", "unknown"} == {o["id"] for o in meta["case_types"]}
+    assert "mumbai_hub" in {o["id"] for o in meta["branches"]}
+    assert meta["bank_stage_default"] in {o["id"] for o in meta["bank_stages"]}
+
+
 def test_create_case_issues_sequential_ids_in_the_configured_format(client: TestClient):
     rm = sign_in(client, RM)
     first = client.post("/api/cases", json=new_case(), headers=rm)
@@ -257,12 +266,12 @@ def test_f07a_the_figures_read_are_served_apart_from_the_file_list(client, publi
     assert page.status_code == 200 and page.headers["content-type"] == "image/png"
 
 
-def test_store_migrates_to_version_19(published_data_root):
+def test_store_migrates_to_version_20(published_data_root):
     from engine import db
 
     conn = db.connect(published_data_root)
     try:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == len(db.MIGRATIONS) == 19
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == len(db.MIGRATIONS) == 20
         tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
         finding_columns = {r["name"] for r in conn.execute("PRAGMA table_info(findings)")}
         case_columns = {r["name"] for r in conn.execute("PRAGMA table_info(cases)")}
@@ -270,6 +279,8 @@ def test_store_migrates_to_version_19(published_data_root):
     finally:
         conn.close()
     assert {"reference_records", "reference_items", "comparison_adjudications"} <= tables
+    # 20: the case's place in the bank's process (T2.1).
+    assert {"product", "case_type", "application_id", "customer_id", "branch", "bank_stage"} <= case_columns
     # 19: a person's conclusion on a file's integrity (F-07A).
     assert "integrity_reviews" in tables
     # 16: what a file's own bytes say about its history (F-07A).

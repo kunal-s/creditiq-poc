@@ -1,7 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { api } from "@/api/client";
-import type { CaseCreate, ProposalRequest, Stage, StageKey } from "@/api/types";
+import type {
+  CaseCreate,
+  ChecklistPreviewRequest,
+  ProposalRequest,
+  Stage,
+  StageKey,
+} from "@/api/types";
 import { t } from "@/config/terminology";
 
 export function useCases() {
@@ -22,6 +28,17 @@ export function useMeta() {
 }
 
 /** F-04: parse a pasted message into a proposed case. Stores nothing. */
+/** What the proposed application will need (F-12), refreshed as its values change. */
+export function useChecklistPreview(body: ChecklistPreviewRequest | null) {
+  return useQuery({
+    queryKey: ["checklist-preview", body],
+    queryFn: () => api.checklistPreview(body!),
+    enabled: body !== null,
+    placeholderData: (previous) => previous,
+    staleTime: 60_000,
+  });
+}
+
 export function useProposeCase() {
   return useMutation({ mutationFn: (body: ProposalRequest) => api.proposeCase(body) });
 }
@@ -62,7 +79,17 @@ export function useDeleteCase() {
   });
 }
 
-/** Labels for configured ids (constitutions, facilities, channels) from /api/meta. */
+type OptionList = { id: string; label: string }[] | undefined;
+
+/** A case field's label (T2.1). A case created before the field was recorded has none
+ * ("Not recorded"); "unknown" is "Not yet confirmed". */
+function recorded(list: OptionList, id: string | null | undefined): string {
+  if (!id) return t("term.notRecorded");
+  if (id === "unknown") return t("term.notConfirmed");
+  return list?.find((o) => o.id === id)?.label ?? id.replace(/_/g, " ");
+}
+
+/** Labels for configured ids (constitutions, facilities, channels, case fields) from /api/meta. */
 export function useLabels() {
   const { data: meta } = useMeta();
   const find = (list: { id: string; label: string }[] | undefined, id: string) =>
@@ -74,7 +101,28 @@ export function useLabels() {
   const facility = useCallback((id: string) => find(meta?.facilities, id), [meta]);
   const facilities = useCallback((ids: string[]) => ids.map(facility).join(", "), [facility]);
   const channel = useCallback((id: string) => find(meta?.channels, id), [meta]);
-  return { constitution, facility, facilities, channel };
+  const product = useCallback((id?: string | null) => recorded(meta?.products, id), [meta]);
+  const caseType = useCallback((id?: string | null) => recorded(meta?.case_types, id), [meta]);
+  const branch = useCallback((id?: string | null) => recorded(meta?.branches, id), [meta]);
+  const bankStage = useCallback((id?: string | null) => recorded(meta?.bank_stages, id), [meta]);
+  // Product and case type in one line; a case from before case types were recorded shows its
+  // product only.
+  const caseKind = useCallback(
+    (c: { product?: string | null; case_type?: string | null }) =>
+      c.case_type ? `${product(c.product)} · ${caseType(c.case_type)}` : product(c.product),
+    [product, caseType],
+  );
+  return {
+    constitution,
+    facility,
+    facilities,
+    channel,
+    product,
+    caseType,
+    caseKind,
+    branch,
+    bankStage,
+  };
 }
 
 export function stageLabel(stage: Stage): string {

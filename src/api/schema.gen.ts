@@ -181,6 +181,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/cases/checklist-preview": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Checklist Preview
+     * @description F-12 at intake: the documents the proposed application will need, from the
+     *     values on the New appraisal screen. Stores nothing; no case is needed.
+     */
+    post: operations["checklist_preview_api_cases_checklist_preview_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/cases/proposals": {
     parameters: {
       query?: never;
@@ -2139,8 +2160,19 @@ export interface components {
     CaseCreate: {
       /** Amount Inr */
       amount_inr: number;
+      /** Application Id */
+      application_id?: string | null;
+      /** Bank Stage */
+      bank_stage?: string | null;
       /** Borrower */
       borrower: string;
+      /** Branch */
+      branch?: string | null;
+      /**
+       * Case Type
+       * @default unknown
+       */
+      case_type: string;
       /** Channel */
       channel: string;
       /** Cin */
@@ -2155,6 +2187,8 @@ export interface components {
        * @default unknown
        */
       constitution: string;
+      /** Customer Id */
+      customer_id?: string | null;
       /** Duplicate Override Reason */
       duplicate_override_reason?: string | null;
       /** Facilities */
@@ -2169,6 +2203,8 @@ export interface components {
       message_text?: string | null;
       /** Pan */
       pan?: string | null;
+      /** Product */
+      product?: string | null;
       /** Udyam */
       udyam?: string | null;
     };
@@ -2184,14 +2220,22 @@ export interface components {
     CaseDetail: {
       /** Amount Inr */
       amount_inr: number;
+      /** Application Id */
+      application_id?: string | null;
       /** As Of */
       as_of: string;
       /** Assessment Opened At */
       assessment_opened_at?: string | null;
       /** Assessment Opened By */
       assessment_opened_by?: string | null;
+      /** Bank Stage */
+      bank_stage?: string | null;
       /** Borrower */
       borrower: string;
+      /** Branch */
+      branch?: string | null;
+      /** Case Type */
+      case_type?: string | null;
       /** Channel */
       channel: string;
       /** Cin */
@@ -2206,6 +2250,8 @@ export interface components {
       created_at: string;
       /** Created By */
       created_by: string;
+      /** Customer Id */
+      customer_id?: string | null;
       /** Facilities */
       facilities: string[];
       /**
@@ -2230,6 +2276,8 @@ export interface components {
       open_review_items: number;
       /** Pan */
       pan: string | null;
+      /** Product */
+      product?: string | null;
       /** Rm */
       rm: string;
       /**
@@ -2332,8 +2380,12 @@ export interface components {
     CaseSummary: {
       /** Amount Inr */
       amount_inr: number;
+      /** Bank Stage */
+      bank_stage?: string | null;
       /** Borrower */
       borrower: string;
+      /** Case Type */
+      case_type?: string | null;
       /** Constitution */
       constitution: string;
       /** Created At */
@@ -2354,6 +2406,8 @@ export interface components {
       id: string;
       /** Open Review Items */
       open_review_items: number;
+      /** Product */
+      product?: string | null;
       /** Rm */
       rm: string;
       /**
@@ -2524,6 +2578,60 @@ export interface components {
       weight: number;
       /** Why */
       why: string;
+    };
+    /** ChecklistPreview */
+    ChecklistPreview: {
+      /** Items */
+      items: components["schemas"]["ChecklistPreviewItem"][];
+      /** Provisional */
+      provisional: boolean;
+      /** Sections */
+      sections: string[];
+    };
+    /** ChecklistPreviewItem */
+    ChecklistPreviewItem: {
+      /** Blocking */
+      blocking: boolean;
+      /** Category */
+      category: string;
+      /** Document Types */
+      document_types?: string[];
+      /** Id */
+      id: string;
+      /** Name */
+      name: string;
+      /** Request */
+      request?: string | null;
+      /** Why */
+      why: string;
+    };
+    /**
+     * ChecklistPreviewRequest
+     * @description The proposed application as it stands on the New appraisal screen, before
+     *     any case exists: what the checklist would ask for (F-12, shown at intake).
+     */
+    ChecklistPreviewRequest: {
+      /**
+       * Amount Inr
+       * @default 0
+       */
+      amount_inr: number;
+      /** Case Type */
+      case_type?: string | null;
+      /**
+       * Collateral Present
+       * @default false
+       */
+      collateral_present: boolean;
+      /**
+       * Constitution
+       * @default unknown
+       */
+      constitution: string;
+      /** Facilities */
+      facilities?: string[];
+      /** Product */
+      product?: string | null;
     };
     /**
      * ChecklistTaxonomySection
@@ -3870,14 +3978,26 @@ export interface components {
      * @description Choice lists the screens need, from config/app.yaml.
      */
     Meta: {
+      /** Bank Stage Default */
+      bank_stage_default?: string | null;
+      /** Bank Stages */
+      bank_stages: components["schemas"]["Option"][];
+      /** Branches */
+      branches: components["schemas"]["Option"][];
       /** Case Create Minimum */
       case_create_minimum: string[];
+      /** Case Types */
+      case_types: components["schemas"]["Option"][];
       /** Channels */
       channels: components["schemas"]["Option"][];
       /** Constitutions */
       constitutions: components["schemas"]["Option"][];
       /** Facilities */
       facilities: components["schemas"]["Option"][];
+      /** Product Default */
+      product_default?: string | null;
+      /** Products */
+      products: components["schemas"]["Option"][];
     };
     /** MonthConduct */
     MonthConduct: {
@@ -6053,6 +6173,41 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["CaseDetail"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  checklist_preview_api_cases_checklist_preview_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ChecklistPreviewRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ChecklistPreview"];
         };
       };
       /** @description Validation Error */

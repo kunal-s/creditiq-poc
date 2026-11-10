@@ -4,6 +4,7 @@
 // for the rest of that test.
 import type { Locator, Page, Request, Route } from "@playwright/test";
 import type {
+  ChecklistPreviewRequest,
   AdjudicationRequest,
   ApprovingAuthority,
   Cam,
@@ -50,6 +51,7 @@ import type {
   XvDecisionRequest,
   XvItem,
 } from "../../src/api/types";
+import { checklistPreview } from "../fixtures/data";
 import {
   APPROVAL,
   APPROVAL_MATRIX,
@@ -454,6 +456,11 @@ export class MockApi {
       ["GET", /^\/api\/audit$/, () => ({ json: AUDIT })],
       ["GET", /^\/api\/cases$/, () => ({ json: this.cases })],
       ["POST", /^\/api\/cases\/proposals$/, () => ({ json: this.proposal })],
+      [
+        "POST",
+        /^\/api\/cases\/checklist-preview$/,
+        (req) => ({ json: checklistPreview(req.postDataJSON() as ChecklistPreviewRequest) }),
+      ],
       ["POST", /^\/api\/cases$/, (req) => this.create(req.postDataJSON() as CaseCreate)],
       [
         "GET",

@@ -184,6 +184,9 @@ from .ingest import (
 )
 from .intake import (
     CaseProposal,
+    ChecklistPreview,
+    ChecklistPreviewItem,
+    ChecklistPreviewRequest,
     Party,
     ProposalRequest,
     ProposedCandidate,

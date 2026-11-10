@@ -21,6 +21,8 @@ import type {
   CaseFacts,
   CaseProgress,
   CaseProposal,
+  ChecklistPreview,
+  ChecklistPreviewRequest,
   CaseSummary,
   ChecklistTaxonomy,
   ComparisonArea,
@@ -167,6 +169,12 @@ export const api = {
   caseProgress: (id: string) => request<CaseProgress>(`/api/cases/${q(id)}/progress`),
   proposeCase: (body: ProposalRequest) =>
     request<CaseProposal>("/api/cases/proposals", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  /** F-12 at intake: what the proposed application will need, before it exists. */
+  checklistPreview: (body: ChecklistPreviewRequest) =>
+    request<ChecklistPreview>("/api/cases/checklist-preview", {
       method: "POST",
       body: JSON.stringify(body),
     }),

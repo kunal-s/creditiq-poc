@@ -88,18 +88,31 @@ types:
     extraction: model
     identity: {name: company_name}
     fields:
+      # Statements filed in XBRL print each value on a labelled line ("Name of audit firm  PRICE WATERHOUSE ..."); the hints
+      # point the model at those lines, and the rule-read fields try the labelled line first.
       company_name: {aliases: ['Company'], llm_hint: 'the full legal name of the company whose financial statements these are, as printed in the auditor report heading or opinion (for example "X PRIVATE LIMITED"); not a sentence'}
       # The year end the statements print on their own face, read rather than asked of a model:
-      # "BALANCE SHEET AS AT 31 MARCH 2026", "...FOR THE YEAR ENDED 31 MARCH 2026".
-      financial_year: {aliases: ['Financial Year'], llm: false, patterns: ['BALANCE SHEET AS AT\s+(\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]+,?\s+\d{4})', 'FOR THE (?:YEAR|PERIOD) ENDED(?: ON)?\s+(\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]+,?\s+\d{4})']}
-      auditor_name: {aliases: ['Statutory Auditors'], llm_hint: 'the name of the audit firm that signs the report, without logo or title text such as "CA"'}
-      audit_date: {patterns: ['Place:\s*[A-Za-z]+\s*\|\s*Date:\s*(\d{1,2}\s+[A-Za-z]+\s+\d{4})'], llm_hint: 'the date the auditor report was signed, copied as printed'}
-      accounting_standard: {llm_hint: "The accounting standards or framework the statements say they follow (for example 'Indian GAAP' or 'Ind AS'), exactly as written; null if none is named."}
-      # The unit the statements print their amounts in, read from the face ("All Amounts are in INR Thousands", "(Rs. in lakhs)"); absent means rupees.
-      amount_unit: {llm: false, patterns: ['(?:amounts?|figures|values)?\s*(?:are\s+)?in\s+(?:INR|Rs\.?|₹)?\s*(thousands?|lakhs?|lacs?|crores?|millions?)\b', '(?:INR|Rs\.?|₹)\s*in\s+(thousands?|lakhs?|lacs?|crores?|millions?)\b']}
+      # "BALANCE SHEET AS AT 31 MARCH 2026", "...FOR THE YEAR ENDED 31 MARCH 2026", or the filed statement's
+      # "Date of end of reporting period  31/03/2026" (its first column is the current period), or a "Financial Year  FY2025"
+      # label. The label counts only when a year follows it, so a table cell headed "Financial Year (Rupees ...)" is not read.
+      financial_year: {llm: false, patterns: ['^\s*Date of end of reporting period\s+(\d{2}/\d{2}/\d{4})\b', '(?:^|\s{2})Financial Year\s*:?\s*((?:FY\s*)?20\d{2}(?:\S| (?! ))*)', 'BALANCE SHEET AS AT\s+(\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]+,?\s+\d{4})', 'FOR THE (?:YEAR|PERIOD) ENDED(?: ON)?\s+(\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]+,?\s+\d{4})']}
+      auditor_name: {aliases: ['Statutory Auditors'], llm_hint: 'the name of the audit firm that signs the auditor report (for example "X & CO LLP"), without logo or title text such as "CA", and without its registration number. In a statement filed in XBRL, the value after "Name of audit firm", whose letters may be spaced out or broken over lines. Not a sentence, and not a name mentioned in the directors report.'}
+      audit_date: {patterns: ['Place:\s*[A-Za-z]+\s*\|\s*Date:\s*(\d{1,2}\s+[A-Za-z]+\s+\d{4})'], llm_hint: 'the date the auditor signed the auditor report, copied as printed. In a statement filed in XBRL, the value after "Date of signing audit report by auditors". Not the date the directors signed their report or the board approved the accounts.'}
+      accounting_standard: {llm_hint: "The accounting framework the statements as a whole follow (for example 'Indian GAAP' or 'Ind AS'), as stated in the basis of preparation or statement of compliance; not one standard cited for a single disclosure (such as 'Ind AS 24 Related Party Disclosures'). Null if none is named."}
+      # The unit the statements print their amounts in, read from the face ("All Amounts are in INR Thousands", "(Rs. in lakhs)",
+      # a filed statement's "Level of rounding used in financial statements  Millions"); absent means rupees.
+      amount_unit: {llm: false, patterns: ['^\s*Level of rounding used in financial statements\s+(thousands?|lakhs?|lacs?|crores?|millions?)\b', '(?:amounts?|figures|values)?\s*(?:are\s+)?in\s+(?:INR|Rs\.?|₹)?\s*(thousands?|lakhs?|lacs?|crores?|millions?)\b', '(?:INR|Rs\.?|₹)\s*in\s+(thousands?|lakhs?|lacs?|crores?|millions?)\b']}
     tables:
       # Each statement lists layout variants, tried in order: the summary layout, then the filed-accounts layout (a Notes column
-      # between the label and the amounts; the period dates in the column headings).
+      # between the label and the amounts; the period dates in the column headings), then the XBRL filing layout.
+      #
+      # XBRL filing layout (the statements as filed with the registrar, rendered to PDF): each statement opens with its
+      # taxonomy code ("[110000] Balance sheet", "[210000] Statement of profit and loss", "[320000] Cash flow statement"),
+      # headed by its period dates and a "<statement> [Abstract]" line; there is no Particulars or Notes heading. Groups are
+      # announced by "[Abstract]" lines, and yes/no facts by "Whether ..." lines: both are dropped, with the running page
+      # heading and per-share lines. A row starts where the current period prints a figure; a label that wraps prints its
+      # figures on a line of their own between its halves, so label lines join the row within a few points of them.
+      # The first Ind AS year adds a third balance-sheet column (the transition date), read and not kept.
       balance_sheet:
         - page_match: 'BALANCE SHEET AS AT'
           dash_is_zero: true
@@ -119,6 +132,21 @@ types:
             - {name: notes, header: '^Notes$', align: right, emit: false}
             - {name: current_period, header: '^31\.03\.20\d\d$', nth: 0, align: right}
             - {name: previous_period, header: '^31\.03\.20\d\d$', nth: 1, align: right}
+        - page_match: '^\[110000\]\s+Balance sheet'
+          start: '^\d{2}/\d{2}/\d{4}\s+\d{2}/\d{2}/\d{4}'
+          header_lines: 1
+          end: '^\[\d{6}[a-z]?\]'
+          multi_page: true
+          row_start: '^[-(]?\d'
+          row_start_col: current_period
+          max_attach: 8
+          skip_rows: ['^$']
+          drop_lines: &xbrl_drop ['\[(?:Abstract|Line ?items|Table|Axis|Member|TextBlock)\]', 'Financial Statements for period \d', '^Unless otherwise specified', '^Whether\b', '^(?:Yes|No)\s+(?:Yes|No)$', '\[INR/shares\]']
+          columns:
+            - {name: particulars, header: '^\[Abstract\]$'}
+            - {name: current_period, header: '^\d{2}/\d{2}/\d{4}$', nth: 0, align: right}
+            - {name: previous_period, header: '^\d{2}/\d{2}/\d{4}$', nth: 1, align: right}
+            - {name: transition_date, header: '^\d{2}/\d{2}/\d{4}$', nth: 2, align: right, emit: false}
       profit_and_loss:
         - page_match: 'STATEMENT OF PROFIT AND LOSS FOR THE YEAR'
           dash_is_zero: true
@@ -149,15 +177,45 @@ types:
             - {name: notes, header: '^Notes$', emit: false}
             - {name: current_period, header: '^Period$', nth: 0, align: right}
             - {name: previous_period, header: '^Period$', nth: 1, align: right}
+        # The period columns are headed "01/04/2025 / to / 31/03/2026" over three lines; the start date anchors each column.
+        - page_match: '^\[210000\]\s+Statement of profit and loss'
+          start: '^\d{2}/\d{2}/\d{4}\s+\d{2}/\d{2}/\d{4}$'
+          header_lines: 3
+          end: '^\[\d{6}[a-z]?\]'
+          multi_page: true
+          row_start: '^[-(]?\d'
+          row_start_col: current_period
+          max_attach: 8
+          skip_rows: ['^$']
+          drop_lines: *xbrl_drop
+          columns:
+            - {name: particulars, header: '^\[Abstract\]$'}
+            - {name: current_period, header: '^\d{2}/\d{2}/\d{4}$', nth: 0, align: right}
+            - {name: previous_period, header: '^\d{2}/\d{2}/\d{4}$', nth: 1, align: right}
       cash_flow:
-        optional: true   # a small company's filed accounts may carry no cash flow statement; the table is still reported missing
-        dash_is_zero: true
-        page_match: 'CASH FLOW STATEMENT FOR THE YEAR'
-        start: '^Year ended 31 March$'
-        header_lines: 2
-        columns:
-          - {name: particulars, header: '^Particulars$'}
-          - {name: current_period, header: '^Year$', nth: 0, align: right}
+        - optional: true   # a small company's filed accounts may carry no cash flow statement; the table is still reported missing
+          dash_is_zero: true
+          page_match: 'CASH FLOW STATEMENT FOR THE YEAR'
+          start: '^Year ended 31 March$'
+          header_lines: 2
+          columns:
+            - {name: particulars, header: '^Particulars$'}
+            - {name: current_period, header: '^Year$', nth: 0, align: right}
+        - optional: true
+          page_match: '^\[320000\]\s+Cash flow statement'
+          start: '^\d{2}/\d{2}/\d{4}\s+\d{2}/\d{2}/\d{4}$'
+          header_lines: 3
+          end: '^\[\d{6}[a-z]?\]'
+          multi_page: true
+          row_start: '^[-(]?\d'
+          row_start_col: current_period
+          max_attach: 8
+          skip_rows: ['^$']
+          drop_lines: *xbrl_drop
+          columns:
+            - {name: particulars, header: '^\[Abstract\]$'}
+            - {name: current_period, header: '^01/04/\d{4}$', nth: 0, align: right}
+            - {name: previous_period, header: '^01/04/\d{4}$', nth: 1, align: right}
 
   income_tax_return:
     # The model reads the fields from the first page and the computation sections (Part B-TI and B-TTI); code checks every

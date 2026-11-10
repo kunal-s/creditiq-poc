@@ -1,6 +1,6 @@
 # Quality gate and page grading (FRD F-07). Interim values, tuned on RBL's documents.
 max_file_bytes: 41943040
-max_pages: 300
+max_pages: 400
 max_sheet_cells: 500000
 min_dpi: 150
 ocr_confidence_floor: 60

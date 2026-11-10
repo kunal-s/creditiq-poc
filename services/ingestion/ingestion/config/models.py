@@ -242,6 +242,7 @@ class TableRule(Strict):
     text_only: Literal["row", "continuation"] = "row"
     attach: Literal["nearest", "heading"] = "nearest"   # heading: a label-only line heads the next row; any other line outside a row is dropped
     skip_rows: list[str] = Field(default_factory=list)
+    drop_lines: list[str] = Field(default_factory=list)   # lines that are no part of the table: neither a row nor a heading (a filed statement's [Abstract] markers)
     max_attach: float = 24.0   # points; a line farther than this from every row is not part of the table
     multi_page: bool = False
     optional: bool = False   # a statement the document type may legitimately lack: still reported missing, but not a reason for review
@@ -297,7 +298,7 @@ class ValidatorsConfig(Strict):
 
 class QualityConfig(Strict):
     max_file_bytes: int = 40 * 1024 * 1024
-    max_pages: int = 300
+    max_pages: int = 400
     max_sheet_cells: int = 500_000
     min_dpi: int = 150
     ocr_confidence_floor: float = 60
@@ -644,7 +645,7 @@ class IngestionConfig(Strict):
                     emitted = {c.name for c in tr.columns if c.emit}
                     if emitted - cols:
                         problems.append(f"fields.{tid}.tables.{tname}: unknown columns {sorted(emitted - cols)}")
-                    for rx in [tr.start, tr.end, tr.row_start, tr.page_match, *tr.skip_rows, *[c.header for c in tr.columns]]:
+                    for rx in [tr.start, tr.end, tr.row_start, tr.page_match, *tr.skip_rows, *tr.drop_lines, *[c.header for c in tr.columns]]:
                         if rx:
                             _compile(rx, f"fields.{tid}.tables.{tname}", problems)
         for r in self.validators.rules:

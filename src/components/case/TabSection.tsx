@@ -48,12 +48,21 @@ export function StepHeader({
   purpose?: string;
   actions?: ReactNode;
 }) {
+  // One line under the case header: the step's name and what it is for. The case header already
+  // names the appraisal, so the kicker is for screen readers only.
   return (
-    <div className="border-b border-border bg-surface px-4 py-4 sm:px-6" data-testid="step-header">
-      <p className="field-label break-words">{kicker}</p>
-      <h1 className="mt-0.5 text-[19px] font-semibold tracking-tight text-foreground">{title}</h1>
-      {purpose && <p className="mt-1 max-w-3xl text-[13px] text-muted-foreground">{purpose}</p>}
-      {actions && <div className="mt-3 flex flex-wrap items-center gap-2">{actions}</div>}
+    <div
+      className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 pt-5 sm:px-6"
+      data-testid="step-header"
+    >
+      <div className="min-w-0">
+        <p className="sr-only">{kicker}</p>
+        <h1 className="text-[15px] font-semibold tracking-tight text-foreground">{title}</h1>
+        {purpose && (
+          <p className="mt-0.5 max-w-3xl text-[12.5px] text-muted-foreground">{purpose}</p>
+        )}
+      </div>
+      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
   );
 }

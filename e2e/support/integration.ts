@@ -45,7 +45,7 @@ export function sourcingMessage(borrower: string): string {
  */
 export async function createCase(page: Page, borrower: string): Promise<string> {
   await page.goto("/appraisals/new");
-  await page.getByTestId("channel").selectOption("email");
+  await page.getByTestId("channel-email").click();
   await page.getByTestId("message-input").fill(sourcingMessage(borrower));
   const read = page.getByRole("button", { name: "Read the message" });
   await expect(read).toBeEnabled();

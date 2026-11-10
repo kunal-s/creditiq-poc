@@ -21,21 +21,28 @@ import { Panel, Chip } from "@/components/common/Panel";
 import { ErrorState } from "@/components/common/States";
 import { ProposedStatusChip } from "@/components/documents/chips";
 import { UploadZone } from "@/components/documents/UploadZone";
+import { IntakeDocuments } from "@/components/cases/IntakeDocuments";
 import { t } from "@/config/terminology";
 import { formatInr, useCases, useCreateCase, useMeta, useProposeCase } from "@/domain/cases";
 import { errorKind } from "@/domain/errors";
 import {
   draftFrom,
+  fieldCells,
   fieldKeys,
+  groupFields,
+  isDefaulted,
   markRuns,
   missingMinimum,
   normalise,
+  optionsFor,
+  previewRequest,
   toCaseCreate,
   unsettled,
   type Draft,
   type Mark,
 } from "@/domain/proposal";
 import { formatBytes } from "@/domain/documents";
+import { useSession } from "@/domain/session";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/appraisals/new")({
@@ -45,12 +52,16 @@ export const Route = createFileRoute("/appraisals/new")({
   component: NewApplication,
 });
 
+/** How many matching applications the duplicate warning names; the rest are counted. */
+const SHOWN_DUPLICATES = 3;
+
 const inputClass =
   "mt-1 h-9 w-full min-w-0 rounded border border-border bg-surface px-2.5 text-[13px] text-foreground outline-none placeholder:text-muted-foreground/70 focus:border-primary/60 focus:ring-1 focus:ring-ring";
 
 function NewApplication() {
   const navigate = useNavigate();
   const meta = useMeta();
+  const session = useSession();
   const propose = useProposeCase();
   const create = useCreateCase();
   const [channel, setChannel] = useState<string>("");
@@ -79,7 +90,7 @@ function NewApplication() {
       setIds("");
       const result = await propose.mutateAsync({ channel: channelId, text: combined });
       setProposal(result);
-      setDraft(draftFrom(result, meta.data));
+      setDraft(draftFrom(result, meta.data, session?.user.branch));
       setSelected(null);
       setOverride(false);
       setOverrideReason("");
@@ -177,14 +188,24 @@ function NewApplication() {
         )}
 
         {proposal && draft && (
-          <div className="grid gap-4 lg:grid-cols-2">
-            <MessagePanel
-              text={text}
-              proposal={proposal}
-              draft={draft}
-              selected={selected}
-              onEdit={discardProposalKeepText}
-            />
+          <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+            <div className="min-w-0 space-y-4">
+              <MessagePanel
+                text={text}
+                proposal={proposal}
+                draft={draft}
+                selected={selected}
+                onEdit={discardProposalKeepText}
+              />
+              {meta.data && (
+                <IntakeDocuments
+                  request={previewRequest(draft)}
+                  attachments={attachments}
+                  onAttach={(files) => setAttachments((prev) => [...prev, ...files])}
+                  onRemove={(i) => setAttachments((prev) => prev.filter((_, j) => j !== i))}
+                />
+              )}
+            </div>
 
             {meta.data ? (
               <ProposedCase
@@ -221,7 +242,7 @@ function NewApplication() {
                 <div className="flex flex-wrap items-start gap-2 text-[12.5px] text-flag-foreground">
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                   <div className="min-w-0 flex-1 space-y-1.5">
-                    {(proposal.duplicates ?? []).map((d) => (
+                    {(proposal.duplicates ?? []).slice(0, SHOWN_DUPLICATES).map((d) => (
                       <p key={d.id} className="flex flex-wrap items-center gap-2">
                         <span>
                           {t("newApplication.duplicate", { id: d.id, borrower: d.borrower })}
@@ -235,6 +256,13 @@ function NewApplication() {
                         </Link>
                       </p>
                     ))}
+                    {(proposal.duplicates ?? []).length > SHOWN_DUPLICATES && (
+                      <p data-testid="more-duplicates">
+                        {t("newApplication.moreDuplicates", {
+                          n: (proposal.duplicates ?? []).length - SHOWN_DUPLICATES,
+                        })}
+                      </p>
+                    )}
                   </div>
                   {!override && (
                     <button
@@ -259,37 +287,6 @@ function NewApplication() {
                 )}
               </div>
             )}
-
-            <Panel
-              title={t("newApplication.attachments")}
-              subtitle={t("newApplication.attachmentsHelp")}
-            >
-              <div className="space-y-2 p-4">
-                <UploadZone
-                  compact
-                  onFiles={(files) => setAttachments((prev) => [...prev, ...files])}
-                />
-                {attachments.length > 0 && (
-                  <ul className="space-y-1 text-[12px]" data-testid="attachments">
-                    {attachments.map((f, i) => (
-                      <li key={`${f.name}-${i}`} className="flex items-center gap-2">
-                        <Paperclip className="h-3 w-3 shrink-0 text-muted-foreground" />
-                        <span className="min-w-0 flex-1 break-all">{f.name}</span>
-                        <span className="text-muted-foreground">{formatBytes(f.size)}</span>
-                        <button
-                          type="button"
-                          aria-label={t("action.remove")}
-                          onClick={() => setAttachments((prev) => prev.filter((_, j) => j !== i))}
-                          className="rounded p-0.5 text-muted-foreground hover:bg-muted"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </Panel>
 
             <CreateBar
               proposal={proposal}
@@ -372,7 +369,7 @@ function MessagePanel({
       }
     >
       <pre
-        className="max-h-[520px] overflow-auto whitespace-pre-wrap break-words px-4 py-3 font-sans text-[12.5px] leading-relaxed text-foreground"
+        className="max-h-80 overflow-auto whitespace-pre-wrap break-words px-4 py-3 font-sans text-[12.5px] leading-relaxed text-foreground"
         data-testid="message-view"
       >
         {runs.map((run) =>
@@ -427,6 +424,7 @@ function ProposedCase({
 
   const set = (key: string, value: string, span?: { start: number; end: number } | null) =>
     onChange({
+      ...draft,
       values: { ...draft.values, [key]: value },
       spans: span !== undefined ? { ...draft.spans, [key]: span } : draft.spans,
       settled: { ...draft.settled, [key]: true },
@@ -434,91 +432,116 @@ function ProposedCase({
   const settle = (key: string) =>
     onChange({ ...draft, settled: { ...draft.settled, [key]: true } });
 
+  const groups = groupFields(keys);
+
   return (
     <Panel title={t("newApplication.proposed")} testId="proposed-case">
-      <ul className="divide-y divide-border">
-        {keys.map((key) => {
-          const f = proposal.fields[key]!;
-          const value = draft.values[key] ?? "";
-          const needs = pending.includes(key);
-          return (
-            <li
-              key={key}
-              data-field={key}
-              data-testid={`field-${key}`}
-              onClick={() => onSelect(key)}
-              className={cn(
-                "cursor-pointer px-4 py-2.5",
-                selected === key ? "bg-primary/5" : "hover:bg-surface-muted/60",
-                needs && "border-l-2 border-l-flag",
-              )}
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-[12px] font-medium text-muted-foreground">
-                  {t(`proposalField.${key}`)}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  {draft.settled[key] && (f.status === "unclear" || f.status === "invalid") && (
-                    <Chip tone="positive">
-                      <Check className="h-3 w-3" /> {t("newApplication.confirmedByYou")}
-                    </Chip>
+      {groups.map((group) => (
+        <section key={group.id} data-testid={`group-${group.id}`} className="@container/fields">
+          <h3 className="border-b border-border bg-surface-muted/60 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            {t(`newApplication.group.${group.id}`)}
+          </h3>
+          <ul className="grid @min-[30rem]/fields:grid-cols-2">
+            {group.keys.map((key) => {
+              const cells = fieldCells(group.keys);
+              // Product and stage are never read from the message: they have no proposal of their own.
+              const f = proposal.fields[key] ?? null;
+              const value = draft.values[key] ?? "";
+              const needs = pending.includes(key);
+              const defaulted = isDefaulted(draft, key);
+              return (
+                <li
+                  key={key}
+                  data-field={key}
+                  data-testid={`field-${key}`}
+                  onClick={() => onSelect(key)}
+                  className={cn(
+                    "min-w-0 cursor-pointer border-b border-border px-4 py-2.5",
+                    cells[key] === "full" && "@min-[30rem]/fields:col-span-2",
+                    cells[key] === "left" && "@min-[30rem]/fields:border-r",
+                    selected === key ? "bg-primary/5" : "hover:bg-surface-muted/60",
+                    needs && "border-l-2 border-l-flag",
                   )}
-                  <ProposedStatusChip status={f.status} />
-                </span>
-              </div>
-              <FieldEditor
-                field={key}
-                value={value}
-                meta={meta}
-                onChange={(v) => set(key, v)}
-                onFocus={() => onSelect(key)}
-              />
-              {key === "amount_inr" && Number(value) > 0 && (
-                <p className="mt-0.5 text-[11px] text-muted-foreground tabular">
-                  {formatInr(Number(value))}
-                </p>
-              )}
-              {f.note && <p className="mt-1 text-[11.5px] text-flag-foreground">{f.note}</p>}
-              {(f.status === "unclear" || f.status === "invalid") &&
-                (f.candidates ?? []).length > 0 && (
-                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                    <span className="text-[11px] text-muted-foreground">
-                      {t("newApplication.candidates")}
-                    </span>
-                    {(f.candidates ?? []).map((c) => (
-                      <button
-                        key={`${c.span.start}-${c.value}`}
-                        type="button"
-                        data-testid="candidate"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onSelect(key);
-                          set(key, normalise(key, c.value, meta), c.span);
-                        }}
-                        className="rounded border border-flag/40 bg-surface px-1.5 py-0.5 text-[11.5px] font-medium text-foreground hover:bg-flag-soft"
-                      >
-                        {candidateLabel(key, c.value, meta)}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              {needs && (
-                <button
-                  type="button"
-                  data-testid={`confirm-${key}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    settle(key);
-                  }}
-                  className="mt-1.5 inline-flex items-center gap-1 rounded border border-border bg-surface px-2 py-0.5 text-[11.5px] font-medium text-foreground hover:bg-muted"
                 >
-                  <Check className="h-3 w-3" /> {t("newApplication.confirmValue")}
-                </button>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-[12px] font-medium text-muted-foreground">
+                      {t(`proposalField.${key}`)}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      {f &&
+                        draft.settled[key] &&
+                        (f.status === "unclear" || f.status === "invalid") && (
+                          <Chip tone="positive">
+                            <Check className="h-3 w-3" /> {t("newApplication.confirmedByYou")}
+                          </Chip>
+                        )}
+                      {defaulted ? (
+                        <Chip tone="muted">
+                          <span data-testid="prefilled">
+                            {t(`newApplication.prefilled.${draft.defaults[key]!.source}`)}
+                          </span>
+                        </Chip>
+                      ) : f ? (
+                        <ProposedStatusChip status={f.status} />
+                      ) : null}
+                    </span>
+                  </div>
+                  <FieldEditor
+                    field={key}
+                    value={value}
+                    meta={meta}
+                    onChange={(v) => set(key, v)}
+                    onFocus={() => onSelect(key)}
+                  />
+                  {key === "amount_inr" && Number(value) > 0 && (
+                    <p className="mt-0.5 text-[11px] text-muted-foreground tabular">
+                      {formatInr(Number(value))}
+                    </p>
+                  )}
+                  {f?.note && <p className="mt-1 text-[11.5px] text-flag-foreground">{f.note}</p>}
+                  {f &&
+                    (f.status === "unclear" || f.status === "invalid") &&
+                    (f.candidates ?? []).length > 0 && (
+                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                        <span className="text-[11px] text-muted-foreground">
+                          {t("newApplication.candidates")}
+                        </span>
+                        {(f.candidates ?? []).map((c) => (
+                          <button
+                            key={`${c.span.start}-${c.value}`}
+                            type="button"
+                            data-testid="candidate"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onSelect(key);
+                              set(key, normalise(key, c.value, meta), c.span);
+                            }}
+                            className="rounded border border-flag/40 bg-surface px-1.5 py-0.5 text-[11.5px] font-medium text-foreground hover:bg-flag-soft"
+                          >
+                            {candidateLabel(key, c.value, meta)}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  {needs && (
+                    <button
+                      type="button"
+                      data-testid={`confirm-${key}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        settle(key);
+                      }}
+                      className="mt-1.5 inline-flex items-center gap-1 rounded border border-border bg-surface px-2 py-0.5 text-[11.5px] font-medium text-foreground hover:bg-muted"
+                    >
+                      <Check className="h-3 w-3" /> {t("newApplication.confirmValue")}
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))}
       {pending.length > 0 && (
         <p
           className="flex items-center gap-1.5 border-t border-border bg-flag-soft px-4 py-2 text-[12px] text-flag-foreground"
@@ -534,10 +557,11 @@ function ProposedCase({
 
 /** A candidate as the RM reads it: a configured id shows its label. */
 function candidateLabel(field: string, value: string, meta: Meta): string {
-  const list =
-    field === "constitution" ? meta.constitutions : field === "facilities" ? meta.facilities : [];
-  return list.find((o) => o.id === value)?.label ?? value.replace(/_/g, " ");
+  return optionsFor(field, meta).find((o) => o.id === value)?.label ?? value.replace(/_/g, " ");
 }
+
+/** Lists a case cannot be created without (product, stage) offer no empty choice. */
+const ALWAYS_CHOSEN = new Set(["product", "bank_stage"]);
 
 function FieldEditor({
   field,
@@ -553,17 +577,21 @@ function FieldEditor({
   onFocus: () => void;
 }) {
   const label = t(`proposalField.${field}`);
-  if (field === "constitution") {
+  const options = field === "facilities" ? [] : optionsFor(field, meta);
+  if (options.length > 0) {
     return (
       <select
         aria-label={label}
         className={inputClass}
         value={value}
         onFocus={onFocus}
+        onClick={(e) => e.stopPropagation()}
         onChange={(e) => onChange(e.target.value)}
       >
-        <option value="">{t("term.notConfirmed")}</option>
-        {meta.constitutions
+        {!ALWAYS_CHOSEN.has(field) || value === "" ? (
+          <option value="">{t("term.notConfirmed")}</option>
+        ) : null}
+        {options
           .filter((c) => c.id !== "unknown")
           .map((c) => (
             <option key={c.id} value={c.id}>
@@ -645,7 +673,10 @@ function CreateBar({
   onDiscard: () => void;
   onCreate: () => void;
 }) {
-  const missing = missingMinimum(meta.case_create_minimum, draft);
+  const missing = missingMinimum(meta.case_create_minimum, draft, {
+    product: meta.product_default,
+    bank_stage: meta.bank_stage_default,
+  });
   const pending = unsettled(proposal, draft);
   const blocked = missing.length > 0 || pending.length > 0 || duplicateBlocked;
 
@@ -653,12 +684,29 @@ function CreateBar({
     <div className="space-y-2">
       {error ? <ErrorState error={error} compact /> : null}
       <div className="flex flex-wrap items-center justify-end gap-2">
-        {missing.length > 0 && (
-          <p className="mr-auto text-[12px] text-muted-foreground" data-testid="missing-minimum">
-            {t("newApplication.stillNeeded", {
-              fields: missing.map((k) => t(`proposalField.${k}`)).join(", "),
-            })}
-          </p>
+        {blocked && (
+          <ul
+            className="mr-auto space-y-0.5 text-[12px] text-flag-foreground"
+            data-testid="create-blockers"
+          >
+            {missing.length > 0 && (
+              <li data-testid="missing-minimum">
+                {t("newApplication.stillNeeded", {
+                  fields: missing.map((k) => t(`proposalField.${k}`)).join(", "),
+                })}
+              </li>
+            )}
+            {pending.length > 0 && (
+              <li data-testid="pending-confirmation">
+                {t("newApplication.stillToConfirm", {
+                  fields: pending.map((k) => t(`proposalField.${k}`)).join(", "),
+                })}
+              </li>
+            )}
+            {duplicateBlocked && (
+              <li data-testid="duplicate-blocker">{t("newApplication.duplicateBlocker")}</li>
+            )}
+          </ul>
         )}
         <button
           type="button"

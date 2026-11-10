@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { AlertTriangle, Check, Loader2 } from "lucide-react";
+import { AlertTriangle, Check, Loader2, Lock } from "lucide-react";
 import type { CaseProgress, StageProgress as Stage, StageStatus } from "@/api/types";
 import { caseTabPath, tabForStage } from "@/components/shell/nav";
 import { t } from "@/config/terminology";
@@ -91,14 +91,13 @@ function StageItem({
   );
 }
 
-const PILL_TONE: Record<StageStatus, string> = {
-  done: "bg-positive-soft text-positive",
-  needs_attention: "bg-flag-soft text-flag-foreground",
-  in_progress: "bg-info-soft text-info",
-  not_started: "text-muted-foreground",
+const DOT_TONE: Partial<Record<StageStatus, string>> = {
+  needs_attention: "bg-flag",
+  in_progress: "bg-info",
 };
 
-/** One stage as a pill: its name, coloured by where it stands; its detail on hover. */
+/** One stage as a tab: its short name, underlined when open; a dot when it needs a person or is
+ * running; its full name and detail on hover. */
 function StagePill({
   caseId,
   stage,
@@ -111,13 +110,25 @@ function StagePill({
   canOpen: boolean;
 }) {
   const className = cn(
-    "inline-flex items-center whitespace-nowrap rounded px-2 py-1 text-[11.5px] font-medium transition-colors",
-    active ? "bg-primary text-primary-foreground" : PILL_TONE[stage.status],
-    canOpen && !active && "hover:bg-muted hover:text-foreground",
+    "-mb-px inline-flex items-center gap-1.5 whitespace-nowrap border-b-2 px-0.5 pb-2 pt-1 text-[12.5px] transition-colors",
+    active
+      ? "border-primary font-semibold text-foreground"
+      : "border-transparent text-muted-foreground",
+    canOpen && !active && "hover:border-border hover:text-foreground",
+    !canOpen && "cursor-not-allowed text-muted-foreground/50",
   );
-  // The step's short name, as in the side menu; the stage's full name and detail on hover.
   const label = t(`caseTab.${tabForStage(stage.key).key}`);
-  const title = `${t(`progress.stage.${stage.key}`)} · ${stageDetail(stage)}`;
+  const title = canOpen
+    ? `${t(`progress.stage.${stage.key}`)} · ${stageDetail(stage)}`
+    : t("nav.lockedStep");
+  const dot = canOpen ? DOT_TONE[stage.status] : undefined;
+  const body = (
+    <>
+      {!canOpen && <Lock className="h-3 w-3" aria-hidden />}
+      {label}
+      {dot && <span className={cn("h-1.5 w-1.5 rounded-full", dot)} aria-hidden />}
+    </>
+  );
   return canOpen ? (
     <Link
       to={caseTabPath(caseId, tabForStage(stage.key))}
@@ -127,16 +138,17 @@ function StagePill({
       data-testid={`stage-${stage.key}`}
       data-status={stage.status}
     >
-      {label}
+      {body}
     </Link>
   ) : (
     <span
       className={className}
       title={title}
+      aria-disabled="true"
       data-testid={`stage-${stage.key}`}
       data-status={stage.status}
     >
-      {label}
+      {body}
     </span>
   );
 }
@@ -166,8 +178,8 @@ export function StageProgressBar({
 
   return (
     <nav aria-label={t("progress.label")} data-testid="stage-progress">
-      {/* A pill a stage, as the original design: done tinted, the open one dark. */}
-      <ol className="flex flex-wrap items-center gap-1 md:justify-end">
+      {/* A tab a stage: plain text, the open one underlined. */}
+      <ol className="flex items-center gap-5 overflow-x-auto">
         {stages.map((stage) => (
           <li key={stage.key}>
             <StagePill

@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronRight,
+  Clock,
   CircleDashed,
   Copy,
   FileText,
@@ -29,6 +30,8 @@ import {
   bandOf,
   isOpen,
   passes,
+  readyForCredit,
+  scoreText,
   sortInBand,
   useChecklist,
   useQueryList,
@@ -38,15 +41,9 @@ import {
 } from "@/domain/checklist";
 import { ACCEPT, pageRange, useCaseRegister, useDocumentTypes } from "@/domain/documents";
 import { integrityNeedsPerson, stateOf } from "@/domain/integrity";
+import { readinessWait, type ReadinessWait } from "@/domain/progress";
 import { cn } from "@/lib/utils";
-import {
-  Glance,
-  GlanceCompact,
-  GlanceCompactNotice,
-  GlanceCompactSkeleton,
-  GlanceNotice,
-  GlanceSkeleton,
-} from "./checklist/Glance";
+import { GlanceCompactNotice, GlanceCompactSkeleton } from "./checklist/Glance";
 import type { CanOpen } from "./checklist/GlanceRail";
 import { BAND, filterLabel, ICON, ICON_TONE, TONE, type BandKey } from "./checklist/status";
 import { CopyLabel } from "./checklist/CopyLabel";
@@ -78,33 +75,12 @@ export function DocumentChecklist({
   const checklist = useChecklist(caseId);
   const r = checklist.data;
   const retry = () => void checklist.refetch();
-  const overview = variant === "overview";
 
   // A failed read with an earlier one at hand keeps the earlier one on screen (and every
   // outcome, pin and filter with it), with a note and a retry; only a first read that fails
   // replaces the checklist.
   if (!r || r.items.length === 0) {
     const state = !r ? (checklist.isError ? "error" : "loading") : "empty";
-    if (overview) {
-      if (state === "loading")
-        return (
-          <>
-            <GlanceSkeleton caseId={caseId} progress={progress} canOpen={canOpen} />
-            <Panel title={t("journey.title")} testId="document-checklist">
-              <LoadingBlock rows={4} className="border-0" />
-            </Panel>
-          </>
-        );
-      return (
-        <GlanceNotice
-          state={state}
-          caseId={caseId}
-          progress={progress}
-          canOpen={canOpen}
-          onRetry={retry}
-        />
-      );
-    }
     return (
       <Panel title={t("journey.title")} testId="document-checklist">
         {state === "loading" ? (
@@ -178,6 +154,7 @@ function Journey({
   const [filter, setFilterState] = useState<Filter>("all");
   // The done band: open on the Files step and whenever nothing is open; else as last toggled.
   const [doneToggle, setDoneToggle] = useState<boolean | null>(null);
+  const [unmatchedOpen, setUnmatchedOpen] = useState(variant === "files");
   const anyOpen = r.items.some(isOpen);
   const doneOpen = doneToggle ?? (variant === "files" || !anyOpen);
 
@@ -256,6 +233,7 @@ function Journey({
       dragging={dragging}
       flash={flash === item.item_id}
       onJump={jump}
+      compact={variant === "overview"}
     />
   );
 
@@ -320,15 +298,7 @@ function Journey({
       }
     >
       {variant === "files" && stale && <StaleNotice onRetry={stale} />}
-      {variant === "files" && (
-        <GlanceCompact
-          r={r}
-          sections={sections}
-          filter={filter}
-          onFilter={setFilter}
-          onJump={jump}
-        />
-      )}
+      {variant === "files" && <FilterRow r={r} filter={filter} onFilter={setFilter} />}
       <div className="divide-y divide-border">
         {shown.length === 0 && (
           <p className="px-4 py-6 text-center text-[12.5px] text-muted-foreground">
@@ -381,14 +351,22 @@ function Journey({
 
         {filter === "all" && unmatched.length > 0 && (
           <section aria-labelledby="journey-unmatched-title" data-testid="journey-unmatched">
-            <BandHeader
-              band="unmatched"
-              id="journey-unmatched-title"
-              title={t("journey.unmatched")}
-              n={unmatched.length}
-              help={t("journey.unmatchedHelp")}
-            />
-            <ul className="flex flex-wrap gap-1.5 px-4 py-3">
+            <button
+              type="button"
+              aria-expanded={unmatchedOpen}
+              onClick={() => setUnmatchedOpen((v) => !v)}
+              className="group block w-full text-left"
+              data-testid="journey-unmatched-toggle"
+            >
+              <BandHeader
+                band="unmatched"
+                id="journey-unmatched-title"
+                title={t("journey.unmatched")}
+                n={unmatched.length}
+                help={t("journey.unmatchedHelp")}
+              />
+            </button>
+            <ul hidden={!unmatchedOpen} className="flex flex-wrap gap-1.5 px-4 py-3">
               {unmatched.slice(0, 12).map((d) => (
                 <li key={d.id} className="min-w-0 max-w-full">
                   <DocPill caseId={caseId} doc={d} files={fileList} />
@@ -417,17 +395,8 @@ function Journey({
   if (variant === "files") return list;
   return (
     <>
-      <Glance
-        caseId={caseId}
-        r={r}
-        sections={sections}
-        progress={progress}
-        canOpen={canOpen}
-        filter={filter}
-        onFilter={setFilter}
-        onJump={jump}
-        notice={stale && <StaleNotice onRetry={stale} />}
-      />
+      <OverviewStatus r={r} wait={readinessWait(progress, r)} caseId={caseId} />
+      {stale && <StaleNotice onRetry={stale} />}
       {list}
     </>
   );
@@ -552,6 +521,7 @@ function Requirement({
   dragging,
   flash,
   onJump,
+  compact = false,
 }: {
   caseId: string;
   item: ChecklistItemState;
@@ -564,7 +534,12 @@ function Requirement({
   dragging: boolean;
   flash: boolean;
   onJump: (itemId: string) => void;
+  /** One line (name, one detail, status), the rest opened on demand: the Overview. */
+  compact?: boolean;
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const [allDocs, setAllDocs] = useState(false);
+  const detail = !compact || expanded;
   const Icon = ICON[item.status];
   const id = item.item_id;
   const open = item.status === "missing" || item.status === "insufficient";
@@ -594,8 +569,11 @@ function Requirement({
     <li
       id={`req-${id}`}
       className={cn(
-        "relative grid scroll-mt-24 grid-cols-[16px_minmax(0,1fr)] gap-x-3 gap-y-2 border-l-[3px] px-4 py-3 transition-colors duration-700 motion-reduce:transition-none sm:grid-cols-[16px_minmax(0,1fr)_auto]",
+        "relative grid scroll-mt-24 gap-x-3 gap-y-2 border-l-[3px] px-4 transition-colors duration-700 motion-reduce:transition-none",
         // Red while the requirement still blocks the case, wherever the row is kept.
+        compact
+          ? "grid-cols-[16px_minmax(0,1fr)_auto] py-2.5"
+          : "grid-cols-[16px_minmax(0,1fr)] py-3 sm:grid-cols-[16px_minmax(0,1fr)_auto]",
         bandOf(item) === "blocking" ? "border-l-destructive" : "border-l-transparent",
         flash && "bg-accent/70 duration-0",
         dragging &&
@@ -635,11 +613,22 @@ function Requirement({
           : undefined
       }
     >
-      <Icon className={cn("mt-5 size-4", ICON_TONE[item.status])} aria-hidden />
+      <Icon
+        className={cn(compact ? "mt-0.5" : "mt-5", "size-4", ICON_TONE[item.status])}
+        aria-hidden
+      />
 
       <div className="flex min-w-0 flex-col gap-1.5">
+        {compact && (
+          <CompactLine
+            item={item}
+            docs={docs.length}
+            expanded={expanded}
+            onToggle={() => setExpanded((v) => !v)}
+          />
+        )}
         {/* On a phone the section wraps beside the status, never cut off. */}
-        <div className="flex items-start gap-2">
+        <div className={cn("flex items-start gap-2", compact && "hidden")}>
           <span className="min-w-0 text-[10.5px] font-medium uppercase leading-4 tracking-wide text-muted-foreground">
             {item.section}
           </span>
@@ -651,20 +640,35 @@ function Requirement({
           ref={name}
           id={`req-${id}-name`}
           tabIndex={-1}
-          className="rounded-sm text-[13.5px] font-medium leading-snug text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className={cn(
+            "rounded-sm text-[13.5px] font-medium leading-snug text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+            compact && "sr-only",
+          )}
         >
           {item.name}
         </p>
 
-        {docs.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {docs.map((d) => (
+        {detail && docs.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {(allDocs ? docs : docs.slice(0, SHOWN_DOCS)).map((d) => (
               <DocPill key={d.id} caseId={caseId} doc={d} files={files} />
             ))}
+            {docs.length > SHOWN_DOCS && (
+              <button
+                type="button"
+                onClick={() => setAllDocs((v) => !v)}
+                className="rounded px-1.5 py-0.5 text-[11.5px] font-medium text-primary hover:underline"
+                data-testid="journey-docs-more"
+              >
+                {allDocs
+                  ? t("journey.fewerDocs")
+                  : t("journey.moreDocs", { n: docs.length - SHOWN_DOCS })}
+              </button>
+            )}
           </div>
         )}
 
-        {item.deficiency && item.status !== "satisfied" ? (
+        {!detail ? null : item.deficiency && item.status !== "satisfied" ? (
           <p
             className={cn(
               "text-[12.5px] leading-5",
@@ -679,14 +683,14 @@ function Requirement({
           <p className="text-[12.5px] text-info">{t("journey.waitingPerson")}</p>
         ) : null}
 
-        {open && ask.map((q) => <AskBlock key={q.id} text={q.text} />)}
+        {detail && open && ask.map((q) => <AskBlock key={q.id} text={q.text} />)}
 
         {/* In place before the first file is sent, so its first outcome is announced. */}
-        {(droppable || outcomes.length > 0) && (
+        {detail && (droppable || outcomes.length > 0) && (
           <Outcomes outcomes={outcomes} itemId={id} onJump={onJump} />
         )}
 
-        {item.why && (
+        {detail && item.why && (
           <div className="pt-0.5">
             <button
               type="button"
@@ -719,11 +723,16 @@ function Requirement({
         )}
       </div>
 
-      <div className="col-start-2 flex items-center gap-2 sm:col-start-3 sm:row-start-1 sm:flex-col sm:items-end">
-        <span className="hidden sm:inline-flex">
+      <div
+        className={cn(
+          "flex items-center gap-2 sm:flex-col sm:items-end",
+          compact ? "col-start-3 row-start-1" : "col-start-2 sm:col-start-3 sm:row-start-1",
+        )}
+      >
+        <span className={compact ? "inline-flex" : "hidden sm:inline-flex"}>
           <StatusChip status={item.status} />
         </span>
-        {droppable && (
+        {droppable && detail && (
           <>
             <input
               ref={input}
@@ -777,6 +786,192 @@ function Requirement({
         </div>
       )}
     </li>
+  );
+}
+
+/** A compact row's one line: the name (a toggle), its section and one detail. */
+function CompactLine({
+  item,
+  docs,
+  expanded,
+  onToggle,
+}: {
+  item: ChecklistItemState;
+  docs: number;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const detail =
+    item.deficiency && item.status !== "satisfied"
+      ? item.deficiency
+      : item.status === "in_review"
+        ? t("journey.waitingPerson")
+        : docs === 0
+          ? t("journey.notReceived")
+          : docs === 1
+            ? t("journey.oneDocument")
+            : t("journey.documents", { n: docs });
+  return (
+    <button
+      type="button"
+      aria-expanded={expanded}
+      onClick={onToggle}
+      className="group flex min-w-0 items-start gap-1.5 rounded-sm text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+      data-testid="journey-item-toggle"
+    >
+      <ChevronRight
+        className="mt-1 size-3 shrink-0 text-muted-foreground transition-transform group-aria-expanded:rotate-90 motion-reduce:transition-none"
+        aria-hidden
+      />
+      <span className="min-w-0">
+        <span className="block text-[13px] font-medium leading-snug text-foreground">
+          {item.name}
+        </span>
+        <span
+          className={cn(
+            "block text-[12px] leading-5",
+            item.status === "satisfied" || item.status === "waived"
+              ? "text-muted-foreground"
+              : (DEFICIENCY_TONE[item.status] ?? "text-muted-foreground"),
+          )}
+          data-testid="journey-item-detail"
+        >
+          {item.section} · {detail}
+        </span>
+      </span>
+    </button>
+  );
+}
+
+/** How many of a requirement's documents its row names before "n more". */
+const SHOWN_DOCS = 6;
+
+const FILTERS: Filter[] = ["all", "todo", "blocking", "in_review", "satisfied"];
+
+/** The Files step's summary: the requirements counted by status, each count a filter. */
+function FilterRow({
+  r,
+  filter,
+  onFilter,
+}: {
+  r: Readiness;
+  filter: Filter;
+  onFilter: (f: Filter) => void;
+}) {
+  return (
+    <div
+      className="flex flex-wrap gap-1.5 border-b border-border px-4 py-2.5"
+      role="group"
+      aria-label={t("journey.filterLabel")}
+      data-testid="journey-summary"
+    >
+      {r.provisional && (
+        <span
+          className="mr-1 rounded border border-flag/40 bg-flag-soft px-2 py-0.5 text-[12px] text-flag-foreground"
+          title={t("checklist.provisionalHelp")}
+          data-testid="journey-provisional"
+        >
+          {t("checklist.provisional")}
+        </span>
+      )}
+      {FILTERS.map((f) => {
+        const n = r.items.filter((i) => passes(i, f)).length;
+        if (f !== "all" && n === 0) return null;
+        const on = filter === f;
+        return (
+          <button
+            key={f}
+            type="button"
+            aria-pressed={on}
+            onClick={() => onFilter(on && f !== "all" ? "all" : f)}
+            className={cn(
+              "rounded border px-2 py-0.5 text-[12px] transition-colors",
+              on
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border bg-surface text-foreground hover:bg-muted",
+            )}
+            data-testid={`journey-filter-${f}`}
+          >
+            {f === "all" ? t("journey.filterAll") : filterLabel(f)} {n}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** The Overview's opening line: whether the case can go to credit review, and why not. */
+function OverviewStatus({
+  r,
+  wait,
+  caseId,
+}: {
+  r: Readiness;
+  wait: ReadinessWait;
+  caseId: string;
+}) {
+  // Before the documents are in and read, the score and blocking count would only say "nothing
+  // received yet": say what readiness waits on instead.
+  if (wait) {
+    const text =
+      wait.kind === "documents"
+        ? t("overviewStatus.waitingDocuments")
+        : wait.total > 0
+          ? t("overviewStatus.reading", { done: wait.done, total: wait.total })
+          : t("overviewStatus.readingStarted");
+    const Icon = wait.kind === "documents" ? Clock : Loader2;
+    return (
+      <section
+        className="flex flex-wrap items-start gap-2.5 rounded border border-border bg-surface-muted px-4 py-3 text-[13px] text-foreground"
+        data-testid="journey-verdict"
+        data-state={`waiting-${wait.kind}`}
+        role="status"
+      >
+        <Icon
+          className={cn(
+            "mt-0.5 size-4 shrink-0 text-muted-foreground",
+            wait.kind === "reading" && "animate-spin",
+          )}
+          aria-hidden
+        />
+        <p className="min-w-0 flex-1 font-medium">{text}</p>
+        {wait.kind === "documents" && (
+          <Link
+            to="/appraisals/$caseId/documents"
+            params={{ caseId }}
+            className="text-[12.5px] font-medium text-primary hover:underline"
+            data-testid="verdict-upload"
+          >
+            {t("overviewStatus.uploadDocuments")}
+          </Link>
+        )}
+      </section>
+    );
+  }
+  const ready = readyForCredit(r);
+  const score = scoreText(r.score_pct, r.gate_pct);
+  const gate = Math.round(r.gate_pct);
+  const text = ready
+    ? t("overviewStatus.ready", { score, gate })
+    : r.blocking_open > 0
+      ? t("overviewStatus.notReady", { score, gate, n: r.blocking_open })
+      : t("overviewStatus.notReadyScore", { score, gate });
+  const Icon = ready ? CheckCircle2 : AlertTriangle;
+  return (
+    <section
+      className={cn(
+        "flex items-start gap-2.5 rounded border px-4 py-3 text-[13px]",
+        ready
+          ? "border-positive/30 bg-positive-soft text-positive"
+          : "border-destructive/30 bg-destructive/5 text-destructive",
+      )}
+      data-testid="journey-verdict"
+      data-state={ready ? "ready" : "not_ready"}
+      role="status"
+    >
+      <Icon className="mt-0.5 size-4 shrink-0" aria-hidden />
+      <p className="font-medium">{text}</p>
+    </section>
   );
 }
 

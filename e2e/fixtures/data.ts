@@ -4,6 +4,9 @@
 // against the excluded-terms list.
 import type {
   ApprovalMatrixConfig,
+  ChecklistPreview,
+  ChecklistPreviewItem,
+  ChecklistPreviewRequest,
   ApprovingAuthority,
   Cam,
   CamBlock,
@@ -170,7 +173,27 @@ export const META: Meta = {
     { id: "term_loan", label: "Term loan" },
     { id: "bank_guarantee", label: "Bank guarantee" },
   ],
-  case_create_minimum: ["borrower", "facilities", "amount_inr"],
+  products: [{ id: "bbg", label: "Business banking" }],
+  product_default: "bbg",
+  case_types: [
+    { id: "new", label: "New" },
+    { id: "renewal", label: "Renewal" },
+    { id: "enhancement", label: "Enhancement" },
+    { id: "takeover", label: "Takeover" },
+    { id: "unknown", label: "Not yet confirmed" },
+  ],
+  branches: [
+    { id: "mumbai_hub", label: "Mumbai hub" },
+    { id: "head_office", label: "Head office" },
+  ],
+  bank_stages: [
+    { id: "login", label: "Login" },
+    { id: "pd", label: "Personal discussion" },
+    { id: "sanction", label: "Sanction" },
+    { id: "post_sanction", label: "Post-sanction" },
+  ],
+  bank_stage_default: "login",
+  case_create_minimum: ["borrower", "product", "facilities", "amount_inr"],
 };
 
 // --- Cases ---
@@ -199,16 +222,24 @@ function summary(
     open_review_items: open,
     files_attention: 0,
     files_altered: 0,
+    // Every case is business banking (migration 20); case type and bank stage are set per case.
+    product: "bbg",
     ...extra,
   };
 }
 
 export const CASES: CaseSummary[] = [
-  summary(KESTREL, "Kestrel Polymers Pvt Ltd", "Completeness", 3),
+  summary(KESTREL, "Kestrel Polymers Pvt Ltd", "Completeness", 3, {
+    case_type: "renewal",
+    bank_stage: "pd",
+  }),
   summary(SAFFRON, "Saffron Loom Textiles Pvt Ltd", "CrossVerification", 0, {
     facilities: ["cash_credit"],
     amount_inr: 25_000_000,
+    case_type: "new",
+    bank_stage: "login",
   }),
+  // Created before case types were recorded: product only.
   summary(ORIEL, "Oriel Castings", "Intake", 0, { constitution: "unknown" }),
 ];
 
@@ -221,6 +252,9 @@ export function detail(s: CaseSummary, extra: Partial<CaseDetail> = {}): CaseDet
     udyam: null,
     collateral_present: true,
     channel: "email",
+    application_id: s.id === KESTREL ? "LA123456" : null,
+    customer_id: null,
+    branch: s.case_type ? "mumbai_hub" : null,
     as_of: "2026-09-20",
     created_by: "arjun-deshpande",
     config_version: "v3",
@@ -770,7 +804,58 @@ export function proposal(duplicates: CaseSummary[] = []): CaseProposal {
         status: "found",
         span: spanOf("Kabir Rao and Leela Varghese"),
       },
+      case_type: { value: "renewal", status: "found", span: spanOf("renewal") },
+      branch: { value: null, status: "not_found" },
+      application_id: { value: null, status: "not_found" },
+      customer_id: { value: null, status: "not_found" },
     },
+  };
+}
+
+/** What the New appraisal screen previews (F-12 at intake): the common items while the
+ * constitution is unknown, the company items once it is a private limited company. */
+export function checklistPreview(req: ChecklistPreviewRequest): ChecklistPreview {
+  const common: ChecklistPreviewItem[] = [
+    {
+      id: "bank_statements",
+      name: "Bank statements, last 12 months",
+      category: "Financials",
+      why: "Banking conduct and turnover.",
+      blocking: true,
+      document_types: ["Bank statement"],
+    },
+    {
+      id: "gst_returns",
+      name: "GST returns, last 12 months",
+      category: "Financials",
+      why: "Declared turnover.",
+      blocking: true,
+      document_types: ["GSTR-3B"],
+    },
+  ];
+  const company: ChecklistPreviewItem[] = [
+    {
+      id: "coi",
+      name: "Certificate of incorporation",
+      category: "Constitution and KYC",
+      why: "Proof the company exists.",
+      blocking: true,
+      document_types: ["Certificate of incorporation"],
+    },
+    {
+      id: "board_resolution",
+      name: "Board resolution to borrow",
+      category: "Constitution and KYC",
+      why: "Authority to borrow.",
+      blocking: false,
+      document_types: ["Board resolution"],
+    },
+  ];
+  const known = req.constitution === "private_limited";
+  return {
+    provisional: !known,
+    sections: ["Constitution and KYC", "Financials"],
+    items: known ? [...company, ...common] : common,
   };
 }
 

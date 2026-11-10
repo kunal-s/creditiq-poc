@@ -308,14 +308,29 @@ function Summary({
   const attention = documents.filter((d) => needsAttention(d, context)).length;
   return (
     <Panel title={t("documents.summary")} testId="documents-summary">
-      <div className="grid grid-cols-2 gap-2 p-3">
-        <Stat label={t("documents.logical")} value={documents.length} />
-        <Stat label={t("documents.needsAttention")} value={attention} tone="flag" />
-        <Stat label={t("document.unclassified")} value={unclassified} tone="flag" />
-        <Stat label={t("documents.labelMismatches")} value={mismatched} tone="flag" />
-      </div>
-      <dl className="divide-y divide-border border-t border-border text-[12.5px]">
-        {STATUS_ORDER.map((s) => (
+      {/* One list: the documents, then the files by status; a status with no file is left out. */}
+      <dl className="divide-y divide-border text-[12.5px]">
+        {(
+          [
+            [t("documents.logical"), documents.length, false],
+            [t("documents.needsAttention"), attention, true],
+            [t("document.unclassified"), unclassified, true],
+            [t("documents.labelMismatches"), mismatched, true],
+          ] as const
+        ).map(([label, value, flag]) => (
+          <div key={label} className="flex items-center justify-between gap-3 px-4 py-1.5">
+            <dt className="text-muted-foreground">{label}</dt>
+            <dd
+              className={cn(
+                "tabular font-medium",
+                flag && value > 0 ? "text-flag-foreground" : "text-foreground",
+              )}
+            >
+              {value}
+            </dd>
+          </div>
+        ))}
+        {STATUS_ORDER.filter((s) => s === "registered" || count(s) > 0).map((s) => (
           <div key={s} className="flex items-center justify-between gap-3 px-4 py-1.5">
             <dt>
               <FileStatusChip status={s} />

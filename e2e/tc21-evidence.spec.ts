@@ -46,6 +46,9 @@ test("TC-21: every field carries a confidence and a page link; corrections show 
   const fields = page.getByTestId("section-fields");
 
   const rows = fields.getByTestId("field-row");
+  // A field the document does not carry is listed only when asked for.
+  await expect(rows).toHaveCount(3);
+  await fields.getByTestId("field-missing-toggle").click();
   await expect(rows).toHaveCount(4);
   // The two monthly cells sit in one table, not in rows of their own.
   await expect(fields.getByTestId("field-table-row")).toHaveCount(2);

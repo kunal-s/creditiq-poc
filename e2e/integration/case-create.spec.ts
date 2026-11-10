@@ -21,7 +21,7 @@ test("paste, read, confirm and create: the engine proposes the fields it found",
   const read = page.getByRole("button", { name: "Read the message" });
   await expect(read).toBeDisabled();
 
-  await page.getByTestId("channel").selectOption("email");
+  await page.getByTestId("channel-email").click();
   await page.getByTestId("message-input").fill(SOURCING_MESSAGE);
   await expect(read).toBeEnabled();
   await read.click();
@@ -91,7 +91,7 @@ test("nothing is created while the message is only read", async ({ page }) => {
   const before = await rows();
 
   await page.goto("/appraisals/new");
-  await page.getByTestId("channel").selectOption("email");
+  await page.getByTestId("channel-email").click();
   await page.getByTestId("message-input").fill(SOURCING_MESSAGE);
   await page.getByRole("button", { name: "Read the message" }).click();
   await expect(page.getByTestId("proposed-case")).toBeVisible();
@@ -104,7 +104,7 @@ test("nothing is created while the message is only read", async ({ page }) => {
 test("a message without an amount says what is still needed", async ({ page }) => {
   await signIn(page, "analyst");
   await page.goto("/appraisals/new");
-  await page.getByTestId("channel").selectOption("email");
+  await page.getByTestId("channel-email").click();
   await page.getByTestId("message-input").fill("Client Vireo Castings Pvt Ltd is asking for CC.");
   await page.getByRole("button", { name: "Read the message" }).click();
 
@@ -122,7 +122,7 @@ test("a second application for the same borrower is offered the existing one", a
   try {
     // The same borrower again: the screen offers the case that already exists.
     await page.goto("/appraisals/new");
-    await page.getByTestId("channel").selectOption("email");
+    await page.getByTestId("channel-email").click();
     await page.getByTestId("message-input").fill(SOURCING_MESSAGE);
     await page.getByRole("button", { name: "Read the message" }).click();
     await page.getByTestId("field-borrower").getByRole("textbox").fill(borrower);
@@ -152,7 +152,7 @@ test("a second application for the same borrower is offered the existing one", a
 test("Discard clears the proposal and leaves the screen empty", async ({ page }) => {
   await signIn(page, "analyst");
   await page.goto("/appraisals/new");
-  await page.getByTestId("channel").selectOption("email");
+  await page.getByTestId("channel-email").click();
   await page.getByTestId("message-input").fill(SOURCING_MESSAGE);
   await page.getByRole("button", { name: "Read the message" }).click();
   await expect(page.getByTestId("proposed-case")).toBeVisible();

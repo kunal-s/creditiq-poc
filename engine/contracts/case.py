@@ -17,7 +17,9 @@ class HeaderField(BaseModel):
     proposed: str | None = None
     source: str | None = None
     """"message:<start>-<end>" (a span in the pasted message),
-    "document:<document_id>:p<page>", or "person"."""
+    "document:<document_id>:p<page>", "person", or a default the system
+    filled: "default:config" (the configured default) or "default:rm" (the
+    RM's own branch)."""
 
 
 class CaseCreate(BaseModel):
@@ -34,6 +36,18 @@ class CaseCreate(BaseModel):
     cin: str | None = None
     udyam: str | None = None
     collateral_present: bool = False
+    product: str | None = None
+    """A product id from config/app.yaml; None takes the configured default."""
+    case_type: str = "unknown"
+    """new, renewal, enhancement or takeover; "unknown" until confirmed."""
+    application_id: str | None = None
+    """The application's identifier in the loan origination system."""
+    customer_id: str | None = None
+    """The customer's identifier in the bank's systems."""
+    branch: str | None = None
+    """A branch id from config/app.yaml; None takes the RM's branch."""
+    bank_stage: str | None = None
+    """A bank stage id from config/app.yaml; None takes the configured default."""
     header: dict[str, HeaderField] = Field(default_factory=dict)
     duplicate_override_reason: str | None = None
     """Required when the duplicate-case check matched and the RM creates anyway (F-04.5)."""
@@ -58,6 +72,10 @@ class CaseSummary(BaseModel):
     facilities: list[str]
     amount_inr: int
     stage: Stage
+    product: str | None = None
+    case_type: str | None = None
+    """None for a case created before case types were recorded."""
+    bank_stage: str | None = None
     rm: str
     created_at: str
     open_review_items: int
@@ -74,6 +92,9 @@ class CaseDetail(CaseSummary):
     udyam: str | None
     collateral_present: bool
     channel: str
+    application_id: str | None = None
+    customer_id: str | None = None
+    branch: str | None = None
     as_of: str
     """Fixed at creation; every age and window rule uses it (FRD principle 8)."""
     created_by: str

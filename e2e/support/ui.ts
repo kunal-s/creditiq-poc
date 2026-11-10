@@ -81,7 +81,7 @@ export async function createCaseViaUi(
   opts: { message?: string; borrower?: string; channel?: string } = {},
 ): Promise<string> {
   await page.goto("/appraisals/new");
-  await page.getByTestId("channel").selectOption(opts.channel ?? "email");
+  await page.getByTestId(`channel-${opts.channel ?? "email"}`).click();
   await page.getByTestId("message-input").fill(opts.message ?? SOURCING_MESSAGE);
   await page.getByRole("button", { name: "Read the message" }).click();
   await expect(page.getByTestId("proposed-case")).toBeVisible();

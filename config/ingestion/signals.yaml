@@ -103,10 +103,12 @@ types:
 
   audited_financial_statements:
     required:
-      - any: ['audited\s+(standalone\s+|consolidated\s+)?(financial\s+statements|accounts)', 'independent\s+auditor', 'balance\s+sheet\s+as\s+(at|on)', 'financial\s+statements\s+for\s+the\s+(year|period)']
+      # The last alternative is the opening block of statements filed in XBRL, whose statements start well past the pages read here.
+      - any: ['audited\s+(standalone\s+|consolidated\s+)?(financial\s+statements|accounts)', 'independent\s+auditor', 'balance\s+sheet\s+as\s+(at|on)', 'financial\s+statements\s+for\s+the\s+(year|period)', '^\[700300\]\s+disclosure\s+of\s+general\s+information\s+about\s+company']
         zone: head
     supporting:
       - {rx: 'independent\s+auditor', weight: 2}
+      - {rx: '^\s*level\s+of\s+rounding\s+used\s+in\s+financial\s+statements\b', weight: 2}
       - 'balance[\s-]*sheet'
       - 'statement\s+of\s+profit\s+and\s+loss'
       - 'cash[\s-]*flow\s+statement'

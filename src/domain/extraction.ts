@@ -38,12 +38,20 @@ const ACRONYMS = new Set([
   "dscr",
   "tnw",
   "od",
+  "id",
+  "uin",
+  "udin",
+  "ifsc",
+  "pat",
+  "pbt",
 ]);
 
 /** One word of a field name as a person writes it: acronyms in capitals,
  * financial years as FY25, GSTR-3B style return names as GSTR-3B. */
 function word(w: string): string {
   if (ACRONYMS.has(w)) return w.toUpperCase();
+  // A plural acronym: "dins" -> "DINs".
+  if (w.endsWith("s") && ACRONYMS.has(w.slice(0, -1))) return `${w.slice(0, -1).toUpperCase()}s`;
   if (/^fy\d+$/.test(w)) return w.toUpperCase();
   const ret = w.match(/^(gstr)(\d+[a-z]?)$/);
   if (ret) return `${ret[1]!.toUpperCase()}-${ret[2]!.toUpperCase()}`;
@@ -67,6 +75,9 @@ export function fieldLabel(field: string): string {
     const [, table = "", row = "0", column = ""] = cell;
     return t("data.cell", { table: words(table), row: Number(row) + 1, column: words(column) });
   }
+  // One entry of a list: "authorized_person_dins[0]" -> "Authorized person DINs 1".
+  const entry = field.match(/^(\w+)\[(\d+)\]$/);
+  if (entry) return `${words(entry[1]!)} ${Number(entry[2]) + 1}`;
   return words(field);
 }
 

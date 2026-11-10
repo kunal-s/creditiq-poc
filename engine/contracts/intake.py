@@ -89,3 +89,33 @@ class Party(BaseModel):
     source: str
     """Where the party came from: "document:<id>:p<n>", "message", or "person"."""
     kyc_document_ids: list[str] = Field(default_factory=list)
+
+
+class ChecklistPreviewRequest(BaseModel):
+    """The proposed application as it stands on the New appraisal screen, before
+    any case exists: what the checklist would ask for (F-12, shown at intake)."""
+
+    constitution: str = "unknown"
+    facilities: list[str] = Field(default_factory=list)
+    amount_inr: int = 0
+    collateral_present: bool = False
+    product: str | None = None
+    case_type: str | None = None
+
+
+class ChecklistPreviewItem(BaseModel):
+    id: str
+    name: str
+    category: str
+    why: str
+    blocking: bool
+    request: str | None = None
+    document_types: list[str] = Field(default_factory=list)
+    """Names of the document types that can satisfy the item."""
+
+
+class ChecklistPreview(BaseModel):
+    provisional: bool
+    """The constitution is not confirmed yet: only the items every constitution needs."""
+    sections: list[str]
+    items: list[ChecklistPreviewItem]

@@ -1,4 +1,12 @@
-import type { CaseCreate, CaseProposal, HeaderField, Meta, Option, Span } from "@/api/types";
+import type {
+  CaseCreate,
+  CaseProposal,
+  ChecklistPreviewRequest,
+  HeaderField,
+  Meta,
+  Option,
+  Span,
+} from "@/api/types";
 
 /** The case's place in the bank's process (T2.1), shown first, in display order. */
 export const APPLICATION_FIELDS = [
@@ -9,6 +17,70 @@ export const APPLICATION_FIELDS = [
   "branch",
   "bank_stage",
 ] as const;
+
+/** How the proposed application is laid out: each group's fields in order. A field
+ * not named here (a new proposal field) joins the request group. */
+export const FIELD_GROUPS = [
+  { id: "application", fields: APPLICATION_FIELDS as readonly string[] },
+  { id: "borrower", fields: ["borrower", "constitution", "contact", "promoters"] },
+  {
+    id: "request",
+    fields: [
+      "facilities",
+      "amount_inr",
+      "proposed_emi_inr",
+      "declared_turnover_inr",
+      "existing_banking",
+    ],
+  },
+  { id: "identifiers", fields: ["pan", "gstin", "cin", "udyam"] },
+] as const;
+
+/** Fields that take the full width of the field grid. */
+export const WIDE_FIELDS = new Set(["borrower", "promoters", "facilities", "existing_banking"]);
+
+/** Where each field sits in a two-column group: a wide field, or one that would
+ * otherwise stand alone in its row, takes the full width. */
+export function fieldCells(keys: string[]): Record<string, "full" | "left" | "right"> {
+  const out: Record<string, "full" | "left" | "right"> = {};
+  let left = true;
+  keys.forEach((key, i) => {
+    const next = keys[i + 1];
+    if (WIDE_FIELDS.has(key) || (left && (next === undefined || WIDE_FIELDS.has(next)))) {
+      out[key] = "full";
+      left = true;
+    } else {
+      out[key] = left ? "left" : "right";
+      left = !left;
+    }
+  });
+  return out;
+}
+
+/** The fields of each group, in order, from the keys a proposal shows. */
+export function groupFields(keys: string[]): { id: string; keys: string[] }[] {
+  const named = new Set<string>(FIELD_GROUPS.flatMap((g) => [...g.fields]));
+  return FIELD_GROUPS.map((g) => ({
+    id: g.id,
+    keys: [
+      ...g.fields.filter((k) => keys.includes(k)),
+      ...(g.id === "request" ? keys.filter((k) => !named.has(k)) : []),
+    ],
+  })).filter((g) => g.keys.length > 0);
+}
+
+/** The checklist preview request for the values on screen (F-12 at intake). */
+export function previewRequest(draft: Draft): ChecklistPreviewRequest {
+  const v = (key: string) => (draft.values[key] ?? "").trim();
+  return {
+    constitution: v("constitution") || "unknown",
+    facilities: v("facilities").split(",").filter(Boolean),
+    amount_inr: Number(v("amount_inr")) || 0,
+    collateral_present: false,
+    product: v("product") || null,
+    case_type: v("case_type") || null,
+  };
+}
 
 /** The fields a proposal carries (F-04.2), in display order. */
 export const PROPOSAL_FIELDS = [

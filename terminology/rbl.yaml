@@ -23,6 +23,10 @@ nav:
   readinessConsole: Readiness Console
   memoLibrary: Memo Library
   footer: "Every check runs under the configuration published {date}"
+  lockedStep: Opens for the credit team; your role does not include this step.
+  caseGroup:
+    documents: Documents and data
+    assessment: Assessment and outputs
   group:
     workbench: Workbench
     docready: DocReady
@@ -1302,6 +1306,20 @@ newApplication:
   group:
     application: Application
     borrower: Borrower
+    request: Request
+    identifiers: Identifiers
+  documents:
+    title: Documents
+    help: Attach what the RM has now; more can be added after the application is created.
+    attached: "Attached ({n})"
+    noneAttached: Nothing attached yet.
+    needed: "Will need {n} documents"
+    neededSome: "Will need {n} documents ({blocking} blocking)"
+    acceptedAs: "Accepted as: {types}"
+    neededLoading: Working out what this application will need…
+    provisionalHelp: Confirm the constitution to see the full list.
+    notBlocking: Not blocking
+    after: Files are read once the application is created; the Documents tab then shows what is still missing.
   prefilled:
     "default:config": Default
     "default:rm": Your branch
@@ -1315,6 +1333,9 @@ newApplication:
   attachmentsHelp: Optional. Files added here are uploaded to the application's documents once it is created.
   attachmentsLater: The application was created; add the attachments from its Documents screen.
   stillNeeded: "Still needed: {fields}"
+  stillToConfirm: "Still to confirm: {fields}"
+  duplicateBlocker: An application for this borrower already exists. Choose Create anyway above and give a reason, or open the existing one.
+  moreDuplicates: "and {n} more applications for this borrower"
   discard: Discard
   create: Create application
   creating: Creating…
@@ -1365,6 +1386,11 @@ journey:
   filesAttention: "{n} need a person"
   filterEmpty: Nothing here under this filter.
   notReceived: Nothing received for this yet.
+  filterAll: All
+  moreDocs: "{n} more"
+  fewerDocs: Show fewer
+  oneDocument: 1 document on file
+  documents: "{n} documents on file"
   ask: "Ask:"
   copy: Copy the request
   copyRequest: "Copy request {n}"
@@ -2158,6 +2184,9 @@ caseHeader:
   readiness: Readiness
   readinessUnavailable: Readiness not available
   outstandingGate: "{n} outstanding · {gate}% review gate"
+  waitingDocuments: Waiting for documents
+  readingDocuments: "Reading documents · {done} of {total}"
+  readingStarted: Reading documents
   ask: Ask
   blockingGaps: "{n} blocking"
   tabs: Appraisal tabs
@@ -2315,6 +2344,15 @@ assessment:
     notReady: The case cannot be created yet. The conditions above are not all met.
     failed: The case could not be created. Try again.
 
+overviewStatus:
+  ready: "Ready for credit review: {score}% against the {gate}% review gate, nothing blocking."
+  notReady: "Not ready for credit review: {score}% against the {gate}% review gate, {n} blocking requirements open."
+  notReadyScore: "Not ready for credit review: {score}% against the {gate}% review gate."
+  waitingDocuments: "Waiting for documents. Readiness is worked out once they are uploaded and read; the list below is what this appraisal needs."
+  reading: "Reading the documents ({done} of {total}). Readiness is worked out when reading finishes."
+  readingStarted: "Reading the documents. Readiness is worked out when reading finishes."
+  uploadDocuments: Upload documents
+
 readiness:
   reviewGate: Review gate
   disbursementGate: Disbursement gate
@@ -2431,6 +2469,8 @@ source:
 
 # Extracted data and evidence (FRD F-15 to F-17).
 data:
+  showNotFound: "Show {n} fields not found on the document"
+  hideNotFound: Hide the fields not found on the document
   filter: Filter by status
   showInReview: "Show the {n} in review"
   filterAll: All fields

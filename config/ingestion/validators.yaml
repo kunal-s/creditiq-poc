@@ -49,6 +49,13 @@ rules:
     severity: fail
     label: Balance sheet totals agree (previous year)
 
+  - id: afs_financial_year_is_date
+    types: [audited_financial_statements]
+    kind: field_pattern
+    params: {field: financial_year, pattern: '\d{1,2}[/.-]\d{1,2}[/.-]\d{4}|\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]+,?\s+\d{4}|(?:FY\s*)?20\d{2}(?:-\d{2}(?:\d{2})?)?(?:\s*\(ended\s+[^)]+\))?'}
+    severity: fail
+    label: Financial year is a year or a year-end date
+
   - id: signature_block_filled
     types: [board_resolution_borrowing]
     kind: blank_after_label

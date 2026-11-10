@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { api } from "@/api/client";
-import type { CaseProgress, StageProgress } from "@/api/types";
+import type { CaseProgress, Readiness, StageProgress } from "@/api/types";
 import { t } from "@/config/terminology";
 
 const POLL_MS = 3000;
@@ -61,4 +61,26 @@ export function stageDetail(stage: StageProgress): string {
   return stage.attention > 0 && stage.status !== "done"
     ? `${count} · ${t("progress.attention", { n: stage.attention })}`
     : count;
+}
+
+/** What readiness waits on before it means anything: no documents submitted yet, or the
+ * submitted ones still being read. Null once the documents are read. */
+export type ReadinessWait =
+  { kind: "documents" } | { kind: "reading"; done: number; total: number } | null;
+
+export function readinessWait(
+  progress: CaseProgress | undefined,
+  readiness?: Readiness,
+): ReadinessWait {
+  const docs = progress?.stages.find((s) => s.key === "documents");
+  if (!docs) return null;
+  const extraction = progress?.stages.find((s) => s.key === "extraction");
+  if (docs.status === "in_progress" || extraction?.status === "in_progress") {
+    // Reading covers both stages: sorting the files, then reading each document's values.
+    const stage = docs.status === "in_progress" ? docs : extraction!;
+    return { kind: "reading", done: stage.done ?? 0, total: stage.total ?? 0 };
+  }
+  // A case met without documents (every item waived) is not waiting on any.
+  if (docs.status === "not_started" && !readiness?.gate_met) return { kind: "documents" };
+  return null;
 }

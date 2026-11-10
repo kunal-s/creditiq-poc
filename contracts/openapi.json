@@ -3541,6 +3541,137 @@
         "title": "ChecklistItemState",
         "type": "object"
       },
+      "ChecklistPreview": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ChecklistPreviewItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "provisional": {
+            "title": "Provisional",
+            "type": "boolean"
+          },
+          "sections": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sections",
+            "type": "array"
+          }
+        },
+        "required": [
+          "provisional",
+          "sections",
+          "items"
+        ],
+        "title": "ChecklistPreview",
+        "type": "object"
+      },
+      "ChecklistPreviewItem": {
+        "properties": {
+          "blocking": {
+            "title": "Blocking",
+            "type": "boolean"
+          },
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "document_types": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Document Types",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "request": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request"
+          },
+          "why": {
+            "title": "Why",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "category",
+          "why",
+          "blocking"
+        ],
+        "title": "ChecklistPreviewItem",
+        "type": "object"
+      },
+      "ChecklistPreviewRequest": {
+        "description": "The proposed application as it stands on the New appraisal screen, before\nany case exists: what the checklist would ask for (F-12, shown at intake).",
+        "properties": {
+          "amount_inr": {
+            "default": 0,
+            "title": "Amount Inr",
+            "type": "integer"
+          },
+          "case_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Case Type"
+          },
+          "collateral_present": {
+            "default": false,
+            "title": "Collateral Present",
+            "type": "boolean"
+          },
+          "constitution": {
+            "default": "unknown",
+            "title": "Constitution",
+            "type": "string"
+          },
+          "facilities": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Facilities",
+            "type": "array"
+          },
+          "product": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product"
+          }
+        },
+        "title": "ChecklistPreviewRequest",
+        "type": "object"
+      },
       "ChecklistTaxonomySection": {
         "description": "config/checklist_taxonomy.yaml",
         "properties": {
@@ -12612,6 +12743,63 @@
           }
         },
         "summary": "Create Case"
+      }
+    },
+    "/api/cases/checklist-preview": {
+      "post": {
+        "description": "F-12 at intake: the documents the proposed application will need, from the\nvalues on the New appraisal screen. Stores nothing; no case is needed.",
+        "operationId": "checklist_preview_api_cases_checklist_preview_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChecklistPreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChecklistPreview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Checklist Preview"
       }
     },
     "/api/cases/proposals": {

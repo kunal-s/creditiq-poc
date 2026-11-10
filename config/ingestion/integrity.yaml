@@ -428,7 +428,8 @@ arithmetic:
     carried_forward: '\b(?:carried\s+forward|c/f)\b'
   balance_sheet_types: [audited_financial_statements]
   balance_sheet_table: balance_sheet
-  balance_sheet_totals: '^\s*total(?:\s+(?:equity\s+(?:&|and)\s+liabilities|assets|liabilities|sources\s+of\s+funds|application\s+of\s+funds|funds\s+employed))?\s*$'
+  # A bare "Total liabilities" is not a grand total: Ind AS statements print it as the subtotal before "Total equity and liabilities".
+  balance_sheet_totals: '^\s*total(?:\s+(?:equity\s+(?:&|and)\s+liabilities|assets|sources\s+of\s+funds|application\s+of\s+funds|funds\s+employed))?\s*$'
   balance_sheet_columns: [current_period, previous_period]
   balance_sheet_tolerance_units: 1 # one unit of the printed unit (rupees, thousands, lakhs)
 

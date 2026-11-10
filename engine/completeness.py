@@ -631,20 +631,45 @@ def applicable_items(root: Path, case: CaseDetail, data: CaseData | None) -> tup
     """F-12: the items for the case's constitution and attributes. While the
     constitution is unknown, only the items every constitution needs (F-12.3).
     Without the case's documents (`data` None), no facilities are taken as declared."""
-    taxonomy = reader.load_checklist_taxonomy(root)
-    policy = reader.load_policy(root)
-    facility_sets = {f["id"]: f.get("sets") for f in load_app_config()["facilities"]}
-    attrs = CaseAttributes.from_case(
+    return items_for(
+        root,
+        constitution=case.constitution,
         facilities=case.facilities,
         amount_inr=case.amount_inr,
         collateral_present=case.collateral_present,
-        facility_sets=facility_sets,
-        mpbf_above_limit_inr=policy.working_capital.mpbf_above_limit_inr,
         existing_facilities_declared=data.existing_facilities_declared if data else False,
         product=case.product,
         case_type=case.case_type,
     )
-    provisional = case.constitution not in ALL_CONSTITUTIONS
+
+
+def items_for(
+    root: Path,
+    *,
+    constitution: str,
+    facilities: list[str],
+    amount_inr: int,
+    collateral_present: bool,
+    existing_facilities_declared: bool = False,
+    product: str | None = None,
+    case_type: str | None = None,
+) -> tuple[list[ChecklistItemDef], bool]:
+    """The checklist items for a case described by its header, whether or not
+    the case exists yet: the New appraisal screen previews them (F-12)."""
+    taxonomy = reader.load_checklist_taxonomy(root)
+    policy = reader.load_policy(root)
+    facility_sets = {f["id"]: f.get("sets") for f in load_app_config()["facilities"]}
+    attrs = CaseAttributes.from_case(
+        facilities=facilities,
+        amount_inr=amount_inr,
+        collateral_present=collateral_present,
+        facility_sets=facility_sets,
+        mpbf_above_limit_inr=policy.working_capital.mpbf_above_limit_inr,
+        existing_facilities_declared=existing_facilities_declared,
+        product=product,
+        case_type=case_type,
+    )
+    provisional = constitution not in ALL_CONSTITUTIONS
     if provisional:
         items = [
             item
@@ -652,7 +677,7 @@ def applicable_items(root: Path, case: CaseDetail, data: CaseData | None) -> tup
             if set(ALL_CONSTITUTIONS) <= set(item.constitutions) and all(attrs.has(a) for a in item.requires_attributes)
         ]
     else:
-        items = [item for item in taxonomy.items if applies(item, case.constitution, attrs)]
+        items = [item for item in taxonomy.items if applies(item, constitution, attrs)]
     return items, provisional
 
 

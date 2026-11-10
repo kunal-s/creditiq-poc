@@ -68,10 +68,12 @@ export function DeleteCaseButton({ caseId, borrower }: { caseId: string; borrowe
       <AlertDialogTrigger asChild>
         <button
           type="button"
-          className="inline-flex items-center gap-1 rounded border border-border px-2.5 py-1.5 text-[11.5px] font-medium text-muted-foreground hover:border-destructive/40 hover:text-destructive"
+          aria-label={t("caseDelete.action")}
+          className="inline-flex items-center gap-1 rounded px-2 py-1.5 text-[11.5px] font-medium text-muted-foreground hover:bg-destructive/5 hover:text-destructive"
           data-testid="delete-case"
         >
-          <Trash2 className="h-3 w-3" /> {t("caseDelete.action")}
+          <Trash2 className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">{t("caseDelete.action")}</span>
         </button>
       </AlertDialogTrigger>
       <AlertDialogContent>

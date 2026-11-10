@@ -4,6 +4,9 @@
 // against the excluded-terms list.
 import type {
   ApprovalMatrixConfig,
+  ChecklistPreview,
+  ChecklistPreviewItem,
+  ChecklistPreviewRequest,
   ApprovingAuthority,
   Cam,
   CamBlock,
@@ -806,6 +809,53 @@ export function proposal(duplicates: CaseSummary[] = []): CaseProposal {
       application_id: { value: null, status: "not_found" },
       customer_id: { value: null, status: "not_found" },
     },
+  };
+}
+
+/** What the New appraisal screen previews (F-12 at intake): the common items while the
+ * constitution is unknown, the company items once it is a private limited company. */
+export function checklistPreview(req: ChecklistPreviewRequest): ChecklistPreview {
+  const common: ChecklistPreviewItem[] = [
+    {
+      id: "bank_statements",
+      name: "Bank statements, last 12 months",
+      category: "Financials",
+      why: "Banking conduct and turnover.",
+      blocking: true,
+      document_types: ["Bank statement"],
+    },
+    {
+      id: "gst_returns",
+      name: "GST returns, last 12 months",
+      category: "Financials",
+      why: "Declared turnover.",
+      blocking: true,
+      document_types: ["GSTR-3B"],
+    },
+  ];
+  const company: ChecklistPreviewItem[] = [
+    {
+      id: "coi",
+      name: "Certificate of incorporation",
+      category: "Constitution and KYC",
+      why: "Proof the company exists.",
+      blocking: true,
+      document_types: ["Certificate of incorporation"],
+    },
+    {
+      id: "board_resolution",
+      name: "Board resolution to borrow",
+      category: "Constitution and KYC",
+      why: "Authority to borrow.",
+      blocking: false,
+      document_types: ["Board resolution"],
+    },
+  ];
+  const known = req.constitution === "private_limited";
+  return {
+    provisional: !known,
+    sections: ["Constitution and KYC", "Financials"],
+    items: known ? [...company, ...common] : common,
   };
 }
 

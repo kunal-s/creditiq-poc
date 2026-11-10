@@ -4,15 +4,12 @@ import { Panel } from "@/components/common/Panel";
 import { QueryView } from "@/components/common/States";
 import { reviewItemPath } from "@/components/review/reviewLinks";
 import { CaseScreen } from "@/components/shell/CaseScreen";
-import { caseTabPath, tabForStage } from "@/components/shell/nav";
+import { tabForStage } from "@/components/shell/nav";
 import { t } from "@/config/terminology";
-import { StepHeader } from "@/components/case/TabSection";
 import { DocumentChecklist } from "@/components/case/DocumentChecklist";
-import { stepKicker } from "@/domain/steps";
-import { stageDetail, useCaseProgress } from "@/domain/progress";
+import { useCaseProgress } from "@/domain/progress";
 import { useReviewQueue } from "@/domain/review";
 import { useCan, useSession } from "@/domain/session";
-import { cn } from "@/lib/utils";
 
 // The case Overview (FRD §6): where the case is, what needs a person next,
 // and the counts behind each stage. It updates while processing runs.
@@ -27,13 +24,10 @@ export const Route = createFileRoute("/appraisals/$caseId/")({
 function OverviewTab() {
   const { caseId } = Route.useParams();
   const progress = useCaseProgress(caseId);
+  // The case header names the case; the Overview needs no title of its own.
   return (
     <>
-      <StepHeader
-        kicker={stepKicker(caseId, "overview")}
-        title={t("page.overview.title")}
-        purpose={t("page.overview.purpose")}
-      />
+      <h1 className="sr-only">{t("page.overview.title")}</h1>
       <div className="px-4 py-5 sm:px-6">
         <QueryView query={progress}>
           {(p) => <CaseScreen caseId={caseId}>{() => <Overview progress={p} />}</CaseScreen>}
@@ -59,39 +53,7 @@ function Overview({ progress }: { progress: CaseProgress }) {
         canOpen={canOpen}
       />
 
-      <div className="grid items-start gap-4 @min-[65rem]/main:grid-cols-[minmax(0,1fr)_380px]">
-        <Panel title={t("progress.label")} testId="overview-stages">
-          <ol className="divide-y divide-border">
-            {progress.stages.map((s, i) => (
-              <li key={s.key} className="flex items-center gap-3 px-4 py-3">
-                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-border text-[11px] font-semibold tabular text-muted-foreground">
-                  {i + 1}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[13px] font-medium">
-                    {t(`progress.stage.${s.key}`)}
-                  </span>
-                  <span className="block text-[11.5px] text-muted-foreground">
-                    {stageDetail(s)}
-                  </span>
-                </span>
-                <StatusChip status={s.status} />
-                {canOpen(s.key) && s.status !== "not_started" && (
-                  <Link
-                    to={caseTabPath(progress.case_id, tabForStage(s.key))}
-                    className="text-[12px] font-medium text-primary hover:underline"
-                  >
-                    {t("page.overview.open")}
-                  </Link>
-                )}
-              </li>
-            ))}
-          </ol>
-        </Panel>
-        <div className="min-w-0 space-y-4">
-          <WaitingForDecision caseId={progress.case_id} />
-        </div>
-      </div>
+      <WaitingForDecision caseId={progress.case_id} />
     </div>
   );
 }
@@ -141,20 +103,5 @@ function WaitingForDecision({ caseId }: { caseId: string }) {
         </ul>
       )}
     </Panel>
-  );
-}
-
-const CHIP = {
-  not_started: "bg-muted text-muted-foreground",
-  in_progress: "bg-info-soft text-info",
-  needs_attention: "bg-flag-soft text-flag-foreground",
-  done: "bg-positive-soft text-positive",
-} as const;
-
-function StatusChip({ status }: { status: keyof typeof CHIP }) {
-  return (
-    <span className={cn("shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium", CHIP[status])}>
-      {t(`progress.status.${status}`)}
-    </span>
   );
 }

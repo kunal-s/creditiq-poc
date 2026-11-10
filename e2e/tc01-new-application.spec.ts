@@ -125,7 +125,12 @@ test("TC-01: nothing is created without confirmation", async ({ page }) => {
 
 test("TC-01: a duplicate is offered, and creating anyway needs a reason", async ({ page }) => {
   const api = new MockApi();
-  api.proposal = proposal([{ ...CASES[0]!, id: EXISTING }]);
+  // Five earlier applications for the borrower: three are named, the rest counted.
+  api.proposal = proposal(
+    [EXISTING, "BBG-2026-000015", "BBG-2026-000016", "BBG-2026-000017", "BBG-2026-000018"].map(
+      (id) => ({ ...CASES[0]!, id }),
+    ),
+  );
   await signedIn(page, api);
   await page.goto("/appraisals/new");
   await page.getByTestId("message-input").fill(MESSAGE);
@@ -136,14 +141,23 @@ test("TC-01: a duplicate is offered, and creating anyway needs a reason", async 
 
   const warning = page.getByTestId("duplicate-warning");
   await expect(warning).toContainText(EXISTING);
-  await expect(warning.getByRole("link", { name: "Open it" })).toHaveAttribute(
+  await expect(warning.getByRole("link", { name: "Open it" }).first()).toHaveAttribute(
     "href",
     `/appraisals/${EXISTING}`,
   );
+  await expect(warning.getByRole("link", { name: "Open it" })).toHaveCount(3);
+  await expect(warning.getByTestId("more-duplicates")).toHaveText(
+    "and 2 more applications for this borrower",
+  );
+  // The disabled button says why: the only thing left is the duplicate.
   await expect(page.getByTestId("create-application")).toBeDisabled();
+  await expect(page.getByTestId("create-blockers")).toHaveText(
+    "An application for this borrower already exists. Choose Create anyway above and give a reason, or open the existing one.",
+  );
   await warning.getByRole("button", { name: "Create anyway" }).click();
   await expect(page.getByTestId("create-application")).toBeDisabled();
   await page.getByTestId("override-reason").fill("Separate unit with its own GST registration");
+  await expect(page.getByTestId("create-blockers")).toHaveCount(0);
   await page.getByTestId("create-application").click();
 
   await expect(page).toHaveURL(/\/appraisals\/BBG-2026-000031\/documents$/);
@@ -180,4 +194,40 @@ test("TC-01: a duplicate found at creation (409) is offered the same way", async
   await page.getByTestId("create-application").click();
   await expect(page).toHaveURL(/\/appraisals\/BBG-2026-000031\/documents$/);
   expect(api.called("POST", "/api/cases")).toHaveLength(2);
+});
+
+test("the documents the application will need follow the fields on screen", async ({ page }) => {
+  const api = new MockApi();
+  await signedIn(page, api);
+  await page.goto("/appraisals/new");
+  await page.getByTestId("message-input").fill(MESSAGE);
+  await page.getByRole("button", { name: "Read the message" }).click();
+
+  // The constitution is unclear: only what every application needs, marked provisional.
+  const needed = page.getByTestId("documents-needed");
+  await expect(needed.getByTestId("needed-provisional")).toBeVisible();
+  await expect(needed.getByTestId("needed-item")).toHaveCount(2);
+  await expect(needed).toContainText("Will need 2 documents");
+
+  // Confirming the constitution brings in the company documents; a supporting item says so.
+  await page.getByTestId("field-constitution").getByTestId("candidate").first().click();
+  await expect(needed.getByTestId("needed-item")).toHaveCount(4);
+  await expect(needed.getByTestId("needed-provisional")).toHaveCount(0);
+  // Only the supporting items are set apart; the count names the blocking ones.
+  await expect(needed).toContainText("Will need 4 documents (3 blocking)");
+  await expect(
+    needed.getByTestId("needed-item").filter({ hasText: "Board resolution" }),
+  ).toHaveAttribute("data-blocking", "false");
+  // One line per item: the name only, the rest is in its hover text.
+  await expect(
+    needed.getByTestId("needed-item").filter({ hasText: "Certificate of incorporation" }),
+  ).toHaveText("Certificate of incorporation");
+
+  const [last] = api.called("POST", "/api/cases/checklist-preview").slice(-1);
+  expect(last!.body).toMatchObject({
+    constitution: "private_limited",
+    facilities: ["cash_credit", "term_loan"],
+    product: "bbg",
+    case_type: "renewal",
+  });
 });

@@ -181,6 +181,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/cases/checklist-preview": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Checklist Preview
+     * @description F-12 at intake: the documents the proposed application will need, from the
+     *     values on the New appraisal screen. Stores nothing; no case is needed.
+     */
+    post: operations["checklist_preview_api_cases_checklist_preview_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/cases/proposals": {
     parameters: {
       query?: never;
@@ -2557,6 +2578,60 @@ export interface components {
       weight: number;
       /** Why */
       why: string;
+    };
+    /** ChecklistPreview */
+    ChecklistPreview: {
+      /** Items */
+      items: components["schemas"]["ChecklistPreviewItem"][];
+      /** Provisional */
+      provisional: boolean;
+      /** Sections */
+      sections: string[];
+    };
+    /** ChecklistPreviewItem */
+    ChecklistPreviewItem: {
+      /** Blocking */
+      blocking: boolean;
+      /** Category */
+      category: string;
+      /** Document Types */
+      document_types?: string[];
+      /** Id */
+      id: string;
+      /** Name */
+      name: string;
+      /** Request */
+      request?: string | null;
+      /** Why */
+      why: string;
+    };
+    /**
+     * ChecklistPreviewRequest
+     * @description The proposed application as it stands on the New appraisal screen, before
+     *     any case exists: what the checklist would ask for (F-12, shown at intake).
+     */
+    ChecklistPreviewRequest: {
+      /**
+       * Amount Inr
+       * @default 0
+       */
+      amount_inr: number;
+      /** Case Type */
+      case_type?: string | null;
+      /**
+       * Collateral Present
+       * @default false
+       */
+      collateral_present: boolean;
+      /**
+       * Constitution
+       * @default unknown
+       */
+      constitution: string;
+      /** Facilities */
+      facilities?: string[];
+      /** Product */
+      product?: string | null;
     };
     /**
      * ChecklistTaxonomySection
@@ -6098,6 +6173,41 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["CaseDetail"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  checklist_preview_api_cases_checklist_preview_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ChecklistPreviewRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ChecklistPreview"];
         };
       };
       /** @description Validation Error */

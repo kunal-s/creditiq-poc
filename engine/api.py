@@ -103,6 +103,8 @@ from .contracts import (
     CaseFacts,
     CaseProgress,
     CaseProposal,
+    ChecklistPreview,
+    ChecklistPreviewRequest,
     PdNote,
     PolicyAssessment,
     Spread,
@@ -941,6 +943,46 @@ def propose_case(
         return proposal.propose(conn, data_root(), body.text)
     except configstore_reader.NoPublishedConfig as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
+
+
+@app.post("/api/cases/checklist-preview", response_model=ChecklistPreview)
+def checklist_preview(body: ChecklistPreviewRequest, _: dict = Depends(require("case.create"))):
+    """F-12 at intake: the documents the proposed application will need, from the
+    values on the New appraisal screen. Stores nothing; no case is needed."""
+    from .completeness import items_for
+
+    for value, key in ((body.constitution, "constitutions"), (body.product, "products"), (body.case_type, "case_types")):
+        if value is not None and value not in option_ids(key):
+            raise HTTPException(status_code=422, detail=f"unknown {key[:-1]} {value!r}")
+    unknown = set(body.facilities) - option_ids("facilities")
+    if unknown:
+        raise HTTPException(status_code=422, detail=f"unknown facilities {sorted(unknown)}")
+    root = data_root()
+    try:
+        items, provisional = items_for(
+            root,
+            constitution=body.constitution,
+            facilities=body.facilities,
+            amount_inr=body.amount_inr,
+            collateral_present=body.collateral_present,
+            product=body.product,
+            case_type=body.case_type,
+        )
+        taxonomy = configstore_reader.load_checklist_taxonomy(root)
+        types = configstore_reader.load_document_types(root).types
+    except configstore_reader.NoPublishedConfig as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+    return {
+        "provisional": provisional,
+        "sections": taxonomy.sections,
+        "items": [
+            {
+                "id": i.id, "name": i.name, "category": i.category, "why": i.why, "blocking": i.blocking,
+                "request": i.request, "document_types": [t.name for t in types if i.id in t.satisfies],
+            }
+            for i in items
+        ],
+    }
 
 
 _UPLOAD_BODY = {

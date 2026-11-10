@@ -94,3 +94,39 @@ def test_analyst_reads_the_fields(client: TestClient):
     case = client.post("/api/cases", json=new_case(customer_id="C-1"), headers=sign_in(client, RM)).json()
     read = client.get(f"/api/cases/{case['id']}", headers=sign_in(client, ANALYST)).json()
     assert read["customer_id"] == "C-1" and read["product"] == "bbg"
+
+
+# --- Checklist preview at intake ---
+
+def _preview(client: TestClient, headers: dict, **body) -> dict:
+    r = client.post("/api/cases/checklist-preview", json=body, headers=headers)
+    assert r.status_code == 200, r.text
+    return r.json()
+
+
+def test_preview_matches_the_checklist_of_a_created_case(client: TestClient):
+    rm = sign_in(client, RM)
+    body = {"constitution": "private_limited", "facilities": ["cash_credit", "term_loan"], "amount_inr": 65000000,
+            "collateral_present": True, "product": "bbg", "case_type": "renewal"}
+    preview = _preview(client, rm, **body)
+    assert preview["provisional"] is False and preview["items"]
+    case = client.post("/api/cases", json=new_case(**body), headers=rm).json()
+    real = client.get(f"/api/cases/{case['id']}/checklist", headers=sign_in(client, ANALYST)).json()
+    assert {i["id"] for i in preview["items"]} == {i["item_id"] for i in real["items"]}
+    # Each item names the document types that can satisfy it.
+    assert all(i["document_types"] for i in preview["items"] if i["id"] != "sourcing_message")
+
+
+def test_preview_is_provisional_until_the_constitution_is_known(client: TestClient):
+    rm = sign_in(client, RM)
+    unknown = _preview(client, rm, facilities=["cash_credit"], amount_inr=1)
+    known = _preview(client, rm, constitution="private_limited", facilities=["cash_credit"], amount_inr=1)
+    assert unknown["provisional"] is True
+    assert {i["id"] for i in unknown["items"]} < {i["id"] for i in known["items"]}
+
+
+def test_preview_refuses_unknown_choices_and_needs_create_permission(client: TestClient):
+    rm = sign_in(client, RM)
+    assert client.post("/api/cases/checklist-preview", json={"facilities": ["mortgage"]}, headers=rm).status_code == 422
+    assert client.post("/api/cases/checklist-preview", json={"product": "lap"}, headers=rm).status_code == 422
+    assert client.post("/api/cases/checklist-preview", json={}).status_code == 401

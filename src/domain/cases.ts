@@ -1,7 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { api } from "@/api/client";
-import type { CaseCreate, ProposalRequest, Stage, StageKey } from "@/api/types";
+import type {
+  CaseCreate,
+  ChecklistPreviewRequest,
+  ProposalRequest,
+  Stage,
+  StageKey,
+} from "@/api/types";
 import { t } from "@/config/terminology";
 
 export function useCases() {
@@ -22,6 +28,17 @@ export function useMeta() {
 }
 
 /** F-04: parse a pasted message into a proposed case. Stores nothing. */
+/** What the proposed application will need (F-12), refreshed as its values change. */
+export function useChecklistPreview(body: ChecklistPreviewRequest | null) {
+  return useQuery({
+    queryKey: ["checklist-preview", body],
+    queryFn: () => api.checklistPreview(body!),
+    enabled: body !== null,
+    placeholderData: (previous) => previous,
+    staleTime: 60_000,
+  });
+}
+
 export function useProposeCase() {
   return useMutation({ mutationFn: (body: ProposalRequest) => api.proposeCase(body) });
 }

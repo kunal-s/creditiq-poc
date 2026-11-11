@@ -1,4 +1,3 @@
-import { Info } from "lucide-react";
 import type { PolicyAssessment } from "@/api/types";
 import { t } from "@/config/terminology";
 import { countParts } from "@/domain/policy";
@@ -37,15 +36,6 @@ export function PolicyHeader({
           data-testid="policy-summary-line"
         >
           {summary}
-        </p>
-      )}
-      {policy?.norms.some((n) => n.provisional) && (
-        <p
-          className="mt-2 flex max-w-3xl items-start gap-1.5 text-[12px] text-info"
-          data-testid="policy-interim"
-        >
-          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
-          {t("policy.interimNotice")}
         </p>
       )}
     </div>

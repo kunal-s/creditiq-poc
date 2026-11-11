@@ -399,7 +399,7 @@ test("each ratio norm reads in the band the engine placed it; the spread has no 
   const row = (id: string) => page.locator(`[data-testid="norm"][data-norm="${id}"]`);
   await expect(row("FR-01").getByTestId("norm-band")).toHaveAttribute("data-band", "within");
   await expect(row("FR-01").getByTestId("norm-band")).toHaveText("Within policy");
-  await expect(row("FR-06").getByTestId("norm-band")).toHaveText("Marginal");
+  await expect(row("FR-06").getByTestId("norm-band")).toHaveText("Marginal deviation");
   await expect(row("FR-06").getByTestId("norm-marginal")).toHaveText("marginal 95 days");
   // A marginal deviation reads amber, not red.
   await expect(row("FR-06").getByTestId("norm-actual")).toHaveClass(/text-flag-foreground/);

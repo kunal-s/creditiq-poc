@@ -183,6 +183,13 @@ export const api = {
   /** F-13: create the case, opening cross-verification, policy checks and the outputs. */
   openAssessment: (id: string) =>
     request<CaseDetail>(`/api/cases/${q(id)}/assessment`, { method: "POST" }),
+  /** Take the PAN, GSTIN or CIN every document agrees on onto the case (F-10). */
+  recordIdentifier: (id: string, field: "pan" | "gstin" | "cin", value: string) =>
+    request<CaseDetail>(`/api/cases/${q(id)}/identifiers/${q(field)}`, {
+      method: "POST",
+      body: JSON.stringify({ value }),
+    }),
+
   deleteCase: (id: string, reason: string) =>
     request<undefined>(`/api/cases/${q(id)}`, {
       method: "DELETE",

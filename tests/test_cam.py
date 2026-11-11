@@ -211,10 +211,10 @@ def test_tc26_sections_follow_the_assumed_layout_numbered_then_the_summary_and_t
     # Then the risk assessment (the summary, not rated) and the recommendation: eight in all.
     assert (cam["summary_number"], cam["recommendation_number"]) == (7, 8)
     assert cam["summary_title"] == "Risk Assessment and Rating"
-    assert cam["rating_note"] == "Not rated: RBL's rating model is not configured."
+    assert cam["rating_note"] == "Not rated"
     assert all(s["review"]["state"] == "machine" for s in cam["sections"])
     assert cam["title"] == "Credit Approval Memo" and cam["borrower"] == "Kestrel Tools Pvt Ltd"
-    assert cam["interim_template"] is True and cam["template_note"].startswith("Draft — layout assumed")
+    assert cam["interim_template"] is True and cam["template_note"] == "Interim layout"
     assert cam["as_of"] == "2026-09-29" and cam["config_version"] == reader.published_version(published_data_root)["version"]
     assert cam["run_id"] == _get(client, analyst, case_id, "cross-verification")["run"]["id"]
     # Every section has something on file for this case.
@@ -1034,7 +1034,7 @@ def test_the_policy_table_and_the_approving_authority(client: TestClient, publis
     cam = _get(client, analyst, case_id, "cam")
     stated = [t for t in _texts(cam) if t == "DSCR could not be assessed: the proposed term loan's instalment is not on file."]
     assert len(stated) == 2  # under the term loan, and in the summary's register
-    assert [b["text"] for b in _blocks(policy, "note")] == ["Every norm is an interim proposal awaiting RBL's policy norms."]
+    assert [b["text"] for b in _blocks(policy, "note")] == ["Every norm is provisional."]
     assert [b["text"] for b in _blocks(policy, "subheading")] == ["Approving authority"]
     authority = _facts(_blocks(policy, "facts")[0])
     assert {k: v["text"] for k, v in authority.items()} == {
@@ -1095,7 +1095,7 @@ def test_the_memo_says_the_norms_are_interim(client: TestClient, published_data_
     analyst = sign_in(client, ANALYST)
     case_id = _case(client, analyst, published_data_root)
     policy = _section(_cam(client, analyst, published_data_root, case_id), "policy")
-    assert any("interim proposal" in b["text"] for b in _blocks(policy, "note"))
+    assert any("provisional" in b["text"] for b in _blocks(policy, "note"))
 
 
 # --- Sources ---

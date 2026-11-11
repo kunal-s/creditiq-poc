@@ -15,13 +15,16 @@ test("the case header shows the case's place in the bank's process", async ({ pa
   await expect(header.getByTestId("header-rm")).toHaveText("Arjun Deshpande · Mumbai hub");
 });
 
-test("a case from before the fields were recorded says so", async ({ page }) => {
+test("a case from before the fields were recorded leaves them out", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api);
   await page.goto(`/appraisals/${ORIEL}/completeness`);
   const header = page.getByTestId("case-header");
-  await expect(header.getByTestId("header-product")).toHaveText("Business banking · Not recorded");
-  await expect(header.getByTestId("header-bank-stage")).toHaveText("Not recorded");
+  // A field with no value is left out, never written as "not recorded".
+  await expect(header.getByTestId("header-product")).toHaveText("Business banking");
+  await expect(header.getByTestId("header-bank-stage")).toHaveCount(0);
+  await expect(header).not.toContainText("Not recorded");
+  await expect(header.getByTestId("header-case-date")).toBeVisible();
   await expect(header.getByTestId("header-rm")).toHaveText("Arjun Deshpande");
   await expect(header).not.toContainText("Application ID");
 });

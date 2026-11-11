@@ -54,9 +54,8 @@ test("TC-24: the header says where the case stands against the norms", async ({ 
   await expect(page.getByTestId("policy-summary-line")).toHaveText(
     "3 deviations · 3 cannot be evaluated · 1 passed · FY 2025-26 · provisional norms",
   );
-  await expect(page.getByTestId("policy-interim")).toHaveText(
-    "These norms are interim proposals until RBL's own policy norms are supplied.",
-  );
+  // The provisional state is in the summary line and the chips; no note about the project.
+  await expect(page.getByTestId("policy-interim")).toHaveCount(0);
 });
 
 test("TC-24: a card per family of norms, then the authority, each with the engine's counts", async ({

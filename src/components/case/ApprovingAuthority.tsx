@@ -196,11 +196,6 @@ export function AuthorityView({
           </Details>
         </>
       )}
-      {authority.provisional && (
-        <p className="text-[11.5px] text-muted-foreground">
-          {t("approvingAuthority.awaitingMatrix")}
-        </p>
-      )}
       {canCompare && (
         <Link
           to="/appraisals/$caseId/comparison"

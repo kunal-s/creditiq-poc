@@ -84,3 +84,10 @@ export function readinessWait(
   if (docs.status === "not_started" && !readiness?.gate_met) return { kind: "documents" };
   return null;
 }
+
+/** Whether the case is created (F-13): the engine's gate is open. A progress from before the gate
+ * existed counts as created, as the assessment steps treat it. */
+export function caseCreated(progress: CaseProgress | undefined): boolean {
+  if (!progress) return false;
+  return progress.gate ? progress.gate.open : true;
+}

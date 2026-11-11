@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Cam, CamBlock, CamReview as Review, CamSummaryItem } from "@/api/types";
 import { CamMemo, Downloads, Sources, SourcesContext } from "@/components/case/Outputs";
 import { QueryView } from "@/components/common/States";
+import { Chip } from "@/components/common/Panel";
 import { t } from "@/config/terminology";
 import { api } from "@/api/client";
 import { camSheets, type Sheet } from "@/domain/camSheet";
@@ -184,20 +185,25 @@ function ReviewBody({ caseId, m }: { caseId: string; m: Cam }) {
         className="flex flex-wrap items-center justify-between gap-3"
         data-testid="cam-review-meta"
       >
-        <p className="tabular text-[12px] text-muted-foreground">
-          {m.title} · {m.borrower} · {t("outputs.header.asOf", { date: formatDay(m.as_of) })} ·{" "}
-          <span title={m.config_version}>
-            {t("outputs.header.config", { version: configLabel(m) })}
-          </span>
-          {m.run_id && ` · ${t("outputs.header.run", { id: m.run_id })}`}
+        {/* The data date in words; which configuration and cross-check run drew it, on hover. */}
+        <p
+          className="flex flex-wrap items-center gap-2 text-[12px] text-muted-foreground"
+          title={[
+            t("outputs.header.config", { version: configLabel(m) }),
+            m.run_id ? t("outputs.header.run", { id: m.run_id }) : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+        >
+          <span className="tabular">{t("outputs.header.asOf", { date: formatDay(m.as_of) })}</span>
+          {m.template_note && (
+            <span data-testid="cam-template-note">
+              <Chip tone="muted">{m.template_note}</Chip>
+            </span>
+          )}
         </p>
         <Downloads caseId={caseId} output="cam" />
       </div>
-      {m.template_note && (
-        <p className="rounded border border-info/40 bg-info-soft px-3 py-2 text-[12px] italic text-info">
-          {m.template_note}
-        </p>
-      )}
       {blocking && (
         <p
           className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded border border-destructive/40 bg-critical-soft px-4 py-2.5 text-[12.5px] text-foreground"
@@ -209,7 +215,7 @@ function ReviewBody({ caseId, m }: { caseId: string; m: Cam }) {
             to="/appraisals/$caseId/cross-verification"
             params={{ caseId }}
             search={{ finding: blocking.ref }}
-            className="font-medium text-destructive hover:underline"
+            className="font-medium text-critical-text hover:underline"
           >
             {t("outputs.review.bannerOpen", { ref: blocking.ref })} →
           </Link>
@@ -549,7 +555,7 @@ function ErrorLine({ error }: { error: unknown }) {
   if (!error) return null;
   const message = error instanceof Error ? error.message : String(error);
   return (
-    <p className="mt-2 text-[12px] text-destructive" data-testid="cam-action-error">
+    <p className="mt-2 text-[12px] text-critical-text" data-testid="cam-action-error">
       {message}
     </p>
   );

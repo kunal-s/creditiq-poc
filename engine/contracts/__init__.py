@@ -67,6 +67,7 @@ from .appraisal import (
 from .case import (
     CaseCreate,
     CaseDeleteRequest,
+    IdentifierRecord,
     AssessmentGate,
     CaseDetail,
     CaseProgress,
@@ -323,6 +324,7 @@ __all__ = [
     "CaseProposal",
     "CaseCreate",
     "CaseDeleteRequest",
+    "IdentifierRecord",
     "DocumentDefect",
     "IngestFile",
     "Party",

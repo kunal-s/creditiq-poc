@@ -67,9 +67,7 @@ test("the risk assessment says it is not rated, and the recommendation is left f
   await expect(section(page).getByTestId("cam-section-title")).toHaveText(
     "Risk Assessment and Rating",
   );
-  await expect(section(page).getByTestId("cam-rating-note")).toHaveText(
-    "Not rated: RBL's rating model is not configured.",
-  );
+  await expect(section(page).getByTestId("cam-rating-note")).toHaveText("Not rated");
   await expect(section(page).getByTestId("cam-summary")).toBeVisible();
   await open(page, "recommendation");
   await expect(section(page).getByTestId("cam-recommendation-prompt")).toHaveCount(4);

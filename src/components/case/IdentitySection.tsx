@@ -1,6 +1,14 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Eye, Users } from "lucide-react";
-import type { CaseDetail, FieldValue, LogicalDocument, Party } from "@/api/types";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Eye, Loader2, Users } from "lucide-react";
+import { api } from "@/api/client";
+import type {
+  CaseDetail,
+  CrossVerificationView,
+  FieldValue,
+  LogicalDocument,
+  Party,
+} from "@/api/types";
 import { CaseScreen } from "@/components/shell/CaseScreen";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { Panel } from "@/components/common/Panel";
@@ -13,6 +21,8 @@ import { FieldRowDecision } from "@/components/review/FieldDecision";
 import { useDocViewer } from "@/components/docviewer/DocViewer";
 import { t } from "@/config/terminology";
 import { useLabels } from "@/domain/cases";
+import { useCrossVerification } from "@/domain/crossVerification";
+import { useCan } from "@/domain/session";
 import { pageRange, useCaseDocuments, useDocumentTypes } from "@/domain/documents";
 import { fieldLabel, useFields, useParties } from "@/domain/extraction";
 
@@ -35,8 +45,53 @@ export function IdentitySection({ c }: { c: CaseDetail }) {
   );
 }
 
+/** The identifiers the cross-checks compare across the documents, by the rule that compares them. */
+const FROM_DOCUMENTS = { pan: "ID-01", gstin: "ID-02", cin: "ID-05" } as const;
+type DocumentField = keyof typeof FROM_DOCUMENTS;
+
+/** What the documents say about one identifier, from the latest cross-check: the value every
+ * document agrees on and how many carry it, or that they disagree. */
+function documentsSay(
+  board: CrossVerificationView | undefined,
+  field: DocumentField,
+): { value: string; count: number } | "disagree" | null {
+  const item = board?.items.find((i) => i.finding.rule_id === FROM_DOCUMENTS[field]);
+  if (!item) return null;
+  if (item.finding.outcome === "fail") return "disagree";
+  if (item.finding.outcome !== "pass") return null;
+  const sides = item.finding.sides ?? [];
+  const values = new Set(
+    sides
+      .map((s) =>
+        String(s.value ?? "")
+          .trim()
+          .toUpperCase(),
+      )
+      .filter(Boolean),
+  );
+  if (values.size !== 1) return null;
+  const count = sides.reduce((n, s) => n + (s.evidence?.length ?? 0), 0);
+  return { value: [...values][0]!, count };
+}
+
+/** The borrower's identifiers, each with where it came from. One not yet on the case shows the value
+ * the documents agree on, which a person who decides can take onto the case (the engine checks it
+ * against its own cross-check and logs who took it); where the documents disagree it says so. */
 function Identifiers({ c }: { c: CaseDetail }) {
   const labels = useLabels();
+  // Only a role that reads the cross-checks can be told what the documents agree on.
+  const mayReadChecks = useCan("finding.read");
+  const board = useCrossVerification(c.id).data;
+  const mayRecord = useCan("review.decide");
+  const client = useQueryClient();
+  const record = useMutation({
+    mutationFn: ({ field, value }: { field: DocumentField; value: string }) =>
+      api.recordIdentifier(c.id, field, value),
+    onSuccess: (updated) => {
+      client.setQueryData(["cases", c.id], updated);
+      void client.invalidateQueries({ queryKey: ["cases", c.id] });
+    },
+  });
   const rows: { key: string; value: string | null }[] = [
     { key: "borrower", value: c.borrower },
     { key: "constitution", value: labels.constitution(c.constitution) },
@@ -56,26 +111,81 @@ function Identifiers({ c }: { c: CaseDetail }) {
           const h = c.header[row.key];
           const proposed = h?.proposed;
           const edited = proposed && h?.value && proposed !== h.value;
+          const field = row.key in FROM_DOCUMENTS ? (row.key as DocumentField) : null;
+          const said = !row.value && field && mayReadChecks ? documentsSay(board, field) : null;
+          const pending = record.isPending && record.variables?.field === field;
           return (
-            <div key={row.key} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5">
+            <div
+              key={row.key}
+              className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5"
+              data-testid="identifier"
+              data-field={row.key}
+            >
               <dt className="w-full shrink-0 text-[12px] text-muted-foreground sm:w-44">
                 {t(`proposalField.${row.key}`)}
               </dt>
               <dd className="tabular min-w-0 flex-1 break-words text-[13px] text-foreground">
-                {row.value ?? (
-                  <span className="text-muted-foreground">{t("identity.notOnRecord")}</span>
-                )}
+                {row.value ??
+                  (said === "disagree" ? (
+                    <span className="text-flag-foreground" data-testid="identifier-disagree">
+                      {t("identity.documentsDisagree")}
+                    </span>
+                  ) : said ? (
+                    <span data-testid="identifier-from-documents">
+                      {said.value}
+                      <span className="ml-2 text-[11.5px] text-muted-foreground">
+                        {t("identity.documentsAgree", { n: said.count })}
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">
+                      {field && mayReadChecks && board
+                        ? t("identity.notOnDocuments")
+                        : t("identity.notOnRecord")}
+                    </span>
+                  ))}
                 {edited && (
                   <span className="ml-2 text-[11px] text-muted-foreground">
                     {t("identity.proposed", { value: proposed })}
                   </span>
                 )}
               </dd>
-              <SourceChip caseId={c.id} source={h?.source} />
+              {said && said !== "disagree" && field && mayRecord ? (
+                <button
+                  type="button"
+                  disabled={record.isPending}
+                  onClick={() => record.mutate({ field, value: said.value })}
+                  className="inline-flex h-7 items-center gap-1.5 rounded border border-primary/40 bg-surface px-2.5 text-[12px] font-medium text-primary hover:bg-primary/5 disabled:opacity-50"
+                  data-testid="identifier-use"
+                >
+                  {pending && (
+                    <Loader2
+                      className="size-3.5 animate-spin motion-reduce:animate-none"
+                      aria-hidden
+                    />
+                  )}
+                  {t("identity.useValue")}
+                </button>
+              ) : said === "disagree" ? (
+                <Link
+                  to="/appraisals/$caseId/cross-verification"
+                  params={{ caseId: c.id }}
+                  className="text-[12px] font-medium text-primary hover:underline"
+                >
+                  {t("caseTab.crossVerification")} →
+                </Link>
+              ) : (
+                <SourceChip caseId={c.id} source={h?.source} />
+              )}
             </div>
           );
         })}
       </dl>
+      {record.isError && (
+        <p className="border-t border-border px-4 py-2 text-[12px] text-critical-text" role="alert">
+          {t("identity.useFailed")}
+        </p>
+      )}
     </Panel>
   );
 }

@@ -1822,9 +1822,9 @@ class Draft:
                  _t(n.category_label)] for n in norms], numeric=[1, 2], note=self.years_note(norms)))
         provisional = [n for n in norms if n.provisional]
         if provisional:
-            blocks.append(_note("Every norm is an interim proposal awaiting RBL's policy norms."
+            blocks.append(_note("Every norm is provisional."
                                 if len(provisional) == len(norms) else f"{len(provisional)} of {len(norms)} norms are "
-                                "interim proposals awaiting RBL's policy norms."))
+                                "provisional."))
         # The table states each result; why a norm was not assessed is said once, here or where the
         # memo states it first (the DSCR, under the term loan).
         stated = {self.ratio_norms.get("dscr")} if self.term_stated() else set()

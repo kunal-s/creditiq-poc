@@ -776,6 +776,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/cases/{case_id}/identifiers/{field}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Record Identifier
+     * @description F-10: take the PAN, GSTIN or CIN every document agrees on onto the case, then re-run the case's
+     *     checks against it.
+     */
+    post: operations["record_identifier_api_cases__case_id__identifiers__field__post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/cases/{case_id}/messages": {
     parameters: {
       query?: never;
@@ -3557,6 +3578,15 @@ export interface components {
       source?: string | null;
       /** Value */
       value: string | null;
+    };
+    /**
+     * IdentifierRecord
+     * @description A borrower identifier taken from the documents onto the case (F-10): the value the documents
+     *     agree on, which the engine checks against its own cross-check before recording it.
+     */
+    IdentifierRecord: {
+      /** Value */
+      value: string;
     };
     /** IdentityFacts */
     IdentityFacts: {
@@ -7296,6 +7326,44 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Finding"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  record_identifier_api_cases__case_id__identifiers__field__post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+        field: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["IdentifierRecord"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CaseDetail"];
         };
       };
       /** @description Validation Error */

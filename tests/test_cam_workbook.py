@@ -74,7 +74,7 @@ def test_each_sheet_heads_with_the_memo_and_holds_its_section():
     assert glance["cells"]["A2"] == "Credit Approval Memo · Kestrel Fabricators Pvt Ltd"
     assert "Case ID: BBG-2026-000004" in glance["cells"]["A3"] and "Version 7 (published 29 Sep 2026)" in glance[
         "cells"]["A3"]
-    assert glance["cells"]["A4"].startswith("Draft — layout assumed")
+    assert glance["cells"]["A4"] == "Interim layout"
     assert "1. Proposal at a glance" in glance["cells"].values()
     # Key facts as Field | Value | Source.
     row = _row_of(glance, "Borrower")

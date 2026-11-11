@@ -65,9 +65,7 @@ test("the draft CAM: its header, then numbered sections of facts, tables, paragr
   await expect(config).toHaveAttribute("title", OUTPUT_CONFIG_VERSION);
   await expect(meta).not.toContainText(OUTPUT_CONFIG_VERSION);
   await expect(meta).toContainText("Cross-check run XR-000021-003");
-  await expect(header.getByTestId("cam-template-note")).toHaveText(
-    "Draft — layout assumed until RBL's CAM template is received.",
-  );
+  await expect(header.getByTestId("cam-template-note")).toHaveText("Interim layout");
 
   // Eight sections: six drafted from parts, each part under its subheading, then the risk
   // assessment and the recommendation.

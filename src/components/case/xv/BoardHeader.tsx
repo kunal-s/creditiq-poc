@@ -1,17 +1,19 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, Lock } from "lucide-react";
 import type { CrossVerificationView } from "@/api/types";
 import { t } from "@/config/terminology";
 import { formatStamp } from "@/domain/crossVerification";
 import { useCan } from "@/domain/session";
-import { cn } from "@/lib/utils";
 import { headerButton } from "./styles";
 
 /** One line on where the board stands, from the view's counts. */
 function summaryLine(view: CrossVerificationView): string {
   if (view.items.length === 0) return t("crossVerification.summary.notRun");
   const { total, adjudicated } = view.counts;
-  if (total === 0) return t("crossVerification.summary.none");
+  const notRun = view.items.filter((i) => i.finding.outcome === "incomplete").length;
+  if (total === 0)
+    return notRun > 0
+      ? t("crossVerification.summary.noneNotRun", { n: notRun })
+      : t("crossVerification.summary.none");
   if (adjudicated >= total) {
     return total === 1
       ? t("crossVerification.summary.decidedOne")
@@ -38,7 +40,6 @@ function metaLine(view: CrossVerificationView): string {
   if (run) {
     parts.push(
       t("crossVerification.meta.run", {
-        id: run.id,
         rules: run.rules,
         sources: run.sources,
         at: formatStamp(run.at),
@@ -57,7 +58,6 @@ export function BoardHeader({
   caseId: string;
   view: CrossVerificationView | undefined;
 }) {
-  const canOutputs = useCan("output.read");
   const canQueue = useCan("review.read");
   const meta = view ? metaLine(view) : "";
   return (
@@ -80,51 +80,19 @@ export function BoardHeader({
           <p
             className="tabular mt-1 break-words text-[11.5px] text-muted-foreground"
             data-testid="xv-meta-line"
+            title={view?.run ? t("crossVerification.meta.runId", { id: view.run.id }) : undefined}
           >
             {meta}
           </p>
         )}
       </div>
-      {view && (
+      {/* The way on is the bar at the foot of the step; the queue is here while there is
+          something in it to decide. */}
+      {view && canQueue && view.counts.total > view.counts.adjudicated && (
         <div className="mt-3 flex max-w-full flex-wrap items-center gap-2">
-          {canOutputs && (
-            <Link
-              to="/appraisals/$caseId/policy"
-              params={{ caseId }}
-              hash="financials"
-              className={headerButton}
-              data-testid="xv-back-spread"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" aria-hidden />{" "}
-              {t("crossVerification.header.spread")}
-            </Link>
-          )}
-          {canQueue && (
-            <Link to="/review" className={headerButton} data-testid="xv-exception-queue">
-              {t("crossVerification.header.queue")}
-            </Link>
-          )}
-          {canOutputs && (
-            <Link
-              to="/appraisals/$caseId/outputs"
-              params={{ caseId }}
-              search={{ view: "cam" }}
-              disabled={view.blocked}
-              tabIndex={view.blocked ? 0 : undefined}
-              title={view.blocked ? t("crossVerification.header.continueBlocked") : undefined}
-              className={cn(
-                "inline-flex h-9 items-center gap-1.5 rounded px-3 text-[12.5px] font-medium",
-                view.blocked
-                  ? "cursor-not-allowed border border-border bg-muted text-muted-foreground"
-                  : "bg-primary text-primary-foreground hover:bg-primary/90",
-              )}
-              data-testid="xv-continue"
-            >
-              {view.blocked && <Lock className="h-3.5 w-3.5" aria-hidden />}
-              {t("crossVerification.header.continue")}
-              <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-            </Link>
-          )}
+          <Link to="/review" className={headerButton} data-testid="xv-exception-queue">
+            {t("crossVerification.header.queue")}
+          </Link>
         </div>
       )}
     </div>

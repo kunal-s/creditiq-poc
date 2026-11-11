@@ -150,6 +150,8 @@ export class MockApi {
   user: SessionUser = ANALYST;
   cases: CaseSummary[] = structuredClone(CASES);
   details = new Map<string, CaseDetail>(this.cases.map((c) => [c.id, detail(c)]));
+  /** Identifiers taken from the documents onto a case, as sent. */
+  identifierRecords: { caseId: string; field: string; value: string }[] = [];
   checklists = new Map<string, Readiness>([
     [KESTREL, KESTREL_CHECKLIST],
     [SAFFRON, SAFFRON_CHECKLIST],
@@ -526,6 +528,25 @@ export class MockApi {
         "GET",
         new RegExp(`^/api/cases/${id}/documents/${id}/pages/(\\d+)$`),
         () => ({ body: PAGE_PNG, contentType: "image/png" }),
+      ],
+      [
+        "POST",
+        new RegExp(`^/api/cases/${id}/identifiers/(pan|gstin|cin)$`),
+        (req, m) => {
+          // As the engine: the value goes on the case with the document it came from.
+          const c = this.details.get(decodeURIComponent(m[1]!));
+          if (!c) return { status: 404, json: { detail: "no case" } };
+          const field = m[2] as "pan" | "gstin" | "cin";
+          const value = String((req.postDataJSON() as { value: string }).value).toUpperCase();
+          this.identifierRecords.push({ caseId: c.id, field, value });
+          const updated = {
+            ...c,
+            [field]: value,
+            header: { ...c.header, [field]: { value, proposed: c[field], source: "document" } },
+          };
+          this.details.set(c.id, updated);
+          return { json: updated };
+        },
       ],
       ["GET", new RegExp(`^/api/cases/${id}/fields$`), one(this.fields, [])],
       ["GET", new RegExp(`^/api/cases/${id}/parties$`), one(this.parties, [])],

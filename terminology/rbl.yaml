@@ -27,6 +27,11 @@ nav:
   caseGroup:
     documents: Documents and data
     assessment: Assessment and outputs
+  stepGroup:
+    start: Overview
+    documents: Documents and data
+    assessment: Assessment
+    memo: Memo and decision
   group:
     workbench: Workbench
     docready: DocReady
@@ -416,7 +421,7 @@ outputs:
     noRows: Nothing on this sheet yet.
   cam:
     eyebrow: Draft for credit
-    interim: Sections follow an interim list until RBL's CAM template is available. Every figure links to the page it comes from.
+    interim: Interim layout. Every figure links to the page it comes from.
     recommendationEmpty: For credit to complete.
     summary:
       finding: "Findings ({n})"
@@ -482,6 +487,7 @@ crossVerification:
   kicker: "Appraisal {id} · Cross-verification"
   summary:
     none: Every source lined up against every other. No discrepancy found for this borrower.
+    noneNotRun: "No discrepancy found, but {n} check(s) could not run: see what would complete them below."
     one: Every source lined up against every other. One discrepancy found for this borrower, with its evidence attached and a decision required from you.
     many: "Every source lined up against every other. {n} discrepancies found for this borrower, ranked by credit impact, each with its evidence attached and a decision required from you."
     decidedOne: Every source lined up against every other. One discrepancy found for this borrower, decided and recorded.
@@ -489,38 +495,39 @@ crossVerification:
     notRun: No checks have run yet for this borrower.
   meta:
     adjudicated: "{adjudicated} of {total} adjudicated"
-    run: "{id} · {rules} rules across {sources} sources · {at}"
+    run: "Checked {at} · {rules} checks across {sources} documents"
+    runId: "Cross-check run {id}"
   # Keyed by the area the engine sends. The board shows the areas the enabled rules cover
   # (identity, turnover, bank accounts, existing obligations); the others are worded for the day
   # their rules are switched back on in configuration.
   area:
     identity:
       title: Identity consistency
-      purpose: PAN, GSTIN, CIN, name and directors agree across every document.
+      purpose: Whether PAN, GSTIN, CIN, name and directors agree across every document.
     turnover:
       title: Turnover
-      purpose: Audited, GST, banked and declared turnover agree within tolerance.
+      purpose: Whether audited, GST, banked and declared turnover agree within tolerance.
     accounts:
       title: Bank accounts
-      purpose: Every declared account has a statement; every account on file was declared.
+      purpose: Whether every declared account has a statement, and every account on file was declared.
     obligations:
       title: Existing obligations
-      purpose: Declared facilities agree with sanction letters, the bureau and the bank.
+      purpose: Whether declared facilities agree with sanction letters, the bureau and the bank.
     authority:
       title: Borrowing authority
-      purpose: The board resolution covers the borrowing, from this bank, by its directors.
+      purpose: Whether the board resolution covers the borrowing, from this bank, by its directors.
     tax:
       title: Income tax
-      purpose: Each audited year has its income tax return, and its profit agrees with the books.
+      purpose: Whether each audited year has its income tax return, and its profit agrees with the books.
     financials:
       title: Financial statements
-      purpose: Each year's statements agree with the previous audit and the bank balances.
+      purpose: Whether each year's statements agree with the previous audit and the bank balances.
   overview:
     label: The areas checked
   status:
     open: Open discrepancies
     decided: Every discrepancy decided
-    incomplete: Some checks could not run
+    incomplete: Not fully checked
     clear: Everything checked agrees
   areaCard:
     openOne: open discrepancy
@@ -528,6 +535,7 @@ crossVerification:
     blocking: Blocking
     decided: "{adjudicated} of {total} decided"
     noDiscrepancy: No discrepancy
+    notFullyChecked: "Not fully checked: {n} of {total} checks could not run"
     allDecided: Every discrepancy decided
     keyFigures: Key figures
   # The severity tiles at the head of the board: the open discrepancies by credit impact, and
@@ -561,7 +569,7 @@ crossVerification:
   emptyDescription: The cross-checks run once documents have been read and their values extracted.
   header:
     spread: Spread
-    queue: Exception queue
+    queue: Review queue
     continue: Continue to draft
     continueBlocked: Submission is blocked until every blocking discrepancy is accepted or dismissed.
   banner:
@@ -689,7 +697,7 @@ policy:
   # A ratio's band against its configured acceptable and marginal values (the engine's).
   band:
     within: Within policy
-    marginal: Marginal
+    marginal: Marginal deviation
     outside: Outside policy
   marginalAt: "marginal {value}"
   # A norm's tile: the norm it is held to, under its chip.
@@ -762,7 +770,6 @@ policy:
   awaitingReview: Awaiting review
   definition: Definition
   note: Note
-  interimNotice: These norms are interim proposals until RBL's own policy norms are supplied.
   emptyTitle: No norms evaluated yet
   emptyDescription: The policy norms are evaluated once the documents have been read and their values extracted.
   count:
@@ -872,7 +879,6 @@ approvingAuthority:
   cannotDetermine:
     no_product: "The authority cannot be determined: no product in the matrix covers {facilities}."
   notPublished: The approval matrix is not part of the published configuration.
-  awaitingMatrix: Waiting for RBL's approval and delegation matrix.
   compare: Compared with RBL's record on the Comparison tab
 
 # Extracted data by kind of document (FRD §6).
@@ -1016,17 +1022,27 @@ page:
       mine: Mine
       review: With review items
   rating:
-    title: Recommendation and risk rating
+    title: Rating and recommendation
     purpose: "Where the rating stands, what the recommendation rests on, the recommendation credit writes, and who must approve the case."
     toDraft: Draft
     ratingTitle: Internal risk rating
     noRating: No rating model is configured; the rating is left to credit.
     restsOn: What the recommendation rests on
     facility: Facility on the table
+    answerPlaceholder: Write it here; it goes into the memo as written.
+    save: Save to the memo
+    saving: Saving…
+    discard: Discard changes
+    unsaved: Not saved yet
+    notWritten: Not written yet
+    saveFailed: Could not save. Try again.
+    savedBy: "Saved by {name}, {at}"
+    signedBy: "{name} · {at}"
+    notYet: Not yet
   submission:
-    title: Submission and routing
+    title: Submission
     purpose: "What must hold before the memo leaves your desk, each read from this appraisal as it stands, and who it goes to."
-    closed: "Submission is closed. {n} item(s) on the checklist are not met: {items}."
+    closed: "{met} of {total} met · submission opens when every item is met"
     open: Every item that blocks submission is met.
     checklist: Pre-submission checklist
     checklistSub: Read from the appraisal as it stands.
@@ -1039,20 +1055,21 @@ page:
     seriousDone: Every blocking finding has a decision.
     seriousOpen: "{n} blocking finding(s) still open; submission waits for each."
     advisoryDone: Every other finding has a decision.
-    advisoryOpen: "{n} finding(s) still open. They do not block, but they go to credit as open."
+    advisoryOpen: "{n} discrepancy(ies) still open. They do not block, but they go to credit as open."
+    advisoryNotRun: "No open discrepancy; {n} check(s) could not run, and go to credit as not checked."
     readinessDone: The review gate is met and nothing blocking remains.
     readinessOpen: "Readiness {score}% against a {gate}% gate; {n} blocking item(s) open."
     recommendationDone: The recommendation is written.
     recommendationOpen: The recommendation is still blank.
-    openBoard: Open the discrepancy board
-    openReadiness: Open readiness
+    openBoard: Open Cross-verification
+    openReadiness: Open Document readiness
     openRecommendation: Open the recommendation
     routing: Routing
     routingNote: The approving authority the matrix requires for this case.
     routingUnknown: The approving authority cannot be determined yet.
     travels: What travels with the memo
     memo: Memo
-    memoValue: "{n} sections, {template}; {edited} in a person's words"
+    memoValue: "{n} sections, {template} · {edited} of {n} in a person's words"
     findings: Findings
     findingsValue: "{n} cross-verification finding(s), {decided} decided"
     asOf: Data as of
@@ -1138,7 +1155,7 @@ page:
     title: Pre-login query list
     purpose: Everything needed from the customer, in one list the RM can send in one go.
   identity:
-    title: Entity and parties
+    title: Identity
     purpose: The borrower's identifiers and the promoters, directors or partners, each with the document it came from.
   documents:
     title: Files
@@ -1148,11 +1165,11 @@ page:
     title: Extracted data
     purpose: Key fields by source, each with its confidence and a link to the page it came from.
   crossVerification:
-    title: Cross-verification and discrepancy
+    title: Cross-verification
   policy:
     title: Financials and Policy
   draft:
-    title: CAM draft and review
+    title: Outputs
     purpose: The draft Credit Approval Memo in eight sections, drafted from the evidence on file, and the questions for the personal discussion. Every statement carries the pages it rests on; the engine's words are marked, and anything you change is recorded as yours.
   comparison:
     title: Comparison with RBL's record
@@ -2168,7 +2185,45 @@ exitTier:
   none: Not classified
 
 # The case header in the case workspace (FRD §6).
+# The bar at the foot of every step of a case: the way on to the next one.
+nextStep:
+  next: "Next: {step}"
+  createFirst: "Next: create the case"
+  library: Memo Library
+
+# The Overview's case progress, once the case is created: each stage after the documents in a line.
+caseProgress:
+  title: Case progress
+  documents: "{n} of {total} requirements satisfied"
+  xvOpen: "{n} discrepancy(ies) to decide"
+  xvNotRun: "No discrepancy; {n} check(s) could not run"
+  xvClear: No discrepancy
+  deviations: "{n} deviation(s) from policy"
+  noDeviation: Every norm met
+  memo: "{n} of {total} sections in your words"
+  recommendationOpen: Not written
+  recommendationDone: Written
+  submissionClosed: "Closed: {n} check(s) not met"
+  submissionOpen: Ready to submit
+  state:
+    done: done
+    open: needs you
+    waiting: waiting
+  next:
+    completeness: "Next: complete the documents"
+    crossVerification: "Next: review Cross-verification"
+    policy: "Next: review the deviations"
+    outputs: "Next: review the memo"
+    rating: "Next: write the recommendation"
+    submission: "Next: submit"
+
 caseHeader:
+  more: More
+  caseDate: Case date
+  caseDateHelp: Documents, periods and ages are assessed as of this date.
+  caseStage:
+    assessment: In assessment
+    memo: Memo in draft
   readiness: Document readiness
   readinessUnavailable: Document readiness not available
   outstandingGate: "{score}% weighted · {gate}% review gate"
@@ -2428,6 +2483,11 @@ identity:
   identifiers: Borrower identifiers
   identifiersHelp: Each value with where it came from. Where a person changed a proposed value, both are kept.
   notOnRecord: Not on record
+  notOnDocuments: Not on any document
+  documentsAgree: "same on {n} document(s)"
+  documentsDisagree: The documents disagree
+  useValue: Use this value
+  useFailed: Could not record the value. Open Cross-verification to see what the documents say.
   proposed: "(proposed: {value})"
   parties: Parties
   partiesHelp: Directors, partners, proprietor and guarantors, each with its source and the KYC attributed to them.

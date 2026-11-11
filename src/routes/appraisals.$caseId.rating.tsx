@@ -1,7 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
 import { AssessmentStage } from "@/components/case/gate/AssessmentStage";
-import { Recommendation, Summary } from "@/components/case/Outputs";
+import { Summary } from "@/components/case/Outputs";
+import { RecommendationEditor } from "@/components/case/RecommendationEditor";
 import { AuthoritySection } from "@/components/case/policy/AuthoritySection";
 import { StepHeader } from "@/components/case/TabSection";
 import { stepKicker } from "@/domain/steps";
@@ -24,9 +24,6 @@ export const Route = createFileRoute("/appraisals/$caseId/rating")({
   component: RatingTab,
 });
 
-const button =
-  "inline-flex items-center gap-1.5 rounded border border-border bg-surface px-3 py-1.5 text-[12.5px] font-medium hover:bg-muted";
-
 function RatingTab() {
   const { caseId } = Route.useParams();
   return (
@@ -35,25 +32,6 @@ function RatingTab() {
         kicker={stepKicker(caseId, "rating")}
         title={t("page.rating.title")}
         purpose={t("page.rating.purpose")}
-        actions={
-          <>
-            <Link
-              to="/appraisals/$caseId/outputs"
-              params={{ caseId }}
-              search={{ view: "cam" }}
-              className={button}
-            >
-              <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> {t("page.rating.toDraft")}
-            </Link>
-            <Link
-              to="/appraisals/$caseId/submission"
-              params={{ caseId }}
-              className="inline-flex items-center gap-1.5 rounded bg-primary px-3 py-1.5 text-[12.5px] font-medium text-primary-foreground hover:bg-primary/90"
-            >
-              {t("caseTab.submission")} <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-            </Link>
-          </>
-        }
       />
       <AssessmentStage caseId={caseId}>
         <RatingBody caseId={caseId} />
@@ -81,11 +59,15 @@ function RatingBody({ caseId }: { caseId: string }) {
                 <Summary caseId={caseId} m={m} headed={false} />
               </div>
             </Panel>
-            <Panel title={m.recommendation_title} testId="rating-recommendation">
-              <div className="px-4 py-3">
-                <Recommendation m={m} headed={false} />
-              </div>
-            </Panel>
+            <div id="recommendation" className="scroll-mt-4">
+              <Panel title={m.recommendation_title} testId="rating-recommendation">
+                <div className="px-4 py-3">
+                  {/* Keyed by the stored words, so a save (or a change made in Outputs) starts the
+                      boxes from what the memo now holds. */}
+                  <RecommendationEditor key={m.recommendation ?? ""} caseId={caseId} m={m} />
+                </div>
+              </Panel>
+            </div>
           </div>
         )}
       </QueryView>

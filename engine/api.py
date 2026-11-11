@@ -98,6 +98,7 @@ from .contracts import (
     SettingsPublishRequest,
     CaseCreate,
     CaseDeleteRequest,
+    IdentifierRecord,
     Cam,
     CaseDetail,
     CaseFacts,
@@ -333,6 +334,22 @@ def open_assessment(
         raise HTTPException(status_code=409, detail={"error": "assessment_not_open", "blockers": e.blockers}) from e
     except configstore_reader.NoPublishedConfig as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
+
+
+@app.post("/api/cases/{case_id}/identifiers/{field}", response_model=CaseDetail)
+def record_identifier(case_id: str, field: str, body: IdentifierRecord, user: dict = Depends(require("review.decide")),
+                      conn: sqlite3.Connection = Depends(get_conn)) -> CaseDetail:
+    """F-10: take the PAN, GSTIN or CIN every document agrees on onto the case, then re-run the case's
+    checks against it."""
+    _case_for(conn, case_id, user)
+    try:
+        cases.record_identifier(conn, case_id, field, body.value, actor=user["id"])
+    except cases.IdentifierError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    pipeline.refresh_case(conn, data_root(), case_id)
+    case = cases.get_case(conn, case_id)
+    assert case is not None
+    return case
 
 
 @app.delete("/api/cases/{case_id}", status_code=204)

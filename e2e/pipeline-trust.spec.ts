@@ -2,7 +2,7 @@
 // from the documents, the recommendation is written where Submission sends you, and Submission
 // counts what Cross-verification and Outputs count.
 import { expect, test } from "@playwright/test";
-import { KESTREL, RM } from "./fixtures/data";
+import { KESTREL, RM, SPREAD } from "./fixtures/data";
 import { MockApi, signedIn } from "./support/api";
 
 test.use({ viewport: { width: 1440, height: 900 } });
@@ -210,4 +210,24 @@ test("Extracted data with nothing to check is one folded row a document, opened 
   await expect(groups.first().getByTestId("field-group-counts")).toContainText("fields");
   await groups.first().getByTestId("field-group-toggle").click();
   await expect(groups.first().getByTestId("field-row").first()).toBeVisible();
+});
+
+test("Financials and Policy leads with the lending answer, and says the gap when it falls short", async ({
+  page,
+}) => {
+  const api = new MockApi();
+  await signedIn(page, api);
+  await page.goto(`/appraisals/${KESTREL}/policy`);
+  const headline = page.getByTestId("lending-headline");
+  await expect(headline).toContainText("Eligible bank finance");
+  await expect(headline).toContainText("Asked");
+  // In this case the assessment allows more than is asked: no shortfall is shown.
+  await expect(headline.getByTestId("lending-short")).toHaveCount(0);
+
+  api.spreads.set(KESTREL, {
+    ...SPREAD,
+    working_capital: { ...SPREAD.working_capital!, eligible: 40_000_000, requested: 50_000_000 },
+  });
+  await page.reload();
+  await expect(page.getByTestId("lending-short")).toBeVisible();
 });

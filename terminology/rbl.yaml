@@ -695,6 +695,13 @@ facts:
 policy:
   kicker: "Appraisal {id} · Financials and Policy"
   # A ratio's band against its configured acceptable and marginal values (the engine's).
+  headline:
+    eligible: Eligible bank finance
+    asked: Asked
+    short: Short by
+    deviationsLabel: Deviations
+    deviations: "{n} deviation(s) from policy"
+    approver: Approver
   band:
     within: Within policy
     marginal: Marginal deviation

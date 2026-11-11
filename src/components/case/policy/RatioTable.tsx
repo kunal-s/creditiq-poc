@@ -9,7 +9,6 @@ import { cellText } from "@/domain/spread";
 import { useCan } from "@/domain/session";
 import { cn } from "@/lib/utils";
 import { NormDetail, BAND_TEXT, split, statusOf } from "./NormTile";
-import { OUTCOME_TEXT } from "./styles";
 
 type Band = "within" | "marginal" | "outside";
 
@@ -135,7 +134,7 @@ function Trend({
     <span
       className={cn(
         "inline-flex items-center gap-0.5 text-[11px] font-medium",
-        flat ? "text-muted-foreground" : better ? "text-positive" : "text-destructive",
+        flat ? "text-muted-foreground" : better ? "text-positive" : "text-critical-text",
       )}
       title={t(
         flat
@@ -227,11 +226,8 @@ export function RatioTable({
           const status = statusOf(norm);
           const evaluated = norm.outcome === "pass" || norm.outcome === "deviation";
           const [figure, unit] = evaluated ? split(actualText(norm)) : ["—", ""];
-          const tone = !evaluated
-            ? "text-muted-foreground"
-            : norm.band
-              ? BAND_TEXT[norm.band]
-              : OUTCOME_TEXT[norm.outcome];
+          // The latest figure in the text colour; where it stands is the chip's to say.
+          const tone = evaluated ? "text-foreground" : "text-muted-foreground";
           const open = selected === norm.id;
           const reason = norm.reason
             ? t(`policy.reason.${norm.reason}`, {
@@ -361,7 +357,7 @@ export function RatioTable({
                   <span
                     className={cn(
                       "mt-2 block text-[12px] leading-snug",
-                      norm.outcome === "deviation" ? "text-destructive" : "text-flag-foreground",
+                      norm.outcome === "deviation" ? "text-critical-text" : "text-flag-foreground",
                     )}
                     data-testid={reason ? "norm-reason" : "norm-missing"}
                     data-reason={norm.reason ?? undefined}

@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { AlertTriangle, Check, Loader2, Lock } from "lucide-react";
 import type { CaseProgress, StageProgress as Stage, StageStatus } from "@/api/types";
 import { CASE_TABS, caseTabPath, tabForStage } from "@/components/shell/nav";
+import { CASE_TABS, caseTabPath, tabForStage } from "@/components/shell/nav";
 import { t } from "@/config/terminology";
 import { stageDetail } from "@/domain/progress";
 import { useSession } from "@/domain/session";
@@ -157,6 +158,7 @@ export function StageProgressBar({
   caseId,
   progress,
   activeStage,
+  onOverview = false,
   onOverview = false,
 }: {
   caseId: string;

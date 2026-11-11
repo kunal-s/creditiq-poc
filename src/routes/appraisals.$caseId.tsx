@@ -152,6 +152,7 @@ function CaseHeader({ c }: { c: CaseDetail }) {
               : r
                 ? t("caseHeader.outstandingGate", {
                     score: scoreText(r.score_pct, r.gate_pct),
+                    score: scoreText(r.score_pct, r.gate_pct),
                     gate: Math.round(r.gate_pct),
                   })
                 : checklist.isError

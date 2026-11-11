@@ -55,23 +55,34 @@ const Register = createContext<RegisterContext>({
 const SURE = 0.85;
 
 /** The register's columns: one row per document (a file with none has one row of its own). On a
- * phone each row is a short card: the file, then a line for each cell with its column named. */
-const ROW =
-  "flex flex-col gap-1.5 px-4 py-2.5 md:grid md:py-2 md:grid-cols-[minmax(0,2.3fr)_3.5rem_minmax(0,1.6fr)_4.5rem_minmax(0,1.8fr)_minmax(0,1.3fr)] md:gap-x-3";
+ * phone each row is a short card: the file, then a line for each cell with its column named. The
+ * row's own text size is the file name's, so every cell's first line sits on the same line. */
+export const REGISTER_ROW =
+  "flex flex-col gap-1.5 px-4 py-2.5 text-[12.5px] leading-normal md:grid md:py-2 md:grid-cols-[minmax(0,2.3fr)_3.5rem_minmax(0,1.6fr)_5.5rem_minmax(0,1.8fr)_minmax(0,1.3fr)] md:gap-x-3";
 const COLUMNS = ["file", "pages", "type", "confidence", "integrity", "satisfies"] as const;
+type Column = (typeof COLUMNS)[number];
+
+/** A column's alignment on the laptop grid, the same in its title and its cells: the confidence is
+ * a figure, so it sits right; the integrity check keeps a gap from it. */
+const ALIGN: Partial<Record<Column, string>> = {
+  confidence: "md:text-right",
+  integrity: "md:pl-4",
+};
 
 /** The column titles, once above every section. */
 export function RegisterHead() {
   return (
     <div
       className={cn(
-        ROW,
+        REGISTER_ROW,
         "hidden border-b border-border bg-muted/40 py-1.5 text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground md:grid",
       )}
       data-testid="register-head"
     >
       {COLUMNS.map((c) => (
-        <span key={c}>{t(`documents.table.${c}`)}</span>
+        <span key={c} className={ALIGN[c]}>
+          {t(`documents.table.${c}`)}
+        </span>
       ))}
     </div>
   );
@@ -226,7 +237,7 @@ function FileRows({
     const reading = file.status === "registered";
     return (
       <div data-testid="tree-file" data-status={file.status} style={indent(depth, false)}>
-        <div className={ROW}>
+        <div className={REGISTER_ROW}>
           <FileCell file={file} depth={depth}>
             {file.status === "duplicate" && (
               <span data-testid="duplicate-of">
@@ -241,7 +252,7 @@ function FileRows({
           </FileCell>
           <Empty />
           {/* A file with no documents yet: where it stands, in the type's place. */}
-          <Cell column="type">
+          <RegisterCell column="type">
             <span className="flex flex-wrap items-center gap-1.5">
               {reading ? <StageTrack doc={undefined} /> : <FileStatusChip status={file.status} />}
               {file.status === "exception" && canUpload && (
@@ -258,11 +269,11 @@ function FileRows({
                 </button>
               )}
             </span>
-          </Cell>
-          <Empty />
-          <Cell column="integrity" empty={noIntegrity}>
+          </RegisterCell>
+          <Empty column="confidence" />
+          <RegisterCell column="integrity" empty={noIntegrity}>
             {integrity}
-          </Cell>
+          </RegisterCell>
           <Empty />
         </div>
         {panel}
@@ -306,7 +317,7 @@ function SameFile() {
 }
 
 /** A cell's column name, on a phone only, where the row's cells stand without their headings. */
-function PhoneLabel({ column }: { column: (typeof COLUMNS)[number] }) {
+function PhoneLabel({ column }: { column: Column }) {
   return (
     <span className="w-[5.25rem] shrink-0 pt-[3px] text-[10px] font-semibold uppercase leading-tight tracking-wide text-muted-foreground md:hidden">
       {t(`documents.table.phone.${column}`)}
@@ -321,20 +332,25 @@ function indent(depth: number, toggle: boolean): CSSProperties {
 
 /** One cell: a column of the grid on a laptop; on a phone a line of its own with the column named
  * beside it, left out when it has nothing to say. */
-function Cell({
+export function RegisterCell({
   column,
   empty = false,
+  className,
   children,
 }: {
-  column: (typeof COLUMNS)[number];
+  column: Column;
   empty?: boolean;
+  /** Placement on the laptop grid, e.g. a span over columns that have nothing to say. */
+  className?: string;
   children: ReactNode;
 }) {
   return (
     <span
       className={cn(
         "flex min-w-0 items-start gap-2 max-md:pl-[var(--indent,0px)] md:block",
+        ALIGN[column],
         empty && "max-md:hidden",
+        className,
       )}
     >
       <PhoneLabel column={column} />
@@ -343,9 +359,12 @@ function Cell({
   );
 }
 
-function Empty() {
+/** A laptop cell with nothing in it, aligned as its column is. */
+function Empty({ column }: { column?: Column }) {
   return (
-    <span className="hidden text-[11px] text-muted-foreground md:inline">
+    <span
+      className={cn("hidden text-[11px] text-muted-foreground md:inline", column && ALIGN[column])}
+    >
       {t("documents.table.none")}
     </span>
   );
@@ -464,7 +483,7 @@ function DocumentRow({
 
   return (
     <div data-testid="tree-document" data-document-id={doc.id} style={indent(depth, true)}>
-      <div className={ROW}>
+      <div className={REGISTER_ROW}>
         <FileCell
           file={file}
           depth={depth}
@@ -490,7 +509,7 @@ function DocumentRow({
         <span className="tabular hidden text-[11.5px] text-muted-foreground md:inline">
           {pageRange(doc)}
         </span>
-        <Cell column="type">
+        <RegisterCell column="type">
           <span className="flex min-w-0 flex-col items-start gap-1">
             <button
               type="button"
@@ -526,8 +545,8 @@ function DocumentRow({
             )}
             <DocStatus caseId={caseId} doc={doc} />
           </span>
-        </Cell>
-        <Cell column="confidence" empty={!classified || confidence == null}>
+        </RegisterCell>
+        <RegisterCell column="confidence" empty={!classified || confidence == null}>
           <span
             className={cn(
               "tabular text-[12px] font-medium",
@@ -541,11 +560,11 @@ function DocumentRow({
               <span className="hidden md:inline">{t("documents.table.none")}</span>
             )}
           </span>
-        </Cell>
-        <Cell column="integrity" empty={integrityEmpty}>
+        </RegisterCell>
+        <RegisterCell column="integrity" empty={integrityEmpty}>
           {integrity}
-        </Cell>
-        <Cell column="satisfies" empty={satisfies.length === 0 && shownDefects === 0}>
+        </RegisterCell>
+        <RegisterCell column="satisfies" empty={satisfies.length === 0 && shownDefects === 0}>
           <span className="flex min-w-0 flex-col items-start gap-1 text-[11.5px] text-foreground">
             {satisfies.length > 0 ? (
               <span data-testid="document-satisfies">
@@ -564,7 +583,7 @@ function DocumentRow({
               </Chip>
             )}
           </span>
-        </Cell>
+        </RegisterCell>
       </div>
       {panel}
       {items.length > 0 && (

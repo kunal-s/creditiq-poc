@@ -24,6 +24,7 @@ import { errorKind } from "@/domain/errors";
 import { reviewTarget, useReviewQueue } from "@/domain/review";
 import { useCan, useSession } from "@/domain/session";
 import { cn } from "@/lib/utils";
+import { NotUploaded } from "./NotUploaded";
 
 /** Open review items and checklist defects by document, for the register rows. */
 function useRegisterContext(caseId: string): RegisterContext {
@@ -88,8 +89,8 @@ function Section({
   );
 }
 
-/** The register in three sections: what needs a person first, then what is
- * still being read, then everything ready, folded into one line. */
+/** The register in four sections: the required documents not uploaded first, then what needs a
+ * person, then what is still being read, then everything ready, folded into one line. */
 function Register({
   caseId,
   files,
@@ -124,6 +125,7 @@ function Register({
   return (
     <div data-testid="file-tree">
       <RegisterHead />
+      <NotUploaded caseId={caseId} />
       {n.attention > 0 && (
         <Section
           tone="attention"
@@ -238,9 +240,14 @@ export function DocumentsSection({ caseId }: { caseId: string }) {
               <LoadingBlock rows={4} className="border-0 p-0" />
             </div>
           ) : files.data.length === 0 ? (
-            <p className="px-4 py-8 text-center text-[12.5px] text-muted-foreground">
-              {t("documents.none")}
-            </p>
+            // Nothing received yet: what the appraisal needs is still listed, each with its upload.
+            <div data-testid="file-tree">
+              <RegisterHead />
+              <NotUploaded caseId={caseId} />
+              <p className="px-4 py-8 text-center text-[12.5px] text-muted-foreground">
+                {t("documents.none")}
+              </p>
+            </div>
           ) : (
             <Register
               caseId={caseId}

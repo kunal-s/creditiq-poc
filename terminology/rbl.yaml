@@ -1142,8 +1142,8 @@ page:
     purpose: The borrower's identifiers and the promoters, directors or partners, each with the document it came from.
   documents:
     title: Files
-    purpose: "Every file received for this appraisal, with its checks; add more here. What each document still needs is on the Overview and on Document readiness."
-    purposeRead: "Every file received for this appraisal, with its checks. What each document still needs is on the Overview and on Document readiness."
+    purpose: "Every file received for this appraisal, with its checks, and every required document not yet uploaded, first, each with its own upload. Add more files here."
+    purposeRead: "Every file received for this appraisal, with its checks, and every required document not yet uploaded, first."
   data:
     title: Extracted data
     purpose: Key fields by source, each with its confidence and a link to the page it came from.
@@ -1402,39 +1402,21 @@ upload:
   camera: Take a photo
 
 journey:
-  title: Document checklist
-  subtitle: "Documents this appraisal needs: {n}. Upload on a row that still needs one, or drop files on it."
-  subtitleRead: "Documents this appraisal needs: {n}."
-  stale: The checklist could not be read again just now; this is the last read.
-  files: "{n} file(s) received"
-  filesAttention: "{n} need a person"
-  filterEmpty: Nothing here under this filter.
-  notReceived: Nothing received for this yet.
-  filterAll: All
-  moreDocs: "{n} more"
-  fewerDocs: Show fewer
-  oneDocument: 1 document on file
-  documents: "{n} documents on file"
-  ask: "Ask:"
-  copy: Copy the request
-  copyRequest: "Copy request {n}"
-  copied: Copied
+  # The upload on a required document's row in the files received, and what became of the file.
   upload: Upload
   uploadHelp: Upload files for this requirement, or drop them on its row
   dropHere: "Drop to upload for {name}"
   uploading: Uploading…
   uploadingFor: "Uploading for {name}"
-  filterLabel: Show requirements
-  why: Why this is needed
+  uploadFor: "Upload for {name}"
   outcome:
     reading: received; reading it now. Its content decides where it counts.
     counted: "read as {type}; counts toward {items}."
     unasked: "read as {type}; no requirement asks for it."
     unidentified: its type could not be told; it waits for a person in the files below.
     turnedAway: "turned away: {reason}"
-  unmatched: On file, not asked for
-  unmatchedHelp: Kept with the appraisal; open one to check what it is.
-  # The readiness glance at the top of the Overview, and the compact summary on Files.
+  # Document readiness on the Overview, under the status line: the counts, then every document's
+  # status.
   readiness:
     title: Document readiness
     ofTotal: "{n} / {total}"
@@ -1445,37 +1427,9 @@ journey:
     breakdown: "Of the {n} not satisfied"
     blockingNote: "Blocking credit review: {n}"
     noneNotSatisfied: Every requirement is satisfied.
-    showOnly: "Show only {label} in the list below"
   status:
     title: Document status
     blocks: Blocks credit review
-  verdict:
-    gateMet: Review gate met
-    conditions: Gate conditions
-  live: "Weighted score {score}%. {verdict}"
-  meter: "Weighted score {score}%, review gate {gate}%, {toGo}"
-  meterMet: "Weighted score {score}%, review gate {gate}%, met"
-  scoreHelpToggle: What the weighted score means
-  showAll: "Show all ({n})"
-  band:
-    done: Satisfied and waived
-    doneFlagged: "{n} on a file that needs a person"
-    doneAbove: "Shown above, where a file was sent from it: {names}"
-    inReviewHelp: Not satisfied yet; on file and waiting for a person.
-    clearNonblocking: Nothing else is missing or insufficient.
-    clearInReview: Nothing on this case waits for a person.
-  waitingPerson: Waiting for a person.
-  askCustomer: Ask the customer
-  askOpen: "{n} open"
-  askResolved: "{n} resolved"
-  copyList: Copy the list
-  showRequests: Show the requests
-  hideRequests: Hide the requests
-  showing: "Showing: {filter}"
-  showingLive: "Showing: {filter}, {n} in the list"
-  clearFilter: Show all requirements
-  uploadFor: "Upload for {name}"
-  jumpTo: Show
 
 documents:
   table:
@@ -1509,6 +1463,11 @@ documents:
       failed: Could not run
       not_checked: Not yet checked
       not_applicable: Does not apply
+  # The documents this appraisal needs that have not been uploaded, at the head of the files
+  # received, each with an upload (journey.upload*).
+  missing:
+    section: "Not uploaded · {n}"
+    notUploaded: Not uploaded
   section:
     attention: "Needs attention · {n}"
     reading: "Reading {n} file(s)"
@@ -2343,14 +2302,26 @@ assessment:
   created: "Case created {at}"
   createdBy: "Case created by {who}"
   gateTitle: Ready to create the case
+  gateTitleBlocked: Not ready to create the case yet
   gateTitleOpen: Case created
   conditionsMet: "{met} of {total} conditions met"
+  conditionsHelp: "The case can be created once all three are met: the weighted score reaches the review gate, no blocking requirement is open, and every file has been read."
   createBlocked: "Every condition must be met first:"
   tile:
+    met: Met
+    notMet: Not met
+    reviewGate: Review gate
+    needs: "Needs {gate}%"
     toGo: "{n} points to go"
     toGoOne: 1 point to go
     blocking: Blocking requirements
     blockingOpen: not satisfied
+    blockingDone: "{done} / {total} blocking requirements satisfied"
+    showItems: Show them
+    files: Files read
+    filesUnread: file(s) could not be read
+    showFiles: Open the files
+  gateIntro: The cross-checks, the policy checks and the outputs open once the case is created.
   lockedTitle: Opens once the case is created
   lockedBody: This step runs after intake. Finish the checklist on the Document readiness step, then create the case.
   lockedAction: Go to Document readiness
@@ -2376,8 +2347,10 @@ overviewStatus:
 
 readiness:
   reviewGate: Review gate
+  disbursementGate: Disbursement gate
   met: Met
   notMet: Not met
+  threshold: "threshold {threshold}% · now {score}%"
   notReady: Not ready for credit review
   withBlocking: "(blocking open: {n})"
   notReadyHelp: The gate is met only when the weighted score reaches the threshold and every blocking requirement is satisfied or waived with a reason.
@@ -2390,6 +2363,7 @@ readiness:
   nonBlocking: Not satisfied
   nonBlockingHelp: Missing or insufficient, asked for from the customer; these do not hold the case up.
   noBlocking: No blocking requirement remains on this case.
+  blockingOpen: "{n} blocking requirement(s) not satisfied. Each one stops the case reaching credit review."
   blockingFindings: "{n} blocking cross-check finding(s) to decide"
   noNonBlocking: Nothing else is missing or insufficient.
   openEvidence: "Open evidence · page {page}"

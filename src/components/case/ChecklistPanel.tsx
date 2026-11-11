@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { useState, type ReactNode } from "react";
-import { ChevronDown, ChevronRight, Eye, Info } from "lucide-react";
+import { useState } from "react";
+import { ChevronDown, ChevronRight, Eye } from "lucide-react";
 import type {
   ChecklistItemDef,
   ChecklistItemState,
@@ -19,27 +19,21 @@ import { StatusMark } from "./checklist/Readiness";
 import { cn } from "@/lib/utils";
 import { pageRange, useCaseDocuments, useDocumentTypes } from "@/domain/documents";
 
-/** The list's own filters, in the words the readiness counts use; a count above can also set
- * missing, insufficient or in review, which shows as one more chip. */
+/** The list's own filters, in the words the readiness counts use. */
 const ITEM_FILTERS: Filter[] = ["all", "not_satisfied", "blocking", "satisfied"];
 
-/** The checklist with each item's status (F-12, F-13), filterable; while provisional it says so,
- * and failed blocking cross-checks are shown on it (F-19.5), decided on their tab. */
+/** The checklist with each item's status (F-12, F-13), filterable. The readiness panel above it
+ * says whether it is provisional and which blocking cross-checks wait (F-19.5). */
 export function ChecklistPanel({
   caseId,
   r,
   filter,
   onFilter,
-  action,
-  blockingFindings = 0,
 }: {
   caseId: string;
   r: Readiness;
   filter: Filter;
   onFilter: (f: Filter) => void;
-  /** In the panel's head: the action that creates the case. */
-  action?: ReactNode;
-  blockingFindings?: number;
 }) {
   const { data: c } = useCase(caseId);
   const labels = useLabels();
@@ -62,29 +56,7 @@ export function ChecklistPanel({
           : undefined
       }
       testId="checklist"
-      action={action}
     >
-      {r.provisional && (
-        <p
-          className="flex items-start gap-2 border-b border-border bg-accent/40 px-4 py-2 text-[12px] text-accent-foreground"
-          data-testid="provisional"
-        >
-          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
-          {t("checklist.provisionalHelp")}
-        </p>
-      )}
-      {blockingFindings > 0 && (
-        <p className="border-b border-border px-4 py-2">
-          <Link
-            to="/appraisals/$caseId/cross-verification"
-            params={{ caseId }}
-            className="inline-flex items-center gap-1 text-[12px] font-medium text-primary hover:underline"
-            data-testid="blocking-findings"
-          >
-            {t("readiness.blockingFindings", { n: blockingFindings })} →
-          </Link>
-        </p>
-      )}
       <div
         className="flex flex-wrap gap-1.5 border-b border-border px-4 py-2"
         data-testid="checklist-filters"
@@ -240,7 +212,7 @@ function Item({
             </Details>
           )}
           {item.deficiency && (
-            <p className="rounded border border-destructive/30 bg-destructive/10 px-3 py-2 text-[12px] leading-relaxed text-destructive">
+            <p className="rounded border border-destructive/25 bg-critical-soft/60 px-3 py-2 text-[12px] leading-relaxed text-critical-text">
               {t(`docStatus.${item.status}`)} — {item.deficiency}
             </p>
           )}

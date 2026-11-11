@@ -30,7 +30,7 @@ test("the stage bar leads back to the Overview from every step", async ({ page }
     await expect(page.getByTestId(`stage-${stage}`)).toHaveAttribute("aria-current", "page");
     await overview.click();
     await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}$`));
-    await expect(page.getByTestId("document-status")).toBeVisible();
+    await expect(page.getByTestId("journey-readiness")).toBeVisible();
   }
 });
 
@@ -61,7 +61,13 @@ test("the six processing steps sit in two groups, and a step the role may not op
   const docs = nav.getByTestId("case-nav-group-documents");
   await expect(docs).toHaveText("Documents and data");
   await expect(nav.getByTestId("case-nav-group-assessment")).toHaveText("Assessment and outputs");
-  for (const name of ["Files", "Extracted data", "Completeness", "Cross-verification", "Outputs"])
+  for (const name of [
+    "Files",
+    "Extracted data",
+    "Document readiness",
+    "Cross-verification",
+    "Outputs",
+  ])
     await expect(nav.getByRole("link", { name })).toBeVisible();
   await expect(nav.locator("[data-locked]")).toHaveCount(0);
 

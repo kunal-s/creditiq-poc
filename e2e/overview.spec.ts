@@ -1,6 +1,7 @@
-// The Overview: one line on whether the case can go to credit review, then what the appraisal
-// needs, one line a requirement. A row opens to show its files, what to ask the customer and the
-// upload; the rest of the detail lives on the Files and Completeness steps.
+// The Overview, a stand-up view of the case: one line on whether it can go to credit review, then
+// document readiness (satisfied of all, and why the rest are not), then every document under its
+// section with its mark and status, then what waits for a decision.
+// The requirement list itself lives on the Files and Document readiness steps.
 import { expect, test, type Page } from "@playwright/test";
 import { KESTREL, SAFFRON } from "./fixtures/data";
 import { MockApi, signedIn } from "./support/api";
@@ -27,11 +28,103 @@ test("the Overview opens with one line on whether the case can go to credit revi
     /Not ready for credit review: .*85% review gate, \d+ blocking/,
   );
   // The same score as the case header.
-  expect(await scoreOf(page, "journey-verdict")).toBe(await scoreOf(page, "header-readiness"));
-  // No dashboard: no tiles, meter or rail.
-  await expect(page.locator("[data-testid^='journey-filter-']")).toHaveCount(0);
-  await expect(page.getByTestId("next-action")).toHaveCount(0);
+  expect(await scoreOf(page, "journey-verdict")).toBe(
+    await scoreOf(page, "header-readiness-score"),
+  );
+  // A stand-up view: the status, document readiness and what waits; no requirement list here.
+  await expect(page.getByTestId("journey-readiness")).toBeVisible();
   await expect(page.getByTestId("waiting-decision")).toBeVisible();
+  await expect(page.getByTestId("document-checklist")).toHaveCount(0);
+  await expect(page.getByTestId("journey-item")).toHaveCount(0);
+});
+
+test("document readiness opens on its counts: every requirement once, the rest by why", async ({
+  page,
+}) => {
+  await overview(page);
+  const panel = page.getByTestId("readiness-panel-readiness");
+  await expect(panel).toBeVisible();
+  await expect(panel.getByTestId("document-readiness-total")).toHaveText("2 / 9");
+  await expect(panel.getByTestId("document-readiness-satisfied")).toContainText(/2\s*Satisfied/);
+  await expect(panel.getByTestId("document-readiness-not_satisfied")).toContainText(
+    /7\s*Not satisfied/,
+  );
+  await expect(panel.getByTestId("document-readiness-breakdown")).toContainText(
+    "Of the 7 not satisfied",
+  );
+  await expect(panel.getByTestId("document-readiness-missing")).toContainText(/Missing\s*2/);
+  await expect(panel.getByTestId("document-readiness-insufficient")).toContainText(
+    /Insufficient\s*4/,
+  );
+  await expect(panel.getByTestId("document-readiness-in_review")).toContainText(/In review\s*1/);
+  await expect(panel.getByTestId("document-readiness-blocking")).toHaveText(
+    "Blocking credit review: 2",
+  );
+  // Figures to read, not filters: nothing below them to filter.
+  await expect(panel.getByRole("button")).toHaveCount(0);
+});
+
+test("document readiness and document status are shown one under the other", async ({ page }) => {
+  await overview(page);
+  const readiness = page.getByTestId("readiness-panel-readiness");
+  const status = page.getByTestId("readiness-panel-status");
+  await expect(readiness).toContainText("Document readiness");
+  await expect(status).toContainText("Document status");
+  await expect(readiness).toBeVisible();
+  await expect(status.getByTestId("document-status-item").first()).toBeVisible();
+  // No tabs: both at once, the counts first and the documents under them.
+  await expect(page.getByRole("tablist")).toHaveCount(0);
+  const top = async (l: typeof readiness) => (await l.boundingBox())!.y;
+  expect(await top(status)).toBeGreaterThan(await top(readiness));
+  // Each as wide as the other.
+  expect((await status.boundingBox())!.width).toBe((await readiness.boundingBox())!.width);
+});
+
+test("document status names every document under its section, with its mark and its word", async ({
+  page,
+}) => {
+  await overview(page);
+  const sections = page.getByTestId("document-status-section");
+  expect(await sections.evaluateAll((els) => els.map((e) => e.dataset["section"]))).toEqual([
+    "Constitution and KYC",
+    "Financials",
+    "Banking and operations",
+    "Collateral and security",
+  ]);
+  await expect(page.getByTestId("document-status-item")).toHaveCount(9);
+  const rows = sections
+    .filter({ hasText: "Constitution and KYC" })
+    .getByTestId("document-status-item");
+  expect(await rows.evaluateAll((els) => els.map((e) => e.dataset["status"]))).toEqual([
+    "satisfied",
+    "insufficient",
+    "missing",
+  ]);
+  await expect(rows.nth(0)).toContainText("Certificate of incorporation");
+  await expect(rows.nth(0)).toContainText("Satisfied");
+  await expect(rows.nth(2)).toContainText("KYC of directors");
+  await expect(rows.nth(2)).toContainText("Missing");
+  await expect(rows.nth(2)).toContainText("Blocks credit review");
+  // Every row has its mark; no section says "x of y satisfied" instead of naming them.
+  for (const marks of await page
+    .getByTestId("document-status-item")
+    .evaluateAll((els) => els.map((e) => e.querySelectorAll("svg").length)))
+    expect(marks).toBe(1);
+  await expect(page.getByTestId("journey-readiness")).not.toContainText(/\d+ of \d+ satisfied/);
+});
+
+test("the Overview and the Document readiness step count the same requirements", async ({
+  page,
+}) => {
+  await overview(page);
+  await expect(page.getByTestId("document-readiness-total")).toHaveText("2 / 9");
+  await page.goto(`/appraisals/${KESTREL}/completeness`);
+  await expect(page.getByTestId("checklist-filter-all")).toHaveText("All (9)");
+  await expect(page.getByTestId("checklist-filter-not_satisfied")).toHaveText("Not satisfied (7)");
+  await expect(page.getByTestId("checklist-filter-satisfied")).toHaveText("Satisfied (2)");
+  await expect(page.getByTestId("checklist-filter-blocking")).toHaveText(
+    "Blocks credit review (2)",
+  );
 });
 
 test("a case ready for credit says so", async ({ page }) => {
@@ -39,75 +132,28 @@ test("a case ready for credit says so", async ({ page }) => {
   const status = page.getByTestId("journey-verdict");
   await expect(status).toHaveAttribute("data-state", "ready");
   await expect(status).toContainText("Ready for credit review");
-  await expect(page.getByTestId("journey-band-blocking")).toHaveText(
-    "No blocking gap remains on this case.",
+  await expect(page.getByTestId("document-readiness-total")).toHaveText("9 / 9");
+  await expect(page.getByTestId("journey-readiness")).toContainText(
+    "Every requirement is satisfied.",
   );
 });
 
-test("each requirement is one line; its files, the request and the upload open on demand", async ({
-  page,
-}) => {
-  await overview(page);
-  const row = page.locator('[data-testid="journey-item"][data-item="kyc_directors"]');
-  await expect(row.getByTestId("journey-item-detail")).toContainText("Constitution and KYC · ");
-  await expect(row).toContainText("Missing");
-  await expect(row.getByTestId("journey-upload")).toHaveCount(0);
-  await expect(row.getByTestId("journey-why")).toHaveCount(0);
-
-  const toggle = row.getByTestId("journey-item-toggle");
-  await expect(toggle).toHaveAttribute("aria-expanded", "false");
-  await toggle.click();
-  await expect(toggle).toHaveAttribute("aria-expanded", "true");
-  await expect(row.getByTestId("journey-upload")).toBeVisible();
-  await expect(row.getByTestId("journey-why")).toBeVisible();
-  await toggle.click();
-  await expect(row.getByTestId("journey-upload")).toHaveCount(0);
+test("a provisional checklist says so over the counts", async ({ page }) => {
+  const api = new MockApi();
+  api.checklists.set(KESTREL, { ...api.checklists.get(KESTREL)!, provisional: true });
+  await overview(page, api);
+  await expect(page.getByTestId("journey-provisional")).toContainText("provisional");
+  await expect(page.getByTestId("document-readiness-total")).toBeVisible();
 });
 
-test("a file sent from an opened row is read where it was sent, and the status line moves", async ({
+test("on a phone the counts and the documents fit, and nothing scrolls sideways", async ({
   page,
 }) => {
-  const api = await overview(page);
-  const row = page.locator('[data-testid="journey-item"][data-item="kyc_directors"]');
-  await row.getByTestId("journey-item-toggle").click();
-  await row
-    .getByTestId("journey-upload-input")
-    .setInputFiles([
-      { name: "kyc-leela.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.7") },
-    ]);
-  await expect(row.getByTestId("journey-outcome")).toHaveAttribute("data-state", "reading");
-
-  const added = api.files.get(KESTREL)!.find((f) => f.original_name === "kyc-leela.pdf")!;
-  const template = api.documents.get(KESTREL)![0]!;
-  api.documents.set(KESTREL, [
-    ...api.documents.get(KESTREL)!,
-    { ...template, id: "doc-kyc-new", file_id: added.id },
-  ]);
-  const r = api.checklists.get(KESTREL)!;
-  api.checklists.set(KESTREL, {
-    ...r,
-    score_pct: 70,
-    blocking_open: 1,
-    items: r.items.map((i) =>
-      i.item_id === "kyc_directors"
-        ? { ...i, status: "satisfied", deficiency: null, document_ids: ["doc-kyc-new"] }
-        : i,
-    ),
-  });
-  await expect(row.getByTestId("journey-outcome")).toHaveAttribute("data-state", "counted", {
-    timeout: 15_000,
-  });
-  await expect(row).toHaveAttribute("data-status", "satisfied");
-  await expect(page.getByTestId("journey-verdict")).toContainText(
-    "70% against the 85% review gate, 1 blocking",
-  );
-});
-
-test("on a phone each row keeps its status, and nothing scrolls sideways", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await overview(page);
-  const row = page.locator('[data-testid="journey-item"][data-item="kyc_directors"]');
-  await expect(row).toContainText("Missing");
+  await expect(page.getByTestId("document-readiness-total")).toHaveText("2 / 9");
+  await page.getByTestId("document-status-item").first().scrollIntoViewIfNeeded();
+  await expect(page.getByTestId("document-status-item").first()).toBeVisible();
   const sideways = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
   );
@@ -127,6 +173,8 @@ test("before any document is in, readiness waits for documents instead of scorin
     "href",
     `/appraisals/${KESTREL}/documents`,
   );
+  // No counts until there is something to count.
+  await expect(page.getByTestId("journey-readiness")).toHaveCount(0);
   const header = page.getByTestId("header-readiness");
   await expect(header).toHaveAttribute("data-state", "waiting-documents");
   await expect(header).toContainText("Waiting for documents");
@@ -144,8 +192,24 @@ test("while the documents are read, readiness says so and counts them", async ({
   await expect(status).toContainText(
     new RegExp(`Reading the documents \\(\\d+ of ${docs.length}\\)`),
   );
+  await expect(page.getByTestId("journey-readiness")).toHaveCount(0);
   await expect(page.getByTestId("header-readiness")).toContainText(
     new RegExp(`Reading documents · \\d+ of ${docs.length}`),
   );
   await expect(page.getByTestId("header-blocking")).toHaveCount(0);
+});
+
+test("when the checklist cannot be read the Overview says so and offers a retry", async ({
+  page,
+}) => {
+  const api = new MockApi();
+  api.on("GET", new RegExp(`^/api/cases/${KESTREL}/checklist$`), () => ({
+    status: 500,
+    json: { detail: "down" },
+  }));
+  await signedIn(page, api);
+  await page.goto(`/appraisals/${KESTREL}`);
+  const notice = page.getByTestId("journey-verdict");
+  await expect(notice).toHaveAttribute("data-state", "error", { timeout: 15_000 });
+  await expect(notice.getByRole("button")).toBeVisible();
 });

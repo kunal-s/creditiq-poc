@@ -9,9 +9,9 @@ test("Overview lists what is still needed and what waits for a decision", async 
   const api = new MockApi();
   await signedIn(page, api);
   await page.goto(`/appraisals/${KESTREL}`);
-  const needed = page.getByTestId("document-checklist");
-  await expect(needed).toContainText("KYC of directors");
-  await expect(needed).toContainText("Valuation report");
+  const needed = page.getByTestId("readiness-panel-status");
+  await expect(needed.locator('[data-item="kyc_directors"]')).toContainText("Missing");
+  await expect(needed.locator('[data-item="valuation"]')).toContainText("Missing");
   const waiting = page.getByTestId("waiting-decision");
   await expect(waiting.getByRole("link")).toHaveCount(2);
   await expect(waiting.getByRole("link").first()).toHaveAttribute(
@@ -93,7 +93,8 @@ test("when processing finishes, the rest of the appraisal refreshes", async ({ p
   });
   await signedIn(page, api);
   await page.goto(`/appraisals/${KESTREL}`);
-  await expect(page.getByTestId("document-checklist")).toBeVisible();
+  // While processing runs the Overview says it is reading; the counts follow when it is done.
+  await expect(page.getByTestId("journey-verdict")).toBeVisible();
   const before = api.called("GET", `/api/cases/${KESTREL}/checklist`).length;
   await expect.poll(() => calls, { timeout: 15_000 }).toBeGreaterThan(2);
   await expect
@@ -185,11 +186,11 @@ test("a finding is accepted as valid, or dismissed as not valid, each with a com
   await expect(ba1.getByTestId("xv-recorded-decision")).toContainText("Accepted");
 });
 
-test("a blocking cross-check finding shows on the required document set", async ({ page }) => {
+test("a blocking cross-check finding shows on the Document readiness summary", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api);
   await page.goto(`/appraisals/${KESTREL}/completeness`);
-  await expect(page.getByTestId("checklist").getByTestId("blocking-findings")).toHaveText(
+  await expect(page.getByTestId("create-case-panel").getByTestId("blocking-findings")).toHaveText(
     "2 blocking cross-check finding(s) to decide →",
   );
   await page.getByTestId("blocking-findings").click();

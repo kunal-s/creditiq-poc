@@ -15,7 +15,7 @@ from .tables import build_table
 
 
 def _kind(f: FieldDef, rule: FieldRule) -> str:
-    return rule.normaliser or {"date": "date", "number": "number"}.get(f.type, "text")
+    return rule.normaliser or {"date": "date", "number": "number", "boolean": "present"}.get(f.type, "text")
 
 
 def _finish(f: FieldDef, rule: FieldRule, found: Found) -> dict:
@@ -55,7 +55,8 @@ def scoped_pages(scopes: list[PageScope], pages: list[Page]) -> list[Page]:
     return [p for p in pages if p.no in keep]
 
 
-def extract_instance(cfg: IngestionConfig, doc_type: str, pages: list[Page], model: ModelClient | None) -> dict:
+def extract_instance(cfg: IngestionConfig, doc_type: str, pages: list[Page], model: ModelClient | None,
+                     prompt: str = "extract", subs: dict[str, str] | None = None) -> dict:
     td = cfg.document_types.by_id()[doc_type]
     rules = cfg.fields.types.get(doc_type)
     rules_f = rules.fields if rules else {}
@@ -84,7 +85,7 @@ def extract_instance(cfg: IngestionConfig, doc_type: str, pages: list[Page], mod
     if pending and model is not None:
         hints = {f.name: rules_f.get(f.name, FieldRule()).llm_hint for f in pending}
         read = scoped_pages(rules.model_pages, pages) if model_first and rules.model_pages else pages
-        found, reasons, trace = llm_extract.fill(cfg, td.display_name, pending, hints, read, model)
+        found, reasons, trace = llm_extract.fill(cfg, td.display_name, pending, hints, read, model, prompt, subs)
         for f in pending:
             rule = rules_f.get(f.name, FieldRule())
             if f.name in found:

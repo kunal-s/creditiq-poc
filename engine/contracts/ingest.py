@@ -99,7 +99,7 @@ class IngestCandidate(_C):
 class IngestClassification(_C):
     type: str | None
     confidence: float
-    tier: Literal["signals", "model", "person", "none"]
+    tier: Literal["signals", "model", "person", "sibling", "none"]
     signals: dict[str, Any] = Field(default_factory=dict)
     candidates: list[IngestCandidate] = Field(default_factory=list)
     needs_review: bool
@@ -157,6 +157,13 @@ class IngestDocument(_C):
     identity: dict[str, str] = Field(default_factory=dict)
     """name, pan, din, dob, gstin, cin as read, for party attribution (F-10)."""
     defects: list[DocumentDefect] = Field(default_factory=list)
+    origin: Literal["classified", "sibling"] = "classified"
+    """classified: the file's own type. sibling: another document of the same category found inside the
+    file by the service's second pass (F-08.1), read on its own pages."""
+    pages: list[int] = Field(default_factory=list)
+    """The pages the document was read from; a document found by the second pass need not be contiguous."""
+    classification: IngestClassification | None = None
+    """How a document found by the second pass was recognised; absent for the file's own type."""
 
 
 class IngestReject(_C):

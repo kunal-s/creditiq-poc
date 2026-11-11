@@ -106,3 +106,32 @@ def test_threshold_edit_changes_hash_and_behaviour(cfg, tmp_path):
     a = Ingestor(cfg, Store(), None, None).process_file("C", spec(n, fixture_doc(n)), fixture_doc(n))
     b = Ingestor(strict, Store(), None, None).process_file("C", spec(n, fixture_doc(n)), fixture_doc(n))
     assert (a.decision, b.decision) == ("auto_accept", "human_review")
+
+
+def test_every_type_names_a_document_fields_category(cfg):
+    cats = {t.document_type: t.category for t in cfg.document_types.documents}
+    assert set(cats.values()) == {"constitution_kyc", "financials", "banking_operations", "supporting"}
+    assert cats["company_pan"] == cats["certificate_of_incorporation"] == "constitution_kyc"
+
+
+@pytest.mark.parametrize("change, message", [
+    ({"identifier": "tann"}, "unknown kind tann"),
+    ({"validators": ["format:tann"]}, "no format defined for tann"),
+    ({"normaliser": "bogus"}, "unknown normaliser bogus"),
+])
+def test_an_unknown_identifier_format_or_normaliser_is_rejected(tmp_path, change, message):
+    d = _edited(tmp_path, "fields.yaml", lambda x: x["types"]["certificate_of_incorporation"]["fields"]["tan"].update(change))
+    with pytest.raises(ConfigError, match=message):
+        load_dir(d)
+
+
+def test_the_second_pass_prompt_is_required(tmp_path):
+    d = _edited(tmp_path, "llm.yaml", lambda x: x["prompts"].pop("sibling"))
+    with pytest.raises(ConfigError, match="missing 'sibling'"):
+        load_dir(d)
+
+
+def test_the_second_pass_settings_are_checked(tmp_path):
+    d = _edited(tmp_path, "llm.yaml", lambda x: x["siblings"].update(min_key_fields=0))
+    with pytest.raises(ConfigError):
+        load_dir(d)

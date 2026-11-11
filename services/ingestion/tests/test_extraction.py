@@ -10,10 +10,13 @@ CO = "Southgate Textiles Private Limited"
 EXPECTED = {
     "Southgate_Certificate_of_Incorporation.pdf": [{
         "company_name": CO, "cin": "U17291TZ2016PTC027431", "date_of_incorporation": "2016-03-18",
-        "company_type": "Company limited by shares", "roc": "Registrar of Companies, Coimbatore, Tamil Nadu"}],
+        "company_type": "Company limited by shares", "roc": "Registrar of Companies, Coimbatore, Tamil Nadu",
+        "pan": "AAHCS6612M", "tan": "CMBS12345F", "certificate_kind": "CERTIFICATE OF INCORPORATION"}],
     "Southgate_MOA_AOA.pdf": [{
-        "company_name": CO, "registered_office": "Tamil Nadu", "authorized_share_capital": 15000000, "paid_up_share_capital": 10000000}],
-    "Southgate_Entity_PAN.pdf": [{"company_name": CO, "pan": "AAHCS6612M", "date_of_issue": "2016-03-24"}],
+        "company_name": CO, "registered_office": "Tamil Nadu", "authorized_share_capital": 15000000, "paid_up_share_capital": 10000000,
+        "liability_clause": "The liability of the member(s) is limited and this liability is limited to the amount unpaid, if any, on the shares held by them.",
+        "face_value_per_share": 10}],
+    "Southgate_Entity_PAN.pdf": [{"company_name": CO, "pan": "AAHCS6612M", "date_of_issue": "2016-03-24", "date_of_incorporation": "2016-03-18"}],
     "Southgate_Director_KYC_Iyer_x2.pdf": [
         {"person_name": "Lakshmi Iyer", "din": "07421683", "designation": "Managing Director", "date_of_birth": "1979-07-12",
          "pan": "AXXXX1683M", "id_document_type": "Aadhaar", "id_number": "XXXX XXXX 4471"},
@@ -21,20 +24,22 @@ EXPECTED = {
          "pan": "AXXXX1699V", "id_document_type": "Aadhaar", "id_number": "XXXX XXXX 9026"}],
     "Southgate_Board_Resolution_draft.pdf": [{
         "company_name": CO, "meeting_date": "2026-08-03", "borrowing_limit": 42500000,
-        "lender_name": "Continental Commercial Bank, Coimbatore SME Branch", "authorized_persons": ["Lakshmi Iyer", "Venkat Iyer"]}],
+        "lender_name": "Continental Commercial Bank, Coimbatore SME Branch", "authorized_persons": ["Lakshmi Iyer", "Venkat Iyer"],
+        "cin": "U17291TZ2016PTC027431"}],
     "Southgate_Audited_FS_FY2025.pdf": [{
         "company_name": CO, "financial_year": "FY2025 (ended 31 March 2025)",
-        "auditor_name": "M/s. Rangaswamy & Associates, Chartered Accountants", "audit_date": "2025-08-29"}],
+        "auditor_name": "M/s. Rangaswamy & Associates, Chartered Accountants", "audit_date": "2025-08-29",
+        "auditor_frn": "004512S", "auditor_membership_no": "214536"}],
     "Southgate_Audited_FS_FY2024.pdf": [{"company_name": CO, "audit_date": "2024-08-27"}],
     "Southgate_ITR_FY2024_FY2025.pdf": [
         {"pan": "AAHCS6612M", "taxpayer_name": CO, "assessment_year": "2024-25", "financial_year": "FY2024", "filing_date": "2024-10-28",
-         "acknowledgement_number": "247100320281024", "gross_total_income": 11802986, "total_income": 11802986, "tax_payable": 3068776, "tax_paid": 3068776, "refund_amount": 0},
+         "acknowledgement_number": "247100320281024", "itr_form": "ITR-6", "gross_total_income": 11802986, "total_income": 11802986, "tax_payable": 3068776, "tax_paid": 3068776, "refund_amount": 0},
         {"pan": "AAHCS6612M", "taxpayer_name": CO, "assessment_year": "2025-26", "financial_year": "FY2025", "filing_date": "2025-10-27",
          "acknowledgement_number": "247100915271025", "gross_total_income": 15490378, "total_income": 15490378, "tax_payable": 4027498, "tax_paid": 4027498, "refund_amount": 0}],
     "Southgate_CCB_CA_Statements_12m.pdf": [{
         "account_holder_name": CO, "account_number": "914020055831447", "bank_name": "Continental Commercial Bank", "branch": "Coimbatore SME",
         "ifsc": "CCBL0004821", "statement_period_start": "2025-08-01", "statement_period_end": "2026-07-31",
-        "opening_balance": 18809000, "closing_balance": 25622250, "currency": "INR"}],
+        "opening_balance": 18809000, "closing_balance": 25622250, "currency": "INR", "account_type": "Current Account"}],
     "Southgate_Nil_Facilities_Declaration.pdf": [{
         "company_name": CO, "declaration_date": "2026-08-06", "pan": "AAHCS6612M", "cin": "U17291TZ2016PTC027431",
         "gstin": "33AAHCS6612M1ZQ"}],
@@ -158,3 +163,10 @@ def test_accuracy_report_digital(results, capsys):
                 hit += got.get(k) == v
     print(f"\nC3 (digital, scalar fields): {hit}/{total}")
     assert hit == total
+
+
+def test_gstr_tax_payment_reports_what_was_paid_in_cash_and_through_itc(results):
+    r = results["Southgate_GSTR3B_Dec2025_Jul2026.pdf"]
+    t = r.documents[0].tables["tax_payment"]
+    assert t.status == "found" and {"paid_itc", "paid_cash", "interest", "late_fee"} <= set(t.columns)
+    assert all(row.cells["paid_itc"] is not None and row.cells["paid_cash"] is not None for row in t.rows)

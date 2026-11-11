@@ -126,6 +126,10 @@ def to_text(raw: str) -> str | None:
 
 def normalise(raw: str, kind: str) -> tuple[object | None, str | None]:
     """(value, reason-if-unparseable)."""
+    if kind == "present":
+        # A yes/no fact read from the wording that states it ("Material Uncertainty Related to Going
+        # Concern"): verified wording on the page means true. Nothing found stays missing, never false.
+        return (True, None) if to_text(raw) else (None, "empty")
     if kind == "date":
         v = to_date(raw)
         return v, None if v else "unparseable_date"

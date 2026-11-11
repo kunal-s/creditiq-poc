@@ -176,6 +176,7 @@
             "signals",
             "model",
             "person",
+            "sibling",
             "none"
           ],
           "title": "Tier",
@@ -261,6 +262,17 @@
     "IngestDocument": {
       "additionalProperties": false,
       "properties": {
+        "classification": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/IngestClassification"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "confidence": {
           "$ref": "#/$defs/IngestConfidence"
         },
@@ -305,6 +317,15 @@
           "title": "Instance No",
           "type": "integer"
         },
+        "origin": {
+          "default": "classified",
+          "enum": [
+            "classified",
+            "sibling"
+          ],
+          "title": "Origin",
+          "type": "string"
+        },
         "page_from": {
           "title": "Page From",
           "type": "integer"
@@ -312,6 +333,13 @@
         "page_to": {
           "title": "Page To",
           "type": "integer"
+        },
+        "pages": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Pages",
+          "type": "array"
         },
         "tables": {
           "additionalProperties": {

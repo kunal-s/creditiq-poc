@@ -3,7 +3,7 @@
 // content decides where it counts, and the row says so. A role that cannot upload sees the rows
 // without the upload.
 import { expect, test, type Page } from "@playwright/test";
-import { KESTREL, MANAGER } from "./fixtures/data";
+import { DOCUMENTS, KESTREL, MANAGER } from "./fixtures/data";
 import { MockApi, signedIn } from "./support/api";
 
 async function files(page: Page, api = new MockApi(), user = api.user) {
@@ -173,4 +173,41 @@ test("the register's columns line up: figures sit right under their title, and n
   for (const r of layout.figures) expect(Math.abs(r - layout.title)).toBeLessThanOrEqual(1);
   expect(layout.gap).toBeGreaterThanOrEqual(24);
   expect(layout.overflow).toEqual([]);
+});
+
+test("a document found within a file is its own part, marked, with its own pages", async ({
+  page,
+}) => {
+  const api = new MockApi();
+  const gst = DOCUMENTS.find((d) => d.id === "doc-gst")!;
+  // A part the service found inside the merged file, on two pages that are not next to each other.
+  api.documents.set(KESTREL, [
+    ...DOCUMENTS,
+    {
+      ...gst,
+      id: "doc-found",
+      page_from: 11,
+      page_to: 13,
+      pages: [11, 13].map((n) => ({ ...gst.pages[0]!, n })),
+      classification: {
+        types: ["bank_statement"],
+        confidence: 0.83,
+        exit_tier: "sibling",
+        signals: [],
+        candidates: [],
+      },
+      status: "in_review",
+    },
+  ]);
+  await files(page, api);
+  const row = page.locator("[data-testid='tree-document'][data-document-id='doc-found']");
+  await expect(row.getByTestId("found-within")).toHaveText("Found within the file");
+  await expect(row.getByText("p11, 13", { exact: true }).locator("visible=true")).toHaveCount(1);
+  // The file's own parts carry no such mark.
+  const own = page.locator("[data-testid='tree-document'][data-document-id='doc-gst']");
+  await expect(own.getByTestId("found-within")).toHaveCount(0);
+
+  await row.getByTestId("document-toggle").click();
+  await expect(row.getByTestId("found-within-detail")).toContainText("Found on p11, 13 of a file");
+  await expect(row.getByText("Found within the file").last()).toBeVisible();
 });

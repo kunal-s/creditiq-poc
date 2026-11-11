@@ -12,6 +12,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from ..stages.extract.identifiers import PATTERNS as _IDENTIFIER_PATTERNS
+
 
 class Strict(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -252,6 +254,10 @@ class TableRule(Strict):
 
 
 IDENTITY_KEYS = {"name", "pan", "din", "dob", "gstin", "cin"}
+#: Identifier kinds a field rule may scan for, and that `format:` validators check (stages/extract/identifiers.py).
+IDENTIFIER_KINDS = set(_IDENTIFIER_PATTERNS)
+#: Normalisers a field rule may name (stages/extract/normalise.py); the default follows the field type.
+NORMALISERS = {"date", "number", "text", "present"}
 
 
 class PageScope(Strict):
@@ -526,6 +532,18 @@ class TransactionsLlm(Strict):
     batch_size: int = Field(default=40, ge=1, le=200)
 
 
+class SiblingsConfig(Strict):
+    """The second pass (FRD F-08.1, F-08.2): the other document types of the classified type's category,
+    looked for in the same file. A type counts as present only where a page carries its own signals and
+    its key fields are read and verified on those pages."""
+
+    enabled: bool = True
+    page_min_score: float = Field(default=0.5, ge=0.0, le=1.0)
+    """A page opens a part of type T when T's signals are met on that page alone and score at least this."""
+    min_key_fields: int = Field(default=1, ge=1)
+    """Key fields (required, or named in the type's identity) that must be found for the part to count."""
+
+
 class LlmConfig(Strict):
     """The model layer (FRD AD-5a). Prompt text and sampling settings are part of the published version."""
 
@@ -543,6 +561,7 @@ class LlmConfig(Strict):
     fill: Literal["missing", "flagged"] = "missing"  # which unfilled fields the model may read
     prompts: dict[str, Prompt]
     transactions: TransactionsLlm = Field(default_factory=TransactionsLlm)
+    siblings: SiblingsConfig = Field(default_factory=SiblingsConfig)
 
 
 # --- confidence.yaml, decision.yaml ------------------------------------------------------------
@@ -636,6 +655,14 @@ class IngestionConfig(Strict):
                     _compile(p.regex, f"fields.{tid}.{fname}", problems, p.flags)
                 if rule.page_match:
                     _compile(rule.page_match, f"fields.{tid}.{fname}.page_match", problems)
+                if rule.identifier and rule.identifier not in IDENTIFIER_KINDS:
+                    problems.append(f"fields.{tid}.{fname}.identifier: unknown kind {rule.identifier}")
+                for v in rule.validators:
+                    kind, _, arg = v.partition(":")
+                    if kind == "format" and arg not in IDENTIFIER_KINDS:
+                        problems.append(f"fields.{tid}.{fname}.validators: no format defined for {arg}")
+                if rule.normaliser and rule.normaliser not in NORMALISERS:
+                    problems.append(f"fields.{tid}.{fname}.normaliser: unknown normaliser {rule.normaliser}")
             for tname, trs in tf.tables.items():
                 if tname not in tnames:
                     problems.append(f"fields.{tid}.tables.{tname}: not in the type's schema")
@@ -652,7 +679,7 @@ class IngestionConfig(Strict):
             for t in r.types:
                 if t not in types:
                     problems.append(f"validators.{r.id}: unknown type {t}")
-        for name in ("classify", "extract", "transactions"):
+        for name in ("classify", "extract", "sibling", "transactions"):
             if name not in self.llm.prompts:
                 problems.append(f"llm.prompts: missing '{name}'")
         for rx in self.routing.reading.boilerplate:

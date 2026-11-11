@@ -11,6 +11,8 @@ PATTERNS: dict[str, str] = {
     "cin": r"\b[LU]\d{5}[A-Z]{2}\d{4}[A-Z]{3}\d{6}\b",
     "ifsc": r"\b[A-Z]{4}0[A-Z0-9]{6}\b",
     "din": r"\b\d{8}\b",
+    "tan": r"\b[A-Z]{4}\d{5}[A-Z]\b",
+    "udin": r"\b\d{8}[A-Z0-9]{10}\b",
     "masked_pan": r"\b[A-Z][X*]{4}\d{4}[A-Z]\b",
     "masked_aadhaar": r"(?:\b[X*]{4}\s?){2}\d{4}\b",
 }

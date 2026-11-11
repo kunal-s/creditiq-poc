@@ -1,20 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { ChecklistPanel } from "@/components/case/ChecklistPanel";
-import { ReadinessPanel } from "@/components/case/gate/CreateCasePanel";
+import { CreateCaseAction } from "@/components/case/gate/CreateCaseAction";
 import { QueriesPanel } from "@/components/case/QueriesPanel";
 import { QueryView } from "@/components/common/States";
 import { t } from "@/config/terminology";
 import { StepHeader } from "@/components/case/TabSection";
 import { stepKicker } from "@/domain/steps";
 import { useAnchor } from "@/domain/anchor";
-import { useChecklist } from "@/domain/checklist";
+import { useChecklist, type Filter } from "@/domain/checklist";
 import { useFindings } from "@/domain/findings";
 import { useCaseProgress } from "@/domain/progress";
 import { useCan } from "@/domain/session";
 
-// Stage 3, validation and completeness (FRD §5, §6): readiness against the
-// gates, then the checklist beside the query list the RM sends.
+// Stage 3, document readiness (FRD §5, §6): the required document set, each document with
+// where it stands and the action that creates the case, beside the query list the RM sends.
+// The counts and the verdict are on the Overview.
 
 export const Route = createFileRoute("/appraisals/$caseId/completeness")({
   head: () => ({
@@ -46,6 +47,7 @@ function Anchor({
 }
 
 function CompletenessTab() {
+  const [filter, setFilter] = useState<Filter>("all");
   const { caseId } = Route.useParams();
   const checklist = useChecklist(caseId);
   const canReadFindings = useCan("finding.read");
@@ -69,18 +71,16 @@ function CompletenessTab() {
         >
           {(r) => (
             <>
-              {/* Where the case stands, once: the readiness, the gates and the action. */}
-              <Anchor id="readiness">
-                <ReadinessPanel
-                  caseId={caseId}
-                  r={r}
-                  gate={gate}
-                  blockingFindings={blockingFindings}
-                />
-              </Anchor>
               <div className="grid items-start gap-4 @min-[65rem]/main:grid-cols-[minmax(0,1fr)_380px]">
                 <Anchor id="checklist" className="min-w-0">
-                  <ChecklistPanel caseId={caseId} r={r} />
+                  <ChecklistPanel
+                    caseId={caseId}
+                    r={r}
+                    filter={filter}
+                    onFilter={setFilter}
+                    action={<CreateCaseAction caseId={caseId} gate={gate} />}
+                    blockingFindings={blockingFindings}
+                  />
                 </Anchor>
                 <Anchor
                   id="queries"

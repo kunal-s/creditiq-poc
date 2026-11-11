@@ -5,11 +5,15 @@ import type { Evidence, OutputFormat, OutputKind, OutputSource } from "@/api/typ
 import { t } from "@/config/terminology";
 import { errorKind, refusal } from "@/domain/errors";
 
-// The draft CAM and the PD note as files (F-23.5, F-24.3): Word, for credit to complete, and PDF,
-// composed by the engine from the same content as the screen. A plain link cannot carry the
-// session token, so the file is fetched with it and handed to the browser to save.
+// The draft CAM and the PD note as files (F-23.5, F-24.3), composed by the engine from the same
+// content as the screen: the CAM as an Excel workbook (a sheet a section) and PDF; the PD note as
+// Word, for the discussion's answers, and PDF. A plain link cannot carry the session token, so the
+// file is fetched with it and handed to the browser to save.
 
-export const OUTPUT_FORMATS: OutputFormat[] = ["docx", "pdf"];
+export const OUTPUT_FORMATS: Record<OutputKind, OutputFormat[]> = {
+  cam: ["xlsx", "pdf"],
+  pd_note: ["docx", "pdf"],
+};
 
 const FILE_STEM: Record<OutputKind, string> = { cam: "CAM-draft", pd_note: "PD-note" };
 

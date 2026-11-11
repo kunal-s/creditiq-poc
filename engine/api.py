@@ -851,7 +851,7 @@ _DOWNLOAD = {200: {"description": "The file, as an attachment.",
                    "content": {media: {"schema": {"type": "string", "format": "binary"}}
                                for media in exports.MEDIA_TYPES.values()}}}
 _OUTPUTS = {"cam": "draft CAM", "pd_note": "PD note"}
-_FORMATS = {"docx": "Word", "pdf": "PDF"}
+_FORMATS = {"docx": "Word", "pdf": "PDF", "xlsx": "Excel"}
 _log = logging.getLogger("creditiq.api")
 
 
@@ -860,8 +860,11 @@ def _download(conn: sqlite3.Connection, user: dict, case: CaseDetail, output: st
     """The file as an attachment; the decision log records the download. A file that cannot be written
     is a 500 with its reason in words, which reaches the screens as any error does."""
     try:
-        document = exports.cam_document(draft) if output == "cam" else exports.pd_note_document(draft)
-        content = exports.render(document, fmt)
+        if fmt == "xlsx":
+            content = exports.cam_workbook(draft, exports.logo())
+        else:
+            document = exports.cam_document(draft) if output == "cam" else exports.pd_note_document(draft)
+            content = exports.render(document, fmt)
     except Exception as e:  # any writer's fault: logged, and answered rather than left to the server
         _log.exception("%s %s file for %s failed", output, fmt, case.id)
         raise HTTPException(status_code=500, detail=f"The {_OUTPUTS[output]} could not be written as a "
@@ -896,12 +899,13 @@ def case_pd_note_download(
 @app.get("/api/cases/{case_id}/cam/download", response_class=Response, responses=_DOWNLOAD)
 def case_cam_download(
     case_id: str,
-    fmt: Literal["docx", "pdf"] = Query(alias="format"),
+    fmt: Literal["docx", "pdf", "xlsx"] = Query(alias="format"),
     user: dict = Depends(require("output.read")),
     conn: sqlite3.Connection = Depends(get_conn),
 ):
-    """F-23.5: the draft CAM as a Word or PDF file, the same content as the screen, with numbered
-    citations and the sources; the recommendation is left blank for credit."""
+    """F-23.5: the draft CAM as a Word, PDF or Excel file, the same content as the screen, with numbered
+    citations and the sources; the recommendation is left blank for credit. The workbook has a sheet a
+    section, the figures a person overrode in their cells, noted."""
     case = _case_for(conn, case_id, user)
     try:
         draft = cam.build(conn, data_root(), case)

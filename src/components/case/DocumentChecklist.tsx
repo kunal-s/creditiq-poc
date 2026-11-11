@@ -43,7 +43,7 @@ import { ACCEPT, pageRange, useCaseRegister, useDocumentTypes } from "@/domain/d
 import { integrityNeedsPerson, stateOf } from "@/domain/integrity";
 import { readinessWait, type ReadinessWait } from "@/domain/progress";
 import { cn } from "@/lib/utils";
-import { GlanceCompactNotice, GlanceCompactSkeleton } from "./checklist/Glance";
+import { Glance, GlanceNotice, GlanceSkeleton } from "./checklist/Glance";
 import type { CanOpen } from "./checklist/GlanceRail";
 import { BAND, filterLabel, ICON, ICON_TONE, TONE, type BandKey } from "./checklist/status";
 import { CopyLabel } from "./checklist/CopyLabel";
@@ -53,22 +53,17 @@ import { useJump } from "./checklist/useJump";
 import { useRowUploads, type Outcome, type Pin, type RowUploads } from "./checklist/useRowUploads";
 
 // What this appraisal needs, what has come in for each, what is wrong or missing, what to ask the
-// customer, and an upload on the spot. On the Overview it follows the readiness glance; on the
-// Files step it opens with a compact summary. Requirements are grouped by what they do to the
+// customer, and an upload on the spot, after the readiness glance on the Overview. Requirements are grouped by what they do to the
 // case: what blocks it, what is asked but does not block, what waits for a person, and what is
 // done. The content of a file decides where it counts, so a file sent from a row is read and
 // lands where it belongs; the row keeps its place and says what became of the file.
 
-export type ChecklistVariant = "overview" | "files";
-
 export function DocumentChecklist({
   caseId,
-  variant,
   progress,
   canOpen,
 }: {
   caseId: string;
-  variant: ChecklistVariant;
   progress?: CaseProgress;
   canOpen?: CanOpen;
 }) {
@@ -81,17 +76,23 @@ export function DocumentChecklist({
   // replaces the checklist.
   if (!r || r.items.length === 0) {
     const state = !r ? (checklist.isError ? "error" : "loading") : "empty";
-    return (
-      <Panel title={t("journey.title")} testId="document-checklist">
-        {state === "loading" ? (
-          <>
-            <GlanceCompactSkeleton />
+    if (state === "loading")
+      return (
+        <>
+          <GlanceSkeleton caseId={caseId} progress={progress} canOpen={canOpen} />
+          <Panel title={t("journey.title")} testId="document-checklist">
             <LoadingBlock rows={4} className="border-0" />
-          </>
-        ) : (
-          <GlanceCompactNotice state={state} onRetry={retry} />
-        )}
-      </Panel>
+          </Panel>
+        </>
+      );
+    return (
+      <GlanceNotice
+        state={state}
+        caseId={caseId}
+        progress={progress}
+        canOpen={canOpen}
+        onRetry={retry}
+      />
     );
   }
 
@@ -99,7 +100,6 @@ export function DocumentChecklist({
     <Journey
       caseId={caseId}
       r={r}
-      variant={variant}
       progress={progress}
       canOpen={canOpen}
       stale={checklist.isError ? retry : undefined}
@@ -132,14 +132,12 @@ function StaleNotice({ onRetry }: { onRetry: () => void }) {
 function Journey({
   caseId,
   r,
-  variant,
   progress,
   canOpen,
   stale,
 }: {
   caseId: string;
   r: Readiness;
-  variant: ChecklistVariant;
   progress: CaseProgress | undefined;
   canOpen: CanOpen | undefined;
   /** Set when the latest read failed: retries it. */
@@ -152,11 +150,11 @@ function Journey({
   const uploads = useRowUploads(caseId);
   const dragging = useFileDrag();
   const [filter, setFilterState] = useState<Filter>("all");
-  // The done band: open on the Files step and whenever nothing is open; else as last toggled.
+  // The done band: open whenever nothing is open; else as last toggled.
   const [doneToggle, setDoneToggle] = useState<boolean | null>(null);
   const [unmatchedOpen, setUnmatchedOpen] = useState(variant === "files");
   const anyOpen = r.items.some(isOpen);
-  const doneOpen = doneToggle ?? (variant === "files" || !anyOpen);
+  const doneOpen = doneToggle ?? !anyOpen;
 
   const docs = documents.data ?? [];
   const fileList = files.data ?? [];
@@ -283,22 +281,16 @@ function Journey({
               </button>
             </span>
           )}
-          {variant === "overview" ? (
-            <Link
-              to="/appraisals/$caseId/documents"
-              params={{ caseId }}
-              className="rounded-sm text-[12px] text-muted-foreground hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-            >
-              {filesLine}
-            </Link>
-          ) : (
-            <span className="text-[12px] text-muted-foreground">{filesLine}</span>
-          )}
+          <Link
+            to="/appraisals/$caseId/documents"
+            params={{ caseId }}
+            className="rounded-sm text-[12px] text-muted-foreground hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >
+            {filesLine}
+          </Link>
         </div>
       }
     >
-      {variant === "files" && stale && <StaleNotice onRetry={stale} />}
-      {variant === "files" && <FilterRow r={r} filter={filter} onFilter={setFilter} />}
       <div className="divide-y divide-border">
         {shown.length === 0 && (
           <p className="px-4 py-6 text-center text-[12.5px] text-muted-foreground">
@@ -392,7 +384,6 @@ function Journey({
     </Panel>
   );
 
-  if (variant === "files") return list;
   return (
     <>
       <OverviewStatus r={r} wait={readinessWait(progress, r)} caseId={caseId} />

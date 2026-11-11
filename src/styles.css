@@ -66,6 +66,7 @@
   --color-flag-soft: var(--flag-soft);
   --color-critical: var(--critical);
   --color-critical-soft: var(--critical-soft);
+  --color-critical-text: var(--critical-text);
   --color-positive: var(--positive);
   --color-positive-soft: var(--positive-soft);
   --color-info: var(--info);
@@ -103,6 +104,8 @@
   --flag-soft: oklch(0.955 0.035 78);
   --critical: oklch(0.53 0.19 27);
   --critical-soft: oklch(0.955 0.028 25);
+  /* Words in red: lighter and softer than --critical, still 4.5:1 on white and on the pale chip. */
+  --critical-text: oklch(0.565 0.15 25);
   --positive: oklch(0.5 0.1 155);
   --positive-soft: oklch(0.955 0.03 158);
   --info: oklch(0.48 0.08 231);

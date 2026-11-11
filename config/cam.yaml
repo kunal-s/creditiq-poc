@@ -61,6 +61,8 @@ sign_off: [Prepared by, Recommended by, Approved by]
 # The labels inside the downloaded memo (Word and PDF), by key; the screen takes its own from
 # terminology/rbl.yaml. A key left out keeps the download's own wording.
 labels:
+  # Named at the head of every sheet of the Excel workbook, beside the bank's logo where it is in place.
+  bank: RBL Bank · Business Banking Group
   borrower: Borrower
   case_id: Case ID
   drafted_as_of: Drafted from the data on file as of

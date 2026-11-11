@@ -185,11 +185,11 @@ test("a finding is accepted as valid, or dismissed as not valid, each with a com
   await expect(ba1.getByTestId("xv-recorded-decision")).toContainText("Accepted");
 });
 
-test("a blocking cross-check finding shows on the Completeness summary", async ({ page }) => {
+test("a blocking cross-check finding shows on the required document set", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api);
   await page.goto(`/appraisals/${KESTREL}/completeness`);
-  await expect(page.getByTestId("blocking-findings")).toHaveText(
+  await expect(page.getByTestId("checklist").getByTestId("blocking-findings")).toHaveText(
     "2 blocking cross-check finding(s) to decide →",
   );
   await page.getByTestId("blocking-findings").click();

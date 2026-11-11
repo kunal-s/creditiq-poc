@@ -1,36 +1,47 @@
-// The Files step opens with the document checklist: every document the appraisal needs, what has
-// come in for each, what is wrong or missing, and an upload on the row (one-stop journey).
+// The document checklist on the Overview: every document the appraisal needs, what has come in
+// for each, what is wrong or missing, and an upload on the row (one-stop journey). The Files step
+// keeps to the files received.
 import { expect, test } from "@playwright/test";
 import { KESTREL } from "./fixtures/data";
 import { MockApi, signedIn } from "./support/api";
 
-test("the Files step leads with what the appraisal needs, has and lacks", async ({ page }) => {
+test("the Files step lists the files received, without the checklist", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api);
   await page.goto(`/appraisals/${KESTREL}/documents`);
+  await expect(page.getByTestId("files-received")).toBeVisible();
+  await expect(page.getByTestId("add-documents")).toBeVisible();
+  await expect(page.getByTestId("document-checklist")).toHaveCount(0);
+  await expect(page.getByTestId("document-readiness")).toHaveCount(0);
+  await expect(page.getByTestId("step-header").getByRole("heading", { level: 1 })).toHaveText(
+    "Files",
+  );
+});
+
+test("the Overview's checklist names what the appraisal needs, has and lacks", async ({ page }) => {
+  const api = new MockApi();
+  await signedIn(page, api);
+  await page.goto(`/appraisals/${KESTREL}`);
   const panel = page.getByTestId("document-checklist");
   await expect(panel).toBeVisible();
   const items = panel.getByTestId("journey-item");
-  await expect(items).toHaveCount(9);
-  // A row of filters counts the requirements by status. The percentage lives in the case header
-  // and the Overview's status line, never in the summary on the Files step.
-  await expect(page.getByTestId("journey-summary")).toContainText(/Outstanding\s*6/);
-  await expect(page.getByTestId("journey-summary")).not.toContainText("58%");
-  await expect(page.getByTestId("header-readiness")).toContainText("58%");
+  await expect(items).toHaveCount(7);
+  await expect(page.getByTestId("document-readiness-total")).toHaveText("2 / 9");
+  await expect(page.getByTestId("journey-filter-missing")).toContainText(/Missing\s*2/);
+  await expect(page.getByTestId("header-readiness-score")).toContainText("58%");
 
-  // What is on file for a requirement opens its page.
-  const audited = items.filter({ hasText: "Audited financial statements" });
-  await expect(audited.getByTestId("journey-doc")).toContainText("Balance sheet");
-
-  // To do: the missing and the insufficient, each with an upload on its row.
-  await page.getByTestId("journey-filter-todo").click();
-  await expect(items).toHaveCount(6);
+  // Not satisfied: the missing, the insufficient and those in review; a row that needs a document
+  // has its upload.
+  await page.getByTestId("journey-filter-not_satisfied").click();
+  await expect(items).toHaveCount(7);
   for (const status of await items.evaluateAll((els) => els.map((e) => e.dataset["status"])))
-    expect(["missing", "insufficient"]).toContain(status);
+    expect(["missing", "insufficient", "in_review"]).toContain(status);
   await expect(items.first().getByTestId("journey-upload")).toBeVisible();
 
-  // The files received stay below, every one with its checks.
-  await expect(page.getByTestId("files-received")).toBeVisible();
+  // What is on file for a requirement opens its page.
+  await page.getByTestId("journey-filter-satisfied").click();
+  const audited = items.filter({ hasText: "Audited financial statements" });
+  await expect(audited.getByTestId("journey-doc")).toContainText("Balance sheet");
 });
 
 test("a file uploaded from a requirement's row goes to the appraisal and the row says so", async ({
@@ -38,7 +49,7 @@ test("a file uploaded from a requirement's row goes to the appraisal and the row
 }) => {
   const api = new MockApi();
   await signedIn(page, api);
-  await page.goto(`/appraisals/${KESTREL}/documents`);
+  await page.goto(`/appraisals/${KESTREL}`);
   const row = page.locator('[data-testid="journey-item"][data-item="valuation"]');
   await row
     .getByTestId("journey-upload-input")
@@ -94,7 +105,7 @@ test("each requirement says what to ask the customer, and flags a file whose che
     ),
   );
   await signedIn(page, api);
-  await page.goto(`/appraisals/${KESTREL}/documents`);
+  await page.goto(`/appraisals/${KESTREL}`);
   const items = page.getByTestId("journey-item");
   await expect(items.filter({ hasText: "KYC of directors" })).toContainText(
     "Ask:KYC of Leela Varghese: PAN and address proof.",
@@ -103,6 +114,8 @@ test("each requirement says what to ask the customer, and flags a file whose che
   await expect(items.filter({ hasText: "Board resolution" })).toContainText(
     "Board resolution: the copy provided is not signed.",
   );
+  // A satisfied requirement, in the done band, flags its file too.
+  await page.getByTestId("journey-done-toggle").click();
   const audited = items.filter({ hasText: "Audited financial statements" });
   await expect(audited.getByTestId("journey-doc")).toHaveAttribute("data-flagged", "true");
   // What came in that no requirement asks for is kept in view.
@@ -119,7 +132,7 @@ test("a provisional checklist says so above the requirements", async ({ page }) 
   const r = api.checklists.get(KESTREL)!;
   api.checklists.set(KESTREL, { ...r, provisional: true });
   await signedIn(page, api);
-  await page.goto(`/appraisals/${KESTREL}/documents`);
+  await page.goto(`/appraisals/${KESTREL}`);
   await expect(page.getByTestId("journey-provisional")).toBeVisible();
 });
 
@@ -133,7 +146,7 @@ test("a file sent from a row says where it landed once it is read", async ({ pag
     return { json: progress };
   });
   await signedIn(page, api);
-  await page.goto(`/appraisals/${KESTREL}/documents`);
+  await page.goto(`/appraisals/${KESTREL}`);
   const row = page.locator('[data-testid="journey-item"][data-item="kyc_directors"]');
   await row
     .getByTestId("journey-upload-input")
@@ -164,7 +177,7 @@ test("a file sent from a row says where it landed once it is read", async ({ pag
 test("a second file sent from the same row keeps the first one's line", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api);
-  await page.goto(`/appraisals/${KESTREL}/documents`);
+  await page.goto(`/appraisals/${KESTREL}`);
   const row = page.locator('[data-testid="journey-item"][data-item="kyc_directors"]');
   const outcomes = row.getByTestId("journey-outcome");
   for (const name of ["kyc-first-director.pdf", "kyc-second-director.pdf"]) {
@@ -182,7 +195,7 @@ test("a second file sent from the same row keeps the first one's line", async ({
 test("files dropped on a requirement's row are uploaded from it", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api);
-  await page.goto(`/appraisals/${KESTREL}/documents`);
+  await page.goto(`/appraisals/${KESTREL}`);
   const row = page.locator('[data-testid="journey-item"][data-item="valuation"]');
   await expect(row).toBeVisible();
   const dataTransfer = await page.evaluateHandle(() => {

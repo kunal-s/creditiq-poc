@@ -112,6 +112,7 @@ type Handler = (req: Request, match: RegExpMatchArray) => Reply | Promise<Reply>
 const DOWNLOAD_TYPES: Record<OutputFormat, string> = {
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   pdf: "application/pdf",
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 };
 const DOWNLOAD_STEM: Record<OutputKind, string> = { cam: "CAM-draft", pd_note: "PD-note" };
 
@@ -248,9 +249,10 @@ export class MockApi {
       ["policy", "Compliance with policy norms"],
       ["documentation", "Documentation status"],
     ].map(([kind, title]) => ({ kind: kind!, id: kind!, title: title! }));
-    const def: CamTemplate = {
-      id: "default",
-      name: "Default template",
+    // engine/cam_templates.py: two built-in templates, both the configured layout.
+    const builtIn = (id: string, name: string): CamTemplate => ({
+      id,
+      name,
       description: null,
       default: true,
       sections: CAM.sections.map((sec) => ({
@@ -259,9 +261,13 @@ export class MockApi {
         purpose: sec.purpose ?? null,
         parts: (sec.parts ?? []).map((p) => p.kind),
       })),
-    };
+    });
     return {
-      templates: [def, ...this.camTemplates],
+      templates: [
+        builtIn("default", "Default Template One"),
+        builtIn("default_two", "Default Template Two"),
+        ...this.camTemplates,
+      ],
       parts,
       closing: ["Risk Assessment and Rating", "Recommendation"],
     };
@@ -1121,10 +1127,13 @@ export class MockApi {
     if (!this.can("output.read")) return this.denied("output.read");
     if (!this.details.has(caseId)) return refused(404, "no case");
     const format = new URL(req.url()).searchParams.get("format");
-    if (format !== "docx" && format !== "pdf") return refused(422, "format must be docx or pdf");
+    // engine/api.py: the CAM as Word, PDF or Excel; the PD note as Word or PDF.
+    const formats: string[] = output === "cam" ? ["docx", "pdf", "xlsx"] : ["docx", "pdf"];
+    if (!format || !formats.includes(format))
+      return refused(422, `format must be one of ${formats.join(", ")}`);
     const authorization = await req.headerValue("authorization");
     this.downloads.push({ output, format, authorization });
-    return attachment(output, caseId, format);
+    return attachment(output, caseId, format as OutputFormat);
   }
 
   private boardItem(caseId: string, findingId: string): XvItem | undefined {

@@ -132,7 +132,7 @@ caseTab:
   identity: Identity
   documents: Files
   extraction: Extracted data
-  completeness: Completeness
+  completeness: Document readiness
   crossVerification: Cross-verification
   policy: Financials and Policy
   outputs: Outputs
@@ -284,6 +284,7 @@ outputs:
   download:
     docx: Download Word
     pdf: Download PDF
+    xlsx: Download Excel
     preparing: Preparing…
     failed: The file could not be downloaded
   # The pages a statement rests on, marked as the downloads mark them: "5 p.1", "11 pp.3-5", and
@@ -391,6 +392,28 @@ outputs:
     requestPlaceholder: e.g. Please provide the debtors' ageing as at 31 March 2026.
     requestSave: Add to query list
     requestLine: "Requested: {text}"
+  # The memo as a sheet, a section at a time: its rows and columns as a spreadsheet shows them, the
+  # cell's address and contents above, the sections as tabs below. A paragraph is put in your words;
+  # a figure is overridden, with a reason. Every change is kept with your name and the time.
+  sheet:
+    label: "{title}, as a sheet"
+    tabs: The memo's sections
+    nameBox: Cell
+    field: Field
+    value: Value
+    source: Source
+    canEdit: "Double-click, press Enter or start typing to change it."
+    readOnly: Drafted from the case; changed through the actions above.
+    readOnlyRole: Read only for your role.
+    reason: Why change it?
+    reasonPlaceholder: e.g. As per the certified copy
+    reasonNote: Kept with your name, the time and the value drafted.
+    save: Save
+    cancel: Cancel
+    saving: Saving…
+    overridden: "Overridden by {name} on {date}: {reason}. As drafted: {original}."
+    writeHere: Write the recommendation here
+    noRows: Nothing on this sheet yet.
   cam:
     eyebrow: Draft for credit
     interim: Sections follow an interim list until RBL's CAM template is available. Every figure links to the page it comes from.
@@ -406,6 +429,7 @@ outputs:
       query: "Open queries ({n})"
       queryList: Open the query list
     signOff:
+      role: Role
       name: Name
       designation: Designation
       signature: Signature
@@ -883,7 +907,7 @@ progress:
   stage:
     documents: Quality and classification
     extraction: Extraction
-    completeness: Validation and completeness
+    completeness: Document readiness
     cross_verification: Cross-verification
     policy: Financials and Policy
     outputs: Outputs
@@ -895,7 +919,7 @@ progress:
   count:
     documents: "{done} of {total} documents classified"
     extraction: "{done} of {total} documents extracted"
-    completeness: "{done} of {total} items satisfied"
+    completeness: "{done} of {total} requirements satisfied"
   attention: "{n} need attention"
   waiting:
     documents: No documents yet
@@ -942,7 +966,7 @@ page:
         title: Extracted data
         body: The figures and details printed on each document are read out and shown next to the page they came from. Check anything marked for review.
       completeness:
-        title: Completeness
+        title: Document readiness
         body: The documents received are compared with those the facility needs. What is missing, stale or incomplete is listed with the request to send to the customer.
       crossVerification:
         title: Cross-verification
@@ -979,7 +1003,7 @@ page:
       open: Appraisals open
       openNote: "of {n} on the book"
       ready: Ready for credit
-      blocking: Blocking gaps
+      blocking: Blocking requirements
       blockingNote: across the open appraisals
       byStage: Appraisals by stage
     viewAll: View all
@@ -1060,24 +1084,24 @@ page:
     kpi:
       open: Open appraisals
       openNote: in collection
-      blocking: Blocking gaps
+      blocking: Blocking requirements
       blockingNote: stop an appraisal reaching credit review
       ready: Ready for credit review
       readyNote: gate met, nothing blocking
-      outstanding: Requirements outstanding
-      outstandingNote: insufficient or missing
+      outstanding: Not satisfied
+      outstandingNote: missing, insufficient or in review
     table: Appraisals in collection
-    tableSub: Readiness is weighted by document importance, not a plain count.
+    tableSub: Document readiness counts the requirements satisfied; the weighted score the review gate uses is beside it.
     search: Search borrower, RM or appraisal number
     show:
       all: All appraisals
-      blocking: Blocking gaps
+      blocking: Blocking requirements
       ready: Ready for credit review
     col:
       ask: Product and ask
-      outstanding: Outstanding
-    satisfied: "{n} of {total} satisfied · {gate}% gate"
-    outstanding: "{insufficient} insufficient · {missing} missing"
+      outstanding: Not satisfied
+    satisfied: "{n} of {total} satisfied · weighted score against the {gate}% gate"
+    outstanding: "Missing {missing} · Insufficient {insufficient} · In review {inReview}"
     nothingBlocking: Nothing blocking
     none: No appraisal matches
     noneHelp: Change the search or the filter.
@@ -1099,8 +1123,8 @@ page:
     waitingCount: "{n} open review item(s) on this appraisal"
     more: "{n} more"
   completeness:
-    title: Validation and completeness
-    purpose: "The documents received against those this constitution and facility need, the readiness gate, and the list to send the customer."
+    title: Document readiness
+    purpose: "Each document this constitution and facility need, where it stands, and the list to send the customer."
   checklist:
     title: Required document set
     purpose: The checklist derived from the case's constitution and facilities, with each item satisfied, insufficient or missing.
@@ -1108,7 +1132,7 @@ page:
     title: Machine checks by document
     purpose: Every document received, its quality, what it was identified as, and each check it passed or failed.
   readiness:
-    title: Readiness
+    title: Document readiness
     purpose: How complete the file is against the review gate, and what is still blocking.
   queries:
     title: Pre-login query list
@@ -1117,9 +1141,9 @@ page:
     title: Entity and parties
     purpose: The borrower's identifiers and the promoters, directors or partners, each with the document it came from.
   documents:
-    title: Documents
-    purpose: "What this appraisal needs, what has come in for each document and what is still missing, with an upload on each one still needed; every file received is listed below with its checks."
-    purposeRead: "What this appraisal needs, what has come in for each document and what is still missing; every file received is listed below with its checks."
+    title: Files
+    purpose: "Every file received for this appraisal, with its checks; add more here. What each document still needs is on the Overview and on Document readiness."
+    purposeRead: "Every file received for this appraisal, with its checks. What each document still needs is on the Overview and on Document readiness."
   data:
     title: Extracted data
     purpose: Key fields by source, each with its confidence and a link to the page it came from.
@@ -1200,7 +1224,7 @@ stage:
   intake: Intake
   documents: Documents
   extraction: Extraction
-  completeness: Completeness
+  completeness: Document readiness
   crossverification: Cross-verification
   policy: Policy
   outputs: Outputs
@@ -1411,29 +1435,34 @@ journey:
   unmatched: On file, not asked for
   unmatchedHelp: Kept with the appraisal; open one to check what it is.
   # The readiness glance at the top of the Overview, and the compact summary on Files.
+  readiness:
+    title: Document readiness
+    ofTotal: "{n} / {total}"
+    satisfiedOf: "requirements satisfied"
+    satisfied: Satisfied
+    notSatisfied: Not satisfied
+    includesWaived: "includes {n} waived"
+    breakdown: "Of the {n} not satisfied"
+    blockingNote: "Blocking credit review: {n}"
+    noneNotSatisfied: Every requirement is satisfied.
+    showOnly: "Show only {label} in the list below"
+  status:
+    title: Document status
+    blocks: Blocks credit review
   verdict:
     gateMet: Review gate met
     conditions: Gate conditions
-  live: "Readiness score {score}%. {verdict}"
-  meter: "Readiness score {score}%, review gate {gate}%, {toGo}"
-  meterMet: "Readiness score {score}%, review gate {gate}%, met"
-  scoreHelpToggle: What the readiness score means
-  blockedBy: Blocked by
-  requirements: "Requirements · {n}"
+  live: "Weighted score {score}%. {verdict}"
+  meter: "Weighted score {score}%, review gate {gate}%, {toGo}"
+  meterMet: "Weighted score {score}%, review gate {gate}%, met"
+  scoreHelpToggle: What the weighted score means
   showAll: "Show all ({n})"
-  bySection: By section
-  sectionMap: Requirements by section
-  tile:
-    nothingBlocking: nothing blocking
-    nothingOutstanding: nothing outstanding
-    ofTotal: "of {n}"
-    waived: "{n} waived"
   band:
     done: Satisfied and waived
     doneFlagged: "{n} on a file that needs a person"
     doneAbove: "Shown above, where a file was sent from it: {names}"
-    inReviewHelp: On file and waiting for a person.
-    clearNonblocking: No non-blocking gap remains on this case.
+    inReviewHelp: Not satisfied yet; on file and waiting for a person.
+    clearNonblocking: Nothing else is missing or insufficient.
     clearInReview: Nothing on this case waits for a person.
   waitingPerson: Waiting for a person.
   askCustomer: Ask the customer
@@ -2181,12 +2210,9 @@ exitTier:
 
 # The case header in the case workspace (FRD §6).
 caseHeader:
-  readiness: Readiness
-  readinessUnavailable: Readiness not available
-  outstandingGate: "{n} outstanding · {gate}% review gate"
-  waitingDocuments: Waiting for documents
-  readingDocuments: "Reading documents · {done} of {total}"
-  readingStarted: Reading documents
+  readiness: Document readiness
+  readinessUnavailable: Document readiness not available
+  outstandingGate: "{score}% weighted · {gate}% review gate"
   ask: Ask
   blockingGaps: "{n} blocking"
   tabs: Appraisal tabs
@@ -2194,7 +2220,7 @@ caseHeader:
   bankStage: Bank stage
 
 checklist:
-  derivedFrom: "{n} requirements derived from the {constitution} constitution and the {facilities} ask. Blocking items stop credit review; the rest do not."
+  derivedFrom: "{n} requirements derived from the {constitution} constitution and the {facilities} ask. Blocking requirements stop credit review; the rest do not."
   provisional: provisional
   provisionalHelp: The constitution or facilities are not confirmed yet, so this checklist is provisional. It is derived again once they are.
   queryListLink: "Pre-login query list ({n})"
@@ -2202,9 +2228,13 @@ checklist:
   filterEmpty: No item matches this filter.
   filter:
     all: "All ({n})"
-    open: "Open ({n})"
-    blocking: "Blocking ({n})"
+    not_satisfied: "Not satisfied ({n})"
+    blocking: "Blocks credit review ({n})"
     satisfied: "Satisfied ({n})"
+    missing: "Missing ({n})"
+    insufficient: "Insufficient ({n})"
+    in_review: "In review ({n})"
+    todo: "Missing or insufficient ({n})"
   blocking: Blocking
   blockingNote: "Blocking: credit review waits for this item."
   documentsLinked: "linked documents: {n}"
@@ -2310,34 +2340,22 @@ assessment:
   created: "Case created {at}"
   createdBy: "Case created by {who}"
   gateTitle: Ready to create the case
-  gateTitleBlocked: Not ready to create the case yet
   gateTitleOpen: Case created
   conditionsMet: "{met} of {total} conditions met"
-  createBlocked: Every condition below must be met first.
+  createBlocked: "Every condition must be met first:"
   tile:
-    met: Met
-    notMet: Not met
-    reviewGate: Review gate
-    score: "Readiness {score}%"
-    needs: "Needs {gate}%"
     toGo: "{n} points to go"
     toGoOne: 1 point to go
-    blocking: Blocking items
-    blockingOpen: still open
-    blockingDone: "{done} of {total} blocking items satisfied"
-    showItems: Show them
-    files: Files read
-    filesUnread: file(s) could not be read
-    showFiles: Open the files
-  gateIntro: The cross-checks, the policy checks and the outputs open once the case is created.
+    blocking: Blocking requirements
+    blockingOpen: not satisfied
   lockedTitle: Opens once the case is created
-  lockedBody: This step runs after intake. Finish the checklist on the completeness step, then create the case.
-  lockedAction: Go to completeness
+  lockedBody: This step runs after intake. Finish the checklist on the Document readiness step, then create the case.
+  lockedAction: Go to Document readiness
   condition:
     reviewGate: "Review gate met · {score}% against a {gate}% gate"
     reviewGateUnmet: "Review gate not met · {score}% against a {gate}% gate"
-    blockingItems: "{n} blocking checklist item(s) still open"
-    blockingItemsClear: No blocking checklist item is open
+    blockingItems: "{n} blocking requirement(s) not satisfied"
+    blockingItemsClear: Every blocking requirement is satisfied
     openExceptions: "{n} file(s) could not be read"
     openExceptionsClear: Every file was read
   error:
@@ -2355,25 +2373,22 @@ overviewStatus:
 
 readiness:
   reviewGate: Review gate
-  disbursementGate: Disbursement gate
   met: Met
   notMet: Not met
-  threshold: "threshold {threshold}% · now {score}%"
   notReady: Not ready for credit review
   withBlocking: "(blocking open: {n})"
-  notReadyHelp: The gate is met only when the weighted score reaches the threshold and every blocking item is satisfied or waived with a reason.
+  notReadyHelp: The gate is met only when the weighted score reaches the threshold and every blocking requirement is satisfied or waived with a reason.
   readyHelp: "The {gate}% gate is met and nothing blocking remains."
-  score: Readiness score
+  score: Weighted score
   scoreHelp: Weighted by section and by document importance, not a plain count of files.
   counts: "{satisfied} satisfied · {insufficient} insufficient · {missing} missing, of {total} requirements"
-  blocking: Blocking gaps
+  blocking: Not satisfied · blocks credit review
   blockingHelp: Each of these stops the case reaching credit review.
-  nonBlocking: Non-blocking gaps
-  nonBlockingHelp: Recorded and asked for, but not allowed to hold the case up.
-  noBlocking: No blocking gap remains on this case.
-  blockingOpen: "{n} blocking item(s) still open. Each one stops the case reaching credit review."
+  nonBlocking: Not satisfied
+  nonBlockingHelp: Missing or insufficient, asked for from the customer; these do not hold the case up.
+  noBlocking: No blocking requirement remains on this case.
   blockingFindings: "{n} blocking cross-check finding(s) to decide"
-  noNonBlocking: Nothing outstanding outside the blocking set.
+  noNonBlocking: Nothing else is missing or insufficient.
   openEvidence: "Open evidence · page {page}"
   next: Next
   nextReady: Every applicable requirement is met. The case can move to credit appraisal.
@@ -2411,23 +2426,21 @@ console:
   kpi:
     open: Open cases
     openNote: in collection now
-    blocking: Blocking gaps
+    blocking: Blocking requirements
     blockingNote: cannot reach credit review yet
     readyNote: gate met, nothing blocking
-    outstanding: Requirements outstanding
-    outstandingNote: insufficient or missing
+    outstanding: Not satisfied
+    outstandingNote: missing, insufficient or in review
     inReviewNote: waiting for a person
   cases: Cases in collection
-  casesHelp: Readiness is weighted by document importance, not a plain count.
+  casesHelp: Document readiness counts the requirements satisfied; the weighted score the review gate uses is beside it.
   search: Search borrower or case
   filter:
     all: All cases
-    blocking: Blocking gaps
+    blocking: Blocking requirements
     ready: Ready for credit
-  outstanding: Outstanding
+  outstanding: Not satisfied
   satisfiedOf: "{x} of {y} satisfied"
-  gateMet: gate met
-  belowGate: "below the {gate}% gate"
   insufficientMissing: "{insufficient} insufficient · {missing} missing"
   blocking: "{n} blocking"
   nothingBlocking: Nothing blocking

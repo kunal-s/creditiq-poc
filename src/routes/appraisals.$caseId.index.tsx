@@ -46,12 +46,7 @@ function Overview({ progress }: { progress: CaseProgress }) {
     <div className="space-y-4">
       {/* The readiness glance (verdict, score against the gate, what blocks it, the counts, what
           to do next and what to ask the customer), then what this appraisal needs, row by row. */}
-      <DocumentChecklist
-        caseId={progress.case_id}
-        variant="overview"
-        progress={progress}
-        canOpen={canOpen}
-      />
+      <DocumentChecklist caseId={progress.case_id} progress={progress} canOpen={canOpen} />
 
       <WaitingForDecision caseId={progress.case_id} />
     </div>

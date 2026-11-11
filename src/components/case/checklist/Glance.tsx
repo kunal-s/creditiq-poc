@@ -1,14 +1,11 @@
 import { Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   AlertTriangle,
   Check,
-  CheckCircle2,
   CircleCheckBig,
   CircleDashed,
-  Clock,
   Info,
-  ListTodo,
   OctagonX,
   ShieldCheck,
   X,
@@ -19,54 +16,47 @@ import { Chip } from "@/components/common/Panel";
 import { scoreTone } from "@/components/common/scoreTone";
 import { t } from "@/config/terminology";
 import {
-  blockers,
-  countItems,
   formatPoints,
-  passes,
   pointsToGo,
   scoreText,
-  sectionGroups,
   toGoText,
   verdictOf,
   type Filter,
   type Verdict,
 } from "@/domain/checklist";
 import { cn } from "@/lib/utils";
-import { CountList, type Count } from "./CountList";
 import { GlanceRail, type CanOpen } from "./GlanceRail";
-import { CELL, CELL_ICON, ICON, ICON_TONE } from "./status";
+import { DocumentReadiness, DocumentStatusList } from "./Readiness";
 import { prefersReducedMotion } from "./useJump";
 
 // The readiness glance: the answer to "can this case go to credit review?" in one read. The
-// verdict and the gate conditions, the weighted score against the gate, what blocks it by name,
-// then the requirements counted by status (each count also a filter for the list below), and
-// the requirements by section. On the Overview a rail under it says what to do next and what to
-// ask the customer.
+// verdict and the gate conditions; document readiness as satisfied of all, the two halves and
+// why the rest are not (each count also shows only those in the list below); the weighted score
+// the review gate uses; and every document named under its section with a tick or a cross. On
+// the Overview a rail under it says what to do next and what to ask the customer.
 
-const VERDICT: Record<Verdict, { icon: LucideIcon; tile: string; text: string; rule: string }> = {
+/** Each verdict's colour, on its icon tile and its words; the card itself stays white.
+ * Saturated colour is kept for small signals; anything wide is a pale tint. */
+const VERDICT: Record<Verdict, { icon: LucideIcon; tile: string; text: string }> = {
   blocked: {
     icon: OctagonX,
     tile: "bg-critical-soft text-destructive",
     text: "text-destructive",
-    rule: "bg-destructive",
   },
   belowGate: {
     icon: AlertTriangle,
     tile: "bg-flag-soft text-flag-foreground",
     text: "text-flag-foreground",
-    rule: "bg-flag",
   },
   gateMet: {
     icon: CircleCheckBig,
     tile: "bg-positive-soft text-positive",
     text: "text-positive",
-    rule: "bg-positive",
   },
   ready: {
     icon: ShieldCheck,
     tile: "bg-positive-soft text-positive",
     text: "text-positive",
-    rule: "bg-positive",
   },
 };
 
@@ -127,7 +117,6 @@ export function Glance({
       data-state={v}
       aria-labelledby="journey-verdict-title"
     >
-      <div aria-hidden className={cn("h-[3px]", VERDICT[v].rule)} />
       {notice}
       <div className={BODY}>
         <div className={READINESS} data-testid="journey-readiness">
@@ -148,39 +137,23 @@ export function Glance({
               <ProvisionalStrip className="mt-3 @min-[40rem]/glance:col-start-2 @min-[40rem]/glance:row-start-2 @min-[40rem]/glance:-mt-2 @min-[60rem]/glance:mt-3" />
             )}
           </div>
+          {/* Document readiness first: satisfied of all, the two halves, why the rest are not.
+              The weighted score the review gate uses follows, as the gate's own measure. */}
+          <div
+            className="@min-[40rem]/glance:col-span-2 @min-[60rem]/glance:col-span-1"
+            data-testid="journey-summary"
+          >
+            <DocumentReadiness items={r.items} filter={filter} onFilter={onFilter} />
+          </div>
           <ReadinessMeter
             r={r}
-            className="@min-[40rem]/glance:col-start-2 @min-[40rem]/glance:row-start-1 @min-[60rem]/glance:col-start-auto @min-[60rem]/glance:row-start-auto"
-          />
-          <BlockedBy
-            r={r}
-            sections={sections}
-            onJump={onJump}
-            onFilter={onFilter}
-            className="@min-[40rem]/glance:col-span-2 @min-[60rem]/glance:col-span-1"
+            className="border-t border-border pt-4 @min-[40rem]/glance:col-span-2 @min-[60rem]/glance:col-span-1"
           />
         </div>
 
-        <div
-          className="min-w-0 @min-[60rem]/glance:border-l @min-[60rem]/glance:border-border @min-[60rem]/glance:pl-8"
-          data-testid="journey-summary"
-        >
-          <div className="flex items-baseline justify-between gap-3">
-            <h3 className="field-label">{t("journey.requirements", { n: r.items.length })}</h3>
-            {filter !== "all" && <ShowAll n={r.items.length} onFilter={onFilter} />}
-          </div>
-          <StatusTiles
-            items={r.items}
-            filter={filter}
-            onFilter={onFilter}
-            className="mt-2 grid-cols-2 @min-[40rem]/glance:grid-cols-4 @min-[60rem]/glance:grid-cols-2 @min-[84rem]/glance:grid-cols-4"
-          />
-          {/* Only beside the readiness column: while the card is one column it would push what
-              to do next below the screen, and every row names its section. */}
-          <div className="mt-4 hidden @min-[60rem]/glance:block">
-            <h3 className="field-label">{t("journey.bySection")}</h3>
-            <SectionMap items={r.items} sections={sections} onJump={onJump} />
-          </div>
+        {/* Every document named under its section, with a tick or a cross. */}
+        <div className="min-w-0 @min-[60rem]/glance:border-l @min-[60rem]/glance:border-border @min-[60rem]/glance:pl-8">
+          <DocumentStatusList items={r.items} sections={sections} onJump={onJump} />
         </div>
       </div>
       <GlanceRail caseId={caseId} progress={progress} canOpen={canOpen} />
@@ -349,13 +322,11 @@ function ReadinessMeter({ r, className }: { r: Readiness; className?: string }) 
       <div className="grid grid-cols-[auto_minmax(0,1fr)] items-end gap-x-5">
         <div>
           <p
-            className="tabular text-[30px] font-semibold leading-none tracking-tight text-foreground @min-[40rem]/glance:text-[36px]"
+            className="tabular text-[22px] font-semibold leading-none tracking-tight text-foreground"
             data-testid="journey-score"
           >
             {text}
-            <span className="ml-0.5 text-[18px] font-medium text-muted-foreground @min-[40rem]/glance:text-[20px]">
-              %
-            </span>
+            <span className="ml-0.5 text-[14px] font-medium text-muted-foreground">%</span>
           </p>
           <p className="mt-1.5 flex items-center gap-1">
             <span id="journey-score-label" className="field-label">
@@ -444,418 +415,6 @@ function useShownScore(score: number): number {
   return shown;
 }
 
-const MAX_BLOCKERS = 4;
-
-/** What stops the case, by name; each opens its row. */
-function BlockedBy({
-  r,
-  sections,
-  onJump,
-  onFilter,
-  className,
-}: {
-  r: Readiness;
-  sections: string[] | undefined;
-  onJump: (itemId: string) => void;
-  onFilter: (f: Filter) => void;
-  className?: string;
-}) {
-  const list = blockers(r.items, sections);
-  if (list.length === 0) return null;
-  return (
-    <div className={cn("min-w-0", className)}>
-      <p className="field-label">{t("journey.blockedBy")}</p>
-      <ul className="mt-1.5 flex flex-wrap gap-1.5">
-        {list.slice(0, MAX_BLOCKERS).map((item) => {
-          const Icon = ICON[item.status];
-          return (
-            <li key={item.item_id} className="min-w-0 max-w-full">
-              <a
-                href={`#req-${item.item_id}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  onJump(item.item_id);
-                }}
-                className="inline-flex h-8 max-w-full items-center gap-1.5 rounded-full border border-destructive/35 bg-surface pl-2 pr-3 text-[12.5px] font-medium text-foreground transition-colors hover:border-destructive/60 hover:bg-critical-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                data-testid="journey-blocker"
-                data-item={item.item_id}
-              >
-                <Icon className={cn("size-3.5 shrink-0", ICON_TONE[item.status])} aria-hidden />
-                <span className="truncate">{item.name}</span>{" "}
-                <span className="shrink-0 font-normal text-muted-foreground">
-                  · {t(`docStatus.${item.status}`)}
-                </span>
-              </a>
-            </li>
-          );
-        })}
-        {list.length > MAX_BLOCKERS && (
-          <li>
-            <button
-              type="button"
-              onClick={() => onFilter("blocking")}
-              className="h-8 rounded-sm px-1 text-[12px] font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-            >
-              {t("page.overview.more", { n: list.length - MAX_BLOCKERS })}
-            </button>
-          </li>
-        )}
-      </ul>
-    </div>
-  );
-}
-
-function ShowAll({ n, onFilter }: { n: number; onFilter: (f: Filter) => void }) {
-  return (
-    <button
-      type="button"
-      onClick={() => onFilter("all")}
-      className="rounded-sm text-[12px] font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-      data-testid="journey-filter-all"
-    >
-      {t("journey.showAll", { n })}
-    </button>
-  );
-}
-
-type TileKey = Exclude<Filter, "all">;
-
-type Tile = {
-  key: TileKey;
-  glyph: LucideIcon;
-  glyphTone: string;
-  label: string;
-  n: number;
-  tone: string;
-  /** What the number means: a phrase, or counts by status. */
-  note: string | Count[];
-  finished: boolean;
-};
-
-/** The requirements counted by status. Each tile is also the filter for the list. */
-export function StatusTiles({
-  items,
-  filter,
-  onFilter,
-  className,
-}: {
-  items: ChecklistItemState[];
-  filter: Filter;
-  onFilter: (f: Filter) => void;
-  className: string;
-}) {
-  const c = countItems(items);
-  const blocking = items.filter((i) => passes(i, "blocking")).length;
-  const todo = c.missing + c.insufficient;
-  const done = c.satisfied + c.waived;
-  const tiles: Tile[] = [
-    blocking === 0
-      ? {
-          key: "blocking",
-          glyph: CheckCircle2,
-          glyphTone: "text-positive",
-          label: t("console.kpi.blocking"),
-          n: 0,
-          tone: "text-positive",
-          note: t("journey.tile.nothingBlocking"),
-          finished: true,
-        }
-      : {
-          key: "blocking",
-          glyph: OctagonX,
-          glyphTone: "text-destructive",
-          label: t("console.kpi.blocking"),
-          n: blocking,
-          tone: "text-destructive",
-          note: t("console.kpi.blockingNote"),
-          finished: false,
-        },
-    todo === 0
-      ? {
-          key: "todo",
-          glyph: CheckCircle2,
-          glyphTone: "text-positive",
-          label: t("console.outstanding"),
-          n: 0,
-          tone: "text-positive",
-          note: t("journey.tile.nothingOutstanding"),
-          finished: true,
-        }
-      : {
-          key: "todo",
-          glyph: ListTodo,
-          glyphTone: "text-foreground",
-          label: t("console.outstanding"),
-          n: todo,
-          tone: "text-foreground",
-          note: [
-            { key: "missing", label: t("docStatus.missing"), n: c.missing },
-            { key: "insufficient", label: t("docStatus.insufficient"), n: c.insufficient },
-          ],
-          finished: false,
-        },
-    {
-      key: "in_review",
-      glyph: Clock,
-      glyphTone: "text-info",
-      label: t("docStatus.in_review"),
-      n: c.in_review,
-      tone: c.in_review > 0 ? "text-info" : "text-muted-foreground",
-      note: t("console.kpi.inReviewNote"),
-      finished: false,
-    },
-    {
-      key: "satisfied",
-      glyph: CheckCircle2,
-      glyphTone: "text-positive",
-      label: t("docStatus.satisfied"),
-      n: done,
-      // Nothing done yet is not a success.
-      tone: done > 0 ? "text-positive" : "text-muted-foreground",
-      note:
-        t("journey.tile.ofTotal", { n: items.length }) +
-        (c.waived > 0 ? ` · ${t("journey.tile.waived", { n: c.waived })}` : ""),
-      finished: items.length > 0 && done === items.length,
-    },
-  ];
-
-  const press = (key: TileKey, keyboard: boolean) => {
-    onFilter(filter === key ? "all" : key);
-    // From a pointer, bring the list into view when it starts below the screen. From the
-    // keyboard the screen stays with the focused tile; the list's new count is announced.
-    if (keyboard) return;
-    const list = document.getElementById("journey-list");
-    if (list && list.getBoundingClientRect().top > window.innerHeight - 80)
-      list.scrollIntoView({ block: "start", behavior: prefersReducedMotion() ? "auto" : "smooth" });
-  };
-
-  return (
-    <div role="group" aria-label={t("journey.filterLabel")} className={cn("grid gap-2", className)}>
-      {tiles.map((tile) => {
-        const Glyph = tile.glyph;
-        return (
-          <button
-            key={tile.key}
-            type="button"
-            aria-pressed={filter === tile.key}
-            // A click from the keyboard has no pointer presses (detail 0).
-            onClick={(e) => press(tile.key, e.detail === 0)}
-            className={cn(
-              "@container/tile relative flex min-h-[64px] min-w-0 flex-col justify-start gap-1 rounded-md border border-border bg-surface px-2.5 py-2.5 text-left transition-[border-color,background-color,box-shadow] hover:border-primary/40 hover:bg-surface-muted/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring aria-pressed:border-primary aria-pressed:bg-accent/40 aria-pressed:shadow-[inset_0_0_0_1px_var(--color-primary)]",
-              tile.finished && "border-positive/30",
-            )}
-            data-testid={`journey-filter-${tile.key}`}
-          >
-            <span className="field-label flex items-start gap-1.5 leading-[14px] @max-[21rem]/glance:min-h-7">
-              <Glyph className={cn("size-3.5 shrink-0", tile.glyphTone)} aria-hidden />
-              <span className="min-w-0">{tile.label}</span>
-            </span>{" "}
-            {/* Every tile in a row is built the same: in a narrow tile the note takes a line of
-                its own under the number, in a wide one it follows the number. */}
-            <span className="flex min-w-0 flex-col gap-1 @min-[12rem]/tile:flex-row @min-[12rem]/tile:items-baseline @min-[12rem]/tile:gap-2">
-              <span
-                className={cn(
-                  "tabular text-[22px] font-semibold leading-none @min-[40rem]/glance:text-[24px]",
-                  tile.tone,
-                )}
-              >
-                {tile.n}
-              </span>{" "}
-              <TileNote note={tile.note} />
-            </span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-const NOTE =
-  "min-w-0 text-[11px] leading-[14px] text-muted-foreground @min-[12rem]/tile:text-[11.5px]";
-
-/** A phrase wraps to a second line where the tile is narrow (on a phone, or four across beside
- * the assistant), so its qualifier is read in full without a pointer; counts wrap between two
- * counts if they must, never inside one. */
-function TileNote({ note }: { note: string | Count[] }) {
-  return typeof note === "string" ? (
-    <span className={cn(NOTE, "line-clamp-2 break-words")} title={note}>
-      {note}
-    </span>
-  ) : (
-    <CountList counts={note} className={NOTE} />
-  );
-}
-
-/** Up to this many sections, the map beside the readiness column sizes each by its name. */
-const SIZED_SECTIONS = 5;
-
-/** Every requirement as a cell, grouped by section; a cell opens its row. Decorative for a
- * screen reader, which hears one sentence a section instead. Each group's cells, name and count
- * share rows with its neighbours', so the counts line up however the names run. */
-function SectionMap({
-  items,
-  sections,
-  onJump,
-  wide,
-}: {
-  items: ChecklistItemState[];
-  sections: string[] | undefined;
-  onJump: (itemId: string) => void;
-  /** Across the full width of the panel (on Files), where the names fit on one line. */
-  wide?: boolean;
-}) {
-  const groups = sectionGroups(items, sections);
-  // Beside the readiness column the sections share one row, each as wide as its name needs (a
-  // short name leaves the room to the long ones), so a name is cut only when the row has no
-  // room left for it; its full name is then on hover, in the sentence a screen reader hears,
-  // and on every row. With more sections than that, or across the full width (where the counts
-  // run four across, and on Files), they sit in equal columns from the left, the names on up to
-  // two lines.
-  const sized = !wide && groups.length <= SIZED_SECTIONS;
-  return (
-    <ul
-      aria-label={t("journey.sectionMap")}
-      style={sized ? ({ "--sections": groups.length } as CSSProperties) : undefined}
-      className={cn(
-        "mt-2 -mb-3 grid gap-x-4",
-        wide
-          ? "grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))]"
-          : sized
-            ? "grid-cols-[repeat(var(--sections),minmax(0,auto))] @min-[84rem]/glance:grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))]"
-            : "grid-cols-[repeat(auto-fit,minmax(5.75rem,1fr))] @min-[84rem]/glance:grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))]",
-      )}
-    >
-      {groups.map(({ section, cells, satisfied, counts }) => {
-        const of = t("console.satisfiedOf", { x: satisfied, y: cells.length });
-        const others = (["insufficient", "missing", "in_review", "waived"] as const)
-          .filter((s) => counts[s] > 0)
-          .map((s) => ` · ${t(`docStatus.${s}`)} ${counts[s]}`)
-          .join("");
-        return (
-          <li
-            key={section}
-            className={cn(
-              "relative row-span-3 grid min-w-0 grid-rows-subgrid pb-3",
-              !sized && cells.length > 4 && "col-span-2",
-            )}
-            data-testid="journey-section"
-          >
-            <div
-              aria-hidden
-              className="flex flex-wrap content-start gap-1"
-              onClick={(e) => {
-                const id = (e.target as HTMLElement).closest<HTMLElement>("[data-item]")?.dataset[
-                  "item"
-                ];
-                if (id) onJump(id);
-              }}
-            >
-              {cells.map((item) => {
-                const Glyph = CELL_ICON[item.status];
-                return (
-                  <span
-                    key={item.item_id}
-                    title={`${item.name} · ${t(`docStatus.${item.status}`)}`}
-                    className={cn(
-                      "grid size-5 cursor-pointer place-items-center rounded-[4px] transition-transform hover:scale-110 motion-reduce:hover:scale-100",
-                      CELL[item.status],
-                    )}
-                    data-testid="journey-cell"
-                    data-item={item.item_id}
-                    data-status={item.status}
-                  >
-                    <Glyph className="size-3" strokeWidth={2.5} />
-                  </span>
-                );
-              })}
-            </div>
-            <p
-              aria-hidden
-              title={sized ? section : undefined}
-              className={cn(
-                "mt-1.5 text-[11.5px] font-medium leading-tight text-foreground",
-                sized ? "truncate" : "line-clamp-2",
-              )}
-            >
-              {section}
-            </p>
-            <p aria-hidden className="tabular text-[11px] text-muted-foreground">
-              {of}
-            </p>
-            <span className="sr-only">
-              {section}: {of}
-              {others}
-            </span>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
-/** The summary at the head of the checklist on the Files step: the verdict in a line, the
- * requirements counted by status (the filters) and by section. No score: the case header has
- * it. */
-export function GlanceCompact({
-  r,
-  sections,
-  filter,
-  onFilter,
-  onJump,
-}: {
-  r: Readiness;
-  sections: string[] | undefined;
-  filter: Filter;
-  onFilter: (f: Filter) => void;
-  onJump: (itemId: string) => void;
-}) {
-  const v = verdictOf(r);
-  const Icon = VERDICT[v].icon;
-  const met = r.score_pct >= r.gate_pct;
-  return (
-    <div
-      className="@container/glance relative space-y-3 border-b border-border px-4 py-3"
-      data-testid="journey-summary"
-    >
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-        {/* One line of text after the icon, so where it wraps it wraps as a sentence. */}
-        <p className="flex min-w-0 items-start gap-2">
-          <Icon className={cn("mt-0.5 size-4 shrink-0", VERDICT[v].text)} aria-hidden />
-          <span className="min-w-0 text-[12.5px] leading-5 text-muted-foreground">
-            <span className="text-[13.5px] font-semibold text-foreground">{verdictTitle(v)}</span>
-            {r.provisional && (
-              <>
-                {" "}
-                <ProvisionalLozenge className="ml-1 inline-block align-[1px]" />
-              </>
-            )}
-            {" · "}
-            {met
-              ? t("console.gateMet")
-              : t("console.belowGate", { gate: formatPoints(r.gate_pct) })}
-            {" · "}
-            {r.blocking_open
-              ? t("console.blocking", { n: r.blocking_open })
-              : t("console.nothingBlocking")}
-          </span>
-        </p>
-        {filter !== "all" && <ShowAll n={r.items.length} onFilter={onFilter} />}
-      </div>
-      {r.provisional && <ProvisionalStrip />}
-      <StatusTiles
-        items={r.items}
-        filter={filter}
-        onFilter={onFilter}
-        className="grid-cols-2 @min-[40rem]/glance:grid-cols-4"
-      />
-      <div className="hidden @min-[40rem]/glance:block">
-        <h3 className="field-label">{t("journey.bySection")}</h3>
-        <SectionMap items={r.items} sections={sections} onJump={onJump} wide />
-      </div>
-    </div>
-  );
-}
-
 // --- Before the checklist is read, when it cannot be, and when there is none ---
 
 function Pulse({ className }: { className: string }) {
@@ -871,44 +430,44 @@ function Line({ className, bar }: { className: string; bar: string }) {
   );
 }
 
-const TILE_SKELETON = Array.from({ length: 4 }, (_, i) => i);
-
-/** The status tiles' placeholders, built as the tiles are (label, number, note, laid out by the
- * tile's own width), so they take the tiles' height at every width. */
-function TilesSkeleton({ className }: { className: string }) {
+/** Document readiness while the checklist is read: the headline, the bar, the two halves and the
+ * breakdown, each at its own height. */
+function ReadinessSkeleton() {
   return (
-    <div className={cn("grid gap-2", className)}>
-      {TILE_SKELETON.map((i) => (
-        <div
-          key={i}
-          className="@container/tile flex min-h-[64px] min-w-0 flex-col gap-1 rounded-md border border-border px-2.5 py-2.5"
-        >
-          <Line className="h-[14px] @max-[21rem]/glance:min-h-7" bar="h-2.5 w-20 max-w-full" />
-          <div className="flex min-w-0 flex-col gap-1 @min-[12rem]/tile:flex-row @min-[12rem]/tile:items-center @min-[12rem]/tile:gap-2">
-            <Pulse className="h-[22px] w-6 shrink-0 rounded bg-muted @min-[40rem]/glance:h-6" />
-            <Line className="h-[14px] min-w-0 flex-1" bar="h-2.5 w-24 max-w-full" />
-          </div>
-        </div>
-      ))}
+    <div className="min-w-0">
+      <Line className="h-[17px]" bar="h-2.5 w-28" />
+      <Pulse className="mt-1 h-[34px] w-28 rounded bg-muted" />
+      <Pulse className="mt-2.5 h-2 rounded-full bg-muted" />
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <Pulse className="h-[66px] rounded-md bg-muted/60" />
+        <Pulse className="h-[66px] rounded-md bg-muted/60" />
+      </div>
+      <Pulse className="mt-2.5 h-[78px] rounded-md bg-muted/50" />
     </div>
   );
 }
 
-/** The section map's placeholders: a group's cells, its name and its count. */
-function SectionMapSkeleton() {
+/** Every document under its section while the checklist is read: four sections of rows. */
+function StatusSkeleton() {
   return (
-    <div className="mt-2 grid grid-cols-[repeat(auto-fit,minmax(5.75rem,1fr))] gap-x-4">
-      {TILE_SKELETON.map((i) => (
-        <div key={i} className="min-w-0">
-          <div className="flex gap-1">
-            {[0, 1, 2].map((c) => (
-              <Pulse key={c} className="size-5 rounded-[4px] bg-muted" />
-            ))}
+    <div className="min-w-0">
+      <Line className="h-[17px]" bar="h-2.5 w-28" />
+      <div className="mt-2 space-y-3">
+        {[3, 2, 3, 1].map((rows, i) => (
+          <div key={i}>
+            <Line className="h-[18px]" bar="h-3 w-36" />
+            <div className="mt-1 divide-y divide-border/70 rounded-md border border-border">
+              {Array.from({ length: rows }, (_, k) => (
+                <div key={k} className="flex h-[41px] items-center gap-2.5 px-2.5">
+                  <Pulse className="size-[18px] rounded-full bg-muted" />
+                  <Pulse className="h-3 flex-1 rounded bg-muted/70" />
+                  <Pulse className="h-3 w-16 rounded bg-muted/70" />
+                </div>
+              ))}
+            </div>
           </div>
-          <Line className="mt-1.5 h-[14px]" bar="h-2.5 w-4/5" />
-          <Line className="h-[17px]" bar="h-2 w-1/2" />
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
@@ -927,7 +486,6 @@ export function GlanceSkeleton({
 }) {
   return (
     <section className={SHELL} aria-busy="true" data-testid="journey-verdict" data-state="loading">
-      <div aria-hidden className="h-[3px] bg-border" />
       <p className="sr-only">{t("state.loading")}</p>
       <div className={BODY} aria-hidden>
         <div className={READINESS}>
@@ -938,57 +496,20 @@ export function GlanceSkeleton({
               <Line className="mt-1.5 h-5" bar="h-3 w-3/4" />
             </div>
           </div>
-          <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-end gap-x-5 @min-[40rem]/glance:col-start-2 @min-[40rem]/glance:row-start-1 @min-[60rem]/glance:col-start-auto @min-[60rem]/glance:row-start-auto">
-            <div>
-              <Pulse className="h-[30px] w-20 rounded bg-muted @min-[40rem]/glance:h-9" />
-              <Line className="mt-1.5 h-[17px]" bar="h-2.5 w-24" />
-            </div>
-            <div className="pb-1.5 pt-5">
-              <Pulse className="h-2.5 rounded-full bg-muted" />
-            </div>
+          <div className="@min-[40rem]/glance:col-span-2 @min-[60rem]/glance:col-span-1">
+            <ReadinessSkeleton />
           </div>
-          <div className="min-w-0 @min-[40rem]/glance:col-span-2 @min-[60rem]/glance:col-span-1">
-            <Line className="h-[17px]" bar="h-2.5 w-20" />
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
-              <Pulse className="h-8 w-40 max-w-full rounded-full bg-muted/60" />
-              <Pulse className="h-8 w-44 max-w-full rounded-full bg-muted/60" />
-            </div>
+          <div className="border-t border-border pt-4 @min-[40rem]/glance:col-span-2 @min-[60rem]/glance:col-span-1">
+            <Pulse className="h-[22px] w-16 rounded bg-muted" />
+            <Line className="mt-1.5 h-[17px]" bar="h-2.5 w-24" />
           </div>
         </div>
         <div className="min-w-0 @min-[60rem]/glance:border-l @min-[60rem]/glance:border-border @min-[60rem]/glance:pl-8">
-          <Line className="h-[17px]" bar="h-2.5 w-32" />
-          <TilesSkeleton className="mt-2 grid-cols-2 @min-[40rem]/glance:grid-cols-4 @min-[60rem]/glance:grid-cols-2 @min-[84rem]/glance:grid-cols-4" />
-          <div className="mt-4 hidden @min-[60rem]/glance:block">
-            <Line className="h-[17px]" bar="h-2.5 w-24" />
-            <SectionMapSkeleton />
-          </div>
+          <StatusSkeleton />
         </div>
       </div>
       <GlanceRail caseId={caseId} progress={progress} canOpen={canOpen} />
     </section>
-  );
-}
-
-/** The Files step's summary while the checklist is read: the verdict line, the tiles and, where
- * there is room, the sections. */
-export function GlanceCompactSkeleton() {
-  return (
-    <div
-      className="@container/glance relative space-y-3 border-b border-border px-4 py-3"
-      aria-busy="true"
-      data-testid="journey-summary"
-      data-state="loading"
-    >
-      <p className="sr-only">{t("state.loading")}</p>
-      <div aria-hidden className="space-y-3">
-        <Line className="h-5" bar="h-4 w-2/3" />
-        <TilesSkeleton className="grid-cols-2 @min-[40rem]/glance:grid-cols-4" />
-        <div className="hidden @min-[40rem]/glance:block">
-          <Line className="h-[17px]" bar="h-2.5 w-24" />
-          <SectionMapSkeleton />
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -1014,7 +535,6 @@ export function GlanceNotice({
       data-state={state}
       aria-labelledby="journey-verdict-title"
     >
-      <div aria-hidden className="h-[3px] bg-border" />
       <div className="p-4 @min-[40rem]/glance:p-5">
         <NoticeRow state={state} onRetry={onRetry} />
       </div>
@@ -1023,31 +543,7 @@ export function GlanceNotice({
   );
 }
 
-/** The same notice as one row at the head of the checklist on the Files step. */
-export function GlanceCompactNotice({
-  state,
-  onRetry,
-}: {
-  state: "error" | "empty";
-  onRetry: () => void;
-}) {
-  return (
-    <div className="px-4 py-4" data-testid="journey-summary" data-state={state}>
-      <NoticeRow state={state} onRetry={onRetry} compact />
-    </div>
-  );
-}
-
-function NoticeRow({
-  state,
-  onRetry,
-  compact,
-}: {
-  state: "error" | "empty";
-  onRetry: () => void;
-  compact?: boolean;
-}) {
-  const Title = compact ? "p" : "h2";
+function NoticeRow({ state, onRetry }: { state: "error" | "empty"; onRetry: () => void }) {
   return (
     <div className="flex items-start gap-3">
       <span
@@ -1057,17 +553,12 @@ function NoticeRow({
         <CircleDashed className="size-[18px] @min-[40rem]/glance:size-5" />
       </span>
       <div className="min-w-0 flex-1">
-        <Title
-          id={compact ? undefined : "journey-verdict-title"}
-          className={cn(
-            "font-semibold tracking-tight text-foreground",
-            compact
-              ? "text-[13.5px] leading-5"
-              : "text-[16px] leading-[22px] @min-[40rem]/glance:text-[18px] @min-[40rem]/glance:leading-6",
-          )}
+        <h2
+          id="journey-verdict-title"
+          className="text-[16px] font-semibold leading-[22px] tracking-tight text-foreground @min-[40rem]/glance:text-[18px] @min-[40rem]/glance:leading-6"
         >
           {state === "error" ? t("caseHeader.readinessUnavailable") : t("checklist.emptyTitle")}
-        </Title>
+        </h2>
         {state === "error" ? (
           <button
             type="button"

@@ -45,7 +45,7 @@ export type Tone = "positive" | "flag" | "critical" | "info" | "muted" | "primar
 export const TONE_CLASS: Record<Tone, string> = {
   positive: "border-positive/30 bg-positive-soft text-positive",
   flag: "border-flag/35 bg-flag-soft text-flag-foreground",
-  critical: "border-destructive/30 bg-destructive/10 text-destructive",
+  critical: "border-destructive/25 bg-critical-soft/60 text-critical-text",
   info: "border-info/30 bg-info-soft text-info",
   muted: "border-border bg-surface-muted text-muted-foreground",
   primary: "border-primary/35 bg-primary/10 text-primary",

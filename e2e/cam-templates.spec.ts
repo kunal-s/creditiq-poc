@@ -18,8 +18,26 @@ test("the memo follows the default template, the eight sections, until another i
   await openReview(page);
   const select = page.getByTestId("cam-template-select");
   await expect(select).toHaveValue("default");
-  await expect(select.locator("option")).toHaveText(["Default template · 8 sections"]);
+  await expect(select.locator("option")).toHaveText([
+    "Default Template One · 8 sections",
+    "Default Template Two · 8 sections",
+  ]);
   await expect(page.getByTestId("cam-review-nav-item")).toHaveCount(8);
+});
+
+test("the second default template can be chosen; the choice is sent and the memo redrawn", async ({
+  page,
+}) => {
+  const api = await openReview(page);
+  const select = page.getByTestId("cam-template-select");
+  await select.selectOption("default_two");
+  await expect(select).toHaveValue("default_two");
+  expect(api.camCalls.at(-1)).toEqual({
+    kind: "choose",
+    section: "",
+    body: { template_id: "default_two" },
+  });
+  await expect(page.getByTestId("cam-sheet-tab")).toHaveCount(8);
 });
 
 test("a new template is built from the default: sections renamed, parts moved, a blank one added", async ({
@@ -96,7 +114,8 @@ test("choosing another template, and back to the default", async ({ page }) => {
   await openReview(page, api);
   const select = page.getByTestId("cam-template-select");
   await expect(select.locator("option")).toHaveText([
-    "Default template · 8 sections",
+    "Default Template One · 8 sections",
+    "Default Template Two · 8 sections",
     "Short memo · 3 sections",
   ]);
   await select.selectOption("tpl-9");

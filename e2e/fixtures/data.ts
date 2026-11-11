@@ -3030,7 +3030,7 @@ export const CAM: Cam = {
   template_note: "Draft — layout assumed until RBL's CAM template is received.",
   copilot: false,
   template_id: "default",
-  template_name: "Default template",
+  template_name: "Default Template One",
   sections: eightSections([
     memoSection(1, "snapshot", "Proposal at a glance", [
       facts(
@@ -3967,6 +3967,7 @@ export const PD_NOTE: PdNote = {
 export const DOWNLOAD_BYTES = {
   docx: Buffer.from("PK\u0003\u0004 CreditIQ draft", "latin1"),
   pdf: Buffer.from("%PDF-1.4\n% CreditIQ draft\n%%EOF\n", "latin1"),
+  xlsx: Buffer.from("PK\u0003\u0004 CreditIQ workbook", "latin1"),
 };
 
 export const CONFIG_VERSIONS = [

@@ -89,6 +89,8 @@ class Unit:
     identity: dict[str, str] = field(default_factory=dict)
     defects: list[dict] = field(default_factory=list)
     fields: list[Flat] = field(default_factory=list)
+    origin: str = "classified"
+    """classified: the file's own type. sibling: another document of its category found in the file (F-08.1)."""
 
 
 def document_grade(pages: list[PageInfo]) -> str:
@@ -107,6 +109,15 @@ def _reasons(pages: list[PageInfo], grades: tuple[str, ...]) -> list[str]:
                 if r not in codes:
                     codes.append(r)
     return codes
+
+
+def _pages_label(nos: list[int]) -> str:
+    """Page numbers as a person writes them: "page 3", "pages 3-8", "pages 2, 5"."""
+    if len(nos) == 1:
+        return f"page {nos[0]}"
+    if nos == list(range(nos[0], nos[-1] + 1)):
+        return f"pages {nos[0]}-{nos[-1]}"
+    return "pages " + ", ".join(map(str, nos))
 
 
 def _file_label(file_row: sqlite3.Row) -> str:
@@ -169,13 +180,18 @@ def _flatten(doc: IngestDocument, dims: dict[int, tuple[float, float]]) -> list[
     return out
 
 
-def _page_infos(fr: IngestFileResult, lo: int, hi: int) -> list[PageInfo]:
+def _page_infos(fr: IngestFileResult, lo: int, hi: int, only: list[int] | None = None) -> list[PageInfo]:
+    """The pages lo..hi, or exactly `only` when the service named them (a part found inside a file)."""
+    keep = set(only) if only else None
     return [PageInfo(n=p.page, route=ROUTE[p.source], grade=p.grade, reasons=list(p.reasons), ocr_confidence=p.ocr_conf)
-            for p in fr.pages if lo <= p.page <= hi]
+            for p in fr.pages if (p.page in keep if keep is not None else lo <= p.page <= hi)]
 
 
 def _classification(fr: IngestFileResult) -> Classification:
-    c = fr.classification
+    return _classification_of(fr.classification)
+
+
+def _classification_of(c) -> Classification:
     if c is None:
         return Classification(types=[], confidence=0.0, exit_tier="none")
     sig = c.signals or {}
@@ -210,8 +226,10 @@ def units_of(fr: IngestFileResult) -> list[Unit]:
         units = []
         for d in fr.documents:
             key = hashlib.sha256(f"{fr.sha256}|{d.document_type}|{d.instance_no}|{d.page_from}-{d.page_to}".encode()).hexdigest()[:16]
-            units.append(Unit(key, d.page_from, d.page_to, _page_infos(fr, d.page_from, d.page_to), cls, d.instance_key, dict(d.identity),
-                              [x.model_dump() for x in d.defects], _flatten(d, dims)))
+            # A part the service found inside the file carries its own classification and its own pages.
+            dcls = _classification_of(d.classification) if d.classification else cls
+            units.append(Unit(key, d.page_from, d.page_to, _page_infos(fr, d.page_from, d.page_to, d.pages if d.origin == "sibling" else None),
+                              dcls, d.instance_key, dict(d.identity), [x.model_dump() for x in d.defects], _flatten(d, dims), d.origin))
         return units
     if not fr.pages:
         return []
@@ -308,7 +326,7 @@ def _store_document(conn: sqlite3.Connection, ctx: Context, case_id: str, file_r
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (doc_id, case_id, file_row["id"], unit.page_from, unit.page_to, json.dumps([p.model_dump() for p in unit.pages]), grade,
          unit.classification.model_dump_json(), status, unit.instance_key, None, ctx.version, unit.doc_key, dumps(unit.identity),
-         json.dumps(unit.defects), 0, now_iso()),
+         json.dumps(unit.defects), 1 if unit.origin == "sibling" else 0, now_iso()),
     )
     where = f"{_file_label(file_row)} p{unit.page_from}" + (f"-{unit.page_to}" if unit.page_to != unit.page_from else "")
     if status == "in_exception":
@@ -324,6 +342,13 @@ def _store_document(conn: sqlite3.Connection, ctx: Context, case_id: str, file_r
         status = _store_fields(conn, ctx, case_id, doc_id, unit, types)
         conn.execute("UPDATE documents SET status = ? WHERE id = ?", (status, doc_id))
         _supersede(conn, case_id, doc_id, types, unit.instance_key)
+        if unit.origin == "sibling":
+            # F-08.6: a document found inside a file another type was read as goes to a person, who confirms
+            # it as a document of its own or waives it as part of the file's own document.
+            nos = [p.n for p in unit.pages]
+            raise_item(conn, case_id=case_id, kind="split", ref=f"document:{doc_id}",
+                       summary=f"{ctx.type_name(types[0])} found on {_pages_label(nos)} of {_file_label(file_row)}",
+                       detail={"document_id": doc_id, "file_id": file_row["id"], "type_id": types[0], "pages": nos})
     if grade == "C":
         codes = _reasons(unit.pages, ("C",)) or ["ocr_floor"]
         raise_item(conn, case_id=case_id, kind="quality", ref=f"document:{doc_id}",
@@ -451,7 +476,9 @@ def reextract_document(conn: sqlite3.Connection, root: Path, job_id: str, case_i
     _check_version(result, ctx)
     fr = result.files[0]
     units = units_of(fr) if fr.status == "processed" else []
-    mine = next((u for u in units if (u.page_from, u.page_to) == (doc["page_from"], doc["page_to"])), None) or (units[0] if units else None)
+    # The document read as the assigned type, on the same pages; never a part of another type found in the file.
+    own = [u for u in units if types[0] in u.classification.types] or units
+    mine = next((u for u in own if (u.page_from, u.page_to) == (doc["page_from"], doc["page_to"])), None) or (own[0] if own else None)
     if mine is None:
         raise IngestError(f"the service returned no document for {file_row['original_name']} read as {types[0]}")
     with transaction(conn):

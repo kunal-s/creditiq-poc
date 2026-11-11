@@ -23,6 +23,9 @@ def dev_config(tmp_path):
     # These tests are about the service contract, not extraction; no recordings exist for the fixtures, so read by rules.
     f = d / "fields.yaml"
     f.write_text(f.read_text().replace("extraction: model", "extraction: rules"))
+    # A field the rules leave empty (a former name on an original certificate) must not fall through to the model either.
+    llm = d / "llm.yaml"
+    llm.write_text(llm.read_text().replace("fill: missing", "fill: flagged"))
     return d
 
 

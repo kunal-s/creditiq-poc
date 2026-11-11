@@ -43,14 +43,27 @@ from .util import parse_date
 BASIS = {"audited_financial_statements": "audited"}
 
 PROFIT_AND_LOSS = [
-    "revenue_from_operations", "other_income", "ebitda", "depreciation", "finance_costs", "profit_before_tax",
-    "profit_after_tax",
+    "revenue_from_operations", "other_income", "cost_of_materials_consumed", "purchases_of_stock_in_trade",
+    "changes_in_inventories", "employee_benefits_expense", "other_expenses", "total_expenses", "ebitda", "depreciation",
+    "finance_costs", "exceptional_items", "profit_before_tax", "tax_expense", "profit_after_tax",
+    "cash_flow_from_operations",
 ]
 BALANCE_SHEET = [
-    "share_capital", "reserves_and_surplus", "net_worth", "long_term_borrowings", "short_term_borrowings",
-    "total_borrowings", "trade_payables", "current_liabilities", "inventories", "trade_receivables",
-    "current_assets",
+    "share_capital", "reserves_and_surplus", "share_application_money", "net_worth", "long_term_borrowings",
+    "deferred_tax_liability", "other_long_term_liabilities", "long_term_provisions", "short_term_borrowings",
+    "total_borrowings", "trade_payables", "current_liabilities", "net_fixed_assets", "capital_work_in_progress",
+    "intangible_assets", "non_current_investments", "deferred_tax_asset", "long_term_loans_and_advances",
+    "other_non_current_assets", "current_investments", "inventories", "trade_receivables", "current_assets",
 ]
+# Lines many statements do not print (Schedule III detail): a row is shown only when some year prints it,
+# so a company without, say, share application money pending does not carry an empty row.
+WHEN_PRINTED = {
+    "cost_of_materials_consumed", "purchases_of_stock_in_trade", "changes_in_inventories", "employee_benefits_expense",
+    "other_expenses", "total_expenses", "exceptional_items", "tax_expense", "cash_flow_from_operations",
+    "share_application_money", "deferred_tax_liability", "other_long_term_liabilities", "long_term_provisions",
+    "net_fixed_assets", "capital_work_in_progress", "intangible_assets", "non_current_investments", "deferred_tax_asset",
+    "long_term_loans_and_advances", "other_non_current_assets", "current_investments",
+}
 
 # Derived lines: key, label, section, unit, expression over the lines above.
 DERIVED = [
@@ -206,8 +219,11 @@ def build(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> Spread:
     rows: list[SpreadRow] = []
     for section, names in (("profit_and_loss", PROFIT_AND_LOSS), ("balance_sheet", BALANCE_SHEET)):
         for name in names:
+            cells = [lines[name] for lines in lines_by_column]
+            if name in WHEN_PRINTED and all(c.value is None for c in cells):
+                continue
             rows.append(SpreadRow(key=name, label=policy_module.INPUT_LABELS[name], section=section, kind="line",
-                                  unit="inr", cells=[lines[name] for lines in lines_by_column]))
+                                  unit="inr", cells=cells))
         for key, label, sec, unit, expression in DERIVED:
             if sec == section:
                 rows.append(SpreadRow(key=key, label=label, section=sec, kind="derived", unit=unit,

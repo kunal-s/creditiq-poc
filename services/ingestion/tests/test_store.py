@@ -32,7 +32,8 @@ def test_the_jsonb_can_be_queried_in_sql(cfg):
     assert row == ("certificate_of_incorporation", "U17291TZ2016PTC027431")
     assert store._q("SELECT type, tier FROM classifications")[0] == ("certificate_of_incorporation", "signals")
     assert store._q("SELECT json_extract(fields,'$.cin.confidence') FROM extractions")[0][0] > 0.9
-    assert json.loads(store._q("SELECT json(missing) FROM extractions")[0][0]) == []
+    # An original certificate prints no former name; that field is the only one missing.
+    assert json.loads(store._q("SELECT json(missing) FROM extractions")[0][0]) == ["former_name"]
 
 
 def test_result_round_trips_through_the_database(cfg):

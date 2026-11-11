@@ -43,27 +43,30 @@ def _verify(raw: str, text_f: str) -> bool:
 
 
 def fill(cfg: IngestionConfig, type_name: str, fields: list[FieldDef], hints: dict[str, str | None], pages: list[Page],
-         model: ModelClient) -> tuple[dict[str, Found], dict[str, str], list[dict]]:
-    """Returns (found, reasons for fields the model could not supply, trace entries)."""
+         model: ModelClient, prompt: str = "extract", subs: dict[str, str] | None = None) -> tuple[dict[str, Found], dict[str, str], list[dict]]:
+    """Returns (found, reasons for fields the model could not supply, trace entries). `prompt` names the
+    configured prompt and the task; `subs` fills its other placeholders (the second pass names the file's type)."""
     pending = {f.name: f for f in fields}
     found: dict[str, Found] = {}
     reasons: dict[str, str] = {}
     trace: list[dict] = []
-    pr = cfg.llm.prompts["extract"]
+    pr = cfg.llm.prompts[prompt]
     for win in windows(pages, cfg.llm.window_chars):
         if not pending:
             break
         by_id: dict[str, tuple[Page, Line]] = {l.id: (p, l) for p in win for l in p.content_lines()}
         user = pr.user.replace("{{fields}}", "\n".join(_field_line(f, hints.get(f.name)) for f in pending.values()))
         user = user.replace("{{lines}}", "\n".join(f"{i}: {l.text}" for i, (_, l) in by_id.items())).strip()
-        system = pr.system.replace("{{type_name}}", type_name).strip()
-        req = ModelRequest("extract", system, user, extract_schema(list(pending.values())))
+        system = pr.system.replace("{{type_name}}", type_name)
+        for k, v in (subs or {}).items():
+            system = system.replace("{{%s}}" % k, v)
+        req = ModelRequest(prompt, system.strip(), user, extract_schema(list(pending.values())))
         try:
             ans = model.call(req)
         except ModelError as e:
             for n in pending:
                 reasons[n] = f"model_unavailable:{e.code}"
-            trace.append({"call": "extract", "error": e.code, "message": str(e)[:200]})
+            trace.append({"call": prompt, "error": e.code, "message": str(e)[:200]})
             return found, reasons, trace
         got = (ans or {}).get("fields", {})
         for name, f in list(pending.items()):

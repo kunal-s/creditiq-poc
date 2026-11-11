@@ -17,6 +17,7 @@ from .readers.ocr import OcrEngine
 from .stages import classify as classify_stage
 from .stages import instances as instances_stage
 from .stages import route as route_stage
+from .stages import siblings as siblings_stage
 from .stages.extract.run import extract_instance
 from .integrity.locate import locate as locate_on_pages
 from .integrity.locate import place_objects
@@ -181,7 +182,11 @@ class Ingestor:
             _integrity_reason(integrity, reasons)
             return FileResult(**common, decision="reject" if grade == "U" else "human_review", review_reasons=reasons, trace=tr.entries)
 
-        front, groups = self._timed(tr, "instances", lambda: ((r := instances_stage.split_instances(cfg, cls["type"], pages)), {"front_matter": r[0], "instances": [[p.no for p in g] for g in r[1]]}))
+        # F-08.1/F-08.2: the other documents of the same category in this file. Found before the file's own
+        # document is read, so each document is read on its own pages only (principle 7).
+        found = self._timed(tr, "siblings", lambda: ((r := siblings_stage.find(cfg, cls["type"], pages, self.model)), r.to_json()))
+        own_pages = [p for p in pages if p.no not in found.taken]
+        front, groups = self._timed(tr, "instances", lambda: ((r := instances_stage.split_instances(cfg, cls["type"], own_pages)), {"front_matter": r[0], "instances": [[p.no for p in g] for g in r[1]]}))
         by_no = {p.no: p for p in pages}
         extracted = []
         for n, ipages in enumerate(groups, start=1):
@@ -197,27 +202,35 @@ class Ingestor:
         carry["integrity"] = integrity.findings
         carry["integrity_recommendation"] = integrity.recommendation["code"]
 
+        # A page another type showed outright is no longer mixed content once a part found here holds it.
+        own_cls = {**cls, "mixed_content": [m for m in cls.get("mixed_content") or [] if m["page"] not in found.taken]}
+        units = [(ipages, e, checks, own_cls, "classified") for ipages, e, checks in zip(groups, extracted, checks_all)]
+        units += [(part.pages, part.extracted, part.checks, part.classification, "sibling") for part in found.parts]
         docs, decisions, reasons = [], [], []
-        rule = cfg.signals.types[cls["type"]].instances
-        for n, (ipages, e, checks) in enumerate(zip(groups, extracted, checks_all), start=1):
-            ipg = {p.no: p for p in ipages}
-            fields = {k: score_field(cfg, k, f, cls["confidence"], by_no, checks) for k, f in e["fields"].items()}
+        codes = {r.id: r.defect for r in cfg.validators.rules if r.defect}
+        for n, (ipages, e, checks, ucls, origin) in enumerate(units, start=1):
+            utype = ucls["type"]
+            rule = cfg.signals.types[utype].instances
+            fields = {k: score_field(cfg, k, f, ucls["confidence"], by_no, checks) for k, f in e["fields"].items()}
             tables = {k: score_table(cfg, k, t, by_no, checks) for k, t in e["tables"].items()}
             igrade = document_grade(ipages)
-            conf = decide(cfg, igrade, cls, fields, checks, tables)
+            conf = decide(cfg, igrade, ucls, fields, checks, tables)
             key = None
             if rule and rule.keys:
                 key = " | ".join(str(fields[k]["value"] or fields[k]["raw_text"]) for k in rule.keys if fields[k]["status"] == "found") or None
-            tf = cfg.fields.types.get(cls["type"])
+            tf = cfg.fields.types.get(utype)
             identity = {}
             for ikey, fname in (tf.identity if tf else {}).items():
                 f = fields.get(fname)
                 if f and f["status"] == "found" and f["value"] not in (None, ""):
                     identity[ikey] = str(f["value"])
-            codes = {r.id: r.defect for r in cfg.validators.rules if r.defect}
             defects = [{"code": codes[c["id"]], "detail": c["detail"], "pages": [p.no for p in ipages]} for c in checks if c["id"] in codes and c["outcome"] != "pass"]
-            docs.append({"instance_no": n, "instance_key": key, "page_from": ipages[0].no, "page_to": ipages[-1].no, "document_type": cls["type"],
-                         "fields": fields, "tables": tables, "validation": checks, "confidence": conf, "identity": identity, "defects": defects})
+            doc = {"instance_no": n, "instance_key": key, "page_from": ipages[0].no, "page_to": ipages[-1].no, "document_type": utype,
+                   "fields": fields, "tables": tables, "validation": checks, "confidence": conf, "identity": identity, "defects": defects,
+                   "origin": origin, "pages": [p.no for p in ipages]}
+            if origin == "sibling":
+                doc["classification"] = ucls
+            docs.append(doc)
             decisions.append(conf["decision"])
             reasons += [{**r, "instance": n} for r in conf["reasons"]]
             self.store.save_instance(run_id, n, key, ipages[0].no, ipages[-1].no, fields, tables, checks)

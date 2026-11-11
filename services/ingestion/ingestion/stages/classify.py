@@ -79,6 +79,12 @@ def classify(cfg: IngestionConfig, pages: list[Page], model: ModelClient | None)
     if top["eligible"] and top["score"] >= sig.classify_threshold and margin >= sig.tier1_margin:
         result.update(type=top["type"], confidence=top["score"], tier="signals", signals=top["signals"], needs_review=False,
                       reason=f"signals matched: {len(top['signals']['supporting'])} supporting, margin {margin:.2f}")
+    elif (opening := _opening_part(cfg, pages)) is not None:
+        # A bundle (F-08.1): the file as a whole contradicts itself, so it is placed by the document it opens
+        # with, judged on that document's pages alone. The second pass finds the others of its category.
+        entry, part = opening
+        result.update(type=entry["type"], confidence=entry["score"], tier="signals", signals=entry["signals"], needs_review=False,
+                      reason=f"the file holds several documents; placed by the one it opens with (pages {part[0]}-{part[-1]})")
     else:
         why = "no type met the signal rules" if not top["eligible"] else f"margin {margin:.2f} below {sig.tier1_margin}"
         result["reason"] = why
@@ -101,6 +107,39 @@ def classify(cfg: IngestionConfig, pages: list[Page], model: ModelClient | None)
     if result["type"] and sig.mixed_content_check:
         result["mixed_content"] = _mixed(cfg, pages, result["type"])
     return result
+
+
+def _page_heads(cfg: IngestionConfig, page: Page) -> str | None:
+    """The type a page names itself as: eligible on that page alone, at the classification threshold."""
+    ranked = score_types(cfg, evidence([page], 1, cfg.signals.head_lines))
+    top = ranked[0]
+    return top["type"] if top["eligible"] and top["score"] >= cfg.signals.classify_threshold else None
+
+
+def _opening_part(cfg: IngestionConfig, pages: list[Page]) -> tuple[dict, list[int]] | None:
+    """When the file opens with one document and a later page names itself as another type, the type of
+    the opening document, scored on its own pages by the tier-1 rule; None when the file is not such a bundle."""
+    sig = cfg.signals
+    real = [p for p in pages if not p.blank][:sig.signal_pages]
+    if len(real) < 2:
+        return None
+    first = _page_heads(cfg, real[0])
+    if first is None:
+        return None
+    part = [real[0]]
+    for p in real[1:]:
+        head = _page_heads(cfg, p)
+        if head is not None and head != first:
+            break
+        part.append(p)
+    if len(part) == len(real):
+        return None                     # no other document follows: not a bundle
+    ranked = score_types(cfg, evidence(part, sig.signal_pages, sig.head_lines))
+    top = ranked[0]
+    margin = top["score"] - (ranked[1]["score"] if len(ranked) > 1 else 0.0)
+    if top["type"] != first or not top["eligible"] or top["score"] < sig.classify_threshold or margin < sig.tier1_margin:
+        return None
+    return top, [p.no for p in part]
 
 
 def _guard(cfg: IngestionConfig, type_id: str, entry: dict) -> str | None:

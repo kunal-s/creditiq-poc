@@ -44,6 +44,11 @@ const ACRONYMS = new Set([
   "ifsc",
   "pat",
   "pbt",
+  "itc",
+  "igst",
+  "cgst",
+  "sgst",
+  "dpd",
 ]);
 
 /** One word of a field name as a person writes it: acronyms in capitals,

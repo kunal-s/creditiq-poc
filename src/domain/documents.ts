@@ -149,8 +149,23 @@ export function pageGrade(doc: LogicalDocument, page: number): Grade | undefined
   return doc.pages.find((p) => p.n === page)?.grade;
 }
 
-export function pageRange(doc: Pick<LogicalDocument, "page_from" | "page_to">): string {
-  return doc.page_from === doc.page_to ? `p${doc.page_from}` : `p${doc.page_from}–${doc.page_to}`;
+/** A document's pages as a person writes them: "p3", "p3–8", or for a part found inside a file whose
+ * pages are not contiguous, "p2, 5–6". The page list is used when the document carries one. */
+export function pageRange(
+  doc: Pick<LogicalDocument, "page_from" | "page_to"> & { pages?: { n: number }[] },
+): string {
+  const nos = [...new Set((doc.pages ?? []).map((p) => p.n))].sort((a, b) => a - b);
+  if (nos.length === 0 || nos.length === doc.page_to - doc.page_from + 1) {
+    return doc.page_from === doc.page_to ? `p${doc.page_from}` : `p${doc.page_from}–${doc.page_to}`;
+  }
+  const runs: string[] = [];
+  for (let i = 0; i < nos.length;) {
+    let j = i;
+    while (j + 1 < nos.length && nos[j + 1] === nos[j]! + 1) j++;
+    runs.push(i === j ? `${nos[i]}` : `${nos[i]}–${nos[j]}`);
+    i = j + 1;
+  }
+  return `p${runs.join(", ")}`;
 }
 
 export function formatBytes(n: number): string {

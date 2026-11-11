@@ -14,6 +14,10 @@ types:
       company_type: {aliases: ['Company Category'], llm_hint: 'the type of company as printed, for example "Company limited by shares" or "Private Limited"; null if not stated'}
       registered_address: {aliases: ['Registered Office'], llm: true, llm_hint: 'the address of the registered office, as printed'}
       roc: {patterns: ['Office of the (Registrar of Companies[^\n]*)'], llm_hint: 'the Registrar of Companies office named in the certificate, as printed'}
+      pan: {identifier: pan, validators: ['format:pan']}
+      tan: {identifier: tan, validators: ['format:tan']}
+      certificate_kind: {patterns: ['^\s*((?:Fresh\s+)?Certificate of Incorporation(?:\s+Consequent upon[^\n]*)?)'], llm_hint: 'the heading of the certificate as printed: "Certificate of Incorporation", or "Fresh Certificate of Incorporation Consequent upon Change of Name" (or upon conversion)'}
+      former_name: {llm_hint: 'the former name of the company, printed only on a fresh certificate issued after a change of name; null if not stated'}
 
   memorandum_articles_of_association:
     extraction: model   # the model reads each field; code checks the value on its page; the rules below are the fallback without a model
@@ -26,6 +30,11 @@ types:
       paid_up_share_capital: {patterns: ['paid-?up\s+capital\s+is\s+Rs\.?\s*([\d,]+)'], llm_hint: 'the paid-up (subscribed) share capital in rupees, the amount only, as printed; null if not stated'}
       objects_of_company: {patterns: [{regex: 'MAIN OBJECTS TO BE PURSUED[^\n]*\n(.+?)\n\(B\)', flags: ims, span_pages: true}], llm_hint: 'the main objects clause, copied as printed; null if absent'}
       directors: {patterns: [{regex: 'first\s+directors\s+of\s+the\s+company\s+are\s+(.+?)\.\s*$', flags: ims, multi: true, split: '\s+and\s+|,\s*', strip: '^(?:Smt|Sri|Shri|Mr|Ms|Mrs)\.?\s+'}], llm: true, llm_hint: 'the first directors named in the articles, one entry per person with the name only (no title) and the DIN when printed'}
+      liability_clause: {patterns: [{regex: '(The liability of the members?(?:\(s\))? is limited.*?\.)', flags: is}], llm_hint: 'the liability clause (clause IV) as printed, for example "The liability of the member(s) is limited and this liability is limited to the amount unpaid, if any, on the shares held by them"'}
+      face_value_per_share: {patterns: ['shares\s+of\s+Rs\.?\s*([\d,]+(?:\.\d+)?)\s*(?:/-\s*)?each'], llm_hint: 'the face value of one share in rupees from the capital clause ("... shares of Rs. 10 each"), the amount only, as printed'}
+      borrowing_powers: {llm_hint: 'the article on borrowing powers, as printed: whether the Board may borrow, and any cap, condition or need for members approval; null if the articles have none'}
+      private_company_restrictions: {llm_hint: 'the definition of a private company in the articles, as printed: restriction on transfer of shares, members limited to two hundred, no invitation to the public; null if absent'}
+      latest_alteration_date: {llm_hint: 'the date of the latest alteration noted beside an altered clause ("Altered vide special resolution dated ..."), copied as printed; null if none'}
     tables:
       shareholding:
         page_match: 'SUBSCRIPTION CLAUSE'
@@ -46,6 +55,7 @@ types:
       company_name: {aliases: ['Name'], llm_hint: 'the name of the company printed on the PAN card or allotment letter'}
       pan: {identifier: pan, validators: ['format:pan']}
       date_of_issue: {patterns: ['^Date:\s*(\d{1,2}\s+[A-Za-z]+\s+\d{4})'], llm_hint: 'the date the PAN was issued or the letter dated, copied as printed'}
+      date_of_incorporation: {aliases: ['Date of Incorporation(?:/Formation)?'], llm_hint: 'the date of incorporation or formation printed on the e-PAN ("Date of Incorporation/Formation"), copied as printed; null if not printed'}
 
   director_kyc:
     extraction: model   # the model reads each field; code checks the value on its page; the rules below are the fallback without a model
@@ -81,6 +91,11 @@ types:
       # The DIN printed after each authorised person, in the same order; used to tell the directors apart, never to correct a value.
       authorized_person_dins: {patterns: [{regex: '(?:Smt|Sri|Shri|Mr|Ms|Mrs)\.?\s+[A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)*,\s+(?:Managing\s+)?Director\s*\(DIN\s+(\d{8})\)', flags: m, multi: true}], llm: false}
       authorized_signatories: {llm_hint: "The people the resolution authorises to sign or execute the loan documents: one entry per person, the name only (leave out Smt., Sri., titles, designations and DIN numbers). List every person named."}
+      cin: {identifier: cin, validators: ['format:cin']}
+      meeting_place: {llm_hint: 'the place where the Board meeting was held, as printed (for example "at the registered office of the company at ..."); null if not stated'}
+      facilities_authorised: {llm_hint: 'the facilities the resolution authorises, one entry per facility with its amount as printed (for example "cash credit of Rs 5,00,00,000"); null if none are listed'}
+      security_authorised: {llm_hint: 'the security the resolution authorises the company to create (hypothecation, charge or mortgage over named assets), as printed; null if not stated'}
+      certified_by: {llm_hint: 'who certified the copy of the resolution, from the certification block ("Certified true copy ... For <Company> ... Director (DIN ...)"): the name, with designation and DIN as printed'}
 
   audited_financial_statements:
     # The model reads every field (all pages); code checks each value against its page. The aliases and patterns below are the
@@ -99,6 +114,21 @@ types:
       auditor_name: {aliases: ['Statutory Auditors'], llm_hint: 'the name of the audit firm that signs the auditor report (for example "X & CO LLP"), without logo or title text such as "CA", and without its registration number. In a statement filed in XBRL, the value after "Name of audit firm", whose letters may be spaced out or broken over lines. Not a sentence, and not a name mentioned in the directors report.'}
       audit_date: {patterns: ['Place:\s*[A-Za-z]+\s*\|\s*Date:\s*(\d{1,2}\s+[A-Za-z]+\s+\d{4})'], llm_hint: 'the date the auditor signed the auditor report, copied as printed. In a statement filed in XBRL, the value after "Date of signing audit report by auditors". Not the date the directors signed their report or the board approved the accounts.'}
       accounting_standard: {llm_hint: "The accounting framework the statements as a whole follow (for example 'Indian GAAP' or 'Ind AS'), as stated in the basis of preparation or statement of compliance; not one standard cited for a single disclosure (such as 'Ind AS 24 Related Party Disclosures'). Null if none is named."}
+      statement_basis: {llm_hint: 'whether these statements are audited, provisional or projected, from the title or a heading, copied as printed (for example "Provisional Financial Statements"); for statements with a signed auditor report, the words of the report heading ("Independent Auditor''s Report")'}
+      auditor_frn: {patterns: ['Firm\s+Registration\s+(?:No\.?|Number)\s*:?\s*([0-9]{6}[A-Z](?:/[A-Z0-9]+)?)'], llm_hint: 'the audit firm registration number (FRN) printed in the auditor signature block, for example "123456W"; the number only'}
+      auditor_membership_no: {patterns: ['Membership\s+(?:No\.?|Number)\s*:?\s*(\d{5,6})'], llm_hint: 'the membership number of the partner who signed the auditor report, the number only'}
+      udin: {identifier: udin, page_match: 'UDIN', validators: ['format:udin']}
+      audit_opinion: {llm_hint: 'the heading of the opinion paragraph in the auditor report, copied as printed: "Opinion", "Qualified Opinion", "Adverse Opinion" or "Disclaimer of Opinion"'}
+      going_concern_uncertainty: {normaliser: present, llm_hint: 'the heading "Material Uncertainty Related to Going Concern" copied as printed, only when the auditor report has such a paragraph; null when it has none'}
+      caro_remarks: {llm_hint: 'adverse remarks in the CARO annexure to the auditor report (default in repayment of loans, clause ix; undisputed statutory dues outstanding, clause vii; fraud, clause xi): one entry per remark, copied as printed; null if there are none'}
+      # Figures from the notes to accounts, as printed (in the statements' own unit, see amount_unit).
+      current_maturities_of_long_term_debt: {llm_hint: 'from the note on short-term borrowings (or other current liabilities), the current year amount of "Current maturities of long-term debt" (or long-term borrowings), as printed; null if not stated'}
+      bank_working_capital_borrowings: {llm_hint: 'from the note on short-term borrowings, the current year amount of loans repayable on demand from banks (cash credit, overdraft or working capital loans), as printed; null if not stated'}
+      finance_costs_term_loans: {llm_hint: 'from the note on finance costs, the current year interest on term loans, as printed; null if the note does not show it separately'}
+      loans_from_directors: {llm_hint: 'from the notes on borrowings, the current year amount of loans from directors or related parties, as printed; null if not stated'}
+      receivables_over_6_months: {llm_hint: 'from the ageing of trade receivables, the current year amount outstanding for more than six months from the due date, as printed; null if not stated'}
+      contingent_liabilities: {llm_hint: 'from the note on contingent liabilities and commitments, the current year total of contingent liabilities, as printed; null if the note is absent or says nil'}
+      shareholders_above_5pct: {llm_hint: 'from the note on share capital, the shareholders holding more than 5 per cent of the shares: one entry per shareholder with the name, the number of shares and the percentage held, each copied as printed'}
       # The unit the statements print their amounts in, read from the face ("All Amounts are in INR Thousands", "(Rs. in lakhs)",
       # a filed statement's "Level of rounding used in financial statements  Millions"); absent means rupees.
       amount_unit: {llm: false, patterns: ['^\s*Level of rounding used in financial statements\s+(thousands?|lakhs?|lacs?|crores?|millions?)\b', '(?:amounts?|figures|values)?\s*(?:are\s+)?in\s+(?:INR|Rs\.?|₹)?\s*(thousands?|lakhs?|lacs?|crores?|millions?)\b', '(?:INR|Rs\.?|₹)\s*in\s+(thousands?|lakhs?|lacs?|crores?|millions?)\b']}
@@ -225,6 +255,7 @@ types:
     model_pages:
       - {match: 'PART B[\s_-]*TI\s*-\s*COMPUTATION OF TOTAL INCOME', span: 4}
       - {match: 'FINANCIAL YEAR 20\d{2}-\d{2}', span: 1}
+      - {match: '^\s*VERIFICATION\b', span: 1}
     identity: {name: taxpayer_name, pan: pan}
     fields:
       pan: {identifier: pan, validators: ['format:pan']}
@@ -238,6 +269,9 @@ types:
       tax_payable: {aliases: ['Total Tax and Interest Payable', 'Total Tax Payable', 'Net Tax Payable'], llm_hint: 'Part B-TTI, the row "Aggregate liability (7 + 8e)", item 9; the amount in the last column'}
       tax_paid: {aliases: ['Taxes Paid \(TDS \+ Advance \+', 'Total Taxes Paid', 'Taxes Paid'], llm_hint: 'Part B-TTI, the row "Total Taxes Paid (10a+10b+10c+10d)", item 10e; the amount in the last column'}
       refund_amount: {aliases: ['Tax Payable / \(Refund\)', 'Refund(?:able)? Amount', 'Refund Due'], llm_hint: 'Part B-TTI, the row "Refund (If 10e is greater than 9)", item 12; the amount in the last column'}
+      itr_form: {patterns: ['\b(ITR-\s?[1-7])\b'], llm_hint: 'the ITR form number printed in the heading of the return, for example "ITR-6"'}
+      filing_section: {aliases: ['Filed u/s', 'Filed under section'], llm_hint: 'the section the return was filed under, as printed, for example "139(1)" for an original return, "139(4)" belated or "139(5)" revised'}
+      verification_mode: {aliases: ['Verified (?:by|using|through)', 'Mode of verification'], llm_hint: 'how the return was verified, as printed: digital signature certificate (DSC) or electronic verification code (EVC); null if not stated'}
     tables:
       income_computation:
         page_match: 'COMPUTATION OF (?:TOTAL )?INCOME'
@@ -258,6 +292,7 @@ types:
       tax_period: {patterns: ['^\s*Period\s+([A-Za-z]{3}(?:-[A-Za-z]{3})?)\s*$', {regex: '(?:^|\s{2})Tax Period\s+(\S.*?)(?:\s{2}|$)', flags: m}], llm_hint: 'the tax period of the return, the month name as printed (for example Dec)'}
       filing_date: {aliases: ['2\(d\)\.?\s*Date of ARN', 'Date of Filing'], llm_hint: 'the date of filing or ARN date, table 2(d), copied as printed'}
       return_status: {patterns: ['Return status:\s*([A-Za-z]+)'], llm: false}
+      arn: {aliases: ['2\(c\)\.?\s*ARN', 'ARN'], llm_hint: 'the ARN (acknowledgement reference number) of the return, table 2(c), as printed'}
     # Two layouts, tried in order: the portal's own printout, then the summary layout.
     tables:
       outward_supplies:
@@ -314,20 +349,20 @@ types:
             - {name: tax_amount, header: '^Tax$', align: right, join: ''}
             - {name: adjustment, header: '^Adjustment$', align: right, emit: false}
             - {name: net_payable, header: '^Net$', align: right, emit: false}
-            - {name: itc_igst, header: '^Integrated$', align: right, emit: false}
-            - {name: itc_cgst, header: '^Central$', align: right, emit: false}
-            - {name: itc_sgst, header: '^State/UT$', align: right, emit: false}
-            - {name: itc_cess, header: '^Cess$', align: right, emit: false}
-            - {name: cash, header: '^paid$', nth: 1, align: right, join: '', emit: false}
-            - {name: interest, header: '^Interest$', align: right, emit: false}
-            - {name: late_fee, header: '^Late$', align: right, emit: false}
+            - {name: itc_igst, header: '^Integrated$', align: right}
+            - {name: itc_cgst, header: '^Central$', align: right}
+            - {name: itc_sgst, header: '^State/UT$', align: right}
+            - {name: itc_cess, header: '^Cess$', align: right}
+            - {name: paid_cash, header: '^paid$', nth: 1, align: right, join: ''}
+            - {name: interest, header: '^Interest$', align: right}
+            - {name: late_fee, header: '^Late$', align: right}
         - start: '^Description\s+Tax Payable'
           end: '^Verified and filed'
           columns:
             - {name: tax_type, header: '^Description$'}
             - {name: tax_amount, header: '^Tax$', align: right}
-            - {name: paid_itc, header: '^Paid$', nth: 0, align: right, emit: false}
-            - {name: paid_cash, header: '^Paid$', nth: 1, align: right, emit: false}
+            - {name: paid_itc, header: '^Paid$', nth: 0, align: right}
+            - {name: paid_cash, header: '^Paid$', nth: 1, align: right}
 
   gstr_1:
     extraction: model   # the model reads each field; code checks the value on its page; the rules below are the fallback without a model
@@ -375,6 +410,11 @@ types:
       opening_balance: {patterns: ['Opening Balance\s*\([^)]*\)\s+([\d,]+)'], llm_hint: 'the opening balance of the period, the amount only, as printed'}
       closing_balance: {patterns: ['Closing Balance\s*\([^)]*\)\s+([\d,]+)'], llm_hint: 'the closing balance of the period, the amount only, as printed'}
       currency: {patterns: ['Currency\s+([A-Z]{3})\b'], llm_hint: 'the currency code, for example INR'}
+      account_type: {aliases: ['Account Type', 'A/c Type', 'Product'], llm_hint: 'the type of account as printed, for example Current Account, Cash Credit, Overdraft or Savings'}
+      sanctioned_limit: {aliases: ['Sanctioned Limit', 'Limit'], llm_hint: 'the sanctioned limit of a cash credit or overdraft account, the amount only, as printed; null for other accounts'}
+      drawing_power: {aliases: ['Drawing Power', 'DP'], llm_hint: 'the drawing power of a cash credit or overdraft account, the amount only, as printed; null if not stated'}
+      customer_id: {aliases: ['Customer ID', 'Cust(?:omer)?\.? ID', 'CIF(?: No\.?| Number)?'], llm_hint: 'the customer ID or CIF number, as printed'}
+      holder_address: {aliases: ['Address'], llm_hint: 'the address printed under the account holder name, as printed'}
     tables:
       transactions:
         start: '^Date\s+Particulars\s+Reference'
@@ -385,6 +425,7 @@ types:
         row_start: '^(\d{1,2}\s+[A-Za-z]{3}\s+\d{4}|\d{4}-\d{2}-\d{2}|\d{1,2}[/-]\d{1,2}[/-]\d{4})$'
         columns:
           - {name: date, header: '^Date$'}
+          - {name: value_date, header: '^Value$'}
           - {name: description, header: '^Particulars$'}
           - {name: reference_number, header: '^Reference$', join: ''}
           - {name: debit, header: '^Debit$', align: right}
@@ -402,6 +443,7 @@ types:
       pan: {identifier: pan, validators: ['format:pan']}
       cin: {identifier: cin, validators: ['format:cin']}
       gstin: {identifier: gstin, validators: ['format:gstin']}
+      facilities_as_of: {patterns: ['outstanding\s+as\s+(?:on|at)\s+(\d{1,2}[\s/-][A-Za-z0-9]+[\s/-]\d{4})'], llm_hint: 'the date the outstanding amounts are stated as on ("as on <date>" in the facilities table heading), copied as printed'}
     tables:
       facilities:
         start: '^Name of Lender\s+Nature of Facility'
@@ -428,6 +470,7 @@ types:
       borrower_name: {aliases: ['Borrower', 'Name of Borrower'], llm_hint: 'the borrower the facilities are sanctioned to'}
       sanction_date: {aliases: ['Date of Sanction', 'Date'], llm_hint: 'the date of the sanction letter, copied as printed'}
       reference_number: {aliases: ['Reference', 'Ref\.? No\.?'], llm_hint: 'the reference number of the letter, as printed'}
+      security: {llm_hint: 'the security for the facilities from the Security section, primary and collateral, as printed; null if not stated'}
     tables:
       facilities:
         start: '^Facility\s+Sanctioned Amount'
@@ -450,6 +493,9 @@ types:
       gstin: {identifier: gstin, validators: ['format:gstin']}
       report_date: {aliases: ['Report Date', 'Date of Report'], llm_hint: 'the date of the report, copied as printed'}
       credit_rank: {aliases: ['Credit Rank'], llm_hint: 'the credit rank or score as printed'}
+      dpd_asset_class: {aliases: ['DPD', 'Asset Classification', 'Asset Class'], llm_hint: 'the days-past-due or asset classification summary of the borrower, as printed (for example "0 DPD" or "Standard")'}
+      suit_filed_wilful_default: {aliases: ['Suit Filed', 'Wilful Default(?:er)?'], llm_hint: 'whether the report shows any suit filed or wilful default against the borrower, as printed (for example "No suit filed" or "Nil"); null if not stated'}
+      enquiries_6m: {aliases: ['Enquiries (?:in )?(?:the )?last 6 months', 'Enquiries \(6 months\)'], llm_hint: 'the number of credit enquiries in the last six months, the count only, as printed'}
     tables:
       credit_facilities:
         start: '^Lender\s+Facility\s+Sanctioned'

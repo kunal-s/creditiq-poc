@@ -535,6 +535,11 @@ function DocumentRow({
                 </span>
               )}
             </button>
+            {doc.classification?.exit_tier === "sibling" && (
+              <Chip tone="info" title={t("documents.foundWithinHelp")}>
+                <span data-testid="found-within">{t("documents.foundWithin")}</span>
+              </Chip>
+            )}
             {doc.label_mismatch && (
               <Chip tone="flag" title={t("documents.labelMismatchHelp")}>
                 <AlertTriangle className="h-3 w-3" />

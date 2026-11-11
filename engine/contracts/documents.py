@@ -25,7 +25,8 @@ DocStatus = Literal[
     "duplicate",
 ]
 
-ExitTier = Literal["signals", "layout", "model", "person", "none"]
+ExitTier = Literal["signals", "layout", "model", "person", "sibling", "none"]
+"""sibling: found inside a file another type was read as, on its own pages (F-08.1)."""
 
 
 IntegrityState = Literal["passed", "review_recommended", "suspicious", "suspicious_high", "incomplete",

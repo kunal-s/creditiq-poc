@@ -37,7 +37,7 @@
     {
       "document_type": "certificate_of_incorporation",
       "display_name": "Certificate of Incorporation",
-      "category": "company_kyc",
+      "category": "constitution_kyc",
       "priority": "mandatory",
       "schema": {
         "fields": [
@@ -70,6 +70,26 @@
             "name": "roc",
             "type": "string",
             "required": false
+          },
+          {
+            "name": "pan",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "tan",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "certificate_kind",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "former_name",
+            "type": "string",
+            "required": false
           }
         ],
         "tables": []
@@ -78,7 +98,7 @@
     {
       "document_type": "memorandum_articles_of_association",
       "display_name": "Memorandum and Articles of Association",
-      "category": "company_kyc",
+      "category": "constitution_kyc",
       "priority": "mandatory",
       "schema": {
         "fields": [
@@ -129,6 +149,31 @@
                 }
               ]
             }
+          },
+          {
+            "name": "liability_clause",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "face_value_per_share",
+            "type": "number",
+            "required": false
+          },
+          {
+            "name": "borrowing_powers",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "private_company_restrictions",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "latest_alteration_date",
+            "type": "date",
+            "required": false
           }
         ],
         "tables": [
@@ -156,7 +201,7 @@
     {
       "document_type": "company_pan",
       "display_name": "Company PAN",
-      "category": "company_kyc",
+      "category": "constitution_kyc",
       "priority": "mandatory",
       "schema": {
         "fields": [
@@ -174,6 +219,11 @@
             "name": "date_of_issue",
             "type": "date",
             "required": false
+          },
+          {
+            "name": "date_of_incorporation",
+            "type": "date",
+            "required": false
           }
         ],
         "tables": []
@@ -182,7 +232,7 @@
     {
       "document_type": "director_kyc",
       "display_name": "Director KYC",
-      "category": "company_kyc",
+      "category": "constitution_kyc",
       "priority": "mandatory",
       "schema": {
         "fields": [
@@ -258,7 +308,7 @@
     {
       "document_type": "board_resolution_borrowing",
       "display_name": "Board Resolution for Borrowing",
-      "category": "company_kyc",
+      "category": "constitution_kyc",
       "priority": "mandatory",
       "schema": {
         "fields": [
@@ -320,6 +370,34 @@
             "items": {
               "type": "string"
             }
+          },
+          {
+            "name": "cin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "meeting_place",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "facilities_authorised",
+            "type": "array",
+            "required": false,
+            "items": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "security_authorised",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "certified_by",
+            "type": "string",
+            "required": false
           }
         ],
         "tables": []
@@ -361,6 +439,96 @@
             "name": "amount_unit",
             "type": "string",
             "required": false
+          },
+          {
+            "name": "statement_basis",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "auditor_frn",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "auditor_membership_no",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "udin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "audit_opinion",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "going_concern_uncertainty",
+            "type": "boolean",
+            "required": false
+          },
+          {
+            "name": "caro_remarks",
+            "type": "array",
+            "required": false,
+            "items": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "current_maturities_of_long_term_debt",
+            "type": "number",
+            "required": false
+          },
+          {
+            "name": "bank_working_capital_borrowings",
+            "type": "number",
+            "required": false
+          },
+          {
+            "name": "finance_costs_term_loans",
+            "type": "number",
+            "required": false
+          },
+          {
+            "name": "loans_from_directors",
+            "type": "number",
+            "required": false
+          },
+          {
+            "name": "receivables_over_6_months",
+            "type": "number",
+            "required": false
+          },
+          {
+            "name": "contingent_liabilities",
+            "type": "number",
+            "required": false
+          },
+          {
+            "name": "shareholders_above_5pct",
+            "type": "array",
+            "required": false,
+            "items": {
+              "type": "object",
+              "fields": [
+                {
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "name": "number_of_shares",
+                  "type": "string"
+                },
+                {
+                  "name": "percentage",
+                  "type": "string"
+                }
+              ]
+            }
           }
         ],
         "tables": [
@@ -482,6 +650,21 @@
             "name": "refund_amount",
             "type": "number",
             "required": false
+          },
+          {
+            "name": "itr_form",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "filing_section",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "verification_mode",
+            "type": "string",
+            "required": false
           }
         ],
         "tables": [
@@ -504,7 +687,7 @@
     {
       "document_type": "gstr_3b",
       "display_name": "GSTR-3B",
-      "category": "financials",
+      "category": "banking_operations",
       "priority": "mandatory",
       "schema": {
         "fields": [
@@ -540,6 +723,11 @@
           },
           {
             "name": "return_status",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "arn",
             "type": "string",
             "required": false
           }
@@ -601,6 +789,38 @@
               {
                 "name": "tax_amount",
                 "type": "number"
+              },
+              {
+                "name": "paid_itc",
+                "type": "number"
+              },
+              {
+                "name": "itc_igst",
+                "type": "number"
+              },
+              {
+                "name": "itc_cgst",
+                "type": "number"
+              },
+              {
+                "name": "itc_sgst",
+                "type": "number"
+              },
+              {
+                "name": "itc_cess",
+                "type": "number"
+              },
+              {
+                "name": "paid_cash",
+                "type": "number"
+              },
+              {
+                "name": "interest",
+                "type": "number"
+              },
+              {
+                "name": "late_fee",
+                "type": "number"
               }
             ]
           }
@@ -610,7 +830,7 @@
     {
       "document_type": "gstr_1",
       "display_name": "GSTR-1",
-      "category": "financials",
+      "category": "supporting",
       "priority": "optional",
       "schema": {
         "fields": [
@@ -738,6 +958,31 @@
             "name": "currency",
             "type": "string",
             "required": false
+          },
+          {
+            "name": "account_type",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "sanctioned_limit",
+            "type": "number",
+            "required": false
+          },
+          {
+            "name": "drawing_power",
+            "type": "number",
+            "required": false
+          },
+          {
+            "name": "customer_id",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "holder_address",
+            "type": "string",
+            "required": false
           }
         ],
         "tables": [
@@ -767,6 +1012,10 @@
               {
                 "name": "balance",
                 "type": "number"
+              },
+              {
+                "name": "value_date",
+                "type": "date"
               }
             ]
           }
@@ -776,7 +1025,7 @@
     {
       "document_type": "existing_facilities_declaration",
       "display_name": "Declaration of Existing Facilities",
-      "category": "banking_operations",
+      "category": "supporting",
       "priority": "optional",
       "schema": {
         "fields": [
@@ -802,6 +1051,11 @@
           },
           {
             "name": "gstin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "facilities_as_of",
             "type": "string",
             "required": false
           }
@@ -857,7 +1111,7 @@
     {
       "document_type": "sanction_letter",
       "display_name": "Sanction Letter",
-      "category": "banking_operations",
+      "category": "supporting",
       "priority": "optional",
       "schema": {
         "fields": [
@@ -878,6 +1132,11 @@
           },
           {
             "name": "reference_number",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "security",
             "type": "string",
             "required": false
           }
@@ -915,7 +1174,7 @@
     {
       "document_type": "commercial_bureau_report",
       "display_name": "Commercial Bureau Report",
-      "category": "credit_bureau",
+      "category": "supporting",
       "priority": "optional",
       "schema": {
         "fields": [
@@ -947,6 +1206,21 @@
           {
             "name": "credit_rank",
             "type": "string",
+            "required": false
+          },
+          {
+            "name": "dpd_asset_class",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "suit_filed_wilful_default",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "enquiries_6m",
+            "type": "number",
             "required": false
           }
         ],

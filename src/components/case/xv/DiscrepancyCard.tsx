@@ -80,7 +80,7 @@ export function DiscrepancyCard({
             <span className="flex flex-wrap items-center gap-2">
               <Chip tone={SEVERITY_TONE[f.severity]}>{t(`severity.${f.severity}`)}</Chip>
               {blockingOpen && (
-                <span className="inline-flex shrink-0 items-center gap-1 rounded bg-destructive px-1.5 py-0.5 text-[10.5px] font-medium text-destructive-foreground">
+                <span className="inline-flex shrink-0 items-center gap-1 rounded border border-destructive/30 bg-critical-soft px-1.5 py-0.5 text-[10.5px] font-medium text-critical-text">
                   <Lock className="h-3 w-3" aria-hidden />{" "}
                   {t("crossVerification.card.blocksSubmission")}
                 </span>
@@ -182,7 +182,7 @@ function CardFigures({ finding }: { finding: Finding }) {
                 <span
                   className={cn(
                     "tabular text-[18px] font-semibold leading-tight",
-                    fact.differs ? "text-destructive" : "text-foreground",
+                    fact.differs ? "text-critical-text" : "text-foreground",
                   )}
                 >
                   {factValue(fact)}
@@ -318,7 +318,7 @@ function GapRow({ finding }: { finding: Finding }) {
           <dd
             className={cn(
               "tabular break-words text-[13px] font-semibold",
-              g.breached ? "text-destructive" : "text-foreground",
+              g.breached ? "text-critical-text" : "text-foreground",
             )}
           >
             {legText(g)}

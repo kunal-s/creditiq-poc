@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowRight, ChevronRight, Eye } from "lucide-react";
+import { ArrowRight, CheckCircle2, ChevronRight, Eye } from "lucide-react";
 import type { FieldStatus, FieldValue, LogicalDocument } from "@/api/types";
 import { Panel } from "@/components/common/Panel";
 import { Details } from "@/components/common/Details";
@@ -56,7 +56,8 @@ type Filter = (typeof FILTERS)[number];
 export function ExtractedDataSection({ caseId }: { caseId: string }) {
   const fields = useFields(caseId);
   const documents = useCaseDocuments(caseId);
-  const [filter, setFilter] = useState<Filter>("all");
+  // The page opens on what needs checking; the reader's own choice of filter wins once made.
+  const [chosen, setFilter] = useState<Filter | null>(null);
   const types = useDocumentTypes();
 
   if (fields.isError || documents.isError) {
@@ -74,11 +75,14 @@ export function ExtractedDataSection({ caseId }: { caseId: string }) {
     );
   }
   const all = fields.data;
+  const count = (s: FieldStatus) => all.filter((f) => f.status === s).length;
+  const filter: Filter = chosen ?? (count("in_review") > 0 ? "in_review" : "all");
+  // Nothing to check and nothing chosen: each document is one folded row, opened on request.
+  const folded = chosen === null && filter === "all";
   const shown = all.filter((f) => filter === "all" || f.status === filter);
   const groups = documents.data
     .map((doc) => ({ doc, fields: shown.filter((f) => f.document_id === doc.id) }))
     .filter((g) => g.fields.length > 0);
-  const count = (s: FieldStatus) => all.filter((f) => f.status === s).length;
 
   return (
     <div className="grid gap-4 px-4 py-5 sm:px-6 @min-[49rem]/main:grid-cols-[minmax(0,1fr)_300px]">
@@ -100,6 +104,15 @@ export function ExtractedDataSection({ caseId }: { caseId: string }) {
             </button>
           ))}
         </div>
+        {folded && all.length > 0 && (
+          <p
+            className="flex items-center gap-2 rounded border border-border bg-surface px-4 py-2.5 text-[12.5px] text-foreground"
+            data-testid="data-nothing-to-check"
+          >
+            <CheckCircle2 className="size-4 shrink-0 text-positive" aria-hidden />
+            {t("data.nothingToCheck")}
+          </p>
+        )}
         {all.length === 0 ? (
           <Panel title={t("page.data.title")}>
             <p className="px-4 py-8 text-center text-[12.5px] text-muted-foreground">
@@ -122,7 +135,13 @@ export function ExtractedDataSection({ caseId }: { caseId: string }) {
                   {t(`fieldSection.${section}`)}
                 </h3>
                 {members.map((g) => (
-                  <DocumentFields key={g.doc.id} caseId={caseId} doc={g.doc} fields={g.fields} />
+                  <DocumentFields
+                    key={`${g.doc.id}-${folded ? "folded" : "open"}`}
+                    caseId={caseId}
+                    doc={g.doc}
+                    fields={g.fields}
+                    folded={folded}
+                  />
                 ))}
               </section>
             );
@@ -130,7 +149,7 @@ export function ExtractedDataSection({ caseId }: { caseId: string }) {
         )}
       </div>
 
-      <div className="min-w-0 space-y-3">
+      <div className="order-first min-w-0 space-y-3 @min-[49rem]/main:order-none">
         <Panel title={t("data.summary")} testId="data-summary">
           <div className="grid grid-cols-2 divide-x divide-border border-b border-border">
             <div className="px-4 py-3">
@@ -175,11 +194,15 @@ function DocumentFields({
   caseId,
   doc,
   fields,
+  folded = false,
 }: {
   caseId: string;
   doc: LogicalDocument;
   fields: FieldValue[];
+  /** Shown as one row (its counts), its fields on request. */
+  folded?: boolean;
 }) {
+  const [open, setOpen] = useState(!folded);
   const types = useDocumentTypes();
   const files = useCaseFiles(caseId);
   const viewer = useDocViewer();
@@ -207,7 +230,12 @@ function DocumentFields({
         </span>
       }
       action={
-        <span className="flex items-center gap-2">
+        <span className="flex flex-wrap items-center gap-2">
+          {!open && (
+            <span className="text-[11.5px] text-muted-foreground" data-testid="field-group-counts">
+              {t("data.groupCounts", { n: all.length - notFound.length, missing: notFound.length })}
+            </span>
+          )}
           <AverageConfidence fields={fields} />
           {(doc.grade === "C" || doc.grade === "U") && <GradeChip grade={doc.grade} />}
           <button
@@ -217,81 +245,100 @@ function DocumentFields({
           >
             <Eye className="h-3 w-3" /> {t("validation.openDocument")}
           </button>
+          <button
+            type="button"
+            aria-expanded={open}
+            onClick={() => setOpen((v) => !v)}
+            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11.5px] font-medium text-primary hover:bg-muted"
+            data-testid="field-group-toggle"
+          >
+            <ChevronRight
+              className={cn("h-3 w-3 transition-transform", open && "rotate-90")}
+              aria-hidden
+            />
+            {open ? t("data.hideFields") : t("data.showFields")}
+          </button>
         </span>
       }
     >
-      {plain.length > 0 && (
-        <div className="overflow-x-auto">
-          <StackTable className="field-cards w-full min-w-[480px] table-fixed text-[12.5px]">
-            <thead>
-              {/* Fixed widths: the columns line up from one document's table to the next. */}
-              <tr className="border-b border-border text-left text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">
-                <th className="w-[32%] px-4 py-2 font-medium">{t("data.col.field")}</th>
-                <th className="w-[40%] px-3 py-2 font-medium">{t("data.col.value")}</th>
-                <th className="px-4 py-2 font-medium">{t("data.col.status")}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {plain.map((f) => (
-                <tr key={f.id} className="align-top" data-testid="field-row">
-                  <td className="px-4 py-2 text-muted-foreground">{fieldLabel(f.field)}</td>
-                  <td className="px-3 py-2">
-                    <FieldValueButton caseId={caseId} field={f} />
-                  </td>
-                  <td className="px-4 py-2">
-                    <FieldStatusChip status={f.status} />
-                    <FieldRowDecision field={f} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </StackTable>
-        </div>
+      {open && (
+        <>
+          {plain.length > 0 && (
+            <div className="overflow-x-auto">
+              <StackTable className="field-cards w-full min-w-[480px] table-fixed text-[12.5px]">
+                <thead>
+                  {/* Fixed widths: the columns line up from one document's table to the next. */}
+                  <tr className="border-b border-border text-left text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">
+                    <th className="w-[32%] px-4 py-2 font-medium">{t("data.col.field")}</th>
+                    <th className="w-[40%] px-3 py-2 font-medium">{t("data.col.value")}</th>
+                    <th className="px-4 py-2 font-medium">{t("data.col.status")}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {plain.map((f) => (
+                    <tr key={f.id} className="align-top" data-testid="field-row">
+                      <td className="px-4 py-2 text-muted-foreground">{fieldLabel(f.field)}</td>
+                      <td className="px-3 py-2">
+                        <FieldValueButton caseId={caseId} field={f} />
+                      </td>
+                      <td className="px-4 py-2">
+                        <FieldStatusChip status={f.status} />
+                        <FieldRowDecision field={f} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </StackTable>
+            </div>
+          )}
+          {notFound.length > 0 && !onlyMissing && (
+            <button
+              type="button"
+              aria-expanded={showMissing}
+              onClick={() => setShowMissing((v) => !v)}
+              className="flex w-full items-center gap-1.5 border-t border-border px-4 py-2 text-left text-[12px] text-muted-foreground hover:bg-surface-muted hover:text-foreground"
+              data-testid="field-missing-toggle"
+            >
+              <ChevronRight
+                className={cn("h-3 w-3 transition-transform", showMissing && "rotate-90")}
+                aria-hidden
+              />
+              {showMissing
+                ? t("data.hideNotFound")
+                : t("data.showNotFound", { n: notFound.length })}
+            </button>
+          )}
+          {tables.map((table) => (
+            <FieldTableView key={table.name} caseId={caseId} table={table} />
+          ))}
+          <div className="border-t border-border px-4 py-3">
+            <Details testId="field-details">
+              <table className="w-full text-[12px]">
+                <thead>
+                  <tr className="text-left text-[10.5px] uppercase tracking-wide text-muted-foreground">
+                    <th className="py-1 pr-3 font-medium">{t("data.col.field")}</th>
+                    <th className="py-1 pr-3 font-medium">{t("data.readBy")}</th>
+                    <th className="py-1 font-medium">{t("data.asPrinted")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {fields.map((f) => (
+                    <tr key={f.id} className="border-t border-border align-top">
+                      <td className="py-1 pr-3 text-muted-foreground">{fieldLabel(f.field)}</td>
+                      <td className="py-1 pr-3">{t(`fieldMethod.${f.method}`)}</td>
+                      <td className="py-1" data-testid="as-printed">
+                        {f.raw && f.status !== "missing" && f.raw !== formatValue(effectiveValue(f))
+                          ? f.raw
+                          : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Details>
+          </div>
+        </>
       )}
-      {notFound.length > 0 && !onlyMissing && (
-        <button
-          type="button"
-          aria-expanded={showMissing}
-          onClick={() => setShowMissing((v) => !v)}
-          className="flex w-full items-center gap-1.5 border-t border-border px-4 py-2 text-left text-[12px] text-muted-foreground hover:bg-surface-muted hover:text-foreground"
-          data-testid="field-missing-toggle"
-        >
-          <ChevronRight
-            className={cn("h-3 w-3 transition-transform", showMissing && "rotate-90")}
-            aria-hidden
-          />
-          {showMissing ? t("data.hideNotFound") : t("data.showNotFound", { n: notFound.length })}
-        </button>
-      )}
-      {tables.map((table) => (
-        <FieldTableView key={table.name} caseId={caseId} table={table} />
-      ))}
-      <div className="border-t border-border px-4 py-3">
-        <Details testId="field-details">
-          <table className="w-full text-[12px]">
-            <thead>
-              <tr className="text-left text-[10.5px] uppercase tracking-wide text-muted-foreground">
-                <th className="py-1 pr-3 font-medium">{t("data.col.field")}</th>
-                <th className="py-1 pr-3 font-medium">{t("data.readBy")}</th>
-                <th className="py-1 font-medium">{t("data.asPrinted")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {fields.map((f) => (
-                <tr key={f.id} className="border-t border-border align-top">
-                  <td className="py-1 pr-3 text-muted-foreground">{fieldLabel(f.field)}</td>
-                  <td className="py-1 pr-3">{t(`fieldMethod.${f.method}`)}</td>
-                  <td className="py-1" data-testid="as-printed">
-                    {f.raw && f.status !== "missing" && f.raw !== formatValue(effectiveValue(f))
-                      ? f.raw
-                      : "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Details>
-      </div>
     </Panel>
   );
 }
@@ -300,52 +347,70 @@ function DocumentFields({
  * every cell still opens its source page and carries its own confidence and
  * decision (F-16.1, F-17). */
 function FieldTableView({ caseId, table }: { caseId: string; table: FieldTable }) {
+  const needs = table.rows.some((r) =>
+    Object.values(r.cells).some((f) => f?.status === "in_review"),
+  );
+  const [open, setOpen] = useState(needs);
   return (
     <div
       className="overflow-x-auto border-t border-border first:border-t-0"
       data-testid="field-table"
     >
-      <p className="px-4 pt-3 text-[11.5px] font-semibold text-muted-foreground">{table.title}</p>
-      <table className="mt-1 w-full text-[12.5px]">
-        <thead>
-          <tr className="border-b border-border text-left text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">
-            <th className="px-4 py-2 font-medium">{t("data.col.row")}</th>
-            {table.columns.map((c) => (
-              <th key={c.key} className="px-3 py-2 font-medium">
-                {c.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {table.rows.map((row) => (
-            <tr key={row.index} className="align-top" data-testid="field-table-row">
-              <td className="tabular px-4 py-2 text-muted-foreground">{row.index + 1}</td>
-              {table.columns.map((c) => {
-                const f = row.cells[c.key];
-                return (
-                  <td
-                    key={c.key}
-                    className={cn("px-3 py-2", f?.status === "in_review" && "bg-flag-soft")}
-                  >
-                    {f ? (
-                      <>
-                        <FieldValueButton caseId={caseId} field={f} />
-                        <div className="mt-1 flex flex-wrap items-center gap-1">
-                          {f.status !== "accepted" && <FieldStatusChip status={f.status} />}
-                        </div>
-                        <FieldRowDecision field={f} />
-                      </>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </td>
-                );
-              })}
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-1.5 px-4 py-2.5 text-left text-[12px] font-semibold text-muted-foreground hover:bg-surface-muted hover:text-foreground"
+        data-testid="field-table-toggle"
+      >
+        <ChevronRight
+          className={cn("h-3 w-3 transition-transform", open && "rotate-90")}
+          aria-hidden
+        />
+        {t("data.tableToggle", { title: table.title, n: table.rows.length })}
+      </button>
+      {open && (
+        <table className="mt-1 w-full text-[12.5px]">
+          <thead>
+            <tr className="border-b border-border text-left text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">
+              <th className="px-4 py-2 font-medium">{t("data.col.row")}</th>
+              {table.columns.map((c) => (
+                <th key={c.key} className="px-3 py-2 font-medium">
+                  {c.label}
+                </th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {table.rows.map((row) => (
+              <tr key={row.index} className="align-top" data-testid="field-table-row">
+                <td className="tabular px-4 py-2 text-muted-foreground">{row.index + 1}</td>
+                {table.columns.map((c) => {
+                  const f = row.cells[c.key];
+                  return (
+                    <td
+                      key={c.key}
+                      className={cn("px-3 py-2", f?.status === "in_review" && "bg-flag-soft")}
+                    >
+                      {f ? (
+                        <>
+                          <FieldValueButton caseId={caseId} field={f} />
+                          <div className="mt-1 flex flex-wrap items-center gap-1">
+                            {f.status !== "accepted" && <FieldStatusChip status={f.status} />}
+                          </div>
+                          <FieldRowDecision field={f} />
+                        </>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }

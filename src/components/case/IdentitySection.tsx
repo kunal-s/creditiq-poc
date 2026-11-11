@@ -11,6 +11,7 @@ import type {
 } from "@/api/types";
 import { CaseScreen } from "@/components/shell/CaseScreen";
 import { PageHeader } from "@/components/shell/PageHeader";
+import { Details } from "@/components/common/Details";
 import { Panel } from "@/components/common/Panel";
 import { ErrorState, LoadingBlock, QueryView } from "@/components/common/States";
 import { SourceChip } from "@/components/common/SourceChip";
@@ -26,8 +27,8 @@ import { useCan } from "@/domain/session";
 import { pageRange, useCaseDocuments, useDocumentTypes } from "@/domain/documents";
 import { fieldLabel, useFields, useParties } from "@/domain/extraction";
 
-/** Document-type groups whose fields describe identity (F-15.6, "Identity"). */
-const IDENTITY_GROUPS = new Set(["constitution", "registration", "kyc"]);
+/** Document-type groups whose fields describe the company itself (F-15.6, "Identity"). */
+const COMPANY_GROUPS = new Set(["constitution", "registration"]);
 
 /** Identifiers and parties, each with its source (F-10, F-15). */
 export function IdentitySection({ c }: { c: CaseDetail }) {
@@ -241,6 +242,8 @@ function PartyRow({
   const kyc = (party.kyc_document_ids ?? [])
     .map((id) => documents.find((d) => d.id === id))
     .filter((d): d is LogicalDocument => Boolean(d));
+  const fields = useFields(caseId).data ?? [];
+  const own = fields.filter((f) => kyc.some((d) => d.id === f.document_id));
   return (
     <li className="px-4 py-2.5" data-testid="party">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
@@ -284,6 +287,13 @@ function PartyRow({
           )}
         </div>
       )}
+      {own.length > 0 && (
+        <div className="mt-1.5">
+          <Details title={t("identity.partyDetails", { n: own.length })} testId="party-details">
+            <FieldList caseId={caseId} fields={own} />
+          </Details>
+        </div>
+      )}
     </li>
   );
 }
@@ -292,11 +302,13 @@ function IdentityFields({ caseId }: { caseId: string }) {
   const fields = useFields(caseId);
   const documents = useCaseDocuments(caseId);
   const types = useDocumentTypes();
+  // The company's own fields (constitution and registration); each person's KYC fields sit under
+  // that person in Parties.
   const identityDoc = (docId: string) => {
     const doc = documents.data?.find((d) => d.id === docId);
     return (doc?.classification?.types ?? []).some((id) => {
       const group = types.byId(id)?.group;
-      return group ? IDENTITY_GROUPS.has(group) : false;
+      return group ? COMPANY_GROUPS.has(group) : false;
     });
   };
   return (
@@ -310,7 +322,7 @@ function IdentityFields({ caseId }: { caseId: string }) {
         ) : undefined
       }
     >
-      <div className="p-0">
+      <div className="px-4 py-3">
         {fields.isError ? (
           <div className="p-4">
             <ErrorState error={fields.error} compact />
@@ -320,10 +332,17 @@ function IdentityFields({ caseId }: { caseId: string }) {
             <LoadingBlock rows={3} className="border-0 p-0" />
           </div>
         ) : (
-          <FieldList
-            caseId={caseId}
-            fields={fields.data.filter((f) => identityDoc(f.document_id))}
-          />
+          <Details
+            title={t("identity.companyFieldsShow", {
+              n: fields.data.filter((f) => identityDoc(f.document_id)).length,
+            })}
+            testId="identity-fields-list"
+          >
+            <FieldList
+              caseId={caseId}
+              fields={fields.data.filter((f) => identityDoc(f.document_id))}
+            />
+          </Details>
         )}
       </div>
     </Panel>

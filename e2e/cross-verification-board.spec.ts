@@ -242,8 +242,8 @@ test("each area card carries the engine's key figures, the open discrepancies fi
   await expect(facts.nth(1)).toContainText("Commercial bureau report");
   // An identifier in monospace, so its characters can be compared; the differing one in red.
   await expect(values(pan).nth(1)).toHaveClass(/font-mono/);
-  await expect(values(pan).nth(1)).toHaveClass(/text-destructive/);
-  await expect(values(pan).nth(0)).not.toHaveClass(/text-destructive/);
+  await expect(values(pan).nth(1)).toHaveClass(/text-critical-text/);
+  await expect(values(pan).nth(0)).not.toHaveClass(/text-critical-text/);
   await expect(pan.getByTestId("xv-highlight-note")).toHaveCount(0);
   await expect(values(identity.nth(1))).toHaveText([
     "U28999MH2015PTC123456",
@@ -264,7 +264,7 @@ test("each area card carries the engine's key figures, the open discrepancies fi
     "GST against bank credits · Aug 2025 to Mar 2026",
   );
   await expect(values(window)).toHaveText(["INR 14.80 cr", "INR 17.19 cr"]);
-  await expect(values(window).nth(0)).toHaveClass(/text-destructive/);
+  await expect(values(window).nth(0)).toHaveClass(/text-critical-text/);
   await expect(values(window).nth(0)).not.toHaveClass(/font-mono/);
   await expect(window.getByTestId("xv-highlight-fact").nth(1)).toContainText("Bank credits");
   await expect(window.getByTestId("xv-highlight-note")).toHaveText("13.9% apart · tolerance 10%");
@@ -523,10 +523,10 @@ test("a name's line by line marks the part that differs", async ({ page }) => {
   await lines.locator("summary").click();
   const table = lines.getByTestId("xv-detail-table");
   await expect(table.locator('[data-flagged-cell="true"]')).toHaveText(["Missing"]);
-  await expect(table.locator('[data-flagged-cell="true"]')).toHaveClass(/text-destructive/);
+  await expect(table.locator('[data-flagged-cell="true"]')).toHaveClass(/text-critical-text/);
   const none = table.locator("tbody tr").nth(2).locator("td").nth(4);
   await expect(none).toHaveText("—");
-  await expect(none).not.toHaveClass(/text-destructive/);
+  await expect(none).not.toHaveClass(/text-critical-text/);
 });
 
 test("the cards and sections follow the areas the engine sends", async ({ page }) => {
@@ -1917,7 +1917,9 @@ test("the turnover section opens with every compared pair of figures, coloured b
   const row = (rule: string) => figures.locator(`[data-rule="${rule}"]`);
   await expect(row("TO-01")).toContainText("Outside tolerance");
   await expect(row("TO-01").getByTestId("xv-figure-value").first()).toHaveText("INR 11.80 cr");
-  await expect(row("TO-01").getByTestId("xv-figure-value").first()).toHaveClass(/text-destructive/);
+  await expect(row("TO-01").getByTestId("xv-figure-value").first()).toHaveClass(
+    /text-critical-text/,
+  );
   await expect(row("TO-02")).toContainText("Within tolerance");
   await expect(row("TO-02").getByTestId("xv-figure-value").nth(1)).toHaveClass(/text-positive/);
   await expect(row("TO-03")).toContainText("Not compared");

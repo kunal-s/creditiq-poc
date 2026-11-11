@@ -26,7 +26,7 @@ export function BlockingBanner({
     >
       <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" aria-hidden />
       <div className="min-w-0 flex-1 basis-64">
-        <p className="text-[13px] font-semibold text-destructive">
+        <p className="text-[13px] font-semibold text-critical-text">
           {n === 1
             ? t(`crossVerification.banner.${kind}One`)
             : t(`crossVerification.banner.${kind}Many`, { n })}

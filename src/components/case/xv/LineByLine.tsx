@@ -44,7 +44,7 @@ export function LineByLine({ detail }: { detail: FindingDetail }) {
                 className={cn(
                   "px-2 py-1",
                   r.label.length <= 32 ? "whitespace-nowrap" : "break-words",
-                  r.flagged && "font-semibold text-destructive",
+                  r.flagged && "font-semibold text-critical-text",
                 )}
               >
                 {r.flagged && <AlertTriangle className="mr-1 inline h-3 w-3" aria-hidden />}
@@ -57,10 +57,10 @@ export function LineByLine({ detail }: { detail: FindingDetail }) {
                     "tabular px-2 py-1 text-right",
                     // Short values stay on one line; on a phone the table scrolls in its box.
                     typeof c !== "string" || c.length <= 32 ? "whitespace-nowrap" : "break-words",
-                    c === "—" && "text-destructive",
+                    c === "—" && "text-critical-text",
                     c === "✓" && "text-positive",
                     // A cell the row is flagged for (a name's middle name missing).
-                    r.flagged_cells.includes(j) && "font-semibold text-destructive",
+                    r.flagged_cells.includes(j) && "font-semibold text-critical-text",
                   )}
                   data-flagged-cell={r.flagged_cells.includes(j) ? "true" : undefined}
                 >

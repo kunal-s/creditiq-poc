@@ -221,9 +221,12 @@ function FileRows({
 }) {
   const { file, documents } = node;
   const [showIntegrity, setShowIntegrity] = useState(false);
+  // A file split into several documents is one row until its parts are asked for, unless one of
+  // them needs a person.
+  const [showParts, setShowParts] = useState(false);
   const canUpload = useCan("document.upload");
   const readAgain = useReadAgain(caseId);
-  const { defectsFor } = useContext(Register);
+  const { defectsFor, itemsFor } = useContext(Register);
   const integrity = (
     <IntegrityCell file={file} open={showIntegrity} onToggle={() => setShowIntegrity((v) => !v)} />
   );
@@ -287,8 +290,42 @@ function FileRows({
   const firstDefects = documents.map((doc) =>
     defectsFor(doc.id).filter((d) => !seen.has(d.item_id) && seen.add(d.item_id)),
   );
+  // A part that waits on a person keeps the parts open, so it is never folded out of sight.
+  const partsNeedPerson = documents.some(
+    (d) =>
+      itemsFor(d.id).length > 0 ||
+      d.label_mismatch === true ||
+      d.status === "unclassified" ||
+      d.status === "in_exception" ||
+      d.status === "in_review",
+  );
+  if (documents.length > 1 && !showParts && !partsNeedPerson) {
+    return (
+      <SplitFileRow
+        file={file}
+        documents={documents}
+        depth={depth}
+        integrity={integrity}
+        integrityEmpty={noIntegrity}
+        panel={panel}
+        onOpen={() => setShowParts(true)}
+      />
+    );
+  }
   return (
     <div data-testid="tree-file" data-status={file.status}>
+      {documents.length > 1 && !partsNeedPerson && (
+        <button
+          type="button"
+          onClick={() => setShowParts(false)}
+          className="flex w-full items-center gap-1.5 px-4 py-1.5 text-left text-[11.5px] font-medium text-primary hover:bg-surface-muted"
+          style={{ paddingLeft: 16 + depth * 14 }}
+          data-testid="split-file-fold"
+        >
+          <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+          {t("documents.foldParts", { name: file.original_name, n: documents.length })}
+        </button>
+      )}
       {documents.map((doc, i) => (
         <DocumentRow
           key={doc.id}
@@ -303,6 +340,73 @@ function FileRows({
           shownDefects={firstDefects[i]!.length}
         />
       ))}
+    </div>
+  );
+}
+
+/** A file split into several documents, as one row: how many, of which types, from which to which
+ * period, and where they count; a chevron opens the parts in place. */
+function SplitFileRow({
+  file,
+  documents,
+  depth,
+  integrity,
+  integrityEmpty,
+  panel,
+  onOpen,
+}: {
+  file: FileRecord;
+  documents: LogicalDocument[];
+  depth: number;
+  integrity: ReactNode;
+  integrityEmpty: boolean;
+  panel: ReactNode;
+  onOpen: () => void;
+}) {
+  const types = useDocumentTypes();
+  const { satisfiesFor } = useContext(Register);
+  const names = [
+    ...new Set(documents.flatMap((d) => (d.classification?.types ?? []).map(types.name))),
+  ];
+  const labels = documents.map((d) => instanceLabel(d.instance_key)).filter(Boolean);
+  const range =
+    labels.length > 1 ? `${labels[0]} – ${labels[labels.length - 1]}` : (labels[0] ?? "");
+  const satisfies = [...new Set(documents.flatMap((d) => satisfiesFor(d.id).map((i) => i.name)))];
+  return (
+    <div data-testid="tree-file" data-status={file.status} data-split="folded">
+      <div className={REGISTER_ROW} style={indent(depth, true)}>
+        <FileCell
+          file={file}
+          depth={depth}
+          toggle={
+            <button
+              type="button"
+              onClick={onOpen}
+              aria-expanded={false}
+              aria-label={t("documents.showParts", { n: documents.length })}
+              className="grid h-5 w-5 shrink-0 place-items-center rounded text-muted-foreground hover:bg-muted"
+              data-testid="split-file-open"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          }
+        />
+        <Empty />
+        <RegisterCell column="type">
+          <span className="block text-[12.5px] text-foreground" data-testid="split-file-summary">
+            {t("documents.splitSummary", { n: documents.length, types: names.join(", ") })}
+          </span>
+          {range && <span className="block text-[11.5px] text-muted-foreground">{range}</span>}
+        </RegisterCell>
+        <Empty column="confidence" />
+        <RegisterCell column="integrity" empty={integrityEmpty}>
+          {integrity}
+        </RegisterCell>
+        <RegisterCell column="satisfies" empty={satisfies.length === 0}>
+          <span className="text-[11.5px] text-foreground">{satisfies.join(", ")}</span>
+        </RegisterCell>
+      </div>
+      {panel}
     </div>
   );
 }
@@ -550,7 +654,10 @@ function DocumentRow({
           <span
             className={cn(
               "tabular text-[12px] font-medium",
-              confidence != null && confidence < SURE ? "text-flag-foreground" : "text-foreground",
+              // Only a placing made with doubt stands out; a sure one stays quiet.
+              confidence != null && confidence < SURE
+                ? "text-flag-foreground"
+                : "text-muted-foreground",
             )}
             data-testid="document-confidence"
           >

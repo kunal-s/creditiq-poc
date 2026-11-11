@@ -190,3 +190,24 @@ test("with every request resolved, the query list is one line and nothing to cop
   await resolved.getByText("Show", { exact: true }).click();
   await expect(resolved.getByTestId("query-item").first()).toBeVisible();
 });
+
+test("Extracted data with nothing to check is one folded row a document, opened on request", async ({
+  page,
+}) => {
+  const api = new MockApi();
+  api.fields.set(
+    KESTREL,
+    api.fields
+      .get(KESTREL)!
+      .map((f) => (f.status === "in_review" ? { ...f, status: "accepted" as const } : f)),
+  );
+  await signedIn(page, api);
+  await page.goto(`/appraisals/${KESTREL}/extraction`);
+  await expect(page.getByTestId("data-nothing-to-check")).toBeVisible();
+  const groups = page.getByTestId("field-group");
+  await expect(groups.first()).toBeVisible();
+  await expect(page.getByTestId("field-row")).toHaveCount(0);
+  await expect(groups.first().getByTestId("field-group-counts")).toContainText("fields");
+  await groups.first().getByTestId("field-group-toggle").click();
+  await expect(groups.first().getByTestId("field-row").first()).toBeVisible();
+});

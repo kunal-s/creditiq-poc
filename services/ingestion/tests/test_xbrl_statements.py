@@ -27,7 +27,7 @@ def _page(no: int, rows: list[tuple]) -> Page:
     words: list[Word] = []
     for y, label, *figs in rows:
         if label:
-            words += _w(label, LABEL_X if not label.startswith(("[", "BMW", "Unless")) else 20.0, y)
+            words += _w(label, LABEL_X if not label.startswith(("[", "SAMPLE", "Unless")) else 20.0, y)
         for fig, x1 in zip(figs, (CUR_X1, PREV_X1)):
             if fig is not None:
                 words += _right(fig, x1, y)
@@ -49,7 +49,7 @@ def _defs(cfg, table: str):
 
 def _pl_pages() -> list[Page]:
     p1 = _page(1, [
-        (20, "BMW SAMPLE PRIVATE LIMITED Standalone Financial Statements for period 01/04/2025 to 31/03/2026"),
+        (20, "SAMPLE TRADERS PRIVATE LIMITED Standalone Financial Statements for period 01/04/2025 to 31/03/2026"),
         (40, "[210000] Statement of profit and loss"),
         (60, "Unless otherwise specified, all monetary values are in Millions of INR"),
         *_dates(80, "01/04/2025", "01/04/2024"), (91, None, "to", "to"), *_dates(102, "31/03/2026", "31/03/2025"),
@@ -58,7 +58,7 @@ def _pl_pages() -> list[Page]:
         (800, None, "1", None),   # page number
     ])
     p2 = _page(2, [
-        (20, "BMW SAMPLE PRIVATE LIMITED Standalone Financial Statements for period 01/04/2025 to 31/03/2026"),
+        (20, "SAMPLE TRADERS PRIVATE LIMITED Standalone Financial Statements for period 01/04/2025 to 31/03/2026"),
         (60, "Unless otherwise specified, all monetary values are in Millions of INR"),
         *_dates(80, "01/04/2025", "01/04/2024"), (91, None, "to", "to"), *_dates(102, "31/03/2026", "31/03/2025"),
         (113, "Statement of profit and loss [Abstract]"),
@@ -92,7 +92,7 @@ def test_profit_and_loss_rows_from_an_xbrl_filing(cfg):
 
 def test_a_multi_page_table_stops_at_the_next_statement_above_a_repeated_header(cfg):
     bs = _page(1, [
-        (20, "BMW SAMPLE PRIVATE LIMITED Standalone Financial Statements for period 01/04/2025 to 31/03/2026"),
+        (20, "SAMPLE TRADERS PRIVATE LIMITED Standalone Financial Statements for period 01/04/2025 to 31/03/2026"),
         (40, "[110000] Balance sheet"),
         *_dates(80, "31/03/2026", "31/03/2025"),
         (91, "Balance sheet [Abstract]"),

@@ -162,7 +162,7 @@ export function StageProgressBar({
   caseId: string;
   progress: CaseProgress;
   activeStage?: string | undefined;
-  /** The Overview is open: its pill, first in the row, is the dark one. */
+  /** The Overview is open: its tab, first in the row, is the underlined one. */
   onOverview?: boolean;
 }) {
   const permissions = useSession()?.user.permissions ?? [];
@@ -181,17 +181,19 @@ export function StageProgressBar({
 
   return (
     <nav aria-label={t("progress.label")} data-testid="stage-progress">
-      {/* A pill a stage, as the original design: done tinted, the open one dark. */}
-      <ol className="flex flex-wrap items-center gap-1 md:justify-end">
-        {/* The way back to the Overview from any step. */}
+      {/* A tab a stage: plain text, the open one underlined; the Overview first, the way back to it
+          from any step. */}
+      <ol className="flex items-center gap-5 overflow-x-auto">
         <li>
           <Link
             to={caseTabPath(caseId, CASE_TABS[0]!)}
             // Every step's path starts with the Overview's: only the Overview itself is current.
             activeOptions={{ exact: true }}
             className={cn(
-              "inline-flex items-center whitespace-nowrap rounded px-2 py-1 text-[11.5px] font-medium transition-colors",
-              onOverview ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted",
+              "-mb-px inline-flex items-center whitespace-nowrap border-b-2 px-0.5 pb-2 pt-1 text-[12.5px] transition-colors",
+              onOverview
+                ? "border-primary font-semibold text-foreground"
+                : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
             )}
             aria-current={onOverview ? "page" : undefined}
             data-testid="stage-overview"

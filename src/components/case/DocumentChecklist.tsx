@@ -152,7 +152,8 @@ function Journey({
   const [filter, setFilterState] = useState<Filter>("all");
   // The done band: open whenever nothing is open; else as last toggled.
   const [doneToggle, setDoneToggle] = useState<boolean | null>(null);
-  const [unmatchedOpen, setUnmatchedOpen] = useState(variant === "files");
+  // What came in that no requirement asks for starts closed, under its count.
+  const [unmatchedOpen, setUnmatchedOpen] = useState(false);
   const anyOpen = r.items.some(isOpen);
   const doneOpen = doneToggle ?? !anyOpen;
 
@@ -231,7 +232,7 @@ function Journey({
       dragging={dragging}
       flash={flash === item.item_id}
       onJump={jump}
-      compact={variant === "overview"}
+      compact
     />
   );
 

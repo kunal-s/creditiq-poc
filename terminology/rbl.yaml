@@ -2215,6 +2215,9 @@ caseHeader:
   outstandingGate: "{score}% weighted · {gate}% review gate"
   ask: Ask
   blockingGaps: "{n} blocking"
+  waitingDocuments: Waiting for documents
+  readingDocuments: "Reading documents · {done} of {total}"
+  readingStarted: Reading documents
   tabs: Appraisal tabs
   stage: Stage
   bankStage: Bank stage

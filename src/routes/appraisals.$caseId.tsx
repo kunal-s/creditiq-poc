@@ -11,7 +11,7 @@ import { ScoreBar } from "@/components/common/Panel";
 import { t } from "@/config/terminology";
 import { formatInr, stageLabel, useLabels } from "@/domain/cases";
 import { readinessBreakdown, readyForCredit, scoreText, useChecklist } from "@/domain/checklist";
-import { useCaseProgress } from "@/domain/progress";
+import { readinessWait, useCaseProgress } from "@/domain/progress";
 import { useCan, useSession } from "@/domain/session";
 import { cn } from "@/lib/utils";
 
@@ -37,21 +37,18 @@ function Layout({ c }: { c: CaseDetail }) {
 
   return (
     <div>
-      <div className="border-b border-border bg-surface px-4 py-3 sm:px-6">
-        <CaseHeader
-          c={c}
-          stage={progress.data?.stage ?? c.stage}
-          stagesBar={
-            progress.data && (
-              <StageProgressBar
-                caseId={c.id}
-                progress={progress.data}
-                activeStage={activeTab?.stage}
-                onOverview={activeTab?.key === "overview"}
-              />
-            )
-          }
-        />
+      <div className="border-b border-border px-4 pt-4 sm:px-6">
+        <CaseHeader c={c} />
+        <div className="mt-3 min-h-9">
+          {progress.data && (
+            <StageProgressBar
+              caseId={c.id}
+              progress={progress.data}
+              activeStage={activeTab?.stage}
+              onOverview={activeTab?.key === "overview"}
+            />
+          )}
+        </div>
       </div>
 
       <Outlet />
@@ -66,12 +63,17 @@ function CaseHeader({ c }: { c: CaseDetail }) {
   const labels = useLabels();
   const checklist = useChecklist(c.id);
   const canReview = useCan("review.read");
-  const r = checklist.data;
+  // Until the documents are in and read, a score of 0 with every item blocking says nothing:
+  // the header says what readiness is waiting on instead.
+  const wait = readinessWait(useCaseProgress(c.id).data, checklist.data);
+  const r = wait ? undefined : checklist.data;
   const b = r ? readinessBreakdown(r.items) : undefined;
-  const ids: [string, string | null | undefined][] = [
-    [t("identifier.pan"), c.pan],
-    [t("identifier.gstin"), c.gstin],
-    [t("identifier.udyam"), c.udyam],
+  const ids: (string | null)[] = [
+    c.id,
+    c.pan ? `${t("identifier.pan")} ${c.pan}` : null,
+    c.gstin ? `${t("identifier.gstin")} ${c.gstin}` : null,
+    c.udyam ? `${t("identifier.udyam")} ${c.udyam}` : null,
+    c.application_id ? `${t("identifier.applicationId")} ${c.application_id}` : null,
   ];
 
   return (
@@ -79,53 +81,75 @@ function CaseHeader({ c }: { c: CaseDetail }) {
       className="relative rounded border border-border border-l-2 border-l-primary bg-surface px-5 py-4"
       data-testid="case-header"
     >
-      <div className="min-w-0 max-w-full">
-        <h1 className="break-words text-[15px] font-semibold tracking-tight text-foreground">
-          {c.borrower}
-        </h1>
-        <div className="tabular mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
-          <span>{labels.constitution(c.constitution)}</span>
-          {ids.map(([label, value]) =>
-            value ? (
-              <span key={label} className="contents">
-                <span className="text-border">|</span>
-                <span>
-                  {label} {value}
-                </span>
-              </span>
-            ) : null,
-          )}
-          <span className="text-border">|</span>
-          <span>{c.id}</span>
-        </div>
+      <div className="absolute right-3 top-3">
+        <DeleteCaseButton caseId={c.id} borrower={c.borrower} />
       </div>
+      <p className="pr-10 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground sm:pr-40">
+        <span data-testid="header-product">
+          {labels.product(c.product)} · {labels.caseType(c.case_type)}
+        </span>
+        {" · "}
+        {labels.constitution(c.constitution)}
+      </p>
+      <h1 className="mt-1 break-words text-[17px] font-semibold tracking-tight text-foreground">
+        {c.borrower}
+      </h1>
+      <p className="tabular mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-[12px] text-muted-foreground">
+        {ids
+          .filter((v): v is string => Boolean(v))
+          .map((v) => (
+            <span key={v} className="after:ml-2 after:text-border after:content-['|']">
+              {v}
+            </span>
+          ))}
+        <span data-testid="header-rm">
+          {c.rm}
+          {c.branch ? ` · ${labels.branch(c.branch)}` : ""}
+        </span>
+      </p>
 
-      <div className="flex min-w-0 flex-col items-end gap-2.5 max-md:w-full max-md:items-stretch">
-        {stagesBar}
-        <div className="flex flex-wrap items-end justify-end gap-x-5 gap-y-2 max-md:justify-start">
-          {/* Document readiness as every screen says it: satisfied of all; the weighted score the
-              review gate uses under it. */}
-          <div className="w-48" data-testid="header-readiness">
-            <div className="flex items-baseline justify-between gap-2">
-              <span className="field-label">{t("caseHeader.readiness")}</span>
-              <span
-                className="tabular text-[12.5px] font-semibold leading-none text-foreground"
-                data-testid="header-readiness-count"
-              >
-                {b ? t("journey.readiness.ofTotal", { n: b.satisfied, total: b.total }) : "—"}
-              </span>
-            </div>
+      <div className="mt-3 flex flex-wrap items-end gap-x-6 gap-y-3">
+        <div
+          className="w-44"
+          data-testid="header-readiness"
+          data-state={wait ? `waiting-${wait.kind}` : undefined}
+        >
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="field-label">{t("caseHeader.readiness")}</span>
+            <span
+              className="tabular text-[13px] font-semibold leading-none text-foreground"
+              data-testid="header-readiness-count"
+            >
+              {b ? t("journey.readiness.ofTotal", { n: b.satisfied, total: b.total }) : "—"}
+            </span>
+          </div>
+          {wait ? (
+            <div
+              className={cn(
+                "mt-1 h-1.5 rounded-full bg-muted",
+                wait.kind === "reading" && "animate-pulse bg-info/30",
+              )}
+              aria-hidden
+            />
+          ) : (
             <ScoreBar
               className="mt-1"
               score={r?.score_pct ?? 0}
               gate={r?.gate_pct ?? 100}
               blocking={r?.blocking_open ?? 0}
             />
-            <p
-              className="tabular mt-0.5 text-[10.5px] text-muted-foreground"
-              data-testid="header-readiness-score"
-            >
-              {r
+          )}
+          <p
+            className="tabular mt-1 text-[11px] text-muted-foreground"
+            data-testid="header-readiness-score"
+          >
+            {wait
+              ? wait.kind === "documents"
+                ? t("caseHeader.waitingDocuments")
+                : wait.total > 0
+                  ? t("caseHeader.readingDocuments", { done: wait.done, total: wait.total })
+                  : t("caseHeader.readingStarted")
+              : r
                 ? t("caseHeader.outstandingGate", {
                     score: scoreText(r.score_pct, r.gate_pct),
                     gate: Math.round(r.gate_pct),
@@ -149,7 +173,7 @@ function CaseHeader({ c }: { c: CaseDetail }) {
               to="/appraisals/$caseId/completeness"
               params={{ caseId: c.id }}
               hash="checklist"
-              className="rounded border border-destructive/25 bg-critical-soft/60 px-2 py-1 text-[11.5px] font-medium text-critical-text"
+              className="rounded border border-destructive/25 bg-critical-soft/60 px-2 py-1 text-[12px] font-medium text-critical-text hover:bg-critical-soft"
               data-testid="header-blocking"
             >
               {t("caseHeader.blockingGaps", { n: r.blocking_open })}

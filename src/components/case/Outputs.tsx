@@ -828,8 +828,12 @@ export function SummaryItem({ caseId, item }: { caseId: string; item: CamSummary
       {item.kind !== "query" && (
         <span className="flex flex-wrap items-center gap-1.5">
           <SummaryRef caseId={caseId} item={item} />
-          {item.severity && (
-            <Chip tone={SEVERITY_TONE[item.severity]}>{t(`severity.${item.severity}`)}</Chip>
+          {item.kind === "incomplete" ? (
+            <Chip tone="muted">{t("outputs.cam.summary.notChecked")}</Chip>
+          ) : (
+            item.severity && (
+              <Chip tone={SEVERITY_TONE[item.severity]}>{t(`severity.${item.severity}`)}</Chip>
+            )
           )}
           {(item.title || !detail) && (
             <span className="font-medium">

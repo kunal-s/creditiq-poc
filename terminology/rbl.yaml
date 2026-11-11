@@ -425,9 +425,10 @@ outputs:
     recommendationEmpty: For credit to complete.
     summary:
       finding: "Findings ({n})"
-      findingNone: "Findings (0): no discrepancy in cross-check run {run}"
+      findingNone: "No discrepancy found (cross-check run {run})"
       findingNoRun: "Findings (0): the cross-checks have not run on this case yet"
-      incomplete: "Checks not completed ({n})"
+      incomplete: "Checks that could not run ({n})"
+      notChecked: Not checked
       request: "What would complete it:"
       deviation: "Deviations from policy ({n})"
       unassessed: "Norms not assessed ({n})"

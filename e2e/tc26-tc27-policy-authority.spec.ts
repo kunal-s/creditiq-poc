@@ -133,7 +133,9 @@ test("TC-24: each family card shows the engine's key norms, actual against requi
   await expect(coverage.getByTestId("policy-highlight-fact")).toHaveText(
     "Cannot evaluate · at least 2.50x",
   );
-  await expect(coverage.getByTestId("policy-highlight-value")).not.toHaveClass(/text-critical-text/);
+  await expect(coverage.getByTestId("policy-highlight-value")).not.toHaveClass(
+    /text-critical-text/,
+  );
   await expect(coverage.getByTestId("policy-highlight-note")).toHaveText("Finance costs is zero");
   await expect(keyNorm(ratios, "FR-06").getByTestId("policy-highlight-note")).toHaveText(
     "Waiting for review of Trade receivables",

@@ -65,11 +65,17 @@ export function ReadinessPanel({
     .join("; ");
   const files = conditions.find((c) => c.key === "open_exceptions");
   const gates = [
-    { label: t("readiness.reviewGate"), threshold: r.gate_pct, met: r.gate_met },
+    {
+      label: t("readiness.reviewGate"),
+      help: t("readiness.reviewGateHelp"),
+      threshold: r.gate_pct,
+      met: r.gate_met,
+    },
     ...(taxonomy.data
       ? [
           {
             label: t("readiness.disbursementGate"),
+            help: t("readiness.disbursementGateHelp"),
             threshold: taxonomy.data.disbursement_gate_threshold,
             met: r.score_pct >= taxonomy.data.disbursement_gate_threshold && r.blocking_open === 0,
           },
@@ -312,7 +318,7 @@ export function ReadinessPanel({
               <span
                 key={g.label}
                 data-testid="gate"
-                title={t("readiness.threshold", { threshold: Math.round(g.threshold), score })}
+                title={`${g.help} ${t("readiness.threshold", { threshold: Math.round(g.threshold), score })}`}
               >
                 <Chip tone={g.met ? "primary" : "muted"}>
                   {g.label} {Math.round(g.threshold)}% ·{" "}

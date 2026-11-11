@@ -2217,6 +2217,12 @@ caseProgress:
     rating: "Next: write the recommendation"
     submission: "Next: submit"
 
+# On Document readiness, once the case is created: the cross-checks that could not run, and what
+# each needs.
+checksNeed:
+  title: "{n} cross-check(s) could not run. To run them, ask for:"
+  open: See them on Cross-verification
+
 caseHeader:
   more: More
   caseDate: Case date
@@ -2403,6 +2409,8 @@ overviewStatus:
 readiness:
   reviewGate: Review gate
   disbursementGate: Disbursement gate
+  reviewGateHelp: The weighted score credit review needs, with nothing blocking.
+  disbursementGateHelp: Disbursement needs every requirement satisfied.
   met: Met
   notMet: Not met
   threshold: "threshold {threshold}% · now {score}%"
@@ -2436,6 +2444,8 @@ queryGroup:
 queries:
   subtitle: "{open} open · {resolved} resolved"
   resolvedGroup: Resolved
+  allResolved: "All {n} requests resolved"
+  show: Show
   copyEmail: Copy as email
   copyText: Copy
   copiedEmail: Copied as an email. Paste it into your mail.

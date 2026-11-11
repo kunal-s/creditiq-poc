@@ -156,3 +156,37 @@ test("with nothing blocking, the header names where the created case stands", as
   await expect(page.getByTestId("header-stage")).toHaveText(/^(In assessment|Memo in draft)$/);
   await expect(page.getByTestId("header-ready")).toHaveCount(0);
 });
+
+test("Document readiness names the documents the cross-checks still need", async ({ page }) => {
+  const api = new MockApi();
+  await signedIn(page, api);
+  await page.goto(`/appraisals/${KESTREL}/completeness`);
+  const incomplete = api.boards
+    .get(KESTREL)!
+    .items.filter((i) => i.finding.outcome === "incomplete" && i.finding.request);
+  const note = page.getByTestId("checks-need");
+  await expect(note).toHaveAttribute("data-count", String(incomplete.length));
+  const requests = new Set(incomplete.map((i) => i.finding.request!));
+  await expect(note.getByTestId("checks-need-item")).toHaveCount(requests.size);
+  await expect(note.getByTestId("checks-need-item").first()).toHaveText([...requests][0]!);
+});
+
+test("with every request resolved, the query list is one line and nothing to copy", async ({
+  page,
+}) => {
+  const api = new MockApi();
+  const items = api.queries.get(KESTREL)!;
+  api.queries.set(
+    KESTREL,
+    items.map((q) => ({ ...q, resolved: true })),
+  );
+  await signedIn(page, api);
+  await page.goto(`/appraisals/${KESTREL}/completeness`);
+  const list = page.getByTestId("query-list");
+  const resolved = list.getByTestId("query-group-resolved");
+  await expect(resolved).toContainText(`All ${items.length} requests resolved`);
+  await expect(list.getByRole("button", { name: "Copy as email" })).toHaveCount(0);
+  await expect(resolved.getByTestId("query-item").first()).toBeHidden();
+  await resolved.getByText("Show", { exact: true }).click();
+  await expect(resolved.getByTestId("query-item").first()).toBeVisible();
+});

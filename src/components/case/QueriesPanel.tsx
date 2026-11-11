@@ -38,24 +38,26 @@ export function QueriesPanel({ caseId }: { caseId: string }) {
       }
       testId="query-list"
       action={
-        <div className="flex flex-wrap gap-1.5">
-          <button
-            type="button"
-            disabled={open.length === 0 || !c}
-            onClick={() => c && void copy(queryListEmail(c, items), t("queries.copiedEmail"))}
-            className="inline-flex items-center gap-1.5 rounded bg-primary px-2.5 py-1 text-[12px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
-          >
-            <Mail className="h-3.5 w-3.5" /> {t("queries.copyEmail")}
-          </button>
-          <button
-            type="button"
-            disabled={open.length === 0}
-            onClick={() => void copy(queryListText(items), t("queries.copiedText"))}
-            className="inline-flex items-center gap-1.5 rounded border border-border px-2.5 py-1 text-[12px] font-medium hover:bg-muted disabled:opacity-40"
-          >
-            <Copy className="h-3.5 w-3.5" /> {t("queries.copyText")}
-          </button>
-        </div>
+        open.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              disabled={open.length === 0 || !c}
+              onClick={() => c && void copy(queryListEmail(c, items), t("queries.copiedEmail"))}
+              className="inline-flex items-center gap-1.5 rounded bg-primary px-2.5 py-1 text-[12px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
+            >
+              <Mail className="h-3.5 w-3.5" /> {t("queries.copyEmail")}
+            </button>
+            <button
+              type="button"
+              disabled={open.length === 0}
+              onClick={() => void copy(queryListText(items), t("queries.copiedText"))}
+              className="inline-flex items-center gap-1.5 rounded border border-border px-2.5 py-1 text-[12px] font-medium hover:bg-muted disabled:opacity-40"
+            >
+              <Copy className="h-3.5 w-3.5" /> {t("queries.copyText")}
+            </button>
+          </div>
+        )
       }
     >
       <QueryView
@@ -79,7 +81,25 @@ export function QueriesPanel({ caseId }: { caseId: string }) {
                   </ol>
                 </div>
               ))}
-              {resolved.length > 0 && (
+              {resolved.length > 0 && open.length === 0 ? (
+                // Every request resolved: one line, the list on request.
+                <details data-testid="query-group-resolved" className="group">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-2.5 text-[12.5px] text-foreground hover:bg-surface-muted">
+                    <span className="inline-flex items-center gap-2">
+                      <Check className="h-3.5 w-3.5 text-positive" aria-hidden />
+                      {t("queries.allResolved", { n: resolved.length })}
+                    </span>
+                    <span className="text-[12px] font-medium text-primary group-open:hidden">
+                      {t("queries.show")}
+                    </span>
+                  </summary>
+                  <ol className="divide-y divide-border border-t border-border">
+                    {resolved.map((item) => (
+                      <QueryRow key={item.id} caseId={caseId} n={0} item={item} />
+                    ))}
+                  </ol>
+                </details>
+              ) : resolved.length > 0 ? (
                 <div data-testid="query-group-resolved">
                   <p className="bg-surface-muted/70 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                     {t("queries.resolvedGroup")} · {resolved.length}
@@ -90,7 +110,7 @@ export function QueriesPanel({ caseId }: { caseId: string }) {
                     ))}
                   </ol>
                 </div>
-              )}
+              ) : null}
             </div>
             <p className="border-t border-border px-4 py-2 text-[11.5px] text-muted-foreground">
               {t("queries.nothingSent")}

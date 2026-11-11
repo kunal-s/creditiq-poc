@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: policy-table-on-phone
+expected_outcome: |
+  The table stacks into one card per row with StackTable (or scrolls inside its own box) so the page never scrolls sideways; checked with the phone layout spec at 320/400/768 and a 400px screenshot that was looked at.

@@ -10,7 +10,7 @@ import { CASE_TABS, caseTabPath } from "@/components/shell/nav";
 import { ScoreBar } from "@/components/common/Panel";
 import { t } from "@/config/terminology";
 import { formatInr, stageLabel, useLabels } from "@/domain/cases";
-import { countItems, readyForCredit, scoreText, useChecklist } from "@/domain/checklist";
+import { readinessBreakdown, readyForCredit, scoreText, useChecklist } from "@/domain/checklist";
 import { readinessWait, useCaseProgress } from "@/domain/progress";
 import { useCan, useSession } from "@/domain/session";
 import { cn } from "@/lib/utils";
@@ -45,6 +45,7 @@ function Layout({ c }: { c: CaseDetail }) {
               caseId={c.id}
               progress={progress.data}
               activeStage={activeTab?.stage}
+              onOverview={activeTab?.key === "overview"}
             />
           )}
         </div>
@@ -66,7 +67,7 @@ function CaseHeader({ c }: { c: CaseDetail }) {
   // the header says what readiness is waiting on instead.
   const wait = readinessWait(useCaseProgress(c.id).data, checklist.data);
   const r = wait ? undefined : checklist.data;
-  const counts = r ? countItems(r.items) : undefined;
+  const b = r ? readinessBreakdown(r.items) : undefined;
   const ids: (string | null)[] = [
     c.id,
     c.pan ? `${t("identifier.pan")} ${c.pan}` : null,
@@ -115,8 +116,11 @@ function CaseHeader({ c }: { c: CaseDetail }) {
         >
           <div className="flex items-baseline justify-between gap-2">
             <span className="field-label">{t("caseHeader.readiness")}</span>
-            <span className="tabular text-[13px] font-semibold leading-none text-foreground">
-              {r ? `${scoreText(r.score_pct, r.gate_pct)}%` : "—"}
+            <span
+              className="tabular text-[13px] font-semibold leading-none text-foreground"
+              data-testid="header-readiness-count"
+            >
+              {b ? t("journey.readiness.ofTotal", { n: b.satisfied, total: b.total }) : "—"}
             </span>
           </div>
           {wait ? (
@@ -135,16 +139,19 @@ function CaseHeader({ c }: { c: CaseDetail }) {
               blocking={r?.blocking_open ?? 0}
             />
           )}
-          <p className="mt-1 text-[11px] text-muted-foreground">
+          <p
+            className="tabular mt-1 text-[11px] text-muted-foreground"
+            data-testid="header-readiness-score"
+          >
             {wait
               ? wait.kind === "documents"
                 ? t("caseHeader.waitingDocuments")
                 : wait.total > 0
                   ? t("caseHeader.readingDocuments", { done: wait.done, total: wait.total })
                   : t("caseHeader.readingStarted")
-              : r && counts
+              : r
                 ? t("caseHeader.outstandingGate", {
-                    n: counts.outstanding,
+                    score: scoreText(r.score_pct, r.gate_pct),
                     gate: Math.round(r.gate_pct),
                   })
                 : checklist.isError
@@ -165,8 +172,8 @@ function CaseHeader({ c }: { c: CaseDetail }) {
             <Link
               to="/appraisals/$caseId/completeness"
               params={{ caseId: c.id }}
-              hash="readiness"
-              className="rounded border border-destructive/35 bg-destructive/5 px-2 py-1 text-[12px] font-medium text-destructive hover:bg-destructive/10"
+              hash="checklist"
+              className="rounded border border-destructive/25 bg-critical-soft/60 px-2 py-1 text-[12px] font-medium text-critical-text hover:bg-critical-soft"
               data-testid="header-blocking"
             >
               {t("caseHeader.blockingGaps", { n: r.blocking_open })}

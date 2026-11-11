@@ -43,8 +43,7 @@ import { ACCEPT, pageRange, useCaseRegister, useDocumentTypes } from "@/domain/d
 import { integrityNeedsPerson, stateOf } from "@/domain/integrity";
 import { readinessWait, type ReadinessWait } from "@/domain/progress";
 import { cn } from "@/lib/utils";
-import { GlanceCompactNotice, GlanceCompactSkeleton } from "./checklist/Glance";
-import type { CanOpen } from "./checklist/GlanceRail";
+import { ChecklistNotice, OverviewSkeleton, ReadinessCard } from "./checklist/Glance";
 import { BAND, filterLabel, ICON, ICON_TONE, TONE, type BandKey } from "./checklist/status";
 import { CopyLabel } from "./checklist/CopyLabel";
 import { useCopy } from "./checklist/useCopy";
@@ -52,25 +51,19 @@ import { useFileDrag } from "./checklist/useFileDrag";
 import { useJump } from "./checklist/useJump";
 import { useRowUploads, type Outcome, type Pin, type RowUploads } from "./checklist/useRowUploads";
 
-// What this appraisal needs, what has come in for each, what is wrong or missing, what to ask the
-// customer, and an upload on the spot. On the Overview it follows the readiness glance; on the
-// Files step it opens with a compact summary. Requirements are grouped by what they do to the
-// case: what blocks it, what is asked but does not block, what waits for a person, and what is
+// The Overview: one line on whether the case can go to credit review; document readiness (the
+// counts, and every document by section); then what this appraisal needs, one line a requirement,
+// each opening to what has come in, what is wrong or missing, what to ask the customer and an
+// upload on the spot. Requirements are grouped by what they do to the case: what blocks it, what is asked but does not block, what waits for a person, and what is
 // done. The content of a file decides where it counts, so a file sent from a row is read and
 // lands where it belongs; the row keeps its place and says what became of the file.
 
-export type ChecklistVariant = "overview" | "files";
-
 export function DocumentChecklist({
   caseId,
-  variant,
   progress,
-  canOpen,
 }: {
   caseId: string;
-  variant: ChecklistVariant;
   progress?: CaseProgress;
-  canOpen?: CanOpen;
 }) {
   const checklist = useChecklist(caseId);
   const r = checklist.data;
@@ -81,16 +74,18 @@ export function DocumentChecklist({
   // replaces the checklist.
   if (!r || r.items.length === 0) {
     const state = !r ? (checklist.isError ? "error" : "loading") : "empty";
+    if (state === "loading")
+      return (
+        <>
+          <OverviewSkeleton />
+          <Panel title={t("journey.title")} testId="document-checklist">
+            <LoadingBlock rows={4} className="border-0" />
+          </Panel>
+        </>
+      );
     return (
       <Panel title={t("journey.title")} testId="document-checklist">
-        {state === "loading" ? (
-          <>
-            <GlanceCompactSkeleton />
-            <LoadingBlock rows={4} className="border-0" />
-          </>
-        ) : (
-          <GlanceCompactNotice state={state} onRetry={retry} />
-        )}
+        <ChecklistNotice state={state} onRetry={retry} />
       </Panel>
     );
   }
@@ -99,9 +94,7 @@ export function DocumentChecklist({
     <Journey
       caseId={caseId}
       r={r}
-      variant={variant}
       progress={progress}
-      canOpen={canOpen}
       stale={checklist.isError ? retry : undefined}
     />
   );
@@ -132,16 +125,12 @@ function StaleNotice({ onRetry }: { onRetry: () => void }) {
 function Journey({
   caseId,
   r,
-  variant,
   progress,
-  canOpen,
   stale,
 }: {
   caseId: string;
   r: Readiness;
-  variant: ChecklistVariant;
   progress: CaseProgress | undefined;
-  canOpen: CanOpen | undefined;
   /** Set when the latest read failed: retries it. */
   stale: (() => void) | undefined;
 }) {
@@ -152,11 +141,12 @@ function Journey({
   const uploads = useRowUploads(caseId);
   const dragging = useFileDrag();
   const [filter, setFilterState] = useState<Filter>("all");
-  // The done band: open on the Files step and whenever nothing is open; else as last toggled.
+  // The done band: open whenever nothing is open; else as last toggled.
   const [doneToggle, setDoneToggle] = useState<boolean | null>(null);
-  const [unmatchedOpen, setUnmatchedOpen] = useState(variant === "files");
+  // What came in that no requirement asks for starts closed, under its count.
+  const [unmatchedOpen, setUnmatchedOpen] = useState(false);
   const anyOpen = r.items.some(isOpen);
-  const doneOpen = doneToggle ?? (variant === "files" || !anyOpen);
+  const doneOpen = doneToggle ?? !anyOpen;
 
   const docs = documents.data ?? [];
   const fileList = files.data ?? [];
@@ -233,7 +223,7 @@ function Journey({
       dragging={dragging}
       flash={flash === item.item_id}
       onJump={jump}
-      compact={variant === "overview"}
+      compact
     />
   );
 
@@ -283,22 +273,16 @@ function Journey({
               </button>
             </span>
           )}
-          {variant === "overview" ? (
-            <Link
-              to="/appraisals/$caseId/documents"
-              params={{ caseId }}
-              className="rounded-sm text-[12px] text-muted-foreground hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-            >
-              {filesLine}
-            </Link>
-          ) : (
-            <span className="text-[12px] text-muted-foreground">{filesLine}</span>
-          )}
+          <Link
+            to="/appraisals/$caseId/documents"
+            params={{ caseId }}
+            className="rounded-sm text-[12px] text-muted-foreground hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >
+            {filesLine}
+          </Link>
         </div>
       }
     >
-      {variant === "files" && stale && <StaleNotice onRetry={stale} />}
-      {variant === "files" && <FilterRow r={r} filter={filter} onFilter={setFilter} />}
       <div className="divide-y divide-border">
         {shown.length === 0 && (
           <p className="px-4 py-6 text-center text-[12.5px] text-muted-foreground">
@@ -392,11 +376,22 @@ function Journey({
     </Panel>
   );
 
-  if (variant === "files") return list;
+  // Until the documents are in and read, the counts would only say "nothing yet": the status line
+  // says what readiness waits on, and the counts follow once there is something to count.
+  const wait = readinessWait(progress, r);
   return (
     <>
-      <OverviewStatus r={r} wait={readinessWait(progress, r)} caseId={caseId} />
+      <OverviewStatus r={r} wait={wait} caseId={caseId} />
       {stale && <StaleNotice onRetry={stale} />}
+      {!wait && (
+        <ReadinessCard
+          r={r}
+          sections={sections}
+          filter={filter}
+          onFilter={setFilter}
+          onJump={jump}
+        />
+      )}
       {list}
     </>
   );
@@ -846,61 +841,6 @@ function CompactLine({
 /** How many of a requirement's documents its row names before "n more". */
 const SHOWN_DOCS = 6;
 
-const FILTERS: Filter[] = ["all", "todo", "blocking", "in_review", "satisfied"];
-
-/** The Files step's summary: the requirements counted by status, each count a filter. */
-function FilterRow({
-  r,
-  filter,
-  onFilter,
-}: {
-  r: Readiness;
-  filter: Filter;
-  onFilter: (f: Filter) => void;
-}) {
-  return (
-    <div
-      className="flex flex-wrap gap-1.5 border-b border-border px-4 py-2.5"
-      role="group"
-      aria-label={t("journey.filterLabel")}
-      data-testid="journey-summary"
-    >
-      {r.provisional && (
-        <span
-          className="mr-1 rounded border border-flag/40 bg-flag-soft px-2 py-0.5 text-[12px] text-flag-foreground"
-          title={t("checklist.provisionalHelp")}
-          data-testid="journey-provisional"
-        >
-          {t("checklist.provisional")}
-        </span>
-      )}
-      {FILTERS.map((f) => {
-        const n = r.items.filter((i) => passes(i, f)).length;
-        if (f !== "all" && n === 0) return null;
-        const on = filter === f;
-        return (
-          <button
-            key={f}
-            type="button"
-            aria-pressed={on}
-            onClick={() => onFilter(on && f !== "all" ? "all" : f)}
-            className={cn(
-              "rounded border px-2 py-0.5 text-[12px] transition-colors",
-              on
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-border bg-surface text-foreground hover:bg-muted",
-            )}
-            data-testid={`journey-filter-${f}`}
-          >
-            {f === "all" ? t("journey.filterAll") : filterLabel(f)} {n}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-/** The Overview's opening line: whether the case can go to credit review, and why not. */
 function OverviewStatus({
   r,
   wait,
@@ -957,13 +897,14 @@ function OverviewStatus({
       ? t("overviewStatus.notReady", { score, gate, n: r.blocking_open })
       : t("overviewStatus.notReadyScore", { score, gate });
   const Icon = ready ? CheckCircle2 : AlertTriangle;
+  // White, as every card is: the colour is in the edge and the icon, the words stay readable.
   return (
     <section
       className={cn(
-        "flex items-start gap-2.5 rounded border px-4 py-3 text-[13px]",
+        "flex items-start gap-2.5 rounded border border-l-2 border-border bg-surface px-4 py-3 text-[13px] text-foreground",
         ready
-          ? "border-positive/30 bg-positive-soft text-positive"
-          : "border-destructive/30 bg-destructive/5 text-destructive",
+          ? "border-l-positive/60 [&>svg]:text-positive"
+          : "border-l-destructive/50 [&>svg]:text-destructive",
       )}
       data-testid="journey-verdict"
       data-state={ready ? "ready" : "not_ready"}

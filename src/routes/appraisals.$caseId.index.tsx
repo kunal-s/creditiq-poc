@@ -38,20 +38,11 @@ function OverviewTab() {
 }
 
 function Overview({ progress }: { progress: CaseProgress }) {
-  const permissions = useSession()?.user.permissions ?? [];
-  const canOpen = (key: CaseProgress["stages"][number]["key"]) =>
-    permissions.includes(tabForStage(key).permission);
-
   return (
     <div className="space-y-4">
-      {/* The readiness glance (verdict, score against the gate, what blocks it, the counts, what
-          to do next and what to ask the customer), then what this appraisal needs, row by row. */}
-      <DocumentChecklist
-        caseId={progress.case_id}
-        variant="overview"
-        progress={progress}
-        canOpen={canOpen}
-      />
+      {/* Whether the case can go to credit review, document readiness (the counts and every
+          document by section), then what this appraisal needs, one line a requirement. */}
+      <DocumentChecklist caseId={progress.case_id} progress={progress} />
 
       <WaitingForDecision caseId={progress.case_id} />
     </div>

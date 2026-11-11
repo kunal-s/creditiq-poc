@@ -7,6 +7,7 @@ This repository is the RBL Bank (Business Banking Group) instance of CreditIQ. I
 - **`docs/functional-requirements.md` governs the build** (since 2026-09-29). It lists features F-00 to F-27 in build order, each traced to the PoC test plan (TC-01 to TC-31, C1 to C9). Where it differs from anything in `workflow/docs/`, it wins.
 - Background only, load when a feature needs it: `workflow/docs/` (git-ignored) holds the earlier plans, the handoff note, reference reports and the document-intelligence review (`reviews/2026-09-23-document-intelligence-review.md`).
 - Work feature by feature in the FRD's order and stop for the user's sign-off at every phase boundary.
+- Frontend work follows the project skills in `.claude/skills/`: `creditiq-ui` to design and build (tokens, the pale-tint colour rule, components, copy, tests) and `creditiq-ui-audit` to review before hand-back (`scripts/ui_check.py` for the mechanical checks).
 
 ## Hard rules
 

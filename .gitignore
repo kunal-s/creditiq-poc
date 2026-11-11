@@ -38,3 +38,5 @@ __pycache__/
 *.njsproj
 *.sln
 *.sw?
+# Claude Code's local state (worktrees, settings) stays out of git; the project skills are shared.
+/.claude/

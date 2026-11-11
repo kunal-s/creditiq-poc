@@ -962,7 +962,9 @@ def test_the_downloads_are_read_as_the_outputs_are(client: TestClient, published
         assert _download(client, rm, case_id, path, "pdf").status_code == 403
         assert _download(client, rm, own, path, "pdf").status_code == 403
         assert _download(client, sign_in(client, ADMIN), case_id, path, "pdf").status_code == 403
-        assert _download(client, analyst, case_id, path, "xlsx").status_code == 422
+        assert _download(client, analyst, case_id, path, "odt").status_code == 422
+        # Only the memo is a workbook.
+        assert _download(client, analyst, case_id, path, "xlsx").status_code == (200 if path == "cam" else 422)
         assert client.get(f"/api/cases/{case_id}/{path}/download", headers=analyst).status_code == 422
         assert _download(client, analyst, "BBG-2099-999999", path, "pdf").status_code == 404
         assert _download(client, sign_in(client, MANAGER), case_id, path, "docx").status_code == 200
@@ -971,7 +973,7 @@ def test_the_downloads_are_read_as_the_outputs_are(client: TestClient, published
         logged = conn.execute("SELECT COUNT(*) FROM decision_log WHERE action = 'output.downloaded'").fetchone()[0]
     finally:
         conn.close()
-    assert logged == 2  # only the two that were served
+    assert logged == 3  # only those served: the two Word files and the memo's workbook
 
 
 def test_a_role_that_reads_outputs_but_not_every_case_downloads_only_its_own(

@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: audit-current-changes
+expected_outcome: |
+  The audit runs ui_check.py on the changed files and the gates, reads the relevant references, and reports a verdict then a severity-ranked table with file:line and fixes, plus what was and was not checked.

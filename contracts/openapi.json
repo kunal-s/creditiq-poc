@@ -13141,7 +13141,7 @@
     },
     "/api/cases/{case_id}/cam/download": {
       "get": {
-        "description": "F-23.5: the draft CAM as a Word or PDF file, the same content as the screen, with numbered\ncitations and the sources; the recommendation is left blank for credit.",
+        "description": "F-23.5: the draft CAM as a Word, PDF or Excel file, the same content as the screen, with numbered\ncitations and the sources; the recommendation is left blank for credit. The workbook has a sheet a\nsection, the figures a person overrode in their cells, noted.",
         "operationId": "case_cam_download_api_cases__case_id__cam_download_get",
         "parameters": [
           {
@@ -13160,7 +13160,8 @@
             "schema": {
               "enum": [
                 "docx",
-                "pdf"
+                "pdf",
+                "xlsx"
               ],
               "title": "Format",
               "type": "string"
@@ -13187,6 +13188,12 @@
           "200": {
             "content": {
               "application/pdf": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              },
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
                 "schema": {
                   "format": "binary",
                   "type": "string"
@@ -15123,6 +15130,12 @@
           "200": {
             "content": {
               "application/pdf": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              },
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
                 "schema": {
                   "format": "binary",
                   "type": "string"

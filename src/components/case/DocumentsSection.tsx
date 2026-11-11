@@ -8,7 +8,6 @@ import { FileTree, RegisterHead, type RegisterContext } from "@/components/docum
 import { UploadZone } from "@/components/documents/UploadZone";
 import { FileStatusChip } from "@/components/documents/chips";
 import { t } from "@/config/terminology";
-import { DocumentChecklist } from "./DocumentChecklist";
 import { useCase } from "@/domain/cases";
 import { useChecklist } from "@/domain/checklist";
 import {
@@ -211,9 +210,6 @@ export function DocumentsSection({ caseId }: { caseId: string }) {
   return (
     <div className="grid gap-4 px-4 py-5 sm:px-6 @min-[49rem]/main:grid-cols-[minmax(0,1fr)_320px]">
       <div className="order-2 min-w-0 space-y-4 @min-[49rem]/main:order-1">
-        {/* First: what the appraisal needs, what has come in for each, what is missing, with an
-            upload on each row; every file received follows. */}
-        <DocumentChecklist caseId={caseId} variant="files" />
         <Panel
           title={t("documents.received")}
           subtitle={

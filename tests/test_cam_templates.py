@@ -41,11 +41,13 @@ def _create(client: TestClient, headers: dict, body: dict | None = None):
     return client.post("/api/cam/templates", json=body or TEMPLATE, headers=headers)
 
 
-def test_the_default_comes_first_with_the_parts_a_template_may_draw_on(client: TestClient, analyst,
-                                                                         published_data_root: Path):
+def test_the_two_built_in_templates_come_first_with_the_parts_a_template_may_draw_on(
+        client: TestClient, analyst, published_data_root: Path):
     listing = client.get("/api/cam/templates", headers=analyst).json()
-    [default] = listing["templates"]
-    assert default["id"] == "default" and default["default"] is True
+    default, two = listing["templates"]
+    assert (default["id"], default["name"], default["default"]) == ("default", "Default Template One", True)
+    assert (two["id"], two["name"], two["default"]) == ("default_two", "Default Template Two", True)
+    assert two["sections"] == default["sections"]
     assert [s["title"] for s in default["sections"]][:2] == ["Borrower and Group Profile",
                                                               "Facility Requested and Purpose"]
     assert len(listing["parts"]) == 12 and {"kind": "turnover", "id": "turnover"}.items() <= listing["parts"][6].items()
@@ -64,7 +66,7 @@ def test_an_analyst_makes_a_template_kept_bank_wide_with_who_and_when(client: Te
     # Section ids never take a part's id, so a link to a part still finds it.
     assert [s["id"] for s in t["sections"]] == ["the_borrower", "numbers", "analyst_s_note"]
     assert [x["name"] for x in client.get("/api/cam/templates", headers=analyst).json()["templates"]] == [
-        "Default template", "Short memo"]
+        "Default Template One", "Default Template Two", "Short memo"]
 
 
 @pytest.mark.parametrize("change,status,message", [
@@ -140,3 +142,14 @@ def test_an_unknown_template_is_refused_and_the_rm_may_not_choose(client: TestCl
     assert client.put(f"/api/cases/{case_id}/cam/template", json={"template_id": "default"},
                       headers=rm).status_code == 403
     assert _create(client, rm).status_code == 403
+
+
+def test_choosing_the_second_built_in_template_is_kept_and_the_memo_follows_it(client: TestClient, analyst,
+                                                                               published_data_root: Path):
+    case_id = make_case(client, analyst, published_data_root)
+    cam = client.put(f"/api/cases/{case_id}/cam/template", json={"template_id": "default_two"}, headers=analyst)
+    assert cam.status_code == 200, cam.text
+    assert (cam.json()["template_id"], cam.json()["template_name"]) == ("default_two", "Default Template Two")
+    again = client.get(f"/api/cases/{case_id}/cam", headers=analyst).json()
+    assert again["template_id"] == "default_two"
+    assert [s["title"] for s in again["sections"]] == [s["title"] for s in cam.json()["sections"]]

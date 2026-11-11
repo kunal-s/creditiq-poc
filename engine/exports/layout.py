@@ -40,6 +40,10 @@ LABELS = {
     "sign_name": "Name", "sign_designation": "Designation", "sign_signature": "Signature", "sign_date": "Date",
     "sources": "Sources", "source_no": "No.", "source_document": "Document", "source_file": "File",
     "source_pages": "Pages",
+    # The Excel workbook's own words: its key facts' columns, each sheet's sources, a cell's override note,
+    # the sign-off's role column, and the bank named at the head of every sheet (none unless configured).
+    "field": "Field", "value": "Value", "source": "Source", "sources_cited": "Sources cited in this section",
+    "as_drafted": "As drafted", "overridden_by": "Overridden by", "sign_role": "Role", "bank": "",
 }
 # The groups of the query list, in its order.
 QUERY_GROUPS = {"documents_needed": "Documents needed", "documents_to_redo": "Documents to redo",

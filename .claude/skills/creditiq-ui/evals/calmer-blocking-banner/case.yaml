@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: calmer-blocking-banner
+expected_outcome: |
+  The bold text-destructive words become text-critical-text at normal weight (or a critical Chip); any solid red fill becomes a pale tint; the glyph stays saturated; contrast stays at or above 4.5:1; tests touching the banner still pass.

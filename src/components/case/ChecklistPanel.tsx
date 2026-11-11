@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { ChevronDown, ChevronRight, Eye } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { ChevronDown, ChevronRight, Eye, Info } from "lucide-react";
 import type {
   ChecklistItemDef,
   ChecklistItemState,
@@ -14,28 +14,38 @@ import { ChecklistStatusChip } from "@/components/documents/chips";
 import { useDocViewer } from "@/components/docviewer/DocViewer";
 import { t } from "@/config/terminology";
 import { useCase, useLabels } from "@/domain/cases";
-import { bySection, isOpen, useTaxonomy } from "@/domain/checklist";
+import { bySection, passes, useTaxonomy, type Filter } from "@/domain/checklist";
+import { StatusMark } from "./checklist/Readiness";
 import { cn } from "@/lib/utils";
 import { pageRange, useCaseDocuments, useDocumentTypes } from "@/domain/documents";
 
-type ItemFilter = "all" | "open" | "blocking" | "satisfied";
-const ITEM_FILTERS: ItemFilter[] = ["all", "open", "blocking", "satisfied"];
+/** The list's own filters, in the words the readiness counts use; a count above can also set
+ * missing, insufficient or in review, which shows as one more chip. */
+const ITEM_FILTERS: Filter[] = ["all", "not_satisfied", "blocking", "satisfied"];
 
-function passes(item: ChecklistItemState, filter: ItemFilter): boolean {
-  if (filter === "open") return isOpen(item);
-  if (filter === "blocking") return item.blocking && isOpen(item);
-  if (filter === "satisfied") return item.status === "satisfied" || item.status === "waived";
-  return true;
-}
-
-/** The checklist with each item's status (F-12, F-13), filterable. */
-export function ChecklistPanel({ caseId, r }: { caseId: string; r: Readiness }) {
+/** The checklist with each item's status (F-12, F-13), filterable; while provisional it says so,
+ * and failed blocking cross-checks are shown on it (F-19.5), decided on their tab. */
+export function ChecklistPanel({
+  caseId,
+  r,
+  filter,
+  onFilter,
+  action,
+  blockingFindings = 0,
+}: {
+  caseId: string;
+  r: Readiness;
+  filter: Filter;
+  onFilter: (f: Filter) => void;
+  /** In the panel's head: the action that creates the case. */
+  action?: ReactNode;
+  blockingFindings?: number;
+}) {
   const { data: c } = useCase(caseId);
   const labels = useLabels();
   const taxonomy = useTaxonomy();
   const documents = useCaseDocuments(caseId);
   const [open, setOpen] = useState<string | null>(null);
-  const [filter, setFilter] = useState<ItemFilter>("all");
   const items = r.items;
   const shown = items.filter((i) => passes(i, filter));
 
@@ -52,17 +62,39 @@ export function ChecklistPanel({ caseId, r }: { caseId: string; r: Readiness }) 
           : undefined
       }
       testId="checklist"
+      action={action}
     >
+      {r.provisional && (
+        <p
+          className="flex items-start gap-2 border-b border-border bg-accent/40 px-4 py-2 text-[12px] text-accent-foreground"
+          data-testid="provisional"
+        >
+          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
+          {t("checklist.provisionalHelp")}
+        </p>
+      )}
+      {blockingFindings > 0 && (
+        <p className="border-b border-border px-4 py-2">
+          <Link
+            to="/appraisals/$caseId/cross-verification"
+            params={{ caseId }}
+            className="inline-flex items-center gap-1 text-[12px] font-medium text-primary hover:underline"
+            data-testid="blocking-findings"
+          >
+            {t("readiness.blockingFindings", { n: blockingFindings })} →
+          </Link>
+        </p>
+      )}
       <div
         className="flex flex-wrap gap-1.5 border-b border-border px-4 py-2"
         data-testid="checklist-filters"
       >
-        {ITEM_FILTERS.map((f) => (
+        {(ITEM_FILTERS.includes(filter) ? ITEM_FILTERS : [...ITEM_FILTERS, filter]).map((f) => (
           <button
             key={f}
             type="button"
             aria-pressed={filter === f}
-            onClick={() => setFilter(f)}
+            onClick={() => onFilter(filter === f && f !== "all" ? "all" : f)}
             data-testid={`checklist-filter-${f}`}
             className={cn(
               "rounded border px-2 py-0.5 text-[11.5px] font-medium transition-colors",
@@ -155,6 +187,7 @@ function Item({
         ) : (
           <ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
         )}
+        <StatusMark status={item.status} className="mt-px" />
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-2">
             <span className="text-[13px] font-medium text-foreground">{item.name}</span>

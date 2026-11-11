@@ -56,6 +56,42 @@ export function countItems(items: ChecklistItemState[]): ReadinessCounts {
   return counts;
 }
 
+/** Document readiness as one hierarchy, the same on every screen: every requirement is either
+ * satisfied (waived ones count here: they no longer hold the case up) or not satisfied, and the
+ * not satisfied ones break down into missing, insufficient and in review. Blocking is a property
+ * of a not-satisfied requirement, never a count of its own beside them. */
+export type ReadinessBreakdown = {
+  total: number;
+  /** Satisfied plus waived. */
+  satisfied: number;
+  waived: number;
+  notSatisfied: number;
+  missing: number;
+  insufficient: number;
+  inReview: number;
+  /** Of the not satisfied, how many stop the case reaching credit review. */
+  blocking: number;
+};
+
+export function readinessBreakdown(items: ChecklistItemState[]): ReadinessBreakdown {
+  const c = countItems(items);
+  const b: ReadinessBreakdown = {
+    total: items.length,
+    satisfied: c.satisfied + c.waived,
+    waived: c.waived,
+    notSatisfied: c.missing + c.insufficient + c.in_review,
+    missing: c.missing,
+    insufficient: c.insufficient,
+    inReview: c.in_review,
+    blocking: items.filter((i) => i.blocking && i.status !== "satisfied" && i.status !== "waived")
+      .length,
+  };
+  // Every requirement is counted once: the two halves make the whole, the parts make the half.
+  if (b.satisfied + b.notSatisfied !== b.total)
+    throw new Error("document readiness: the counts do not add up to the requirements");
+  return b;
+}
+
 /** Items that still stand between the case and its gate. */
 export function isOpen(item: Pick<ChecklistItemState, "status">): boolean {
   return item.status !== "satisfied" && item.status !== "waived";
@@ -83,7 +119,15 @@ export function bySection(
 // --- The readiness glance and the banded checklist ---
 
 /** What the checklist shows: everything, or one kind of requirement. */
-export type Filter = "all" | "blocking" | "todo" | "in_review" | "satisfied";
+export type Filter =
+  | "all"
+  | "blocking"
+  | "todo"
+  | "not_satisfied"
+  | "missing"
+  | "insufficient"
+  | "in_review"
+  | "satisfied";
 
 export function passes(item: Pick<ChecklistItemState, "status" | "blocking">, f: Filter): boolean {
   switch (f) {
@@ -93,6 +137,14 @@ export function passes(item: Pick<ChecklistItemState, "status" | "blocking">, f:
       return item.blocking && isOpen(item);
     case "todo":
       return item.status === "missing" || item.status === "insufficient";
+    case "not_satisfied":
+      return (
+        item.status === "missing" || item.status === "insufficient" || item.status === "in_review"
+      );
+    case "missing":
+      return item.status === "missing";
+    case "insufficient":
+      return item.status === "insufficient";
     case "in_review":
       return item.status === "in_review";
     case "satisfied":

@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { AlertTriangle, Check, Loader2, Lock } from "lucide-react";
 import type { CaseProgress, StageProgress as Stage, StageStatus } from "@/api/types";
-import { caseTabPath, tabForStage } from "@/components/shell/nav";
+import { CASE_TABS, caseTabPath, tabForStage } from "@/components/shell/nav";
 import { t } from "@/config/terminology";
 import { stageDetail } from "@/domain/progress";
 import { useSession } from "@/domain/session";
@@ -157,10 +157,13 @@ export function StageProgressBar({
   caseId,
   progress,
   activeStage,
+  onOverview = false,
 }: {
   caseId: string;
   progress: CaseProgress;
   activeStage?: string | undefined;
+  /** The Overview is open: its tab, first in the row, is the underlined one. */
+  onOverview?: boolean;
 }) {
   const permissions = useSession()?.user.permissions ?? [];
   const stages = progress.stages;
@@ -178,8 +181,26 @@ export function StageProgressBar({
 
   return (
     <nav aria-label={t("progress.label")} data-testid="stage-progress">
-      {/* A tab a stage: plain text, the open one underlined. */}
+      {/* A tab a stage: plain text, the open one underlined; the Overview first, the way back to it
+          from any step. */}
       <ol className="flex items-center gap-5 overflow-x-auto">
+        <li>
+          <Link
+            to={caseTabPath(caseId, CASE_TABS[0]!)}
+            // Every step's path starts with the Overview's: only the Overview itself is current.
+            activeOptions={{ exact: true }}
+            className={cn(
+              "-mb-px inline-flex items-center whitespace-nowrap border-b-2 px-0.5 pb-2 pt-1 text-[12.5px] transition-colors",
+              onOverview
+                ? "border-primary font-semibold text-foreground"
+                : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
+            )}
+            aria-current={onOverview ? "page" : undefined}
+            data-testid="stage-overview"
+          >
+            {t("caseTab.overview")}
+          </Link>
+        </li>
         {stages.map((stage) => (
           <li key={stage.key}>
             <StagePill

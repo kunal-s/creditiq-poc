@@ -55,10 +55,19 @@ const Register = createContext<RegisterContext>({
 const SURE = 0.85;
 
 /** The register's columns: one row per document (a file with none has one row of its own). On a
- * phone each row is a short card: the file, then a line for each cell with its column named. */
+ * phone each row is a short card: the file, then a line for each cell with its column named. The
+ * row's own text size is the file name's, so every cell's first line sits on the same line. */
 export const REGISTER_ROW =
-  "flex flex-col gap-1.5 px-4 py-2.5 md:grid md:py-2 md:grid-cols-[minmax(0,2.3fr)_3.5rem_minmax(0,1.6fr)_4.5rem_minmax(0,1.8fr)_minmax(0,1.3fr)] md:gap-x-3";
+  "flex flex-col gap-1.5 px-4 py-2.5 text-[12.5px] leading-normal md:grid md:py-2 md:grid-cols-[minmax(0,2.3fr)_3.5rem_minmax(0,1.6fr)_5.5rem_minmax(0,1.8fr)_minmax(0,1.3fr)] md:gap-x-3";
 const COLUMNS = ["file", "pages", "type", "confidence", "integrity", "satisfies"] as const;
+type Column = (typeof COLUMNS)[number];
+
+/** A column's alignment on the laptop grid, the same in its title and its cells: the confidence is
+ * a figure, so it sits right; the integrity check keeps a gap from it. */
+const ALIGN: Partial<Record<Column, string>> = {
+  confidence: "md:text-right",
+  integrity: "md:pl-4",
+};
 
 /** The column titles, once above every section. */
 export function RegisterHead() {
@@ -71,7 +80,9 @@ export function RegisterHead() {
       data-testid="register-head"
     >
       {COLUMNS.map((c) => (
-        <span key={c}>{t(`documents.table.${c}`)}</span>
+        <span key={c} className={ALIGN[c]}>
+          {t(`documents.table.${c}`)}
+        </span>
       ))}
     </div>
   );
@@ -259,7 +270,7 @@ function FileRows({
               )}
             </span>
           </RegisterCell>
-          <Empty />
+          <Empty column="confidence" />
           <RegisterCell column="integrity" empty={noIntegrity}>
             {integrity}
           </RegisterCell>
@@ -306,7 +317,7 @@ function SameFile() {
 }
 
 /** A cell's column name, on a phone only, where the row's cells stand without their headings. */
-function PhoneLabel({ column }: { column: (typeof COLUMNS)[number] }) {
+function PhoneLabel({ column }: { column: Column }) {
   return (
     <span className="w-[5.25rem] shrink-0 pt-[3px] text-[10px] font-semibold uppercase leading-tight tracking-wide text-muted-foreground md:hidden">
       {t(`documents.table.phone.${column}`)}
@@ -324,17 +335,22 @@ function indent(depth: number, toggle: boolean): CSSProperties {
 export function RegisterCell({
   column,
   empty = false,
+  className,
   children,
 }: {
-  column: (typeof COLUMNS)[number];
+  column: Column;
   empty?: boolean;
+  /** Placement on the laptop grid, e.g. a span over columns that have nothing to say. */
+  className?: string;
   children: ReactNode;
 }) {
   return (
     <span
       className={cn(
         "flex min-w-0 items-start gap-2 max-md:pl-[var(--indent,0px)] md:block",
+        ALIGN[column],
         empty && "max-md:hidden",
+        className,
       )}
     >
       <PhoneLabel column={column} />
@@ -343,9 +359,12 @@ export function RegisterCell({
   );
 }
 
-function Empty() {
+/** A laptop cell with nothing in it, aligned as its column is. */
+function Empty({ column }: { column?: Column }) {
   return (
-    <span className="hidden text-[11px] text-muted-foreground md:inline">
+    <span
+      className={cn("hidden text-[11px] text-muted-foreground md:inline", column && ALIGN[column])}
+    >
       {t("documents.table.none")}
     </span>
   );

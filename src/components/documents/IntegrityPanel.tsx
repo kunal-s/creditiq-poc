@@ -90,7 +90,8 @@ export function TraceButton({
   );
 }
 
-/** The file row's chip: the integrity status in a word, and the toggle for the checks. */
+/** The file row's chip: the integrity status in a word, and the toggle for the checks. A long
+ * status wraps inside its column rather than running into the next one. */
 export function IntegrityChip({
   file,
   open,
@@ -108,9 +109,12 @@ export function IntegrityChip({
       title={t(open ? "fileIntegrity.hide" : "fileIntegrity.show")}
       data-testid="integrity-chip"
       data-state={stateOf(file)}
-      className="shrink-0"
+      className="max-w-full text-left"
     >
-      <StateChip file={file} className="cursor-pointer whitespace-nowrap hover:opacity-80" />
+      <StateChip
+        file={file}
+        className="max-w-full cursor-pointer hover:opacity-80 [&>svg]:shrink-0"
+      />
     </button>
   );
 }

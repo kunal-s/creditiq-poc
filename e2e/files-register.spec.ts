@@ -1,5 +1,5 @@
 // The Files step: one register of the files received and, at its head, every required document
-// not yet uploaded, each a pale red row with its own upload. A file sent from a row is read; its
+// not yet uploaded, each a white row with its own upload. A file sent from a row is read; its
 // content decides where it counts, and the row says so. A role that cannot upload sees the rows
 // without the upload.
 import { expect, test, type Page } from "@playwright/test";
@@ -41,12 +41,18 @@ test("every required document not uploaded heads the one register, named and mar
   const kyc = missing.locator('[data-item="kyc_directors"]');
   await expect(kyc).toContainText("Not uploaded");
   await expect(kyc).toContainText("KYC of directors");
-  await expect(kyc).toContainText("Missing");
   await expect(kyc).toContainText("Missing: 1 of 2 directors (Leela Varghese)");
   await expect(kyc).toContainText("Blocks credit review");
-  // A pale red row; the strong colour only in its mark.
-  await expect(kyc).toHaveClass(/bg-critical-soft\/30/);
   await expect(kyc.locator("svg").first()).toBeVisible();
+  // A white row like any other: no tinted area (section, heading, row) and no second status word;
+  // the colour is in the mark and the blocking note only.
+  const tinted = await missing.evaluate((section) =>
+    [section, ...section.querySelectorAll("h3, li, li > div")].some((el) =>
+      [...el.classList].some((c) => /^bg-(critical|destructive)/.test(c)),
+    ),
+  );
+  expect(tinted).toBe(false);
+  await expect(kyc.getByText("Missing", { exact: true })).toHaveCount(0);
   // No separate list of what is missing anywhere on the step.
   await expect(page.getByTestId("document-checklist")).toHaveCount(0);
 });
@@ -130,4 +136,41 @@ test("on a phone each missing row is a card and nothing scrolls sideways", async
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
   );
   expect(sideways).toBe(false);
+});
+
+test("the register's columns line up: figures sit right under their title, and no cell runs into the next", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await files(page);
+  const layout = await page.getByTestId("file-tree").evaluate((tree) => {
+    const head = tree.querySelector("[data-testid='register-head']")!.children;
+    const right = (el: Element) => Math.round(el.getBoundingClientRect().right);
+    // Where a title's words start, past any padding of its cell.
+    const textLeft = (el: Element) => {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      return Math.round(range.getBoundingClientRect().left);
+    };
+    const confidence = [...tree.querySelectorAll("[data-testid='document-confidence']")];
+    const rows = [
+      ...tree.querySelectorAll(
+        "[data-testid='tree-document'] > div, [data-testid='tree-file'] > div",
+      ),
+    ];
+    return {
+      title: right(head[3]!),
+      figures: confidence.map((c) => right(c)),
+      gap: textLeft(head[4]!) - right(head[3]!),
+      overflow: rows.flatMap((r) =>
+        [...r.children]
+          .filter((c) => (c as HTMLElement).scrollWidth > (c as HTMLElement).clientWidth + 1)
+          .map((c) => c.textContent),
+      ),
+    };
+  });
+  expect(layout.figures.length).toBeGreaterThan(0);
+  for (const r of layout.figures) expect(Math.abs(r - layout.title)).toBeLessThanOrEqual(1);
+  expect(layout.gap).toBeGreaterThanOrEqual(24);
+  expect(layout.overflow).toEqual([]);
 });

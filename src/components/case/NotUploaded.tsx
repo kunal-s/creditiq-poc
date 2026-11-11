@@ -1,7 +1,6 @@
 import { useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, CircleDashed, Loader2, Upload, X } from "lucide-react";
 import type { ChecklistItemState } from "@/api/types";
-import { Chip } from "@/components/common/Panel";
 import { REGISTER_ROW, RegisterCell } from "@/components/documents/FileTree";
 import { StageTrack } from "@/components/documents/StageTrack";
 import { t } from "@/config/terminology";
@@ -14,7 +13,9 @@ import { useRowUploads, type Outcome, type RowUploads } from "./checklist/useRow
 
 // The documents this appraisal needs that have not been uploaded, at the head of the files
 // received: one row each, in the register's columns, so what is missing is seen before what has
-// come in. The row is a pale red; the strong colour is only in its mark. A file is uploaded from
+// come in. The rows are white like every other row: the colour is only in each row's mark and its
+// blocking note. With no file there are no pages, confidence or checks, so the document and what is
+// missing of it run across those columns and the row stays short. A file is uploaded from
 // the row (picked or dropped on it); its content decides where it counts, and the row says what
 // it was read as and which requirement it now counts toward. A row a file was sent from stays
 // until the page is left, so that answer is read where the file was sent. A role that cannot
@@ -35,8 +36,8 @@ export function NotUploaded({ caseId }: { caseId: string }) {
   const missing = items.filter((i) => i.status === "missing").length;
   return (
     <section data-testid="register-missing" data-count={missing}>
-      <h3 className="flex items-center gap-1.5 border-b border-border bg-critical-soft/40 px-4 py-1.5 text-[11.5px] font-semibold text-critical-text">
-        <X className="h-3.5 w-3.5" aria-hidden />
+      <h3 className="flex items-center gap-1.5 border-b border-border px-4 py-1.5 text-[11.5px] font-semibold text-foreground">
+        <X className="h-3.5 w-3.5 text-critical-text" aria-hidden />
         {t("documents.missing.section", { n: missing })}
       </h3>
       <ul className="divide-y divide-border">
@@ -67,7 +68,7 @@ function MissingRow({
   return (
     <li
       className={cn(
-        "relative bg-critical-soft/30 transition-colors",
+        "relative transition-colors",
         dragging &&
           droppable &&
           !over &&
@@ -151,26 +152,14 @@ function MissingRow({
             </>
           )}
         </span>
-        <RegisterCell column="pages" empty>
-          <span className="text-muted-foreground">—</span>
-        </RegisterCell>
-        {/* What is needed: the document, its status, and what exactly is missing. */}
-        <RegisterCell column="type">
-          <span className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[12.5px] font-medium text-foreground">{item.name}</span>
-            <Chip tone="critical">{t(`docStatus.${item.status}`)}</Chip>
-          </span>
+        {/* What is needed and what exactly is missing of it, across the columns a file would fill. */}
+        <RegisterCell column="type" className="md:col-span-3 md:col-start-3">
+          <span className="block text-[12.5px] font-medium text-foreground">{item.name}</span>
           {item.deficiency && (
             <span className="mt-0.5 block text-[11.5px] text-muted-foreground">
               {item.deficiency}
             </span>
           )}
-        </RegisterCell>
-        <RegisterCell column="confidence" empty>
-          <span className="text-muted-foreground">—</span>
-        </RegisterCell>
-        <RegisterCell column="integrity" empty>
-          <span className="text-muted-foreground">—</span>
         </RegisterCell>
         <RegisterCell column="satisfies">
           <span className="block text-[12px] text-muted-foreground">{item.section}</span>

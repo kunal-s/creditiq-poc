@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: xv-status-panel
+expected_outcome: |
+  A design note is stated before code; the panel reuses Panel and Chip (tones positive/flag/critical/info/muted) with words from terminology/rbl.yaml; no raw colours or solid red areas; counts come from the board data and add up; a data-testid and a browser test assert it; the gates are run and reported.

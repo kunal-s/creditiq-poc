@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: critique-red-on-readiness
+expected_outcome: |
+  The critique finds the components behind the screen, takes screenshots or reads the code, applies the pale-tint colour rule and the readiness vocabulary, and reports ranked findings without editing files.

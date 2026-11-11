@@ -214,8 +214,8 @@ types:
           drop_lines: *xbrl_drop
           columns:
             - {name: particulars, header: '^\[Abstract\]$'}
-            - {name: current_period, header: '^01/04/\d{4}$', nth: 0, align: right}
-            - {name: previous_period, header: '^01/04/\d{4}$', nth: 1, align: right}
+            - {name: current_period, header: '^\d{2}/\d{2}/\d{4}$', nth: 0, align: right}
+            - {name: previous_period, header: '^\d{2}/\d{2}/\d{4}$', nth: 1, align: right}
 
   income_tax_return:
     # The model reads the fields from the first page and the computation sections (Part B-TI and B-TTI); code checks every

@@ -1,55 +1,158 @@
-import { CircleDashed, Info } from "lucide-react";
-import type { Readiness } from "@/api/types";
+import { Link } from "@tanstack/react-router";
+import { AlertTriangle, CheckCircle2, CircleDashed, Clock, Info, Loader2 } from "lucide-react";
+import type { CaseProgress, Readiness } from "@/api/types";
+import { Panel } from "@/components/common/Panel";
 import { t } from "@/config/terminology";
-import type { Filter } from "@/domain/checklist";
+import { readyForCredit, scoreText, useChecklist, useTaxonomy } from "@/domain/checklist";
+import { readinessWait, type ReadinessWait } from "@/domain/progress";
 import { cn } from "@/lib/utils";
 import { DocumentReadiness, DocumentStatusList } from "./Readiness";
 
-// Document readiness on the Overview, under the line that says whether the case can go to credit
-// review: how many requirements are satisfied of all, the rest as not satisfied broken down by why
-// (each count also shows only those in the list below), and every document named under its
-// section with its mark and its status. A white card: the colour is in the marks and the chips.
+// The head of the Overview: one line on whether the case can go to credit review, then document
+// readiness (satisfied of all, and why the rest are not) and, under it, every document by section
+// with its mark and status. White panels: the colour is in the marks and the chips.
+//
+// Test ids: journey-verdict (the status line; data-state ready, not_ready, waiting-documents,
+// waiting-reading, error, empty), journey-readiness (both panels), readiness-panel-readiness and
+// readiness-panel-status, journey-provisional, journey-loading (the skeleton).
 
-const SHELL = "@container/glance relative rounded-md border border-border bg-surface";
+/** The Overview's head for a case: the status line, then document readiness once there is
+ * something to count. */
+export function OverviewReadiness({
+  caseId,
+  progress,
+}: {
+  caseId: string;
+  progress: CaseProgress | undefined;
+}) {
+  const checklist = useChecklist(caseId);
+  const taxonomy = useTaxonomy();
+  const r = checklist.data;
 
-const BODY =
-  "grid gap-x-8 gap-y-5 p-4 @min-[40rem]/glance:p-5 @min-[60rem]/glance:grid-cols-[minmax(0,1fr)_minmax(0,1.08fr)]";
+  if (!r) {
+    if (!checklist.isError) return <OverviewSkeleton />;
+    return <ChecklistNotice state="error" onRetry={() => void checklist.refetch()} />;
+  }
+  if (r.items.length === 0)
+    return <ChecklistNotice state="empty" onRetry={() => void checklist.refetch()} />;
 
-const STATUS_COLUMN =
-  "min-w-0 @min-[60rem]/glance:border-l @min-[60rem]/glance:border-border @min-[60rem]/glance:pl-8";
+  // Until the documents are in and read, the counts would only say "nothing yet": the status
+  // line says what readiness waits on, and the counts follow once there is something to count.
+  const wait = readinessWait(progress, r);
+  return (
+    <div className="space-y-4">
+      <OverviewStatus r={r} wait={wait} caseId={caseId} />
+      {!wait && <ReadinessCard r={r} sections={taxonomy.data?.sections} />}
+    </div>
+  );
+}
 
-/** The counts beside every document by section; a provisional checklist says so over them. */
-export function ReadinessCard({
+/** Whether the case can go to credit review, in one line; or, before the documents are in and
+ * read, what readiness is waiting on. */
+function OverviewStatus({
   r,
-  sections,
-  filter,
-  onFilter,
-  onJump,
+  wait,
+  caseId,
 }: {
   r: Readiness;
-  sections: string[] | undefined;
-  filter: Filter;
-  onFilter: (f: Filter) => void;
-  onJump: (itemId: string) => void;
+  wait: ReadinessWait;
+  caseId: string;
 }) {
+  // Before the documents are in and read, the score and blocking count would only say "nothing
+  // received yet": say what readiness waits on instead.
+  if (wait) {
+    const text =
+      wait.kind === "documents"
+        ? t("overviewStatus.waitingDocuments")
+        : wait.total > 0
+          ? t("overviewStatus.reading", { done: wait.done, total: wait.total })
+          : t("overviewStatus.readingStarted");
+    const Icon = wait.kind === "documents" ? Clock : Loader2;
+    return (
+      <section
+        className="flex flex-wrap items-start gap-2.5 rounded border border-border bg-surface-muted px-4 py-3 text-[13px] text-foreground"
+        data-testid="journey-verdict"
+        data-state={`waiting-${wait.kind}`}
+        role="status"
+      >
+        <Icon
+          className={cn(
+            "mt-0.5 size-4 shrink-0 text-muted-foreground",
+            wait.kind === "reading" && "animate-spin",
+          )}
+          aria-hidden
+        />
+        <p className="min-w-0 flex-1 font-medium">{text}</p>
+        {wait.kind === "documents" && (
+          <Link
+            to="/appraisals/$caseId/documents"
+            params={{ caseId }}
+            className="text-[12.5px] font-medium text-primary hover:underline"
+            data-testid="verdict-upload"
+          >
+            {t("overviewStatus.uploadDocuments")}
+          </Link>
+        )}
+      </section>
+    );
+  }
+  const ready = readyForCredit(r);
+  const score = scoreText(r.score_pct, r.gate_pct);
+  const gate = Math.round(r.gate_pct);
+  const text = ready
+    ? t("overviewStatus.ready", { score, gate })
+    : r.blocking_open > 0
+      ? t("overviewStatus.notReady", { score, gate, n: r.blocking_open })
+      : t("overviewStatus.notReadyScore", { score, gate });
+  const Icon = ready ? CheckCircle2 : AlertTriangle;
+  // White, as every card is: the colour is in the edge and the icon, the words stay readable.
   return (
-    <section className={SHELL} data-testid="journey-readiness">
-      {r.provisional && (
-        <p
-          className="flex items-start gap-2 border-b border-border bg-info-soft/60 px-4 py-2 text-[12px] leading-5 text-foreground @min-[40rem]/glance:px-5"
-          data-testid="journey-provisional"
-        >
-          <Info className="mt-0.5 size-3.5 shrink-0 text-info" aria-hidden />
-          {t("checklist.provisionalHelp")}
-        </p>
+    <section
+      className={cn(
+        "flex items-start gap-2.5 rounded border border-l-2 border-border bg-surface px-4 py-3 text-[13px] text-foreground",
+        ready
+          ? "border-l-positive/60 [&>svg]:text-positive"
+          : "border-l-destructive/50 [&>svg]:text-destructive",
       )}
-      <div className={BODY}>
-        <DocumentReadiness items={r.items} filter={filter} onFilter={onFilter} />
-        <div className={STATUS_COLUMN}>
-          <DocumentStatusList items={r.items} sections={sections} onJump={onJump} />
-        </div>
-      </div>
+      data-testid="journey-verdict"
+      data-state={ready ? "ready" : "not_ready"}
+      role="status"
+    >
+      <Icon className="mt-0.5 size-4 shrink-0" aria-hidden />
+      <p className="font-medium">{text}</p>
     </section>
+  );
+}
+
+/** Document readiness, then every document's status under it; a provisional checklist says so
+ * over the counts. */
+function ReadinessCard({ r, sections }: { r: Readiness; sections: string[] | undefined }) {
+  return (
+    <div className="space-y-4" data-testid="journey-readiness">
+      <Panel title={t("journey.readiness.title")} testId="readiness-panel-readiness">
+        {r.provisional && <ProvisionalNote />}
+        <div className="px-4 py-4">
+          <DocumentReadiness items={r.items} />
+        </div>
+      </Panel>
+      <Panel title={t("journey.status.title")} testId="readiness-panel-status">
+        <div className="px-4 py-4">
+          <DocumentStatusList items={r.items} sections={sections} />
+        </div>
+      </Panel>
+    </div>
+  );
+}
+
+function ProvisionalNote() {
+  return (
+    <p
+      className="flex items-start gap-2 border-b border-border bg-info-soft/60 px-4 py-2 text-[12px] leading-5 text-foreground"
+      data-testid="journey-provisional"
+    >
+      <Info className="mt-0.5 size-3.5 shrink-0 text-info" aria-hidden />
+      {t("checklist.provisionalHelp")}
+    </p>
   );
 }
 
@@ -68,46 +171,27 @@ function Line({ className, bar }: { className: string; bar: string }) {
   );
 }
 
-/** The Overview's head while the checklist is read: the status line and the card, each at the
- * height it takes once read, so nothing jumps when it arrives. */
-export function OverviewSkeleton() {
+/** The Overview's head while the checklist is read: the status line and the readiness panel at
+ * the heights they take once read, so nothing jumps when they arrive. */
+function OverviewSkeleton() {
   return (
     <div className="space-y-4" aria-busy="true" data-testid="journey-loading">
       <p className="sr-only">{t("state.loading")}</p>
       <div className="h-[46px] rounded border border-border bg-surface px-4 py-3" aria-hidden>
         <Line className="h-5" bar="h-3 w-2/3" />
       </div>
-      <section className={SHELL} aria-hidden>
-        <div className={BODY}>
-          <div className="min-w-0">
-            <Line className="h-[17px]" bar="h-2.5 w-28" />
-            <Pulse className="mt-1 h-[34px] w-28 rounded bg-muted" />
-            <Pulse className="mt-2.5 h-2 rounded-full bg-muted" />
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <Pulse className="h-[66px] rounded-md bg-muted/60" />
-              <Pulse className="h-[66px] rounded-md bg-muted/60" />
-            </div>
-            <Pulse className="mt-2.5 h-[78px] rounded-md bg-muted/50" />
+      <section className="rounded border border-border bg-surface" aria-hidden>
+        <div className="border-b border-border px-4 py-2.5">
+          <Line className="h-[18px]" bar="h-2.5 w-36" />
+        </div>
+        <div className="px-4 py-4">
+          <Pulse className="h-[34px] w-28 rounded bg-muted" />
+          <Pulse className="mt-2.5 h-2 rounded-full bg-muted" />
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <Pulse className="h-[66px] rounded-md bg-muted/60" />
+            <Pulse className="h-[66px] rounded-md bg-muted/60" />
           </div>
-          <div className={STATUS_COLUMN}>
-            <Line className="h-[17px]" bar="h-2.5 w-28" />
-            <div className="mt-2 space-y-3">
-              {[3, 2, 3, 1].map((rows, i) => (
-                <div key={i}>
-                  <Line className="h-[18px]" bar="h-3 w-36" />
-                  <div className="mt-1 divide-y divide-border/70 rounded-md border border-border">
-                    {Array.from({ length: rows }, (_, k) => (
-                      <div key={k} className="flex h-[41px] items-center gap-2.5 px-2.5">
-                        <Pulse className="size-[18px] rounded-full bg-muted" />
-                        <Pulse className="h-3 flex-1 rounded bg-muted/70" />
-                        <Pulse className="h-3 w-16 rounded bg-muted/70" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <Pulse className="mt-2.5 h-[78px] rounded-md bg-muted/50" />
         </div>
       </section>
     </div>
@@ -115,16 +199,10 @@ export function OverviewSkeleton() {
 }
 
 /** When the checklist could not be read, or there is none yet: what it means, and a retry. */
-export function ChecklistNotice({
-  state,
-  onRetry,
-}: {
-  state: "error" | "empty";
-  onRetry: () => void;
-}) {
+function ChecklistNotice({ state, onRetry }: { state: "error" | "empty"; onRetry: () => void }) {
   return (
     <div
-      className="flex items-start gap-3 px-4 py-4"
+      className="flex items-start gap-3 rounded border border-border bg-surface px-4 py-4"
       data-testid="journey-verdict"
       data-state={state}
     >

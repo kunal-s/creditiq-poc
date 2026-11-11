@@ -43,6 +43,7 @@ test("age rules read the case's own frozen date, so the same file reads differen
   await page.goto(`/appraisals/${cases["baseline"]}/completeness`);
   const baseline = await checklistStatuses(page);
   expect(new Set(baseline)).toEqual(new Set(["satisfied"]));
+  await expect(page.getByTestId("gate-banner")).toHaveAttribute("data-ready", "true");
   await expect(page.getByTestId("header-ready")).toBeVisible();
 
   await page.goto(`/appraisals/${cases["shifted"]}/completeness`);
@@ -51,6 +52,7 @@ test("age rules read the case's own frozen date, so the same file reads differen
   // A year later, the same documents are out of their permitted age and their
   // periods no longer cover what the policy asks for.
   expect(new Set(shifted)).not.toEqual(new Set(["satisfied"]));
+  await expect(page.getByTestId("gate-banner")).toHaveAttribute("data-ready", "false");
   await expect(page.getByTestId("header-ready")).toHaveCount(0);
 });
 

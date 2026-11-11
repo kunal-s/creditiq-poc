@@ -121,6 +121,8 @@ test("Completeness: every requirement is satisfied and the case is ready for cre
   expect(statuses).toHaveLength(10);
   expect(new Set(statuses)).toEqual(new Set(["satisfied"]));
 
+  await expect(page.getByTestId("gate-banner")).toHaveAttribute("data-ready", "true");
+  await expect(page.getByTestId("readiness-score")).toContainText("100");
   await expect(page.getByTestId("checklist-filter-not_satisfied")).toHaveText("Not satisfied (0)");
   await expect(page.getByTestId("header-readiness-score")).toContainText("100%");
   await expect(page.getByTestId("header-ready")).toBeVisible();

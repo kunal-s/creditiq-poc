@@ -4,12 +4,11 @@ import { Panel } from "@/components/common/Panel";
 import { QueryView } from "@/components/common/States";
 import { reviewItemPath } from "@/components/review/reviewLinks";
 import { CaseScreen } from "@/components/shell/CaseScreen";
-import { tabForStage } from "@/components/shell/nav";
 import { t } from "@/config/terminology";
-import { DocumentChecklist } from "@/components/case/DocumentChecklist";
+import { OverviewReadiness } from "@/components/case/checklist/Glance";
 import { useCaseProgress } from "@/domain/progress";
 import { useReviewQueue } from "@/domain/review";
-import { useCan, useSession } from "@/domain/session";
+import { useCan } from "@/domain/session";
 
 // The case Overview (FRD §6): where the case is, what needs a person next,
 // and the counts behind each stage. It updates while processing runs.
@@ -40,9 +39,9 @@ function OverviewTab() {
 function Overview({ progress }: { progress: CaseProgress }) {
   return (
     <div className="space-y-4">
-      {/* Whether the case can go to credit review, document readiness (the counts and every
-          document by section), then what this appraisal needs, one line a requirement. */}
-      <DocumentChecklist caseId={progress.case_id} progress={progress} />
+      {/* Where the case stands at a glance: whether it can go to credit review, then document
+          readiness (the counts, and every document by section) as two tabs. */}
+      <OverviewReadiness caseId={progress.case_id} progress={progress} />
 
       <WaitingForDecision caseId={progress.case_id} />
     </div>

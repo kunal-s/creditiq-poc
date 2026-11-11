@@ -16,6 +16,10 @@ test("TC-11: complete file is ready for credit", async ({ page }) => {
   await expect(page.getByTestId("header-ready")).toHaveText("Ready for credit");
   await expect(page.getByTestId("header-readiness")).toContainText("100%");
 
+  // Readiness is on the same tab, above the checklist.
+  await expect(page.getByTestId("gate-banner")).toHaveAttribute("data-ready", "true");
+  await expect(page.getByTestId("blocking-gaps")).toContainText("No blocking requirement remains");
+  await expect(page.getByTestId("gate").first()).toContainText("Met");
   await expect(page.getByTestId("checklist-filter-not_satisfied")).toHaveText("Not satisfied (0)");
 
   // The verdict is on the Overview.

@@ -22,8 +22,9 @@ test("TC-12: missing items with a specific request", async ({ page }) => {
   const needed = page.getByTestId("query-group-documents_needed");
   await expect(needed).toContainText("1.KYC of Leela Varghese: PAN and address proof.");
   await expect(needed).toContainText("2.Valuation report for the property offered as collateral.");
+  await expect(page.getByTestId("checklist-summary")).toContainText("Missing2");
 
   // The Overview counts them under Not satisfied.
   await page.goto(`/appraisals/${KESTREL}`);
-  await expect(page.getByTestId("journey-filter-missing")).toContainText(/Missing\s*2/);
+  await expect(page.getByTestId("document-readiness-missing")).toContainText(/Missing\s*2/);
 });

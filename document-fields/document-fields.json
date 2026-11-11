@@ -1,0 +1,3484 @@
+{
+  "title": "Document fields",
+  "version": 1,
+  "as_of_note": "as_of is the case's fixed as-of date.",
+  "conventions": {
+    "source": "extracted = read off the document; derived = worked out from fields of the same document",
+    "required": "true = must be produced for every document of this type (or when required_when holds)",
+    "amounts": "rupees, after applying the statement's unit; computed lines and ratios per column (current, previous year)",
+    "in_app": "yes / partly / no, against config/ingestion/document_types.json and config/statements.yaml"
+  },
+  "categories": [
+    {
+      "id": "constitution_kyc",
+      "name": "Constitution and KYC",
+      "documents": [
+        {
+          "id": "certificate_of_incorporation",
+          "name": "Certificate of incorporation",
+          "checklist_item": "coi",
+          "issued_by": "Registrar of Companies, MCA (Form INC-11; issued through SPICe+)",
+          "one_per": "Company (a fresh certificate on change of name or conversion)",
+          "sections": [
+            {
+              "name": "Read off the certificate",
+              "fields": [
+                {
+                  "key": "company_name",
+                  "label": "Company name",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "model + label",
+                  "read_from": "Body sentence \"I hereby certify that <NAME> is incorporated …\"; older layouts label it \"Name of Company\". The model reads the sentence and the value is confirmed on the page's word index.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "cin",
+                  "label": "Corporate Identity Number",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "identifier",
+                  "read_from": "Printed as \"Corporate Identity Number (CIN)\"; found by scanning the page for the CIN pattern.",
+                  "pattern": "^[LU][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}$",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "date_of_incorporation",
+                  "label": "Date of incorporation",
+                  "type": "date",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "model + label",
+                  "read_from": "\"Given under my hand at <place> this <day> day of <month> <year>\", or \"Date of Incorporation\". Often written in words; convert to a date.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "registered_address",
+                  "label": "Registered office",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "label + model",
+                  "read_from": "\"Mailing Address as per record available in Registrar of Companies office\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "company_type",
+                  "label": "Company category",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "label",
+                  "read_from": "\"Company limited by shares\", \"private company\" wording in the certificate body.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "roc",
+                  "label": "Registrar of Companies office",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "pattern",
+                  "read_from": "\"Office of the Registrar of Companies, <city>\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "pan",
+                  "label": "PAN allotted with incorporation",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "identifier",
+                  "read_from": "SPICe+ certificates print \"The Permanent Account Number (PAN) of the company is …\".",
+                  "pattern": "^[A-Z]{3}[ABCFGHJLPT][A-Z][0-9]{4}[A-Z]$",
+                  "in_app": "no"
+                },
+                {
+                  "key": "tan",
+                  "label": "TAN allotted with incorporation",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "identifier",
+                  "read_from": "\"Tax Deduction and Collection Account Number (TAN)\": four letters, five digits, one letter.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "certificate_kind",
+                  "label": "Original or fresh certificate",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "pattern",
+                  "read_from": "Heading \"Certificate of Incorporation\" against \"Fresh Certificate of Incorporation Consequent upon Change of Name\" (or upon conversion).",
+                  "in_app": "no"
+                },
+                {
+                  "key": "former_name",
+                  "label": "Former name",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "model",
+                  "read_from": "Printed only on a fresh certificate after a change of name.",
+                  "in_app": "no"
+                }
+              ]
+            },
+            {
+              "name": "Worked out from what is read",
+              "fields": [
+                {
+                  "key": "cin_listing_status",
+                  "label": "Listed or unlisted",
+                  "type": "string",
+                  "source": "derived",
+                  "required": false,
+                  "formula": "CIN[0]: L = listed, U = unlisted",
+                  "inputs": [
+                    "cin"
+                  ],
+                  "in_app": "no"
+                },
+                {
+                  "key": "cin_industry_code",
+                  "label": "Industry (NIC 2008)",
+                  "type": "string",
+                  "source": "derived",
+                  "required": false,
+                  "formula": "CIN[1:6], the 5-digit NIC code, mapped to a sector",
+                  "inputs": [
+                    "cin"
+                  ],
+                  "in_app": "no"
+                },
+                {
+                  "key": "cin_state_code",
+                  "label": "State of registration",
+                  "type": "string",
+                  "source": "derived",
+                  "required": false,
+                  "formula": "CIN[6:8], e.g. MH, KA, DL",
+                  "inputs": [
+                    "cin"
+                  ],
+                  "in_app": "no"
+                },
+                {
+                  "key": "cin_year",
+                  "label": "Year in the CIN",
+                  "type": "integer",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "CIN[8:12]",
+                  "inputs": [
+                    "cin"
+                  ],
+                  "in_app": "yes"
+                },
+                {
+                  "key": "company_class",
+                  "label": "Company class",
+                  "type": "string",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "CIN[12:15]: PTC private limited, PLC public limited, OPC one person, NPL section 8, FTC/FLC foreign subsidiary, GOI/SGC government",
+                  "inputs": [
+                    "cin"
+                  ],
+                  "in_app": "partly"
+                },
+                {
+                  "key": "vintage_years",
+                  "label": "Business vintage",
+                  "type": "number",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "completed months from date_of_incorporation to as_of ÷ 12",
+                  "inputs": [
+                    "date_of_incorporation",
+                    "as_of"
+                  ],
+                  "in_app": "yes"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "memorandum_articles_of_association",
+          "name": "Memorandum and Articles of Association",
+          "checklist_item": "moa_aoa",
+          "issued_by": "The company (Companies Act 2013 s.4, s.5; Schedule I Tables A to F)",
+          "one_per": "Company (the latest altered copy)",
+          "sections": [
+            {
+              "name": "Memorandum (clauses I to V and subscription)",
+              "fields": [
+                {
+                  "key": "company_name",
+                  "label": "Name clause",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "pattern + model",
+                  "read_from": "Clause I: \"The name of the company is <X> PRIVATE LIMITED.\"",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "cin",
+                  "label": "CIN",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "identifier",
+                  "read_from": "Only on certified or updated copies (header or stamp). A memorandum is signed before incorporation, so the original carries none.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "registered_office",
+                  "label": "Registered office State",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "pattern",
+                  "read_from": "Clause II: \"The registered office of the company will be situated in the State of <X>.\"",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "objects_of_company",
+                  "label": "Main objects",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "pattern + model",
+                  "read_from": "Clause III(A) \"MAIN OBJECTS TO BE PURSUED …\" up to III(B); may span pages.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "liability_clause",
+                  "label": "Liability clause",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "pattern",
+                  "read_from": "Clause IV: \"The liability of the member(s) is limited …\" (by shares or by guarantee).",
+                  "in_app": "no"
+                },
+                {
+                  "key": "authorized_share_capital",
+                  "label": "Authorised capital",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "pattern",
+                  "read_from": "Clause V: \"The authorised share capital of the company is Rs. <X> divided into <n> equity shares of Rs. <f> each\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "face_value_per_share",
+                  "label": "Face value per share",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "pattern",
+                  "read_from": "Clause V, \"… shares of Rs. <f> each\".",
+                  "in_app": "no"
+                },
+                {
+                  "key": "paid_up_share_capital",
+                  "label": "Paid-up capital",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "pattern",
+                  "read_from": "Where an amended copy states it. The current figure is share capital in the audited balance sheet.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "shareholding.shareholder_name",
+                  "label": "Subscribers",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table",
+                  "read_from": "Subscription clause table \"Name, address, description and occupation of subscriber\", one row per subscriber.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "shareholding.number_of_shares",
+                  "label": "Shares taken by each subscriber",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table",
+                  "read_from": "Same table, \"No. of shares\" column; skip the Total row.",
+                  "in_app": "yes"
+                }
+              ]
+            },
+            {
+              "name": "Articles",
+              "fields": [
+                {
+                  "key": "directors",
+                  "label": "First directors (name, DIN)",
+                  "type": "array",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "model + pattern",
+                  "read_from": "Article \"The first directors of the company are …\"; one entry per person, title removed, DIN when printed.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "borrowing_powers",
+                  "label": "Borrowing powers article",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "model",
+                  "read_from": "Article headed \"Borrowing powers\": whether the Board may borrow, and any cap, condition or need for members' approval.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "private_company_restrictions",
+                  "label": "Private-company restrictions",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "model",
+                  "read_from": "Definition article: transfer of shares restricted, members capped at 200, no invitation to the public (s.2(68)).",
+                  "in_app": "no"
+                },
+                {
+                  "key": "latest_alteration_date",
+                  "label": "Date of the latest alteration",
+                  "type": "date",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "model",
+                  "read_from": "Notes beside altered clauses: \"Altered vide special resolution dated …\".",
+                  "in_app": "no"
+                }
+              ]
+            },
+            {
+              "name": "Worked out from what is read",
+              "fields": [
+                {
+                  "key": "shareholding.shareholding_percentage",
+                  "label": "Share of each subscriber",
+                  "type": "number",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "shareholding.number_of_shares ÷ Σ shareholding.number_of_shares × 100",
+                  "inputs": [
+                    "shareholding.number_of_shares"
+                  ],
+                  "in_app": "partly"
+                },
+                {
+                  "key": "subscriber_owners",
+                  "label": "Beneficial owners at incorporation",
+                  "type": "array",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "shareholding.shareholder_name where shareholding.shareholding_percentage > 10",
+                  "inputs": [
+                    "shareholding.shareholder_name",
+                    "shareholding.shareholding_percentage"
+                  ],
+                  "in_app": "no"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "board_resolution_borrowing",
+          "name": "Board resolution authorising the facility",
+          "checklist_item": "board_resolution",
+          "issued_by": "The company: certified true copy signed by a director or the company secretary",
+          "one_per": "Facility request (the latest)",
+          "sections": [
+            {
+              "name": "Read off the resolution",
+              "fields": [
+                {
+                  "key": "company_name",
+                  "label": "Company",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "pattern + model",
+                  "read_from": "\"… Board of Directors of <X> (CIN …)\" in the heading.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "cin",
+                  "label": "CIN in the heading",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "identifier",
+                  "read_from": "Usually printed in brackets after the name.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "meeting_date",
+                  "label": "Date of the Board meeting",
+                  "type": "date",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "pattern + model",
+                  "read_from": "\"… held on <weekday>, <dd Month yyyy>\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "meeting_place",
+                  "label": "Place of the meeting",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "model",
+                  "read_from": "\"… at the registered office of the company at …\".",
+                  "in_app": "no"
+                },
+                {
+                  "key": "resolution_date",
+                  "label": "Resolution date",
+                  "type": "date",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "label",
+                  "read_from": "Only where printed apart from the meeting date (a \"Date:\" line on the certification).",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "resolution_number",
+                  "label": "Resolution number",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "model",
+                  "read_from": "\"Resolution No. …\" where printed.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "lender_name",
+                  "label": "Lender",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "pattern + model",
+                  "read_from": "\"… to borrow from <Lender>, credit facilities …\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "borrowing_limit",
+                  "label": "Borrowing limit",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "pattern + model",
+                  "read_from": "\"… aggregating to Rs. <amount>\"; the amount only.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "facilities_authorised",
+                  "label": "Facilities authorised",
+                  "type": "array",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "model",
+                  "read_from": "\"… cash credit of Rs …, term loan of Rs …\".",
+                  "in_app": "no"
+                },
+                {
+                  "key": "purpose_of_borrowing",
+                  "label": "Purpose",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "model",
+                  "read_from": "The purpose as stated (\"working capital\"); a heading is not a purpose.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "security_authorised",
+                  "label": "Security to be created",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "model",
+                  "read_from": "\"… to create hypothecation / charge / mortgage over …\".",
+                  "in_app": "no"
+                },
+                {
+                  "key": "authorized_signatories",
+                  "label": "Authorised signatories",
+                  "type": "array",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "model",
+                  "read_from": "The people authorised to sign or execute the loan documents; one entry per person, no titles.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "authorized_persons",
+                  "label": "Directors named",
+                  "type": "array",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "pattern",
+                  "read_from": "\"Shri <Name>, Director\" lines.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "authorized_person_dins",
+                  "label": "DINs of the directors named",
+                  "type": "array",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "pattern",
+                  "read_from": "\"(DIN 12345678)\" after each name, in the same order.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "certified_by",
+                  "label": "Certified by (name, designation, DIN)",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "model",
+                  "read_from": "Certification block: \"Certified true copy … For <Company> … Director (DIN …)\".",
+                  "in_app": "no"
+                },
+                {
+                  "key": "signature_present",
+                  "label": "Signed",
+                  "type": "boolean",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "mark",
+                  "read_from": "Blank after \"Signature:\" or \"Name:\" means unsigned (validator signature_block_filled).",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "seal_present",
+                  "label": "Stamped",
+                  "type": "boolean",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "mark",
+                  "read_from": "Blank after \"Stamp:\", \"Seal:\" or \"Company seal:\" means unstamped (validator stamp_block_filled).",
+                  "in_app": "yes"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "company_pan",
+          "name": "Entity PAN",
+          "checklist_item": "pan_entity",
+          "issued_by": "Income Tax Department (PAN card, e-PAN or allotment letter; the SPICe+ certificate also counts)",
+          "one_per": "Entity",
+          "sections": [
+            {
+              "name": "Read off the PAN",
+              "fields": [
+                {
+                  "key": "pan",
+                  "label": "PAN",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "identifier",
+                  "read_from": "Ten characters, printed under \"Permanent Account Number\".",
+                  "pattern": "^[A-Z]{3}[ABCFGHJLPT][A-Z][0-9]{4}[A-Z]$",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "company_name",
+                  "label": "Name",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "label",
+                  "read_from": "\"Name\" on the card or letter.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "date_of_incorporation",
+                  "label": "Date of incorporation or formation",
+                  "type": "date",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "label",
+                  "read_from": "The e-PAN prints \"Date of Incorporation/Formation\".",
+                  "in_app": "no"
+                },
+                {
+                  "key": "date_of_issue",
+                  "label": "Date of issue or of the letter",
+                  "type": "date",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "pattern",
+                  "read_from": "\"Date: <dd Month yyyy>\" on an allotment letter.",
+                  "in_app": "yes"
+                }
+              ]
+            },
+            {
+              "name": "Worked out from what is read",
+              "fields": [
+                {
+                  "key": "holder_type",
+                  "label": "Holder type",
+                  "type": "string",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "PAN[3]: C company, F firm or LLP, P individual, H HUF, T trust, A AOP, B BOI, G government, J artificial juridical person, L local authority",
+                  "inputs": [
+                    "pan"
+                  ],
+                  "in_app": "yes"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "director_kyc",
+          "name": "KYC of directors, partners or proprietor",
+          "checklist_item": "kyc_promoters",
+          "issued_by": "The person: PAN plus an officially valid document (passport, driving licence, voter ID, Aadhaar proof of possession, NREGA card, NPR letter)",
+          "one_per": "Person",
+          "sections": [
+            {
+              "name": "Read off the KYC",
+              "fields": [
+                {
+                  "key": "person_name",
+                  "label": "Name",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "label + model",
+                  "read_from": "\"Name of Director\" or the name on the ID.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "pan",
+                  "label": "PAN",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "label",
+                  "read_from": "\"PAN\" or \"PAN (masked)\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "din",
+                  "label": "DIN",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "required_when": "the person is a director",
+                  "method": "label",
+                  "read_from": "\"Director Identification Number\", 8 digits.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "date_of_birth",
+                  "label": "Date of birth",
+                  "type": "date",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "label",
+                  "read_from": "\"Date of Birth\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "address",
+                  "label": "Residential address",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "label",
+                  "read_from": "\"Residential Address\" or the address on the ID.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "id_document_type",
+                  "label": "Identity document type",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "pattern",
+                  "read_from": "Aadhaar, Passport, Driving licence, Voter ID.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "id_number",
+                  "label": "Identity document number",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "label",
+                  "read_from": "\"Aadhaar (masked)\" or the ID's number.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "expiry_date",
+                  "label": "Expiry date",
+                  "type": "date",
+                  "source": "extracted",
+                  "required": true,
+                  "required_when": "the identity document expires (passport, driving licence)",
+                  "method": "label",
+                  "read_from": "\"Date of Expiry\" / \"Valid Until\" on a passport or driving licence.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "designation",
+                  "label": "Designation",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "label",
+                  "read_from": "Director, Managing Director, Partner.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "father_or_spouse_name",
+                  "label": "Father's or spouse's name",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "model",
+                  "read_from": "Where printed.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "gender",
+                  "label": "Gender",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "model",
+                  "read_from": "Where printed.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "document_number",
+                  "label": "Document number",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "label",
+                  "read_from": "Not printed on the KYC summary sheet.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "issue_date",
+                  "label": "Issue date",
+                  "type": "date",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "label",
+                  "read_from": "On a passport or driving licence.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "photograph_present",
+                  "label": "Photograph",
+                  "type": "boolean",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "mark",
+                  "read_from": "A photograph on the ID or the KYC form.",
+                  "in_app": "no"
+                }
+              ]
+            },
+            {
+              "name": "Worked out from what is read",
+              "fields": [
+                {
+                  "key": "age_years",
+                  "label": "Age on as-of",
+                  "type": "integer",
+                  "source": "derived",
+                  "required": false,
+                  "formula": "completed years from date_of_birth to as_of",
+                  "inputs": [
+                    "date_of_birth",
+                    "as_of"
+                  ],
+                  "in_app": "no"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "financials",
+      "name": "Financials",
+      "documents": [
+        {
+          "id": "audited_financial_statements",
+          "name": "Audited financial statements",
+          "checklist_item": "fs_fy_minus1, fs_fy_minus2",
+          "issued_by": "The company, audited under Companies Act s.143; Schedule III format; filed with the Registrar in AOC-4",
+          "one_per": "Financial year: two checklist items, one per year",
+          "sections": [
+            {
+              "name": "Document-level",
+              "fields": [
+                {
+                  "key": "company_name",
+                  "label": "Entity name",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "label + model",
+                  "read_from": "Auditor's report heading or opinion (\"… of X PRIVATE LIMITED\").",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "financial_year",
+                  "label": "Year end of the current column",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "pattern",
+                  "read_from": "\"Balance sheet as at 31 March 2026\", \"for the year ended …\", or XBRL \"Date of end of reporting period\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "previous_year_end",
+                  "label": "Year end of the comparative column",
+                  "type": "date",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "financial_year − 12 months (confirm on the column heading)",
+                  "inputs": [
+                    "financial_year"
+                  ],
+                  "in_app": "partly"
+                },
+                {
+                  "key": "amount_unit",
+                  "label": "Unit of every amount",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "pattern",
+                  "read_from": "\"All amounts in INR thousands\", \"(Rs. in lakhs)\", XBRL \"Level of rounding\". Absent means rupees.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "unit_multiplier",
+                  "label": "Unit multiplier",
+                  "type": "number",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "from amount_unit: rupees 1; thousands 1,000; lakhs 1,00,000; millions 10,00,000; crores 1,00,00,000",
+                  "inputs": [
+                    "amount_unit"
+                  ],
+                  "in_app": "yes"
+                },
+                {
+                  "key": "statement_basis",
+                  "label": "Audited, provisional or projected",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "pattern + model",
+                  "read_from": "Title, a \"Provisional\" or \"Projected\" heading, and whether an auditor's report is attached.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "accounting_standard",
+                  "label": "Indian GAAP or Ind AS",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "model",
+                  "read_from": "Basis of preparation note (Schedule III Division I or II).",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "auditor_name",
+                  "label": "Audit firm",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "label + model",
+                  "read_from": "Signature block of the auditor's report; XBRL \"Name of audit firm\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "auditor_frn",
+                  "label": "Firm registration number",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "pattern",
+                  "read_from": "\"Firm Registration No. 123456W\".",
+                  "in_app": "no"
+                },
+                {
+                  "key": "auditor_membership_no",
+                  "label": "Signing partner's membership number",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "pattern",
+                  "read_from": "\"Membership No. 123456\".",
+                  "in_app": "no"
+                },
+                {
+                  "key": "udin",
+                  "label": "UDIN",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "identifier",
+                  "read_from": "\"UDIN: …\" after the membership number: 18 characters.",
+                  "pattern": "^[0-9]{8}[A-Z0-9]{10}$",
+                  "in_app": "no"
+                },
+                {
+                  "key": "audit_date",
+                  "label": "Date of the auditor's report",
+                  "type": "date",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "pattern + model",
+                  "read_from": "\"Place: … | Date: …\" under the auditor's signature; XBRL \"Date of signing audit report\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "audit_opinion",
+                  "label": "Audit opinion",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "model",
+                  "read_from": "Heading of the opinion paragraph: Opinion (unmodified), Qualified Opinion, Adverse Opinion, Disclaimer of Opinion.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "going_concern_uncertainty",
+                  "label": "Going-concern uncertainty",
+                  "type": "boolean",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "model",
+                  "read_from": "Paragraph \"Material Uncertainty Related to Going Concern\".",
+                  "in_app": "no"
+                },
+                {
+                  "key": "caro_remarks",
+                  "label": "CARO 2020 adverse remarks",
+                  "type": "array",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "model",
+                  "read_from": "Annexure to the auditor's report: default in repayment (clause ix), unpaid statutory dues (vii), fraud (xi).",
+                  "in_app": "no"
+                },
+                {
+                  "key": "audit_lag_days",
+                  "label": "Audit lag",
+                  "type": "integer",
+                  "source": "derived",
+                  "required": false,
+                  "formula": "audit_date − financial_year (days)",
+                  "inputs": [
+                    "audit_date",
+                    "financial_year"
+                  ],
+                  "in_app": "no"
+                }
+              ]
+            },
+            {
+              "name": "Balance sheet: equity and liabilities",
+              "fields": [
+                {
+                  "key": "share_capital",
+                  "label": "Share capital",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Balance sheet, row \"Share capital\" (also printed as Partners' capital; Proprietor's capital); current and previous columns, × unit multiplier.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "reserves_and_surplus",
+                  "label": "Reserves and surplus",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Balance sheet, row \"Reserves and surplus\" (also printed as Other equity (Ind AS)); current and previous columns, × unit multiplier.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "share_application_money",
+                  "label": "Share application money pending allotment",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table row",
+                  "read_from": "Balance sheet, row \"Share application money pending allotment\" (also printed as Money received against share warrants); current and previous columns, × unit multiplier.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "long_term_borrowings",
+                  "label": "Long-term borrowings",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Balance sheet, row \"Long-term borrowings\" (also printed as Borrowings (non-current)); current and previous columns, × unit multiplier.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "deferred_tax_liability",
+                  "label": "Deferred tax liability",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table row",
+                  "read_from": "Balance sheet, row \"Deferred tax liabilities (net)\"; current and previous columns, × unit multiplier.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "other_long_term_liabilities",
+                  "label": "Other long-term liabilities",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table row",
+                  "read_from": "Balance sheet, row \"Other long-term liabilities\" (also printed as Other non-current liabilities); current and previous columns, × unit multiplier.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "long_term_provisions",
+                  "label": "Long-term provisions",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table row",
+                  "read_from": "Balance sheet, row \"Long-term provisions\" (also printed as Provisions (non-current)); current and previous columns, × unit multiplier.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "short_term_borrowings",
+                  "label": "Short-term borrowings",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Balance sheet, row \"Short-term borrowings\" (also printed as Borrowings (current); Cash credit (includes current maturities since FY 2021-22)); current and previous columns, × unit multiplier.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "trade_payables",
+                  "label": "Trade payables",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Balance sheet, row \"Trade payables\" (also printed as Sundry creditors (add MSME and others)); current and previous columns, × unit multiplier.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "other_current_liabilities",
+                  "label": "Other current liabilities",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Balance sheet, row \"Other current liabilities\" (also printed as Other financial liabilities (current)); current and previous columns, × unit multiplier.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "short_term_provisions",
+                  "label": "Short-term provisions",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Balance sheet, row \"Short-term provisions\" (also printed as Current tax liabilities (net)); current and previous columns, × unit multiplier.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "total_equity_and_liabilities",
+                  "label": "Total equity and liabilities",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Balance sheet, row \"TOTAL\" (also printed as Total equity and liabilities); current and previous columns, × unit multiplier.",
+                  "in_app": "yes"
+                }
+              ]
+            },
+            {
+              "name": "Balance sheet: assets",
+              "fields": [
+                {
+                  "key": "net_fixed_assets",
+                  "label": "Net fixed assets",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Balance sheet, row \"Property, plant and equipment\" (also printed as Tangible assets; Net block); current and previous columns, × unit multiplier.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "capital_work_in_progress",
+                  "label": "Capital work-in-progress",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table row",
+                  "read_from": "Balance sheet, row \"Capital work-in-progress\"; current and previous columns, × unit multiplier.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "intangible_assets",
+                  "label": "Intangible assets",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Balance sheet, row \"Intangible assets\" (also printed as Goodwill; Intangible assets under development); current and previous columns, × unit multiplier.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "non_current_investments",
+                  "label": "Non-current investments",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table row",
+                  "read_from": "Balance sheet, row \"Non-current investments\" (also printed as Investments); current and previous columns, × unit multiplier.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "deferred_tax_asset",
+                  "label": "Deferred tax asset",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table row",
+                  "read_from": "Balance sheet, row \"Deferred tax assets (net)\"; current and previous columns, × unit multiplier.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "long_term_loans_and_advances",
+                  "label": "Long-term loans and advances",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table row",
+                  "read_from": "Balance sheet, row \"Long-term loans and advances\" (also printed as Loans (non-current)); current and previous columns, × unit multiplier.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "other_non_current_assets",
+                  "label": "Other non-current assets",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table row",
+                  "read_from": "Balance sheet, row \"Other non-current assets\"; current and previous columns, × unit multiplier.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "current_investments",
+                  "label": "Current investments",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Balance sheet, row \"Current investments\"; current and previous columns, × unit multiplier.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "inventories",
+                  "label": "Inventories",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Balance sheet, row \"Inventories\" (also printed as Closing stock; Stock-in-trade); current and previous columns, × unit multiplier.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "trade_receivables",
+                  "label": "Trade receivables",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Balance sheet, row \"Trade receivables\" (also printed as Sundry debtors); current and previous columns, × unit multiplier.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "cash_and_bank_balances",
+                  "label": "Cash and bank balances",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Balance sheet, row \"Cash and bank balances\" (also printed as Cash and cash equivalents + Other bank balances (Ind AS: add both)); current and previous columns, × unit multiplier.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "short_term_loans_and_advances",
+                  "label": "Short-term loans and advances",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Balance sheet, row \"Short-term loans and advances\" (also printed as Loans (current)); current and previous columns, × unit multiplier.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "other_current_assets",
+                  "label": "Other current assets",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Balance sheet, row \"Other current assets\" (also printed as Other financial assets (current)); current and previous columns, × unit multiplier.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "total_assets",
+                  "label": "Total assets",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Balance sheet, row \"TOTAL\" (also printed as Total assets); current and previous columns, × unit multiplier.",
+                  "in_app": "yes"
+                }
+              ]
+            },
+            {
+              "name": "Statement of profit and loss",
+              "fields": [
+                {
+                  "key": "revenue_from_operations",
+                  "label": "Revenue from operations",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Statement of profit and loss, row \"Revenue from operations\" (also Sales; Turnover; Gross receipts); current and previous columns, × unit multiplier.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "other_income",
+                  "label": "Other income",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Statement of profit and loss, row \"Other income\" (also Non-operating income); current and previous columns, × unit multiplier.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "total_income",
+                  "label": "Total income",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table row",
+                  "read_from": "Statement of profit and loss, row \"Total income\" (also Total revenue); current and previous columns, × unit multiplier.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "cost_of_materials_consumed",
+                  "label": "Cost of materials consumed",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Statement of profit and loss, row \"Cost of materials consumed\" (also Raw material consumed); current and previous columns, × unit multiplier.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "purchases_of_stock_in_trade",
+                  "label": "Purchases of stock-in-trade",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Statement of profit and loss, row \"Purchases of stock-in-trade\" (also Purchases); current and previous columns, × unit multiplier.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "changes_in_inventories",
+                  "label": "Changes in inventories",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Statement of profit and loss, row \"Changes in inventories of finished goods, work-in-progress and stock-in-trade\" (also (Increase)/decrease in stock); current and previous columns, × unit multiplier.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "employee_benefits_expense",
+                  "label": "Employee benefits expense",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table row",
+                  "read_from": "Statement of profit and loss, row \"Employee benefits expense\" (also Salaries and wages); current and previous columns, × unit multiplier.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "finance_costs",
+                  "label": "Finance costs",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Statement of profit and loss, row \"Finance costs\" (also Interest and finance charges (no row = 0)); current and previous columns, × unit multiplier.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "depreciation",
+                  "label": "Depreciation and amortisation",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Statement of profit and loss, row \"Depreciation and amortisation expense\"; current and previous columns, × unit multiplier.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "other_expenses",
+                  "label": "Other expenses",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table row",
+                  "read_from": "Statement of profit and loss, row \"Other expenses\" (also Administrative; Manufacturing expenses); current and previous columns, × unit multiplier.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "total_expenses",
+                  "label": "Total expenses",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table row",
+                  "read_from": "Statement of profit and loss, row \"Total expenses\"; current and previous columns, × unit multiplier.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "exceptional_items",
+                  "label": "Exceptional items",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table row",
+                  "read_from": "Statement of profit and loss, row \"Exceptional items\" (also Extraordinary items); current and previous columns, × unit multiplier.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "profit_before_tax",
+                  "label": "Profit before tax",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Statement of profit and loss, row \"Profit before tax\" (also Net profit before tax); current and previous columns, × unit multiplier.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "tax_expense",
+                  "label": "Tax expense",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table row",
+                  "read_from": "Statement of profit and loss, row \"Tax expense\" (also Provision for tax); current and previous columns, × unit multiplier.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "profit_after_tax",
+                  "label": "Profit after tax",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Statement of profit and loss, row \"Profit/(Loss) for the year\" (also Net profit; Net profit transferred to capital account (firms)); current and previous columns, × unit multiplier.",
+                  "in_app": "yes"
+                }
+              ]
+            },
+            {
+              "name": "Notes to accounts and cash flow",
+              "fields": [
+                {
+                  "key": "current_maturities_of_long_term_debt",
+                  "label": "Current maturities of long-term debt",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Note on short-term borrowings: \"Current maturities of long-term debt\".",
+                  "in_app": "no"
+                },
+                {
+                  "key": "bank_working_capital_borrowings",
+                  "label": "Bank working-capital borrowings (CC/OD)",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Note on short-term borrowings: \"Loans repayable on demand from banks\".",
+                  "in_app": "no"
+                },
+                {
+                  "key": "finance_costs_term_loans",
+                  "label": "Interest on term loans",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table row",
+                  "read_from": "Note on finance costs.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "loans_from_directors",
+                  "label": "Loans from directors and related parties",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table row",
+                  "read_from": "Note on borrowings: \"From directors / related parties\".",
+                  "in_app": "no"
+                },
+                {
+                  "key": "shareholders_above_5pct",
+                  "label": "Shareholders holding more than 5%",
+                  "type": "table",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table",
+                  "read_from": "Note on share capital (Schedule III): name, number of shares, percentage; promoter shareholding.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "receivables_over_6_months",
+                  "label": "Receivables over six months",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table row",
+                  "read_from": "Ageing schedule in the note on trade receivables.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "contingent_liabilities",
+                  "label": "Contingent liabilities",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table row",
+                  "read_from": "Note \"Contingent liabilities and commitments\".",
+                  "in_app": "no"
+                },
+                {
+                  "key": "cash_flow_from_operations",
+                  "label": "Net cash from operating activities",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table row",
+                  "read_from": "Cash flow statement, \"Net cash generated from operating activities\".",
+                  "in_app": "partly"
+                }
+              ]
+            },
+            {
+              "name": "Computed from the statements",
+              "fields": [
+                {
+                  "key": "cost_of_sales",
+                  "label": "Cost of sales",
+                  "type": "number",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "cost_of_materials_consumed + purchases_of_stock_in_trade + changes_in_inventories",
+                  "inputs": [
+                    "cost_of_materials_consumed",
+                    "purchases_of_stock_in_trade",
+                    "changes_in_inventories"
+                  ],
+                  "in_app": "no"
+                },
+                {
+                  "key": "gross_profit",
+                  "label": "Gross profit",
+                  "type": "number",
+                  "source": "derived",
+                  "required": false,
+                  "formula": "revenue_from_operations − cost_of_sales",
+                  "inputs": [
+                    "revenue_from_operations",
+                    "cost_of_sales"
+                  ],
+                  "in_app": "no"
+                },
+                {
+                  "key": "ebitda",
+                  "label": "EBITDA",
+                  "type": "number",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "profit_before_tax + finance_costs + depreciation − other_income",
+                  "inputs": [
+                    "profit_before_tax",
+                    "finance_costs",
+                    "depreciation",
+                    "other_income"
+                  ],
+                  "in_app": "partly"
+                },
+                {
+                  "key": "cash_accruals",
+                  "label": "Cash accruals",
+                  "type": "number",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "profit_after_tax + depreciation",
+                  "inputs": [
+                    "profit_after_tax",
+                    "depreciation"
+                  ],
+                  "in_app": "no"
+                },
+                {
+                  "key": "net_worth",
+                  "label": "Net worth",
+                  "type": "number",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "share_capital + reserves_and_surplus + share_application_money",
+                  "inputs": [
+                    "share_capital",
+                    "reserves_and_surplus",
+                    "share_application_money"
+                  ],
+                  "in_app": "partly"
+                },
+                {
+                  "key": "tangible_net_worth",
+                  "label": "Tangible net worth",
+                  "type": "number",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "net_worth − intangible_assets",
+                  "inputs": [
+                    "net_worth",
+                    "intangible_assets"
+                  ],
+                  "in_app": "no"
+                },
+                {
+                  "key": "total_debt",
+                  "label": "Total debt",
+                  "type": "number",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "long_term_borrowings + short_term_borrowings",
+                  "inputs": [
+                    "long_term_borrowings",
+                    "short_term_borrowings"
+                  ],
+                  "in_app": "yes"
+                },
+                {
+                  "key": "total_outside_liabilities",
+                  "label": "Total outside liabilities",
+                  "type": "number",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "total_equity_and_liabilities − net_worth",
+                  "inputs": [
+                    "total_equity_and_liabilities",
+                    "net_worth"
+                  ],
+                  "in_app": "partly"
+                },
+                {
+                  "key": "current_assets",
+                  "label": "Current assets",
+                  "type": "number",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "current_investments + inventories + trade_receivables + cash_and_bank_balances + short_term_loans_and_advances + other_current_assets",
+                  "inputs": [
+                    "current_investments",
+                    "inventories",
+                    "trade_receivables",
+                    "cash_and_bank_balances",
+                    "short_term_loans_and_advances",
+                    "other_current_assets"
+                  ],
+                  "in_app": "partly"
+                },
+                {
+                  "key": "current_liabilities",
+                  "label": "Current liabilities",
+                  "type": "number",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "short_term_borrowings + trade_payables + other_current_liabilities + short_term_provisions",
+                  "inputs": [
+                    "short_term_borrowings",
+                    "trade_payables",
+                    "other_current_liabilities",
+                    "short_term_provisions"
+                  ],
+                  "in_app": "yes"
+                },
+                {
+                  "key": "net_working_capital",
+                  "label": "Net working capital",
+                  "type": "number",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "current_assets − current_liabilities",
+                  "inputs": [
+                    "current_assets",
+                    "current_liabilities"
+                  ],
+                  "in_app": "yes"
+                }
+              ]
+            },
+            {
+              "name": "Ratios",
+              "fields": [
+                {
+                  "key": "revenue_growth",
+                  "label": "Revenue growth",
+                  "type": "number",
+                  "source": "derived",
+                  "required": false,
+                  "formula": "revenue_from_operations.current ÷ revenue_from_operations.previous − 1",
+                  "inputs": [
+                    "revenue_from_operations"
+                  ],
+                  "in_app": "yes"
+                },
+                {
+                  "key": "gross_margin",
+                  "label": "Gross margin",
+                  "type": "number",
+                  "source": "derived",
+                  "required": false,
+                  "formula": "gross_profit ÷ revenue_from_operations",
+                  "inputs": [
+                    "gross_profit",
+                    "revenue_from_operations"
+                  ],
+                  "in_app": "no"
+                },
+                {
+                  "key": "ebitda_margin",
+                  "label": "EBITDA margin",
+                  "type": "number",
+                  "source": "derived",
+                  "required": false,
+                  "formula": "ebitda ÷ revenue_from_operations",
+                  "inputs": [
+                    "ebitda",
+                    "revenue_from_operations"
+                  ],
+                  "in_app": "yes"
+                },
+                {
+                  "key": "pat_margin",
+                  "label": "Net profit margin",
+                  "type": "number",
+                  "source": "derived",
+                  "required": false,
+                  "formula": "profit_after_tax ÷ revenue_from_operations",
+                  "inputs": [
+                    "profit_after_tax",
+                    "revenue_from_operations"
+                  ],
+                  "in_app": "yes"
+                },
+                {
+                  "key": "current_ratio",
+                  "label": "Current ratio",
+                  "type": "number",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "current_assets ÷ current_liabilities",
+                  "inputs": [
+                    "current_assets",
+                    "current_liabilities"
+                  ],
+                  "in_app": "yes"
+                },
+                {
+                  "key": "tol_tnw",
+                  "label": "TOL / TNW",
+                  "type": "number",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "total_outside_liabilities ÷ tangible_net_worth",
+                  "inputs": [
+                    "total_outside_liabilities",
+                    "tangible_net_worth"
+                  ],
+                  "in_app": "partly"
+                },
+                {
+                  "key": "debt_equity",
+                  "label": "Debt / equity",
+                  "type": "number",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "total_debt ÷ tangible_net_worth",
+                  "inputs": [
+                    "total_debt",
+                    "tangible_net_worth"
+                  ],
+                  "in_app": "partly"
+                },
+                {
+                  "key": "debt_ebitda",
+                  "label": "Debt / EBITDA",
+                  "type": "number",
+                  "source": "derived",
+                  "required": false,
+                  "formula": "total_debt ÷ ebitda",
+                  "inputs": [
+                    "total_debt",
+                    "ebitda"
+                  ],
+                  "in_app": "no"
+                },
+                {
+                  "key": "interest_coverage",
+                  "label": "Interest coverage",
+                  "type": "number",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "ebitda ÷ finance_costs",
+                  "inputs": [
+                    "ebitda",
+                    "finance_costs"
+                  ],
+                  "in_app": "partly"
+                },
+                {
+                  "key": "dscr",
+                  "label": "DSCR",
+                  "type": "number",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "(profit_after_tax + depreciation + finance_costs_term_loans) ÷ (finance_costs_term_loans + current_maturities_of_long_term_debt)",
+                  "inputs": [
+                    "profit_after_tax",
+                    "depreciation",
+                    "finance_costs_term_loans",
+                    "current_maturities_of_long_term_debt"
+                  ],
+                  "in_app": "partly"
+                },
+                {
+                  "key": "inventory_days",
+                  "label": "Inventory days",
+                  "type": "number",
+                  "source": "derived",
+                  "required": false,
+                  "formula": "inventories ÷ cost_of_sales × 365",
+                  "inputs": [
+                    "inventories",
+                    "cost_of_sales"
+                  ],
+                  "in_app": "no"
+                },
+                {
+                  "key": "receivable_days",
+                  "label": "Receivable days",
+                  "type": "number",
+                  "source": "derived",
+                  "required": false,
+                  "formula": "trade_receivables ÷ revenue_from_operations × 365",
+                  "inputs": [
+                    "trade_receivables",
+                    "revenue_from_operations"
+                  ],
+                  "in_app": "no"
+                },
+                {
+                  "key": "payable_days",
+                  "label": "Payable days",
+                  "type": "number",
+                  "source": "derived",
+                  "required": false,
+                  "formula": "trade_payables ÷ cost_of_sales × 365",
+                  "inputs": [
+                    "trade_payables",
+                    "cost_of_sales"
+                  ],
+                  "in_app": "no"
+                },
+                {
+                  "key": "working_capital_cycle",
+                  "label": "Working-capital cycle",
+                  "type": "number",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "inventory_days + receivable_days − payable_days",
+                  "inputs": [
+                    "inventory_days",
+                    "receivable_days",
+                    "payable_days"
+                  ],
+                  "in_app": "partly"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "income_tax_return",
+          "name": "Income Tax Return with computation, latest assessment year",
+          "checklist_item": "itr",
+          "issued_by": "Income Tax Department e-filing portal (ITR-6 for a company; ITR-V acknowledgement)",
+          "one_per": "Assessment year",
+          "sections": [
+            {
+              "name": "Read off the acknowledgement and form",
+              "fields": [
+                {
+                  "key": "pan",
+                  "label": "PAN",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "identifier",
+                  "read_from": "Acknowledgement header.",
+                  "pattern": "^[A-Z]{3}[ABCFGHJLPT][A-Z][0-9]{4}[A-Z]$",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "taxpayer_name",
+                  "label": "Name",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "label + model",
+                  "read_from": "\"Name\" in Part A on the first page.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "assessment_year",
+                  "label": "Assessment year",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "label",
+                  "read_from": "\"Assessment Year 2026-27\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "financial_year",
+                  "label": "Financial year",
+                  "type": "string",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "assessment_year − 1 (AY 2026-27 → FY 2025-26)",
+                  "inputs": [
+                    "assessment_year"
+                  ],
+                  "in_app": "yes"
+                },
+                {
+                  "key": "itr_form",
+                  "label": "Form",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "pattern",
+                  "read_from": "\"ITR-6\" (company), \"ITR-5\" (firm, LLP), \"ITR-3\" (proprietor) in the heading.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "filing_section",
+                  "label": "Filed under section",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "label",
+                  "read_from": "\"Filed u/s 139(1)\" original, 139(4) belated, 139(5) revised.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "acknowledgement_number",
+                  "label": "Acknowledgement number",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "label",
+                  "read_from": "\"Acknowledgement Number\", 15 digits.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "filing_date",
+                  "label": "Date of filing",
+                  "type": "date",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "label",
+                  "read_from": "\"Date of Filing\" in the header.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "verification_mode",
+                  "label": "Verified by",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "label",
+                  "read_from": "DSC (mandatory for a company) or EVC.",
+                  "in_app": "no"
+                }
+              ]
+            },
+            {
+              "name": "Income and tax",
+              "fields": [
+                {
+                  "key": "turnover",
+                  "label": "Turnover per the return",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Computation or Part A-P&L: \"Revenue from operations\" / \"Gross receipts\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "profit_before_tax",
+                  "label": "Profit before tax per the return",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Computation: \"Profit as per P&L\" / \"Net profit before tax\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "total_income",
+                  "label": "Total income",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "model + label",
+                  "read_from": "Part B-TI item 13, \"Total income\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "gross_total_income",
+                  "label": "Gross total income",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "model + label",
+                  "read_from": "Part B-TI item 9.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "tax_payable",
+                  "label": "Aggregate tax liability",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "model + label",
+                  "read_from": "Part B-TTI item 9.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "tax_paid",
+                  "label": "Taxes paid",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "model + label",
+                  "read_from": "Part B-TTI item 10e.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "refund_amount",
+                  "label": "Refund",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "model + label",
+                  "read_from": "Part B-TTI item 12.",
+                  "in_app": "yes"
+                }
+              ]
+            },
+            {
+              "name": "Worked out from what is read",
+              "fields": [
+                {
+                  "key": "effective_tax_rate",
+                  "label": "Effective tax rate",
+                  "type": "number",
+                  "source": "derived",
+                  "required": false,
+                  "formula": "tax_payable ÷ total_income × 100",
+                  "inputs": [
+                    "tax_payable",
+                    "total_income"
+                  ],
+                  "in_app": "no"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "banking_operations",
+      "name": "Banking and operations",
+      "documents": [
+        {
+          "id": "bank_statement",
+          "name": "Bank statements, twelve months, all operative accounts",
+          "checklist_item": "bank_statements",
+          "issued_by": "The bank (e-statement PDF, or a copy stamped by the branch)",
+          "one_per": "Account (several files may make one account's year)",
+          "sections": [
+            {
+              "name": "Header",
+              "fields": [
+                {
+                  "key": "account_holder_name",
+                  "label": "Account holder",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "label",
+                  "read_from": "\"Account Name\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "bank_name",
+                  "label": "Bank",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "pattern",
+                  "read_from": "Statement heading.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "account_number",
+                  "label": "Account number",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "pattern",
+                  "read_from": "\"Account No.\", 9 to 18 digits.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "account_type",
+                  "label": "Account type",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "label",
+                  "read_from": "\"Account Type\": current, cash credit, overdraft, savings.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "sanctioned_limit",
+                  "label": "Sanctioned limit (CC/OD)",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "required_when": "the account is cash credit or overdraft",
+                  "method": "label",
+                  "read_from": "\"Sanctioned Limit\" / \"Limit\" on CC/OD statements.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "drawing_power",
+                  "label": "Drawing power (CC/OD)",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "required_when": "the account is cash credit or overdraft",
+                  "method": "label",
+                  "read_from": "\"Drawing Power\" / \"DP\".",
+                  "in_app": "no"
+                },
+                {
+                  "key": "statement_period_start",
+                  "label": "Period from",
+                  "type": "date",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "pattern",
+                  "read_from": "\"Statement 01 Sep 2025 to …\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "statement_period_end",
+                  "label": "Period to",
+                  "type": "date",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "pattern",
+                  "read_from": "\"… to 31 Aug 2026\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "opening_balance",
+                  "label": "Opening balance",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "pattern",
+                  "read_from": "\"Opening Balance\" in the summary (Dr = negative).",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "closing_balance",
+                  "label": "Closing balance",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "pattern",
+                  "read_from": "\"Closing Balance\" in the summary.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "ifsc",
+                  "label": "IFSC",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "identifier",
+                  "read_from": "Statement header, beside the branch.",
+                  "pattern": "^[A-Z]{4}0[A-Z0-9]{6}$",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "branch",
+                  "label": "Branch",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "pattern",
+                  "read_from": "\"Branch / IFSC\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "currency",
+                  "label": "Currency",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "pattern",
+                  "read_from": "\"Currency INR\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "customer_id",
+                  "label": "Customer ID / CIF",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "label",
+                  "read_from": "\"Customer ID\" / \"CIF No.\".",
+                  "in_app": "no"
+                },
+                {
+                  "key": "holder_address",
+                  "label": "Address on the statement",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "label",
+                  "read_from": "Address block under the holder's name.",
+                  "in_app": "no"
+                }
+              ]
+            },
+            {
+              "name": "Transactions (one row per entry)",
+              "fields": [
+                {
+                  "key": "transactions.date",
+                  "label": "Transaction date",
+                  "type": "date",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table",
+                  "read_from": "Date column; rows start at a date.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "transactions.description",
+                  "label": "Narration",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table",
+                  "read_from": "Particulars / Narration column (may wrap).",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "transactions.reference_number",
+                  "label": "Reference or cheque number",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table",
+                  "read_from": "Ref / Chq No. column.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "transactions.debit",
+                  "label": "Debit",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table",
+                  "read_from": "Withdrawal column.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "transactions.credit",
+                  "label": "Credit",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table",
+                  "read_from": "Deposit column.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "transactions.balance",
+                  "label": "Balance",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table",
+                  "read_from": "Balance column (Dr = negative). The running balance is used to repair a single misread cell.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "value_date",
+                  "label": "Value date",
+                  "type": "date",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table",
+                  "read_from": "Value Dt column where printed.",
+                  "in_app": "no"
+                }
+              ]
+            },
+            {
+              "name": "Worked out from what is read",
+              "fields": [
+                {
+                  "key": "months_covered",
+                  "label": "Months covered",
+                  "type": "array",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "calendar months from statement_period_start to statement_period_end, merged across the account's files",
+                  "inputs": [
+                    "statement_period_start",
+                    "statement_period_end"
+                  ],
+                  "in_app": "yes"
+                },
+                {
+                  "key": "txn_category",
+                  "label": "Category of each entry",
+                  "type": "string",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "category of each transactions.description: first matching rule in config/txn_classification.yaml, then the model, then a person",
+                  "inputs": [
+                    "transactions.description"
+                  ],
+                  "in_app": "yes"
+                },
+                {
+                  "key": "business_credits",
+                  "label": "Business credits by month",
+                  "type": "number",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "Σ transactions.credit per month, less own-account transfers, loan disbursals, reversals and returned cheques (by txn_category)",
+                  "inputs": [
+                    "transactions.credit",
+                    "txn_category"
+                  ],
+                  "in_app": "yes"
+                },
+                {
+                  "key": "abb_month",
+                  "label": "Average balance by month",
+                  "type": "number",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "mean of the end-of-day transactions.balance over every calendar day of the month (carried forward over days with no entry)",
+                  "inputs": [
+                    "transactions.balance"
+                  ],
+                  "in_app": "yes"
+                },
+                {
+                  "key": "emi_obligations",
+                  "label": "Instalments by lender",
+                  "type": "array",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "transactions.debit to one lender in 3 or more months, amounts within 5%",
+                  "inputs": [
+                    "transactions.debit"
+                  ],
+                  "in_app": "yes"
+                },
+                {
+                  "key": "inward_returns",
+                  "label": "Cheques and auto-debits returned",
+                  "type": "integer",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "count of transactions with txn_category = return_issued (the borrower's own cheques or auto-debits returned unpaid; events, not charge lines)",
+                  "inputs": [
+                    "txn_category"
+                  ],
+                  "in_app": "yes"
+                },
+                {
+                  "key": "cash_deposit_share",
+                  "label": "Cash-deposit share",
+                  "type": "number",
+                  "source": "derived",
+                  "required": false,
+                  "formula": "Σ transactions.credit with txn_category = cash_deposit ÷ Σ transactions.credit × 100, per month",
+                  "inputs": [
+                    "transactions.credit",
+                    "txn_category"
+                  ],
+                  "in_app": "yes"
+                },
+                {
+                  "key": "utilisation_pct",
+                  "label": "CC/OD utilisation",
+                  "type": "number",
+                  "source": "derived",
+                  "required": true,
+                  "required_when": "the account is cash credit or overdraft",
+                  "formula": "average daily drawn transactions.balance ÷ min(sanctioned_limit, drawing_power) × 100",
+                  "inputs": [
+                    "transactions.balance",
+                    "sanctioned_limit",
+                    "drawing_power"
+                  ],
+                  "in_app": "no"
+                },
+                {
+                  "key": "days_overdrawn",
+                  "label": "Days overdrawn",
+                  "type": "integer",
+                  "source": "derived",
+                  "required": true,
+                  "required_when": "the account is cash credit or overdraft",
+                  "formula": "days the drawn transactions.balance exceeded min(sanctioned_limit, drawing_power)",
+                  "inputs": [
+                    "transactions.balance",
+                    "sanctioned_limit",
+                    "drawing_power"
+                  ],
+                  "in_app": "no"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "gstr_3b",
+          "name": "GSTR-3B, twelve months",
+          "checklist_item": "gst_returns",
+          "issued_by": "GST portal (CGST Rules r.61)",
+          "one_per": "Tax period per GSTIN (month; a quarter for QRMP filers)",
+          "sections": [
+            {
+              "name": "Header (table 1 and 2)",
+              "fields": [
+                {
+                  "key": "gstin",
+                  "label": "GSTIN",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "identifier",
+                  "read_from": "Table 1 of the return.",
+                  "pattern": "^[0-9]{2}[A-Z0-9]{10}[0-9A-Z]Z[0-9A-Z]$",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "legal_name",
+                  "label": "Legal name",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "label",
+                  "read_from": "Table 2(a) \"Legal name of the registered person\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "trade_name",
+                  "label": "Trade name",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "label",
+                  "read_from": "Table 2(b).",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "financial_year",
+                  "label": "Financial year",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "pattern",
+                  "read_from": "\"Year 2025-26\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "tax_period",
+                  "label": "Tax period",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "pattern",
+                  "read_from": "\"Period Dec\" or \"Apr-Jun\" for a quarterly filer.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "arn",
+                  "label": "ARN",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "label",
+                  "read_from": "Table 2(c) \"ARN\".",
+                  "in_app": "no"
+                },
+                {
+                  "key": "filing_date",
+                  "label": "Date of filing",
+                  "type": "date",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "label",
+                  "read_from": "Table 2(d) \"Date of ARN\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "return_status",
+                  "label": "Return status",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "pattern",
+                  "read_from": "\"Return status: Filed\".",
+                  "in_app": "yes"
+                }
+              ]
+            },
+            {
+              "name": "Table 3.1 outward supplies (taxable value, IGST, CGST, SGST)",
+              "fields": [
+                {
+                  "key": "outward_taxable_a",
+                  "label": "3.1(a) Outward taxable supplies",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Row (a), \"Total taxable value\" column.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "outward_zero_rated_b",
+                  "label": "3.1(b) Zero-rated supplies (exports)",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Row (b).",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "outward_nil_exempt_c",
+                  "label": "3.1(c) Nil-rated and exempted",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "Row (c).",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "inward_reverse_charge_d",
+                  "label": "3.1(d) Inward supplies on reverse charge",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table row",
+                  "read_from": "Row (d). Not a sale.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "non_gst_outward_e",
+                  "label": "3.1(e) Non-GST outward supplies",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table row",
+                  "read_from": "Row (e).",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "output_tax",
+                  "label": "Tax on 3.1(a) and (b)",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table row",
+                  "read_from": "IGST, CGST, SGST and cess columns of rows (a) and (b).",
+                  "in_app": "yes"
+                }
+              ]
+            },
+            {
+              "name": "Tables 4, 5.1 and 6.1",
+              "fields": [
+                {
+                  "key": "itc_available",
+                  "label": "4(A) ITC available",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table row",
+                  "read_from": "Table 4(A) total.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "itc_reversed",
+                  "label": "4(B) ITC reversed",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table row",
+                  "read_from": "Table 4(B).",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "net_itc",
+                  "label": "4(C) Net ITC",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table row",
+                  "read_from": "Table 4(C).",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "interest_late_fee",
+                  "label": "5.1 Interest and late fee paid",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table row",
+                  "read_from": "Table 5.1.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "tax_paid_cash",
+                  "label": "6.1 Tax paid in cash",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table row",
+                  "read_from": "Table 6.1 \"Paid in cash\" column.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "tax_paid_itc",
+                  "label": "6.1 Tax paid through ITC",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table row",
+                  "read_from": "Table 6.1 \"Paid through ITC\" columns.",
+                  "in_app": "no"
+                }
+              ]
+            },
+            {
+              "name": "Worked out from what is read",
+              "fields": [
+                {
+                  "key": "gst_turnover",
+                  "label": "GST turnover for the period",
+                  "type": "number",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "outward_taxable_a + outward_zero_rated_b + outward_nil_exempt_c (taxable value)",
+                  "inputs": [
+                    "outward_taxable_a",
+                    "outward_zero_rated_b",
+                    "outward_nil_exempt_c"
+                  ],
+                  "in_app": "yes"
+                },
+                {
+                  "key": "tax_inclusive_turnover",
+                  "label": "Turnover including tax",
+                  "type": "number",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "gst_turnover + output_tax",
+                  "inputs": [
+                    "gst_turnover",
+                    "output_tax"
+                  ],
+                  "in_app": "no"
+                },
+                {
+                  "key": "pan_in_gstin",
+                  "label": "PAN within the GSTIN",
+                  "type": "string",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "GSTIN[2:12]",
+                  "inputs": [
+                    "gstin"
+                  ],
+                  "in_app": "yes"
+                },
+                {
+                  "key": "gst_state",
+                  "label": "State of registration",
+                  "type": "string",
+                  "source": "derived",
+                  "required": false,
+                  "formula": "GSTIN[0:2], e.g. 27 Maharashtra, 29 Karnataka",
+                  "inputs": [
+                    "gstin"
+                  ],
+                  "in_app": "no"
+                },
+                {
+                  "key": "filing_frequency",
+                  "label": "Monthly or quarterly",
+                  "type": "string",
+                  "source": "derived",
+                  "required": false,
+                  "formula": "tax_period names one month (monthly) or a range such as Apr-Jun (QRMP)",
+                  "inputs": [
+                    "tax_period"
+                  ],
+                  "in_app": "partly"
+                },
+                {
+                  "key": "due_date",
+                  "label": "Due date",
+                  "type": "date",
+                  "source": "derived",
+                  "required": false,
+                  "formula": "20th of the month after tax_period (monthly); 22nd or 24th of the month after the quarter (quarterly filer, by State)",
+                  "inputs": [
+                    "tax_period"
+                  ],
+                  "in_app": "no"
+                },
+                {
+                  "key": "days_late",
+                  "label": "Days filed late",
+                  "type": "integer",
+                  "source": "derived",
+                  "required": false,
+                  "formula": "max(0, filing_date − due_date)",
+                  "inputs": [
+                    "filing_date",
+                    "due_date"
+                  ],
+                  "in_app": "no"
+                },
+                {
+                  "key": "cash_tax_share",
+                  "label": "Share of tax paid in cash",
+                  "type": "number",
+                  "source": "derived",
+                  "required": false,
+                  "formula": "tax_paid_cash ÷ (tax_paid_cash + tax_paid_itc) × 100",
+                  "inputs": [
+                    "tax_paid_cash",
+                    "tax_paid_itc"
+                  ],
+                  "in_app": "no"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "supporting",
+      "name": "Supporting documents",
+      "documents": [
+        {
+          "id": "gstr_1",
+          "name": "GSTR-1",
+          "issued_by": "GST portal",
+          "one_per": "Tax period per GSTIN",
+          "sections": [
+            {
+              "name": "Read off the return",
+              "fields": [
+                {
+                  "key": "gstin",
+                  "label": "GSTIN",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "identifier",
+                  "read_from": "Header of the return.",
+                  "pattern": "^[0-9]{2}[A-Z0-9]{10}[0-9A-Z]Z[0-9A-Z]$",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "legal_name",
+                  "label": "Legal name",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "label",
+                  "read_from": "\"Legal name of the registered person\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "trade_name",
+                  "label": "Trade name",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "label",
+                  "read_from": "\"Trade name if any\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "financial_year",
+                  "label": "Financial year",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "pattern",
+                  "read_from": "\"Financial year 2025-26\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "tax_period",
+                  "label": "Tax period",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "pattern",
+                  "read_from": "\"Tax period Dec\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "filing_date",
+                  "label": "ARN date",
+                  "type": "date",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "label",
+                  "read_from": "\"ARN date\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "outward_supplies.value",
+                  "label": "Section totals (4A, 4B, 5, 6A to 6C, 7, 9B)",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table",
+                  "read_from": "One row per section from its Total line: records, value, IGST, CGST, SGST, cess.",
+                  "in_app": "yes"
+                }
+              ]
+            },
+            {
+              "name": "Worked out from what is read",
+              "fields": [
+                {
+                  "key": "total_outward_value",
+                  "label": "Total outward value",
+                  "type": "number",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "Σ outward_supplies.value of sections 4A, 4B, 5, 6A, 6B, 6C, 7 − outward_supplies.value of 9B (net credit notes)",
+                  "inputs": [
+                    "outward_supplies.value"
+                  ],
+                  "in_app": "no"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "existing_facilities_declaration",
+          "name": "Declaration of existing facilities",
+          "issued_by": "The borrower, signed",
+          "one_per": "Case",
+          "sections": [
+            {
+              "name": "Read off the declaration",
+              "fields": [
+                {
+                  "key": "company_name",
+                  "label": "Company",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "label + pattern",
+                  "read_from": "\"Name of the Company\" or \"For <X> Limited\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "declaration_date",
+                  "label": "Date",
+                  "type": "date",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "label",
+                  "read_from": "\"Date\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "pan",
+                  "label": "PAN",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "identifier",
+                  "read_from": "Letterhead.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "cin",
+                  "label": "CIN",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "identifier",
+                  "read_from": "Letterhead.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "gstin",
+                  "label": "GSTIN",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "identifier",
+                  "read_from": "Letterhead.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "facilities.lender",
+                  "label": "Facility: lender",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table",
+                  "read_from": "\"Name of Lender\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "facilities.facility",
+                  "label": "Facility: type",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table",
+                  "read_from": "\"Nature of Facility\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "facilities.sanctioned_amount",
+                  "label": "Facility: limit",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table",
+                  "read_from": "\"Limit\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "facilities.outstanding",
+                  "label": "Facility: outstanding",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table",
+                  "read_from": "\"Outstanding\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "facilities.emi",
+                  "label": "Facility: instalment",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table",
+                  "read_from": "\"EMI\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "facilities_as_of",
+                  "label": "Outstanding as on",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "label",
+                  "read_from": "\"as on <date>\" in the table heading.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "bank_accounts.bank",
+                  "label": "Account: bank",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table",
+                  "read_from": "\"Name of Bank\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "bank_accounts.account_number",
+                  "label": "Account: number",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table",
+                  "read_from": "\"Account Number\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "bank_accounts.account_type",
+                  "label": "Account: type",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table",
+                  "read_from": "\"Type\".",
+                  "in_app": "yes"
+                }
+              ]
+            },
+            {
+              "name": "Worked out from what is read",
+              "fields": [
+                {
+                  "key": "existing_emi_total",
+                  "label": "Existing monthly instalments",
+                  "type": "number",
+                  "source": "derived",
+                  "required": true,
+                  "formula": "Σ facilities.emi",
+                  "inputs": [
+                    "facilities.emi"
+                  ],
+                  "in_app": "partly"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "sanction_letter",
+          "name": "Sanction letter (other lenders)",
+          "issued_by": "The other lender, on its letterhead",
+          "one_per": "Facility letter",
+          "sections": [
+            {
+              "name": "Read off the letter",
+              "fields": [
+                {
+                  "key": "lender_name",
+                  "label": "Lender",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "label + pattern",
+                  "read_from": "Letterhead or \"For <Bank>\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "borrower_name",
+                  "label": "Borrower",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "label",
+                  "read_from": "\"Borrower\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "sanction_date",
+                  "label": "Date",
+                  "type": "date",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "label",
+                  "read_from": "\"Date\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "reference_number",
+                  "label": "Reference",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "label",
+                  "read_from": "\"Ref. No.\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "facilities.facility",
+                  "label": "Facility",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table",
+                  "read_from": "Facility column.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "facilities.sanctioned_amount",
+                  "label": "Sanctioned amount",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table",
+                  "read_from": "Amount column.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "facilities.interest_rate",
+                  "label": "Rate",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table",
+                  "read_from": "Interest column.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "facilities.tenure",
+                  "label": "Tenor",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table",
+                  "read_from": "Tenure column.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "facilities.emi",
+                  "label": "Instalment",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table",
+                  "read_from": "EMI column.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "security",
+                  "label": "Security",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "model",
+                  "read_from": "\"Security\" section: primary and collateral.",
+                  "in_app": "no"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "commercial_bureau_report",
+          "name": "Commercial bureau report",
+          "issued_by": "A credit information company (independent source)",
+          "one_per": "Pull",
+          "sections": [
+            {
+              "name": "Read off the report",
+              "fields": [
+                {
+                  "key": "company_name",
+                  "label": "Company",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "label",
+                  "read_from": "\"Company Name\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "pan",
+                  "label": "PAN",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "identifier",
+                  "read_from": "First PAN on the page (the company's).",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "cin",
+                  "label": "CIN",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "identifier",
+                  "read_from": "Header.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "gstin",
+                  "label": "GSTIN",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "identifier",
+                  "read_from": "Header.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "report_date",
+                  "label": "Report date",
+                  "type": "date",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "label",
+                  "read_from": "\"Report Date\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "credit_rank",
+                  "label": "Credit rank (CMR 1 to 10)",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "label",
+                  "read_from": "\"Credit Rank\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "credit_facilities.lender",
+                  "label": "Facility: lender",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table",
+                  "read_from": "\"Lender\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "credit_facilities.facility",
+                  "label": "Facility: type",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table",
+                  "read_from": "\"Facility\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "credit_facilities.sanctioned_amount",
+                  "label": "Facility: sanctioned",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table",
+                  "read_from": "\"Sanctioned\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "credit_facilities.outstanding",
+                  "label": "Facility: outstanding",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table",
+                  "read_from": "\"Outstanding\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "credit_facilities.overdue",
+                  "label": "Facility: overdue",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table",
+                  "read_from": "\"Overdue\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "credit_facilities.status",
+                  "label": "Facility: status",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table",
+                  "read_from": "\"Status\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "dpd_asset_class",
+                  "label": "Facility: DPD and asset class",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table",
+                  "read_from": "DPD history; Standard / SMA / Sub-standard / Doubtful / Loss.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "suit_filed_wilful_default",
+                  "label": "Suit filed or wilful default",
+                  "type": "boolean",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table",
+                  "read_from": "Flags per facility.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "enquiries_6m",
+                  "label": "Enquiries in the last six months",
+                  "type": "integer",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table",
+                  "read_from": "Enquiry section.",
+                  "in_app": "no"
+                },
+                {
+                  "key": "related_parties.name",
+                  "label": "Related party: name",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table",
+                  "read_from": "\"Name\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "related_parties.relationship",
+                  "label": "Related party: relationship",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "table",
+                  "read_from": "\"Relationship\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "related_parties.pan",
+                  "label": "Related party: PAN",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "table",
+                  "read_from": "\"PAN\".",
+                  "in_app": "yes"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "application_message",
+          "name": "Sourcing message",
+          "issued_by": "The relationship manager",
+          "one_per": "Case",
+          "sections": [
+            {
+              "name": "Read off the message",
+              "fields": [
+                {
+                  "key": "borrower",
+                  "label": "Borrower name",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "declared",
+                  "read_from": "Proposed from the message, confirmed by the RM.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "constitution",
+                  "label": "Constitution",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "declared",
+                  "read_from": "Pvt Ltd, partnership, proprietorship; or from the PAN's 4th letter.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "pan",
+                  "label": "PAN",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "identifier",
+                  "read_from": "Any PAN in the message; a person's PAN is the borrower's only for a proprietorship.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "gstin",
+                  "label": "GSTIN",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "identifier",
+                  "read_from": "Any GSTIN in the message.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "cin",
+                  "label": "CIN",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "identifier",
+                  "read_from": "Any CIN in the message.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "udyam",
+                  "label": "Udyam number",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "identifier",
+                  "read_from": "UDYAM-XX-00-0000000.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "facilities",
+                  "label": "Facilities",
+                  "type": "array",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "declared",
+                  "read_from": "CC, OD, TL, BG, PC.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "amount_inr",
+                  "label": "Amount requested",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "declared",
+                  "read_from": "\"5 cr\", \"50 lakh\", normalised to rupees.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "declared_turnover",
+                  "label": "Declared turnover",
+                  "type": "number",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "declared",
+                  "read_from": "\"T/O 42 cr\".",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "promoters",
+                  "label": "Promoters",
+                  "type": "array",
+                  "source": "extracted",
+                  "required": true,
+                  "method": "declared",
+                  "read_from": "Names after promoter, director, owner.",
+                  "in_app": "yes"
+                },
+                {
+                  "key": "existing_banking",
+                  "label": "Existing banking",
+                  "type": "string",
+                  "source": "extracted",
+                  "required": false,
+                  "method": "declared",
+                  "read_from": "Banks and facilities mentioned.",
+                  "in_app": "yes"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

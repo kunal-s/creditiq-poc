@@ -40,5 +40,4 @@ __pycache__/
 *.sw?
 # Claude Code's local state (worktrees, settings) stays out of git; the project skills are shared.
 /.claude/
-/document-fields
 /Company Financials Metrics and Ratios.html

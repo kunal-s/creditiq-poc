@@ -246,3 +246,38 @@ test("Financials and Policy leads with the lending answer, and says the gap when
   await page.reload();
   await expect(page.getByTestId("lending-short")).toBeVisible();
 });
+
+test("once the engine says the case is created, the Overview folds the documents into one line", async ({
+  page,
+}) => {
+  const api = new MockApi();
+  api.on("GET", new RegExp(`^/api/cases/${KESTREL}/progress$`), () => ({
+    json: {
+      ...api.progress(KESTREL),
+      gate: {
+        open: true,
+        can_open: true,
+        open_exceptions: 0,
+        blocking_open: 0,
+        score_pct: 100,
+        gate_pct: 85,
+        blockers: [],
+      },
+    },
+  }));
+  await signedIn(page, api);
+  await page.goto(`/appraisals/${KESTREL}`);
+  const folded = page.getByTestId("journey-folded");
+  await expect(folded).toContainText("requirements satisfied");
+  await expect(page.getByTestId("document-status")).toBeHidden();
+  await folded.getByText("Show", { exact: true }).click();
+  await expect(page.getByTestId("document-status")).toBeVisible();
+});
+
+test("the turnover table says once which years are only part on file", async ({ page }) => {
+  const api = new MockApi();
+  await signedIn(page, api);
+  await page.goto(`/appraisals/${KESTREL}/policy`);
+  const note = page.getByTestId("spread-turnover-part-note");
+  await expect(note).toContainText("Part of the year is on file for FY");
+});

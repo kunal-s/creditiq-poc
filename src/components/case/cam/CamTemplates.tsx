@@ -46,6 +46,7 @@ export function TemplatePicker({ caseId, m }: { caseId: string; m: Cam }) {
           onChange={(e) => choose.mutate(e.target.value)}
           disabled={choose.isPending || list.isLoading}
           className={cn(field, "mt-1 py-1.5 normal-case tracking-normal")}
+          title={m.template_name || undefined}
           data-testid="cam-template-select"
         >
           {templates.length === 0 && (

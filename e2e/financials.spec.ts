@@ -378,7 +378,8 @@ test("the statements are line by line, and a person's entry is named for confirm
 test("a figure shows where it was read from, and opens its page", async ({ page }) => {
   await openFinancials(page);
   const source = page.getByTestId("spread-source");
-  await expect(source).toContainText("Select any figure");
+  // No empty card until a figure is chosen.
+  await expect(source).toHaveCount(0);
   await page.getByTestId("financials-tab-profit_and_loss").click();
   await page
     .getByTestId("spread-profit_and_loss")

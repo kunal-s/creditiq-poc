@@ -201,7 +201,11 @@ function FinancialsBody({
         ) : (
           <>
             <StatusPanel spread={spread} header={header.data} period={assessed} />
-            <SourcePanel caseId={caseId} picked={pickedNow(spread, picked)} />
+            {/* Where a figure was read from, once one is chosen: no empty card holding the
+                column open until then. */}
+            {pickedNow(spread, picked) && (
+              <SourcePanel caseId={caseId} picked={pickedNow(spread, picked)} />
+            )}
           </>
         )}
       </aside>

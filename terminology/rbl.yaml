@@ -180,6 +180,7 @@ spreadPage:
     subtitle: "{unit} · every source as read from its documents, coloured by what the cross-checks concluded"
     source: Source
     months: "{n} of 12 months"
+    partNote: "Part of the year is on file for {years}: those figures show how many months they cover, and are not compared with the audited turnover."
   verdict:
     agrees: Agrees within tolerance
     differs: Differs outside tolerance
@@ -1427,6 +1428,8 @@ upload:
   camera: Take a photo
 
 journey:
+  foldedCount: "{n} of {total} requirements satisfied"
+  show: Show
   # The upload on a required document's row in the files received, and what became of the file.
   upload: Upload
   uploadHelp: Upload files for this requirement, or drop them on its row

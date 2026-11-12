@@ -79,6 +79,18 @@ items:
     request: KYC (PAN and address proof) of every director, partner or proprietor
 
   # --- Financials ---
+  - id: fs_fy_minus3
+    name: Audited financial statements, third-latest year
+    category: Financials
+    constitutions: [private_limited, proprietorship, partnership]
+    why: Completes the three-year trend behind the latest audited year.
+    basis: RBL credit policy, minimum audited history.
+    source: published_policy
+    blocking: true
+    weight: 4
+    coverage: {kind: financial_year, offset: 3, statements: [balance_sheet, profit_and_loss]}
+    request: Audited financial statements
+
   - id: fs_fy_minus2
     name: Audited financial statements, second-latest year
     category: Financials
@@ -104,7 +116,7 @@ items:
     request: Audited financial statements
 
   - id: itr
-    name: Income Tax Return with computation, latest assessment year
+    name: Income Tax Return with computation, last three assessment years
     category: Financials
     constitutions: [private_limited, proprietorship, partnership]
     why: Independent corroboration of profit and tax paid.
@@ -112,7 +124,7 @@ items:
     source: published_policy
     blocking: true
     weight: 4
-    coverage: {kind: assessment_years, count: 2}
+    coverage: {kind: assessment_years, count: 3}
     request: Income-tax return acknowledgement with computation of income
 
   # --- Banking and operations ---

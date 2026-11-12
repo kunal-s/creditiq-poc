@@ -369,7 +369,8 @@ class Evaluator:
 
     @staticmethod
     def _ay_list(years: list[int]) -> str:
-        return " and ".join(f"AY {y}-{str(y + 1)[2:]}" for y in years)
+        names = [f"AY {y}-{str(y + 1)[2:]}" for y in years]
+        return names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
 
     def assessment_years(self, item: ChecklistItemDef, docs: list[Doc], count: int) -> list[Deficiency]:
         required = self._required_ays(count)

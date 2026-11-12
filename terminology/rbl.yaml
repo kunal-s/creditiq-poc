@@ -915,21 +915,30 @@ fieldDecision:
   reason: Reason for the correction
   save: Save correction
 
-# A figure changed on Extracted data: proposed by the Credit Analyst, checked by the Credit Manager.
+# A value changed on Extracted data: proposed by the Credit Analyst, checked by the Credit Manager.
 figureEdit:
   change: Change figure
+  changeValue: Change value
+  enter: Enter value
   changeAgain: Change again
+  hint: Any value here can be changed with the pencil beside it. Every change is checked by the Credit Manager before it is used.
   title: Change figure
+  titleValue: Change value
+  titleEnter: Enter value
   inForce: On record
   readAs: Read from the document
-  newValue: New figure
+  newValue: New value
+  newFigure: New figure
   newValueHelp: As it should read, in rupees for an amount
+  newValueHelpDate: As a date, for example 29-08-2026
+  newValueHelpText: As it should read on the document
+  newValueHelpAny: A figure, a date (29-08-2026) or text, as it should read
   reason: Reason for the change
-  reasonHelp: "What the figure rests on and where it was found (at least {n} characters)"
+  reasonHelp: "What the value rests on and where it was found (at least {n} characters)"
   attachment: Supporting document (optional)
   attachmentHelp: An auditor's letter, a revised statement or a confirmation. PDF, image, Word or Excel.
   removeAttachment: Remove
-  checkNote: The change is checked by the Credit Manager before it is used. Until then the figure on record stands.
+  checkNote: The change is checked by the Credit Manager before it is used. Until then the value on record stands.
   send: Send for check
   sent: Change sent to the Credit Manager for check
   awaiting: Awaiting check

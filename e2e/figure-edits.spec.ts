@@ -54,6 +54,13 @@ test("the Credit Analyst changes a balance-sheet figure with a reason and a pape
     page.locator('[data-testid="figure-edit-open"][data-field="net_worth"]'),
   ).toBeVisible();
   await expect(page.locator('[data-testid="figure-edit-open"][data-field="pan"]')).toHaveCount(0);
+  // A value the statement did not carry can be entered, for the same check.
+  const statement = page.locator('[data-testid="field-group"]', { has: netWorth(page) });
+  await expect(statement.getByTestId("figure-edit-hint")).toBeVisible();
+  await statement.getByTestId("field-missing-toggle").click();
+  await expect(statement.locator('[data-testid="figure-edit-open"][data-field="pat"]')).toHaveText(
+    "Enter value",
+  );
 
   await netWorth(page).getByTestId("figure-edit-open").click();
   const dialog = page.getByTestId("figure-edit-dialog");

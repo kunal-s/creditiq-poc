@@ -119,10 +119,31 @@ def test_who_may_change_a_figure_and_what_a_change_needs(client: TestClient, pub
     assert _edit(client, analyst, case_id, f["id"], str(f["value"])).status_code == 422
     assert _edit(client, analyst, case_id, f["id"], "100", file=("run.exe", b"MZ", "application/octet-stream")).status_code == 422
     assert _edit(client, analyst, case_id, "FV-nope", "100").status_code == 404
-    # Only a figure: a name or a date read from the document is not changed this way.
-    text = next(x for x in client.get(f"/api/cases/{case_id}/fields", headers=analyst).json()
-                if isinstance(x["value"], str))
-    assert _edit(client, analyst, case_id, text["id"], "12,34,567").status_code == 422
+    # A date stays a date.
+    fields = client.get(f"/api/cases/{case_id}/fields", headers=analyst).json()
+    dated = next(x for x in fields if isinstance(x["value"], str) and len(x["value"]) == 10
+                 and x["value"][4] == "-")
+    assert _edit(client, analyst, case_id, dated["id"], "12,34,567").status_code == 422
+    assert _edit(client, analyst, case_id, dated["id"], "31-02-2026").status_code == 422
+
+
+def test_a_name_or_a_date_changes_as_written(client: TestClient, published_data_root: Path):
+    _, analyst, manager, case_id = _case(client, published_data_root)
+    fields = client.get(f"/api/cases/{case_id}/fields", headers=analyst).json()
+    dated = next(x for x in fields if isinstance(x["value"], str) and len(x["value"]) == 10
+                 and x["value"][4] == "-")
+    named = next(x for x in fields if isinstance(x["value"], str) and x["id"] != dated["id"]
+                 and not x["value"][:4].isdigit())
+    # A date typed day first is kept as the documents keep it.
+    item = _edit(client, analyst, case_id, dated["id"], "15-09-2026").json()
+    assert item["edit"]["to_value"] == "2026-09-15"
+    item2 = _edit(client, analyst, case_id, named["id"], "M/s. Iyer and Co., Chartered Accountants").json()
+    assert item2["edit"]["to_value"] == "M/s. Iyer and Co., Chartered Accountants"
+    for i in (item, item2):
+        assert client.post(f"/api/review/{i['id']}/decision", json={"decision": "confirm"},
+                           headers=manager).status_code == 200
+    assert _field(client, manager, case_id, dated["id"])["corrected_value"] == "2026-09-15"
+    assert _field(client, manager, case_id, named["id"])["status"] == "corrected"
 
 
 def test_while_a_change_waits_the_value_is_not_decided_another_way(client: TestClient, published_data_root: Path):

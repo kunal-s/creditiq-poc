@@ -20,6 +20,7 @@ import json
 import re
 import shutil
 import sqlite3
+from datetime import date
 from pathlib import Path
 
 from .db import log_decision, transaction
@@ -54,20 +55,52 @@ def attachments_dir(root: Path, case_id: str) -> Path:
     return cases_dir(root) / case_id / "attachments"
 
 
-def parse_value(text: str, system: object) -> int | float:
-    """The person's figure, as a number in the type of the one it replaces: Indian or Western digit
-    grouping, a rupee sign or "Rs", brackets or a minus for a negative. Only a figure is changed
-    this way: a value the document gave as text (a name, a date) is not."""
-    raw = text.strip()
-    _require(raw != "", "give the new figure")
-    _require(system is None or (isinstance(system, (int, float)) and not isinstance(system, bool)),
-             "only a figure (a number) is changed here")
+_ISO_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
+_DAY_FIRST = re.compile(r"(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})")
+_NUMBER = re.compile(r"\(?-?(?:₹|INR|Rs\.?)?\s*[\d,\s]*\d(?:\.\d+)?\)?", re.I)
+
+
+def _number(raw: str, like: object) -> int | float:
     negative = raw.startswith("(") and raw.endswith(")")
     digits = re.sub(r"[,\s₹]|^INR|^Rs\.?", "", raw.strip("()"), flags=re.I)
     _require(re.fullmatch(r"-?\d+(\.\d+)?", digits) is not None, f"{raw!r} is not a number")
     number = float(digits)
     number = -number if negative else number
-    return int(number) if number.is_integer() and not isinstance(system, float) else number
+    return int(number) if number.is_integer() and not isinstance(like, float) else number
+
+
+def _date(raw: str) -> str:
+    """A date as the documents' values hold it (YYYY-MM-DD), from that form or day first."""
+    if _ISO_DATE.fullmatch(raw):
+        y, m, d = (int(x) for x in raw.split("-"))
+    else:
+        found = _DAY_FIRST.fullmatch(raw)
+        _require(found is not None, f"{raw!r} is not a date (give it as 29-08-2026)")
+        d, m, y = (int(x) for x in found.groups())  # type: ignore[union-attr]
+    try:
+        return date(y, m, d).isoformat()
+    except ValueError:
+        raise EditError(422, f"{raw!r} is not a date") from None
+
+
+def parse_value(text: str, system: object) -> object:
+    """The person's value in the kind of the one it replaces: a number for a figure (Indian or
+    Western digit grouping, a rupee sign or "Rs", brackets or a minus for a negative), a date as
+    YYYY-MM-DD (typed that way or day first), otherwise the text as written. A value the document
+    did not carry is a number or a date when it is written as one."""
+    raw = text.strip()
+    _require(raw != "", "give the new value")
+    _require(not isinstance(system, bool), "a yes-or-no value is not changed here")
+    if isinstance(system, (int, float)):
+        return _number(raw, system)
+    if isinstance(system, str) and _ISO_DATE.fullmatch(system):
+        return _date(raw)
+    if system is None:
+        if _NUMBER.fullmatch(raw):
+            return _number(raw, None)
+        if _ISO_DATE.fullmatch(raw) or _DAY_FIRST.fullmatch(raw):
+            return _date(raw)
+    return raw
 
 
 def shown(value: object) -> str:
@@ -101,7 +134,7 @@ def edit_figure(
     """Record the maker's change and open it for a checker; returns the review item's id."""
     _require("manual.make" in set(user["permissions"]), "changing a figure needs the maker permission", 403)
     reason = (reason or "").strip()
-    _require(len(reason) >= REASON_MIN, f"say why the figure changes (at least {REASON_MIN} characters)")
+    _require(len(reason) >= REASON_MIN, f"say why the value changes (at least {REASON_MIN} characters)")
     fv = conn.execute("SELECT * FROM field_values WHERE id = ? AND case_id = ?", (field_id, case_id)).fetchone()
     _require(fv is not None, "no such field on this case", 404)
     system = json.loads(fv["value"]) if fv["value"] is not None else None
@@ -109,7 +142,7 @@ def edit_figure(
     # The figure in force, as everything downstream reads it (engine/facts.py).
     current = corrected if fv["status"] == "corrected" and corrected is not None else system
     new = parse_value(value, current)
-    _require(new != current, "the new figure is the same as the one on record")
+    _require(new != current, "the new value is the same as the one on record")
 
     stored = None
     if attachment is not None:

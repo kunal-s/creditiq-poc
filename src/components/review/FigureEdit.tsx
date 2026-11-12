@@ -73,17 +73,46 @@ export function FieldStatusCell({
       <FieldRowDecision field={field} />
       {/* Figures only (names and dates are not changed this way); a value still waiting for its
           own review is confirmed or corrected there first. */}
-      {editable && canMake && !reviewItem && isFigure(field) && (
+      {editable && canMake && !reviewItem && isChangeable(field) && (
         <ChangeFigure field={field} compact={quiet} />
       )}
     </>
   );
 }
 
-/** A figure the document gave as a number (engine/figure_edits.py changes no other value). */
-function isFigure(field: FieldValue): boolean {
-  return typeof field.value === "number";
+/** What kind of value a field holds, for the words and the input: a figure, a date, text, or
+ * none read (a field not found on the document). A yes-or-no value is not changed this way. */
+type ValueKind = "figure" | "date" | "text" | "none";
+
+function kindOf(field: FieldValue): ValueKind | null {
+  if (field.value === null || field.value === undefined) return "none";
+  if (typeof field.value === "number") return "figure";
+  if (typeof field.value === "boolean") return null;
+  return /^\d{4}-\d{2}-\d{2}$/.test(field.value) ? "date" : "text";
 }
+
+function isChangeable(field: FieldValue): boolean {
+  return kindOf(field) !== null;
+}
+
+const CHANGE_LABEL: Record<ValueKind, string> = {
+  figure: "figureEdit.change",
+  date: "figureEdit.changeValue",
+  text: "figureEdit.changeValue",
+  none: "figureEdit.enter",
+};
+const TITLE: Record<ValueKind, string> = {
+  figure: "figureEdit.title",
+  date: "figureEdit.titleValue",
+  text: "figureEdit.titleValue",
+  none: "figureEdit.titleEnter",
+};
+const HELP: Record<ValueKind, string> = {
+  figure: "figureEdit.newValueHelp",
+  date: "figureEdit.newValueHelpDate",
+  text: "figureEdit.newValueHelpText",
+  none: "figureEdit.newValueHelpAny",
+};
 
 function ChangeFigure({
   field,
@@ -96,7 +125,7 @@ function ChangeFigure({
   compact?: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const label = again ? t("figureEdit.changeAgain") : t("figureEdit.change");
+  const label = again ? t("figureEdit.changeAgain") : t(CHANGE_LABEL[kindOf(field) ?? "text"]);
   return (
     <>
       <span className={compact ? "inline-flex" : "mt-1 flex"}>
@@ -128,6 +157,7 @@ function ChangeDialog({ field, onClose }: { field: FieldValue; onClose: () => vo
   const [file, setFile] = useState<File | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const change = useChangeFigure(field);
+  const kind = kindOf(field) ?? "text";
   const inForce = field.status === "corrected" ? effectiveValue(field) : field.value;
   const ready = value.trim() !== "" && reason.trim().length >= CHANGE_REASON_MIN;
   const refused = change.isError ? refusal(change.error) : null;
@@ -145,13 +175,15 @@ function ChangeDialog({ field, onClose }: { field: FieldValue; onClose: () => vo
         data-testid="figure-edit-dialog"
       >
         <DialogHeader>
-          <DialogTitle>{t("figureEdit.title")}</DialogTitle>
+          <DialogTitle>{t(TITLE[kind])}</DialogTitle>
           <DialogDescription>{fieldLabel(field.field)}</DialogDescription>
         </DialogHeader>
 
         <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1 rounded border border-border bg-surface-muted px-3 py-2 text-[12.5px]">
           <dt className="text-muted-foreground">{t("figureEdit.inForce")}</dt>
-          <dd className="tabular font-medium text-foreground">{formatValue(inForce)}</dd>
+          <dd className="tabular font-medium text-foreground">
+            {kind === "none" ? t("fieldStatus.missing") : formatValue(inForce)}
+          </dd>
           {field.status === "corrected" && (
             <>
               <dt className="text-muted-foreground">{t("figureEdit.readAs")}</dt>
@@ -161,11 +193,13 @@ function ChangeDialog({ field, onClose }: { field: FieldValue; onClose: () => vo
         </dl>
 
         <label className="block">
-          <span className="field-label">{t("figureEdit.newValue")}</span>
+          <span className="field-label">
+            {kind === "figure" ? t("figureEdit.newFigure") : t("figureEdit.newValue")}
+          </span>
           <input
             className={inputClass}
             value={value}
-            inputMode="decimal"
+            inputMode={kind === "figure" ? "decimal" : undefined}
             onChange={(e) => {
               setValue(e.target.value);
               clearError();
@@ -177,7 +211,7 @@ function ChangeDialog({ field, onClose }: { field: FieldValue; onClose: () => vo
             id="figure-edit-value-help"
             className="mt-1 block text-[11.5px] text-muted-foreground"
           >
-            {t("figureEdit.newValueHelp")}
+            {t(HELP[kind])}
           </span>
         </label>
 

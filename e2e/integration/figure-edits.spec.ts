@@ -51,12 +51,12 @@ test("the Credit Analyst changes a figure with a reason and a paper; it waits fo
   const page = await pageAs(browser, "analyst");
   await page.goto(`/appraisals/${caseId}/extraction`);
   await page.getByTestId("data-filter-all").click();
-  // The statements' figures are in their tables (balance sheet, profit and loss).
+  // The statements' figures are in their tables (balance sheet, profit and loss), open with the
+  // document, and the panel says where a figure is changed.
   const financials = page.getByTestId("field-section-financials");
-  for (const toggle of await financials.getByTestId("field-table-toggle").all())
-    await toggle.click();
+  await expect(financials.getByTestId("figure-edit-hint").first()).toBeVisible();
   const open = page.locator(
-    '[data-testid="field-section-financials"] [data-testid="figure-edit-open"]',
+    '[data-testid="field-section-financials"] [data-testid="field-table"] [data-testid="figure-edit-open"]',
   );
   await open.first().scrollIntoViewIfNeeded();
   field = (await open.first().getAttribute("data-field"))!;

@@ -1,5 +1,5 @@
 import { Fragment, useState } from "react";
-import { ArrowRight, CheckCircle2, ChevronRight, Eye } from "lucide-react";
+import { ArrowRight, CheckCircle2, ChevronRight, Eye, PencilLine } from "lucide-react";
 import type { FieldStatus, FieldValue, LogicalDocument } from "@/api/types";
 import { Panel } from "@/components/common/Panel";
 import { Details } from "@/components/common/Details";
@@ -269,6 +269,7 @@ function DocumentFields({
   const files = useCaseFiles(caseId);
   const viewer = useDocViewer();
   const pending = usePendingChanges(caseId);
+  const canMake = useCan("manual.make");
   const file = files.data?.find((f) => f.id === doc.file_id);
   const { plain: all, tables } = groupFields(fields);
   // Fields the document does not carry are counted, and listed only when asked for.
@@ -326,6 +327,16 @@ function DocumentFields({
     >
       {open && (
         <>
+          {/* A financial statement's values, its tables' figures among them, are changed here. */}
+          {editable && canMake && (
+            <p
+              className="flex items-center gap-1.5 border-b border-border px-4 py-2 text-[12px] text-muted-foreground"
+              data-testid="figure-edit-hint"
+            >
+              <PencilLine className="size-3 shrink-0" aria-hidden />
+              {t("figureEdit.hint")}
+            </p>
+          )}
           {plain.length > 0 && (
             <div className="overflow-x-auto">
               <StackTable className="field-cards w-full min-w-[480px] table-fixed text-[12.5px]">
@@ -445,7 +456,8 @@ function FieldTableView({
   const needs = table.rows.some((r) =>
     Object.values(r.cells).some((f) => f && (f.status === "in_review" || pending.has(f.id))),
   );
-  const [open, setOpen] = useState(needs || filtered);
+  // A financial statement's tables are its figures: they open with the document.
+  const [open, setOpen] = useState(needs || filtered || editable);
   return (
     <div
       className="overflow-x-auto border-t border-border first:border-t-0"

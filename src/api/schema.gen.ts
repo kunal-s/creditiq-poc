@@ -2727,7 +2727,7 @@ export interface components {
        * Exit Tier
        * @enum {string}
        */
-      exit_tier: "signals" | "layout" | "model" | "person" | "none";
+      exit_tier: "signals" | "layout" | "model" | "person" | "sibling" | "none";
       /** Signals */
       signals?: string[];
       /** Types */

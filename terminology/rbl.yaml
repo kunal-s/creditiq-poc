@@ -1559,6 +1559,8 @@ documents:
   labelMismatches: Label mismatches
   details: Show the checks on this document
   defects: "{n} defect(s)"
+  foundWithin: Found within the file
+  foundWithinHelp: A document of its own inside a file that holds several, read from its own pages only.
   waitingReview: Waiting for credit review
   readAgain: Read again
   readAgainHelp: Send this file through processing again, as it was received. Its earlier outcome is cleared and the action is recorded in the audit trail.
@@ -2230,6 +2232,7 @@ exitTier:
   layout: Layout
   model: Page reading
   person: Assigned by a person
+  sibling: Found within the file
   none: Not classified
 
 # The case header in the case workspace (FRD §6).
@@ -2397,6 +2400,7 @@ validation:
   notClassifiedYet: Not classified yet.
   labelMismatchDetail: "The file is labelled {label}; its content reads as {type}. The content decides; the mismatch is reported."
   unclassifiedDetail: No type from the published list fits this document with enough confidence. It is not counted against any checklist item until a person assigns a type.
+  foundWithinDetail: "Found on {pages} of a file that holds several documents, and read from those pages only. It counts towards its own checklist item. Confirm it as a document of its own, or waive it as part of the file's other document, in the"
   defects: Deficiencies
   openDocument: Open document
 
@@ -2929,3 +2933,45 @@ banking:
     remove: Remove manual classification
     recorded: Classification saved.
     removed: Manual classification removed.
+
+# Field names as a person reads them, where spelling out the name is not enough (src/domain/extraction.ts fieldLabel).
+fieldLabels:
+  tan: TAN
+  certificate_kind: Original or fresh certificate
+  former_name: Former name
+  liability_clause: Liability clause
+  face_value_per_share: Face value per share
+  borrowing_powers: Borrowing powers article
+  private_company_restrictions: Private-company restrictions
+  latest_alteration_date: Date of the latest alteration
+  meeting_place: Place of the meeting
+  facilities_authorised: Facilities authorised
+  security_authorised: Security to be created
+  certified_by: Certified by
+  statement_basis: Audited, provisional or projected
+  auditor_frn: Firm registration number
+  auditor_membership_no: Signing partner's membership number
+  udin: UDIN
+  audit_opinion: Audit opinion
+  going_concern_uncertainty: Going-concern uncertainty
+  caro_remarks: CARO 2020 adverse remarks
+  itr_form: ITR form
+  filing_section: Filed under section
+  verification_mode: Verified by
+  account_type: Account type
+  sanctioned_limit: Sanctioned limit
+  drawing_power: Drawing power
+  customer_id: Customer ID / CIF
+  holder_address: Address on the statement
+  arn: ARN
+  facilities_as_of: Outstanding as on
+  current_maturities_of_long_term_debt: Current maturities of long-term debt
+  bank_working_capital_borrowings: Working capital borrowings from banks
+  finance_costs_term_loans: Finance costs on term loans
+  loans_from_directors: Loans from directors
+  receivables_over_6_months: Receivables over six months
+  contingent_liabilities: Contingent liabilities
+  shareholders_above_5pct: Shareholders above 5%
+  dpd_asset_class: DPD / asset class
+  suit_filed_wilful_default: Suit filed / wilful default
+  enquiries_6m: Enquiries in the last six months

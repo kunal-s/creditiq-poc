@@ -3,7 +3,7 @@ import { Eye } from "lucide-react";
 import type { ChecklistItemState, FileRecord, LogicalDocument } from "@/api/types";
 import { useDocViewer } from "@/components/docviewer/DocViewer";
 import { t, tOr } from "@/config/terminology";
-import { useDocumentTypes } from "@/domain/documents";
+import { pageRange, useDocumentTypes } from "@/domain/documents";
 import {
   confidencePct,
   effectiveValue,
@@ -92,6 +92,17 @@ export function DocumentDetail({
               label: file?.label_hint ?? file?.original_name ?? "",
               type: classified ? c!.types.map(types.name).join(" + ") : t("document.unclassified"),
             })}
+          </p>
+        )}
+        {c?.exit_tier === "sibling" && (
+          <p
+            className="rounded border border-info/30 bg-info-soft px-3 py-2 text-foreground"
+            data-testid="found-within-detail"
+          >
+            {t("validation.foundWithinDetail", { pages: pageRange(doc) })}{" "}
+            <Link to="/review" className="font-medium text-primary underline">
+              {t("nav.reviewQueue")}
+            </Link>
           </p>
         )}
         {!classified && (

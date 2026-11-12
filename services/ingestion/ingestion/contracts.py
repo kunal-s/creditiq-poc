@@ -74,7 +74,7 @@ class Candidate(C):
 class Classification(C):
     type: str | None
     confidence: float
-    tier: Literal["signals", "model", "person", "none"]
+    tier: Literal["signals", "model", "person", "sibling", "none"]
     signals: dict[str, Any] = Field(default_factory=dict)
     candidates: list[Candidate] = Field(default_factory=list)
     needs_review: bool
@@ -132,6 +132,13 @@ class Document(C):
     identity: dict[str, str] = Field(default_factory=dict)
     """name, pan, din, dob, gstin, cin as read, for party attribution (F-10)."""
     defects: list[Defect] = Field(default_factory=list)
+    origin: Literal["classified", "sibling"] = "classified"
+    """classified: the file's own type. sibling: another document of the same category found inside the
+    file by the second pass (F-08.1), read on its own pages."""
+    pages: list[int] = Field(default_factory=list)
+    """The pages this document was read from. A document found by the second pass need not be contiguous."""
+    classification: Classification | None = None
+    """How a document found by the second pass was recognised; absent for the file's own type."""
 
 
 class IntegrityEvidence(C):

@@ -33,6 +33,29 @@ lines:
   # The two totals a balance sheet must agree on; read for the spread's reconciliation, not worked from.
   total_assets:            {table: balance_sheet, row: '^total assets'}
   total_equity_and_liabilities: {table: balance_sheet, row: '^total (equity\s*(&|and)\s*liabilities|liabilities and equity)'}
+  # Further Schedule III lines (document-fields). A statement that does not print one simply has no such line.
+  share_application_money: {table: balance_sheet, row: '^\(\w\)\s*share application money'}
+  deferred_tax_liability:  {table: balance_sheet, row: '^\(\w\)\s*deferred tax liabilit'}
+  other_long_term_liabilities: {table: balance_sheet, row: '^\(\w\)\s*other long-term liabilities'}
+  long_term_provisions:    {table: balance_sheet, row: '^\(\w\)\s*long-term provisions'}
+  net_fixed_assets:        {table: balance_sheet, row: '^\(\w\)\s*(property, plant and equipment|tangible assets|fixed assets)'}
+  capital_work_in_progress: {table: balance_sheet, row: '^\(\w\)\s*capital work-in-progress'}
+  intangible_assets:       {table: balance_sheet, row: '^\(\w\)\s*intangible assets'}
+  non_current_investments: {table: balance_sheet, row: '^\(\w\)\s*non-current investments'}
+  deferred_tax_asset:      {table: balance_sheet, row: '^\(\w\)\s*deferred tax assets?'}
+  long_term_loans_and_advances: {table: balance_sheet, row: '^\(\w\)\s*long-term loans and advances'}
+  other_non_current_assets: {table: balance_sheet, row: '^\(\w\)\s*other non-current assets'}
+  current_investments:     {table: balance_sheet, row: '^\(\w\)\s*current investments'}
+  total_income:            {table: profit_and_loss, row: '^([IVX]+\.?\s*)?total (income|revenue)'}
+  cost_of_materials_consumed: {table: profit_and_loss, row: '^cost of (raw )?materials? consumed'}
+  purchases_of_stock_in_trade: {table: profit_and_loss, row: '^purchases? of stock-in-trade'}
+  changes_in_inventories:  {table: profit_and_loss, row: '^changes in inventor'}
+  employee_benefits_expense: {table: profit_and_loss, row: '^employee benefits? expenses?'}
+  other_expenses:          {table: profit_and_loss, row: '^other expenses'}
+  total_expenses:          {table: profit_and_loss, row: '^([IVX]+\.?\s*)?total expenses'}
+  exceptional_items:       {table: profit_and_loss, row: '^([IVX]+\.?\s*)?exceptional'}
+  tax_expense:             {table: profit_and_loss, row: '^([IVX]+\.?\s*)?tax expense'}
+  cash_flow_from_operations: {table: cash_flow, row: '^net cash (generated )?(from|used in|\(used in\)|from\s*/\s*\(used in\))\s*operating activities'}
 
 # Rows a statement may leave out when it has nothing to report; read as nil and marked not printed.
 absent_is_nil: [inventories, other_current_assets]

@@ -19,7 +19,8 @@ configuration (principle 4).
                 figure may also be sent back (waive) with a reason.
 - party:        confirm the attribution, or correct it (value: party id,
                 or "none") with a reason (F-10.5).
-- split:        confirm.
+- split:        confirm a document found inside a file, or waive it (with a reason) as part of
+                the file's own document.
 - finding:      confirm as valid, or waive (F-17.4), with a comment of at
                 least three characters either way, as on the
                 cross-verification board. One escalated from the board is
@@ -217,7 +218,15 @@ def decide(
             log.update(document_id=doc["id"], system_party=doc["party_id"], party=override)
 
         elif kind == "split":
-            _require(decision == "confirm", "an uncertain split is confirmed")
+            _require(decision in ("confirm", "waive"), "a document found inside a file is confirmed, or waived as part of the file's own document")
+            if decision == "waive" and detail.get("document_id"):
+                # Not a document of its own: it is held in the file's own document, and no longer counts.
+                own = conn.execute(
+                    """SELECT id FROM documents WHERE case_id = ? AND file_id = ? AND id <> ? AND split_uncertain = 0
+                       ORDER BY page_from LIMIT 1""", (case_id, detail.get("file_id"), detail["document_id"])).fetchone()
+                conn.execute("UPDATE documents SET status = 'duplicate', duplicate_of = ? WHERE id = ? AND case_id = ?",
+                             (own["id"] if own else None, detail["document_id"], case_id))
+                log.update(document_id=detail["document_id"], held_in=own["id"] if own else None)
         elif kind == "finding":
             # F-17.4, C5: a person accepts the flag as valid (confirm) or finds
             # it not valid (waive, with the reason). The finding itself stays.

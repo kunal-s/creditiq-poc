@@ -90,3 +90,22 @@ def test_a_zero_divisor_leaves_the_ratio_blank(client: TestClient, published_dat
     spread = _spread(client, analyst, zero_net_worth)
     assert _row(spread, "debt-equity")["cells"][0]["value"] is None
     assert _row(spread, "tol-tnw")["cells"][0]["value"] is None
+
+
+def test_further_schedule_iii_lines_show_where_printed(client: TestClient, published_data_root: Path):
+    analyst = sign_in(client, ANALYST)
+    case_id = make_case(client, analyst, published_data_root)
+    audited(published_data_root, case_id)
+    spread = _spread(client, analyst, case_id)
+    # Lines the statement prints are spread rows with their figures and evidence.
+    for key, value in (("net_fixed_assets", 35_000_000), ("cost_of_materials_consumed", 80_000_000),
+                       ("employee_benefits_expense", 12_000_000), ("total_expenses", 111_500_000),
+                       ("tax_expense", 1_100_000)):
+        row = _row(spread, key)
+        assert row["kind"] == "line" and row["cells"][0]["value"] == value and row["cells"][0]["evidence"]
+    # A Schedule III line this company does not print carries no empty row.
+    keys = [r["key"] for r in spread["rows"]]
+    assert "share_application_money" not in keys and "capital_work_in_progress" not in keys
+    # The lines everyone reads keep their place and their order.
+    assert keys.index("revenue_from_operations") < keys.index("cost_of_materials_consumed") < keys.index("ebitda")
+    assert keys.index("current_liabilities") < keys.index("net_fixed_assets") < keys.index("inventories")

@@ -51,6 +51,13 @@ export const DECISIONS_BY_KIND: Record<ReviewKind, ReviewDecision[]> = {
   transactions: [],
 };
 
+/** The decisions this item admits from the review queue. A changed figure (a manual entry with its
+ * change) is approved or sent back where it was made, on Extracted data, beside the figure. */
+export function decisionsFor(item: ReviewItem): ReviewDecision[] {
+  if (item.kind === "manual_entry" && item.edit) return [];
+  return DECISIONS_BY_KIND[item.kind];
+}
+
 /** What a review item points at: "field:<id>", "document:<id>" or "file:<id>". */
 export function reviewTarget(ref: string): { kind: string; id: string } {
   const at = ref.indexOf(":");

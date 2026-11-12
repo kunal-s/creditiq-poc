@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { ArrowRight, CheckCircle2, ChevronRight, Eye } from "lucide-react";
 import type { FieldStatus, FieldValue, LogicalDocument } from "@/api/types";
 import { Panel } from "@/components/common/Panel";
@@ -6,8 +6,8 @@ import { Details } from "@/components/common/Details";
 import { ErrorState, LoadingBlock } from "@/components/common/States";
 import { FieldValueButton } from "@/components/common/FieldValueButton";
 import { AverageConfidence } from "@/components/common/ConfidenceChip";
-import { FieldStatusChip, GradeChip } from "@/components/documents/chips";
-import { FieldRowDecision } from "@/components/review/FieldDecision";
+import { GradeChip } from "@/components/documents/chips";
+import { FieldStatusCell, PendingChangeRow } from "@/components/review/FigureEdit";
 import { useDocViewer } from "@/components/docviewer/DocViewer";
 import { t } from "@/config/terminology";
 import {
@@ -25,10 +25,13 @@ import {
   useFields,
   type FieldTable,
 } from "@/domain/extraction";
+import { usePendingChanges } from "@/domain/figureEdits";
+import { useCan } from "@/domain/session";
 import { cn } from "@/lib/utils";
 import { StackTable } from "@/components/common/StackTable";
 
-const FILTERS = ["all", "in_review", "missing", "corrected"] as const;
+/** "awaiting": figures changed by a person and waiting for their check (figureEdits.ts). */
+const FILTERS = ["all", "in_review", "awaiting", "missing", "corrected"] as const;
 
 /** The FRD §6 grouping of extracted data, from each document type's group. */
 const FIELD_SECTIONS = ["identity", "financials", "tax", "banking", "other"] as const;
@@ -52,10 +55,19 @@ function sectionOf(
 }
 type Filter = (typeof FILTERS)[number];
 
-/** Extracted fields by document, with confidence and page (F-15, F-16). */
+/** The table row a cell belongs to ("<document>:<table>[<row>]"), or null for a plain field. */
+function tableRowOf(f: FieldValue): string | null {
+  const m = f.field.match(/^(\w+\[\d+\])\./);
+  return m ? `${f.document_id}:${m[1]}` : null;
+}
+
+/** Extracted fields by document, with confidence and page (F-15, F-16). A figure on a financial
+ * statement can be changed by the Credit Analyst and is checked by the Credit Manager. */
 export function ExtractedDataSection({ caseId }: { caseId: string }) {
   const fields = useFields(caseId);
   const documents = useCaseDocuments(caseId);
+  const pending = usePendingChanges(caseId);
+  const checker = useCan("manual.check");
   // The page opens on what needs checking; the reader's own choice of filter wins once made.
   const [chosen, setFilter] = useState<Filter | null>(null);
   const types = useDocumentTypes();
@@ -76,10 +88,27 @@ export function ExtractedDataSection({ caseId }: { caseId: string }) {
   }
   const all = fields.data;
   const count = (s: FieldStatus) => all.filter((f) => f.status === s).length;
-  const filter: Filter = chosen ?? (count("in_review") > 0 ? "in_review" : "all");
+  const awaiting = all.filter((f) => pending.has(f.id)).length;
+  // A checker opens on the changes waiting for them; everyone else on what the reading left to check.
+  const filter: Filter =
+    chosen ??
+    (checker && awaiting > 0
+      ? "awaiting"
+      : count("in_review") > 0
+        ? "in_review"
+        : awaiting > 0
+          ? "awaiting"
+          : "all");
   // Nothing to check and nothing chosen: each document is one folded row, opened on request.
   const folded = chosen === null && filter === "all";
-  const shown = all.filter((f) => filter === "all" || f.status === filter);
+  const matches = (f: FieldValue) =>
+    filter === "all" ? true : filter === "awaiting" ? pending.has(f.id) : f.status === filter;
+  // A table cell that matches brings its whole row, so the row still says what the line is.
+  const rowsShown = new Set(all.filter(matches).map(tableRowOf));
+  const shown = all.filter(
+    (f) => matches(f) || (tableRowOf(f) !== null && rowsShown.has(tableRowOf(f))),
+  );
+  const filters = FILTERS.filter((f) => f !== "awaiting" || awaiting > 0 || filter === f);
   const groups = documents.data
     .map((doc) => ({ doc, fields: shown.filter((f) => f.document_id === doc.id) }))
     .filter((g) => g.fields.length > 0);
@@ -88,11 +117,13 @@ export function ExtractedDataSection({ caseId }: { caseId: string }) {
     <div className="grid gap-4 px-4 py-5 sm:px-6 @min-[49rem]/main:grid-cols-[minmax(0,1fr)_300px]">
       <div className="min-w-0 space-y-4">
         <div className="flex flex-wrap gap-1" role="group" aria-label={t("data.filter")}>
-          {FILTERS.map((f) => (
+          {filters.map((f) => (
             <button
               key={f}
               type="button"
               onClick={() => setFilter(f)}
+              aria-pressed={filter === f}
+              data-testid={`data-filter-${f}`}
               className={cn(
                 "rounded border px-2 py-1 text-[11.5px] transition-colors",
                 filter === f
@@ -100,7 +131,11 @@ export function ExtractedDataSection({ caseId }: { caseId: string }) {
                   : "border-border text-muted-foreground hover:bg-muted",
               )}
             >
-              {f === "all" ? t("data.filterAll") : t(`fieldStatus.${f}`)}
+              {f === "all"
+                ? t("data.filterAll")
+                : f === "awaiting"
+                  ? `${t("figureEdit.filter")} · ${awaiting}`
+                  : t(`fieldStatus.${f}`)}
             </button>
           ))}
         </div>
@@ -136,11 +171,13 @@ export function ExtractedDataSection({ caseId }: { caseId: string }) {
                 </h3>
                 {members.map((g) => (
                   <DocumentFields
-                    key={`${g.doc.id}-${folded ? "folded" : "open"}`}
+                    key={`${g.doc.id}-${folded ? "folded" : filter}`}
                     caseId={caseId}
                     doc={g.doc}
                     fields={g.fields}
                     folded={folded}
+                    filtered={filter !== "all"}
+                    editable={section === "financials"}
                   />
                 ))}
               </section>
@@ -170,7 +207,26 @@ export function ExtractedDataSection({ caseId }: { caseId: string }) {
                 <dd className="tabular-nums">{count(s)}</dd>
               </div>
             ))}
+            {awaiting > 0 && (
+              <div className="flex justify-between gap-3 px-4 py-2" data-testid="data-awaiting">
+                <dt className="text-muted-foreground">{t("figureEdit.summaryAwaiting")}</dt>
+                <dd className="tabular-nums text-flag-foreground">{awaiting}</dd>
+              </div>
+            )}
           </dl>
+          {awaiting > 0 && filter !== "awaiting" && (
+            <div className="border-t border-border px-4 py-3">
+              <button
+                type="button"
+                onClick={() => setFilter("awaiting")}
+                className="flex h-8 w-full items-center justify-center gap-1.5 rounded border border-border bg-surface text-[12.5px] font-medium text-foreground hover:bg-muted"
+                data-testid="show-awaiting"
+              >
+                {t("figureEdit.showAwaiting", { n: awaiting })}
+                <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
           {count("in_review") > 0 && filter !== "in_review" && (
             <div className="border-t border-border px-4 py-3">
               <button
@@ -195,17 +251,24 @@ function DocumentFields({
   doc,
   fields,
   folded = false,
+  filtered = false,
+  editable = false,
 }: {
   caseId: string;
   doc: LogicalDocument;
   fields: FieldValue[];
   /** Shown as one row (its counts), its fields on request. */
   folded?: boolean;
+  /** The page shows one status only: its tables open on what it shows. */
+  filtered?: boolean;
+  /** A financial statement: its figures can be changed by a maker, for a checker. */
+  editable?: boolean;
 }) {
   const [open, setOpen] = useState(!folded);
   const types = useDocumentTypes();
   const files = useCaseFiles(caseId);
   const viewer = useDocViewer();
+  const pending = usePendingChanges(caseId);
   const file = files.data?.find((f) => f.id === doc.file_id);
   const { plain: all, tables } = groupFields(fields);
   // Fields the document does not carry are counted, and listed only when asked for.
@@ -275,18 +338,33 @@ function DocumentFields({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {plain.map((f) => (
-                    <tr key={f.id} className="align-top" data-testid="field-row">
-                      <td className="px-4 py-2 text-muted-foreground">{fieldLabel(f.field)}</td>
-                      <td className="px-3 py-2">
-                        <FieldValueButton caseId={caseId} field={f} />
-                      </td>
-                      <td className="px-4 py-2">
-                        <FieldStatusChip status={f.status} />
-                        <FieldRowDecision field={f} />
-                      </td>
-                    </tr>
-                  ))}
+                  {plain.map((f) => {
+                    // A change awaiting its check reads across the row's width, just below it.
+                    const change = pending.get(f.id);
+                    return (
+                      <Fragment key={f.id}>
+                        <tr
+                          className={cn("align-top", change && "border-b-0")}
+                          data-testid="field-row"
+                        >
+                          <td className="px-4 py-2 text-muted-foreground">{fieldLabel(f.field)}</td>
+                          <td className="px-3 py-2">
+                            <FieldValueButton caseId={caseId} field={f} />
+                          </td>
+                          <td className="px-4 py-2">
+                            <FieldStatusCell field={f} editable={editable} changeBelow />
+                          </td>
+                        </tr>
+                        {change && (
+                          <tr data-testid="figure-edit-row">
+                            <td colSpan={3} className="px-4 pb-3 pt-0">
+                              <PendingChangeRow item={change} field={f} />
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    );
+                  })}
                 </tbody>
               </StackTable>
             </div>
@@ -309,7 +387,13 @@ function DocumentFields({
             </button>
           )}
           {tables.map((table) => (
-            <FieldTableView key={table.name} caseId={caseId} table={table} />
+            <FieldTableView
+              key={table.name}
+              caseId={caseId}
+              table={table}
+              editable={editable}
+              filtered={filtered}
+            />
           ))}
           <div className="border-t border-border px-4 py-3">
             <Details testId="field-details">
@@ -346,11 +430,22 @@ function DocumentFields({
 /** A table read from a document: one row per table row, one column per column,
  * every cell still opens its source page and carries its own confidence and
  * decision (F-16.1, F-17). */
-function FieldTableView({ caseId, table }: { caseId: string; table: FieldTable }) {
+function FieldTableView({
+  caseId,
+  table,
+  editable,
+  filtered,
+}: {
+  caseId: string;
+  table: FieldTable;
+  editable: boolean;
+  filtered: boolean;
+}) {
+  const pending = usePendingChanges(caseId);
   const needs = table.rows.some((r) =>
-    Object.values(r.cells).some((f) => f?.status === "in_review"),
+    Object.values(r.cells).some((f) => f && (f.status === "in_review" || pending.has(f.id))),
   );
-  const [open, setOpen] = useState(needs);
+  const [open, setOpen] = useState(needs || filtered);
   return (
     <div
       className="overflow-x-auto border-t border-border first:border-t-0"
@@ -390,16 +485,18 @@ function FieldTableView({ caseId, table }: { caseId: string; table: FieldTable }
                   return (
                     <td
                       key={c.key}
-                      className={cn("px-3 py-2", f?.status === "in_review" && "bg-flag-soft")}
+                      className={cn(
+                        "px-3 py-2",
+                        f && (f.status === "in_review" || pending.has(f.id)) && "bg-flag-soft",
+                      )}
                     >
                       {f ? (
-                        <>
+                        // The pencil sits beside the figure; a status and a waiting change
+                        // wrap below it.
+                        <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
                           <FieldValueButton caseId={caseId} field={f} />
-                          <div className="mt-1 flex flex-wrap items-center gap-1">
-                            {f.status !== "accepted" && <FieldStatusChip status={f.status} />}
-                          </div>
-                          <FieldRowDecision field={f} />
-                        </>
+                          <FieldStatusCell field={f} editable={editable} quiet />
+                        </div>
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}

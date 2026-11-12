@@ -295,7 +295,7 @@ export const TAXONOMY: ChecklistTaxonomy = {
       source: "published_policy",
       blocking: false,
       weight: 4,
-      coverage: { kind: "monthly_periods", months: 12, count: 0, offset: 0 },
+      coverage: { kind: "monthly_periods", months: 12, count: 0, offset: 0, audited_year: false },
       request: "GSTR-3B returns for the last 12 months.",
     },
   ],

@@ -915,6 +915,39 @@ fieldDecision:
   reason: Reason for the correction
   save: Save correction
 
+# A figure changed on Extracted data: proposed by the Credit Analyst, checked by the Credit Manager.
+figureEdit:
+  change: Change figure
+  changeAgain: Change again
+  title: Change figure
+  inForce: On record
+  readAs: Read from the document
+  newValue: New figure
+  newValueHelp: As it should read, in rupees for an amount
+  reason: Reason for the change
+  reasonHelp: "What the figure rests on and where it was found (at least {n} characters)"
+  attachment: Supporting document (optional)
+  attachmentHelp: An auditor's letter, a revised statement or a confirmation. PDF, image, Word or Excel.
+  removeAttachment: Remove
+  checkNote: The change is checked by the Credit Manager before it is used. Until then the figure on record stands.
+  send: Send for check
+  sent: Change sent to the Credit Manager for check
+  awaiting: Awaiting check
+  filter: Awaiting check
+  from: Was
+  to: Proposed
+  by: "Changed by {name} · {at}"
+  waiting: Waiting for the Credit Manager's check
+  approve: Approve
+  sendBack: Send back…
+  sendBackReason: Why it goes back
+  sendBackConfirm: Send back
+  cancel: Cancel
+  approved: Change approved
+  sentBack: Change sent back
+  summaryAwaiting: Changes awaiting check
+  showAwaiting: "Show {n} change(s) awaiting check"
+
 # The six processing stages (FRD §5), as the stage progress shows them.
 progress:
   label: Processing stages

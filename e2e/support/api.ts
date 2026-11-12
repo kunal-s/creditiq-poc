@@ -137,6 +137,9 @@ const ESCALATED: Reply = {
   json: { detail: "an escalated discrepancy is decided by the Credit Manager" },
 };
 const refused = (status: number, detail: string): Reply => ({ status, json: { detail } });
+/** engine/figure_edits.py shown(): an amount in Indian digit grouping. */
+const shown = (v: unknown) =>
+  typeof v === "number" ? v.toLocaleString("en-IN") : v == null ? "—" : String(v);
 /** engine/review.py: every decision on a discrepancy, confirmed or waived, escalated or not, is
  * kept with a comment of at least 3 characters. */
 const FINDING_COMMENT_MIN = 3;
@@ -163,6 +166,14 @@ export class MockApi {
   fields = new Map<string, FieldValue[]>([[KESTREL, FIELDS]]);
   parties = new Map<string, Party[]>([[KESTREL, PARTIES]]);
   review: ReviewItem[] = structuredClone(REVIEW);
+  /** Figures changed for a check, as sent (engine/figure_edits.py): value, reason, file name. */
+  figureEdits: {
+    caseId: string;
+    fieldId: string;
+    value: string;
+    reason: string;
+    file: string | null;
+  }[] = [];
   findings = new Map<string, Finding[]>([[KESTREL, FINDINGS]]);
   facts = new Map<string, CaseFacts>([[KESTREL, FACTS]]);
   /** The spread per case; a case without one answers Kestrel's (F-22). */
@@ -851,6 +862,33 @@ export class MockApi {
         new RegExp(`^/api/review/${id}/decision$`),
         (req, m) => this.decide(m[1]!, req.postDataJSON() as ReviewDecisionRequest),
       ],
+      [
+        "POST",
+        new RegExp(`^/api/cases/${id}/fields/${id}/edit$`),
+        (req, m) =>
+          this.editField(
+            decodeURIComponent(m[1]!),
+            decodeURIComponent(m[2]!),
+            req.postDataBuffer()?.toString("latin1") ?? "",
+          ),
+      ],
+      [
+        "GET",
+        new RegExp(`^/api/review/${id}/attachment$`),
+        (_req, m) => {
+          const item = this.review.find((r) => r.id === decodeURIComponent(m[1]!));
+          const paper = item?.edit?.attachment;
+          if (!paper) return refused(404, "this change has no attachment");
+          return {
+            body: Buffer.from("%PDF-1.7\n"),
+            contentType: paper.content_type,
+            headers: {
+              "content-disposition": `inline; filename="${paper.name}"`,
+              "access-control-expose-headers": "content-disposition",
+            },
+          };
+        },
+      ],
     ];
   }
 
@@ -1241,12 +1279,90 @@ export class MockApi {
     return { json: item };
   }
 
+  /** engine/figure_edits.py: a maker's change to a figure, with its reason and optional paper,
+   * waiting for a checker; the field itself is untouched until the check. */
+  private editField(caseId: string, fieldId: string, form: string): Reply {
+    if (!this.can("manual.make")) return this.denied("manual.make");
+    const part = (name: string) =>
+      new RegExp(`name="${name}"\\r\\n\\r\\n([\\s\\S]*?)\\r\\n--`).exec(form)?.[1] ?? "";
+    const reason = part("reason").trim();
+    if (reason.length < 10)
+      return refused(422, "say why the figure changes (at least 10 characters)");
+    const field = this.fields.get(caseId)?.find((f) => f.id === fieldId);
+    if (!field) return refused(404, "no such field on this case");
+    const current =
+      field.status === "corrected" && field.corrected_value != null
+        ? field.corrected_value
+        : field.value;
+    const raw = part("value").trim();
+    let to: string | number = raw;
+    if (typeof field.value === "number" || (field.value === null && /^[\d,.\s()-]+$/.test(raw))) {
+      const n = Number(raw.replace(/[,\s]/g, ""));
+      if (raw === "" || Number.isNaN(n)) return refused(422, `'${raw}' is not a number`);
+      to = n;
+    }
+    if (to === current) return refused(422, "the new figure is the same as the one on record");
+    const file = /name="files"; filename="([^"]+)"/.exec(form)?.[1] ?? null;
+    const ref = `field:${fieldId}`;
+    const at = "2026-11-12T10:00:00Z";
+    const existing = this.review.find(
+      (r) => r.status === "open" && r.kind === "manual_entry" && r.ref === ref,
+    );
+    const item: ReviewItem = {
+      id: existing?.id ?? `r-edit-${fieldId}`,
+      case_id: caseId,
+      kind: "manual_entry",
+      ref,
+      summary: `${this.user.name} changed ${field.field.replace(/_/g, " ")} from ${shown(current)} to ${shown(to)}; awaiting the Credit Manager's check`,
+      status: "open",
+      escalated: false,
+      created_at: at,
+      maker: this.user.id,
+      edit: {
+        field_value_id: fieldId,
+        document_id: field.document_id,
+        field: field.field,
+        from_value: typeof current === "boolean" ? String(current) : current,
+        to_value: to,
+        reason,
+        maker_name: this.user.name,
+        at,
+        attachment: file ? { name: file, size: 24_576, content_type: "application/pdf" } : null,
+      },
+    };
+    if (existing) Object.assign(existing, item);
+    else this.review.push(item);
+    this.figureEdits.push({ caseId, fieldId, value: raw, reason, file });
+    return { json: item };
+  }
+
   /** F-17.5: a review decision, refused as engine/review.py refuses it. */
   private decide(rawId: string, body: ReviewDecisionRequest): Reply {
     const item = this.review.find((r) => r.id === decodeURIComponent(rawId));
     if (!item) return { status: 404, json: { detail: "no item" } };
     if (item.status !== "open") return refused(409, "this item has already been decided");
     const reason = (body.reason ?? "").trim() || null;
+    if (item.kind === "manual_entry" && item.edit) {
+      // A changed figure: the checker, never the maker, approves it or sends it back.
+      if (!this.can("manual.check")) return this.denied("manual.check");
+      if (item.maker === this.user.id)
+        return refused(403, "the checker must be a different person from the maker");
+      if (body.decision === "waive" && !reason)
+        return refused(422, "a reason is required to waive");
+      if (body.decision === "confirm") {
+        // A new list: the fixture's fields are shared by every test.
+        const edit = item.edit;
+        const list = this.fields.get(item.case_id) ?? [];
+        this.fields.set(
+          item.case_id,
+          list.map((f) =>
+            f.id === edit.field_value_id
+              ? { ...f, corrected_value: edit.to_value ?? null, status: "corrected" as const }
+              : f,
+          ),
+        );
+      }
+    }
     if (item.kind === "finding") {
       // Escalated from the cross-verification board, the Credit Manager decides it; every
       // decision on a discrepancy, confirmed or waived, has a comment.

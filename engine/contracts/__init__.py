@@ -62,6 +62,8 @@ from .appraisal import (
     QueryItem,
     Readiness,
     ReviewDecisionRequest,
+    FigureEdit,
+    FigureEditAttachment,
     ReviewItem,
 )
 from .case import (
@@ -376,6 +378,8 @@ __all__ = [
     "StageProgress",
     "StageStatus",
     "ReviewDecisionRequest",
+    "FigureEdit",
+    "FigureEditAttachment",
     "ReviewItem",
     "SessionUser",
     "AccountBalances",

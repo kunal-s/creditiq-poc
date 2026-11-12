@@ -18,6 +18,8 @@ from .contracts import (
     Classification,
     Evidence,
     FieldValue,
+    FigureEdit,
+    FigureEditAttachment,
     FileRecord,
     Finding,
     FindingSide,
@@ -150,7 +152,17 @@ def review_items(conn: sqlite3.Connection, *, case_id: str | None = None, open_o
 def review_item(row: sqlite3.Row) -> ReviewItem:
     d = dict(row)
     detail = json.loads(d.get("detail") or "{}")
-    return ReviewItem(**d, escalated=bool(detail.get("escalation")))
+    edit = None
+    if d["kind"] == "manual_entry" and detail.get("field_value_id"):
+        a = detail.get("attachment")
+        edit = FigureEdit(
+            field_value_id=detail["field_value_id"], document_id=detail["document_id"], field=detail["field"],
+            from_value=detail.get("from"), to_value=detail.get("to"), reason=detail.get("reason") or "",
+            maker_name=detail.get("maker_name") or "", at=detail.get("at") or d["created_at"],
+            attachment=FigureEditAttachment(name=a["name"], size=a["size"], content_type=a["content_type"])
+            if a else None,
+        )
+    return ReviewItem(**d, escalated=bool(detail.get("escalation")), edit=edit)
 
 
 def readiness(conn: sqlite3.Connection, data_root: Path, case: CaseDetail) -> Readiness:

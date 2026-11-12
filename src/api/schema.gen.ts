@@ -630,6 +630,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/cases/{case_id}/fields/{field_id}/edit": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Edit Field
+     * @description A Credit Analyst changes an extracted figure with the reason and, optionally, the paper it rests
+     *     on (multipart: value, reason, files); the change waits for the Credit Manager's check.
+     */
+    post: operations["edit_field_api_cases__case_id__fields__field_id__edit_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/cases/{case_id}/files": {
     parameters: {
       query?: never;
@@ -1288,6 +1309,26 @@ export interface paths {
     };
     /** Review Queue */
     get: operations["review_queue_api_review_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/review/{item_id}/attachment": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Edit Attachment
+     * @description The paper a changed figure rests on, as attached.
+     */
+    get: operations["edit_attachment_api_review__item_id__attachment_get"];
     put?: never;
     post?: never;
     delete?: never;
@@ -2830,6 +2871,11 @@ export interface components {
      */
     CoverageRule: {
       /**
+       * Audited Year
+       * @default false
+       */
+      audited_year: boolean;
+      /**
        * Count
        * @default 0
        */
@@ -3346,6 +3392,42 @@ export interface components {
       status: "accepted" | "in_review" | "corrected" | "missing" | "rejected";
       /** Value */
       value: string | number | boolean | null;
+    };
+    /**
+     * FigureEdit
+     * @description A figure a person changed (engine/figure_edits.py): what it was, what it is now, why, and the
+     *     paper attached, for the checker to approve or send back.
+     */
+    FigureEdit: {
+      /** At */
+      at: string;
+      attachment?: components["schemas"]["FigureEditAttachment"] | null;
+      /** Document Id */
+      document_id: string;
+      /** Field */
+      field: string;
+      /** Field Value Id */
+      field_value_id: string;
+      /** From Value */
+      from_value?: string | number | null;
+      /** Maker Name */
+      maker_name: string;
+      /** Reason */
+      reason: string;
+      /** To Value */
+      to_value?: string | number | null;
+    };
+    /**
+     * FigureEditAttachment
+     * @description The paper a changed figure rests on, kept with the case outside its documents.
+     */
+    FigureEditAttachment: {
+      /** Content Type */
+      content_type: string;
+      /** Name */
+      name: string;
+      /** Size */
+      size: number;
     };
     /**
      * FileRecord
@@ -4957,6 +5039,7 @@ export interface components {
       decided_by?: string | null;
       /** Decision */
       decision?: ("confirm" | "correct" | "waive" | "assign") | null;
+      edit?: components["schemas"]["FigureEdit"] | null;
       /**
        * Escalated
        * @default false
@@ -7058,6 +7141,48 @@ export interface operations {
       };
     };
   };
+  edit_field_api_cases__case_id__fields__field_id__edit_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+        field_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "multipart/form-data": {
+          files?: string[];
+          reason: string;
+          value: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReviewItem"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   case_files_api_cases__case_id__files_get: {
     parameters: {
       query?: never;
@@ -8299,6 +8424,37 @@ export interface operations {
         content: {
           "application/json": components["schemas"]["ReviewItem"][];
         };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  edit_attachment_api_review__item_id__attachment_get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        item_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Validation Error */
       422: {

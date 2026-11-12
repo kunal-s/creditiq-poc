@@ -22,7 +22,8 @@ export function outputFileName(output: OutputKind, caseId: string, format: Outpu
   return `${FILE_STEM[output]}-${caseId}.${format}`;
 }
 
-function save(blob: Blob, name: string) {
+/** Hand the reader a file the engine sent, under its name. */
+export function save(blob: Blob, name: string) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;

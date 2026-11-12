@@ -301,7 +301,7 @@ def test_the_policy_states_positive_net_worth_a_profit_and_no_blocking_item_in_w
     norms = _policy(client, analyst, case_id)
     assert (norms["EL-03"]["required"], norms["EL-04"]["required"], norms["DOC-01"]["required"]) == (
         "positive", "no loss", "none")
-    assert norms["FR-01"]["required"] == "at least 1.20x" and norms["DOC-02"]["required"] == "at least 2 years"
+    assert norms["FR-01"]["required"] == "at least 1.20x" and norms["DOC-02"]["required"] == "at least 3 years"
     assert norms["DOC-01"]["outcome"] == "deviation" and norms["EL-03"]["outcome"] == "pass"
 
 
@@ -309,11 +309,11 @@ def test_one_year_of_statements_reads_one_year(client: TestClient, analyst, publ
     case_id = make_case(client, analyst, published_data_root, facilities=["cash_credit"], amount_inr=40_000_000)
     audited(published_data_root, case_id)
     n = _policy(client, analyst, case_id)["DOC-02"]
-    assert n["outcome"] == "deviation" and n["actual_text"] == "1 year" and n["required"] == "at least 2 years"
+    assert n["outcome"] == "deviation" and n["actual_text"] == "1 year" and n["required"] == "at least 3 years"
     _refresh(published_data_root, case_id)
     texts = [i["text"] for i in client.get(f"/api/cases/{case_id}/cam", headers=analyst).json()["summary"]]
     questions = [q["text"] for q in client.get(f"/api/cases/{case_id}/pd-note", headers=analyst).json()["questions"]]
-    assert any("1 year against a norm of at least 2 years" in t for t in texts)
+    assert any("1 year against a norm of at least 3 years" in t for t in texts)
     assert not any("1 years" in t for t in texts + questions)
 
 

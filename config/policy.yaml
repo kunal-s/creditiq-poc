@@ -266,7 +266,7 @@ norms:
     expression: audited_years
     unit: years
     kind: min
-    threshold: 2
+    threshold: 3
     category: documentation
     source: provisional
     status: provisional

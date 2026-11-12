@@ -21,7 +21,7 @@ test("the Overview draws no requirement list", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api);
   await page.goto(`/appraisals/${KESTREL}`);
-  await expect(page.getByTestId("journey-readiness")).toBeVisible();
+  await expect(page.getByTestId("journey-folded")).toBeVisible();
   await expect(page.getByTestId("document-checklist")).toHaveCount(0);
   await expect(page.getByTestId("journey-item")).toHaveCount(0);
 });

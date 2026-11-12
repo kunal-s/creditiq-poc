@@ -1,7 +1,9 @@
 import { useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, CircleDashed, Loader2, Upload, X } from "lucide-react";
 import type { ChecklistItemState } from "@/api/types";
-import { REGISTER_ROW, RegisterCell } from "@/components/documents/FileTree";
+import { RegisterCell } from "@/components/documents/FileTree";
+import { useRegisterRow } from "@/components/documents/registerRow";
+import { useFeature } from "@/domain/features";
 import { StageTrack } from "@/components/documents/StageTrack";
 import { t } from "@/config/terminology";
 import { bandOf, useChecklist } from "@/domain/checklist";
@@ -60,6 +62,8 @@ function MissingRow({
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
+  const row = useRegisterRow();
+  const integrityOn = useFeature("integrity_checks");
   const id = item.item_id;
   const pending = uploads.pendingFor(id);
   const droppable = uploads.can;
@@ -104,7 +108,7 @@ function MissingRow({
           : undefined
       }
     >
-      <div className={REGISTER_ROW}>
+      <div className={row}>
         {/* The file: none yet, and the upload for it. */}
         <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1.5">
           <StatusMark status={item.status} />
@@ -153,7 +157,10 @@ function MissingRow({
           )}
         </span>
         {/* What is needed and what exactly is missing of it, across the columns a file would fill. */}
-        <RegisterCell column="type" className="md:col-span-3 md:col-start-3">
+        <RegisterCell
+          column="type"
+          className={integrityOn ? "md:col-span-3 md:col-start-3" : "md:col-span-2 md:col-start-3"}
+        >
           <span className="block text-[12.5px] font-medium text-foreground">{item.name}</span>
           {item.deficiency && (
             <span className="mt-0.5 block text-[11.5px] text-muted-foreground">

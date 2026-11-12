@@ -28,6 +28,12 @@ def load_app_config() -> dict:
     return yaml.safe_load(path.read_text(encoding="utf-8"))
 
 
+def feature_enabled(name: str) -> bool:
+    """Whether a feature is switched on in config/app.yaml `features:` (on when not named, so a
+    deployment that predates the switch keeps what it had)."""
+    return bool((load_app_config().get("features") or {}).get(name, True))
+
+
 def role_label(role_id: str) -> str:
     for role in load_roles_config()["roles"]:
         if role["id"] == role_id:

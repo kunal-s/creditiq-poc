@@ -1,6 +1,7 @@
-// The Overview, a stand-up view of the case: one line on whether it can go to credit review, then
-// document readiness (satisfied of all, and why the rest are not), then every document under its
-// section with its mark and status, then what waits for a decision.
+// The Overview, a stand-up view of the case, the same for a case created or not: the case progress
+// (where the case stands through every step, and the one thing to do next), then document readiness
+// folded into one line that opens to whether it can go to credit review, the counts and every
+// document under its section, then what waits for a decision.
 // The requirement list itself lives on the Files and Document readiness steps.
 import { expect, test, type Page } from "@playwright/test";
 import { KESTREL, SAFFRON } from "./fixtures/data";
@@ -11,17 +12,46 @@ test.use({ viewport: { width: 1440, height: 900 } });
 async function overview(page: Page, api = new MockApi(), caseId = KESTREL) {
   await signedIn(page, api);
   await page.goto(`/appraisals/${caseId}`);
-  await expect(page.getByTestId("journey-verdict")).toBeVisible();
+  await expect(page.getByTestId("case-progress")).toBeVisible();
+  return api;
+}
+
+/** Open the folded document readiness. */
+async function openReadiness(page: Page) {
+  await page.getByTestId("journey-folded").locator("summary").click();
+  await expect(page.getByTestId("journey-readiness")).toBeVisible();
+}
+
+/** The engine says the case is not created yet. */
+function notCreated(api: MockApi, caseId = KESTREL) {
+  api.on("GET", new RegExp(`^/api/cases/${caseId}/progress$`), () => ({
+    json: {
+      ...api.progress(caseId),
+      gate: {
+        open: false,
+        can_open: false,
+        open_exceptions: 0,
+        blocking_open: 2,
+        score_pct: 58,
+        gate_pct: 85,
+        blockers: ["blocking"],
+      },
+    },
+  }));
   return api;
 }
 
 const scoreOf = async (page: Page, testId: string) =>
   /(\d+(?:\.\d)?)%/.exec((await page.getByTestId(testId).textContent()) ?? "")?.[1];
 
-test("the Overview opens with one line on whether the case can go to credit review", async ({
+test("the Overview opens on the case progress, with document readiness folded under it", async ({
   page,
 }) => {
   await overview(page);
+  const folded = page.getByTestId("journey-folded");
+  await expect(folded).toContainText("2 of 9 requirements satisfied");
+  await expect(page.getByTestId("journey-readiness")).toBeHidden();
+  await openReadiness(page);
   const status = page.getByTestId("journey-verdict");
   await expect(status).toHaveAttribute("data-state", "not_ready");
   await expect(status).toContainText(
@@ -42,6 +72,7 @@ test("document readiness opens on its counts: every requirement once, the rest b
   page,
 }) => {
   await overview(page);
+  await openReadiness(page);
   const panel = page.getByTestId("readiness-panel-readiness");
   await expect(panel).toBeVisible();
   await expect(panel.getByTestId("document-readiness-total")).toHaveText("2 / 9");
@@ -66,6 +97,7 @@ test("document readiness opens on its counts: every requirement once, the rest b
 
 test("document readiness and document status are shown one under the other", async ({ page }) => {
   await overview(page);
+  await openReadiness(page);
   const readiness = page.getByTestId("readiness-panel-readiness");
   const status = page.getByTestId("readiness-panel-status");
   await expect(readiness).toContainText("Document readiness");
@@ -84,6 +116,7 @@ test("document status names every document under its section, with its mark and 
   page,
 }) => {
   await overview(page);
+  await openReadiness(page);
   const sections = page.getByTestId("document-status-section");
   expect(await sections.evaluateAll((els) => els.map((e) => e.dataset["section"]))).toEqual([
     "Constitution and KYC",
@@ -117,6 +150,7 @@ test("the Overview and the Document readiness step count the same requirements",
   page,
 }) => {
   await overview(page);
+  await openReadiness(page);
   await expect(page.getByTestId("document-readiness-total")).toHaveText("2 / 9");
   await page.goto(`/appraisals/${KESTREL}/completeness`);
   await expect(page.getByTestId("checklist-filter-all")).toHaveText("All (9)");
@@ -129,6 +163,7 @@ test("the Overview and the Document readiness step count the same requirements",
 
 test("a case ready for credit says so", async ({ page }) => {
   await overview(page, new MockApi(), SAFFRON);
+  await openReadiness(page);
   const status = page.getByTestId("journey-verdict");
   await expect(status).toHaveAttribute("data-state", "ready");
   await expect(status).toContainText("Ready for credit review");
@@ -142,6 +177,7 @@ test("a provisional checklist says so over the counts", async ({ page }) => {
   const api = new MockApi();
   api.checklists.set(KESTREL, { ...api.checklists.get(KESTREL)!, provisional: true });
   await overview(page, api);
+  await openReadiness(page);
   await expect(page.getByTestId("journey-provisional")).toContainText("provisional");
   await expect(page.getByTestId("document-readiness-total")).toBeVisible();
 });
@@ -151,6 +187,7 @@ test("on a phone the counts and the documents fit, and nothing scrolls sideways"
 }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await overview(page);
+  await openReadiness(page);
   await expect(page.getByTestId("document-readiness-total")).toHaveText("2 / 9");
   await page.getByTestId("document-status-item").first().scrollIntoViewIfNeeded();
   await expect(page.getByTestId("document-status-item").first()).toBeVisible();
@@ -160,21 +197,37 @@ test("on a phone the counts and the documents fit, and nothing scrolls sideways"
   expect(sideways).toBe(false);
 });
 
-test("before any document is in, readiness waits for documents instead of scoring 0", async ({
+test("before the case is created, the steps after the documents wait for it", async ({ page }) => {
+  await overview(page, notCreated(new MockApi()));
+  const card = page.getByTestId("case-progress");
+  const docs = card.locator('[data-row="completeness"]');
+  await expect(docs).toHaveAttribute("data-state", "open");
+  await expect(docs).toContainText("2 of 9 requirements satisfied");
+  await expect(docs.getByTestId("case-progress-blocking")).toHaveText("· 2 block credit review");
+  for (const key of ["crossVerification", "policy", "outputs", "rating", "submission"]) {
+    const row = card.locator(`[data-row="${key}"]`);
+    await expect(row).toHaveAttribute("data-state", "waiting");
+    await expect(row).toContainText("After the case is created");
+  }
+  await expect(card.getByTestId("case-progress-next")).toHaveAttribute("data-to", "completeness");
+  await expect(card.getByTestId("case-progress-next")).toHaveText("Next: complete the documents");
+  // One way on: the card's, not a second bar under it.
+  await expect(page.getByTestId("next-step")).toHaveCount(0);
+  await expect(page.getByTestId("journey-folded-blocking")).toHaveText("· 2 block credit review");
+});
+
+test("before any document is in, the case progress waits for documents instead of scoring 0", async ({
   page,
 }) => {
-  const api = new MockApi();
+  const api = notCreated(new MockApi());
   api.documents.set(KESTREL, []);
   await overview(page, api);
-  const status = page.getByTestId("journey-verdict");
-  await expect(status).toHaveAttribute("data-state", "waiting-documents");
-  await expect(status).toContainText("Waiting for documents");
-  await expect(status.getByTestId("verdict-upload")).toHaveAttribute(
-    "href",
-    `/appraisals/${KESTREL}/documents`,
-  );
+  const docs = page.getByTestId("case-progress").locator('[data-row="completeness"]');
+  await expect(docs).toContainText("Waiting for documents");
+  await expect(page.getByTestId("case-progress-next")).toHaveAttribute("data-to", "documents");
+  await expect(page.getByTestId("case-progress-next")).toHaveText("Next: upload the documents");
   // No counts until there is something to count.
-  await expect(page.getByTestId("journey-readiness")).toHaveCount(0);
+  await expect(page.getByTestId("journey-folded")).toHaveCount(0);
   const header = page.getByTestId("header-readiness");
   await expect(header).toHaveAttribute("data-state", "waiting-documents");
   await expect(header).toContainText("Waiting for documents");
@@ -182,17 +235,17 @@ test("before any document is in, readiness waits for documents instead of scorin
   await expect(page.getByTestId("header-blocking")).toHaveCount(0);
 });
 
-test("while the documents are read, readiness says so and counts them", async ({ page }) => {
-  const api = new MockApi();
+test("while the documents are read, the case progress says so and counts them", async ({
+  page,
+}) => {
+  const api = notCreated(new MockApi());
   const docs = api.documents.get(KESTREL)!;
   api.documents.set(KESTREL, [{ ...docs[0]!, status: "received" }, ...docs.slice(1)]);
   await overview(page, api);
-  const status = page.getByTestId("journey-verdict");
-  await expect(status).toHaveAttribute("data-state", "waiting-reading");
-  await expect(status).toContainText(
-    new RegExp(`Reading the documents \\(\\d+ of ${docs.length}\\)`),
-  );
-  await expect(page.getByTestId("journey-readiness")).toHaveCount(0);
+  const row = page.getByTestId("case-progress").locator('[data-row="completeness"]');
+  await expect(row).toHaveAttribute("data-state", "waiting");
+  await expect(row).toContainText(new RegExp(`Reading the documents \\(\\d+ of ${docs.length}\\)`));
+  await expect(page.getByTestId("journey-folded")).toHaveCount(0);
   await expect(page.getByTestId("header-readiness")).toContainText(
     new RegExp(`Reading documents · \\d+ of ${docs.length}`),
   );

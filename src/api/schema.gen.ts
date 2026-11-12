@@ -3355,6 +3355,17 @@ export interface components {
       value: string | number | null;
     };
     /**
+     * Features
+     * @description Features a deployment switches on or off (config/app.yaml `features:`).
+     */
+    Features: {
+      /**
+       * Integrity Checks
+       * @default true
+       */
+      integrity_checks: boolean;
+    };
+    /**
      * FieldValue
      * @description One extracted value with its evidence and confidence (F-15, F-17).
      */
@@ -4107,6 +4118,7 @@ export interface components {
       constitutions: components["schemas"]["Option"][];
       /** Facilities */
       facilities: components["schemas"]["Option"][];
+      features?: components["schemas"]["Features"];
       /** Product Default */
       product_default?: string | null;
       /** Products */

@@ -107,3 +107,32 @@ test("TC-09: an RM sees the flag but not the decision", async ({ page }) => {
   await expect(unc.getByTestId("assign-candidate")).toHaveCount(0);
   await expect(unc.getByTestId("waiting-review")).toHaveText("Waiting for credit review");
 });
+
+test("TC-09: types that match nothing of the document are not offered", async ({ page }) => {
+  const api = new MockApi();
+  const docs = api.documents.get(KESTREL)!;
+  api.documents.set(
+    KESTREL,
+    docs.map((d) =>
+      d.id === "doc-unc"
+        ? {
+            ...d,
+            classification: {
+              ...d.classification!,
+              candidates: (d.classification!.candidates ?? []).map((c) => ({
+                ...c,
+                confidence: 0,
+              })),
+            },
+          }
+        : d,
+    ),
+  );
+  await signedIn(page, api);
+  await page.goto(`/appraisals/${KESTREL}/documents`);
+  const unc = page.getByTestId("section-files").locator('[data-document-id="doc-unc"]');
+  await expect(unc.getByTestId("assign-candidate")).toHaveCount(0);
+  await expect(unc.getByTestId("none-close")).toHaveText("No listed type is close");
+  // The full list is still there to choose from.
+  await expect(unc.getByTestId("assign-other")).toBeVisible();
+});

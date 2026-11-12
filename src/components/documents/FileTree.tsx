@@ -31,7 +31,9 @@ import { DocumentDetail } from "./DocumentDetail";
 import { FileStatusChip } from "./chips";
 import { IntegrityChip, IntegrityPanel } from "./IntegrityPanel";
 import { hasIntegrity, integrityNeedsPerson, integrityReason, stateOf } from "@/domain/integrity";
+import { useRegisterRow } from "./registerRow";
 import { StageTrack } from "./StageTrack";
+import { useFeature } from "@/domain/features";
 
 /** What every row of the register needs to know about the case. */
 export type RegisterContext = {
@@ -54,11 +56,6 @@ const Register = createContext<RegisterContext>({
 /** Below this a type was placed with doubt, and its confidence is said in amber. */
 const SURE = 0.85;
 
-/** The register's columns: one row per document (a file with none has one row of its own). On a
- * phone each row is a short card: the file, then a line for each cell with its column named. The
- * row's own text size is the file name's, so every cell's first line sits on the same line. */
-export const REGISTER_ROW =
-  "flex flex-col gap-1.5 px-4 py-2.5 text-[12.5px] leading-normal md:grid md:py-2 md:grid-cols-[minmax(0,2.3fr)_3.5rem_minmax(0,1.6fr)_5.5rem_minmax(0,1.8fr)_minmax(0,1.3fr)] md:gap-x-3";
 const COLUMNS = ["file", "pages", "type", "confidence", "integrity", "satisfies"] as const;
 type Column = (typeof COLUMNS)[number];
 
@@ -71,15 +68,17 @@ const ALIGN: Partial<Record<Column, string>> = {
 
 /** The column titles, once above every section. */
 export function RegisterHead() {
+  const row = useRegisterRow();
+  const integrityOn = useFeature("integrity_checks");
   return (
     <div
       className={cn(
-        REGISTER_ROW,
+        row,
         "hidden border-b border-border bg-muted/40 py-1.5 text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground md:grid",
       )}
       data-testid="register-head"
     >
-      {COLUMNS.map((c) => (
+      {COLUMNS.filter((c) => c !== "integrity" || integrityOn).map((c) => (
         <span key={c} className={ALIGN[c]}>
           {t(`documents.table.${c}`)}
         </span>
@@ -220,6 +219,8 @@ function FileRows({
   depth: number;
 }) {
   const { file, documents } = node;
+  const row = useRegisterRow();
+  const integrityOn = useFeature("integrity_checks");
   const [showIntegrity, setShowIntegrity] = useState(false);
   // A file split into several documents is one row until its parts are asked for, unless one of
   // them needs a person.
@@ -231,7 +232,7 @@ function FileRows({
     <IntegrityCell file={file} open={showIntegrity} onToggle={() => setShowIntegrity((v) => !v)} />
   );
   const noIntegrity = !integrityNeedsPerson(file) && !hasIntegrity(file);
-  const panel = showIntegrity && integrityNeedsPerson(file) && (
+  const panel = integrityOn && showIntegrity && integrityNeedsPerson(file) && (
     <IntegrityPanel caseId={caseId} file={file} documents={documents} depth={depth} />
   );
 
@@ -240,7 +241,7 @@ function FileRows({
     const reading = file.status === "registered";
     return (
       <div data-testid="tree-file" data-status={file.status} style={indent(depth, false)}>
-        <div className={REGISTER_ROW}>
+        <div className={row}>
           <FileCell file={file} depth={depth}>
             {file.status === "duplicate" && (
               <span data-testid="duplicate-of">
@@ -364,6 +365,7 @@ function SplitFileRow({
   onOpen: () => void;
 }) {
   const types = useDocumentTypes();
+  const row = useRegisterRow();
   const { satisfiesFor } = useContext(Register);
   const names = [
     ...new Set(documents.flatMap((d) => (d.classification?.types ?? []).map(types.name))),
@@ -374,7 +376,7 @@ function SplitFileRow({
   const satisfies = [...new Set(documents.flatMap((d) => satisfiesFor(d.id).map((i) => i.name)))];
   return (
     <div data-testid="tree-file" data-status={file.status} data-split="folded">
-      <div className={REGISTER_ROW} style={indent(depth, true)}>
+      <div className={row} style={indent(depth, true)}>
         <FileCell
           file={file}
           depth={depth}
@@ -448,6 +450,9 @@ export function RegisterCell({
   className?: string;
   children: ReactNode;
 }) {
+  // The integrity check's column is left out where the deployment has it switched off.
+  const integrityOn = useFeature("integrity_checks");
+  if (column === "integrity" && !integrityOn) return null;
   return (
     <span
       className={cn(
@@ -584,10 +589,11 @@ function DocumentRow({
   const items = itemsFor(doc.id);
   const defects = defectsFor(doc.id);
   const satisfies = satisfiesFor(doc.id);
+  const row = useRegisterRow();
 
   return (
     <div data-testid="tree-document" data-document-id={doc.id} style={indent(depth, true)}>
-      <div className={REGISTER_ROW}>
+      <div className={row}>
         <FileCell
           file={file}
           depth={depth}

@@ -19,6 +19,24 @@ def strict_cards(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(xv_cards, "STRICT", True)
 
 
+@pytest.fixture(autouse=True)
+def features_on(monkeypatch: pytest.MonkeyPatch) -> dict:
+    """Every feature of config/app.yaml `features:` switched on, whatever the deployment's file
+    says: the tests are of the features. A test of a feature switched off sets it in the returned
+    map (`features_on["integrity_checks"] = False`)."""
+    from engine import config
+
+    switches: dict = {}
+    real = config.load_app_config
+
+    def with_features() -> dict:
+        cfg = real()
+        return {**cfg, "features": {**{k: True for k in (cfg.get("features") or {})}, **switches}}
+
+    monkeypatch.setattr(config, "load_app_config", with_features)
+    return switches
+
+
 @pytest.fixture()
 def all_rules_enabled(monkeypatch: pytest.MonkeyPatch) -> None:
     """Every configured cross-check runs, those switched off in config/crosschecks.yaml (`enabled:

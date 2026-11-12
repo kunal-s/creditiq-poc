@@ -15,7 +15,7 @@ import { t } from "@/config/terminology";
 import { useDocumentTypes } from "@/domain/documents";
 import { refusal } from "@/domain/errors";
 import { formatValue, useParties } from "@/domain/extraction";
-import { DECISIONS_BY_KIND, reasonMin, useDecideReview } from "@/domain/review";
+import { decisionsFor, reasonMin, useDecideReview } from "@/domain/review";
 import { cn } from "@/lib/utils";
 
 const inputClass =
@@ -52,7 +52,7 @@ export function DecisionDialog({
   field: FieldValue | undefined;
   onClose: () => void;
 }) {
-  const options = DECISIONS_BY_KIND[item.kind];
+  const options = decisionsFor(item);
   const [decision, setDecision] = useState<ReviewDecision>(options[0] ?? "confirm");
   const [value, setValue] = useState("");
   const [rows, setRows] = useState<{ name: string; value: string }[]>([{ name: "", value: "" }]);
@@ -282,7 +282,7 @@ export function DecisionDialog({
           </p>
         )}
         {refused && (
-          <p role="alert" className="text-[12px] text-destructive" data-testid="decision-error">
+          <p role="alert" className="text-[12px] text-critical-text" data-testid="decision-error">
             {refused}
           </p>
         )}

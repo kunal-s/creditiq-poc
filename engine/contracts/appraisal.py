@@ -332,6 +332,29 @@ ReviewKind = Literal["type", "field", "quality", "party", "split", "manual_entry
 ReviewDecision = Literal["confirm", "correct", "waive", "assign"]
 
 
+class FigureEditAttachment(BaseModel):
+    """The paper a changed figure rests on, kept with the case outside its documents."""
+
+    name: str
+    size: int
+    content_type: str
+
+
+class FigureEdit(BaseModel):
+    """A figure a person changed (engine/figure_edits.py): what it was, what it is now, why, and the
+    paper attached, for the checker to approve or send back."""
+
+    field_value_id: str
+    document_id: str
+    field: str
+    from_value: str | int | float | None = None
+    to_value: str | int | float | None = None
+    reason: str
+    maker_name: str
+    at: str
+    attachment: FigureEditAttachment | None = None
+
+
 class ReviewItem(BaseModel):
     """Something waiting for a person (F-17.4)."""
 
@@ -350,6 +373,8 @@ class ReviewItem(BaseModel):
     """For manual entry: the maker, who may not be the checker (F-03.4)."""
     escalated: bool = False
     """A finding escalated to the Credit Manager from the cross-verification board."""
+    edit: FigureEdit | None = None
+    """For a changed figure (manual_entry on a field): the change, for the checker."""
 
 
 class ReviewDecisionRequest(BaseModel):

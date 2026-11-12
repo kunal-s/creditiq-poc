@@ -79,6 +79,7 @@ test("the extracted data is grouped by kind of document", async ({ page }) => {
   await signedIn(page, api);
   await page.goto(`/appraisals/${KESTREL}/extraction`);
   await expect(page.getByTestId("field-section-banking")).toContainText("Bank statement");
+  await page.getByRole("button", { name: "All fields" }).click();
   await expect(page.getByTestId("field-section-financials")).toContainText("Balance sheet");
 });
 

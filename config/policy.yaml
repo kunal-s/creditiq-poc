@@ -30,7 +30,7 @@ ratios:
     applies: All working-capital exposures
     source: provisional
     status: provisional
-    note: "Interim threshold awaiting RBL's policy norms."
+    note: "Provisional threshold."
 
   - key: tol-tnw
     label: TOL / TNW
@@ -42,7 +42,7 @@ ratios:
     applies: All fund-based exposures
     source: provisional
     status: provisional
-    note: "Interim threshold awaiting RBL's policy norms."
+    note: "Provisional threshold."
 
   - key: dscr
     label: DSCR
@@ -54,7 +54,7 @@ ratios:
     applies: Term exposures and any borrower with instalment obligations
     source: provisional
     status: provisional
-    note: "Interim threshold awaiting RBL's policy norms."
+    note: "Provisional threshold."
 
   - key: interest-coverage
     label: Interest coverage
@@ -66,7 +66,7 @@ ratios:
     applies: All exposures
     source: provisional
     status: provisional
-    note: "Interim threshold awaiting RBL's policy norms."
+    note: "Provisional threshold."
 
   - key: buyer-concentration
     label: Buyer concentration
@@ -78,7 +78,7 @@ ratios:
     applies: Manufacturing and trading exposures
     source: provisional
     status: provisional
-    note: "Interim threshold awaiting RBL's policy norms."
+    note: "Provisional threshold."
 
   - key: debt-equity
     label: Debt / equity
@@ -90,7 +90,7 @@ ratios:
     applies: All fund-based exposures
     source: provisional
     status: provisional
-    note: "Interim threshold awaiting RBL's policy norms."
+    note: "Provisional threshold."
 
   - key: wc-cycle
     label: Working-capital cycle
@@ -102,7 +102,7 @@ ratios:
     applies: Manufacturing and trading exposures
     source: provisional
     status: provisional
-    note: "Interim threshold awaiting RBL's policy norms."
+    note: "Provisional threshold."
 
 # Deviation categories (F-20.1). A breached norm is listed under its
 # category; the approving authority (F-21) is looked up by category.
@@ -218,14 +218,14 @@ norms:
     expression: (long_term_borrowings + current_liabilities) / net_worth
     category: financial
     non_positive_denominator: deviation
-    note: "Net worth is share capital plus reserves and surplus; intangible assets are not deducted, and only long-term borrowings are counted among non-current liabilities, until RBL defines tangible net worth."
+    note: "Net worth is share capital plus reserves and surplus; intangible assets are not deducted, and only long-term borrowings are counted among non-current liabilities."
   - id: FR-03
     family: ratios
     ratio: dscr
     expression: (profit_after_tax + depreciation) / (annual_instalments + proposed_instalments)
     category: financial
     applies_when: term_debt
-    note: "Interim and conservative until RBL's DSCR definition: annual instalments (interest and principal) on existing facilities, declared, sanctioned or inferred from bank statements, and on the proposed term loan; interest on term debt is not added back."
+    note: "Conservative definition: annual instalments (interest and principal) on existing facilities, declared, sanctioned or inferred from bank statements, and on the proposed term loan; interest on term debt is not added back."
     # The proposed instalment is entered by the RM once the bank sets the rate and tenor: the
     # promoter is asked what sets them.
     pd_gap_question: "{reason} What will the term loan finance, at what cost and promoter contribution, and what tenor and moratorium are sought?"
@@ -240,14 +240,14 @@ norms:
     expression: total_borrowings / net_worth
     category: financial
     non_positive_denominator: deviation
-    note: "Net worth is share capital plus reserves and surplus; intangible assets are not deducted, until RBL defines tangible net worth."
+    note: "Net worth is share capital plus reserves and surplus; intangible assets are not deducted."
   - id: FR-06
     family: ratios
     ratio: wc-cycle
     expression: (inventories + trade_receivables - trade_payables) / revenue_from_operations * 365
     category: financial
     applies_when: working_capital
-    note: "Days on sales; RBL's own computation may use cost of sales for inventory and payables."
+    note: "Days on sales for inventory, receivables and payables."
 
   - id: DOC-01
     family: documentation

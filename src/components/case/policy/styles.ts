@@ -36,7 +36,7 @@ export const OUTCOME_ICON: Record<NormOutcome, LucideIcon> = {
 
 /** A norm's outcome in text: its icon and its actual value. */
 export const OUTCOME_TEXT: Record<NormOutcome, string> = {
-  deviation: "text-destructive",
+  deviation: "text-critical-text",
   cannot_evaluate: "text-flag-foreground",
   pass: "text-positive",
   not_applicable: "text-muted-foreground",

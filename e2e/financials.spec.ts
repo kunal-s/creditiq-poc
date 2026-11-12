@@ -378,7 +378,8 @@ test("the statements are line by line, and a person's entry is named for confirm
 test("a figure shows where it was read from, and opens its page", async ({ page }) => {
   await openFinancials(page);
   const source = page.getByTestId("spread-source");
-  await expect(source).toContainText("Select any figure");
+  // No empty card until a figure is chosen.
+  await expect(source).toHaveCount(0);
   await page.getByTestId("financials-tab-profit_and_loss").click();
   await page
     .getByTestId("spread-profit_and_loss")
@@ -399,12 +400,12 @@ test("each ratio norm reads in the band the engine placed it; the spread has no 
   const row = (id: string) => page.locator(`[data-testid="norm"][data-norm="${id}"]`);
   await expect(row("FR-01").getByTestId("norm-band")).toHaveAttribute("data-band", "within");
   await expect(row("FR-01").getByTestId("norm-band")).toHaveText("Within policy");
-  await expect(row("FR-06").getByTestId("norm-band")).toHaveText("Marginal");
+  await expect(row("FR-06").getByTestId("norm-band")).toHaveText("Marginal deviation");
   await expect(row("FR-06").getByTestId("norm-marginal")).toHaveText("marginal 95 days");
-  // A marginal deviation reads amber, not red.
-  await expect(row("FR-06").getByTestId("norm-actual")).toHaveClass(/text-flag-foreground/);
+  // The figures are in the text colour; the chip says where each stands.
+  await expect(row("FR-06").getByTestId("norm-actual")).toHaveClass(/text-foreground/);
   await expect(row("FR-02").getByTestId("norm-band")).toHaveText("Outside policy");
-  await expect(row("FR-02").getByTestId("norm-actual")).toHaveClass(/text-destructive/);
+  await expect(row("FR-02").getByTestId("norm-actual")).toHaveClass(/text-foreground/);
   // No band where the norm has no result.
   await expect(row("FR-03").getByTestId("norm-band")).toHaveCount(0);
   await expect(page.getByTestId("spread-ratio")).toHaveCount(0);

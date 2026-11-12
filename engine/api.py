@@ -39,6 +39,7 @@ from . import (
     db,
     exports,
     facts,
+    figure_edits,
     jobs,
     pages,
     parties,
@@ -98,6 +99,7 @@ from .contracts import (
     SettingsPublishRequest,
     CaseCreate,
     CaseDeleteRequest,
+    IdentifierRecord,
     Cam,
     CaseDetail,
     CaseFacts,
@@ -333,6 +335,22 @@ def open_assessment(
         raise HTTPException(status_code=409, detail={"error": "assessment_not_open", "blockers": e.blockers}) from e
     except configstore_reader.NoPublishedConfig as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
+
+
+@app.post("/api/cases/{case_id}/identifiers/{field}", response_model=CaseDetail)
+def record_identifier(case_id: str, field: str, body: IdentifierRecord, user: dict = Depends(require("review.decide")),
+                      conn: sqlite3.Connection = Depends(get_conn)) -> CaseDetail:
+    """F-10: take the PAN, GSTIN or CIN every document agrees on onto the case, then re-run the case's
+    checks against it."""
+    _case_for(conn, case_id, user)
+    try:
+        cases.record_identifier(conn, case_id, field, body.value, actor=user["id"])
+    except cases.IdentifierError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    pipeline.refresh_case(conn, data_root(), case_id)
+    case = cases.get_case(conn, case_id)
+    assert case is not None
+    return case
 
 
 @app.delete("/api/cases/{case_id}", status_code=204)
@@ -1195,6 +1213,95 @@ def decide_review(
         return review.decide(conn, data_root(), item_id, body, user)
     except review.ReviewError as e:
         raise HTTPException(status_code=e.status, detail=str(e)) from e
+
+
+_EDIT_BODY = {
+    "requestBody": {
+        "required": True,
+        "content": {
+            "multipart/form-data": {
+                "schema": {
+                    "type": "object",
+                    "required": ["value", "reason"],
+                    "properties": {
+                        "value": {"type": "string"},
+                        "reason": {"type": "string"},
+                        "files": {"type": "array", "items": {"type": "string", "format": "binary"}},
+                    },
+                }
+            }
+        },
+    }
+}
+
+
+@app.post(
+    "/api/cases/{case_id}/fields/{field_id}/edit", response_model=ReviewItem, openapi_extra=_EDIT_BODY
+)
+async def edit_field(case_id: str, field_id: str, request: Request,
+                     user: dict = Depends(require("manual.make"))) -> ReviewItem:
+    """A Credit Analyst changes an extracted figure with the reason and, optionally, the paper it rests
+    on (multipart: value, reason, files); the change waits for the Credit Manager's check."""
+    root = data_root()
+
+    def check_case() -> None:
+        conn = db.connect(root)
+        try:
+            _case_for(conn, case_id, user)
+        finally:
+            conn.close()
+
+    await run_in_threadpool(check_case)
+    try:
+        receiver = uploads.MultipartReceiver(
+            request.headers.get("content-type", ""), uploads.spool_dir(root, case_id), uploads.limits()
+        )
+        async for chunk in request.stream():
+            await run_in_threadpool(receiver.write, chunk)
+        receiver.finish()
+    except (uploads.UploadError, MultipartParseError) as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    if len(receiver.parts) > 1:
+        raise HTTPException(status_code=422, detail="attach one file to a change")
+    part = receiver.parts[0] if receiver.parts else None
+
+    def record() -> ReviewItem:
+        conn = db.connect(root)
+        try:
+            item_id = figure_edits.edit_figure(
+                conn, root, case_id=case_id, field_id=field_id, value=receiver.fields.get("value", ""),
+                reason=receiver.fields.get("reason", ""), user=user,
+                attachment=(part.original_name, part.path) if part else None,
+            )
+            pipeline.refresh_case(conn, root, case_id)
+            row = conn.execute("SELECT * FROM review_items WHERE id = ?", (item_id,)).fetchone()
+            return reads.review_item(row)
+        except figure_edits.EditError as e:
+            raise HTTPException(status_code=e.status, detail=str(e)) from e
+        finally:
+            conn.close()
+            if part is not None:
+                part.path.unlink(missing_ok=True)
+
+    return await run_in_threadpool(record)
+
+
+@app.get("/api/review/{item_id}/attachment", response_class=Response)
+def edit_attachment(item_id: str, user: dict = Depends(require("data.read")),
+                    conn: sqlite3.Connection = Depends(get_conn)) -> Response:
+    """The paper a changed figure rests on, as attached."""
+    row = conn.execute("SELECT case_id, detail FROM review_items WHERE id = ?", (item_id,)).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"no review item {item_id!r}")
+    _case_for(conn, row["case_id"], user)
+    a = json.loads(row["detail"] or "{}").get("attachment")
+    if not a:
+        raise HTTPException(status_code=404, detail="no file is attached to this change")
+    path = figure_edits.attachments_dir(data_root(), row["case_id"]) / a["file"]
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="the attached file is missing")
+    return Response(content=path.read_bytes(), media_type=a["content_type"], headers={
+        "Content-Disposition": f'inline; filename="{a["name"]}"', "Cache-Control": "private, no-store"})
 
 
 # --- Published configuration (F-00) ---

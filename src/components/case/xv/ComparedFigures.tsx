@@ -20,7 +20,7 @@ const LOOK: Partial<
   },
   fail: {
     tone: "critical",
-    value: "text-destructive",
+    value: "text-critical-text",
     bar: "border-l-destructive",
     label: "crossVerification.figures.differs",
     exact: "crossVerification.figures.exactDiffers",

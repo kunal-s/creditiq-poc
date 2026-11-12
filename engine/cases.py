@@ -449,3 +449,44 @@ def open_assessment(conn: sqlite3.Connection, root: Path, case: CaseDetail, acto
             detail=json.dumps({"score_pct": gate.score_pct, "gate_pct": gate.gate_pct}),
         )
     return get_case(conn, case.id) or case
+
+
+# The cross-check that compares each identifier across the documents (config/crosschecks.yaml).
+IDENTIFIER_RULES = {"pan": "ID-01", "gstin": "ID-02", "cin": "ID-05"}
+
+
+class IdentifierError(Exception):
+    pass
+
+
+def record_identifier(conn: sqlite3.Connection, case_id: str, field: str, value: str, *, actor: str) -> None:
+    """A borrower identifier taken from the documents onto the case (F-10). Only the value the
+    latest cross-check found the same on every document is accepted; the header keeps what was there
+    before as the proposed value and names the document it came from, and the decision log keeps who
+    recorded it and when."""
+    rule = IDENTIFIER_RULES.get(field)
+    if rule is None:
+        raise IdentifierError(f"{field!r} is not an identifier taken from the documents")
+    row = conn.execute(
+        "SELECT outcome, sides FROM findings WHERE case_id = ? AND rule_id = ? ORDER BY run_id DESC LIMIT 1",
+        (case_id, rule),
+    ).fetchone()
+    sides = json.loads(row["sides"]) if row and row["outcome"] == "pass" else []
+    values = {(s.get("value") or "").strip().upper() for s in sides if s.get("value")}
+    agreed = next(iter(values)) if len(values) == 1 else None
+    if agreed is None or agreed != value.strip().upper():
+        raise IdentifierError(f"the documents do not agree on {value.strip()!r} as the {field.upper()}")
+    evidence = next((e for s in sides for e in s.get("evidence") or []), None)
+    source = f"document:{evidence['document_id']}:p{evidence['page']}" if evidence else "document"
+    case = conn.execute(f"SELECT header, {field} FROM cases WHERE id = ?", (case_id,)).fetchone()
+    if case is None:
+        raise IdentifierError(f"no case {case_id!r}")
+    header = json.loads(case["header"] or "{}")
+    before = case[field]
+    prior = header.get(field) or {}
+    header[field] = HeaderField(value=agreed, proposed=prior.get("proposed") or before, source=source).model_dump()
+    with transaction(conn):
+        conn.execute(f"UPDATE cases SET {field} = ?, header = ? WHERE id = ?", (agreed, json.dumps(header), case_id))
+        log_decision(conn, at=_now().isoformat(timespec="seconds"), actor=actor, case_id=case_id,
+                     action="case.identifier_recorded",
+                     detail=json.dumps({"field": field, "value": agreed, "before": before, "source": source}))

@@ -114,7 +114,7 @@ def _memo(**changes) -> Cam:
     ]
     memo = Cam(case_id="BBG-2026-000004", title="Credit Approval Memo", borrower="Kestrel Fabricators Pvt Ltd",
                as_of="2026-09-29", config_version=HASH, config_label=LABEL, run_id="XR-0001",
-               interim_template=True, template_note="Draft — layout assumed until RBL's CAM template is received.",
+               interim_template=True, template_note="Interim layout",
                sections=sections, summary_number=4, summary_title="Summary of findings, deviations and open queries",
                summary=summary, recommendation_number=5, recommendation_title="Recommendation",
                recommendation_prompts=PROMPTS, sign_off=[CamSignOff(role=r) for r in ROLES], sources=sources)
@@ -272,7 +272,7 @@ def test_the_word_memo_follows_the_memo():
     assert body[1][1] == [["Borrower", "Kestrel Fabricators Pvt Ltd"], ["Case ID", "BBG-2026-000004"],
                           ["Drafted from the data on file as of", "29 Sep 2026"], ["Configuration version", LABEL],
                           ["Cross-check run", "XR-0001"]]
-    assert ("p", "Memo note", "Draft — layout assumed until RBL's CAM template is received.") in body
+    assert ("p", "Memo note", "Interim layout") in body
     assert _headings(body) == ["1. Proposal at a glance", "2. Financial performance", "3. Banking and account conduct",
                                "4. Summary of findings, deviations and open queries", "5. Recommendation", "Sources"]
     # Facts as label and value, the citation after the value; a table's figures cited cell by cell.

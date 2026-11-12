@@ -44,13 +44,16 @@ test("TC-21: every field carries a confidence and a page link; corrections show 
   await signedIn(page, api);
   await page.goto(`/appraisals/${KESTREL}/extraction`);
   const fields = page.getByTestId("section-fields");
+  // The page opens on what needs checking; ask for every field.
+  await fields.getByRole("button", { name: "All fields" }).click();
 
   const rows = fields.getByTestId("field-row");
   // A field the document does not carry is listed only when asked for.
   await expect(rows).toHaveCount(3);
   await fields.getByTestId("field-missing-toggle").click();
   await expect(rows).toHaveCount(4);
-  // The two monthly cells sit in one table, not in rows of their own.
+  // The two monthly cells sit in one table, not in rows of their own; a table with a cell to
+  // check opens by itself.
   await expect(fields.getByTestId("field-table-row")).toHaveCount(2);
   // Every extracted (non-missing) value is a link to its page with a confidence.
   await expect(fields.getByTestId("field-value")).toHaveCount(5);

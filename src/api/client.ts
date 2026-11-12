@@ -183,6 +183,13 @@ export const api = {
   /** F-13: create the case, opening cross-verification, policy checks and the outputs. */
   openAssessment: (id: string) =>
     request<CaseDetail>(`/api/cases/${q(id)}/assessment`, { method: "POST" }),
+  /** Take the PAN, GSTIN or CIN every document agrees on onto the case (F-10). */
+  recordIdentifier: (id: string, field: "pan" | "gstin" | "cin", value: string) =>
+    request<CaseDetail>(`/api/cases/${q(id)}/identifiers/${q(field)}`, {
+      method: "POST",
+      body: JSON.stringify({ value }),
+    }),
+
   deleteCase: (id: string, reason: string) =>
     request<undefined>(`/api/cases/${q(id)}`, {
       method: "DELETE",
@@ -346,6 +353,24 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+  /** A maker's change to an extracted figure, with the reason and, optionally, the paper it rests
+   * on (multipart); it waits for a checker and nothing reads it until then. */
+  editField: (
+    id: string,
+    fieldId: string,
+    body: { value: string; reason: string; file: File | null },
+  ) => {
+    const form = new FormData();
+    form.append("value", body.value);
+    form.append("reason", body.reason);
+    if (body.file) form.append("files", body.file, body.file.name);
+    return request<ReviewItem>(`/api/cases/${q(id)}/fields/${q(fieldId)}/edit`, {
+      method: "POST",
+      body: form,
+    });
+  },
+  /** The paper attached to a changed figure. */
+  editAttachment: (itemId: string) => download(`/api/review/${q(itemId)}/attachment`),
 
   documentTypes: () => request<DocumentTypes>("/api/config/document-types"),
   checklistTaxonomy: () => request<ChecklistTaxonomy>("/api/config/checklist-taxonomy"),

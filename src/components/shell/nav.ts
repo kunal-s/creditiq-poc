@@ -38,6 +38,29 @@ export const CASE_TABS: CaseTab[] = [
   { to: "comparison", key: "comparison", permission: "comparison.adjudicate" },
 ];
 
+/** The case's steps as the tab strip shows them: the Overview, then three groups in the order a
+ * case moves through them. Comparison stays reachable for the role that adjudicates it, after the
+ * memo's steps. */
+export const STEP_GROUPS: { id: "start" | "documents" | "assessment" | "memo"; keys: string[] }[] =
+  [
+    { id: "start", keys: ["overview"] },
+    { id: "documents", keys: ["documents", "extraction", "identity", "completeness"] },
+    { id: "assessment", keys: ["crossVerification", "policy"] },
+    { id: "memo", keys: ["outputs", "rating", "submission", "comparison"] },
+  ];
+
+/** Every step in order, as one list. */
+export const STEP_ORDER: CaseTab[] = STEP_GROUPS.flatMap((g) =>
+  g.keys.map((k) => CASE_TABS.find((tab) => tab.key === k)!),
+);
+
+/** The step after this one in the case's order (Comparison is never "next"), if any. */
+export function nextStepOf(key: string): CaseTab | undefined {
+  const steps = STEP_ORDER.filter((tab) => tab.key !== "comparison");
+  const i = steps.findIndex((tab) => tab.key === key);
+  return i >= 0 ? steps[i + 1] : undefined;
+}
+
 /** The tab that shows a processing stage. */
 export function tabForStage(stage: StageKey): CaseTab {
   return CASE_TABS.find((tab) => tab.stage === stage)!;

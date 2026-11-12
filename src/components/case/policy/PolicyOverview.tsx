@@ -32,7 +32,7 @@ const openSectionButton =
   "min-w-0 break-words text-left text-[13.5px] font-semibold leading-snug text-foreground after:absolute after:inset-0 after:rounded-sm after:transition-colors hover:after:bg-foreground/[0.03] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring";
 
 const card =
-  "relative row-span-3 grid min-w-0 grid-rows-subgrid gap-y-0 rounded border border-t-[3px] border-border bg-surface";
+  "relative row-span-3 grid min-w-0 grid-rows-subgrid gap-y-0 rounded border border-border bg-surface";
 
 /** One card per family of norms, in the engine's order, then one for the approving authority.
  * A family's card says where it stands, its deviations, the norms that cannot be evaluated,
@@ -95,7 +95,7 @@ function GroupCard({
   const empty = group.status === "no_norms";
   return (
     <div
-      className={cn(card, status.bar)}
+      className={card}
       data-testid={`policy-group-card-${group.family}`}
       data-status={group.status}
     >
@@ -215,7 +215,7 @@ function KeyNorm({ norm, onOpen }: { norm: NormResult; onOpen: () => void }) {
           className={cn(
             "tabular text-[12.5px] font-semibold",
             norm.outcome === "deviation"
-              ? "text-destructive"
+              ? "text-critical-text"
               : norm.outcome === "cannot_evaluate"
                 ? "text-flag-foreground"
                 : norm.outcome === "pass"

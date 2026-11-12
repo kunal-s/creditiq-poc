@@ -9,6 +9,13 @@ from pydantic import BaseModel, Field
 from .common import Stage
 
 
+class IdentifierRecord(BaseModel):
+    """A borrower identifier taken from the documents onto the case (F-10): the value the documents
+    agree on, which the engine checks against its own cross-check before recording it."""
+
+    value: str
+
+
 class HeaderField(BaseModel):
     """One case-header field with both values kept (F-01.2): what the system
     proposed and where from, and what a person confirmed."""

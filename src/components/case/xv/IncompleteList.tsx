@@ -86,7 +86,7 @@ function IncompleteRow({ caseId, item }: { caseId: string; item: XvItem }) {
         {refused ? (
           <p
             role="alert"
-            className="mt-1 text-[12px] text-destructive"
+            className="mt-1 text-[12px] text-critical-text"
             data-testid="xv-query-error"
           >
             {refused}

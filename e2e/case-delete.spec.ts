@@ -9,6 +9,8 @@ test("delete an application after confirming its ID and a reason", async ({ page
   await signedIn(page, api);
 
   await page.goto(`/appraisals/${SAFFRON}/completeness`);
+  // Kept off the header itself: the header's More menu holds it.
+  await page.getByTestId("case-more").click();
   await page.getByTestId("delete-case").click();
 
   const confirm = page.getByTestId("delete-case-confirm");

@@ -3,8 +3,8 @@ import { Chip } from "@/components/common/Panel";
 import { t } from "@/config/terminology";
 import { cn } from "@/lib/utils";
 
-/** One tile: a label, the count, a bar in the severity's colour, and a line saying what the
- * count is. The bar is the only colour, so three tiles read as one scale. */
+/** One tile: a label, the count, a bar in the severity's colour (grey at zero), and a line saying
+ * what the count is. The bar is the only colour, so three tiles read as one scale. */
 function Tile({
   label,
   value,
@@ -33,7 +33,13 @@ function Tile({
         <span className="text-[26px] font-semibold tabular leading-none text-foreground">
           {value}
         </span>
-        {bar && <span className={cn("h-1.5 w-10 shrink-0 rounded-full", bar)} aria-hidden />}
+        {/* At zero the bar is grey: colour only where there is something of that severity. */}
+        {bar && (
+          <span
+            className={cn("h-1.5 w-10 shrink-0 rounded-full", value === "0" ? "bg-border" : bar)}
+            aria-hidden
+          />
+        )}
       </div>
       <p className="mt-2 text-[11.5px] leading-snug text-muted-foreground">{note}</p>
     </div>

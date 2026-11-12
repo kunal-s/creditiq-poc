@@ -28,6 +28,7 @@ import { QueryView } from "@/components/common/States";
 import { evidenceRequest, useDocViewer } from "@/components/docviewer/DocViewer";
 import { t, tOr } from "@/config/terminology";
 import { useAnchor } from "@/domain/anchor";
+import { readRecommendation } from "@/domain/camRecommendation";
 import { formatInr } from "@/domain/cases";
 import { useCam, usePdNote, useSpread } from "@/domain/findings";
 import {
@@ -432,7 +433,7 @@ function StatusChip({ status, testId }: { status: string; testId: string }) {
 function BlocksSubmission() {
   return (
     <span
-      className="inline-flex shrink-0 items-center gap-1 rounded bg-destructive px-1.5 py-0.5 text-[10.5px] font-medium text-destructive-foreground"
+      className="inline-flex shrink-0 items-center gap-1 rounded border border-destructive/30 bg-critical-soft px-1.5 py-0.5 text-[10.5px] font-medium text-critical-text"
       data-testid="blocks-submission"
     >
       <Lock className="h-3 w-3" aria-hidden /> {t("crossVerification.card.blocksSubmission")}
@@ -772,11 +773,8 @@ function CamHeader({ caseId, m }: { caseId: string; m: Cam }) {
         <Downloads caseId={caseId} output="cam" />
       </div>
       {note && (
-        <p
-          className="mt-2 rounded border border-info/40 bg-info-soft px-3 py-2 text-[12px] italic text-info"
-          data-testid="cam-template-note"
-        >
-          {note}
+        <p className="mt-2" data-testid="cam-template-note">
+          <Chip tone="muted">{note}</Chip>
         </p>
       )}
     </header>
@@ -830,8 +828,12 @@ export function SummaryItem({ caseId, item }: { caseId: string; item: CamSummary
       {item.kind !== "query" && (
         <span className="flex flex-wrap items-center gap-1.5">
           <SummaryRef caseId={caseId} item={item} />
-          {item.severity && (
-            <Chip tone={SEVERITY_TONE[item.severity]}>{t(`severity.${item.severity}`)}</Chip>
+          {item.kind === "incomplete" ? (
+            <Chip tone="muted">{t("outputs.cam.summary.notChecked")}</Chip>
+          ) : (
+            item.severity && (
+              <Chip tone={SEVERITY_TONE[item.severity]}>{t(`severity.${item.severity}`)}</Chip>
+            )
           )}
           {(item.title || !detail) && (
             <span className="font-medium">
@@ -990,8 +992,16 @@ function SignOff({
 /** Present and empty (F-23.4): the headings credit completes, each with room to write. */
 export function Recommendation({ m, headed = true }: { m: Cam; headed?: boolean }) {
   const prompts = m.recommendation_prompts ?? [];
-  const boxes = prompts.length > 0 ? prompts : [null];
+  const { answers, other } = readRecommendation(m.recommendation ?? "", prompts);
   const signOff = m.sign_off ?? [];
+  const emptyBox = (
+    <div
+      className="mt-1 min-h-[3.5rem] rounded border border-dashed border-border px-3 py-2 text-[12.5px] text-muted-foreground"
+      data-testid="cam-recommendation-box"
+    >
+      {t("outputs.cam.recommendationEmpty")}
+    </div>
+  );
   return (
     <section className="min-w-0 space-y-3" data-testid="cam-recommendation">
       {headed && (
@@ -999,23 +1009,25 @@ export function Recommendation({ m, headed = true }: { m: Cam; headed?: boolean 
           {m.recommendation_number}. {m.recommendation_title}
         </h3>
       )}
-      {(m.recommendation ?? "")
-        .split("\n\n")
-        .filter((p) => p.trim())
-        .map((p, i) => (
-          <p key={i} className="text-[13px] leading-relaxed" data-testid="cam-recommendation-text">
-            {p}
-          </p>
-        ))}
-      {boxes.map((prompt, i) => (
-        <div key={i} data-testid="cam-recommendation-prompt">
-          {prompt && <p className="text-[12.5px] font-medium">{prompt}</p>}
-          <div
-            className="mt-1 min-h-[3.5rem] rounded border border-dashed border-border px-3 py-2 text-[12.5px] text-muted-foreground"
-            data-testid="cam-recommendation-box"
-          >
-            {t("outputs.cam.recommendationEmpty")}
-          </div>
+      {other.map((p, i) => (
+        <p key={i} className="text-[13px] leading-relaxed" data-testid="cam-recommendation-text">
+          {p}
+        </p>
+      ))}
+      {prompts.length === 0 && other.length === 0 && emptyBox}
+      {answers.map((a) => (
+        <div key={a.prompt} data-testid="cam-recommendation-prompt">
+          <p className="text-[12.5px] font-medium">{a.prompt}</p>
+          {a.text ? (
+            <p
+              className="mt-1 whitespace-pre-line text-[13px] leading-relaxed"
+              data-testid="cam-recommendation-answer"
+            >
+              {a.text}
+            </p>
+          ) : (
+            emptyBox
+          )}
         </div>
       ))}
       {signOff.length > 0 && <SignOff roles={signOff} testId="cam-sign-off" />}

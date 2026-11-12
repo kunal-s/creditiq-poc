@@ -42,8 +42,7 @@ import { PolicyOverview } from "./PolicyOverview";
 // Test ids (data-testid):
 //   policy-page                 the tab
 //   policy-header               the tab's header: policy-summary-line (the engine's counts, the
-//                               period, provisional norms) and policy-interim (the norms are
-//                               interim proposals)
+//                               period, provisional norms)
 //   policy-overview             the cards: policy-group-card-<family> each (data-status
 //                               deviation|cannot_evaluate|clear|no_norms), opening its section from
 //                               policy-group-open-section (a button whose surface covers the card),

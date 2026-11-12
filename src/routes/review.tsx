@@ -10,7 +10,7 @@ import { reviewItemPath } from "@/components/review/reviewLinks";
 import { t } from "@/config/terminology";
 import { formatDate, stageLabel, useCases } from "@/domain/cases";
 import { formatValue, useFields } from "@/domain/extraction";
-import { DECISIONS_BY_KIND, REVIEW_KINDS, reviewTarget, useReviewQueue } from "@/domain/review";
+import { REVIEW_KINDS, decisionsFor, reviewTarget, useReviewQueue } from "@/domain/review";
 import { useSession } from "@/domain/session";
 import { cn } from "@/lib/utils";
 import { StackTable } from "@/components/common/StackTable";
@@ -287,7 +287,7 @@ function RowAction({
   canDecideEscalated: boolean;
   onDecide: () => void;
 }) {
-  const decidable = item.status === "open" && canDecide && DECISIONS_BY_KIND[item.kind].length > 0;
+  const decidable = item.status === "open" && canDecide && decisionsFor(item).length > 0;
   if (decidable && item.escalated && !canDecideEscalated) {
     return (
       <span className="inline-flex flex-col items-end gap-1">

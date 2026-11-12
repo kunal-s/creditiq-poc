@@ -1,14 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { AlertTriangle, ArrowLeft, CheckCircle2, CircleDashed } from "lucide-react";
+import { AlertTriangle, CheckCircle2, CircleDashed } from "lucide-react";
 import type { ReactNode } from "react";
 import { AssessmentStage } from "@/components/case/gate/AssessmentStage";
 import { StepHeader } from "@/components/case/TabSection";
 import { stepKicker } from "@/domain/steps";
 import { Panel } from "@/components/common/Panel";
 import { t } from "@/config/terminology";
-import { readyForCredit, scoreText, useChecklist } from "@/domain/checklist";
+import { scoreText, useChecklist } from "@/domain/checklist";
 import { useCrossVerification } from "@/domain/crossVerification";
 import { useCam } from "@/domain/findings";
+import { memoSections, submissionState } from "@/domain/submission";
 import { useApprovingAuthority } from "@/domain/policy";
 import { cn } from "@/lib/utils";
 
@@ -23,9 +24,6 @@ export const Route = createFileRoute("/appraisals/$caseId/submission")({
   component: SubmissionTab,
 });
 
-const button =
-  "inline-flex items-center gap-1.5 rounded border border-border bg-surface px-3 py-1.5 text-[12.5px] font-medium hover:bg-muted";
-
 type Check = { key: string; met: boolean; advisory?: boolean; detail: string; link?: ReactNode };
 
 function SubmissionTab() {
@@ -36,16 +34,6 @@ function SubmissionTab() {
         kicker={stepKicker(caseId, "submission")}
         title={t("page.submission.title")}
         purpose={t("page.submission.purpose")}
-        actions={
-          <>
-            <Link to="/appraisals/$caseId/rating" params={{ caseId }} className={button}>
-              <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> {t("caseTab.rating")}
-            </Link>
-            <Link to="/memos" className={button}>
-              {t("nav.memoLibrary")}
-            </Link>
-          </>
-        }
       />
       <AssessmentStage caseId={caseId}>
         <SubmissionBody caseId={caseId} />
@@ -62,10 +50,9 @@ function SubmissionBody({ caseId }: { caseId: string }) {
   if (!board || !checklist || !cam) return null;
 
   const c = board.counts;
-  const advisoryOpen = board.items.filter((i) => !i.adjudicated && !i.finding.blocking).length;
-  const written =
-    cam.recommendation.trim() !== "" ||
-    (cam.recommendation_review?.state ?? "machine") !== "machine";
+  const state = submissionState(board, checklist, cam);
+  const { advisoryOpen, notRun } = state;
+  const written = state.recommendation;
   const toBoard = (
     <Link
       to="/appraisals/$caseId/cross-verification"
@@ -90,15 +77,17 @@ function SubmissionBody({ caseId }: { caseId: string }) {
       met: advisoryOpen === 0,
       advisory: true,
       detail:
-        advisoryOpen === 0
-          ? t("page.submission.advisoryDone")
-          : t("page.submission.advisoryOpen", { n: advisoryOpen }),
-      link: advisoryOpen > 0 ? toBoard : undefined,
+        advisoryOpen > 0
+          ? t("page.submission.advisoryOpen", { n: advisoryOpen })
+          : notRun > 0
+            ? t("page.submission.advisoryNotRun", { n: notRun })
+            : t("page.submission.advisoryDone"),
+      link: advisoryOpen > 0 || notRun > 0 ? toBoard : undefined,
     },
     {
       key: "readiness",
-      met: readyForCredit(checklist),
-      detail: readyForCredit(checklist)
+      met: state.readiness,
+      detail: state.readiness
         ? t("page.submission.readinessDone")
         : t("page.submission.readinessOpen", {
             score: scoreText(checklist.score_pct, checklist.gate_pct),
@@ -126,6 +115,7 @@ function SubmissionBody({ caseId }: { caseId: string }) {
         <Link
           to="/appraisals/$caseId/rating"
           params={{ caseId }}
+          hash="recommendation"
           className="text-[12px] font-medium text-primary hover:underline"
         >
           {t("page.submission.openRecommendation")} →
@@ -134,38 +124,36 @@ function SubmissionBody({ caseId }: { caseId: string }) {
     },
   ];
   const blocking = checks.filter((k) => !k.met && !k.advisory);
-  const edited = cam.sections.filter((s) => s.review?.state && s.review.state !== "machine").length;
+  const required = checks.filter((k) => !k.advisory);
+  // The memo's sections as Outputs counts them: the drafted ones, then the risk assessment and the
+  // recommendation that close it.
+  const { total: sectionCount, edited } = memoSections(cam);
 
   return (
     <div className="grid items-start gap-4 px-4 py-5 sm:px-6 @min-[60rem]/main:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
       <div className="min-w-0 space-y-4">
-        <p
-          className={cn(
-            "flex items-start gap-2 rounded border px-4 py-3 text-[13px]",
-            blocking.length > 0
-              ? "border-destructive/30 bg-destructive/10 text-destructive"
-              : "border-positive/30 bg-positive-soft text-positive",
-          )}
-          data-testid="submission-state"
-          data-open={blocking.length === 0}
-        >
-          {blocking.length > 0 ? (
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-          ) : (
-            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-          )}
-          {blocking.length > 0
-            ? t("page.submission.closed", {
-                n: blocking.length,
-                items: blocking.map((k) => t(`page.submission.check.${k.key}`)).join("; "),
-              })
-            : t("page.submission.open")}
-        </p>
         <Panel
           title={t("page.submission.checklist")}
           subtitle={t("page.submission.checklistSub")}
           testId="submission-checklist"
         >
+          <p
+            className="flex items-center gap-2 border-b border-border px-4 py-2.5 text-[12.5px] font-medium text-foreground"
+            data-testid="submission-state"
+            data-open={blocking.length === 0}
+          >
+            {blocking.length > 0 ? (
+              <CircleDashed className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+            ) : (
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-positive" aria-hidden />
+            )}
+            {blocking.length > 0
+              ? t("page.submission.closed", {
+                  met: required.length - blocking.length,
+                  total: required.length,
+                })
+              : t("page.submission.open")}
+          </p>
           <ul className="divide-y divide-border">
             {checks.map((k) => (
               <li
@@ -192,7 +180,7 @@ function SubmissionBody({ caseId }: { caseId: string }) {
                         ? "text-foreground"
                         : k.advisory
                           ? "text-flag-foreground"
-                          : "text-destructive",
+                          : "text-critical-text",
                     )}
                   >
                     {t(`page.submission.check.${k.key}`)}
@@ -227,7 +215,7 @@ function SubmissionBody({ caseId }: { caseId: string }) {
           <dl className="divide-y divide-border text-[12.5px]">
             <Row label={t("page.submission.memo")}>
               {t("page.submission.memoValue", {
-                n: cam.sections.length,
+                n: sectionCount,
                 template: cam.template_name,
                 edited,
               })}

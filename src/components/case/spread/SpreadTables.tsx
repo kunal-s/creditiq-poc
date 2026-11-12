@@ -174,12 +174,32 @@ export function TurnoverByYear({
   const unit = useDisplayUnit();
   const sources = turnoverSources(years);
   if (sources.length === 0) return null;
+  // The years some source covers only in part: said once, above the table, rather than read off
+  // each cell's dot.
+  const partYears = years
+    .filter((y) =>
+      sources.some(({ source }) => {
+        const f = figureFor(y, source);
+        return (
+          f?.months_covered !== null && f?.months_covered !== undefined && f.months_covered < 12
+        );
+      }),
+    )
+    .map((y) => y.fy);
   return (
     <Card
       title={t("spreadPage.turnover.title")}
       subtitle={t("spreadPage.turnover.subtitle", { unit: unitHeading(unit) })}
       testId="spread-turnover"
     >
+      {partYears.length > 0 && (
+        <p
+          className="border-b border-border px-4 py-2 text-[12px] text-muted-foreground"
+          data-testid="spread-turnover-part-note"
+        >
+          {t("spreadPage.turnover.partNote", { years: partYears.join(", ") })}
+        </p>
+      )}
       <div className="relative overflow-x-auto">
         <table className="table-pin-first w-full text-[13px]" style={yearsWide(years.length)}>
           <thead>

@@ -1,15 +1,17 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { AlertTriangle, ArrowRight, ShieldCheck } from "lucide-react";
-import type { CaseDetail, Stage } from "@/api/types";
+import type { CaseDetail, CaseProgress, Stage } from "@/api/types";
 import { CaseAssistant } from "@/components/case/CaseAssistant";
 import { CaseScreen } from "@/components/shell/CaseScreen";
-import { DeleteCaseButton } from "@/components/cases/DeleteCaseButton";
+import { CaseMoreMenu } from "@/components/cases/DeleteCaseButton";
+import { NextStepBar } from "@/components/case/NextStep";
 import { StageProgressBar } from "@/components/case/StageProgress";
 import { CASE_TABS, caseTabPath } from "@/components/shell/nav";
 import { ScoreBar } from "@/components/common/Panel";
 import { t } from "@/config/terminology";
 import { formatInr, stageLabel, useLabels } from "@/domain/cases";
+import { formatDay } from "@/domain/outputs";
 import { readinessBreakdown, readyForCredit, scoreText, useChecklist } from "@/domain/checklist";
 import { readinessWait, useCaseProgress } from "@/domain/progress";
 import { useCan, useSession } from "@/domain/session";
@@ -41,17 +43,13 @@ function Layout({ c }: { c: CaseDetail }) {
         <CaseHeader c={c} />
         <div className="mt-3 min-h-9">
           {progress.data && (
-            <StageProgressBar
-              caseId={c.id}
-              progress={progress.data}
-              activeStage={activeTab?.stage}
-              onOverview={activeTab?.key === "overview"}
-            />
+            <StageProgressBar caseId={c.id} progress={progress.data} activeKey={activeTab?.key} />
           )}
         </div>
       </div>
 
       <Outlet />
+      <NextStepBar c={c} progress={progress.data} active={activeTab} />
       <CaseAssistant caseId={c.id} borrower={c.borrower} />
     </div>
   );
@@ -65,7 +63,8 @@ function CaseHeader({ c }: { c: CaseDetail }) {
   const canReview = useCan("review.read");
   // Until the documents are in and read, a score of 0 with every item blocking says nothing:
   // the header says what readiness is waiting on instead.
-  const wait = readinessWait(useCaseProgress(c.id).data, checklist.data);
+  const progress = useCaseProgress(c.id);
+  const wait = readinessWait(progress.data, checklist.data);
   const r = wait ? undefined : checklist.data;
   const b = r ? readinessBreakdown(r.items) : undefined;
   const ids: (string | null)[] = [
@@ -82,11 +81,13 @@ function CaseHeader({ c }: { c: CaseDetail }) {
       data-testid="case-header"
     >
       <div className="absolute right-3 top-3">
-        <DeleteCaseButton caseId={c.id} borrower={c.borrower} />
+        <CaseMoreMenu caseId={c.id} borrower={c.borrower} />
       </div>
-      <p className="pr-10 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground sm:pr-40">
+      {/* A field with no value is left out, never written as "not recorded". */}
+      <p className="pr-10 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
         <span data-testid="header-product">
-          {labels.product(c.product)} · {labels.caseType(c.case_type)}
+          {labels.product(c.product)}
+          {c.case_type ? ` · ${labels.caseType(c.case_type)}` : ""}
         </span>
         {" · "}
         {labels.constitution(c.constitution)}
@@ -117,7 +118,7 @@ function CaseHeader({ c }: { c: CaseDetail }) {
           <div className="flex items-baseline justify-between gap-2">
             <span className="field-label">{t("caseHeader.readiness")}</span>
             <span
-              className="tabular text-[13px] font-semibold leading-none text-foreground"
+              className="tabular whitespace-nowrap text-[13px] font-semibold leading-none text-foreground"
               data-testid="header-readiness-count"
             >
               {b ? t("journey.readiness.ofTotal", { n: b.satisfied, total: b.total }) : "—"}
@@ -164,8 +165,13 @@ function CaseHeader({ c }: { c: CaseDetail }) {
         <Fact label={t("caseHeader.ask")}>
           {labels.facilities(c.facilities)} · {formatInr(c.amount_inr)}
         </Fact>
-        <Fact label={t("caseHeader.bankStage")} testId="header-bank-stage">
-          {labels.bankStage(c.bank_stage)}
+        {c.bank_stage && (
+          <Fact label={t("caseHeader.bankStage")} testId="header-bank-stage">
+            {labels.bankStage(c.bank_stage)}
+          </Fact>
+        )}
+        <Fact label={t("caseHeader.caseDate")} testId="header-case-date">
+          <span title={t("caseHeader.caseDateHelp")}>{formatDay(c.as_of)}</span>
         </Fact>
         <div className="flex flex-wrap items-center gap-2">
           {r && r.blocking_open > 0 ? (
@@ -179,6 +185,14 @@ function CaseHeader({ c }: { c: CaseDetail }) {
               {t("caseHeader.blockingGaps", { n: r.blocking_open })}
               <ArrowRight className="ml-0.5 inline h-3 w-3" />
             </Link>
+          ) : progress.data?.gate?.open ? (
+            // Only when the engine says the case is created: until then readiness is the news.
+            <span
+              className="inline-flex items-center gap-1 rounded border border-primary/30 bg-primary/5 px-2 py-1 text-[12px] font-medium text-primary"
+              data-testid="header-stage"
+            >
+              {t(`caseHeader.caseStage.${caseStage(progress.data)}`)}
+            </span>
           ) : r && readyForCredit(r) ? (
             <span
               className="inline-flex items-center gap-1 rounded border border-positive/40 bg-positive-soft px-2 py-1 text-[12px] font-medium text-positive"
@@ -199,6 +213,13 @@ function CaseHeader({ c }: { c: CaseDetail }) {
       </div>
     </div>
   );
+}
+
+/** Where a created case stands, from the engine's stage progress: in assessment until the memo
+ * is drafted, then the memo in draft. */
+function caseStage(progress: CaseProgress | undefined): "assessment" | "memo" {
+  const outputs = progress?.stages.find((s) => s.key === "outputs");
+  return outputs && outputs.status !== "not_started" ? "memo" : "assessment";
 }
 
 /** A fact in the header: its name small above, its value below. */

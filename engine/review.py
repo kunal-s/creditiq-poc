@@ -14,6 +14,9 @@ configuration (principle 4).
                 correct = manual entry of the values (F-07.5) by a maker,
                 which a different person with the checker permission
                 confirms on the resulting manual_entry item (F-03.4).
+- manual_entry: a manual entry or a changed figure (engine/figure_edits.py),
+                confirmed by a checker who is not the maker; a changed
+                figure may also be sent back (waive) with a reason.
 - party:        confirm the attribution, or correct it (value: party id,
                 or "none") with a reason (F-10.5).
 - split:        confirm a document found inside a file, or waive it (with a reason) as part of
@@ -34,7 +37,7 @@ import json
 import sqlite3
 from pathlib import Path
 
-from . import cases, completeness, jobs
+from . import cases, completeness, figure_edits, jobs
 from .configstore import reader
 from .contracts import ReviewDecisionRequest, ReviewItem
 from .db import log_decision, transaction
@@ -118,6 +121,8 @@ def decide(
         if kind == "field":
             fv = conn.execute("SELECT * FROM field_values WHERE id = ?", (detail.get("field_value_id"),)).fetchone()
             _require(fv is not None, "the field value no longer exists", 409)
+            _require(not figure_edits.pending_edit(conn, case_id, fv["id"]),
+                     "a change to this figure is awaiting the Credit Manager's check", 409)
             if decision == "confirm":
                 conn.execute("UPDATE field_values SET status = 'accepted' WHERE id = ?", (fv["id"],))
             elif decision == "correct":
@@ -172,6 +177,16 @@ def decide(
                 _manual_entry(conn, root, item, doc, body, user, reason, log)
             else:
                 raise ReviewError(422, "a quality exception is confirmed, waived or entered manually")
+
+        elif kind == "manual_entry" and detail.get("field_value_id"):
+            # A figure a person changed (engine/figure_edits.py): approved, or sent back with a reason.
+            _require("manual.check" in permissions, "checking a changed figure needs the checker permission", 403)
+            _require(item["maker"] != user["id"], "the checker must be a different person from the maker", 403)
+            try:
+                figure_edits.check_edit(conn, detail, decision, log, checker=user["id"])
+            except figure_edits.EditError as e:
+                raise ReviewError(e.status, str(e)) from e
+            _settle_document(conn, detail["document_id"])
 
         elif kind == "manual_entry":
             _require("manual.check" in permissions, "confirming a manual entry needs the checker permission", 403)

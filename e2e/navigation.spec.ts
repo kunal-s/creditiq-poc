@@ -1,21 +1,41 @@
-// Navigation: a case's steps are in the side menu and the stage bar;
-// Help explains the steps.
+// Navigation: a case's steps are on one strip under its header, each step ends with the way on to
+// the next, and the side menu names the open case; Help explains the steps.
 import { expect, test } from "@playwright/test";
 import { KESTREL, RM } from "./fixtures/data";
 import { MockApi, showArea, signedIn } from "./support/api";
 
-test("a case's steps are reached from the side menu and the stage bar", async ({ page }) => {
+test("every step of a case is on one strip under the header, in the order a case moves", async ({
+  page,
+}) => {
   const api = new MockApi();
   await signedIn(page, api);
   await page.goto(`/appraisals/${KESTREL}`);
-  // One way in: no tab row above the case.
-  await expect(page.getByTestId("tab-extraction")).toHaveCount(0);
-  await expect(page.getByTestId("flow-ingestion")).toHaveCount(0);
-  const nav = page.getByTestId("case-nav");
-  await nav.getByRole("link", { name: "Files" }).click();
-  await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}/documents$`));
-  await page.getByTestId("stage-extraction").click();
-  await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}/extraction$`));
+  const strip = page.getByTestId("stage-progress");
+  const tabs = strip.locator('[data-testid^="stage-"]');
+  await expect(tabs).toHaveCount(10);
+  const names = await tabs.allInnerTexts();
+  expect(names.map((n) => n.trim())).toEqual([
+    "Overview",
+    "Files",
+    "Extracted data",
+    "Identity",
+    "Document readiness",
+    "Cross-verification",
+    "Financials and Policy",
+    "Outputs",
+    "Rating and recommendation",
+    "Submission",
+  ]);
+  // Three groups after the Overview, each named for assistive technology.
+  await expect(strip.getByRole("list", { name: "Documents and data" })).toBeVisible();
+  await expect(strip.getByRole("list", { name: "Assessment" })).toBeVisible();
+  await expect(strip.getByRole("list", { name: "Memo and decision" })).toBeVisible();
+
+  await page.getByTestId("stage-identity").click();
+  await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}/identity$`));
+  await expect(page.getByTestId("stage-identity")).toHaveAttribute("aria-current", "page");
+  await page.getByTestId("stage-submission").click();
+  await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}/submission$`));
   await expect(page.getByTestId("stage-overview")).not.toHaveAttribute("aria-current");
 });
 
@@ -30,11 +50,35 @@ test("the stage bar leads back to the Overview from every step", async ({ page }
     await expect(page.getByTestId(`stage-${stage}`)).toHaveAttribute("aria-current", "page");
     await overview.click();
     await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}$`));
-    await expect(page.getByTestId("journey-readiness")).toBeVisible();
+    await expect(page.getByTestId("document-status")).toBeVisible();
   }
 });
 
-test("the side menu lists the open case's steps under New appraisal, each with its status", async ({
+test("every step ends with the way on to the next, in the strip's order", async ({ page }) => {
+  const api = new MockApi();
+  await signedIn(page, api);
+  await page.goto(`/appraisals/${KESTREL}/documents`);
+  const order = [
+    "extraction",
+    "identity",
+    "completeness",
+    "crossVerification",
+    "policy",
+    "outputs",
+    "rating",
+    "submission",
+  ];
+  for (const to of order) {
+    const link = page.getByTestId("next-step-link");
+    await expect(link).toHaveAttribute("data-to", to);
+    await link.click();
+    await expect(page.getByTestId("next-step")).toHaveAttribute("data-step", to);
+  }
+  // The last step leads to the Memo Library.
+  await expect(page.getByTestId("next-step-link")).toHaveAttribute("data-to", "memos");
+});
+
+test("the side menu names the open case and leads to its Overview; its steps are on the strip", async ({
   page,
 }) => {
   const api = new MockApi();
@@ -43,45 +87,24 @@ test("the side menu lists the open case's steps under New appraisal, each with i
   await expect(page.getByTestId("case-nav")).toHaveCount(0);
   await page.goto(`/appraisals/${KESTREL}/completeness`);
   const nav = page.getByTestId("case-nav");
-  await expect(nav.getByRole("link", { name: "Identity" })).toBeVisible();
-  await expect(nav.getByRole("link", { name: "Policy" })).toBeVisible();
-  await expect(nav.getByRole("link", { name: "Submission" })).toBeVisible();
-  await nav.getByRole("link", { name: "Cross-verification" }).click();
-  await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}/cross-verification$`));
+  await expect(nav.getByRole("link")).toHaveCount(1);
+  await nav.getByRole("link", { name: `Appraisal ${KESTREL}` }).click();
+  await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}$`));
 });
 
-test("the six processing steps sit in two groups, and a step the role may not open is locked", async ({
+test("a step the role may not open is on the strip, locked, and the Next bar says so", async ({
   page,
 }) => {
-  // The credit analyst opens every step.
-  const api = new MockApi();
-  await signedIn(page, api);
-  await page.goto(`/appraisals/${KESTREL}`);
-  const nav = page.getByTestId("case-nav");
-  const docs = nav.getByTestId("case-nav-group-documents");
-  await expect(docs).toHaveText("Documents and data");
-  await expect(nav.getByTestId("case-nav-group-assessment")).toHaveText("Assessment and outputs");
-  for (const name of [
-    "Files",
-    "Extracted data",
-    "Document readiness",
-    "Cross-verification",
-    "Outputs",
-  ])
-    await expect(nav.getByRole("link", { name })).toBeVisible();
-  await expect(nav.locator("[data-locked]")).toHaveCount(0);
-
-  // The RM sees the same steps; those outside the role are listed but locked, in the menu and the
-  // tab strip alike.
   await signedIn(page, new MockApi(), RM);
   await page.goto(`/appraisals/${KESTREL}`);
-  for (const name of ["Extracted data", "Cross-verification", "Financials and Policy", "Outputs"]) {
-    const row = nav.locator("[data-locked]", { hasText: name });
-    await expect(row).toBeVisible();
-    await expect(row).toHaveAttribute("title", /your role does not include this step/);
+  for (const stage of ["extraction", "cross_verification", "policy", "outputs"]) {
+    const tab = page.getByTestId(`stage-${stage}`);
+    await expect(tab).toHaveAttribute("aria-disabled", "true");
+    await expect(tab).toHaveAttribute("title", /your role does not include this step/);
   }
-  await expect(nav.getByRole("link", { name: "Files" })).toBeVisible();
-  await expect(page.getByTestId("stage-extraction")).toHaveAttribute("aria-disabled", "true");
+  await expect(page.getByTestId("stage-documents")).not.toHaveAttribute("aria-disabled");
+  await page.goto(`/appraisals/${KESTREL}/documents`);
+  await expect(page.getByTestId("next-step-locked")).toBeVisible();
 });
 
 test("Help explains each step and status", async ({ page }) => {

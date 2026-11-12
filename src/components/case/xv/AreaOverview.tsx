@@ -85,7 +85,12 @@ function AreaCard({
       ? top && findingTitle(top)
       : area.discrepancies > 0
         ? t("crossVerification.areaCard.allDecided")
-        : t("crossVerification.areaCard.noDiscrepancy");
+        : area.incomplete > 0
+          ? t("crossVerification.areaCard.notFullyChecked", {
+              n: area.incomplete,
+              total: area.incomplete + area.passed + area.discrepancies,
+            })
+          : t("crossVerification.areaCard.noDiscrepancy");
   const others = [
     t("crossVerification.count.incomplete", { n: area.incomplete }),
     t("crossVerification.count.passed", { n: area.passed }),
@@ -96,9 +101,8 @@ function AreaCard({
   return (
     <div
       className={cn(
-        "relative row-span-4 grid min-w-0 grid-rows-subgrid gap-y-0 rounded border border-t-[3px] border-border bg-surface",
-        status.bar,
-        active && "bg-info-soft/60 ring-2 ring-primary/30",
+        "relative row-span-4 grid min-w-0 grid-rows-subgrid gap-y-0 rounded border border-border bg-surface",
+        active && "ring-2 ring-primary",
       )}
       data-testid={`xv-area-card-${area.area}`}
       data-active={active ? "true" : "false"}
@@ -125,7 +129,7 @@ function AreaCard({
           </div>
           {area.blocking_open > 0 && (
             <span
-              className="shrink-0 rounded bg-destructive px-1.5 py-0.5 text-[10px] font-medium text-destructive-foreground"
+              className="shrink-0 rounded border border-destructive/30 bg-critical-soft px-1.5 py-0.5 text-[10px] font-medium text-critical-text"
               data-testid="xv-area-blocking"
             >
               {t("crossVerification.areaCard.blocking")}
@@ -289,7 +293,7 @@ function Fact({ fact }: { fact: XvFact }) {
             : amount
               ? "tabular text-[15px] leading-tight"
               : "tabular line-clamp-2 break-words text-[12.5px]",
-          fact.differs ? "text-destructive" : "text-foreground",
+          fact.differs ? "text-critical-text" : "text-foreground",
         )}
         title={identifier ? undefined : value}
         data-testid="xv-highlight-value"

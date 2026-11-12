@@ -169,7 +169,7 @@ export function Adjudication({ caseId, item }: { caseId: string; item: XvItem })
 function DecisionError({ error }: { error: unknown }) {
   const refused = refusal(error);
   return refused ? (
-    <p role="alert" className="text-[12px] text-destructive" data-testid="xv-decision-error">
+    <p role="alert" className="text-[12px] text-critical-text" data-testid="xv-decision-error">
       {refused}
     </p>
   ) : (

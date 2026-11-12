@@ -65,9 +65,7 @@ test("the draft CAM: its header, then numbered sections of facts, tables, paragr
   await expect(config).toHaveAttribute("title", OUTPUT_CONFIG_VERSION);
   await expect(meta).not.toContainText(OUTPUT_CONFIG_VERSION);
   await expect(meta).toContainText("Cross-check run XR-000021-003");
-  await expect(header.getByTestId("cam-template-note")).toHaveText(
-    "Draft — layout assumed until RBL's CAM template is received.",
-  );
+  await expect(header.getByTestId("cam-template-note")).toHaveText("Interim layout");
 
   // Eight sections: six drafted from parts, each part under its subheading, then the risk
   // assessment and the recommendation.
@@ -244,7 +242,7 @@ test("the summary lists each finding as a register entry, the checks not complet
   await expect(summary.locator("h3")).toHaveText("7. Risk Assessment and Rating");
   await expect(summary.getByTestId("cam-summary-finding")).toContainText("Findings (6)");
   await expect(summary.getByTestId("cam-summary-incomplete")).toContainText(
-    "Checks not completed (2)",
+    "Checks that could not run (2)",
   );
   await expect(summary.getByTestId("cam-summary-deviation")).toContainText(
     "Deviations from policy (3)",
@@ -329,12 +327,10 @@ test("a run that found no discrepancy says so in the summary rather than leaving
   api.cam = { ...structuredClone(CAM), summary: CAM.summary.filter((i) => i.kind !== "finding") };
   await openView(page, "cam", api);
   const findings = page.getByTestId("cam-summary-finding");
-  await expect(findings).toHaveText(
-    "Findings (0): no discrepancy in cross-check run XR-000021-003",
-  );
+  await expect(findings).toHaveText("No discrepancy found (cross-check run XR-000021-003)");
   await expect(findings.getByTestId("cam-summary-item")).toHaveCount(0);
   await expect(page.getByTestId("cam-summary-incomplete")).toContainText(
-    "Checks not completed (2)",
+    "Checks that could not run (2)",
   );
 });
 

@@ -10,21 +10,20 @@ import { actualText, inputLabel, inputValue, normElementId } from "@/domain/poli
 import { useDisplayUnit } from "@/domain/units";
 import { cn } from "@/lib/utils";
 import { NormWorking } from "./NormWorking";
-import { OUTCOME_TEXT } from "./styles";
 
 /** A ratio's band against its configured values (the engine's): green within the norm, amber past
  * it but within the marginal value, red past that. */
 export const BAND_TEXT = {
   within: "text-positive",
   marginal: "text-flag-foreground",
-  outside: "text-destructive",
+  outside: "text-critical-text",
 } as const;
 
 export const CHIP: Record<string, { tone: string; dot: string }> = {
   within: { tone: "border-positive/30 bg-positive-soft text-positive", dot: "bg-positive" },
   marginal: { tone: "border-flag/40 bg-flag-soft text-flag-foreground", dot: "bg-flag-foreground" },
   outside: {
-    tone: "border-destructive/30 bg-critical-soft text-destructive",
+    tone: "border-destructive/30 bg-critical-soft text-critical-text",
     dot: "bg-destructive",
   },
   cannot_evaluate: { tone: "border-flag/40 bg-flag-soft text-flag-foreground", dot: "bg-flag" },
@@ -79,11 +78,8 @@ export function NormTile({
   // A norm with no result reads a dash; the chip says why.
   const evaluated = norm.outcome === "pass" || norm.outcome === "deviation";
   const [figure, unit] = evaluated ? split(actualText(norm)) : ["—", ""];
-  const tone = !evaluated
-    ? "text-muted-foreground"
-    : norm.band
-      ? BAND_TEXT[norm.band]
-      : OUTCOME_TEXT[norm.outcome];
+  // The figure in the text colour; where it stands is the chip's to say.
+  const tone = evaluated ? "text-foreground" : "text-muted-foreground";
   const reason = norm.reason
     ? t(`policy.reason.${norm.reason}`, {
         inputs: (norm.reason_inputs ?? []).map((name) => inputLabel(norm, name)).join(", "),
@@ -160,7 +156,7 @@ export function NormTile({
           <span
             className={cn(
               "mt-1 text-[11.5px] leading-snug",
-              norm.outcome === "deviation" ? "text-destructive" : "text-flag-foreground",
+              norm.outcome === "deviation" ? "text-critical-text" : "text-flag-foreground",
             )}
             data-testid="norm-reason"
             data-reason={norm.reason}

@@ -315,7 +315,7 @@ function Summary({
       <dl className="divide-y divide-border text-[12.5px]">
         {(
           [
-            [t("documents.logical"), documents.length, false],
+            [t("documents.logicalIn", { files: files.length }), documents.length, false],
             [t("documents.needsAttention"), attention, true],
             [t("document.unclassified"), unclassified, true],
             [t("documents.labelMismatches"), mismatched, true],

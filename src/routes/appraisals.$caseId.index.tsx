@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import type { CaseProgress } from "@/api/types";
+import type { CaseDetail, CaseProgress } from "@/api/types";
+import { CaseProgressCard } from "@/components/case/CaseProgress";
 import { Panel } from "@/components/common/Panel";
 import { QueryView } from "@/components/common/States";
 import { reviewItemPath } from "@/components/review/reviewLinks";
 import { CaseScreen } from "@/components/shell/CaseScreen";
 import { t } from "@/config/terminology";
 import { OverviewReadiness } from "@/components/case/checklist/Glance";
-import { useCaseProgress } from "@/domain/progress";
+import { caseCreated, useCaseProgress } from "@/domain/progress";
 import { useReviewQueue } from "@/domain/review";
 import { useCan } from "@/domain/session";
 
@@ -29,18 +30,20 @@ function OverviewTab() {
       <h1 className="sr-only">{t("page.overview.title")}</h1>
       <div className="px-4 py-5 sm:px-6">
         <QueryView query={progress}>
-          {(p) => <CaseScreen caseId={caseId}>{() => <Overview progress={p} />}</CaseScreen>}
+          {(p) => <CaseScreen caseId={caseId}>{(c) => <Overview c={c} progress={p} />}</CaseScreen>}
         </QueryView>
       </div>
     </>
   );
 }
 
-function Overview({ progress }: { progress: CaseProgress }) {
+function Overview({ c, progress }: { c: CaseDetail; progress: CaseProgress }) {
   return (
     <div className="space-y-4">
-      {/* Where the case stands at a glance: whether it can go to credit review, then document
-          readiness (the counts, and every document by section) as two tabs. */}
+      {/* Once the case is created, where it stands through every step and what to do next. */}
+      {caseCreated(progress) && <CaseProgressCard c={c} />}
+      {/* Whether it can go to credit review, then document readiness (the counts, and every
+          document by section). */}
       <OverviewReadiness caseId={progress.case_id} progress={progress} />
 
       <WaitingForDecision caseId={progress.case_id} />
@@ -56,6 +59,8 @@ function WaitingForDecision({ caseId }: { caseId: string }) {
   const review = useReviewQueue({ caseId });
   if (!canReview) return null;
   const items = (review.data ?? []).filter((i) => i.status === "open");
+  // Nothing waiting: no card (the case progress says the case is clear).
+  if (review.data && items.length === 0) return null;
   return (
     <Panel
       title={t("page.overview.waiting")}

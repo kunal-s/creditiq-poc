@@ -6,7 +6,7 @@
 
 interim_template: true
 title: Credit Approval Memo
-template_note: "Draft — layout assumed until RBL's CAM template is received."
+template_note: "Interim layout"
 # Eight sections: six drafted from parts of the file, then the risk assessment (the findings,
 # deviations and open queries) and the recommendation. A part keeps the id it is linked by.
 sections:
@@ -48,7 +48,7 @@ sections:
       - {id: documentation, kind: documentation, title: Documentation status}
 summary_title: Risk Assessment and Rating
 summary_purpose: The findings, deviations and open queries the risk rests on, and the rating.
-rating_note: "Not rated: RBL's rating model is not configured."
+rating_note: "Not rated"
 recommendation_title: Recommendation
 recommendation_purpose: The analyst's recommendation to the approving authority.
 # Left blank under the recommendation, for credit to complete (F-23.4).

@@ -10,7 +10,7 @@
 # included in C4.
 source: provisional
 status: provisional
-note: "Interim matrix proposed by the delivery team, awaiting RBL's approval and delegation matrix."
+note: "Provisional matrix."
 amount_basis: amount_requested   # the case's total amount (CaseDetail.amount_inr)
 
 authorities:   # lowest to highest

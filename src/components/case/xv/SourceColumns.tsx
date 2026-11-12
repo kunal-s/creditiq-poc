@@ -119,7 +119,7 @@ function ColumnCell({
       <p
         className={cn(
           "tabular mt-1 break-words text-[16px] font-semibold leading-tight @min-[16.5rem]:text-[19px]",
-          column.differs && !marked ? "text-destructive" : "text-foreground",
+          column.differs && !marked ? "text-critical-text" : "text-foreground",
         )}
         data-testid="xv-column-value"
       >
@@ -128,7 +128,7 @@ function ColumnCell({
               s.differs ? (
                 <mark
                   key={i}
-                  className="rounded-sm bg-destructive/15 px-px text-destructive underline decoration-destructive/60 decoration-2 underline-offset-4"
+                  className="rounded-sm bg-critical-soft px-px text-critical-text underline decoration-destructive/60 decoration-2 underline-offset-4"
                   data-testid="xv-diff"
                 >
                   {s.text}

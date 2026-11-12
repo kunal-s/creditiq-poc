@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
 import { ChecklistPanel } from "@/components/case/ChecklistPanel";
+import { ChecksNeed } from "@/components/case/gate/ChecksNeed";
 import { ReadinessPanel } from "@/components/case/gate/CreateCasePanel";
 import { QueriesPanel } from "@/components/case/QueriesPanel";
 import { QueryView } from "@/components/common/States";
@@ -81,6 +82,7 @@ function CompletenessTab() {
                   blockingFindings={blockingFindings}
                 />
               </Anchor>
+              <ChecksNeed caseId={caseId} />
               <div className="grid items-start gap-4 @min-[65rem]/main:grid-cols-[minmax(0,1fr)_380px]">
                 <Anchor id="checklist" className="min-w-0">
                   <ChecklistPanel caseId={caseId} r={r} filter={filter} onFilter={setFilter} />

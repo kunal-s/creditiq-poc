@@ -1,14 +1,13 @@
 import { Link } from "@tanstack/react-router";
 import { Lock } from "lucide-react";
 import type { StageStatus } from "@/api/types";
-import { CASE_TABS, caseTabPath, type CaseTab } from "./nav";
+import { CASE_TABS, caseTabPath } from "./nav";
 import { t } from "@/config/terminology";
 import { useCaseProgress } from "@/domain/progress";
-import { useSession } from "@/domain/session";
 import { cn } from "@/lib/utils";
 
-// The open appraisal's own steps in the side menu, under New appraisal as in the original design:
-// each step with a dot for where its stage stands. Shown only inside a case.
+// The open appraisal in the side menu, under New appraisal: its number, leading to its Overview,
+// with a dot for where it stands. Its steps are the tab strip under the case header.
 
 const DOT: Record<StageStatus, string> = {
   not_started: "bg-sidebar-foreground/25",
@@ -70,15 +69,6 @@ function Row({
   );
 }
 
-/** The case's steps in the side menu: the first and last are listed alone, the six processing
- * steps in two groups. A grouped step is always listed; one the role may not open is locked. */
-const LAYOUT: { group: string | null; keys: string[]; always: boolean }[] = [
-  { group: null, keys: ["overview", "identity"], always: false },
-  { group: "documents", keys: ["documents", "extraction", "completeness"], always: true },
-  { group: "assessment", keys: ["crossVerification", "policy", "outputs"], always: true },
-  { group: null, keys: ["rating", "submission", "comparison"], always: false },
-];
-
 export function CaseNav({
   caseId,
   pathname,
@@ -88,51 +78,25 @@ export function CaseNav({
   pathname: string;
   onNavigate?: (() => void) | undefined;
 }) {
-  const permissions = useSession()?.user.permissions ?? [];
+  const overview = CASE_TABS[0]!;
   const progress = useCaseProgress(caseId);
-  const statusOf = (tab: CaseTab) =>
-    tab.stage ? progress.data?.stages.find((s) => s.key === tab.stage)?.status : undefined;
-  const isActive = (tab: CaseTab) =>
-    decodeURIComponent(pathname) === decodeURIComponent(caseTabPath(caseId, tab));
-  const can = (tab: CaseTab) => permissions.includes(tab.permission);
-
+  // One dot for the case: amber while any step waits on a person, blue while one runs.
+  const status: StageStatus = progress.data?.stages.some((s) => s.status === "needs_attention")
+    ? "needs_attention"
+    : progress.data?.stages.some((s) => s.status === "in_progress")
+      ? "in_progress"
+      : "done";
   return (
     <div className="mt-1" data-testid="case-nav">
-      <p className="truncate px-2 pb-1 pl-5 text-[10.5px] text-sidebar-foreground/50">
-        {t("nav.group.thisCase", { id: caseId })}
-      </p>
-      {LAYOUT.map((block, i) => {
-        const tabs = block.keys
-          .map((key) => CASE_TABS.find((tab) => tab.key === key)!)
-          .filter((tab) => block.always || can(tab));
-        if (tabs.length === 0) return null;
-        return (
-          <div key={block.group ?? `block-${i}`} className={cn(block.group && "mt-2")}>
-            {block.group && (
-              <p
-                className="px-2 pb-1 pl-5 text-[10px] font-semibold uppercase tracking-[0.08em] text-sidebar-foreground/45"
-                data-testid={`case-nav-group-${block.group}`}
-              >
-                {t(`nav.caseGroup.${block.group}`)}
-              </p>
-            )}
-            <ul className="space-y-px">
-              {tabs.map((tab) => (
-                <li key={tab.key}>
-                  <Row
-                    to={caseTabPath(caseId, tab)}
-                    label={t(`caseTab.${tab.key}`)}
-                    active={isActive(tab)}
-                    status={statusOf(tab) ?? "not_started"}
-                    locked={!can(tab)}
-                    onNavigate={onNavigate}
-                  />
-                </li>
-              ))}
-            </ul>
-          </div>
-        );
-      })}
+      <Row
+        to={caseTabPath(caseId, overview)}
+        label={t("nav.group.thisCase", { id: caseId })}
+        active={decodeURIComponent(pathname).startsWith(
+          decodeURIComponent(caseTabPath(caseId, overview)),
+        )}
+        status={progress.data ? status : undefined}
+        onNavigate={onNavigate}
+      />
     </div>
   );
 }

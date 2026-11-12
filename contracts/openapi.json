@@ -4124,6 +4124,11 @@
       "CoverageRule": {
         "description": "What \"complete\" means for an item beyond presence (F-13.2), always\nmeasured from the case's fixed as_of date (principle 8).",
         "properties": {
+          "audited_year": {
+            "default": false,
+            "title": "Audited Year",
+            "type": "boolean"
+          },
           "count": {
             "default": 0,
             "title": "Count",
@@ -5475,6 +5480,113 @@
         "title": "FieldValue",
         "type": "object"
       },
+      "FigureEdit": {
+        "description": "A figure a person changed (engine/figure_edits.py): what it was, what it is now, why, and the\npaper attached, for the checker to approve or send back.",
+        "properties": {
+          "at": {
+            "title": "At",
+            "type": "string"
+          },
+          "attachment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FigureEditAttachment"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "document_id": {
+            "title": "Document Id",
+            "type": "string"
+          },
+          "field": {
+            "title": "Field",
+            "type": "string"
+          },
+          "field_value_id": {
+            "title": "Field Value Id",
+            "type": "string"
+          },
+          "from_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Value"
+          },
+          "maker_name": {
+            "title": "Maker Name",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "to_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Value"
+          }
+        },
+        "required": [
+          "field_value_id",
+          "document_id",
+          "field",
+          "reason",
+          "maker_name",
+          "at"
+        ],
+        "title": "FigureEdit",
+        "type": "object"
+      },
+      "FigureEditAttachment": {
+        "description": "The paper a changed figure rests on, kept with the case outside its documents.",
+        "properties": {
+          "content_type": {
+            "title": "Content Type",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "size": {
+            "title": "Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "size",
+          "content_type"
+        ],
+        "title": "FigureEditAttachment",
+        "type": "object"
+      },
       "FileRecord": {
         "description": "Bytes as received (F-05). Every file ends in a visible state (F-05.5).",
         "properties": {
@@ -6189,6 +6301,20 @@
           "value"
         ],
         "title": "HeaderField",
+        "type": "object"
+      },
+      "IdentifierRecord": {
+        "description": "A borrower identifier taken from the documents onto the case (F-10): the value the documents\nagree on, which the engine checks against its own cross-check before recording it.",
+        "properties": {
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "title": "IdentifierRecord",
         "type": "object"
       },
       "IdentityFacts": {
@@ -9914,6 +10040,16 @@
               }
             ],
             "title": "Decision"
+          },
+          "edit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FigureEdit"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "escalated": {
             "default": false,
@@ -14304,6 +14440,100 @@
         "summary": "Case Fields"
       }
     },
+    "/api/cases/{case_id}/fields/{field_id}/edit": {
+      "post": {
+        "description": "A Credit Analyst changes an extracted figure with the reason and, optionally, the paper it rests\non (multipart: value, reason, files); the change waits for the Credit Manager's check.",
+        "operationId": "edit_field_api_cases__case_id__fields__field_id__edit_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "field_id",
+            "required": true,
+            "schema": {
+              "title": "Field Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "files": {
+                    "items": {
+                      "format": "binary",
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "reason": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "value",
+                  "reason"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewItem"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Edit Field"
+      }
+    },
     "/api/cases/{case_id}/files": {
       "get": {
         "operationId": "case_files_api_cases__case_id__files_get",
@@ -14842,6 +15072,81 @@
           }
         },
         "summary": "Case Findings"
+      }
+    },
+    "/api/cases/{case_id}/identifiers/{field}": {
+      "post": {
+        "description": "F-10: take the PAN, GSTIN or CIN every document agrees on onto the case, then re-run the case's\nchecks against it.",
+        "operationId": "record_identifier_api_cases__case_id__identifiers__field__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "field",
+            "required": true,
+            "schema": {
+              "title": "Field",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdentifierRecord"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Record Identifier"
       }
     },
     "/api/cases/{case_id}/messages": {
@@ -16584,6 +16889,55 @@
           }
         },
         "summary": "Review Queue"
+      }
+    },
+    "/api/review/{item_id}/attachment": {
+      "get": {
+        "description": "The paper a changed figure rests on, as attached.",
+        "operationId": "edit_attachment_api_review__item_id__attachment_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "title": "Item Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Edit Attachment"
       }
     },
     "/api/review/{item_id}/decision": {

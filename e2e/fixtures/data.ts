@@ -295,7 +295,7 @@ export const TAXONOMY: ChecklistTaxonomy = {
       source: "published_policy",
       blocking: false,
       weight: 4,
-      coverage: { kind: "monthly_periods", months: 12, count: 0, offset: 0 },
+      coverage: { kind: "monthly_periods", months: 12, count: 0, offset: 0, audited_year: false },
       request: "GSTR-3B returns for the last 12 months.",
     },
   ],
@@ -2542,7 +2542,7 @@ export const APPROVAL = {
 export const APPROVAL_MATRIX = {
   source: "provisional",
   status: "provisional",
-  note: "Interim matrix proposed by the delivery team, awaiting RBL's approval and delegation matrix.",
+  note: "Provisional matrix.",
   amount_basis: "amount_requested",
   authorities: [
     { ...CREDIT_OFFICER, status: "provisional" },
@@ -3027,7 +3027,7 @@ export const CAM: Cam = {
   config_label: OUTPUT_CONFIG_LABEL,
   run_id: XV_RUN.id,
   interim_template: true,
-  template_note: "Draft — layout assumed until RBL's CAM template is received.",
+  template_note: "Interim layout",
   copilot: false,
   template_id: "default",
   template_name: "Default Template One",
@@ -3487,7 +3487,7 @@ export const CAM: Cam = {
   summary_number: 7,
   summary_title: "Risk Assessment and Rating",
   summary_purpose: "The findings, deviations and open queries the risk rests on, and the rating.",
-  rating_note: "Not rated: RBL's rating model is not configured.",
+  rating_note: "Not rated",
   // The findings as a register (their explanations are in section 10), the checks that could not
   // be completed with what would complete them, the deviations, the norms not assessed and the
   // open queries by group.

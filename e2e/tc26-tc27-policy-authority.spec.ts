@@ -54,9 +54,8 @@ test("TC-24: the header says where the case stands against the norms", async ({ 
   await expect(page.getByTestId("policy-summary-line")).toHaveText(
     "3 deviations · 3 cannot be evaluated · 1 passed · FY 2025-26 · provisional norms",
   );
-  await expect(page.getByTestId("policy-interim")).toHaveText(
-    "These norms are interim proposals until RBL's own policy norms are supplied.",
-  );
+  // The provisional state is in the summary line and the chips; no note about the project.
+  await expect(page.getByTestId("policy-interim")).toHaveCount(0);
 });
 
 test("TC-24: a card per family of norms, then the authority, each with the engine's counts", async ({
@@ -124,7 +123,7 @@ test("TC-24: each family card shows the engine's key norms, actual against requi
   await expect(de.getByTestId("policy-highlight-label")).toHaveText("Debt / equity");
   await expect(de.getByTestId("policy-highlight-fact")).toHaveText("3.00x · at most 2.00x");
   // The deviating value in red; what it is held against beside it.
-  await expect(de.getByTestId("policy-highlight-value")).toHaveClass(/text-destructive/);
+  await expect(de.getByTestId("policy-highlight-value")).toHaveClass(/text-critical-text/);
   await expect(de.getByTestId("policy-highlight-required")).toHaveText("at most 2.00x");
   await expect(de.getByTestId("policy-highlight-note")).toHaveCount(0);
 
@@ -134,7 +133,9 @@ test("TC-24: each family card shows the engine's key norms, actual against requi
   await expect(coverage.getByTestId("policy-highlight-fact")).toHaveText(
     "Cannot evaluate · at least 2.50x",
   );
-  await expect(coverage.getByTestId("policy-highlight-value")).not.toHaveClass(/text-destructive/);
+  await expect(coverage.getByTestId("policy-highlight-value")).not.toHaveClass(
+    /text-critical-text/,
+  );
   await expect(coverage.getByTestId("policy-highlight-note")).toHaveText("Finance costs is zero");
   await expect(keyNorm(ratios, "FR-06").getByTestId("policy-highlight-note")).toHaveText(
     "Waiting for review of Trade receivables",
@@ -213,7 +214,7 @@ test("TC-24: the cards render the engine's groups and counts as given", async ({
   const passed = keyNorm(ratios, "FR-01");
   await expect(passed).toHaveAttribute("data-outcome", "pass");
   await expect(passed.getByTestId("policy-highlight-fact")).toHaveText("1.50x · at least 1.20x");
-  await expect(passed.getByTestId("policy-highlight-value")).not.toHaveClass(/text-destructive/);
+  await expect(passed.getByTestId("policy-highlight-value")).not.toHaveClass(/text-critical-text/);
 
   // The sections follow the same groups; a family the engine sent without norms says so.
   await expect(section(page, "documentation").getByTestId("family-pending")).toHaveText(

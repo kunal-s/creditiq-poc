@@ -145,6 +145,10 @@ class CoverageRule(BaseModel):
     """assessment_years: how many, counting back from the latest."""
     months: int = 0
     """monthly_periods / account_months: complete calendar months before the as_of month."""
+    audited_year: bool = False
+    """monthly_periods / account_months: also every month of the latest audited financial year
+    (April to March, the year financial_year offset 1 names), so the turnover the returns and the
+    statements show can be compared with the audited accounts (the TO cross-checks)."""
     statements: list[str] = Field(default_factory=list)
     """statements (and financial_year): sections that must be present, e.g.
     balance_sheet, profit_and_loss."""

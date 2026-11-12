@@ -39,6 +39,35 @@ export function OverviewReadiness({
   // Until the documents are in and read, the counts would only say "nothing yet": the status
   // line says what readiness waits on, and the counts follow once there is something to count.
   const wait = readinessWait(progress, r);
+  // Once the engine says the case is created, the documents are history: the status line and the
+  // counts fold into one line (the case progress above says the same), opened on request.
+  if (progress?.gate?.open && !wait) {
+    return (
+      <details
+        className="group rounded border border-border bg-surface"
+        data-testid="journey-folded"
+      >
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-[12.5px] hover:bg-surface-muted">
+          <span className="font-medium text-foreground">
+            {t("journey.readiness.title")}
+            <span className="ml-2 font-normal text-muted-foreground">
+              {t("journey.foldedCount", {
+                n: r.items.filter((i) => i.status === "satisfied").length,
+                total: r.items.length,
+              })}
+            </span>
+          </span>
+          <span className="text-[12px] font-medium text-primary group-open:hidden">
+            {t("journey.show")}
+          </span>
+        </summary>
+        <div className="space-y-4 border-t border-border p-4">
+          <OverviewStatus r={r} wait={wait} caseId={caseId} />
+          <ReadinessCard r={r} sections={taxonomy.data?.sections} />
+        </div>
+      </details>
+    );
+  }
   return (
     <div className="space-y-4">
       <OverviewStatus r={r} wait={wait} caseId={caseId} />

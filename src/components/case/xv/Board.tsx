@@ -283,7 +283,7 @@ function BoardBody({
                   {t(`crossVerification.area.${area.area}.title`)}
                   {area.open > 0 && (
                     <span
-                      className="tabular rounded-full bg-critical-soft px-1.5 text-[11px] font-semibold leading-[18px] text-destructive"
+                      className="tabular rounded-full bg-critical-soft px-1.5 text-[11px] font-semibold leading-[18px] text-critical-text"
                       data-testid="xv-area-tab-open"
                     >
                       {area.open}

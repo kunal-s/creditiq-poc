@@ -105,31 +105,19 @@ test("the header sums up the board, the decisions made and the run, and locks th
   const header = page.getByTestId("xv-header");
   await expect(header).toContainText(`Appraisal ${KESTREL} · Cross-verification`);
   await expect(
-    header.getByRole("heading", { name: "Cross-verification and discrepancy" }),
+    header.getByRole("heading", { name: "Cross-verification", exact: true }),
   ).toBeVisible();
   await expect(page.getByTestId("xv-summary-line")).toHaveText(
     "Every source lined up against every other. 7 discrepancies found for this borrower, ranked by credit impact, each with its evidence attached and a decision required from you.",
   );
   // Under the summary: the decisions made, then the run the board shows.
   await expect(page.getByTestId("xv-meta-line")).toHaveText(
-    "1 of 7 adjudicated · XR-000021-003 · 18 rules across 9 sources · 09 Oct 2026, 14:00",
+    "1 of 7 adjudicated · Checked 09 Oct 2026, 14:00 · 18 checks across 9 documents",
   );
-  await expect(page.getByTestId("xv-back-spread")).toHaveAttribute(
-    "href",
-    `/appraisals/${KESTREL}/policy#financials`,
-  );
+  // With something to decide, the Review queue; the way on is the step's Next bar.
+  await expect(page.getByTestId("xv-exception-queue")).toHaveText("Review queue");
   await expect(page.getByTestId("xv-exception-queue")).toHaveAttribute("href", "/review");
-
-  const next = page.getByTestId("xv-continue");
-  await expect(next).toHaveText("Continue to draft");
-  await expect(next).toHaveAttribute("aria-disabled", "true");
-  await expect(next).toHaveAttribute(
-    "title",
-    "Submission is blocked until every blocking discrepancy is accepted or dismissed.",
-  );
-  await expect(next).not.toHaveAttribute("href", /./);
-  await next.click({ force: true });
-  await expect(page).toHaveURL(new RegExp(`${BOARD}$`));
+  await expect(page.getByTestId("next-step-link")).toHaveAttribute("data-to", "policy");
 
   // No severity band and no board-wide lists: everything sits in its area.
   await expect(page.getByTestId("xv-band-serious")).toHaveCount(0);
@@ -140,11 +128,6 @@ test("the header sums up the board, the decisions made and the run, and locks th
 
   await page.getByTestId("xv-exception-queue").click();
   await expect(page).toHaveURL(/\/review$/);
-  await page.goBack();
-  await page.getByTestId("xv-back-spread").click();
-  await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}/policy#financials$`));
-  // The board's Spread button opens the Financials section of the Financials and Policy tab.
-  await expect(page.getByTestId("financials")).toBeInViewport();
 });
 
 test("the overview has a card per area, in the engine's order, each saying where the area stands", async ({
@@ -157,7 +140,7 @@ test("the overview has a card per area, in the engine's order, each saying where
   const expected = {
     identity: {
       title: "Identity consistency",
-      purpose: "PAN, GSTIN, CIN, name and directors agree across every document.",
+      purpose: "Whether PAN, GSTIN, CIN, name and directors agree across every document.",
       open: "2",
       severity: "2 serious",
       decided: "0 of 2 decided",
@@ -166,7 +149,7 @@ test("the overview has a card per area, in the engine's order, each saying where
     },
     turnover: {
       title: "Turnover",
-      purpose: "Audited, GST, banked and declared turnover agree within tolerance.",
+      purpose: "Whether audited, GST, banked and declared turnover agree within tolerance.",
       open: "1",
       severity: "1 moderate",
       decided: "1 of 2 decided",
@@ -175,7 +158,8 @@ test("the overview has a card per area, in the engine's order, each saying where
     },
     accounts: {
       title: "Bank accounts",
-      purpose: "Every declared account has a statement; every account on file was declared.",
+      purpose:
+        "Whether every declared account has a statement, and every account on file was declared.",
       open: "1",
       severity: "1 moderate",
       decided: "0 of 1 decided",
@@ -184,7 +168,7 @@ test("the overview has a card per area, in the engine's order, each saying where
     },
     obligations: {
       title: "Existing obligations",
-      purpose: "Declared facilities agree with sanction letters, the bureau and the bank.",
+      purpose: "Whether declared facilities agree with sanction letters, the bureau and the bank.",
       open: "2",
       severity: "2 serious",
       decided: "0 of 2 decided",
@@ -258,8 +242,8 @@ test("each area card carries the engine's key figures, the open discrepancies fi
   await expect(facts.nth(1)).toContainText("Commercial bureau report");
   // An identifier in monospace, so its characters can be compared; the differing one in red.
   await expect(values(pan).nth(1)).toHaveClass(/font-mono/);
-  await expect(values(pan).nth(1)).toHaveClass(/text-destructive/);
-  await expect(values(pan).nth(0)).not.toHaveClass(/text-destructive/);
+  await expect(values(pan).nth(1)).toHaveClass(/text-critical-text/);
+  await expect(values(pan).nth(0)).not.toHaveClass(/text-critical-text/);
   await expect(pan.getByTestId("xv-highlight-note")).toHaveCount(0);
   await expect(values(identity.nth(1))).toHaveText([
     "U28999MH2015PTC123456",
@@ -280,7 +264,7 @@ test("each area card carries the engine's key figures, the open discrepancies fi
     "GST against bank credits · Aug 2025 to Mar 2026",
   );
   await expect(values(window)).toHaveText(["INR 14.80 cr", "INR 17.19 cr"]);
-  await expect(values(window).nth(0)).toHaveClass(/text-destructive/);
+  await expect(values(window).nth(0)).toHaveClass(/text-critical-text/);
   await expect(values(window).nth(0)).not.toHaveClass(/font-mono/);
   await expect(window.getByTestId("xv-highlight-fact").nth(1)).toContainText("Bank credits");
   await expect(window.getByTestId("xv-highlight-note")).toHaveText("13.9% apart · tolerance 10%");
@@ -466,7 +450,10 @@ test("the decided, could-not-be-checked and clear areas read as such", async ({ 
   await expect(turnover.getByTestId("xv-area-others")).toHaveText(
     "3 could not be checked · 0 passed",
   );
-  await expect(turnover.getByTestId("xv-area-top")).toHaveText("No discrepancy");
+  // Checks that could not run: never "no discrepancy" on their own.
+  await expect(turnover.getByTestId("xv-area-top")).toHaveText(
+    "Not fully checked: 3 of 3 checks could not run",
+  );
 
   const obligations = areaCard(page, "obligations");
   await expect(obligations).toHaveAttribute("data-status", "clear");
@@ -536,10 +523,10 @@ test("a name's line by line marks the part that differs", async ({ page }) => {
   await lines.locator("summary").click();
   const table = lines.getByTestId("xv-detail-table");
   await expect(table.locator('[data-flagged-cell="true"]')).toHaveText(["Missing"]);
-  await expect(table.locator('[data-flagged-cell="true"]')).toHaveClass(/text-destructive/);
+  await expect(table.locator('[data-flagged-cell="true"]')).toHaveClass(/text-critical-text/);
   const none = table.locator("tbody tr").nth(2).locator("td").nth(4);
   await expect(none).toHaveText("—");
-  await expect(none).not.toHaveClass(/text-destructive/);
+  await expect(none).not.toHaveClass(/text-critical-text/);
 });
 
 test("the cards and sections follow the areas the engine sends", async ({ page }) => {
@@ -723,7 +710,7 @@ test("each section ranks its discrepancies within the area, the top one on the b
     }
   }
   await expect(section(page, "identity")).toContainText(
-    "PAN, GSTIN, CIN, name and directors agree across every document.",
+    "Whether PAN, GSTIN, CIN, name and directors agree across every document.",
   );
 
   // The first card on the board (the top of the first area with an open discrepancy) is open;
@@ -1126,7 +1113,6 @@ test("accepting, dismissing and escalating update the card, its area, the header
   await expect(identity.getByTestId("xv-area-blocking")).toBeVisible();
   await expect(meta).toContainText("2 of 7 adjudicated");
   await expect(banner).toContainText("1 serious discrepancy unadjudicated");
-  await expect(page.getByTestId("xv-continue")).toHaveAttribute("aria-disabled", "true");
 
   // Dismiss: the area's only discrepancy decided.
   const ba1 = await decide(page, "fnd-ba1", "dismiss", "Closed in March; the letter is on file.");
@@ -1141,14 +1127,13 @@ test("accepting, dismissing and escalating update the card, its area, the header
   await expect(meta).toContainText("3 of 7 adjudicated");
 });
 
-test("Continue to draft opens only once every blocking discrepancy is decided", async ({
+test("deciding every blocking discrepancy clears the banner; the Next bar leads on", async ({
   page,
 }) => {
   await openBoard(page);
-  const next = page.getByTestId("xv-continue");
   await decide(page, "fnd-id1", "accept", "The bureau report is wrong; a correction is requested.");
   await expect(card(page, "fnd-id1")).toHaveAttribute("data-adjudicated", "true");
-  await expect(next).toHaveAttribute("aria-disabled", "true");
+  await expect(page.getByTestId("xv-banner")).toBeVisible();
   await decide(
     page,
     "fnd-id5",
@@ -1158,15 +1143,12 @@ test("Continue to draft opens only once every blocking discrepancy is decided", 
   await expect(page.getByTestId("xv-banner")).toHaveCount(0);
   await expect(page.getByTestId("xv-area-blocking")).toHaveCount(0);
   await expect(areaCard(page, "identity")).toHaveAttribute("data-status", "decided");
-  await expect(next).not.toHaveAttribute("aria-disabled", "true");
-  await expect(next).toHaveAttribute("href", `/appraisals/${KESTREL}/outputs?view=cam`);
   // The serious discrepancies that do not block stay open.
   await expect(areaCard(page, "obligations").getByTestId("xv-area-severity")).toHaveText(
     "2 serious",
   );
-  await next.click();
-  await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}/outputs\\?view=cam$`));
-  await expect(page.getByTestId("cam-review")).toBeVisible();
+  await page.getByTestId("next-step-link").click();
+  await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}/policy$`));
 });
 
 test("an escalated discrepancy is read-only for the analyst until the Credit Manager decides", async ({
@@ -1669,12 +1651,13 @@ test("a board without discrepancies says so and leaves the draft open", async ({
     boardWith((items) => items.filter((i) => i.finding.outcome !== "fail")),
   );
   await openBoard(page, api);
+  // No discrepancy, but the checks that could not run are said, not hidden.
   await expect(page.getByTestId("xv-summary-line")).toHaveText(
-    "Every source lined up against every other. No discrepancy found for this borrower.",
+    "No discrepancy found, but 4 check(s) could not run: see what would complete them below.",
   );
   // Nothing to adjudicate: the meta line gives the run alone.
   await expect(page.getByTestId("xv-meta-line")).toHaveText(
-    "XR-000021-003 · 18 rules across 9 sources · 09 Oct 2026, 14:00",
+    "Checked 09 Oct 2026, 14:00 · 18 checks across 9 documents",
   );
   await expect(page.getByTestId("xv-banner")).toHaveCount(0);
   const statuses = {
@@ -1686,15 +1669,17 @@ test("a board without discrepancies says so and leaves the draft open", async ({
   for (const [area, status] of Object.entries(statuses)) {
     await expect(areaCard(page, area)).toHaveAttribute("data-status", status);
     await expect(areaCard(page, area).getByTestId("xv-area-open")).toHaveText("0");
-    await expect(areaCard(page, area).getByTestId("xv-area-top")).toHaveText("No discrepancy");
+    // An area with a check that could not run is "not fully checked", never "no discrepancy".
+    await expect(areaCard(page, area).getByTestId("xv-area-top")).toHaveText(
+      status === "incomplete"
+        ? /^Not fully checked: \d+ of \d+ checks could not run$/
+        : "No discrepancy",
+    );
     await showArea(page, area);
     await expect(section(page, area).getByTestId("xv-area-none")).toBeVisible();
   }
   await expect(page.locator("[data-expanded]")).toHaveCount(0);
-  await expect(page.getByTestId("xv-continue")).toHaveAttribute(
-    "href",
-    `/appraisals/${KESTREL}/outputs?view=cam`,
-  );
+  await expect(page.getByTestId("next-step-link")).toHaveAttribute("data-to", "policy");
 });
 
 test("without a run on record the meta line gives the decisions alone", async ({ page }) => {
@@ -1932,7 +1917,9 @@ test("the turnover section opens with every compared pair of figures, coloured b
   const row = (rule: string) => figures.locator(`[data-rule="${rule}"]`);
   await expect(row("TO-01")).toContainText("Outside tolerance");
   await expect(row("TO-01").getByTestId("xv-figure-value").first()).toHaveText("INR 11.80 cr");
-  await expect(row("TO-01").getByTestId("xv-figure-value").first()).toHaveClass(/text-destructive/);
+  await expect(row("TO-01").getByTestId("xv-figure-value").first()).toHaveClass(
+    /text-critical-text/,
+  );
   await expect(row("TO-02")).toContainText("Within tolerance");
   await expect(row("TO-02").getByTestId("xv-figure-value").nth(1)).toHaveClass(/text-positive/);
   await expect(row("TO-03")).toContainText("Not compared");

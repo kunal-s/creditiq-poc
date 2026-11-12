@@ -220,3 +220,19 @@ def test_absent_validity_date_is_no_finding(client, published_data_root):
     rm, case_id = _case(client, published_data_root, [n for n, _ in case_files("complete")], "Kestrel Fabricators Pvt Ltd")
     _, items = _checklist(client, rm, case_id)
     assert items["kyc_promoters"]["status"] == "satisfied"
+
+
+def test_a_monthly_coverage_can_also_ask_for_the_audited_year():
+    """A coverage with audited_year asks for the twelve months before the case date and every
+    month of the latest audited year, so turnover can be compared with the audited accounts."""
+    from datetime import date
+    from types import SimpleNamespace
+
+    from engine.completeness import Evaluator
+    from engine.configstore.schema import CoverageRule
+
+    at = SimpleNamespace(as_of=date(2026, 9, 29))
+    trailing = Evaluator.months_required(at, CoverageRule(kind="monthly_periods", months=12))
+    assert (trailing[0], trailing[-1], len(trailing)) == ((2025, 9), (2026, 8), 12)
+    both = Evaluator.months_required(at, CoverageRule(kind="monthly_periods", months=12, audited_year=True))
+    assert (both[0], both[-1], len(both)) == ((2025, 4), (2026, 8), 17)

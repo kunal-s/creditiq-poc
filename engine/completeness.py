@@ -41,6 +41,7 @@ from .util import (
     fy_end,
     fy_end_of,
     fy_label,
+    month_add,
     month_end,
     months_before,
     parse_date,
@@ -305,6 +306,15 @@ class Evaluator:
             return ItemResult(item, state("in_review", "Awaiting review of extracted values", docs), [])
         return ItemResult(item, state("satisfied", None, docs), [])
 
+    def months_required(self, cov) -> list[tuple[int, int]]:
+        """The calendar months a monthly or account coverage asks for: the complete months before
+        the as_of month and, where the rule says so, every month of the latest audited year."""
+        window = months_before(self.as_of, cov.months)
+        if getattr(cov, "audited_year", False):
+            end = fy_end(self.as_of, 1)
+            window = sorted(set(window) | {month_add(end.year - 1, 4, k) for k in range(12)})
+        return window
+
     def missing_request(self, item: ChecklistItemDef) -> str:
         request = item.request or item.name
         cov = item.coverage
@@ -315,9 +325,9 @@ class Evaluator:
         if cov.kind == "assessment_years":
             return f"{request} for {self._ay_list(self._required_ays(cov.count))}"
         if cov.kind == "monthly_periods":
-            return f"{request} for {ranges_label(months_before(self.as_of, cov.months))}"
+            return f"{request} for {ranges_label(self.months_required(cov))}"
         if cov.kind == "account_months":
-            window = ranges_label(months_before(self.as_of, cov.months))
+            window = ranges_label(self.months_required(cov))
             accounts = self.data.declared_accounts
             if accounts:
                 names = ", ".join(f"{bank} ·{last4}".strip() for bank, last4 in accounts)
@@ -378,7 +388,8 @@ class Evaluator:
         ]
 
     def monthly_periods(self, item: ChecklistItemDef, docs: list[Doc], months: int) -> list[Deficiency]:
-        window = months_before(self.as_of, months)
+        window = self.months_required(item.coverage) if item.coverage else months_before(self.as_of, months)
+        months = len(window)
         have: set[tuple[int, int]] = set()
         for d in docs:
             if any(self.types[t].partner_output for t in d.types if t in self.types):
@@ -416,7 +427,7 @@ class Evaluator:
         return _last4(d.value("account_number")) or _last4(d.row["instance_key"])
 
     def account_months(self, item: ChecklistItemDef, docs: list[Doc], months: int) -> list[Deficiency]:
-        window = months_before(self.as_of, months)
+        window = self.months_required(item.coverage) if item.coverage else months_before(self.as_of, months)
         covered: dict[str, set[tuple[int, int]]] = {}
         seen_bank: dict[str, str] = {}
         for d in docs:

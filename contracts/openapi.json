@@ -5337,6 +5337,18 @@
         "title": "FactValue",
         "type": "object"
       },
+      "Features": {
+        "description": "Features a deployment switches on or off (config/app.yaml `features:`).",
+        "properties": {
+          "integrity_checks": {
+            "default": true,
+            "title": "Integrity Checks",
+            "type": "boolean"
+          }
+        },
+        "title": "Features",
+        "type": "object"
+      },
       "FieldValue": {
         "description": "One extracted value with its evidence and confidence (F-15, F-17).",
         "properties": {
@@ -7382,6 +7394,9 @@
             },
             "title": "Facilities",
             "type": "array"
+          },
+          "features": {
+            "$ref": "#/components/schemas/Features"
           },
           "product_default": {
             "anyOf": [

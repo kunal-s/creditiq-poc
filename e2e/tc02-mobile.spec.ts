@@ -72,7 +72,7 @@ test("TC-02: overview, completeness and documents at 375 px", async ({ page }) =
   const api = new MockApi();
   await signedIn(page, api, RM);
   await page.goto(`/appraisals/${KESTREL}`);
-  await expect(page.getByTestId("journey-verdict")).toBeVisible();
+  await expect(page.getByTestId("case-progress")).toBeVisible();
   // An RM sees only the tabs their role may open.
   await expect(page.locator('a[data-testid="stage-extraction"]')).toHaveCount(0);
   expect(await scrollsSideways(page)).toBe(false);

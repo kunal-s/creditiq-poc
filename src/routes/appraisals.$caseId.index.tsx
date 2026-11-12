@@ -7,7 +7,7 @@ import { reviewItemPath } from "@/components/review/reviewLinks";
 import { CaseScreen } from "@/components/shell/CaseScreen";
 import { t } from "@/config/terminology";
 import { OverviewReadiness } from "@/components/case/checklist/Glance";
-import { caseCreated, useCaseProgress } from "@/domain/progress";
+import { useCaseProgress } from "@/domain/progress";
 import { useReviewQueue } from "@/domain/review";
 import { useCan } from "@/domain/session";
 
@@ -40,10 +40,10 @@ function OverviewTab() {
 function Overview({ c, progress }: { c: CaseDetail; progress: CaseProgress }) {
   return (
     <div className="space-y-4">
-      {/* Once the case is created, where it stands through every step and what to do next. */}
-      {caseCreated(progress) && <CaseProgressCard c={c} />}
-      {/* Whether it can go to credit review, then document readiness (the counts, and every
-          document by section). */}
+      {/* Where the case stands through every step and what to do next, created or not. */}
+      <CaseProgressCard c={c} progress={progress} />
+      {/* Document readiness in detail (whether it can go to credit review, the counts, every
+          document by section), folded into one line under the progress. */}
       <OverviewReadiness caseId={progress.case_id} progress={progress} />
 
       <WaitingForDecision caseId={progress.case_id} />

@@ -15,6 +15,7 @@ import sqlite3
 from pathlib import Path
 
 from . import completeness
+from .config import feature_enabled
 from .configstore import reader
 from .contracts import AssessmentGate, CaseDetail, CaseProgress, Readiness, Stage, StageKey, StageProgress
 from .store import MESSAGE_FILE_NAME
@@ -107,7 +108,9 @@ def compute(conn: sqlite3.Connection, root: Path, case: CaseDetail, *, running_j
         # unreadable or poor page or file (quality), a split or a party flag.
         # A grade C document is accepted yet still waits on its quality item,
         # and a file whose own structure contradicts itself on its integrity item.
-        attention=_open_items(conn, case_id, ("type", "quality", "split", "party", "integrity")),
+        # With the integrity checks switched off (config/app.yaml), their items wait on no one.
+        attention=_open_items(conn, case_id, ("type", "quality", "split", "party")
+                              + (("integrity",) if feature_enabled("integrity_checks") else ())),
     )
     if submitted:
         docs.status = "in_progress" if busy else "needs_attention" if docs.attention else "done"

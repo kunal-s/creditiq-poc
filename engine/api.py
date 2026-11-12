@@ -60,6 +60,7 @@ from . import (
     xv,
 )
 from .config import (
+    feature_enabled,
     find_user_by_id,
     load_app_config,
     load_roles_config,
@@ -255,6 +256,7 @@ def meta(_: dict = Depends(current_user)) -> dict:
         "bank_stages": [{"id": o["id"], "label": o["label"]} for o in option_list("bank_stages")],
         "bank_stage_default": option_default("bank_stages"),
         "case_create_minimum": cfg["case_create_minimum"],
+        "features": {"integrity_checks": feature_enabled("integrity_checks")},
     }
 
 

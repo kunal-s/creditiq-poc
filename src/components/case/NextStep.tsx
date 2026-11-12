@@ -8,7 +8,7 @@ import { useSession } from "@/domain/session";
 
 // The way on from every step (one bar, the same on each): where this step stands, in one line from
 // the engine's progress, and the next step in the case's order. Before the case is created,
-// Document readiness points at creating it instead; after, the Overview leaves the way on to its case
+// Document readiness points at creating it instead; the Overview leaves the way on to its case
 // progress. The last step leads to the Memo Library. It sits
 // at the end of the step's content, so nothing moves when a page loads.
 //
@@ -26,8 +26,8 @@ export function NextStepBar({
 }) {
   const permissions = useSession()?.user.permissions ?? [];
   if (!active || active.key === "comparison") return null;
-  // Once the case is created, the Overview's case progress names the next thing to do itself.
-  if (active.key === "overview" && caseCreated(progress)) return null;
+  // The Overview's case progress names the next thing to do itself.
+  if (active.key === "overview") return null;
   const stage = active.stage ? progress?.stages.find((s) => s.key === active.stage) : undefined;
   const next = nextStepOf(active.key);
   const createFirst = active.key === "completeness" && progress && !caseCreated(progress);

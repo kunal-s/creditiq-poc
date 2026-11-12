@@ -1,23 +1,25 @@
-import { Link } from "@tanstack/react-router";
-import { AlertTriangle, CheckCircle2, CircleDashed, Clock, Info, Loader2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, CircleDashed, Info } from "lucide-react";
 import type { CaseProgress, Readiness } from "@/api/types";
 import { Panel } from "@/components/common/Panel";
 import { t } from "@/config/terminology";
 import { readyForCredit, scoreText, useChecklist, useTaxonomy } from "@/domain/checklist";
-import { readinessWait, type ReadinessWait } from "@/domain/progress";
+import { readinessWait } from "@/domain/progress";
 import { cn } from "@/lib/utils";
 import { DocumentReadiness, DocumentStatusList } from "./Readiness";
 
-// The head of the Overview: one line on whether the case can go to credit review, then document
-// readiness (satisfied of all, and why the rest are not) and, under it, every document by section
-// with its mark and status. White panels: the colour is in the marks and the chips.
+// Document readiness on the Overview, under the case progress: one line (requirements satisfied,
+// and what blocks credit review) that opens on request to the status line, the counts and every
+// document by section, created case or not. While readiness waits on documents or their reading,
+// the case progress says so and there is nothing to fold. White panels: the colour is in the marks
+// and the chips.
 //
-// Test ids: journey-verdict (the status line; data-state ready, not_ready, waiting-documents,
-// waiting-reading, error, empty), journey-readiness (both panels), readiness-panel-readiness and
-// readiness-panel-status, journey-provisional, journey-loading (the skeleton).
+// Test ids: journey-folded (the line; open to show), journey-folded-blocking, journey-verdict (the
+// status line; data-state ready, not_ready, error, empty), journey-readiness (both panels),
+// readiness-panel-readiness and readiness-panel-status, journey-provisional, journey-loading (the
+// skeleton).
 
-/** The Overview's head for a case: the status line, then document readiness once there is
- * something to count. */
+/** Document readiness on the Overview: one line, opened on request, once there is something to
+ * count. */
 export function OverviewReadiness({
   caseId,
   progress,
@@ -36,95 +38,47 @@ export function OverviewReadiness({
   if (r.items.length === 0)
     return <ChecklistNotice state="empty" onRetry={() => void checklist.refetch()} />;
 
-  // Until the documents are in and read, the counts would only say "nothing yet": the status
-  // line says what readiness waits on, and the counts follow once there is something to count.
+  // Until the documents are in and read, the counts would only say "nothing yet": the case
+  // progress says what readiness waits on, and the counts follow once there is something to count.
   const wait = readinessWait(progress, r);
-  // Once the engine says the case is created, the documents are history: the status line and the
-  // counts fold into one line (the case progress above says the same), opened on request.
-  if (progress?.gate?.open && !wait) {
-    return (
-      <details
-        className="group rounded border border-border bg-surface"
-        data-testid="journey-folded"
-      >
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-[12.5px] hover:bg-surface-muted">
-          <span className="font-medium text-foreground">
-            {t("journey.readiness.title")}
-            <span className="ml-2 font-normal text-muted-foreground">
-              {t("journey.foldedCount", {
-                n: r.items.filter((i) => i.status === "satisfied").length,
-                total: r.items.length,
-              })}
-            </span>
-          </span>
-          <span className="text-[12px] font-medium text-primary group-open:hidden">
-            {t("journey.show")}
-          </span>
-        </summary>
-        <div className="space-y-4 border-t border-border p-4">
-          <OverviewStatus r={r} wait={wait} caseId={caseId} />
-          <ReadinessCard r={r} sections={taxonomy.data?.sections} />
-        </div>
-      </details>
-    );
-  }
+  if (wait) return null;
+  // The status line and the counts fold into one line (the case progress above says where the
+  // case stands), opened on request.
+  const blocking = progress?.gate?.open ? 0 : r.blocking_open;
   return (
-    <div className="space-y-4">
-      <OverviewStatus r={r} wait={wait} caseId={caseId} />
-      {!wait && <ReadinessCard r={r} sections={taxonomy.data?.sections} />}
-    </div>
+    <details className="group rounded border border-border bg-surface" data-testid="journey-folded">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-[12.5px] hover:bg-surface-muted">
+        <span className="font-medium text-foreground">
+          {t("journey.readiness.title")}
+          <span className="ml-2 font-normal text-muted-foreground">
+            {t("journey.foldedCount", {
+              n: r.items.filter((i) => i.status === "satisfied").length,
+              total: r.items.length,
+            })}
+          </span>
+          {blocking > 0 && (
+            <span
+              className="ml-1 font-normal text-critical-text"
+              data-testid="journey-folded-blocking"
+            >
+              · {t("journey.foldedBlocking", { n: blocking })}
+            </span>
+          )}
+        </span>
+        <span className="text-[12px] font-medium text-primary group-open:hidden">
+          {t("journey.show")}
+        </span>
+      </summary>
+      <div className="space-y-4 border-t border-border p-4">
+        <OverviewStatus r={r} />
+        <ReadinessCard r={r} sections={taxonomy.data?.sections} />
+      </div>
+    </details>
   );
 }
 
-/** Whether the case can go to credit review, in one line; or, before the documents are in and
- * read, what readiness is waiting on. */
-function OverviewStatus({
-  r,
-  wait,
-  caseId,
-}: {
-  r: Readiness;
-  wait: ReadinessWait;
-  caseId: string;
-}) {
-  // Before the documents are in and read, the score and blocking count would only say "nothing
-  // received yet": say what readiness waits on instead.
-  if (wait) {
-    const text =
-      wait.kind === "documents"
-        ? t("overviewStatus.waitingDocuments")
-        : wait.total > 0
-          ? t("overviewStatus.reading", { done: wait.done, total: wait.total })
-          : t("overviewStatus.readingStarted");
-    const Icon = wait.kind === "documents" ? Clock : Loader2;
-    return (
-      <section
-        className="flex flex-wrap items-start gap-2.5 rounded border border-border bg-surface-muted px-4 py-3 text-[13px] text-foreground"
-        data-testid="journey-verdict"
-        data-state={`waiting-${wait.kind}`}
-        role="status"
-      >
-        <Icon
-          className={cn(
-            "mt-0.5 size-4 shrink-0 text-muted-foreground",
-            wait.kind === "reading" && "animate-spin",
-          )}
-          aria-hidden
-        />
-        <p className="min-w-0 flex-1 font-medium">{text}</p>
-        {wait.kind === "documents" && (
-          <Link
-            to="/appraisals/$caseId/documents"
-            params={{ caseId }}
-            className="text-[12.5px] font-medium text-primary hover:underline"
-            data-testid="verdict-upload"
-          >
-            {t("overviewStatus.uploadDocuments")}
-          </Link>
-        )}
-      </section>
-    );
-  }
+/** Whether the case can go to credit review, in one line. */
+function OverviewStatus({ r }: { r: Readiness }) {
   const ready = readyForCredit(r);
   const score = scoreText(r.score_pct, r.gate_pct);
   const gate = Math.round(r.gate_pct);
@@ -200,29 +154,19 @@ function Line({ className, bar }: { className: string; bar: string }) {
   );
 }
 
-/** The Overview's head while the checklist is read: the status line and the readiness panel at
- * the heights they take once read, so nothing jumps when they arrive. */
+/** Document readiness while the checklist is read: the folded line at the height it takes once
+ * read, so nothing jumps when it arrives. */
 function OverviewSkeleton() {
   return (
-    <div className="space-y-4" aria-busy="true" data-testid="journey-loading">
+    <div
+      className="h-[45px] rounded border border-border bg-surface px-4 py-3"
+      aria-busy="true"
+      data-testid="journey-loading"
+    >
       <p className="sr-only">{t("state.loading")}</p>
-      <div className="h-[46px] rounded border border-border bg-surface px-4 py-3" aria-hidden>
-        <Line className="h-5" bar="h-3 w-2/3" />
+      <div aria-hidden>
+        <Line className="h-5" bar="h-3 w-1/3" />
       </div>
-      <section className="rounded border border-border bg-surface" aria-hidden>
-        <div className="border-b border-border px-4 py-2.5">
-          <Line className="h-[18px]" bar="h-2.5 w-36" />
-        </div>
-        <div className="px-4 py-4">
-          <Pulse className="h-[34px] w-28 rounded bg-muted" />
-          <Pulse className="mt-2.5 h-2 rounded-full bg-muted" />
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <Pulse className="h-[66px] rounded-md bg-muted/60" />
-            <Pulse className="h-[66px] rounded-md bg-muted/60" />
-          </div>
-          <Pulse className="mt-2.5 h-[78px] rounded-md bg-muted/50" />
-        </div>
-      </section>
     </div>
   );
 }

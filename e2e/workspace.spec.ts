@@ -9,6 +9,7 @@ test("Overview lists what is still needed and what waits for a decision", async 
   const api = new MockApi();
   await signedIn(page, api);
   await page.goto(`/appraisals/${KESTREL}`);
+  await page.getByTestId("journey-folded").locator("summary").click();
   const needed = page.getByTestId("readiness-panel-status");
   await expect(needed.locator('[data-item="kyc_directors"]')).toContainText("Missing");
   await expect(needed.locator('[data-item="valuation"]')).toContainText("Missing");
@@ -94,8 +95,8 @@ test("when processing finishes, the rest of the appraisal refreshes", async ({ p
   });
   await signedIn(page, api);
   await page.goto(`/appraisals/${KESTREL}`);
-  // While processing runs the Overview says it is reading; the counts follow when it is done.
-  await expect(page.getByTestId("journey-verdict")).toBeVisible();
+  // While processing runs the Overview shows the case progress; the counts follow when it is done.
+  await expect(page.getByTestId("case-progress")).toBeVisible();
   const before = api.called("GET", `/api/cases/${KESTREL}/checklist`).length;
   await expect.poll(() => calls, { timeout: 15_000 }).toBeGreaterThan(2);
   await expect

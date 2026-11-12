@@ -50,7 +50,7 @@ test("the stage bar leads back to the Overview from every step", async ({ page }
     await expect(page.getByTestId(`stage-${stage}`)).toHaveAttribute("aria-current", "page");
     await overview.click();
     await expect(page).toHaveURL(new RegExp(`/appraisals/${KESTREL}$`));
-    await expect(page.getByTestId("document-status")).toBeVisible();
+    await expect(page.getByTestId("case-progress")).toBeVisible();
   }
 });
 

@@ -9,16 +9,27 @@ import type {
   ReviewKind,
 } from "@/api/types";
 import { t } from "@/config/terminology";
+import { useFeature } from "./features";
 import { useCan, useSession } from "./session";
 
 export function useReviewQueue(options: { caseId?: string; includeDecided?: boolean } = {}) {
   const session = useSession();
   const allowed = session?.user.permissions.includes("review.read") ?? false;
+  // A deployment with the integrity checks switched off (config/app.yaml) lists none of their items.
+  const integrityOn = useFeature("integrity_checks");
   return useQuery({
     queryKey: ["review", options.caseId ?? "all", options.includeDecided ? "all" : "open"],
     queryFn: () => api.reviewQueue(options),
     enabled: allowed,
+    select: (items: ReviewItem[]) =>
+      integrityOn ? items : items.filter((i) => i.kind !== "integrity"),
   });
+}
+
+/** The kinds of review item a deployment shows (the integrity checks only when switched on). */
+export function useReviewKinds(): ReviewKind[] {
+  const integrityOn = useFeature("integrity_checks");
+  return integrityOn ? REVIEW_KINDS : REVIEW_KINDS.filter((k) => k !== "integrity");
 }
 
 export function useDecideReview() {

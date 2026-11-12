@@ -13,7 +13,7 @@ import { t } from "@/config/terminology";
 import { formatInr, stageLabel, useLabels } from "@/domain/cases";
 import { formatDay } from "@/domain/outputs";
 import { readinessBreakdown, readyForCredit, scoreText, useChecklist } from "@/domain/checklist";
-import { caseCreated, readinessWait, useCaseProgress } from "@/domain/progress";
+import { readinessWait, useCaseProgress } from "@/domain/progress";
 import { useCan, useSession } from "@/domain/session";
 import { cn } from "@/lib/utils";
 
@@ -185,7 +185,8 @@ function CaseHeader({ c }: { c: CaseDetail }) {
               {t("caseHeader.blockingGaps", { n: r.blocking_open })}
               <ArrowRight className="ml-0.5 inline h-3 w-3" />
             </Link>
-          ) : caseCreated(progress.data) ? (
+          ) : progress.data?.gate?.open ? (
+            // Only when the engine says the case is created: until then readiness is the news.
             <span
               className="inline-flex items-center gap-1 rounded border border-primary/30 bg-primary/5 px-2 py-1 text-[12px] font-medium text-primary"
               data-testid="header-stage"

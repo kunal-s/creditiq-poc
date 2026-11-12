@@ -151,6 +151,21 @@ test("with nothing blocking, the header names where the created case stands", as
   const api = new MockApi();
   const r = api.checklists.get(KESTREL)!;
   api.checklists.set(KESTREL, { ...r, blocking_open: 0 });
+  // The engine says the case is created.
+  api.on("GET", new RegExp(`^/api/cases/${KESTREL}/progress$`), () => ({
+    json: {
+      ...api.progress(KESTREL),
+      gate: {
+        open: true,
+        can_open: true,
+        open_exceptions: 0,
+        blocking_open: 0,
+        score_pct: 100,
+        gate_pct: 85,
+        blockers: [],
+      },
+    },
+  }));
   await signedIn(page, api);
   await page.goto(`/appraisals/${KESTREL}`);
   await expect(page.getByTestId("header-stage")).toHaveText(/^(In assessment|Memo in draft)$/);

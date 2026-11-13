@@ -187,6 +187,14 @@ rejection_phrasing:
   type_not_recognised: "The document type could not be recognised."
   held: "The document is held for review."
 
+# Features a deployment switches on or off. Off, the screens show nothing of the feature and the
+# counts they show leave it out; what the engine has recorded is kept, so switching it back on
+# shows it all again. Read on each request: a change here needs no restart of the engine.
+features:
+  # File integrity checks (F-07A): the Integrity check column and panel on Files, the detailed
+  # evidence page, the marks in the document viewer, and the integrity review items.
+  integrity_checks: false
+
 # Sessions (F-03.3).
 sessions:
   idle_minutes: 480

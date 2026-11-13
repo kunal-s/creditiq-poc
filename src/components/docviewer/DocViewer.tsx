@@ -24,6 +24,7 @@ import {
   usePageImage,
   useRecheckIntegrity,
 } from "@/domain/documents";
+import { useFeature } from "@/domain/features";
 import { marksOf, stateOf } from "@/domain/integrity";
 import { IntegrityOverlay } from "@/components/documents/IntegrityOverlay";
 import { StateChip } from "@/components/documents/IntegritySummary";
@@ -167,8 +168,10 @@ function ViewerPanel({
     ? doc.classification.types.map(types.name).join(" + ")
     : t("document.unclassified");
   const field = request.field;
-  // F-07A: what the file's integrity checks found, drawn on the page shown.
-  const found = file?.integrity;
+  // F-07A: what the file's integrity checks found, drawn on the page shown (when the deployment has
+  // them switched on, config/app.yaml).
+  const integrityOn = useFeature("integrity_checks");
+  const found = integrityOn ? file?.integrity : undefined;
   const { marks, pagesReplaced } = useMemo(() => marksOf(found ?? []), [found]);
   const [showMarks, setShowMarks] = useState(true);
   const [showFigures, setShowFigures] = useState(false);
@@ -301,101 +304,104 @@ function ViewerPanel({
               </button>
             )}
           </div>
-          {file && stateOf(file) !== "not_applicable" && stateOf(file) !== "not_checked" && (
-            <div
-              className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border pt-2 text-[11.5px]"
-              data-testid="viewer-integrity"
-            >
-              {file && <StateChip file={file} />}
-              <label className="inline-flex cursor-pointer items-center gap-1.5 text-muted-foreground">
-                <input
-                  type="checkbox"
-                  checked={showMarks}
-                  onChange={(e) => setShowMarks(e.target.checked)}
-                  className="h-3.5 w-3.5"
-                  data-testid="viewer-show-marks"
-                />
-                {t("fileIntegrity.overlay.marks")} ({marksHere.length})
-              </label>
-              <label className="inline-flex cursor-pointer items-center gap-1.5 text-muted-foreground">
-                <input
-                  type="checkbox"
-                  checked={showFigures}
-                  onChange={(e) => setShowFigures(e.target.checked)}
-                  className="h-3.5 w-3.5"
-                  data-testid="viewer-show-figures"
-                />
-                {t("fileIntegrity.overlay.figures")}
-              </label>
-              <Link
-                to="/appraisals/$caseId/files/$fileId/integrity"
-                params={{ caseId: request.caseId, fileId: file.id }}
-                onClick={onClose}
-                className="ml-auto inline-flex items-center gap-1 font-medium text-primary hover:underline"
+          {integrityOn &&
+            file &&
+            stateOf(file) !== "not_applicable" &&
+            stateOf(file) !== "not_checked" && (
+              <div
+                className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border pt-2 text-[11.5px]"
+                data-testid="viewer-integrity"
               >
-                <Maximize2 className="h-3 w-3" />
-                {t("fileIntegrity.view.open")}
-              </Link>
-              {recordsOnly.length > 0 && (
-                <p
-                  className="w-full text-[11px] text-destructive"
-                  data-testid="viewer-records-only"
+                {file && <StateChip file={file} />}
+                <label className="inline-flex cursor-pointer items-center gap-1.5 text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={showMarks}
+                    onChange={(e) => setShowMarks(e.target.checked)}
+                    className="h-3.5 w-3.5"
+                    data-testid="viewer-show-marks"
+                  />
+                  {t("fileIntegrity.overlay.marks")} ({marksHere.length})
+                </label>
+                <label className="inline-flex cursor-pointer items-center gap-1.5 text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={showFigures}
+                    onChange={(e) => setShowFigures(e.target.checked)}
+                    className="h-3.5 w-3.5"
+                    data-testid="viewer-show-figures"
+                  />
+                  {t("fileIntegrity.overlay.figures")}
+                </label>
+                <Link
+                  to="/appraisals/$caseId/files/$fileId/integrity"
+                  params={{ caseId: request.caseId, fileId: file.id }}
+                  onClick={onClose}
+                  className="ml-auto inline-flex items-center gap-1 font-medium text-primary hover:underline"
                 >
-                  {t("fileIntegrity.overlay.recordsOnly", {
-                    checks: recordsOnly.map(title).join(", "),
-                  })}
-                </p>
-              )}
-              {metadataOnly.length > 0 && (
-                <p
-                  className="w-full text-[11px] text-flag-foreground"
-                  data-testid="viewer-metadata-only"
-                >
-                  {t("fileIntegrity.overlay.metadataOnly", {
-                    checks: metadataOnly.map(title).join(", "),
-                  })}
-                </p>
-              )}
-              {pending.length > 0 && (
-                <p
-                  className="flex w-full flex-wrap items-center gap-2 text-[11px] text-muted-foreground"
-                  data-testid="viewer-pending"
-                >
-                  {t("fileIntegrity.overlay.pending", { n: pending.length })}
-                  {canRecheck && (
-                    <button
-                      type="button"
-                      onClick={() => recheck.mutate(file.id)}
-                      disabled={recheck.isPending || recheck.isSuccess}
-                      className="inline-flex items-center gap-1 rounded border border-primary/40 px-1.5 py-0.5 font-medium text-primary hover:bg-primary/10 disabled:opacity-60"
-                    >
-                      <RotateCw
-                        className={cn(
-                          "h-3 w-3",
-                          (recheck.isPending || recheck.isSuccess) && "animate-spin",
+                  <Maximize2 className="h-3 w-3" />
+                  {t("fileIntegrity.view.open")}
+                </Link>
+                {recordsOnly.length > 0 && (
+                  <p
+                    className="w-full text-[11px] text-destructive"
+                    data-testid="viewer-records-only"
+                  >
+                    {t("fileIntegrity.overlay.recordsOnly", {
+                      checks: recordsOnly.map(title).join(", "),
+                    })}
+                  </p>
+                )}
+                {metadataOnly.length > 0 && (
+                  <p
+                    className="w-full text-[11px] text-flag-foreground"
+                    data-testid="viewer-metadata-only"
+                  >
+                    {t("fileIntegrity.overlay.metadataOnly", {
+                      checks: metadataOnly.map(title).join(", "),
+                    })}
+                  </p>
+                )}
+                {pending.length > 0 && (
+                  <p
+                    className="flex w-full flex-wrap items-center gap-2 text-[11px] text-muted-foreground"
+                    data-testid="viewer-pending"
+                  >
+                    {t("fileIntegrity.overlay.pending", { n: pending.length })}
+                    {canRecheck && (
+                      <button
+                        type="button"
+                        onClick={() => recheck.mutate(file.id)}
+                        disabled={recheck.isPending || recheck.isSuccess}
+                        className="inline-flex items-center gap-1 rounded border border-primary/40 px-1.5 py-0.5 font-medium text-primary hover:bg-primary/10 disabled:opacity-60"
+                      >
+                        <RotateCw
+                          className={cn(
+                            "h-3 w-3",
+                            (recheck.isPending || recheck.isSuccess) && "animate-spin",
+                          )}
+                        />
+                        {t(
+                          recheck.isPending || recheck.isSuccess
+                            ? "fileIntegrity.rechecking"
+                            : "fileIntegrity.summary.runRemaining",
                         )}
-                      />
-                      {t(
-                        recheck.isPending || recheck.isSuccess
-                          ? "fileIntegrity.rechecking"
-                          : "fileIntegrity.summary.runRemaining",
-                      )}
-                    </button>
-                  )}
-                </p>
-              )}
-              {pagesReplaced.has(page) && (
-                <p className="w-full text-[11px] text-flag-foreground">
-                  {t("fileIntegrity.view.pageReplaced")}
-                </p>
-              )}
-              {showFigures && figures.data && figures.data.length === 0 && (
-                <p className="w-full text-[11px] text-muted-foreground">
-                  {t("fileIntegrity.overlay.noFigures")}
-                </p>
-              )}
-            </div>
-          )}
+                      </button>
+                    )}
+                  </p>
+                )}
+                {pagesReplaced.has(page) && (
+                  <p className="w-full text-[11px] text-flag-foreground">
+                    {t("fileIntegrity.view.pageReplaced")}
+                  </p>
+                )}
+                {showFigures && figures.data && figures.data.length === 0 && (
+                  <p className="w-full text-[11px] text-muted-foreground">
+                    {t("fileIntegrity.overlay.noFigures")}
+                  </p>
+                )}
+              </div>
+            )}
         </div>
 
         <div className="min-h-0 flex-1 overflow-auto bg-surface-muted px-4 py-4">

@@ -39,7 +39,10 @@ export function DocumentActions({
 
   const typeItem = items.find((i) => i.kind === "type");
   const others = items.filter((i) => i.kind !== "type");
-  const candidates = (doc.classification?.candidates ?? []).slice(0, MAX_CANDIDATES);
+  // A type that matched nothing of the document (0%) is no suggestion: only the others are offered.
+  const candidates = (doc.classification?.candidates ?? [])
+    .filter((c) => Math.round(c.confidence * 100) > 0)
+    .slice(0, MAX_CANDIDATES);
   const assign = (item: ReviewItem, typeId: string) =>
     decide.mutate(
       { id: item.id, body: { decision: "assign", value: typeId, reason: null } },
@@ -55,7 +58,13 @@ export function DocumentActions({
     <span className="flex flex-wrap items-center gap-1" data-testid="document-actions">
       {typeItem && (
         <>
-          <span className="text-[11px] text-muted-foreground">{t("documents.assignAs")}</span>
+          {candidates.length > 0 ? (
+            <span className="text-[11px] text-muted-foreground">{t("documents.assignAs")}</span>
+          ) : (
+            <span className="text-[11px] text-muted-foreground" data-testid="none-close">
+              {t("documents.noneClose")}
+            </span>
+          )}
           {candidates.map((c) => (
             <button
               key={c.type_id}

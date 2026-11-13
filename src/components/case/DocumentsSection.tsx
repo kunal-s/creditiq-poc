@@ -19,6 +19,7 @@ import {
   useUpload,
   type FileGroup,
 } from "@/domain/documents";
+import { useFeature } from "@/domain/features";
 import { integrityNeedsPerson } from "@/domain/integrity";
 import { errorKind } from "@/domain/errors";
 import { reviewTarget, useReviewQueue } from "@/domain/review";
@@ -102,8 +103,13 @@ function Register({
   documents: LogicalDocument[];
   context: RegisterContext;
 }) {
+  const integrityOn = useFeature("integrity_checks");
   const groups = partitionTree(buildFileTree(files, documents), (f) =>
-    fileGroup(f, (d) => needsAttention(d, context), integrityNeedsPerson),
+    fileGroup(
+      f,
+      (d) => needsAttention(d, context),
+      integrityOn ? integrityNeedsPerson : () => false,
+    ),
   );
   const n = {
     attention: countFiles(groups.attention),

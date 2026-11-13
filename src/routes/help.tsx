@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { t } from "@/config/terminology";
+import { useFeature } from "@/domain/features";
 
 export const Route = createFileRoute("/help")({
   head: () => ({
@@ -12,8 +13,11 @@ export const Route = createFileRoute("/help")({
 const STEPS = ["documents", "extraction", "completeness", "crossVerification", "policy", "outputs"];
 const STATUSES = ["not_started", "in_progress", "needs_attention", "done"];
 const FILE_LABELS = ["integrity", "integrityView", "track", "notIdentified", "different"];
+/** The labels about the integrity checks, left out where the deployment has them switched off. */
+const INTEGRITY_LABELS = new Set(["integrity", "integrityView", "different"]);
 
 function Help() {
+  const integrityOn = useFeature("integrity_checks");
   return (
     <div>
       <PageHeader
@@ -47,7 +51,7 @@ function Help() {
             {t("page.help.fileLabelsTitle")}
           </h2>
           <dl className="mt-3 space-y-3">
-            {FILE_LABELS.map((key) => (
+            {FILE_LABELS.filter((key) => integrityOn || !INTEGRITY_LABELS.has(key)).map((key) => (
               <div key={key} data-testid={`help-file-label-${key}`}>
                 <dt className="text-[13.5px] font-medium">
                   {t(`page.help.fileLabel.${key}.title`)}

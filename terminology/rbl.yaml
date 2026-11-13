@@ -1471,6 +1471,7 @@ upload:
 
 journey:
   foldedCount: "{n} of {total} requirements satisfied"
+  foldedBlocking: "{n} block credit review"
   show: Show
   # The upload on a required document's row in the files received, and what became of the file.
   upload: Upload
@@ -1576,6 +1577,7 @@ documents:
   readingAgain: Reading again…
   checkValues: Check the extracted values
   assignAs: "Assign as:"
+  noneClose: No listed type is close
   otherType: Other type…
   assigned: "Assigned as {type}"
   resolve: "Resolve: {kind}"
@@ -2255,6 +2257,12 @@ nextStep:
 caseProgress:
   title: Case progress
   documents: "{n} of {total} requirements satisfied"
+  blocking: "{n} block credit review"
+  waitingDocuments: Waiting for documents
+  reading: "Reading the documents ({done} of {total})"
+  readingStarted: Reading the documents
+  readyToCreate: Every requirement met; the case can be created
+  afterCreate: After the case is created
   xvOpen: "{n} discrepancy(ies) to decide"
   xvNotRun: "No discrepancy; {n} check(s) could not run"
   xvClear: No discrepancy
@@ -2270,6 +2278,8 @@ caseProgress:
     open: needs you
     waiting: waiting
   next:
+    upload: "Next: upload the documents"
+    create: "Next: create the case"
     completeness: "Next: complete the documents"
     crossVerification: "Next: review Cross-verification"
     policy: "Next: review the deviations"

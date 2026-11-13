@@ -22,8 +22,9 @@ test("TC-11: complete file is ready for credit", async ({ page }) => {
   await expect(page.getByTestId("gate").first()).toContainText("Met");
   await expect(page.getByTestId("checklist-filter-not_satisfied")).toHaveText("Not satisfied (0)");
 
-  // The verdict is on the Overview.
+  // The verdict is on the Overview, in its document readiness.
   await page.goto(`/appraisals/${SAFFRON}`);
+  await page.getByTestId("journey-folded").locator("summary").click();
   await expect(page.getByTestId("journey-verdict")).toHaveAttribute("data-state", "ready");
   await expect(page.getByTestId("journey-readiness")).toContainText(
     "Every requirement is satisfied.",

@@ -10,7 +10,7 @@ import { reviewItemPath } from "@/components/review/reviewLinks";
 import { t } from "@/config/terminology";
 import { formatDate, stageLabel, useCases } from "@/domain/cases";
 import { formatValue, useFields } from "@/domain/extraction";
-import { REVIEW_KINDS, decisionsFor, reviewTarget, useReviewQueue } from "@/domain/review";
+import { decisionsFor, reviewTarget, useReviewKinds, useReviewQueue } from "@/domain/review";
 import { useSession } from "@/domain/session";
 import { cn } from "@/lib/utils";
 import { StackTable } from "@/components/common/StackTable";
@@ -23,6 +23,7 @@ export const Route = createFileRoute("/review")({
 });
 
 function ExceptionQueue() {
+  const kinds = useReviewKinds();
   const session = useSession();
   const canDecide = session?.user.permissions.includes("review.decide") ?? false;
   // A discrepancy escalated from the cross-verification board is decided by the Credit Manager.
@@ -100,7 +101,7 @@ function ExceptionQueue() {
                     className="h-8 rounded border border-border bg-surface px-2 text-[12px] sm:hidden"
                     aria-label={t("exceptions.kindFilter")}
                   >
-                    {(["all", ...REVIEW_KINDS] as const).map((k) => (
+                    {(["all", ...kinds] as const).map((k) => (
                       <option key={k} value={k}>
                         {k === "all" ? t("exceptions.allKinds") : t(`reviewKind.${k}`)}
                       </option>
@@ -111,7 +112,7 @@ function ExceptionQueue() {
                     role="group"
                     aria-label={t("exceptions.kindFilter")}
                   >
-                    {(["all", ...REVIEW_KINDS] as const).map((k) => (
+                    {(["all", ...kinds] as const).map((k) => (
                       <button
                         key={k}
                         type="button"

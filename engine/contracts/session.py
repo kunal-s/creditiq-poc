@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class SessionUser(BaseModel):
@@ -46,6 +46,13 @@ class DisplayUnit(BaseModel):
     """Written after a figure in a sentence: " cr"."""
 
 
+class Features(BaseModel):
+    """Features a deployment switches on or off (config/app.yaml `features:`)."""
+
+    integrity_checks: bool = True
+    """File integrity checks (F-07A) on screen."""
+
+
 class Meta(BaseModel):
     """Choice lists the screens need, from config/app.yaml."""
 
@@ -60,3 +67,4 @@ class Meta(BaseModel):
     bank_stage_default: str | None = None
     """The stage a new case starts at (T2.1)."""
     case_create_minimum: list[str]
+    features: Features = Field(default_factory=Features)

@@ -16,7 +16,8 @@ import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .config import branch_for_label, find_user_by_id, load_app_config, option_default, option_ids
+from .config import (branch_for_label, feature_enabled, find_user_by_id, load_app_config, option_default,
+                     option_ids)
 from .contracts import CaseCreate, CaseDetail, CaseSummary, HeaderField
 from .db import log_decision, transaction
 from .names import normalise_name, similarity
@@ -334,8 +335,10 @@ def delete_case(conn: sqlite3.Connection, case_id: str, *, actor: str, reason: s
 
 
 def _open_reviews(conn: sqlite3.Connection, case_id: str) -> int:
+    # With the integrity checks switched off (config/app.yaml), their items are not counted.
+    skip = "" if feature_enabled("integrity_checks") else " AND kind <> 'integrity'"
     return conn.execute(
-        "SELECT COUNT(*) FROM review_items WHERE case_id = ? AND status = 'open'", (case_id,)
+        "SELECT COUNT(*) FROM review_items WHERE case_id = ? AND status = 'open'" + skip, (case_id,)
     ).fetchone()[0]
 
 
@@ -346,15 +349,18 @@ _ALTERED = ("needs_review_priority", "high_risk_indicators")
 
 
 def _files_attention(conn: sqlite3.Connection, case_id: str) -> tuple[int, int]:
-    """Files of the case that need a person, and of those, files whose checks found signs of an edit."""
+    """Files of the case that need a person, and of those, files whose checks found signs of an edit.
+    With the integrity checks switched off (config/app.yaml), what they found counts for neither."""
+    integrity = feature_enabled("integrity_checks")
     rows = conn.execute(
         """SELECT f.id, f.integrity_recommendation AS rec,
                   f.status IN ('exception', 'rejected')
-                  OR f.integrity_recommendation IN ('needs_review', 'needs_review_priority', 'high_risk_indicators')
+                  OR (? AND f.integrity_recommendation IN ('needs_review', 'needs_review_priority', 'high_risk_indicators'))
                   OR EXISTS (SELECT 1 FROM documents d WHERE d.file_id = f.id
                              AND d.status IN ('unclassified', 'in_exception', 'in_review')) AS attention
-           FROM files f WHERE f.case_id = ?""", (case_id,)).fetchall()
-    return sum(1 for r in rows if r["attention"]), sum(1 for r in rows if r["rec"] in _ALTERED)
+           FROM files f WHERE f.case_id = ?""", (1 if integrity else 0, case_id)).fetchall()
+    altered = sum(1 for r in rows if r["rec"] in _ALTERED) if integrity else 0
+    return sum(1 for r in rows if r["attention"]), altered
 
 
 def _summary_fields(conn: sqlite3.Connection, row: sqlite3.Row) -> dict:

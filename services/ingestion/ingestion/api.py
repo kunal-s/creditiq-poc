@@ -17,6 +17,7 @@ from . import CONTRACT_VERSION, ENGINE_VERSION
 from .config.loader import ConfigError, ConfigStore, load_dir
 from .config.models import IngestionConfig
 from .contracts import IngestRequest
+from .llm.calllog import call_context
 from .llm.openai import OpenAIProvider
 from .llm.recorder import ModelClient
 from .pipeline import Ingestor
@@ -121,7 +122,10 @@ def create_app(settings: Settings | None = None, store: Store | None = None) -> 
             raise HTTPException(409, "no model is configured")
         model = ModelClient(OpenAIProvider(cfg.llm, os.environ.get(cfg.llm.api_key_env)), st.model_mode, db)
         try:
-            return txn_stage.classify(cfg, model, body).model_dump(mode="json")
+            # The request names no case (by design: no case, borrower or account leaves the engine), so
+            # these calls are logged without one.
+            with call_context(case_ref=None, run_id=None):
+                return txn_stage.classify(cfg, model, body).model_dump(mode="json")
         except ModelError as e:
             raise HTTPException(502, detail={"code": e.code, "message": str(e)}) from e
 

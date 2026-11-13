@@ -9,6 +9,7 @@ import time
 import httpx
 
 from ..config.models import LlmConfig
+from .calllog import CallLog, Stopwatch
 from .provider import ModelError, ModelRequest, NativeCall
 
 
@@ -30,20 +31,32 @@ class OpenAIProvider:
         }
         return NativeCall(body, self._send, self._parse)
 
-    def _send(self, body: dict) -> dict:
+    def _send(self, body: dict, report: CallLog | None = None) -> dict:
+        """Send the body, retrying as configured; every attempt is reported to the call log (its status,
+        rate-limit headers, latency and, when it answered, its token usage)."""
         if not self.api_key:
             raise ModelError("not_configured", f"{self.cfg.api_key_env} is not set")
         last = ""
         for attempt in range(self.cfg.max_retries + 1):
+            watch = Stopwatch()
             try:
                 r = httpx.post(self.cfg.base_url.rstrip("/") + "/chat/completions", json=body, timeout=self.cfg.timeout_s,
                                headers={"Authorization": f"Bearer {self.api_key}"})
             except httpx.HTTPError as e:
                 last = str(e)
+                if report:
+                    report.attempt(at=watch.at, latency_ms=watch.ms(), ok=False, error_code=type(e).__name__, message=last)
             else:
                 if r.status_code < 400:
-                    return r.json()
+                    answer = r.json()
+                    if report:
+                        report.attempt(at=watch.at, latency_ms=watch.ms(), ok=True, http_status=r.status_code,
+                                       headers=r.headers, response=answer)
+                    return answer
                 last = f"{r.status_code}: {r.text[:300]}"
+                if report:
+                    report.attempt(at=watch.at, latency_ms=watch.ms(), ok=False, http_status=r.status_code,
+                                   headers=r.headers, error_code="http", message=last)
                 if r.status_code not in (408, 409, 429, 500, 502, 503, 504):
                     break
             time.sleep(min(2 ** attempt, 8))
@@ -75,5 +88,13 @@ class FixtureProvider(OpenAIProvider):
 
     def build(self, req: ModelRequest) -> NativeCall:
         call = super().build(req)
-        call.send = lambda body: {"choices": [{"message": {"content": json.dumps(self.answerer(req))}}]}
+
+        def send(body: dict, report: CallLog | None = None) -> dict:
+            watch = Stopwatch()
+            answer = {"choices": [{"message": {"content": json.dumps(self.answerer(req))}}]}
+            if report:
+                report.attempt(at=watch.at, latency_ms=watch.ms(), ok=True, response=answer)
+            return answer
+
+        call.send = send
         return call

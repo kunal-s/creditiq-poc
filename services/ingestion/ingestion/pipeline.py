@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from . import CONTRACT_VERSION, ENGINE_VERSION
 from .config.models import IngestionConfig
 from .contracts import FileResult, FileSpec, IngestRequest, IngestResult
+from .llm.calllog import call_context
 from .llm.recorder import ModelClient
 from .pageindex import Page
 from .readers.ocr import OcrEngine
@@ -103,7 +104,9 @@ class Ingestor:
         # a file that cannot be read is exactly one worth saying that about.
         carry: dict = {}
         try:
-            res = self._run(case_ref, spec, data, run_id, tr, base, carry)
+            # Every model call of this file's run is logged against its case and run (llm/calllog.py).
+            with call_context(case_ref=case_ref, run_id=run_id):
+                res = self._run(case_ref, spec, data, run_id, tr, base, carry)
         except Exception as e:  # a stage crashed: say which, never return a half answer as if it were whole
             res = FileResult(**base, status="failed", run_id=run_id, error={"stage": stage if tr.seq == 0 else tr.entries[-1]["stage"] + "+1", "type": type(e).__name__, "message": str(e)[:300]},
                              trace=tr.entries, **carry)

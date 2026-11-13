@@ -21,4 +21,4 @@ def build_model(llm: LlmConfig, role: str, *, store: Store, mode: Mode, now: Cal
     if not key and mode != "replay":
         raise RuntimeError(f"{llm.api_key_env} is not set; it is required to {mode} model calls")
     provider = OpenAIProvider(base_url=llm.base_url, api_key=key or "replay-only")
-    return RecordingModel(OpenAIChatModel(name, provider=provider), llm=llm, store=store, mode=mode, now=now)
+    return RecordingModel(OpenAIChatModel(name, provider=provider), llm=llm, store=store, mode=mode, now=now, role=role)

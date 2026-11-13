@@ -62,7 +62,28 @@ MIGRATIONS = [
     );
     """,
     "ALTER TABLE messages ADD COLUMN payload TEXT;",
+    # the model call log (copilot/calllog.py): one row per model request and per replay, with tokens,
+    # latency and outcome. Append-only. Never the prompt or the answer.
+    """
+    CREATE TABLE model_log (
+      id TEXT PRIMARY KEY, at TEXT NOT NULL, service TEXT NOT NULL, task TEXT, provider TEXT, model TEXT, mode TEXT,
+      source TEXT NOT NULL, case_ref TEXT, run_id TEXT, request_key TEXT, attempt INTEGER, status TEXT NOT NULL,
+      error_code TEXT, http_status INTEGER, latency_ms REAL, input_tokens INTEGER, output_tokens INTEGER,
+      total_tokens INTEGER, cached_tokens INTEGER, ratelimit_remaining_tokens INTEGER,
+      ratelimit_remaining_requests INTEGER, retry_after_s REAL, message TEXT
+    );
+    CREATE INDEX model_log_at ON model_log(at);
+    CREATE INDEX model_log_status ON model_log(status);
+    CREATE TRIGGER model_log_no_update BEFORE UPDATE ON model_log BEGIN SELECT RAISE(ABORT, 'model_log is append-only'); END;
+    CREATE TRIGGER model_log_no_delete BEFORE DELETE ON model_log BEGIN SELECT RAISE(ABORT, 'model_log is append-only'); END;
+    """,
 ]
+
+#: The model call log's columns, in table order (copilot/calllog.py builds the rows).
+MODEL_LOG_COLUMNS = ("id", "at", "service", "task", "provider", "model", "mode", "source", "case_ref", "run_id",
+                     "request_key", "attempt", "status", "error_code", "http_status", "latency_ms", "input_tokens",
+                     "output_tokens", "total_tokens", "cached_tokens", "ratelimit_remaining_tokens",
+                     "ratelimit_remaining_requests", "retry_after_s", "message")
 
 
 @dataclass
@@ -180,6 +201,17 @@ class Store:
                 f"INSERT OR {'REPLACE' if replace else 'IGNORE'} INTO llm_calls(request_key,model,recorded_at,request,response) VALUES (?,?,?,?,?)",
                 (key, model, at, request, response),
             )
+
+    # the model call log (append-only)
+    def put_model_log(self, row: dict) -> None:
+        with self._conn() as c:
+            c.execute(f"INSERT INTO model_log ({','.join(MODEL_LOG_COLUMNS)}) VALUES ({','.join('?' * len(MODEL_LOG_COLUMNS))})",
+                      tuple(row.get(k) for k in MODEL_LOG_COLUMNS))
+
+    def model_log(self) -> list[dict]:
+        with self._conn() as c:
+            rows = c.execute(f"SELECT {','.join(MODEL_LOG_COLUMNS)} FROM model_log ORDER BY at, rowid").fetchall()
+        return [dict(zip(MODEL_LOG_COLUMNS, tuple(r))) for r in rows]
 
     # trace
     def trace(self, *, at: str, session_id: str, turn_id: str, user_id: str, event: str, detail: dict) -> None:

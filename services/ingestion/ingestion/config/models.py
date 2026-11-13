@@ -544,6 +544,21 @@ class SiblingsConfig(Strict):
     """Key fields (required, or named in the type's identity) that must be found for the part to count."""
 
 
+class RetryConfig(Strict):
+    """How a failed model call is retried, by the kind of failure (llm/errors.py). Operational waits,
+    not decision rules (CLAUDE.md rule 5 is about rules): the published version holds them."""
+
+    server_attempts: int = Field(3, ge=1)            # total attempts for server_unavailable / timeout
+    server_backoff_s: list[float] = Field(default_factory=lambda: [2.0, 4.0], min_length=1)
+    """Waits between those attempts, in order (the last repeats); never a wait after the last attempt."""
+    backoff_jitter: float = Field(0.2, ge=0, lt=1)  # each wait is moved by up to this share, either way
+    rate_limit_attempts: int = Field(3, ge=1)
+    rate_limit_wait_s: float = Field(60, gt=0)       # when a per-minute limit names no wait
+    max_wait_s: float = Field(90, gt=0)              # a longer wait asked for is not waited: the call fails
+    breaker_failures: int = Field(5, ge=1)           # server failures in a row, across calls, that open the breaker
+    breaker_cooldown_s: float = Field(120, gt=0)     # while open, calls fail at once; then one trial call
+
+
 class LlmConfig(Strict):
     """The model layer (FRD AD-5a). Prompt text and sampling settings are part of the published version."""
 
@@ -552,7 +567,9 @@ class LlmConfig(Strict):
     base_url: str = "https://api.openai.com/v1"
     api_key_env: str = "OPENAI_API_KEY"
     timeout_s: float = 120
-    max_retries: int = 2
+    max_retries: int | None = None
+    """Superseded by `retry`; still read from versions published before it (server_attempts = max_retries + 1)."""
+    retry: RetryConfig | None = None
     classify_chars: int = 6000
     window_chars: int = 12000
     temperature: float | None = None
@@ -562,6 +579,13 @@ class LlmConfig(Strict):
     prompts: dict[str, Prompt]
     transactions: TransactionsLlm = Field(default_factory=TransactionsLlm)
     siblings: SiblingsConfig = Field(default_factory=SiblingsConfig)
+
+    @model_validator(mode="after")
+    def _retry(self) -> "LlmConfig":
+        """A version published before the `retry` block had `max_retries` (retries after the first attempt)."""
+        if self.retry is None:
+            self.retry = RetryConfig(**({"server_attempts": self.max_retries + 1} if self.max_retries is not None else {}))
+        return self
 
 
 # --- confidence.yaml, decision.yaml ------------------------------------------------------------

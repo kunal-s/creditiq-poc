@@ -38,6 +38,7 @@ source_modules =
     engine.ingest_client
     engine.jobs
     engine.model_log
+    engine.model_retry
     engine.keys
     engine.names
     engine.outbox

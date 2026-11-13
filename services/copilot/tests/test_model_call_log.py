@@ -15,6 +15,7 @@ from pydantic_ai.usage import RequestUsage
 
 from copilot import calllog
 from copilot.config import load_dir
+from copilot.model_errors import ModelUnavailable
 from copilot.recording import RecordingModel, ReplayMiss, sampling_settings
 from copilot.store import Store
 
@@ -51,17 +52,18 @@ async def test_a_live_request_gives_one_ok_row_with_tokens():
 
 async def test_a_model_http_error_is_logged_and_raised():
     def boom(messages, info):
-        raise ModelHTTPError(429, "gpt-test", body={"error": {"message": "Rate limit, key sk-live-0123456789abc"}},
+        raise ModelHTTPError(400, "gpt-test", body={"error": {"message": "Bad input, key sk-live-0123456789abc"}},
                              headers={"retry-after": "7", "x-ratelimit-remaining-requests": "0"},
-                             provider_error_code="rate_limit_exceeded")
+                             provider_error_code="invalid_request_error")
 
     store = Store(":memory:")
-    with pytest.raises(ModelHTTPError):
+    with pytest.raises(ModelUnavailable) as e:
         await _agent(_model(store, "live", boom)).run("why?")
+    assert isinstance(e.value.__cause__, ModelHTTPError) and e.value.kind == "bad_request"
     [row] = store.model_log()
-    assert (row["status"], row["error_code"], row["http_status"]) == ("error", "rate_limit_exceeded", 429)
+    assert (row["status"], row["error_code"], row["http_status"], row["kind"]) == ("error", "invalid_request_error", 400, "bad_request")
     assert row["retry_after_s"] == 7.0 and row["ratelimit_remaining_requests"] == 0
-    assert "Rate limit" in row["message"] and "sk-live" not in row["message"]
+    assert "Bad input" in row["message"] and "sk-live" not in row["message"]
 
 
 async def test_replay_hits_and_misses_are_logged_with_no_tokens_and_recordings_are_unchanged():

@@ -25,7 +25,7 @@ LOGGER = "creditiq.model"
 COLUMNS = ("id", "at", "service", "task", "provider", "model", "mode", "source", "case_ref", "run_id", "request_key",
            "attempt", "status", "error_code", "http_status", "latency_ms", "input_tokens", "output_tokens",
            "total_tokens", "cached_tokens", "ratelimit_remaining_tokens", "ratelimit_remaining_requests",
-           "retry_after_s", "message")
+           "retry_after_s", "message", "kind")
 
 log = logging.getLogger(LOGGER)
 _context: ContextVar[dict] = ContextVar("creditiq_model_call_context", default={})
@@ -145,16 +145,20 @@ class CallLog:
     def replay(self, *, hit: bool) -> None:
         write(self.store, self._row(at=now_iso(), source="replay_hit" if hit else "replay_miss", attempt=1,
                                     status="ok" if hit else "error", error_code=None if hit else "replay_miss",
-                                    latency_ms=0))
+                                    kind=None if hit else "replay_miss", latency_ms=0))
 
     def attempt(self, *, at: str, latency_ms: float, ok: bool, http_status: int | None = None, headers: Any = None,
-                response: Any = None, error_code: str | None = None, message: str | None = None) -> None:
-        """One HTTP attempt, as the provider saw it."""
+                response: Any = None, error_code: str | None = None, message: str | None = None,
+                kind: str | None = None, retry_after_s: float | None = None) -> None:
+        """One HTTP attempt, as the provider saw it: its kind of failure and, when it is retried, the wait."""
         self.attempts += 1
+        fields = header_fields(headers)
+        if retry_after_s is not None:
+            fields["retry_after_s"] = round(retry_after_s, 3)
         row = self._row(at=at, source="live", attempt=self.attempts, status="ok" if ok else "error",
-                        error_code=None if ok else error_code, http_status=http_status,
-                        latency_ms=round(latency_ms, 1), message=None if ok else redact(message),
-                        **header_fields(headers), **(usage_fields(response) if ok else {}))
+                        error_code=None if ok else error_code, kind=None if ok else (kind or error_code),
+                        http_status=http_status, latency_ms=round(latency_ms, 1), message=None if ok else redact(message),
+                        **fields, **(usage_fields(response) if ok else {}))
         if ok:
             self._flush()
             self._held = row
@@ -164,13 +168,14 @@ class CallLog:
     def done(self, error_code: str | None = None, message: str | None = None) -> None:
         """The call is over: the held attempt is written, marked failed when its answer could not be used."""
         if self._held is not None and error_code:
-            self._held.update(status="error", error_code=error_code, message=redact(message))
+            self._held.update(status="error", error_code=error_code, kind=error_code, message=redact(message))
         self._flush()
 
-    def failed_before_sending(self, error_code: str, message: str) -> None:
-        """The call could not be sent at all (no key)."""
-        write(self.store, self._row(at=now_iso(), source="live", attempt=1, status="error", error_code=error_code,
-                                    latency_ms=0, message=redact(message)))
+    def failed_before_sending(self, error_code: str, message: str, kind: str | None = None) -> None:
+        """The call could not be sent at all (no key, or the breaker is open)."""
+        self.attempts += 1
+        write(self.store, self._row(at=now_iso(), source="live", attempt=self.attempts, status="error",
+                                    error_code=error_code, kind=kind or error_code, latency_ms=0, message=redact(message)))
 
     def _flush(self) -> None:
         if self._held is not None:

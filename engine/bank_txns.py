@@ -153,6 +153,8 @@ def run_model_pass(conn: sqlite3.Connection, root: Path, case: CaseDetail, clien
                 a = answers.get(f"{direction}:{ckey}")
                 if a is None or a["category"] not in valid or a["confidence"] not in ("high", "medium", "low"):
                     continue
+                if str(a.get("reason") or "").startswith("model_unavailable"):
+                    continue    # the model could not be reached for it: not yet classified, never "unknown"
                 conn.execute(
                     """INSERT INTO txn_model_labels (case_id, cluster_key, direction, config_version, category, confidence,
                        reason, model, at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -163,7 +165,10 @@ def run_model_pass(conn: sqlite3.Connection, root: Path, case: CaseDetail, clien
                      str(response.get("model") or ""), now_iso()),
                 )
                 result["answered"] += 1
+        failed = int(response.get("failed_batches") or 0)
         _set_model_error(conn, case.id, None if result["answered"] == len(items) else
+                         (f"the model could not be reached for {failed} batch(es); it answered "
+                          f"{result['answered']} of {len(items)} narrations") if failed else
                          f"the model answered {result['answered']} of {len(items)} narrations")
     except (IngestError, KeyError, TypeError, ValueError) as e:
         result["error"] = f"{type(e).__name__}: {e}"[:300]

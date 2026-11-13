@@ -77,13 +77,15 @@ MIGRATIONS = [
     CREATE TRIGGER model_log_no_update BEFORE UPDATE ON model_log BEGIN SELECT RAISE(ABORT, 'model_log is append-only'); END;
     CREATE TRIGGER model_log_no_delete BEFORE DELETE ON model_log BEGIN SELECT RAISE(ABORT, 'model_log is append-only'); END;
     """,
+    # what kind of failure each model call log row is (copilot/model_errors.py)
+    "ALTER TABLE model_log ADD COLUMN kind TEXT;",
 ]
 
 #: The model call log's columns, in table order (copilot/calllog.py builds the rows).
 MODEL_LOG_COLUMNS = ("id", "at", "service", "task", "provider", "model", "mode", "source", "case_ref", "run_id",
                      "request_key", "attempt", "status", "error_code", "http_status", "latency_ms", "input_tokens",
                      "output_tokens", "total_tokens", "cached_tokens", "ratelimit_remaining_tokens",
-                     "ratelimit_remaining_requests", "retry_after_s", "message")
+                     "ratelimit_remaining_requests", "retry_after_s", "message", "kind")
 
 
 @dataclass

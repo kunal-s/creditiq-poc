@@ -28,6 +28,7 @@ from .runner import handle_turn
 from .settings import Settings, utc_now
 from .store import Session, Store, pending_action_live
 from .tools import ToolCaller
+from .model_errors import ModelUnavailable
 
 log = logging.getLogger("copilot")
 
@@ -126,6 +127,13 @@ def create_app(
                 except ReplayMiss as e:
                     log.warning("%s", e)
                     yield _sse("error", {"code": "model_unavailable"})
+                    return
+                except ModelUnavailable as e:
+                    # The model could not answer after its retries: say so in the configured words for the kind.
+                    log.warning("model unavailable (%s)", e.kind)
+                    words = cfg.runtime.messages.model_errors
+                    yield _sse("error", {"code": "model_unavailable", "kind": e.kind,
+                                         "message": words.get(e.kind) or words.get("default", "")})
                     return
                 except Exception:  # headers are already sent: end the stream with an event, not a broken connection
                     log.exception("turn failed")

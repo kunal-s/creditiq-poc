@@ -38,6 +38,16 @@ OUT_OF_SCOPE = ["Southgate_Provisional_FY2026.pdf", "Southgate_Stock_BookDebt_30
                 "Southgate_Title_Deed_Coimbatore_Unit.pdf"]
 
 
+@pytest.fixture(autouse=True)
+def _fresh_breakers():
+    """Each test starts with every model server's breaker closed (they are kept per process)."""
+    from ingestion.llm import errors
+
+    errors.reset_breakers()
+    yield
+    errors.reset_breakers()
+
+
 @pytest.fixture(scope="session")
 def cfg():
     return load_dir(CONFIG, version="test", overlay=OVERLAY)

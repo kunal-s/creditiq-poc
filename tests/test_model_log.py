@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from engine import cam_copilot, db
+from engine import cam_copilot, db, model_log
 from tests.test_cam_review import _case
 
 ANSWER = {"choices": [{"message": {"content": json.dumps({"paragraphs": ["Redrafted."]})}}],
@@ -89,15 +89,16 @@ def test_an_http_error_is_logged_with_its_status(client: TestClient, analyst, pu
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test-0123456789abcdef")
 
     def urlopen(req, timeout=None):
-        raise urllib.error.HTTPError(req.full_url, 429, "Too Many Requests", {"retry-after": "7"},
-                                     io.BytesIO(b'{"error": {"message": "Rate limit reached, key sk-live-abcdef0123456789"}}'))
+        raise urllib.error.HTTPError(req.full_url, 400, "Bad Request", {"retry-after": "7"},
+                                     io.BytesIO(b'{"error": {"message": "Bad input, key sk-live-abcdef0123456789"}}'))
 
     monkeypatch.setattr(cam_copilot.urllib.request, "urlopen", urlopen)
     case_id = _case(client, analyst, published_data_root)
     assert _regenerate(client, analyst, case_id).status_code == 502
     [row] = _rows(published_data_root)
-    assert (row["status"], row["error_code"], row["http_status"], row["retry_after_s"]) == ("error", "http", 429, 7.0)
-    assert "Rate limit reached" in row["message"] and "sk-live" not in row["message"]
+    assert (row["status"], row["error_code"], row["http_status"], row["retry_after_s"]) == ("error", "http", 400, 7.0)
+    assert row["kind"] == "bad_request"
+    assert "Bad input" in row["message"] and "sk-live" not in row["message"]
 
 
 def test_the_log_is_append_only(published_data_root: Path):
@@ -108,3 +109,28 @@ def test_the_log_is_append_only(published_data_root: Path):
             conn.execute("DELETE FROM model_log")
     finally:
         conn.close()
+
+
+def test_a_store_whose_version_21_was_another_change_gets_the_model_log(tmp_path):
+    """A working copy that numbered its own migration 21 before the model call log took the number
+    (a column on documents, say) is at version 21 with no model_log: migration 22 creates it, as
+    21 would have, and the log is append-only there too."""
+    path = db.db_path(tmp_path)
+    conn = sqlite3.connect(path, isolation_level=None)
+    for index, script in enumerate(db.MIGRATIONS[:20], start=1):
+        conn.executescript(f"BEGIN; {script}; PRAGMA user_version = {index}; COMMIT;")
+    conn.executescript("BEGIN; ALTER TABLE documents ADD COLUMN search_summary TEXT; PRAGMA user_version = 21; COMMIT;")
+    conn.close()
+
+    store = db.connect(tmp_path)
+    try:
+        assert store.execute("PRAGMA user_version").fetchone()[0] == len(db.MIGRATIONS) == 22
+        columns = {r["name"] for r in store.execute("PRAGMA table_info(model_log)")}
+        assert {"id", "at", "service", "source", "status", "kind"} <= columns
+        model_log.write(store, {"at": "2026-11-13T10:00:00+00:00", "service": "cam", "task": "cam_section",
+                                "source": "live", "status": "error", "kind": "timeout"})
+        assert [tuple(r) for r in store.execute("SELECT service, kind FROM model_log")] == [("cam", "timeout")]
+        with pytest.raises(sqlite3.DatabaseError, match="append-only"):
+            store.execute("DELETE FROM model_log")
+    finally:
+        store.close()

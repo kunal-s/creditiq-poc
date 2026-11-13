@@ -66,7 +66,7 @@ class ModelClient:
                 return call.send(call.body, report=log)
             except ModelError as e:
                 if log.attempts == 0:
-                    log.failed_before_sending(e.code, str(e))
+                    log.failed_before_sending(e.code, str(e), e.kind)
                 raise
         watch = Stopwatch()
         try:

@@ -17,11 +17,14 @@ SAMPLING_PARAMS = {"temperature", "top_p", "top_k", "topP", "topK", "seed", "pre
 
 
 class ModelError(Exception):
-    """code: replay_miss | refusal | bad_response | http | not_configured"""
+    """code: replay_miss | refusal | bad_response | http | not_configured (what callers have always read).
+    kind: what went wrong, for the retry policy and the log (llm/errors.py); the code itself when the
+    code already says it."""
 
-    def __init__(self, code: str, message: str):
+    def __init__(self, code: str, message: str, kind: str | None = None):
         super().__init__(message)
         self.code = code
+        self.kind = kind or code
 
 
 @dataclass

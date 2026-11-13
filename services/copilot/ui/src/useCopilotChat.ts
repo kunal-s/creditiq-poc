@@ -30,6 +30,7 @@ export function useCopilotChat({ endpoint, getToken, context, storageKey }: UseC
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ErrorKey | null>(null);
+  const [errorText, setErrorText] = useState<string | null>(null);
   const [action, setAction] = useState<PendingAction | null>(null);
   const [actionBusy, setActionBusy] = useState(false);
   /** Why the service refused the values on the card; shown on the card so the user can fix them. */
@@ -49,6 +50,7 @@ export function useCopilotChat({ endpoint, getToken, context, storageKey }: UseC
     abort.current = controller;
     setMessages([]);
     setError(null);
+    setErrorText(null);
     setBusy(false);
     setAction(null);
     setActionError(null);
@@ -76,6 +78,7 @@ export function useCopilotChat({ endpoint, getToken, context, storageKey }: UseC
       const controller = new AbortController();
       abort.current = controller;
       setError(null);
+      setErrorText(null);
       setBusy(true);
       setMessages((m) => [...m, { id: `u${++counter.current}`, role: "user", text: message }]);
       const attempt = async (id: string | null) =>
@@ -123,6 +126,7 @@ export function useCopilotChat({ endpoint, getToken, context, storageKey }: UseC
       } catch (e) {
         if (controller.signal.aborted) return;
         setError(e instanceof ChatError ? e.key : "network");
+        setErrorText(e instanceof ChatError ? (e.text ?? null) : null);
       } finally {
         if (!controller.signal.aborted) setBusy(false);
       }
@@ -166,10 +170,11 @@ export function useCopilotChat({ endpoint, getToken, context, storageKey }: UseC
     remembered(slot, null);
     setMessages([]);
     setError(null);
+    setErrorText(null);
     setBusy(false);
     setAction(null);
     setActionError(null);
   }, [slot]);
 
-  return { messages, busy, error, send, reset, action, actionBusy, actionError, confirm, cancel };
+  return { messages, busy, error, errorText, send, reset, action, actionBusy, actionError, confirm, cancel };
 }

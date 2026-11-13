@@ -7,4 +7,13 @@ runner_model: gpt-5.4-nano
 temperature: 0
 seed: 1
 timeout_s: 60
-max_retries: 2
+# How a failed model request is retried, by the kind of failure (copilot/model_errors.py).
+retry:
+  server_attempts: 3          # total attempts for server_unavailable / timeout
+  server_backoff_s: [2, 4]    # waits between attempts; plus or minus backoff_jitter; never a wait after the last
+  backoff_jitter: 0.2
+  rate_limit_attempts: 3
+  rate_limit_wait_s: 60       # used when the response names no wait
+  max_wait_s: 90              # a longer wait asked for is not waited: the request fails
+  breaker_failures: 5         # server_unavailable/timeout in a row, across requests, that open the breaker
+  breaker_cooldown_s: 120     # while open, requests fail at once; then one trial request

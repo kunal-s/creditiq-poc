@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS model_log (
   source TEXT NOT NULL, case_ref TEXT, run_id TEXT, request_key TEXT, attempt INTEGER, status TEXT NOT NULL,
   error_code TEXT, http_status INTEGER, latency_ms REAL, input_tokens INTEGER, output_tokens INTEGER,
   total_tokens INTEGER, cached_tokens INTEGER, ratelimit_remaining_tokens INTEGER,
-  ratelimit_remaining_requests INTEGER, retry_after_s REAL, message TEXT);
+  ratelimit_remaining_requests INTEGER, retry_after_s REAL, message TEXT, kind TEXT);
 CREATE INDEX IF NOT EXISTS model_log_at ON model_log(at);
 CREATE INDEX IF NOT EXISTS model_log_status ON model_log(status);
 CREATE TRIGGER IF NOT EXISTS model_log_no_update BEFORE UPDATE ON model_log
@@ -52,7 +52,7 @@ CREATE TRIGGER IF NOT EXISTS model_log_no_delete BEFORE DELETE ON model_log
 MODEL_LOG_COLUMNS = ("id", "at", "service", "task", "provider", "model", "mode", "source", "case_ref", "run_id",
                      "request_key", "attempt", "status", "error_code", "http_status", "latency_ms", "input_tokens",
                      "output_tokens", "total_tokens", "cached_tokens", "ratelimit_remaining_tokens",
-                     "ratelimit_remaining_requests", "retry_after_s", "message")
+                     "ratelimit_remaining_requests", "retry_after_s", "message", "kind")
 
 
 def _j(v) -> str:
@@ -71,6 +71,10 @@ class Store:
         with self._lock:
             self._conn.execute("PRAGMA journal_mode=WAL")
             self._conn.executescript(SCHEMA)
+            # A store made before the log said what kind of failure each row is.
+            cols = {r[1] for r in self._conn.execute("PRAGMA table_info(model_log)")}
+            if "kind" not in cols:
+                self._conn.execute("ALTER TABLE model_log ADD COLUMN kind TEXT")
 
     @contextmanager
     def tx(self):

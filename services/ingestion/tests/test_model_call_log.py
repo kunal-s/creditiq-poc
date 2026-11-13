@@ -65,7 +65,7 @@ def lines():
 
 
 def _client(cfg, mode, store, key="sk-test-0123456789abcdef"):
-    return ModelClient(OpenAIProvider(cfg.llm, key), mode, store)
+    return ModelClient(OpenAIProvider(cfg.llm, key, sleep=lambda s: None), mode, store)
 
 
 def test_an_answer_with_usage_gives_one_ok_row_with_tokens_and_latency(cfg, http, lines):
@@ -96,18 +96,21 @@ def test_a_retry_shows_as_two_rows(cfg, http):
     _client(cfg, "live", store).call(REQ)
     first, second = store.model_log()
     assert (first["attempt"], first["status"], first["http_status"], first["error_code"]) == (1, "error", 503, "http")
-    assert first["retry_after_s"] == 2.0 and first["input_tokens"] is None and "overloaded" in first["message"]
+    # The wait chosen before the retry: the first backoff, within its jitter.
+    lo, hi = (cfg.llm.retry.server_backoff_s[0] * (1 + s * cfg.llm.retry.backoff_jitter) for s in (-1, 1))
+    assert lo <= first["retry_after_s"] <= hi and first["kind"] == "server_unavailable"
+    assert first["input_tokens"] is None and "overloaded" in first["message"]
     assert (second["attempt"], second["status"], second["http_status"]) == (2, "ok", 200)
 
 
 def test_a_connection_error_is_logged_by_its_class(cfg, http):
     queue, _ = http
-    queue.extend([(httpx.ConnectError("refused"), None, None)] * (cfg.llm.max_retries + 1))
+    queue.extend([(httpx.ConnectError("refused"), None, None)] * cfg.llm.retry.server_attempts)
     store = Store()
     with pytest.raises(ModelError):
         _client(cfg, "live", store).call(REQ)
     rows = store.model_log()
-    assert len(rows) == cfg.llm.max_retries + 1
+    assert len(rows) == cfg.llm.retry.server_attempts
     assert all(r["status"] == "error" and r["error_code"] == "ConnectError" and r["http_status"] is None for r in rows)
 
 

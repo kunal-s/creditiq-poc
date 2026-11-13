@@ -45,6 +45,19 @@ class HostConfig(_M):
     context_keys: list[str] = []  # keys the client may send in `context` (e.g. case_id); others are dropped
 
 
+class RetryConfig(_M):
+    """How a failed model request is retried, by the kind of failure (copilot/model_errors.py)."""
+
+    server_attempts: int = Field(3, ge=1)            # total attempts for server_unavailable / timeout
+    server_backoff_s: list[float] = Field(default_factory=lambda: [2.0, 4.0], min_length=1)
+    backoff_jitter: float = Field(0.2, ge=0, lt=1)
+    rate_limit_attempts: int = Field(3, ge=1)
+    rate_limit_wait_s: float = Field(60, gt=0)
+    max_wait_s: float = Field(90, gt=0)
+    breaker_failures: int = Field(5, ge=1)
+    breaker_cooldown_s: float = Field(120, gt=0)
+
+
 class LlmConfig(_M):
     provider: Literal["openai"] = "openai"
     base_url: str
@@ -54,7 +67,16 @@ class LlmConfig(_M):
     temperature: float = 0
     seed: int = 1
     timeout_s: float = Field(60, gt=0)
-    max_retries: int = Field(2, ge=0)
+    max_retries: int | None = Field(None, ge=0)
+    """Superseded by `retry`; still read (server_attempts = max_retries + 1) when `retry` is not given."""
+    retry: RetryConfig = RetryConfig()
+
+    @model_validator(mode="before")
+    @classmethod
+    def _retry(cls, data):
+        if isinstance(data, dict) and data.get("retry") is None and data.get("max_retries") is not None:
+            data = {**data, "retry": {"server_attempts": int(data["max_retries"]) + 1}}
+        return data
 
 
 class ToolParam(_M):
@@ -181,6 +203,8 @@ class MessagesConfig(_M):
     context_case_differs: str  # {open} / {named}
     action_expired: str  # a confirmation that lapsed, or belongs to another case
     action_cancelled: str
+    model_errors: dict[str, str] = Field(default_factory=dict)
+    """What the assistant says when the model could not answer, by the kind of failure; `default` for the rest."""
 
 
 class RuntimeConfig(_M):

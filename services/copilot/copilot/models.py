@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 from collections.abc import Callable
 
+from openai import AsyncOpenAI
 from pydantic_ai.models import Model
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
@@ -20,5 +21,8 @@ def build_model(llm: LlmConfig, role: str, *, store: Store, mode: Mode, now: Cal
     key = os.environ.get(llm.api_key_env)
     if not key and mode != "replay":
         raise RuntimeError(f"{llm.api_key_env} is not set; it is required to {mode} model calls")
-    provider = OpenAIProvider(base_url=llm.base_url, api_key=key or "replay-only")
+    # The SDK's own retries are off and its timeout is the configured one: RecordingModel retries by the
+    # published policy (llm.retry), so every attempt is seen and logged.
+    client = AsyncOpenAI(base_url=llm.base_url, api_key=key or "replay-only", max_retries=0, timeout=llm.timeout_s)
+    provider = OpenAIProvider(openai_client=client)
     return RecordingModel(OpenAIChatModel(name, provider=provider), llm=llm, store=store, mode=mode, now=now, role=role)

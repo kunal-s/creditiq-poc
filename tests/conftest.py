@@ -20,6 +20,16 @@ def strict_cards(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.fixture(autouse=True)
+def _fresh_breakers():
+    """Each test starts with every model server's breaker closed (they are kept per process)."""
+    from engine import model_retry
+
+    model_retry.reset_breakers()
+    yield
+    model_retry.reset_breakers()
+
+
+@pytest.fixture(autouse=True)
 def features_on(monkeypatch: pytest.MonkeyPatch) -> dict:
     """Every feature of config/app.yaml `features:` switched on, whatever the deployment's file
     says: the tests are of the features. A test of a feature switched off sets it in the returned

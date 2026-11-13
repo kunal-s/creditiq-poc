@@ -799,6 +799,10 @@ def cam_regenerate(case_id: str, section_id: str, body: CamRegenerateRequest,
     cfg = configstore_reader.load_cam(data_root()).copilot
     try:
         paragraphs, recorded = cam_copilot.regenerate(conn, memo, section_id, body.instruction, cfg)
+    except cam_copilot.CopilotError as e:
+        # The kind of failure, for the screen to word it (terminology/rbl.yaml); the engine's words beside it.
+        detail = {"message": str(e), "kind": e.kind} if e.kind else str(e)
+        raise HTTPException(status_code=e.status, detail=detail) from e
     except cam_review.ReviewError as e:
         raise HTTPException(status_code=e.status, detail=str(e)) from e
     return CamRegenerateResult(paragraphs=paragraphs, model=cfg.model, recorded=recorded)

@@ -371,6 +371,11 @@ outputs:
     restore: Restore the draft
     close: Close
     copilotOff: "The copilot is not configured: its key is not set."
+    # Why a redraft failed, by the kind of failure the engine reports.
+    copilotBusy: The copilot is busy just now. Try again in a minute.
+    copilotLimit: The copilot's usage limit has been reached. Try again later.
+    copilotUnreachable: The copilot could not be reached. Try again in a little while.
+    copilotRefused: The copilot could not redraft this section's content.
     editHint: The section's paragraphs, one per block of text; each keeps the citations of the paragraph in its place.
     editSave: Save my words
     editNote: Saved with your name and the time; the engine's draft can be restored.

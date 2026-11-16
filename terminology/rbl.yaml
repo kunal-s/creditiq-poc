@@ -93,14 +93,13 @@ assistant:
   copy: Copy
   copied: Copied
   hint: Enter to send, Shift+Enter for a new line
-  intro: Ask why a document on this appraisal was rejected or held for review, ask for a draft email to the customer, or send that email once you have checked it.
   greeting:
     morning: "Good morning, {name}."
     afternoon: "Good afternoon, {name}."
     evening: "Good evening, {name}."
   startingActions: Starting actions
   groundingTitle: Grounding
-  grounding: Answers name the document and the rule they came from. The assistant never changes a figure or a decision; you do.
+  grounding: Answers name the document and the rule, or the statement lines and the working, they came from. The assistant never changes a figure or a decision; you do.
   context: "Context: {borrower} · {id}"
   topBar: Copilot
   thinking: Looking this up…
@@ -108,11 +107,19 @@ assistant:
   suggestionRejected: Why was a document rejected?
   suggestionProblems: Which documents have a problem?
   suggestionDraft: Draft an email to the customer about them
+  suggestionRatio: What is the quick ratio?
+  suggestionDebtEbitda: Work out debt to EBITDA
+  suggestionRoe: What is the return on equity?
+  suggestionReceivableDays: How many receivable days?
   column:
     document: Document
     status: Status
     reason: Reason
     rule: Rule
+    period: Year
+    inputs: Inputs
+    working: Working
+    value: Result
   action:
     field:
       to: To
@@ -1575,6 +1582,20 @@ documents:
   readAgain: Read again
   readAgainHelp: Send this file through processing again, as it was received. Its earlier outcome is cleared and the action is recorded in the audit trail.
   readingAgain: Reading again…
+  fileActions:
+    replace: Replace
+    replaceHelp: Upload a new file in this one's place. This file and its documents are taken off the case, and the new file is read like any other upload.
+    replacing: Replacing…
+    remove: Remove
+    removeHelp: Take this file and its documents off the case. The same file can be uploaded again afterwards.
+    removing: Removing…
+    readingFirst: This file is still being read; it can be removed or replaced once it has been read.
+    removeTitle: "Remove {name}?"
+    removeDescription: The file and the documents read from it leave the case, and the checks are run again without them. The removal is recorded in the audit trail. The same file can be uploaded again later.
+    removeConfirm: Remove file
+    cancel: Cancel
+    failed: The file could not be removed. Try again.
+    replaceFailed: The file could not be replaced. Try again.
   checkValues: Check the extracted values
   assignAs: "Assign as:"
   noneClose: No listed type is close

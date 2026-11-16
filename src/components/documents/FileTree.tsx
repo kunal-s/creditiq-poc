@@ -28,6 +28,7 @@ import { Chip } from "@/components/common/Panel";
 import { cn } from "@/lib/utils";
 import { DocumentActions } from "./DocumentActions";
 import { DocumentDetail } from "./DocumentDetail";
+import { FileActions } from "./FileActions";
 import { FileStatusChip } from "./chips";
 import { IntegrityChip, IntegrityPanel } from "./IntegrityPanel";
 import { hasIntegrity, integrityNeedsPerson, integrityReason, stateOf } from "@/domain/integrity";
@@ -242,7 +243,11 @@ function FileRows({
     return (
       <div data-testid="tree-file" data-status={file.status} style={indent(depth, false)}>
         <div className={row}>
-          <FileCell file={file} depth={depth}>
+          <FileCell
+            file={file}
+            depth={depth}
+            actions={<FileActions caseId={caseId} file={file} reading={reading} />}
+          >
             {file.status === "duplicate" && (
               <span data-testid="duplicate-of">
                 {" · "}
@@ -291,6 +296,7 @@ function FileRows({
   const firstDefects = documents.map((doc) =>
     defectsFor(doc.id).filter((d) => !seen.has(d.item_id) && seen.add(d.item_id)),
   );
+  const fileReading = file.status === "registered" && documents.some(isDocumentInProgress);
   // A part that waits on a person keeps the parts open, so it is never folded out of sight.
   const partsNeedPerson = documents.some(
     (d) =>
@@ -303,6 +309,8 @@ function FileRows({
   if (documents.length > 1 && !showParts && !partsNeedPerson) {
     return (
       <SplitFileRow
+        caseId={caseId}
+        reading={fileReading}
         file={file}
         documents={documents}
         depth={depth}
@@ -335,6 +343,9 @@ function FileRows({
           file={file}
           depth={depth}
           part={documents.length > 1 ? i + 1 : null}
+          actions={
+            i === 0 ? <FileActions caseId={caseId} file={file} reading={fileReading} /> : null
+          }
           integrity={i === 0 ? integrity : <SameFile />}
           integrityEmpty={i === 0 && noIntegrity}
           panel={i === 0 ? panel : null}
@@ -348,6 +359,8 @@ function FileRows({
 /** A file split into several documents, as one row: how many, of which types, from which to which
  * period, and where they count; a chevron opens the parts in place. */
 function SplitFileRow({
+  caseId,
+  reading,
   file,
   documents,
   depth,
@@ -356,6 +369,8 @@ function SplitFileRow({
   panel,
   onOpen,
 }: {
+  caseId: string;
+  reading: boolean;
   file: FileRecord;
   documents: LogicalDocument[];
   depth: number;
@@ -380,6 +395,7 @@ function SplitFileRow({
         <FileCell
           file={file}
           depth={depth}
+          actions={<FileActions caseId={caseId} file={file} reading={reading} />}
           toggle={
             <button
               type="button"
@@ -491,11 +507,14 @@ function FileCell({
   part,
   pages,
   toggle,
+  actions,
   children,
 }: {
   file: FileRecord;
   depth: number;
   part?: number | null;
+  /** The file's own actions (replace, remove), on a line under its size. */
+  actions?: ReactNode;
   /** The document's pages: in their own column on a laptop, beside the size on a phone. */
   pages?: string;
   toggle?: ReactNode;
@@ -519,6 +538,7 @@ function FileCell({
           {pages && <span className="tabular md:hidden"> · {pages}</span>}
           {children}
         </span>
+        {actions && <span className="mt-0.5 block">{actions}</span>}
       </span>
     </span>
   );
@@ -567,12 +587,15 @@ function DocumentRow({
   integrityEmpty,
   panel,
   shownDefects,
+  actions,
 }: {
   caseId: string;
   doc: LogicalDocument;
   file: FileRecord;
   depth: number;
   part: number | null;
+  /** The file's actions, on its first row only. */
+  actions: ReactNode;
   integrity: ReactNode;
   /** The file has no integrity check to show: a phone leaves the line out. */
   integrityEmpty: boolean;
@@ -599,6 +622,7 @@ function DocumentRow({
           depth={depth}
           part={part}
           pages={pageRange(doc)}
+          actions={actions}
           toggle={
             <button
               type="button"

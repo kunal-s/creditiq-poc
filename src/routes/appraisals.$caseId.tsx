@@ -50,7 +50,7 @@ function Layout({ c }: { c: CaseDetail }) {
 
       <Outlet />
       <NextStepBar c={c} progress={progress.data} active={activeTab} />
-      <CaseAssistant caseId={c.id} borrower={c.borrower} />
+      <CaseAssistant caseId={c.id} borrower={c.borrower} page={activeTab?.key} />
     </div>
   );
 }

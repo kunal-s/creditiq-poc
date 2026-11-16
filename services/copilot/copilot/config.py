@@ -15,6 +15,8 @@ from typing import Literal
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from . import compute
+
 Kind = Literal["read", "draft", "act"]
 PLACEHOLDER = re.compile(r"\{(\w+)\}")
 RESERVED_SLOTS = {"pending_id"}  # filled by the runtime for an act tool: the id of the confirmed action, used as its idempotency key
@@ -62,6 +64,51 @@ class ToolParam(_M):
     description: str
     required: bool = True
     from_slot: str | None = None  # filled by the runtime from the resolved slot; hidden from the model
+    enum: list[str] = []  # the only values allowed, when listed
+
+
+class FormulaSpec(_M):
+    label: str  # the ratio's name, as the answer shows it
+    expression: str  # + - * / and brackets over the source's line keys
+    formula: str  # the same in words, for the answer
+    decimals: int = Field(2, ge=0, le=6)
+    suffix: str = ""  # after the number: "x", "%", " days"
+
+    @model_validator(mode="after")
+    def _parses(self):
+        compute.parse(self.expression)
+        return self
+
+
+class ComputeLines(_M):
+    """Where the source's lines are: a list of rows, each with a key, a label and one value per period."""
+
+    list: str
+    key: str
+    label: str
+    values: str
+    value: str  # the number inside each value; a value that is a bare number is read as it is
+
+
+class ComputePeriods(_M):
+    list: str
+    label: str  # a format string over each period's fields, e.g. "{fy} ({basis})"
+
+
+class AmountFormat(_M):
+    divisor: float = Field(1, gt=0)  # the source's figures are divided by this for display (e.g. rupees to crore)
+    decimals: int = Field(2, ge=0, le=6)
+    suffix: str = ""
+
+
+class ComputeSpec(_M):
+    """The tool works out one of `formulas` (chosen by the model in parameter `select`) over what the host returns."""
+
+    select: str
+    lines: ComputeLines
+    periods: ComputePeriods
+    amount: AmountFormat = AmountFormat()
+    formulas: dict[str, FormulaSpec] = Field(min_length=1)
 
 
 class ToolSpec(_M):
@@ -74,12 +121,19 @@ class ToolSpec(_M):
     timeout_s: float = Field(15, gt=0)
     row_limit: int = Field(200, gt=0)
     result_fields: list[str] = []  # keep only these keys of each result row (none listed: keep all); drops ids and noise
+    compute: ComputeSpec | None = None  # work out a formula over the answer instead of passing it on
 
     @model_validator(mode="after")
     def _placeholders(self):
         missing = set(PLACEHOLDER.findall(self.path)) - set(self.params)
         if missing:
             raise ValueError(f"tool {self.name}: path placeholders without params: {sorted(missing)}")
+        if self.compute:
+            if self.kind != "read":
+                raise ValueError(f"tool {self.name}: only a read tool can compute")
+            p = self.params.get(self.compute.select)
+            if p is None or p.from_slot or sorted(p.enum) != sorted(self.compute.formulas):
+                raise ValueError(f"tool {self.name}: compute.select must be a parameter the model fills, whose enum lists exactly the formulas")
         return self
 
 

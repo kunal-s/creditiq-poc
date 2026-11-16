@@ -30,6 +30,10 @@ from .contracts import (
     ReviewItem,
 )
 
+#: The files a person has taken off the case: kept for the audit trail, shown nowhere.
+_REMOVED = "(SELECT id FROM files WHERE case_id = ? AND status = 'removed')"
+
+
 def _json(text: str | None):
     return None if text is None else json.loads(text)
 
@@ -43,7 +47,9 @@ def files(conn: sqlite3.Connection, case_id: str, root: Path | None = None) -> l
     score = integrity_status.score_settings(root) if root else None
     reviews = integrity_review.latest(conn, case_id)
     out = []
-    for row in conn.execute("SELECT * FROM files WHERE case_id = ? ORDER BY uploaded_at, rowid", (case_id,)):
+    for row in conn.execute(
+        "SELECT * FROM files WHERE case_id = ? AND status <> 'removed' ORDER BY uploaded_at, rowid", (case_id,)
+    ):
         found = [IngestIntegrityFinding(**f) for f in _json(row["integrity"]) or []]
         out.append(FileRecord(**{**{k: row[k] for k in row.keys() if k != "integrity_figures"},
                                  "integrity": found,
@@ -64,7 +70,11 @@ def file_figures(conn: sqlite3.Connection, case_id: str, file_id: str) -> list[I
 def documents(conn: sqlite3.Connection, case_id: str) -> list[LogicalDocument]:
     """A person's type assignment (F-09.5) is shown as the classification at
     exit tier "person"; the machine's signals and candidates are kept."""
-    rows = conn.execute("SELECT * FROM documents WHERE case_id = ? ORDER BY file_id, page_from", (case_id,))
+    # A removed file's documents are out of the case (uploads.remove_file).
+    rows = conn.execute(
+        f"SELECT * FROM documents WHERE case_id = ? AND file_id NOT IN {_REMOVED} ORDER BY file_id, page_from",
+        (case_id, case_id),
+    )
     out = []
     for row in rows:
         d = dict(row)
@@ -89,7 +99,11 @@ def field_values(conn: sqlite3.Connection, case_id: str, document_id: str | None
             "SELECT * FROM field_values WHERE case_id = ? AND document_id = ? ORDER BY field", (case_id, document_id)
         )
     else:
-        rows = conn.execute("SELECT * FROM field_values WHERE case_id = ? ORDER BY document_id, field", (case_id,))
+        rows = conn.execute(
+            f"""SELECT * FROM field_values WHERE case_id = ? AND document_id NOT IN
+                (SELECT id FROM documents WHERE file_id IN {_REMOVED}) ORDER BY document_id, field""",
+            (case_id, case_id),
+        )
     out = []
     for row in rows:
         d = dict(row)

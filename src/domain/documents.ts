@@ -415,6 +415,31 @@ export function useReadAgain(caseId: string) {
   });
 }
 
+/** Take a file off the case (its row's "Remove"); the same content may then be uploaded again. */
+export function useRemoveFile(caseId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (fileId: string) => api.removeFile(caseId, fileId),
+    onSettled: () => {
+      void client.invalidateQueries({ queryKey: ["cases", caseId] });
+      void client.invalidateQueries({ queryKey: ["review"] });
+    },
+  });
+}
+
+/** Put a new upload in a file's place (its row's "Replace"). */
+export function useReplaceFile(caseId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ fileId, files }: { fileId: string; files: File[] }) =>
+      api.replaceFile(caseId, fileId, files),
+    onSettled: () => {
+      void client.invalidateQueries({ queryKey: ["cases", caseId] });
+      void client.invalidateQueries({ queryKey: ["review"] });
+    },
+  });
+}
+
 /** Every figure the integrity page checks read in a file, fetched when first asked for. */
 export function useFileFigures(caseId: string, fileId: string | undefined, enabled: boolean) {
   return useQuery({

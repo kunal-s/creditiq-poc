@@ -17,7 +17,7 @@ messages:
     repeat_call: the same lookup would have been repeated
     no_data: no information could be retrieved for it
     ungrounded: part of the answer could not be tied to the retrieved information
-  decline: I can help with questions about the documents on a case, such as why one was rejected.
+  decline: I can help with questions about the documents on a case, such as why one was rejected, and work out the quick ratio, debt to EBITDA, return on equity or receivable days.
   clarify: Could you say a little more about what you would like to know about this case?
   cannot_do: "Here is what I found: {found}. I could not complete the request because {missing}."
   forbidden: You do not have access to that information.

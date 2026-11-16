@@ -71,6 +71,6 @@ def test_path_placeholder_needs_param(cfgdir):
 
 def test_cli(capsys, cfgdir):
     assert main(["config-validate", str(cfgdir)]) == 0
-    assert "3 use cases, 2 tools" in capsys.readouterr().out
+    assert "4 use cases, 3 tools" in capsys.readouterr().out
     (cfgdir / "llm.yaml").unlink()
     assert main(["config-validate", str(cfgdir)]) == 1

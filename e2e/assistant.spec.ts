@@ -2,7 +2,7 @@
 // which is answered in the browser here (no service, no model). The panel is the reusable one in
 // services/copilot/ui; these tests cover how the case screen mounts it.
 import { expect, test, type Page, type Route } from "@playwright/test";
-import { KESTREL } from "./fixtures/data";
+import { KESTREL, RM } from "./fixtures/data";
 import { MockApi, signedIn } from "./support/api";
 
 const SERVICE = "http://localhost:8202";
@@ -82,26 +82,24 @@ async function service(
   return sent;
 }
 
-test("on a laptop the panel is open on arrival at an appraisal, greeting the user by name", async ({
-  page,
-}) => {
+test("on a laptop the panel is open on arrival at an appraisal", async ({ page }) => {
   await signedIn(page, new MockApi());
   await page.addInitScript(() => window.sessionStorage.removeItem("creditiq.assistant.open"));
   await service(page, {});
   await page.goto(`/appraisals/${KESTREL}/completeness`);
   const panel = page.getByTestId("copilot-panel");
   await expect(panel).toBeVisible();
-  await expect(panel).toContainText(/Good (morning|afternoon|evening), Ananya\./);
   await expect(page.getByTestId("assistant-launcher")).toHaveAttribute("aria-pressed", "true");
 });
 
-async function openPanel(page: Page) {
-  await page.goto(`/appraisals/${KESTREL}/completeness`);
+/** Open the assistant on one of the appraisal's tabs: Files ("documents") by default, where the document questions are offered. */
+async function openPanel(page: Page, tab = "documents") {
+  await page.goto(`/appraisals/${KESTREL}/${tab}`);
   await page.getByTestId("assistant-launcher").click();
   await expect(page.getByTestId("copilot-panel")).toBeVisible();
 }
 
-test("the launcher opens the panel with the intro and the suggested questions", async ({
+test("the launcher opens the panel with the suggested questions and nothing else", async ({
   page,
 }) => {
   await signedIn(page, new MockApi());
@@ -109,9 +107,8 @@ test("the launcher opens the panel with the intro and the suggested questions", 
   await openPanel(page);
   const panel = page.getByTestId("copilot-panel");
   await expect(panel.getByRole("heading", { name: "CreditIQ Copilot" })).toBeVisible();
-  await expect(panel).toContainText(
-    "Ask why a document on this appraisal was rejected or held for review, ask for a draft email to the customer, or send that email once you have checked it.",
-  );
+  await expect(panel).not.toContainText(/Good (morning|afternoon|evening)/);
+  await expect(panel).not.toContainText("Grounding");
   await expect(panel.getByRole("button", { name: "Why was a document rejected?" })).toBeVisible();
   await expect(
     panel.getByRole("button", { name: "Draft an email to the customer about them" }),
@@ -279,7 +276,7 @@ test("the panel docks beside the page: the page stays visible and usable, and cl
   await page.setViewportSize({ width: 1440, height: 900 });
   await signedIn(page, new MockApi());
   await service(page, {});
-  await page.goto(`/appraisals/${KESTREL}/completeness`);
+  await page.goto(`/appraisals/${KESTREL}/documents`);
   const header = page.getByTestId("case-header");
   const before = await header.boundingBox();
 
@@ -369,4 +366,103 @@ test("a sent email is shown as completed", async ({ page }) => {
   await expect(panel.getByTestId("copilot-done")).toHaveText(
     "The email to asha@example.com has been recorded for sending.",
   );
+});
+
+const RATIO = {
+  session_id: "s_1",
+  turn_id: "t_2",
+  terminal: "answer",
+  text: "Quick ratio is (Current assets − Inventories) ÷ Current liabilities.",
+  use_case: "calculate_ratio",
+  format: "table",
+  columns: ["period", "inputs", "working", "value"],
+  rows: [
+    {
+      period: "FY 2024-25 (audited)",
+      inputs: "Current assets 6.38 cr; Inventories 2.16 cr; Current liabilities 3.21 cr",
+      working: "(6.38 − 2.16) ÷ 3.21",
+      value: "1.31x",
+    },
+    {
+      period: "FY 2025-26 (audited)",
+      inputs: "Total borrowings 2.83 cr",
+      working: "Not worked out: EBITDA not on file",
+      value: "",
+    },
+  ],
+  sources: [{ tool: "calculate_ratio", fetched_at: "2026-10-28T10:00:00" }],
+};
+
+test("an analyst asks for a ratio from the suggestions and sees each year's inputs, working and result", async ({
+  page,
+}) => {
+  await signedIn(page, new MockApi());
+  const sent = await service(page, {
+    events: [
+      ["session", { session_id: "s_1" }],
+      ["result", RATIO],
+    ],
+  });
+  await openPanel(page, "policy");
+  const panel = page.getByTestId("copilot-panel");
+  await panel.getByRole("button", { name: "What is the quick ratio?" }).click();
+
+  const rows = panel.getByTestId("copilot-row");
+  await expect(rows).toHaveCount(2);
+  await expect(rows.first()).toContainText("FY 2024-25 (audited)");
+  await expect(rows.first().getByRole("term")).toHaveText(["Inputs", "Working", "Result"]);
+  await expect(rows.first().getByRole("definition")).toHaveText([
+    "Current assets 6.38 cr; Inventories 2.16 cr; Current liabilities 3.21 cr",
+    "(6.38 − 2.16) ÷ 3.21",
+    "1.31x",
+  ]);
+  await expect(rows.nth(1)).toContainText("Not worked out: EBITDA not on file");
+  await expect(panel).toContainText("Sources: calculate_ratio");
+  expect(sent[0]?.body).toMatchObject({ message: "What is the quick ratio?" });
+});
+
+test("the starting questions follow the open tab", async ({ page }) => {
+  await signedIn(page, new MockApi());
+  await service(page, {});
+  const ratios = [
+    "What is the quick ratio?",
+    "Work out debt to EBITDA",
+    "What is the return on equity?",
+    "How many receivable days?",
+  ];
+  const documents = [
+    "Why was a document rejected?",
+    "Which documents have a problem?",
+    "Draft an email to the customer about them",
+  ];
+  const offered = (panel: ReturnType<Page["getByTestId"]>, names: string[]) =>
+    Promise.all(names.map((name) => expect(panel.getByRole("button", { name })).toBeVisible()));
+  const absent = (panel: ReturnType<Page["getByTestId"]>, names: string[]) =>
+    Promise.all(names.map((name) => expect(panel.getByRole("button", { name })).toHaveCount(0)));
+
+  await openPanel(page, "documents");
+  let panel = page.getByTestId("copilot-panel");
+  await offered(panel, documents);
+  await absent(panel, ratios);
+
+  await page.goto(`/appraisals/${KESTREL}/policy`); // the panel stays open from tab to tab
+  panel = page.getByTestId("copilot-panel");
+  await offered(panel, ratios);
+  await absent(panel, documents);
+
+  await page.goto(`/appraisals/${KESTREL}/completeness`); // a tab with no starting questions
+  panel = page.getByTestId("copilot-panel");
+  await expect(panel.getByRole("textbox", { name: "Ask about this appraisal" })).toBeVisible();
+  await absent(panel, [...documents, ...ratios]);
+});
+
+test("a user who cannot see the financials is not offered the ratios on Financials and Policy", async ({
+  page,
+}) => {
+  await signedIn(page, new MockApi(), RM);
+  await service(page, {});
+  await openPanel(page, "policy");
+  const panel = page.getByTestId("copilot-panel");
+  await expect(panel.getByRole("textbox", { name: "Ask about this appraisal" })).toBeVisible();
+  await expect(panel.getByRole("button", { name: "What is the quick ratio?" })).toHaveCount(0);
 });

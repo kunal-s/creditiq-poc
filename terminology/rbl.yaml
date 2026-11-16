@@ -93,14 +93,13 @@ assistant:
   copy: Copy
   copied: Copied
   hint: Enter to send, Shift+Enter for a new line
-  intro: Ask why a document on this appraisal was rejected or held for review, ask for a draft email to the customer, or send that email once you have checked it.
   greeting:
     morning: "Good morning, {name}."
     afternoon: "Good afternoon, {name}."
     evening: "Good evening, {name}."
   startingActions: Starting actions
   groundingTitle: Grounding
-  grounding: Answers name the document and the rule they came from. The assistant never changes a figure or a decision; you do.
+  grounding: Answers name the document and the rule, or the statement lines and the working, they came from. The assistant never changes a figure or a decision; you do.
   context: "Context: {borrower} · {id}"
   topBar: Copilot
   thinking: Looking this up…
@@ -108,11 +107,19 @@ assistant:
   suggestionRejected: Why was a document rejected?
   suggestionProblems: Which documents have a problem?
   suggestionDraft: Draft an email to the customer about them
+  suggestionRatio: What is the quick ratio?
+  suggestionDebtEbitda: Work out debt to EBITDA
+  suggestionRoe: What is the return on equity?
+  suggestionReceivableDays: How many receivable days?
   column:
     document: Document
     status: Status
     reason: Reason
     rule: Rule
+    period: Year
+    inputs: Inputs
+    working: Working
+    value: Result
   action:
     field:
       to: To

@@ -18,6 +18,7 @@ import httpx
 from pydantic_ai import RunContext
 from pydantic_ai.tools import Tool
 
+from . import compute
 from .config import PLACEHOLDER, CopilotConfig, ToolParam, ToolSpec
 from .identity import Principal
 
@@ -78,14 +79,14 @@ def _json_schema(spec: ToolSpec) -> dict:
     visible = {n: p for n, p in spec.params.items() if not p.from_slot}
     return {
         "type": "object",
-        "properties": {n: {"type": p.type, "description": p.description} for n, p in visible.items()},
+        "properties": {n: {"type": p.type, "description": p.description, **({"enum": p.enum} if p.enum else {})} for n, p in visible.items()},
         "required": [n for n, p in visible.items() if p.required],
         "additionalProperties": False,
     }
 
 
 def _check(p: ToolParam, v: Any) -> bool:
-    return isinstance(v, _PY[p.type]) and not (p.type == "integer" and isinstance(v, bool))
+    return isinstance(v, _PY[p.type]) and not (p.type == "integer" and isinstance(v, bool)) and (not p.enum or v in p.enum)
 
 
 def _project(data: Any, fields: list[str]) -> Any:
@@ -138,8 +139,9 @@ class ToolCaller:
                     return _fail(spec, "NEEDS_INPUT", f"{n} is required.")
                 continue
             if not _check(p, v):
-                return _fail(spec, "NEEDS_INPUT", f"{n} must be a {p.type}.")
+                return _fail(spec, "NEEDS_INPUT", f"{n} must be one of: {', '.join(p.enum)}." if p.enum else f"{n} must be a {p.type}.")
             values[n] = v
+        selected = values.pop(spec.compute.select) if spec.compute else None  # chooses the formula; not sent to the host
         path = spec.path
         for n in set(PLACEHOLDER.findall(spec.path)):
             path = path.replace("{" + n + "}", urllib.parse.quote(str(values.pop(n)), safe=""))
@@ -160,9 +162,15 @@ class ToolCaller:
         if r.status_code not in (200, 201):
             return _fail(spec, "UNAVAILABLE", f"The source answered {r.status_code}.")
         try:
-            data, cut = _limit(_project(r.json(), spec.result_fields), spec.row_limit)
+            body = r.json()
         except ValueError:
             return _fail(spec, "UNAVAILABLE", "Unreadable answer.")
+        if spec.compute:
+            data, cut = compute.run(spec.compute, selected, body), False
+            if not data["results"]:
+                return _fail(spec, "NOT_FOUND", "There are no financial statements on file to work it out from.")
+        else:
+            data, cut = _limit(_project(body, spec.result_fields), spec.row_limit)
         return ToolResult(spec.name, True, data, truncated=cut, fetched_at=self._now())
 
 

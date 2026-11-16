@@ -9,7 +9,9 @@ import queue
 import threading
 from functools import lru_cache
 
-from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
+from datetime import date
+
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
 from starlette.datastructures import UploadFile as FormFile
 
@@ -27,6 +29,7 @@ from .stages.quality import run_gate
 from .llm.provider import ModelError
 from .stages import transactions as txn_stage
 from .stages.read import document_grade, read_document
+from . import usage
 from .store import Store
 from .util import sha256_hex
 
@@ -128,6 +131,19 @@ def create_app(settings: Settings | None = None, store: Store | None = None) -> 
                 return txn_stage.classify(cfg, model, body).model_dump(mode="json")
         except ModelError as e:
             raise HTTPException(502, detail={"code": e.code, "message": str(e)}) from e
+
+    @app.get("/v1/model-log/summary", dependencies=[Depends(auth)])
+    def model_log_summary(start: date = Query(alias="from"), end: date = Query(alias="to"), tz: str = "UTC"):
+        """The model call log by day, task and model (the Administration's Model usage section)."""
+        return {"service": "ingestion", "rows": usage.summary(db.model_log_between(*usage.window(start, end)), start, end, tz)}
+
+    @app.get("/v1/model-log/calls", dependencies=[Depends(auth)])
+    def model_log_calls(start: date = Query(alias="from"), end: date = Query(alias="to"), tz: str = "UTC",
+                        status: str | None = None, kind: str | None = None, task: str | None = None,
+                        case_ref: str | None = None, limit: int = 50, offset: int = 0):
+        """The model calls in the range that match, newest first."""
+        return usage.calls(db.model_log_between(*usage.window(start, end)), start, end, tz, status=status, kind=kind,
+                           task=task, case_ref=case_ref, limit=limit, offset=offset)
 
     @app.post("/v1/parse", dependencies=[Depends(auth)])
     async def parse(file: UploadFile = File(...), config_version: str = Form("dev")):

@@ -51,6 +51,7 @@ export const SCREENS: Screen[] = [
   { name: "admin-settings", path: "/admin/settings", user: ADMIN },
   { name: "admin-users", path: "/admin/users", user: ADMIN },
   { name: "admin-templates", path: "/admin/templates", user: ADMIN },
+  { name: "admin-model-usage", path: "/admin/model-usage", user: ADMIN },
   { name: "case-identity", path: `${CASE}/identity` },
   { name: "case-rating", path: `${CASE}/rating` },
   { name: "case-submission", path: `${CASE}/submission` },

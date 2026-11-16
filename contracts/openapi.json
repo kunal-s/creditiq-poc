@@ -5344,6 +5344,11 @@
             "default": true,
             "title": "Integrity Checks",
             "type": "boolean"
+          },
+          "model_usage": {
+            "default": true,
+            "title": "Model Usage",
+            "type": "boolean"
           }
         },
         "title": "Features",
@@ -7428,6 +7433,476 @@
           "case_create_minimum"
         ],
         "title": "Meta",
+        "type": "object"
+      },
+      "ModelCall": {
+        "description": "One model call log row: one HTTP attempt or one replay.",
+        "properties": {
+          "at": {
+            "title": "At",
+            "type": "string"
+          },
+          "attempt": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attempt"
+          },
+          "cached_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cached Tokens"
+          },
+          "case_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Case Ref"
+          },
+          "cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "http_status": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Http Status"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "input_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Tokens"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "latency_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latency Ms"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "mode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mode"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "output_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Tokens"
+          },
+          "price_set": {
+            "default": false,
+            "title": "Price Set",
+            "type": "boolean"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          },
+          "ratelimit_remaining_requests": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ratelimit Remaining Requests"
+          },
+          "ratelimit_remaining_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ratelimit Remaining Tokens"
+          },
+          "request_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Key"
+          },
+          "retry_after_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retry After S"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "service": {
+            "title": "Service",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "task": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task"
+          },
+          "total_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Tokens"
+          }
+        },
+        "required": [
+          "id",
+          "at",
+          "service",
+          "source",
+          "status"
+        ],
+        "title": "ModelCall",
+        "type": "object"
+      },
+      "ModelCalls": {
+        "properties": {
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/ModelCall"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "unavailable": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Unavailable",
+            "type": "array"
+          }
+        },
+        "required": [
+          "total"
+        ],
+        "title": "ModelCalls",
+        "type": "object"
+      },
+      "ModelUsageRow": {
+        "description": "One day, service, task and model.",
+        "properties": {
+          "cached_tokens": {
+            "default": 0,
+            "title": "Cached Tokens",
+            "type": "integer"
+          },
+          "calls": {
+            "title": "Calls",
+            "type": "integer"
+          },
+          "cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost"
+          },
+          "day": {
+            "title": "Day",
+            "type": "string"
+          },
+          "errors": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Errors",
+            "type": "object"
+          },
+          "input_tokens": {
+            "default": 0,
+            "title": "Input Tokens",
+            "type": "integer"
+          },
+          "latency_ms_p50": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latency Ms P50"
+          },
+          "latency_ms_p95": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latency Ms P95"
+          },
+          "live_calls": {
+            "default": 0,
+            "title": "Live Calls",
+            "type": "integer"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "integer"
+          },
+          "output_tokens": {
+            "default": 0,
+            "title": "Output Tokens",
+            "type": "integer"
+          },
+          "price_set": {
+            "default": false,
+            "title": "Price Set",
+            "type": "boolean"
+          },
+          "replay_hits": {
+            "default": 0,
+            "title": "Replay Hits",
+            "type": "integer"
+          },
+          "replay_misses": {
+            "default": 0,
+            "title": "Replay Misses",
+            "type": "integer"
+          },
+          "service": {
+            "title": "Service",
+            "type": "string"
+          },
+          "task": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task"
+          }
+        },
+        "required": [
+          "day",
+          "service",
+          "calls",
+          "ok"
+        ],
+        "title": "ModelUsageRow",
+        "type": "object"
+      },
+      "ModelUsageSummary": {
+        "properties": {
+          "currency": {
+            "title": "Currency",
+            "type": "string"
+          },
+          "default_days": {
+            "title": "Default Days",
+            "type": "integer"
+          },
+          "from_date": {
+            "title": "From Date",
+            "type": "string"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/ModelUsageRow"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "timezone": {
+            "title": "Timezone",
+            "type": "string"
+          },
+          "to_date": {
+            "title": "To Date",
+            "type": "string"
+          },
+          "unavailable": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Unavailable",
+            "type": "array"
+          }
+        },
+        "required": [
+          "from_date",
+          "to_date",
+          "timezone",
+          "currency",
+          "default_days"
+        ],
+        "title": "ModelUsageSummary",
         "type": "object"
       },
       "MonthConduct": {
@@ -12286,6 +12761,300 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/admin/model-usage/calls": {
+      "get": {
+        "description": "The model calls that match, newest first, paged across the three logs.",
+        "operationId": "model_usage_calls_api_admin_model_usage_calls_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          },
+          {
+            "in": "query",
+            "name": "service",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Service"
+            }
+          },
+          {
+            "in": "query",
+            "name": "task",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Task"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
+          },
+          {
+            "in": "query",
+            "name": "case_ref",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Case Ref"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelCalls"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Model Usage Calls"
+      }
+    },
+    "/api/admin/model-usage/summary": {
+      "get": {
+        "description": "Tokens, cost, calls, errors and latency by day, service, task and model, from the three model call logs.\nA source that cannot be read is named in `unavailable`; the rest is still shown.",
+        "operationId": "model_usage_summary_api_admin_model_usage_summary_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          },
+          {
+            "in": "query",
+            "name": "service",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Service"
+            }
+          },
+          {
+            "in": "query",
+            "name": "task",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Task"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelUsageSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Model Usage Summary"
+      }
+    },
     "/api/admin/settings": {
       "get": {
         "description": "The tolerances, norm thresholds, cross-check rules and approval matrix an Administrator\nedits (F-00.6), as the version now published has them.",

@@ -210,6 +210,13 @@ class Store:
             c.execute(f"INSERT INTO model_log ({','.join(MODEL_LOG_COLUMNS)}) VALUES ({','.join('?' * len(MODEL_LOG_COLUMNS))})",
                       tuple(row.get(k) for k in MODEL_LOG_COLUMNS))
 
+    def model_log_between(self, lo: str, hi: str) -> list[dict]:
+        """Rows whose start is from `lo` up to `hi` (ISO, compared as text: the window is wide), oldest first."""
+        with self._conn() as c:
+            rows = c.execute(f"SELECT {','.join(MODEL_LOG_COLUMNS)} FROM model_log WHERE at >= ? AND at < ? ORDER BY at, rowid",
+                             (lo, hi)).fetchall()
+        return [dict(zip(MODEL_LOG_COLUMNS, tuple(r))) for r in rows]
+
     def model_log(self) -> list[dict]:
         with self._conn() as c:
             rows = c.execute(f"SELECT {','.join(MODEL_LOG_COLUMNS)} FROM model_log ORDER BY at, rowid").fetchall()

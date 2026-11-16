@@ -28,11 +28,13 @@ def _open_items(client, headers, case_id) -> int:
     return next(c for c in client.get("/api/cases", headers=headers).json() if c["id"] == case_id)["open_review_items"]
 
 
-def test_the_screens_are_told_whether_the_integrity_checks_are_on(client: TestClient, features_on: dict):
+def test_the_screens_are_told_whether_each_feature_is_on(client: TestClient, features_on: dict):
     rm = sign_in(client, RM)
-    assert client.get("/api/meta", headers=rm).json()["features"] == {"integrity_checks": True}
+    assert client.get("/api/meta", headers=rm).json()["features"] == {"integrity_checks": True, "model_usage": True}
     features_on["integrity_checks"] = False
-    assert client.get("/api/meta", headers=rm).json()["features"] == {"integrity_checks": False}
+    assert client.get("/api/meta", headers=rm).json()["features"] == {"integrity_checks": False, "model_usage": True}
+    features_on["model_usage"] = False
+    assert client.get("/api/meta", headers=rm).json()["features"] == {"integrity_checks": False, "model_usage": False}
 
 
 def test_switched_off_their_items_are_not_counted_and_are_kept(client: TestClient, published_data_root: Path,
@@ -51,4 +53,4 @@ def test_the_deployment_file_names_the_switch():
     import yaml
 
     cfg = yaml.safe_load((REPO_ROOT / "config" / "app.yaml").read_text(encoding="utf-8"))
-    assert "integrity_checks" in cfg["features"]
+    assert {"integrity_checks", "model_usage"} <= set(cfg["features"])

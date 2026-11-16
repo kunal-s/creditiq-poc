@@ -39,6 +39,7 @@ source_modules =
     engine.jobs
     engine.model_log
     engine.model_retry
+    engine.model_usage
     engine.keys
     engine.names
     engine.outbox

@@ -183,6 +183,13 @@ class Store:
             self._conn.execute(f"INSERT INTO model_log ({','.join(MODEL_LOG_COLUMNS)}) VALUES ({marks})",
                                tuple(row.get(c) for c in MODEL_LOG_COLUMNS))
 
+    def model_log_between(self, lo: str, hi: str) -> list[dict]:
+        """Rows whose start (UTC ISO) is from `lo` up to `hi`, oldest first."""
+        with self._lock:
+            cur = self._conn.execute(f"SELECT {','.join(MODEL_LOG_COLUMNS)} FROM model_log WHERE at >= ? AND at < ? "
+                                     "ORDER BY at, rowid", (lo, hi))
+            return [dict(zip(MODEL_LOG_COLUMNS, r)) for r in cur.fetchall()]
+
     def model_log(self) -> list[dict]:
         """Every row, oldest first (tests and the log's readers)."""
         with self._lock:

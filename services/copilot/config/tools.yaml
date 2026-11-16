@@ -12,6 +12,51 @@ tools:
     row_limit: 200
     result_fields: [kind, document, document_type, status, reason, request, rule]
 
+  - name: calculate_ratio
+    kind: read
+    description: >-
+      Works out one financial ratio for every year of the open case's financial statements. It reads the statement
+      lines on file and does the arithmetic itself, returning for each year the inputs, the working and the result.
+      Use it when the user asks for one of the ratios listed under `ratio`; report what it returns exactly as given.
+    path: /api/cases/{case_id}/spread
+    params:
+      case_id: { type: string, description: The open case, from_slot: case_id }
+      ratio:
+        type: string
+        description: >-
+          The ratio to work out. quick_ratio is also called the acid-test ratio; debt_to_ebitda is total borrowings
+          over EBITDA; return_on_equity is profit after tax over net worth; receivable_days is debtor days.
+        enum: [quick_ratio, debt_to_ebitda, return_on_equity, receivable_days]
+    compute:
+      select: ratio
+      # The host's spread: rows of statement lines (key, label, one cell per year) and the years as columns.
+      lines: { list: rows, key: key, label: label, values: cells, value: value }
+      periods: { list: columns, label: "{fy} ({basis})" }
+      amount: { divisor: 10000000, decimals: 2, suffix: " cr" }  # rupees shown in crore, as the host's screens do
+      formulas:
+        quick_ratio:
+          label: Quick ratio
+          expression: (current_assets - inventories) / current_liabilities
+          formula: (Current assets − Inventories) ÷ Current liabilities
+          suffix: x
+        debt_to_ebitda:
+          label: Debt / EBITDA
+          expression: total_borrowings / ebitda
+          formula: Total borrowings ÷ EBITDA
+          suffix: x
+        return_on_equity:
+          label: Return on equity
+          expression: profit_after_tax / net_worth * 100
+          formula: Profit after tax ÷ Net worth × 100
+          decimals: 1
+          suffix: "%"
+        receivable_days:
+          label: Receivable days
+          expression: trade_receivables / revenue_from_operations * 365
+          formula: Trade receivables ÷ Revenue from operations × 365
+          decimals: 0
+          suffix: " days"
+
   - name: send_customer_email
     kind: act
     description: >-

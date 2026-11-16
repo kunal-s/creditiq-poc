@@ -1,5 +1,5 @@
 // Every screen of a case whose file is complete: the recorded "complete" set
-// (Kestrel, 14 documents) is uploaded through the Files screen and each tab is
+// (Kestrel, 15 documents) is uploaded through the Files screen and each tab is
 // then read as a user reads it.
 //
 // The case is created once for the whole file and deleted after it, because the
@@ -78,13 +78,13 @@ test("Files: every uploaded file is registered and read into documents", async (
   const ready = tree.getByTestId("show-ready");
   if ((await ready.count()) > 0 && (await ready.getAttribute("aria-expanded")) === "false")
     await ready.click();
-  // The 14 uploaded documents, plus the sourcing message kept as the first
+  // The 15 uploaded documents, plus the sourcing message kept as the first
   // document of the case (F-04.8).
-  await expect(tree.getByTestId("tree-file")).toHaveCount(15);
+  await expect(tree.getByTestId("tree-file")).toHaveCount(16);
   await expect(
     tree.locator('[data-testid="tree-file"]:not([data-status="registered"])'),
   ).toHaveCount(0);
-  await expect(tree.getByTestId("tree-document")).toHaveCount(27);
+  await expect(tree.getByTestId("tree-document")).toHaveCount(29);
   // A complete, clean set: nothing unidentified and no label contradicted.
   await expect(page.getByTestId("unclassified")).toHaveCount(0);
   await expect(page.getByTestId("label-mismatch")).toHaveCount(0);
@@ -118,7 +118,7 @@ test("Extracted data: the fields read from the documents, with their evidence", 
 test("Completeness: every requirement is satisfied and the case is ready for credit", async () => {
   await page.goto(`/appraisals/${caseId}/completeness`);
   const statuses = await checklistStatuses(page);
-  expect(statuses).toHaveLength(10);
+  expect(statuses).toHaveLength(11);
   expect(new Set(statuses)).toEqual(new Set(["satisfied"]));
 
   await expect(page.getByTestId("gate-banner")).toHaveAttribute("data-ready", "true");
@@ -138,7 +138,7 @@ test("Completeness: the checklist filters by status", async () => {
   // Nothing is blocking on a complete file, so the filter empties the list.
   await expect(page.getByTestId("checklist-item")).toHaveCount(0);
   await page.getByTestId("checklist-filter-satisfied").click();
-  await expect(page.getByTestId("checklist-item")).toHaveCount(10);
+  await expect(page.getByTestId("checklist-item")).toHaveCount(11);
 });
 
 test("Completeness: a requirement states why it is asked for and what satisfies it", async () => {
@@ -154,7 +154,7 @@ test("Completeness: the query list is on the same tab", async () => {
   await expect(list).toBeVisible();
   // Every request the engine raised was met by the complete set.
   await expect(list.locator('[data-testid="query-item"][data-resolved="false"]')).toHaveCount(0);
-  await expect(list.locator('[data-testid="query-item"][data-resolved="true"]')).toHaveCount(10);
+  await expect(list.locator('[data-testid="query-item"][data-resolved="true"]')).toHaveCount(11);
 });
 
 test("Cross-checks: the four areas are reported, with the one check the file fails", async () => {
@@ -216,7 +216,7 @@ test("Policy: the approving authority is worked out from the ask", async () => {
   await expect(card.getByTestId("policy-authority-at-least")).toBeVisible();
 });
 
-test("Financials: the spread holds every statement line over two audited years", async () => {
+test("Financials: the spread holds every statement line over three audited years", async () => {
   await page.goto(`/appraisals/${caseId}/policy`);
   const financials = page.getByTestId("financials");
   // The profit and loss and the balance sheet, a tab each; the ratios are tested in the norms.
@@ -225,10 +225,10 @@ test("Financials: the spread holds every statement line over two audited years",
   await financials.getByTestId("financials-tab-profit_and_loss").click();
   await expect(financials.getByTestId("spread-profit_and_loss")).toBeVisible();
   await expect(financials.getByTestId("spread-row")).toHaveCount(10);
-  // Two audited years are on file, so each statement has two columns of figures.
+  // Three audited years are on file, so each statement has three columns of figures.
   await expect(
     financials.getByTestId("spread-profit_and_loss").getByRole("columnheader"),
-  ).toHaveCount(3);
+  ).toHaveCount(4);
   await expect(financials.getByTestId("wc-verdict")).toBeVisible();
 
   // A figure is traceable to its page.

@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { ChatPanel, type ChatLabels, type Tone } from "@copilot-ui";
 import { useAssistantDock } from "@/components/shell/AssistantDock";
 import { t } from "@/config/terminology";
-import { sessionToken, useCan, useSession } from "@/domain/session";
+import { sessionToken, useCan } from "@/domain/session";
 
 // The assistant for the open appraisal: a launcher, and a panel docked beside the page (shell/AssistantDock) so the
 // appraisal stays visible and usable while it is open. The panel itself is the reusable one in
@@ -20,14 +20,8 @@ const STATUS_TONES: Record<string, Tone> = {
   unclassified: "warning",
 };
 
-/** "Good morning, Ananya." by the hour of the user's own clock: a greeting, nothing more. */
-function greeting(name: string): string {
-  const hour = new Date().getHours();
-  const part = hour < 12 ? "morning" : hour < 17 ? "afternoon" : "evening";
-  return t(`assistant.greeting.${part}`, { name });
-}
-
-function assistantLabels(name: string): ChatLabels {
+// An empty conversation shows only the open tab's starting questions: no intro, no note.
+function assistantLabels(): ChatLabels {
   return {
     title: t("assistant.title"),
     placeholder: t("assistant.placeholder"),
@@ -37,10 +31,7 @@ function assistantLabels(name: string): ChatLabels {
     copy: t("assistant.copy"),
     copied: t("assistant.copied"),
     hint: t("assistant.hint"),
-    intro: name ? `${greeting(name)} ${t("assistant.intro")}` : t("assistant.intro"),
     startingActions: t("assistant.startingActions"),
-    groundingTitle: t("assistant.groundingTitle"),
-    grounding: t("assistant.grounding"),
     thinking: t("assistant.thinking"),
     sources: t("assistant.sources"),
     columns: {
@@ -48,6 +39,10 @@ function assistantLabels(name: string): ChatLabels {
       status: t("assistant.column.status"),
       reason: t("assistant.column.reason"),
       rule: t("assistant.column.rule"),
+      period: t("assistant.column.period"),
+      inputs: t("assistant.column.inputs"),
+      working: t("assistant.column.working"),
+      value: t("assistant.column.value"),
     },
     action: {
       fields: {
@@ -69,18 +64,39 @@ function assistantLabels(name: string): ChatLabels {
   };
 }
 
-export function CaseAssistant({ caseId, borrower }: { caseId: string; borrower: string }) {
+// The starting questions follow the open tab: the document questions on Files, the ratios on Financials and Policy.
+// Other tabs offer none; any question can still be typed. The ratios need the financials (output.read).
+const DOCUMENT_SUGGESTIONS = ["suggestionRejected", "suggestionProblems", "suggestionDraft"];
+const RATIO_SUGGESTIONS = [
+  "suggestionRatio",
+  "suggestionDebtEbitda",
+  "suggestionRoe",
+  "suggestionReceivableDays",
+];
+
+function suggestionKeys(page: string | undefined, readsFinancials: boolean): string[] {
+  if (page === "documents") return DOCUMENT_SUGGESTIONS;
+  if (page === "policy" && readsFinancials) return RATIO_SUGGESTIONS;
+  return [];
+}
+
+export function CaseAssistant({
+  caseId,
+  borrower,
+  page,
+}: {
+  caseId: string;
+  borrower: string;
+  /** The open tab's key (nav.ts CASE_TABS), which decides the starting questions. */
+  page?: string | undefined;
+}) {
   const allowed = useCan("case.read");
+  const readsFinancials = useCan("output.read"); // the ratios are worked out from the spread, which needs it
   const dock = useAssistantDock();
-  const firstName = useSession()?.user.name.split(" ")[0] ?? "";
-  const labels = useMemo(() => assistantLabels(firstName), [firstName]);
+  const labels = useMemo(() => assistantLabels(), []);
   const suggestions = useMemo(
-    () => [
-      t("assistant.suggestionRejected"),
-      t("assistant.suggestionProblems"),
-      t("assistant.suggestionDraft"),
-    ],
-    [],
+    () => suggestionKeys(page, readsFinancials).map((key) => t(`assistant.${key}`)),
+    [page, readsFinancials],
   );
   const enabled = Boolean(ASSISTANT_URL) && allowed && dock !== null;
   const setAvailable = dock?.setAvailable;

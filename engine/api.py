@@ -1045,6 +1045,24 @@ async def upload_files(case_id: str, request: Request, user: dict = Depends(requ
     several files or ZIP archives. Registers every file and queues processing.
     The body is parsed as it streams, so size limits apply before a file is
     held in full."""
+    root, receiver, channel = await _receive_upload(case_id, request, user)
+
+    def register() -> UploadResult:
+        conn = db.connect(root)
+        try:
+            result = uploads.register_parts(
+                conn, root, case_id=case_id, user_id=user["id"], channel=channel, parts=receiver.parts
+            )
+            pipeline.refresh_case(conn, root, case_id)
+            return result
+        finally:
+            conn.close()
+
+    return await run_in_threadpool(register)
+
+
+async def _receive_upload(case_id: str, request: Request, user: dict):
+    """The case checked, then the multipart body streamed to the spool: (data root, receiver, channel)."""
     root = data_root()
 
     def check_case() -> None:
@@ -1067,15 +1085,55 @@ async def upload_files(case_id: str, request: Request, user: dict = Depends(requ
     if not receiver.parts:
         raise HTTPException(status_code=422, detail="no files in the upload (multipart field 'files')")
     channel = (receiver.fields.get("channel") or "upload").strip()[:40] or "upload"
+    return root, receiver, channel
+
+
+@app.delete("/api/cases/{case_id}/files/{file_id}", status_code=204)
+def remove_file(
+    case_id: str,
+    file_id: str,
+    user: dict = Depends(require("document.upload")),
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> Response:
+    """Take a file off the case, whatever its outcome (audited). Its documents leave the case, and
+    its content no longer counts as received, so uploading it again is not taken as a duplicate."""
+    _case_for(conn, case_id, user)
+    try:
+        uploads.remove_file(conn, data_root(), case_id=case_id, file_id=file_id, user_id=user["id"])
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except uploads.RemoveError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    pipeline.refresh_case(conn, data_root(), case_id)
+    return Response(status_code=204)
+
+
+@app.post(
+    "/api/cases/{case_id}/files/{file_id}/replace",
+    response_model=UploadResult,
+    status_code=202,
+    openapi_extra=_UPLOAD_BODY,
+)
+async def replace_file(
+    case_id: str, file_id: str, request: Request, user: dict = Depends(require("document.upload"))
+):
+    """A new upload in a file's place: the file is removed (as DELETE does), then the upload is
+    registered and queued like any other. The same content may be sent again; it is read afresh."""
+    root, receiver, channel = await _receive_upload(case_id, request, user)
 
     def register() -> UploadResult:
         conn = db.connect(root)
         try:
-            result = uploads.register_parts(
-                conn, root, case_id=case_id, user_id=user["id"], channel=channel, parts=receiver.parts
+            result = uploads.replace_file(
+                conn, root, case_id=case_id, file_id=file_id, user_id=user["id"], channel=channel,
+                parts=receiver.parts,
             )
             pipeline.refresh_case(conn, root, case_id)
             return result
+        except LookupError as e:
+            raise HTTPException(status_code=404, detail=str(e)) from e
+        except uploads.RemoveError as e:
+            raise HTTPException(status_code=409, detail=str(e)) from e
         finally:
             conn.close()
 

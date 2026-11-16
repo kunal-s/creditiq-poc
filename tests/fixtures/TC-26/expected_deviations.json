@@ -35,9 +35,9 @@
     {
       "id": "DOC-01",
       "category": "documentation",
-      "actual": 7,
+      "actual": 8,
       "source": "checklist",
-      "open_items": ["moa_aoa", "board_resolution", "kyc_promoters", "fs_fy_minus2", "itr", "bank_statements", "gst_returns"]
+      "open_items": ["moa_aoa", "board_resolution", "kyc_promoters", "fs_fy_minus3", "fs_fy_minus2", "itr", "bank_statements", "gst_returns"]
     },
     {
       "id": "DOC-02",

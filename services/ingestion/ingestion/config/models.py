@@ -94,6 +94,12 @@ class InstanceRule(Strict):
     """Tried before `key_pattern`: when it finds a key on any page it alone splits the file (an identifier printed
     in every page header is a steadier key than a value that schedules also mention)."""
     keys: list[str] = Field(default_factory=list)
+    zone: Literal["head", "any"] = "any"
+    """`head`: the start or key counts only in a page's opening lines (`head_lines`), its heading. A statement
+    that names last year's date in its notes or comparative columns then does not open a new instance."""
+    leading: Literal["front_matter", "first"] = "front_matter"
+    """Pages before the first start or key: `front_matter` (a cover sheet), or `first`, part of the first instance
+    (an auditor's report ahead of the statements it reports on)."""
 
     @model_validator(mode="after")
     def _one_way(self) -> "InstanceRule":

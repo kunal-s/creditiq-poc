@@ -9,8 +9,8 @@ export interface ChatLabels {
   copied: string;
   /** A line under the message box, for example how to send and how to start a new line. */
   hint: string;
-  /** Shown above an empty conversation. */
-  intro: string;
+  /** Shown above an empty conversation; without it the suggestions stand alone. */
+  intro?: string;
   /** Heading over the suggested first questions; without it they are listed bare. */
   startingActions?: string;
   /** A note under the suggestions on what the answers rest on: a heading and its text. */

@@ -277,3 +277,83 @@ def test_f05_rm_cannot_upload_to_another_rms_case(client: TestClient, published_
     case_id = make_case(client, analyst, published_data_root)
     rm = sign_in(client, RM)
     assert upload(client, rm, case_id, [("a.pdf", b"%PDF-1.4")]).status_code == 404
+
+
+def _replace(client: TestClient, headers: dict, case_id: str, file_id: str, files: list[tuple[str, bytes]]):
+    return client.post(
+        f"/api/cases/{case_id}/files/{file_id}/replace",
+        files=[("files", (name, data, "application/octet-stream")) for name, data in files],
+        headers=headers,
+    )
+
+
+def test_a_removed_file_leaves_the_case_and_its_content_can_be_sent_again(client, published_data_root: Path):
+    """A file is removed whatever its outcome: its record leaves the case (kept for the audit trail),
+    its documents with it, its bytes are deleted, and the same content uploaded again is registered,
+    not taken as a duplicate. The duplicate records that pointed at it go with it."""
+    rm = sign_in(client, RM)
+    case_id = make_case(client, rm, published_data_root, borrower="Heronbay Polymers Pvt Ltd")
+    pan = fixture_file("Tarun Velankar PAN.pdf")
+    first, dup = upload(client, rm, case_id, [("pan.pdf", pan), ("copy.pdf", pan)]).json()["files"]
+    assert dup["status"] == "duplicate"
+    run_jobs(published_data_root)
+    assert any(d["file_id"] == first["id"] for d in client.get(f"/api/cases/{case_id}/documents", headers=rm).json())
+
+    assert client.delete(f"/api/cases/{case_id}/files/{first['id']}", headers=rm).status_code == 204
+    assert client.get(f"/api/cases/{case_id}/files", headers=rm).json() == []
+    assert not any(d["file_id"] == first["id"] for d in client.get(f"/api/cases/{case_id}/documents", headers=rm).json())
+    assert not (published_data_root / "cases" / case_id / "files" / first["sha256"]).exists()
+    assert client.delete(f"/api/cases/{case_id}/files/{first['id']}", headers=rm).status_code == 404
+
+    again = upload(client, rm, case_id, [("pan.pdf", pan)]).json()["files"]
+    assert [f["status"] for f in again] == ["registered"]
+    conn = db.connect(published_data_root)
+    try:
+        actions = [r["action"] for r in conn.execute("SELECT action FROM decision_log WHERE case_id = ?", (case_id,))]
+        statuses = {r["id"]: r["status"] for r in conn.execute("SELECT id, status FROM files WHERE case_id = ?", (case_id,))}
+    finally:
+        conn.close()
+    assert "file.removed" in actions
+    assert statuses[first["id"]] == statuses[dup["id"]] == "removed"
+
+
+def test_a_rejected_file_is_removed_and_a_file_still_being_read_is_not(client, published_data_root: Path):
+    rm = sign_in(client, RM)
+    case_id = make_case(client, rm, published_data_root)
+    rejected, reading = upload(client, rm, case_id, [("statement.numbers", b"\x07\x13 not a document \x00\x01"),
+                                                     ("pan.pdf", fixture_file("Sunil Karve PAN.pdf"))]).json()["files"]
+    assert rejected["status"] == "rejected" and reading["status"] == "registered"
+    assert client.delete(f"/api/cases/{case_id}/files/{reading['id']}", headers=rm).status_code == 409
+    assert client.delete(f"/api/cases/{case_id}/files/{rejected['id']}", headers=rm).status_code == 204
+    assert [f["id"] for f in client.get(f"/api/cases/{case_id}/files", headers=rm).json()] == [reading["id"]]
+    assert client.get(f"/api/cases/{case_id}/rejections", headers=rm).json() == []
+
+
+def test_a_file_is_replaced_by_a_new_upload_even_of_the_same_content(client, published_data_root: Path):
+    rm = sign_in(client, RM)
+    case_id = make_case(client, rm, published_data_root)
+    pan = fixture_file("Sunil Karve PAN.pdf")
+    [old] = upload(client, rm, case_id, [("pan.pdf", pan)]).json()["files"]
+    run_jobs(published_data_root)
+    response = _replace(client, rm, case_id, old["id"], [("pan (clear scan).pdf", pan)])
+    assert response.status_code == 202, response.text
+    [new] = response.json()["files"]
+    assert new["status"] == "registered" and new["id"] != old["id"]
+    assert [f["id"] for f in client.get(f"/api/cases/{case_id}/files", headers=rm).json()] == [new["id"]]
+    assert (published_data_root / "cases" / case_id / "files" / new["sha256"]).is_file()
+    conn = db.connect(published_data_root)
+    try:
+        actions = [r["action"] for r in conn.execute("SELECT action FROM decision_log WHERE case_id = ?", (case_id,))]
+    finally:
+        conn.close()
+    assert "file.replaced" in actions
+    assert _replace(client, rm, case_id, old["id"], [("pan.pdf", pan)]).status_code == 404
+
+
+@pytest.mark.parametrize("who,expected", [(None, 401), (MANAGER, 403)])
+def test_removing_a_file_needs_the_upload_permission(client, published_data_root: Path, who, expected):
+    rm = sign_in(client, RM)
+    case_id = make_case(client, rm, published_data_root)
+    [f] = upload(client, rm, case_id, [("statement.numbers", b"\x07\x13 not a document \x00\x01")]).json()["files"]
+    headers = sign_in(client, who) if who else {}
+    assert client.delete(f"/api/cases/{case_id}/files/{f['id']}", headers=headers).status_code == expected

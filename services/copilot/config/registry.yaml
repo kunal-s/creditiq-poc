@@ -46,6 +46,26 @@ use_cases:
     empty_message: "There is nothing to ask the customer for: no document on this case has been rejected or held."
 
 
+  - id: calculate_ratio
+    title: Calculate a financial ratio
+    kind: read
+    examples:
+      - what is the quick ratio?
+      - work out the acid-test ratio for this borrower
+      - calculate debt to EBITDA
+      - what is the return on equity?
+      - how many receivable days does the borrower have?
+      - what are the debtor days?
+    required_slots: [case_id]
+    context_slots: { case_id: case_id }
+    slot_questions: { case_id: "Which case do you mean?" }
+    tools: [calculate_ratio]
+    max_steps: 2
+    permissions: [output.read]
+    prompt: calculate_ratio.md
+    output: { format: table, columns: [period, inputs, working, value] }
+    confirmation: none
+
   - id: send_followup_email
     title: Send the follow-up email
     kind: act

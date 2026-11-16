@@ -15,7 +15,7 @@ from fastapi.testclient import TestClient
 from tests.conftest import RM, case_files, fixture_file, make_case, run_jobs, set_as_of, sign_in, upload
 
 PARTIAL = [n for n, _ in case_files("partial")]
-UNIVERSAL = {"pan_entity", "kyc_promoters", "fs_fy_minus2", "fs_fy_minus1", "itr", "bank_statements", "gst_returns"}
+UNIVERSAL = {"pan_entity", "kyc_promoters", "fs_fy_minus3", "fs_fy_minus2", "fs_fy_minus1", "itr", "bank_statements", "gst_returns"}
 COMPANY = {"coi", "moa_aoa", "board_resolution"}
 
 
@@ -62,11 +62,14 @@ def test_tc12_missing_items_each_with_a_specific_request(client: TestClient, pub
     rm, case_id = _case(client, published_data_root, PARTIAL)
     readiness, items = _checklist(client, rm, case_id)
     missing = {k for k, v in items.items() if v["status"] == "missing"}
-    assert missing == {"moa_aoa", "pan_entity", "fs_fy_minus2", "itr"}
+    assert missing == {"moa_aoa", "pan_entity", "fs_fy_minus3", "fs_fy_minus2", "itr"}
     assert items["fs_fy_minus2"]["deficiency"] == (
         "Not received: Audited financial statements for FY 2024-25 (year ended 31 Mar 2025); received: FY 2025-26"
     )
-    assert "AY 2026-27 and AY 2025-26" in items["itr"]["deficiency"]
+    assert "AY 2026-27, AY 2025-26 and AY 2024-25" in items["itr"]["deficiency"]
+    assert items["fs_fy_minus3"]["deficiency"] == (
+        "Not received: Audited financial statements for FY 2023-24 (year ended 31 Mar 2024); received: FY 2025-26"
+    )
     assert items["moa_aoa"]["deficiency"].startswith("Not received: Memorandum and Articles")
     assert readiness["gate_met"] is False and readiness["ready_for_credit"] is False
     needed = [q["text"] for q in client.get(f"/api/cases/{case_id}/queries", headers=rm).json()

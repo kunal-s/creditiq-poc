@@ -66,11 +66,11 @@ test("Files: the six documents are registered and read", async () => {
   await expect(tree.getByTestId("tree-document")).toHaveCount(14);
 });
 
-test("Completeness: four requirements are missing and four are insufficient", async () => {
+test("Completeness: five requirements are missing and four are insufficient", async () => {
   await page.goto(`/appraisals/${caseId}/completeness`);
   const statuses = await checklistStatuses(page);
-  expect(statuses).toHaveLength(10);
-  expect(statuses.filter((s) => s === "missing")).toHaveLength(4);
+  expect(statuses).toHaveLength(11);
+  expect(statuses.filter((s) => s === "missing")).toHaveLength(5);
   expect(statuses.filter((s) => s === "insufficient")).toHaveLength(4);
   expect(statuses.filter((s) => s === "satisfied")).toHaveLength(2);
 
@@ -98,16 +98,16 @@ test("Completeness: the blocking filter leaves only the blocking gaps", async ()
   for (const status of await checklistStatuses(page)) {
     expect(["missing", "insufficient", "in_review"]).toContain(status);
   }
-  await expect(page.getByTestId("checklist-item")).toHaveCount(8);
+  await expect(page.getByTestId("checklist-item")).toHaveCount(9);
 });
 
 test("Completeness: the query list groups what to ask for and keeps what is resolved", async () => {
   await page.goto(`/appraisals/${caseId}/completeness`);
   const list = page.getByTestId("query-list");
   await expect(list).toBeVisible();
-  await expect(list.getByTestId("query-item")).toHaveCount(15);
+  await expect(list.getByTestId("query-item")).toHaveCount(16);
   await expect(list.locator('[data-testid="query-item"][data-resolved="true"]')).toHaveCount(6);
-  await expect(list.locator('[data-testid="query-item"][data-resolved="false"]')).toHaveCount(9);
+  await expect(list.locator('[data-testid="query-item"][data-resolved="false"]')).toHaveCount(10);
 });
 
 test("Cross-checks: the two findings are on the board with their sources", async () => {

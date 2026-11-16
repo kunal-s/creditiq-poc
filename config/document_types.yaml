@@ -60,7 +60,7 @@ types:
     group: financials
     provenance: borrower_supplied
     description: Audited balance sheet, statement of profit and loss and cash flow statement for a financial year.
-    satisfies: [fs_fy_minus2, fs_fy_minus1]
+    satisfies: [fs_fy_minus3, fs_fy_minus2, fs_fy_minus1]
     instance_key: year
 
   - id: income_tax_return

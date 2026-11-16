@@ -18,7 +18,7 @@ CONSTITUTION_ONLY_ITEMS = {
     "partnership": set(),
 }
 
-UNIVERSAL_ITEMS = {"pan_entity", "kyc_promoters", "fs_fy_minus2", "fs_fy_minus1", "itr", "bank_statements", "gst_returns"}
+UNIVERSAL_ITEMS = {"pan_entity", "kyc_promoters", "fs_fy_minus3", "fs_fy_minus2", "fs_fy_minus1", "itr", "bank_statements", "gst_returns"}
 
 # Items for documents the configured types cannot read are not on the list (AD-2a).
 NOT_ON_THE_LIST = {"gst_registration", "udyam", "fs_provisional", "fs_projected", "cma_data", "stock_statement", "title_document",

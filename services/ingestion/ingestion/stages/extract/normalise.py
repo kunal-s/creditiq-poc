@@ -90,18 +90,19 @@ def _date_exact(low: str) -> str | None:
 
 
 def _two_quantities(s: str) -> bool:
-    """Digits, then words, then more digits ("4,027,498 as on 31 March 2025"): joining them would
-    invent a number, so the value is left unparsed."""
+    """Digits, then anything that is not part of a number, then more digits ("4,027,498 as on 31 March
+    2025", "75,00,000 (90,00,000)"): joining them would invent a number, so the value is left unparsed."""
     body = re.sub(r"(?i)(?:₹|rs\.?|inr)", "", s)
     body = re.sub(r"(?i)\b(?:cr|dr)\.?\s*$", "", body.strip())
-    return re.search(r"\d[\d,.\s]*[A-Za-z]{2,}[^\d]*\d", body) is not None
+    return re.search(r"\d[\d,.\s]*[^\d,.\s][^\d]*\d", body) is not None
 
 
 def to_number(raw: str) -> int | float | None:
     s = collapse_ws(raw)
     if not s or s in ("-", "--", "—"):
         return None
-    s = re.sub(r"(?<=\d)\s*\([^)]*[A-Za-z][^)]*\)\s*$", "", s)  # "4,027,498 (illustrative)": a trailing note
+    # "4,027,498 (illustrative)", "Rs. 75,00,000 (previous year Rs. 90,00,000).": a trailing note in words
+    s = re.sub(r"(?<=\d)\s*\([^)]*[A-Za-z][^)]*\)\s*[.,;]?\s*$", "", s)
     if _two_quantities(s):
         return None
     neg = s.startswith("(") and s.rstrip(" CrDr.").endswith(")") or bool(re.match(r"^[-−–]\s*", s)) or bool(re.search(r"(?<![A-Za-z])Dr\.?$", s))

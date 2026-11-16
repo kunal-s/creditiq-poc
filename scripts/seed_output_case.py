@@ -3,7 +3,7 @@
 
     .venv/bin/python scripts/seed_output_case.py [--root workflow/data]
 
-The case is the fictional Kestrel borrower of the test fixtures: its fourteen documents
+The case is the fictional Kestrel borrower of the test fixtures: its fifteen documents
 (tests/fixtures/cases.json "complete") are uploaded as the RM would, read with their recorded
 service output (the stub client, so no model is called and the result is the same every run),
 and the case is created by the analyst once the review gate is met. Nothing is written past

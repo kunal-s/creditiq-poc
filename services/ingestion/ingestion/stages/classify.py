@@ -116,6 +116,17 @@ def _page_heads(cfg: IngestionConfig, page: Page) -> str | None:
     return top["type"] if top["eligible"] and top["score"] >= cfg.signals.classify_threshold else None
 
 
+def _page_shows_other(cfg: IngestionConfig, page: Page, first: str) -> bool:
+    """A later page ends the opening document when the type it best shows, on that page alone, is another
+    one, eligible at the score the second pass opens a part at (`siblings.page_min_score`). The opening
+    threshold is not asked: a memorandum's first page may carry only its title, and one weak page left
+    inside the opening document would carry that title into it, a signal that rules the opening type out."""
+    ranked = score_types(cfg, evidence([page], 1, cfg.signals.head_lines))
+    floor = cfg.llm.siblings.page_min_score
+    hits = [r for r in ranked if r["eligible"] and r["score"] >= floor]
+    return bool(hits) and hits[0]["type"] != first
+
+
 def _opening_part(cfg: IngestionConfig, pages: list[Page]) -> tuple[dict, list[int]] | None:
     """When the file opens with one document and a later page names itself as another type, the type of
     the opening document, scored on its own pages by the tier-1 rule; None when the file is not such a bundle."""
@@ -128,8 +139,7 @@ def _opening_part(cfg: IngestionConfig, pages: list[Page]) -> tuple[dict, list[i
         return None
     part = [real[0]]
     for p in real[1:]:
-        head = _page_heads(cfg, p)
-        if head is not None and head != first:
+        if _page_shows_other(cfg, p, first):
             break
         part.append(p)
     if len(part) == len(real):

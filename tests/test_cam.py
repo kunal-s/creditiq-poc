@@ -991,7 +991,7 @@ def test_the_summary_lists_exactly_the_policy_deviations(client: TestClient, pub
         if i["ref"] != "DOC-01":
             assert i["citations"], i["ref"]
     texts = {i["ref"]: i["text"] for i in items}
-    assert texts["DOC-02"] == "Documentation: audited financial statements cover 1 year against a norm of at least 2 years."
+    assert texts["DOC-02"] == "Documentation: audited financial statements cover 1 year against a norm of at least 3 years."
     open_items = int(deviations["DOC-01"]["actual"])
     words = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine"}
     assert texts["DOC-01"] == (f"Documentation: {words.get(open_items, str(open_items))} blocking checklist "
@@ -1045,7 +1045,7 @@ def test_the_policy_table_and_the_approving_authority(client: TestClient, publis
         "Deviation, financial norms": "Head Office Credit Committee (one level above the amount authority; "
                                       "FR-06 Working-capital cycle)",
         "Deviation, documentation": "Head Office Credit Committee (one level above the amount authority; "
-                                    "DOC-01 Blocking checklist items open)",
+                                    "DOC-01 Blocking checklist items open and DOC-02 Years of audited financial statements)",
         "Authority required": "At least Head Office Credit Committee",
         "If DSCR is a deviation": "No change",
         "Matrix": "Provisional matrix",
@@ -1326,7 +1326,7 @@ def test_people_the_sourcing_message_alone_names_are_stated_once(client: TestCli
     assert rows["Memorandum and articles of association"][2].startswith("Memorandum and articles of association")
     assert rows["Audited financial statements, second-latest year"][2] == (
         "Audited financial statements for FY 2024-25 (year ended 31 Mar 2025); received: FY 2025-26")
-    assert "Income tax return with computation, latest assessment year" in rows
+    assert "Income tax return with computation, last three assessment years" in rows
 
 
 def test_a_person_missing_from_a_source_is_cited_where_they_are_named(client: TestClient, published_data_root: Path):

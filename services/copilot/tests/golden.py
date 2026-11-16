@@ -19,7 +19,7 @@ FIXTURES = ROOT / "tests" / "fixtures"
 # (cases, recorded model answers): the golden set, and the end-to-end spec's questions
 SETS = [(FIXTURES / "golden.yaml", FIXTURES / "golden_recordings.json"), (FIXTURES / "e2e.yaml", FIXTURES / "e2e_recordings.json")]
 NOW = lambda: "2026-10-28T10:00:00"  # noqa: E731
-USER = Principal("u1", "analyst", frozenset({"case.read", "message.send"}), "token")
+USER = Principal("u1", "analyst", frozenset({"case.read", "message.send", "output.read"}), "token")
 
 
 def load(path: Path = SETS[0][0]) -> dict:

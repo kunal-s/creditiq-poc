@@ -207,6 +207,9 @@ def test_dates_tolerate_a_trailing_note_and_refuse_a_range(raw, expected):
     ("1,23,456 Dr", -123456),
     ("Rs. 1,000/-", 1000),
     ("4,027,498 as on 31 March 2025", None),     # two quantities: joining the digits would invent a number
+    ("Rs. 75,00,000 (previous year Rs. 90,00,000).", 7500000),   # a trailing note, then a full stop
+    ("75,00,000 (90,00,000)", None),             # two figures side by side
+    ("28,792.1 28,792.1", None),
 ])
 def test_numbers_never_join_digits_from_a_note(raw, expected):
     assert to_number(raw) == expected
@@ -243,3 +246,56 @@ def test_words_whose_boxes_overlap_share_a_line_even_when_their_centres_differ()
 def test_two_lines_of_ordinary_spacing_are_never_merged():
     words = [Word("one", 40, 100, 70, 110), Word("two", 40, 114, 70, 124)]
     assert len(build_lines(1, words, y_tol=3, column_gap=12, boilerplate=[], min_overlap=0.5)) == 2
+
+
+# --- two years of audited statements in one file ---------------------------------------------------
+
+
+def _afs(no, *lines):
+    return page(no, "KESTREL FABRICATORS PRIVATE LIMITED", *lines)
+
+
+def test_two_years_of_statements_are_two_instances_with_each_auditors_report_in_its_year(cfg):
+    pages = [_afs(1, "AUDITED FINANCIAL STATEMENTS", "FOR THE YEAR ENDED 31 MARCH 2026"),
+             _afs(2, "INDEPENDENT AUDITOR'S REPORT", "To the Members"),
+             _afs(3, "BALANCE SHEET AS AT 31 MARCH 2026", "Particulars  31 March 2026  31 March 2025"),
+             _afs(4, "STATEMENT OF PROFIT AND LOSS FOR THE YEAR ENDED 31 MARCH 2026"),
+             _afs(5, "AUDITED FINANCIAL STATEMENTS", "FOR THE YEAR ENDED 31 MARCH 2025"),
+             _afs(6, "INDEPENDENT AUDITOR'S REPORT", "To the Members"),
+             _afs(7, "BALANCE SHEET AS AT 31 MARCH 2025")]
+    front, groups = split_instances(cfg, "audited_financial_statements", pages)
+    assert front == [] and [[p.no for p in g] for g in groups] == [[1, 2, 3, 4], [5, 6, 7]]
+
+
+def test_last_years_date_in_notes_or_columns_does_not_split_one_years_statements(cfg):
+    pages = [_afs(1, "INDEPENDENT AUDITOR'S REPORT", "To the Members"),     # before any dated heading: still this year's
+             _afs(2, "BALANCE SHEET AS AT 31 MARCH 2026", "As at 31 March  As at 31 March", "2026  2025"),
+             _afs(3, "Notes to the financial statements", "Particulars", "Amount", "Total", "Note",
+                  "Borrowings for the year ended 31 March 2025 were repaid")]   # below the heading lines
+    front, groups = split_instances(cfg, "audited_financial_statements", pages)
+    assert front == [] and [[p.no for p in g] for g in groups] == [[1, 2, 3]]
+
+
+def test_an_xbrl_rendition_is_split_by_the_period_in_its_page_header_alone(cfg):
+    head = "KESTREL FABRICATORS PRIVATE LIMITED Standalone Financial Statements for period 01/04/2022 to 31/03/2023"
+    pages = [page(1, head, "[110000] Balance sheet", "for the year ended 31 March 2023"),
+             page(2, head, "Textual information", "comparative for the year ended 31 March 2022"),
+             page(3, head, "[400100] Notes")]
+    front, groups = split_instances(cfg, "audited_financial_statements", pages)
+    assert front == [] and [[p.no for p in g] for g in groups] == [[1, 2, 3]]
+
+
+# --- a bundle is placed by the document it opens with ----------------------------------------------
+
+
+def test_a_bundle_whose_second_document_opens_on_a_weak_title_page_is_placed_by_its_first(cfg):
+    # The memorandum's first page carries only its title. Left inside the certificate, that title
+    # would rule the certificate out and the file would not be placed at all.
+    pages = [page(1, "MINISTRY OF CORPORATE AFFAIRS", "CERTIFICATE OF INCORPORATION", "Companies Act, 2013",
+                  "Corporate Identity Number U17021MH2018PTC309874", "is incorporated on this day"),
+             page(2, "THE COMPANIES ACT, 2013", "MEMORANDUM OF ASSOCIATION", "OF KESTREL FABRICATORS PRIVATE LIMITED"),
+             page(3, "SUBSCRIPTION CLAUSE", "MEMORANDUM OF ASSOCIATION", "We, the several persons", "capital clause"),
+             page(4, "INCOME TAX DEPARTMENT", "INTIMATION OF ALLOTMENT OF PERMANENT ACCOUNT NUMBER (PAN)", "PAN AADCK4821K")]
+    r = classify(cfg, pages, None)
+    assert r["type"] == "certificate_of_incorporation" and r["tier"] == "signals"
+    assert "pages 1-1" in r["reason"]

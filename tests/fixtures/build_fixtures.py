@@ -350,7 +350,9 @@ def complete_case() -> list[File]:
         ("kestrel audited fy2026.pdf", "audited_financial_statements", lambda f: audited_fs(f, e, "2026-03-31")),
         # The FY 2025-26 statements show FY 2024-25 at 0.85 of this year: the FY 2024-25 statements agree (FS-01).
         ("kestrel audited fy2025.pdf", "audited_financial_statements", lambda f: audited_fs(f, e, "2025-03-31", scale=0.85)),
-        ("kestrel itr.pdf", "income_tax_return", lambda f: itr(f, e, ["2026-27", "2025-26"])),
+        # The third audited year: the FY 2024-25 statements show FY 2023-24 at 0.85, so these agree with them (FS-01).
+        ("kestrel audited fy2024.pdf", "audited_financial_statements", lambda f: audited_fs(f, e, "2024-03-31", scale=0.85)),
+        ("kestrel itr.pdf", "income_tax_return", lambda f: itr(f, e, ["2026-27", "2025-26", "2024-25"])),
         ("kestrel gst returns.pdf", "gstr_3b", lambda f: gstr3b(f, e, GST_WINDOW)),
         # Business credits of INR 11.70 cr against INR 11.76 cr of GST over the months both cover: within the
         # turnover tolerance (TO-05).

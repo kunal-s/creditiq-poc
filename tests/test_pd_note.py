@@ -807,11 +807,11 @@ def test_a_norms_question_may_name_its_figures_and_the_shortfall(published_data_
     policy = reader.load_policy(published_data_root)
     configured = {n.id: n for n in policy.norms}
     years = NormResult(id="DOC-02", family="documentation", label="Years of audited financial statements", formula="",
-                       required="at least 2 years", unit="years", outcome="deviation", category="documentation",
+                       required="at least 3 years", unit="years", outcome="deviation", category="documentation",
                        category_label="Documentation", actual=1, actual_text="1 year")
     values = norm_values(years, configured["DOC-02"], policy, "FY 2025-26", set())
-    assert (values["shortfall"], values["s"]) == ("1 year", "")
-    assert values["statement"] == "Audited financial statements cover 1 year against a norm of at least 2 years."
+    assert (values["shortfall"], values["s"]) == ("2 years", "s")
+    assert values["statement"] == "Audited financial statements cover 1 year against a norm of at least 3 years."
     inputs = [NormInput(name="amount_requested", label="Amount requested", value=30_000_000),
               NormInput(name="revenue_from_operations", label="Revenue from operations", value=49_560_000)]
     request = NormResult(id="EL-05", family="eligibility", label="Total request against turnover", formula="",

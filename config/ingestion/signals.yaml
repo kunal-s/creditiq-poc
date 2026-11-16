@@ -118,6 +118,17 @@ types:
       - 'provisional\s+financial'
       - 'statement\s+of\s+account'
       - {rx: 'income[\s-]*tax\s+return|form\s+itr', zone: head}
+    # Two years' statements in one file are two instances, told apart by the date a page's heading names
+    # ("for the year ended 31 March 2026", "balance sheet as at 31 March 2026"). Read from the heading only:
+    # notes and comparative columns name last year too. An MCA XBRL rendition prints its period in every
+    # page header, which then alone decides. Pages before the first dated heading (the auditor's report)
+    # belong to the first instance, not front matter.
+    instances:
+      zone: head
+      leading: first
+      first_key_pattern: 'financial\s+statements\s+for\s+period\s+\S+\s+to\s+(\d{1,2}/\d{1,2}/20\d{2})'
+      key_pattern: '(?:year\s+ended|as\s+at)\s+(\d{1,2}(?:st|nd|rd|th)?\s+(?:january|february|march|april|may|june|july|august|september|october|november|december),?\s+20\d{2})'
+      keys: [financial_year]
 
   income_tax_return:
     required:

@@ -410,7 +410,9 @@ export function ChatPanel({ endpoint, getToken, context, labels, suggestions, st
         {empty && (
           <div className="flex flex-col gap-4">
             {/* What the assistant can do here, the questions to start with, and what its answers rest on. */}
-            <p className="rounded border border-border bg-muted/60 px-3 py-3 text-[13px] leading-relaxed text-foreground">{labels.intro}</p>
+            {labels.intro && (
+              <p className="rounded border border-border bg-muted/60 px-3 py-3 text-[13px] leading-relaxed text-foreground">{labels.intro}</p>
+            )}
             {suggestions && suggestions.length > 0 && (
               <div>
                 {labels.startingActions && (

@@ -26,7 +26,7 @@ test("an RM asks why two uploaded files were turned away and gets the engine's r
     await waitForProcessing(api, id);
 
     await signedInAs(page, "rm");
-    await page.goto(`/appraisals/${id}/completeness`);
+    await page.goto(`/appraisals/${id}/documents`);
     await page.getByTestId("assistant-launcher").click();
     const panel = page.getByTestId("copilot-panel");
     await panel.getByRole("button", { name: "Why was a document rejected?" }).click();
@@ -57,7 +57,7 @@ test("an RM drafts the follow-up email, completes it on the card and sends it: t
     await waitForProcessing(api, id);
 
     await signedInAs(page, "rm");
-    await page.goto(`/appraisals/${id}/completeness`);
+    await page.goto(`/appraisals/${id}/documents`);
     await page.getByTestId("assistant-launcher").click();
     const panel = page.getByTestId("copilot-panel");
     const ask = panel.getByRole("textbox", { name: "Ask about this appraisal" });

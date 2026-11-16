@@ -217,6 +217,18 @@ export const api = {
     for (const file of files) form.append("files", file, file.name);
     return request<UploadResult>(`/api/cases/${q(id)}/files`, { method: "POST", body: form });
   },
+  /** A file taken off the case, whatever its outcome; its content may then be sent again. */
+  removeFile: (id: string, fileId: string) =>
+    request<void>(`/api/cases/${q(id)}/files/${q(fileId)}`, { method: "DELETE" }),
+  /** A new upload in a file's place: the file is removed, then the upload registered. */
+  replaceFile: (id: string, fileId: string, files: File[]) => {
+    const form = new FormData();
+    for (const file of files) form.append("files", file, file.name);
+    return request<UploadResult>(`/api/cases/${q(id)}/files/${q(fileId)}/replace`, {
+      method: "POST",
+      body: form,
+    });
+  },
   caseDocuments: (id: string) => request<LogicalDocument[]>(`/api/cases/${q(id)}/documents`),
   /** The rendered page image (PNG); `page` is the absolute page in the source file. */
   pageImage: async (id: string, documentId: string, page: number) => {

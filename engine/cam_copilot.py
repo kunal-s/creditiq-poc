@@ -54,7 +54,21 @@ _rand = random.uniform
 
 
 def available(cfg: CamCopilotConfig) -> bool:
-    return bool(cfg.enabled and cfg.model and os.environ.get(cfg.api_key_env))
+    return bool(cfg.enabled and cfg.model and (cfg.provider != "azure" or cfg.deployment)
+                and os.environ.get(cfg.api_key_env))
+
+
+def _auth(cfg: CamCopilotConfig) -> dict:
+    """Azure OpenAI's v1 API takes the key in `api-key`; OpenAI as a bearer token."""
+    key = os.environ.get(cfg.api_key_env, "")
+    return {"api-key": key} if cfg.provider == "azure" else {"Authorization": f"Bearer {key}"}
+
+
+def _request_hash(cfg: CamCopilotConfig, body: dict) -> str:
+    """The recorded answer's key. OpenAI's is the body's hash, as it always was; Azure's also names the
+    provider, so a deployment named like a model id never replays OpenAI's answer."""
+    keyed = body if cfg.provider != "azure" else {"provider": "azure", "body": body}
+    return hashlib.sha256(json.dumps(keyed, sort_keys=True).encode()).hexdigest()
 
 
 def _current_words(cam: Cam, section_id: str) -> tuple[str, list[str], list[str]]:
@@ -99,13 +113,14 @@ def regenerate(conn: sqlite3.Connection, cam: Cam, section_id: str, instruction:
         user = user.replace("{{" + key + "}}", value)
     sampling = {k: v for k, v in (("temperature", cfg.temperature), ("seed", cfg.seed)) if v is not None}
     body = {
-        "model": cfg.model,
+        # The deployment's name on Azure; the model id elsewhere.
+        "model": cfg.deployment if cfg.provider == "azure" else cfg.model,
         "messages": [{"role": "system", "content": cfg.system}, {"role": "user", "content": user}],
         "response_format": {"type": "json_schema",
                             "json_schema": {"name": "cam_section", "strict": True, "schema": SCHEMA}},
         **sampling,
     }
-    key = hashlib.sha256(json.dumps(body, sort_keys=True).encode()).hexdigest()
+    key = _request_hash(cfg, body)
     row = conn.execute("SELECT response FROM cam_model_calls WHERE case_id = ? AND request_hash = ?",
                        (cam.case_id, key)).fetchone()
     log = CallLog(conn, service="cam", task="cam_section", provider=cfg.provider, model=cfg.model, mode="record",
@@ -155,7 +170,7 @@ def _call(cfg: CamCopilotConfig, body: dict) -> list[str]:
     br = model_retry.breaker(cfg.base_url, cfg.model, policy.breaker_failures, policy.breaker_cooldown_s)
     req = urllib.request.Request(
         cfg.base_url.rstrip("/") + "/chat/completions", data=json.dumps(body).encode(), method="POST",
-        headers={"Content-Type": "application/json", "Authorization": f"Bearer {os.environ.get(cfg.api_key_env, '')}"})
+        headers={"Content-Type": "application/json", **_auth(cfg)})
     server_tries = rate_tries = 0
     while True:
         if not br.allow(_monotonic()):
@@ -214,7 +229,14 @@ def _call(cfg: CamCopilotConfig, body: dict) -> list[str]:
                                502, kind=kind)
         _sleep(wait)
     try:
-        msg = answer["choices"][0]["message"]
+        choice = answer["choices"][0]
+        msg = choice["message"]
+        if choice.get("finish_reason") == "content_filter":
+            # Azure answered, but its content filter withheld or cut the answer: never retried, never kept.
+            if log:
+                log.done("content_filter", "the answer was withheld by the provider's content filter")
+            raise CopilotError("The copilot's answer was withheld by the provider's content filter.", 502,
+                               kind="content_filter")
         if msg.get("refusal"):
             if log:
                 log.done("refusal", str(msg.get("refusal")))

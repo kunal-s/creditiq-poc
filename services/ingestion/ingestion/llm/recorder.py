@@ -49,7 +49,7 @@ class ModelClient:
         try:
             answer = call.parse(response)  # raises on refusal or garbage: nothing is stored then
         except ModelError as e:
-            log.done(e.code, str(e))
+            log.done(e.code, str(e), e.kind)
             raise
         log.done()
         if self.mode == "record":

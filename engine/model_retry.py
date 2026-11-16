@@ -23,6 +23,7 @@ from typing import Any
 
 SERVER = {"server_unavailable", "timeout"}
 _DAILY = re.compile(r"per\s*day|\bTPD\b|\bRPD\b|daily|\bquota\b", re.I)
+_LINK = re.compile(r"https?://\S+")   # Azure's per-minute message links to a "quotaincrease" page
 _DURATION = re.compile(r"(\d+(?:\.\d+)?)(ms|h|m|s)")
 
 
@@ -45,7 +46,7 @@ def http_kind(status: int, body: Any = None, provider_code: str | None = None) -
     code, message = _error(body)
     code = provider_code or code
     if status == 429:
-        if code == "insufficient_quota" or _DAILY.search(message):
+        if code == "insufficient_quota" or _DAILY.search(_LINK.sub("", message)):
             return "quota"
         return "rate_limit_minute"
     if status in (500, 502, 503, 504, 409):

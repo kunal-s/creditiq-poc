@@ -605,8 +605,11 @@ class CamCopilotConfig(BaseModel):
     request, so a section reads the same each time it is shown."""
 
     enabled: bool = False
-    provider: Literal["openai"] = "openai"
+    provider: Literal["openai", "azure"] = "openai"
     model: str = ""
+    """The model id: the call log, the prices and the names on Model usage use it."""
+    deployment: str | None = None
+    """Azure only: the deployment's name, sent as the request's `model` (base_url is then <endpoint>/openai/v1)."""
     base_url: str = "https://api.openai.com/v1"
     api_key_env: str = "OPENAI_API_KEY"
     temperature: float | None = None
@@ -621,6 +624,8 @@ class CamCopilotConfig(BaseModel):
 
     @model_validator(mode="after")
     def _retry(self) -> "CamCopilotConfig":
+        if self.provider == "azure" and not self.deployment:
+            raise ValueError("copilot provider azure needs `deployment`: the name the model was deployed under")
         if self.retry is None:
             self.retry = ModelRetry(**({"server_attempts": self.max_retries + 1} if self.max_retries is not None else {}))
         return self

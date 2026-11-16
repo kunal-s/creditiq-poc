@@ -165,10 +165,10 @@ class CallLog:
         else:
             write(self.store, row)
 
-    def done(self, error_code: str | None = None, message: str | None = None) -> None:
+    def done(self, error_code: str | None = None, message: str | None = None, kind: str | None = None) -> None:
         """The call is over: the held attempt is written, marked failed when its answer could not be used."""
         if self._held is not None and error_code:
-            self._held.update(status="error", error_code=error_code, kind=error_code, message=redact(message))
+            self._held.update(status="error", error_code=error_code, kind=kind or error_code, message=redact(message))
         self._flush()
 
     def failed_before_sending(self, error_code: str, message: str, kind: str | None = None) -> None:

@@ -20,7 +20,7 @@ from .config.loader import ConfigError, ConfigStore, load_dir
 from .config.models import IngestionConfig
 from .contracts import IngestRequest
 from .llm.calllog import call_context
-from .llm.openai import OpenAIProvider
+from .llm.openai import MODEL_PROVIDERS, OpenAIProvider
 from .llm.recorder import ModelClient
 from .pipeline import Ingestor
 from .readers.ocr import get_engine
@@ -34,6 +34,16 @@ from .store import Store
 from .util import sha256_hex
 
 LOOPBACK = {"127.0.0.1", "::1", "localhost", "testclient"}
+
+
+def model_client(cfg: IngestionConfig, mode: str, store) -> ModelClient | None:
+    """The model behind a configuration version: OpenAI or an Azure OpenAI deployment (both through the
+    OpenAI-compatible sender), or none when the version names no model provider ("stub")."""
+    import os
+
+    if cfg.llm.provider not in MODEL_PROVIDERS:
+        return None
+    return ModelClient(OpenAIProvider(cfg.llm, os.environ.get(cfg.llm.api_key_env)), mode, store)
 
 
 def create_app(settings: Settings | None = None, store: Store | None = None) -> FastAPI:
@@ -63,13 +73,9 @@ def create_app(settings: Settings | None = None, store: Store | None = None) -> 
         return load_dir(path, version="dev")
 
     def ingestor(cfg: IngestionConfig) -> Ingestor:
-        import os
-
         if "ocr" not in ocr_cache:
             ocr_cache["ocr"] = get_engine(cfg.routing.ocr)
-        provider = OpenAIProvider(cfg.llm, os.environ.get(cfg.llm.api_key_env))
-        model = ModelClient(provider, st.model_mode, db) if cfg.llm.provider == "openai" else None
-        return Ingestor(cfg, db, model, ocr_cache["ocr"])
+        return Ingestor(cfg, db, model_client(cfg, st.model_mode, db), ocr_cache["ocr"])
 
     @app.get("/v1/health")
     def health():
@@ -118,12 +124,10 @@ def create_app(settings: Settings | None = None, store: Store | None = None) -> 
     def classify_transactions(body: txn_stage.ClassifyRequest):
         """File bank-statement transactions under the categories sent with the request. Answers come from
         recordings in replay mode (the default); a transaction with no recording is an error, never a guess."""
-        import os
-
         cfg = config_for(body.config_version)
-        if cfg.llm.provider != "openai":
+        model = model_client(cfg, st.model_mode, db)
+        if model is None:
             raise HTTPException(409, "no model is configured")
-        model = ModelClient(OpenAIProvider(cfg.llm, os.environ.get(cfg.llm.api_key_env)), st.model_mode, db)
         try:
             # The request names no case (by design: no case, borrower or account leaves the engine), so
             # these calls are logged without one.

@@ -2,6 +2,10 @@
 # Sampling (principle 6, amended 6 Oct 2026): the only parameters ever sent are the two named here; a request
 # carrying any other is refused. Temperature 0 narrows the variation but does not guarantee identical output:
 # determinism rests on recording each answer and replaying it. Prompt text is part of the published version.
+# provider: openai, or azure for an Azure OpenAI deployment. For azure: base_url is <endpoint>/openai/v1 (the v1
+# API, no api-version), `deployment` is the deployment's name (sent as the request's model), `model` stays the
+# model id (the call log, the prices and the names on Model usage use it), and api_key_env is
+# AZURE_OPENAI_API_KEY (workflow/private/azure.env).
 provider: openai
 model: gpt-5.4-nano          # confirm the exact id against the provider before first live use
 base_url: https://api.openai.com/v1

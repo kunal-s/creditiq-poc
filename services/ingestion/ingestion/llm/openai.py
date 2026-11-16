@@ -1,5 +1,7 @@
 """OpenAI-compatible chat completions with strict JSON-schema output. `base_url` makes this work
-for any compatible endpoint, which is how the model stays a configuration choice."""
+for any compatible endpoint, which is how the model stays a configuration choice. Provider `azure` is
+Azure OpenAI's v1 API (<endpoint>/openai/v1, no api-version): the deployment's name goes in the body's
+`model` and the key in an `api-key` header; everything else in the request is the same."""
 
 from __future__ import annotations
 
@@ -16,6 +18,10 @@ from .calllog import CallLog, Stopwatch
 from .provider import ModelError, ModelRequest, NativeCall
 
 
+# The configured providers this sender serves; "stub" means no model at all.
+MODEL_PROVIDERS = ("openai", "azure")
+
+
 class OpenAIProvider:
     name = "openai"
 
@@ -23,14 +29,18 @@ class OpenAIProvider:
                  monotonic: Callable[[], float] = time.monotonic, rand: Callable[[float, float], float] = random.uniform):
         """`sleep`, `monotonic` and `rand` are injected so a test waits for nothing."""
         self.cfg = cfg
+        # The provider names the recordings and the call log; anything but azure keeps the name it always had.
+        self.name = "azure" if cfg.provider == "azure" else "openai"
         self.model = cfg.model
+        # What the request names: the deployment on Azure, the model id elsewhere.
+        self.sent_model = cfg.deployment if self.name == "azure" else cfg.model
         self.sampling = {k: v for k, v in (("temperature", cfg.temperature), ("seed", cfg.seed)) if v is not None}
         self.api_key = api_key
         self._sleep, self._monotonic, self._rand = sleep, monotonic, rand
 
     def build(self, req: ModelRequest) -> NativeCall:
         body = {
-            "model": self.model,
+            "model": self.sent_model,
             "messages": [{"role": "system", "content": req.system}, {"role": "user", "content": req.user}],
             "response_format": {"type": "json_schema", "json_schema": {"name": req.task, "strict": True, "schema": req.schema}},
             **self.sampling,
@@ -58,7 +68,7 @@ class OpenAIProvider:
             status, headers, answer = None, None, None
             try:
                 r = httpx.post(self.cfg.base_url.rstrip("/") + "/chat/completions", json=body, timeout=self.cfg.timeout_s,
-                               headers={"Authorization": f"Bearer {self.api_key}"})
+                               headers=self._auth())
             except httpx.TimeoutException as e:
                 kind, code, last = "timeout", type(e).__name__, str(e) or type(e).__name__
             except httpx.HTTPError as e:
@@ -100,12 +110,20 @@ class OpenAIProvider:
                 raise ModelError("http", last, kind=kind)
             self._sleep(wait)
 
+    def _auth(self) -> dict:
+        return {"api-key": self.api_key} if self.name == "azure" else {"Authorization": f"Bearer {self.api_key}"}
+
     @staticmethod
     def _parse(resp: dict):
         try:
-            msg = resp["choices"][0]["message"]
+            choice = resp["choices"][0]
+            msg = choice["message"]
         except (KeyError, IndexError, TypeError) as e:
             raise ModelError("bad_response", "no choices in the response") from e
+        if choice.get("finish_reason") == "content_filter":
+            # Azure answered, but its content filter withheld or cut the answer: like a refusal, never
+            # retried and never recorded.
+            raise ModelError("refusal", "the answer was withheld by the provider's content filter", kind="content_filter")
         if msg.get("refusal"):
             raise ModelError("refusal", str(msg["refusal"])[:300])
         try:

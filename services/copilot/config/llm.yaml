@@ -1,4 +1,8 @@
 # The model id and endpoint are configuration; the key comes from the environment (never from this file).
+# provider: openai, or azure for an Azure OpenAI deployment. For azure: base_url is <endpoint>/openai/v1 (the v1
+# API, no api-version), `deployment` is the deployment's name (sent as the request's model), router_model and runner_model stay the
+# model id (the call log, the prices and the names on Model usage use it), and api_key_env is
+# AZURE_OPENAI_API_KEY (workflow/private/azure.env).
 provider: openai
 base_url: https://api.openai.com/v1
 api_key_env: OPENAI_API_KEY

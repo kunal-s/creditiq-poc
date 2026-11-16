@@ -3,6 +3,7 @@ only when the deployment has the section switched on. A source that cannot be re
 cost is tokens times the configured price per million (cached input at its own price), and a model with
 no price has none, never 0."""
 
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -100,3 +101,18 @@ def test_the_call_list_is_filtered_newest_first_and_paged(client: TestClient, lo
     page = client.get("/api/admin/model-usage/calls", params={"from": DAY, "to": DAY, "service": "cam", "limit": 2,
                                                              "offset": 1}, headers=admin).json()
     assert page["total"] == 4 and len(page["rows"]) == 2 and page["unavailable"] == []
+
+
+def test_a_call_time_written_without_its_offset_is_given_one_and_sorted_by_the_instant(client: TestClient, logged,
+                                                                                      monkeypatch):
+    """The case assistant writes UTC times without an offset: the list gives every time its offset, so the
+    screen shows each call at its instant, in order with the other services' calls."""
+    later = {"id": "c1", "at": f"{DAY}T10:00:00", "service": "copilot", "task": "runner", "model": "gpt-5.4-nano",
+             "source": "live", "status": "ok"}
+    monkeypatch.setattr(model_usage, "_copilot", lambda path, params, token: {"total": 1, "rows": [later]})
+    admin = sign_in(client, ADMIN)
+    page = client.get("/api/admin/model-usage/calls", params={"from": DAY, "to": DAY}, headers=admin).json()
+    [copilot] = [r for r in page["rows"] if r["service"] == "copilot"]
+    assert copilot["at"] == f"{DAY}T10:00:00+00:00"
+    instants = [datetime.fromisoformat(r["at"]) for r in page["rows"]]
+    assert all(t.tzinfo for t in instants) and instants == sorted(instants, reverse=True)

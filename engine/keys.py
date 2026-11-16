@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 
 PRIVATE = Path(__file__).resolve().parents[1] / "workflow" / "private"
-FILES = ("openai.env",)
+FILES = ("openai.env", "azure.env")   # each provider's key, named by its api_key_env
 
 
 def load() -> None:

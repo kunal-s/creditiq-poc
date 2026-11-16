@@ -20,24 +20,53 @@ export VITE_COPILOT_URL="${VITE_COPILOT_URL:-http://localhost:${COPILOT_PORT}}"
 
 # Model calls: "replay" (the default) answers only from recordings, so a document nobody has run
 # before has none and its model steps fail. "record" calls the model once, stores the answer, and
-# replays it from then on; "live" calls without storing. Both need a key, taken from the
-# environment, else .env.local, else workflow/private/openai.env.
+# replays it from then on; "live" calls without storing. Both need the key each configuration names
+# (`api_key_env`: OPENAI_API_KEY for OpenAI, AZURE_OPENAI_API_KEY for Azure), taken from the
+# environment, else .env.local, else workflow/private/openai.env or azure.env.
 # The case assistant has its own switch, COPILOT_MODEL_MODE, with the same three values; in "replay"
 # it can only repeat answers already recorded in its own store, so use "record" to try it by hand.
 export INGEST_MODEL_MODE="${INGEST_MODEL_MODE:-replay}"
 export COPILOT_MODEL_MODE="${COPILOT_MODEL_MODE:-replay}"
 case "$INGEST_MODEL_MODE/$COPILOT_MODEL_MODE" in
   record/*|live/*|*/record|*/live)
-    for KEY_FILE in "$ROOT_DIR/.env.local" "$ROOT_DIR/workflow/private/openai.env"; do
-      if [ -z "${OPENAI_API_KEY:-}" ] && [ -f "$KEY_FILE" ]; then
-        set -a; . "$KEY_FILE"; set +a
-      fi
-    done
-    if [ -z "${OPENAI_API_KEY:-}" ]; then
-      echo "error: INGEST_MODEL_MODE=$INGEST_MODEL_MODE / COPILOT_MODEL_MODE=$COPILOT_MODEL_MODE needs OPENAI_API_KEY (set it, or give it a value in .env.local)." >&2
-      exit 1
+    # The keys the three model configurations name (document processing, memo copilot, case assistant).
+    KEY_NAMES="OPENAI_API_KEY"
+    if [ -x "$ROOT_DIR/.venv/bin/python" ]; then
+      KEY_NAMES="$("$ROOT_DIR/.venv/bin/python" - "$ROOT_DIR" <<'PY'
+import sys
+from pathlib import Path
+
+import yaml
+
+root = Path(sys.argv[1])
+def name(path, *keys):
+    data = yaml.safe_load((root / path).read_text(encoding="utf-8")) or {}
+    for k in keys:
+        data = (data or {}).get(k) or {}
+    return data or None
+names = {name("config/ingestion/llm.yaml", "api_key_env"), name("config/cam.yaml", "copilot", "api_key_env"),
+         name("services/copilot/config/llm.yaml", "api_key_env")}
+print(" ".join(sorted(n for n in names if isinstance(n, str))) or "OPENAI_API_KEY")
+PY
+)" || KEY_NAMES=""
+      # Configuration that cannot be read still asks for a key: the one the files have always named.
+      if [ -z "$KEY_NAMES" ]; then KEY_NAMES="OPENAI_API_KEY"; fi
     fi
-    export OPENAI_API_KEY
+    for KEY_NAME in $KEY_NAMES; do
+      for KEY_FILE in "$ROOT_DIR/.env.local" "$ROOT_DIR/workflow/private/openai.env" "$ROOT_DIR/workflow/private/azure.env"; do
+        if [ -z "${!KEY_NAME:-}" ] && [ -f "$KEY_FILE" ]; then
+          # Only the key wanted is taken from the file; its value is never printed.
+          KEY_VALUE="$(set -a; . "$KEY_FILE"; printf '%s' "${!KEY_NAME:-}")"
+          if [ -n "$KEY_VALUE" ]; then export "$KEY_NAME=$KEY_VALUE"; fi
+          unset KEY_VALUE
+        fi
+      done
+      if [ -z "${!KEY_NAME:-}" ]; then
+        echo "error: INGEST_MODEL_MODE=$INGEST_MODEL_MODE / COPILOT_MODEL_MODE=$COPILOT_MODEL_MODE needs $KEY_NAME (set it, or give it a value in .env.local or workflow/private/)." >&2
+        exit 1
+      fi
+      export "$KEY_NAME"
+    done
     ;;
 esac
 

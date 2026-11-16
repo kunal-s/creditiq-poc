@@ -6,6 +6,30 @@ from fastapi.testclient import TestClient
 from engine.config import load_roles_config
 from engine.configstore import writer
 
+# The tests run with the model settings they were written for, whatever provider the shipped
+# configuration names (config/cam.yaml `copilot`, config/ingestion/llm.yaml may point at an Azure
+# deployment): a test publish reads these values, and no deployment. With the shipped OpenAI settings this
+# changes nothing.
+PINNED_MODEL = {"provider": "openai", "model": "gpt-5.4-nano", "base_url": "https://api.openai.com/v1",
+                "api_key_env": "OPENAI_API_KEY"}
+_load_yaml = writer._load_yaml
+
+
+def _pin(block: dict) -> dict:
+    return {**{k: v for k, v in block.items() if k != "deployment"}, **PINNED_MODEL}
+
+
+def _pinned_load_yaml(path: Path):
+    data = _load_yaml(path)
+    if path.name == "cam.yaml" and isinstance(data, dict) and isinstance(data.get("copilot"), dict):
+        data = {**data, "copilot": _pin(data["copilot"])}
+    elif path.name == "llm.yaml" and path.parent.name == "ingestion" and isinstance(data, dict):
+        data = _pin(data)
+    return data
+
+
+writer._load_yaml = _pinned_load_yaml
+
 RM = "arjun.deshpande@rblbank.com"
 ANALYST = "ananya.krishnan@rblbank.com"
 MANAGER = "meenal.kulkarni@rblbank.com"

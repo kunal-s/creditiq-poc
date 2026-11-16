@@ -562,8 +562,11 @@ class RetryConfig(Strict):
 class LlmConfig(Strict):
     """The model layer (FRD AD-5a). Prompt text and sampling settings are part of the published version."""
 
-    provider: Literal["openai", "stub"] = "openai"
+    provider: Literal["openai", "azure", "stub"] = "openai"
     model: str = "gpt-5.4-nano"
+    """The model id. The call log, the prices and the names on Model usage use it, whatever the deployment is called."""
+    deployment: str | None = None
+    """Azure only: the deployment's name, sent as the request's `model` (base_url is then <endpoint>/openai/v1)."""
     base_url: str = "https://api.openai.com/v1"
     api_key_env: str = "OPENAI_API_KEY"
     timeout_s: float = 120
@@ -583,6 +586,8 @@ class LlmConfig(Strict):
     @model_validator(mode="after")
     def _retry(self) -> "LlmConfig":
         """A version published before the `retry` block had `max_retries` (retries after the first attempt)."""
+        if self.provider == "azure" and not self.deployment:
+            raise ValueError("provider azure needs `deployment`: the name the model was deployed under")
         if self.retry is None:
             self.retry = RetryConfig(**({"server_attempts": self.max_retries + 1} if self.max_retries is not None else {}))
         return self

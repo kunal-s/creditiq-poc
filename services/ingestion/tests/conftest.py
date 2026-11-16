@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from ingestion.config import loader
 from ingestion.config.loader import load_dir
 from ingestion.contracts import FileSpec
 from ingestion.llm.openai import FixtureProvider
@@ -14,6 +15,22 @@ from ingestion.util import sha256_hex
 
 HERE = Path(__file__).parent
 CONFIG = HERE.parent.parent.parent / "config" / "ingestion"
+
+# The tests run with the model settings their recordings were made under, whatever provider the shipped
+# configuration names (config/ingestion/llm.yaml may point at an Azure deployment): every configuration a
+# test builds has these values, and no deployment. With the shipped OpenAI settings this changes nothing.
+PINNED_MODEL = {"provider": "openai", "model": "gpt-5.4-nano", "base_url": "https://api.openai.com/v1",
+                "api_key_env": "OPENAI_API_KEY"}
+_build = loader._build
+
+
+def _pinned_build(raw: dict, version: str):
+    llm = {k: v for k, v in dict(raw.get("llm") or {}).items() if k != "deployment"}
+    return _build({**raw, "llm": {**llm, **PINNED_MODEL}}, version)
+
+
+_pinned_build.unpinned = _build   # for a test of a provider other than the pinned one
+loader._build = _pinned_build
 OVERLAY = HERE / "fixtures" / "southgate_config"
 FIXTURE_DOCS = Path(os.environ.get("INGEST_FIXTURE_DOCS", HERE.parent.parent.parent / "workflow" / "docs" / "reference" / "fixtures" / "southgate"))
 

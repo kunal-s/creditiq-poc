@@ -59,17 +59,27 @@ class RetryConfig(_M):
 
 
 class LlmConfig(_M):
-    provider: Literal["openai"] = "openai"
+    provider: Literal["openai", "azure"] = "openai"
     base_url: str
+    """Azure: <endpoint>/openai/v1 (the v1 API, no api-version)."""
     api_key_env: str
     router_model: str
+    """The model ids: the call log, the prices and the names on Model usage use them."""
     runner_model: str
+    deployment: str | None = None
+    """Azure only: the deployment's name, sent as the request's `model` for both roles."""
     temperature: float = 0
     seed: int = 1
     timeout_s: float = Field(60, gt=0)
     max_retries: int | None = Field(None, ge=0)
     """Superseded by `retry`; still read (server_attempts = max_retries + 1) when `retry` is not given."""
     retry: RetryConfig = RetryConfig()
+
+    @model_validator(mode="after")
+    def _azure(self):
+        if self.provider == "azure" and not self.deployment:
+            raise ValueError("provider azure needs `deployment`: the name the model was deployed under")
+        return self
 
     @model_validator(mode="before")
     @classmethod

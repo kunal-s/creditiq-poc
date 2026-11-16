@@ -256,8 +256,10 @@ def read_calls(conn: sqlite3.Connection, *, start: date | None, end: date | None
             unavailable.append(name)
             continue
         total += int(got.get("total") or 0)
-        merged += [r for r in got.get("rows") or []]
-    merged.sort(key=lambda r: str(r.get("at") or ""), reverse=True)
+        # Every call's time with its offset: a source that writes UTC without one (the case assistant) would
+        # otherwise read as the browser's local time, and sort out of place among the others.
+        merged += [{**r, "at": _at(r).isoformat()} if _at(r) else r for r in got.get("rows") or []]
+    merged.sort(key=lambda r: _at(r) or datetime.min.replace(tzinfo=timezone.utc), reverse=True)
     out = []
     for r in merged[offset:offset + limit]:
         c, priced = cost(cfg["prices"], r.get("model"), r.get("input_tokens"), r.get("cached_tokens"),

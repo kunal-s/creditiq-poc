@@ -84,22 +84,29 @@ def request_key(model_name: str, messages: list[ModelMessage], settings: ModelSe
 class RecordingModel(WrapperModel):
     def __init__(self, wrapped: Model, *, llm: LlmConfig, store: Store, mode: Mode = "replay", now: Callable[[], str],
                  role: str = "runner", sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
-                 monotonic: Callable[[], float] = time.monotonic, rand: Callable[[float, float], float] = random.uniform):
+                 monotonic: Callable[[], float] = time.monotonic, rand: Callable[[float, float], float] = random.uniform,
+                 model_id: str | None = None):
         """`role` ("router" or "runner") is the task the model call log names; `sleep`, `monotonic` and
-        `rand` are injected so a test waits for nothing."""
+        `rand` are injected so a test waits for nothing. `model_id` is the model the log names (on Azure
+        the wrapped model is named by its deployment); it defaults to the wrapped model's name."""
         super().__init__(wrapped)
         self._llm, self._store, self._mode, self._now, self._role = llm, store, mode, now, role
         self._sleep, self._monotonic, self._rand = sleep, monotonic, rand
+        self._model_id = model_id or self.model_name
+        # The recordings' key names what was asked of whom: OpenAI's as it always was (the model's name);
+        # Azure's also names the provider and the model id, so it never replays another provider's answer.
+        self._key_name = (self.model_name if llm.provider != "azure"
+                          else f"azure:{self._model_id}:{self.model_name}")
 
     def _log(self, key: str, **fields) -> None:
         """One row of the model call log (copilot/calllog.py); never fails the request."""
         calllog.write(self._store, {"id": None, "service": calllog.SERVICE, "task": self._role,
-                                    "provider": self._llm.provider, "model": self.model_name, "mode": self._mode,
+                                    "provider": self._llm.provider, "model": self._model_id, "mode": self._mode,
                                     "request_key": key, "attempt": 1, **calllog.context(), **fields})
 
     async def request(self, messages, model_settings, model_request_parameters) -> ModelResponse:
         assert_sampling(model_settings, self._llm)
-        key, canon = request_key(self.model_name, messages, model_settings, model_request_parameters)
+        key, canon = request_key(self._key_name, messages, model_settings, model_request_parameters)
         if self._mode != "live":
             hit = self._store.get_llm_call(key)
             if hit is not None:
@@ -111,7 +118,7 @@ class RecordingModel(WrapperModel):
                 raise ReplayMiss(f"no recording for request {key[:12]} (model {self.model_name})")
         response = await self._live(key, messages, model_settings, model_request_parameters)
         if self._mode == "record":
-            self._store.put_llm_call(key, self.model_name, self._now(), canon, ModelMessagesTypeAdapter.dump_json([response]).decode())
+            self._store.put_llm_call(key, self._model_id, self._now(), canon, ModelMessagesTypeAdapter.dump_json([response]).decode())
         return response
 
     async def _live(self, key, messages, model_settings, model_request_parameters) -> ModelResponse:
@@ -164,6 +171,15 @@ class RecordingModel(WrapperModel):
                     raise model_errors.ModelUnavailable(kind, str(e)) from e
                 await self._sleep(wait)
                 continue
+            if response.finish_reason == "content_filter":
+                # The provider answered, but its content filter withheld or cut the answer: never retried,
+                # never recorded, and worded by its kind like any other failure.
+                br.answered()
+                message = "the answer was withheld by the provider's content filter"
+                self._log(key, at=at, source="live", attempt=attempt, status="error", error_code="content_filter",
+                          kind="content_filter", latency_ms=round((self._monotonic() - t0) * 1000, 1), message=message,
+                          **calllog.usage_fields(response.usage))
+                raise model_errors.ModelUnavailable("content_filter", message)
             br.success()
             self._log(key, at=at, source="live", attempt=attempt, status="ok",
                       latency_ms=round((self._monotonic() - t0) * 1000, 1), **calllog.usage_fields(response.usage))

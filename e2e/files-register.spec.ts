@@ -211,3 +211,32 @@ test("a document found within a file is its own part, marked, with its own pages
   await expect(row.getByTestId("found-within-detail")).toContainText("Found on p11, 13 of a file");
   await expect(row.getByText("Found within the file").last()).toBeVisible();
 });
+
+test("a refused file is removed from its row after a confirmation, and leaves the register", async ({
+  page,
+}) => {
+  await files(page);
+  const register = page.getByTestId("files-received");
+  const refused = register.locator("[data-testid='tree-file'][data-status='rejected']");
+  await expect(refused).toContainText("statement.numbers");
+  await refused.getByTestId("file-remove").click();
+  const dialog = page.getByRole("alertdialog");
+  await expect(dialog).toContainText("Remove statement.numbers?");
+  await dialog.getByTestId("file-remove-confirm").click();
+  await expect(dialog).toHaveCount(0);
+  await expect(register).not.toContainText("statement.numbers");
+});
+
+test("a file is replaced by a new upload from its row", async ({ page }) => {
+  await files(page);
+  const register = page.getByTestId("files-received");
+  const refused = register.locator("[data-testid='tree-file'][data-status='rejected']");
+  await refused.getByTestId("file-replace-input").setInputFiles(PDF("statement apr-mar.pdf"));
+  await expect(register).not.toContainText("statement.numbers");
+  await expect(register).toContainText("statement apr-mar.pdf");
+});
+
+test("a role that cannot upload has no file actions", async ({ page }) => {
+  await files(page, new MockApi(), MANAGER);
+  await expect(page.getByTestId("file-actions")).toHaveCount(0);
+});

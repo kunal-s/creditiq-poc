@@ -675,6 +675,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/cases/{case_id}/files/{file_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Remove File
+     * @description Take a file off the case, whatever its outcome (audited). Its documents leave the case, and
+     *     its content no longer counts as received, so uploading it again is not taken as a duplicate.
+     */
+    delete: operations["remove_file_api_cases__case_id__files__file_id__delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/cases/{case_id}/files/{file_id}/figures": {
     parameters: {
       query?: never;
@@ -774,6 +795,27 @@ export interface paths {
      *     earlier outcome cleared, audited). Uploading it again would be a duplicate.
      */
     post: operations["read_file_again_api_cases__case_id__files__file_id__read_again_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/cases/{case_id}/files/{file_id}/replace": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Replace File
+     * @description A new upload in a file's place: the file is removed (as DELETE does), then the upload is
+     *     registered and queued like any other. The same content may be sent again; it is read afresh.
+     */
+    post: operations["replace_file_api_cases__case_id__files__file_id__replace_post"];
     delete?: never;
     options?: never;
     head?: never;
@@ -7268,6 +7310,38 @@ export interface operations {
       };
     };
   };
+  remove_file_api_cases__case_id__files__file_id__delete: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+        file_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   file_figures_api_cases__case_id__files__file_id__figures_get: {
     parameters: {
       query?: never;
@@ -7430,6 +7504,47 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["FileRecord"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  replace_file_api_cases__case_id__files__file_id__replace_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+        file_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "multipart/form-data": {
+          channel?: string;
+          files: string[];
+        };
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["UploadResult"];
         };
       };
       /** @description Validation Error */

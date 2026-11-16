@@ -627,3 +627,90 @@ def recheck_integrity(conn: sqlite3.Connection, root: Path, *, case_id: str, fil
         jobs.enqueue(conn, case_id=case_id, kind="integrity", payload={"file_id": file_id})
         log_decision(conn, at=now_iso(), actor=user_id, case_id=case_id, action="integrity.recheck_requested",
                      detail=dumps({"file_id": file_id, "was": row["integrity_recommendation"]}))
+
+
+class RemoveError(ValueError):
+    pass
+
+
+def remove_file(
+    conn: sqlite3.Connection, root: Path, *, case_id: str, file_id: str, user_id: str, replacing: bool = False
+) -> dict:
+    """Take a file off the case, whatever its outcome (registered, in exception, rejected, duplicate).
+
+    The file record stays, marked removed, for the audit trail; it no longer appears on the case.
+    Its bytes are deleted when no other file of the case holds them, so its SHA-256 no longer counts
+    as received and the same content uploaded again is registered as new, not a duplicate. Its
+    documents are taken out of use (superseded), the review items they raised are closed, and the
+    duplicate records that pointed at it are removed with it. The case's checks are re-run by the caller.
+    `replacing` marks a removal made to put a new upload in the file's place (`replace_file`).
+    """
+    row = conn.execute("SELECT * FROM files WHERE id = ? AND case_id = ?", (file_id, case_id)).fetchone()
+    if row is None or row["status"] == "removed":
+        raise LookupError(f"no file {file_id!r} in case {case_id!r}")
+    if row["status"] == "registered" and row["processed_at"] is None:
+        raise RemoveError("the file is still being read; remove it once it has been read")
+    files_dir = case_files_dir(case_id, root)
+    with transaction(conn):
+        ids = [file_id] + [
+            r["id"] for r in conn.execute(
+                "SELECT id FROM files WHERE case_id = ? AND duplicate_of = ? AND status = 'duplicate'", (case_id, file_id)
+            )
+        ]
+        marks = ",".join("?" * len(ids))
+        doc_ids = [r["id"] for r in conn.execute(f"SELECT id FROM documents WHERE file_id IN ({marks})", ids)]
+        conn.execute(f"UPDATE files SET status = 'removed', stored_name = NULL WHERE id IN ({marks})", ids)
+        if doc_ids:
+            dmarks = ",".join("?" * len(doc_ids))
+            conn.execute(f"UPDATE documents SET status = 'superseded' WHERE id IN ({dmarks})", doc_ids)
+            field_ids = [r["id"] for r in conn.execute(
+                f"SELECT id FROM field_values WHERE document_id IN ({dmarks})", doc_ids)]
+        else:
+            field_ids = []
+        refs = [f"file:{i}" for i in ids] + [f"document:{d}" for d in doc_ids] + [f"field:{f}" for f in field_ids]
+        for i in range(0, len(refs), 500):
+            chunk = refs[i:i + 500]
+            for item in conn.execute(
+                f"SELECT id FROM review_items WHERE case_id = ? AND status = 'open' AND ref IN ({','.join('?' * len(chunk))})",
+                (case_id, *chunk),
+            ).fetchall():
+                close_item(conn, item_id=item["id"], decision="waive", reason="File removed", decided_by=user_id)
+        log_decision(conn, at=now_iso(), actor=user_id, case_id=case_id,
+                     action="file.removed",
+                     detail=dumps({"file_id": file_id, "name": row["archive_path"] or row["original_name"],
+                                   "sha256": row["sha256"], "was": row["status"], "documents": doc_ids,
+                                   "also_removed": ids[1:], "replacing": replacing}))
+    stored = row["stored_name"]
+    if stored and conn.execute(
+        "SELECT 1 FROM files WHERE case_id = ? AND stored_name = ?", (case_id, stored)
+    ).fetchone() is None:
+        (files_dir / stored).unlink(missing_ok=True)
+        for cached in (cases_dir(root) / case_id / "pages").glob(f"{stored}-p*.png"):
+            cached.unlink(missing_ok=True)
+    return dict(row)
+
+
+def replace_file(
+    conn: sqlite3.Connection,
+    root: Path,
+    *,
+    case_id: str,
+    file_id: str,
+    user_id: str,
+    channel: str,
+    parts: list[SpooledPart],
+) -> UploadResult:
+    """Put a new upload in a file's place: the file is removed first (so the same content sent again
+    is read afresh rather than taken as a duplicate), then the upload is registered as any other."""
+    try:
+        old = remove_file(conn, root, case_id=case_id, file_id=file_id, user_id=user_id, replacing=True)
+    except Exception:
+        for part in parts:
+            part.path.unlink(missing_ok=True)
+        raise
+    result = register_parts(conn, root, case_id=case_id, user_id=user_id, channel=channel, parts=parts)
+    with transaction(conn):
+        log_decision(conn, at=now_iso(), actor=user_id, case_id=case_id, action="file.replaced",
+                     detail=dumps({"file_id": file_id, "name": old["archive_path"] or old["original_name"],
+                                   "by": [f.id for f in result.files], "job_id": result.job_id}))
+    return result

@@ -522,6 +522,19 @@ export class MockApi {
       ["GET", new RegExp(`^/api/cases/${id}/files$`), one(this.files, [])],
       ["POST", new RegExp(`^/api/cases/${id}/files$`), (req, m) => this.upload(req, m[1]!)],
       [
+        "DELETE",
+        new RegExp(`^/api/cases/${id}/files/([^/]+)$`),
+        (_req, m) => this.removeFile(m[1]!, m[2]!),
+      ],
+      [
+        "POST",
+        new RegExp(`^/api/cases/${id}/files/([^/]+)/replace$`),
+        (req, m) => {
+          const gone = this.removeFile(m[1]!, m[2]!);
+          return gone.status === 204 ? this.upload(req, m[1]!) : gone;
+        },
+      ],
+      [
         "GET",
         new RegExp(`^/api/cases/${id}/documents$`),
         (_req, m) => {
@@ -1121,6 +1134,25 @@ export class MockApi {
     this.files.set(caseId, [...existing, ...added]);
     const result: UploadResult = { files: added, job_id: "job-1" };
     return { status: 202, json: result };
+  }
+
+  /** A file taken off the case with its documents; its content no longer counts as received. */
+  private removeFile(rawId: string, rawFile: string): Reply {
+    if (!this.user.permissions.includes("document.upload")) return FORBIDDEN;
+    const caseId = decodeURIComponent(rawId);
+    const fileId = decodeURIComponent(rawFile);
+    const existing = this.files.get(caseId) ?? [];
+    if (!existing.some((f) => f.id === fileId))
+      return { status: 404, json: { detail: `no file ${fileId}` } };
+    this.files.set(
+      caseId,
+      existing.filter((f) => f.id !== fileId && f.duplicate_of !== fileId),
+    );
+    this.documents.set(
+      caseId,
+      (this.documents.get(caseId) ?? []).filter((d) => d.file_id !== fileId),
+    );
+    return { status: 204 };
   }
 
   /** F-25.1: the reviewer confirms RBL's record; never the person who imported it. */

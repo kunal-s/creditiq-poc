@@ -358,7 +358,7 @@ def _files_attention(conn: sqlite3.Connection, case_id: str) -> tuple[int, int]:
                   OR (? AND f.integrity_recommendation IN ('needs_review', 'needs_review_priority', 'high_risk_indicators'))
                   OR EXISTS (SELECT 1 FROM documents d WHERE d.file_id = f.id
                              AND d.status IN ('unclassified', 'in_exception', 'in_review')) AS attention
-           FROM files f WHERE f.case_id = ?""", (1 if integrity else 0, case_id)).fetchall()
+           FROM files f WHERE f.case_id = ? AND f.status <> 'removed'""", (1 if integrity else 0, case_id)).fetchall()
     altered = sum(1 for r in rows if r["rec"] in _ALTERED) if integrity else 0
     return sum(1 for r in rows if r["attention"]), altered
 

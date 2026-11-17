@@ -33,7 +33,40 @@
    "defects": [],
    "document_type": "@case",
    "fields": {
-    "registration_number": {
+    "document_title": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "label": "Title",
+     "method": "model",
+     "needs_review": true,
+     "origin": "discovered",
+     "raw_text": "Certificate",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "Certificate"
+     },
+     "status": "found",
+     "value": "Certificate"
+    },
+    "pan": {
      "components": {
       "agreement": 0.8,
       "classification": 1.0,
@@ -44,9 +77,9 @@
      "confidence": 0.96,
      "key_field": false,
      "label": "Registration number",
-     "method": "model",
+     "method": "identifier",
      "needs_review": true,
-     "origin": "discovered",
+     "origin": "gap",
      "raw_text": "AAACH5678Q",
      "reason": null,
      "required": false,

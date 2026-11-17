@@ -184,3 +184,28 @@ test("the Administrator sees the types made on appraisals", async ({ page }) => 
   await expect(panel).toContainText("Fields: monthly rent");
   await expect(panel).toContainText("Appraisals: 1 · Documents: 1");
 });
+
+test("a gap field no other document gives is marked as filling a gap", async ({ page }) => {
+  const api = new MockApi();
+  const base = FIELDS[0]!;
+  api.fields.set(KESTREL, [
+    ...FIELDS,
+    {
+      ...base,
+      id: "fv-gap",
+      field: "cin",
+      label: "Registration No.",
+      origin: "gap",
+      fills_gap: true,
+      method: "deterministic",
+      status: "in_review",
+    },
+    { ...base, id: "fv-gap-2", field: "gstin", label: null, origin: "gap", fills_gap: false },
+  ]);
+  await signedIn(page, api);
+  await page.goto(`/appraisals/${KESTREL}/extraction`);
+  await page.getByRole("button", { name: "All fields" }).click();
+  const row = page.getByTestId("field-row").filter({ hasText: "Registration No." });
+  await expect(row.getByTestId("field-fills-gap")).toHaveText("Fills a gap");
+  await expect(page.getByTestId("field-fills-gap")).toHaveCount(1);
+});

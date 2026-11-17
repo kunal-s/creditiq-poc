@@ -61,6 +61,7 @@ from .contracts import (
 from .names import normalise_name, similarity
 from . import statements
 from .parties import party_list_spec
+from . import case_types
 from .pipeline import effective_types
 from .store import MESSAGE_FILE_NAME
 from .txn_intel import Context, Txn as IntelTxn
@@ -85,6 +86,9 @@ KYC_TYPES = {"director_kyc"}
 YEAR_LINES = ("revenue_from_operations", "profit_before_tax", "profit_after_tax", "net_worth", "total_borrowings",
               "long_term_borrowings", "finance_costs", "cash_and_bank_balances")
 MESSAGE = "application_message"
+# F-19.10: a document of a type a person made for the appraisal (F-09.8) is one source under this name,
+# for the rules that list it; each value is labelled with the type's own name.
+CASE_DOCUMENTS = "case_documents"
 # What the sourcing message may say an account or a facility is, as in "cash credit with Lotuscrest
 # Bank a/c 90100005678"; a short form stands for its full name.
 BANKING_KINDS = {"current account": None, "savings account": None, "escrow account": None, "cash credit": None,
@@ -141,6 +145,8 @@ class Doc:
     party_id: str | None = None
     edits: dict[tuple[str, str], StatementEdit] = field(default_factory=dict)
     """The live edits of this document's statement lines, by line and column."""
+    case_type: bool = False
+    """Of a type made for this appraisal (F-09.8): its values count once a person confirmed them (F-19.10)."""
 
     @property
     def label(self) -> str:
@@ -184,6 +190,7 @@ def _effective(row: sqlite3.Row) -> object:
 
 def load_documents(conn: sqlite3.Connection, root: Path, case_id: str) -> list[Doc]:
     types = {t.id: t.name for t in reader.load_document_types(root).types}
+    types.update(case_types.names(conn, case_id))
     docs: list[Doc] = []
     for row in conn.execute(
         """SELECT d.* FROM documents d WHERE d.case_id = ? AND d.status IN ('accepted', 'in_review', 'extracted',
@@ -193,12 +200,16 @@ def load_documents(conn: sqlite3.Connection, root: Path, case_id: str) -> list[D
         doc_types = effective_types(row)
         if not doc_types:
             continue
+        own = case_types.is_case_type(doc_types[0])
         fields: dict[str, Value] = {}
         for fv in conn.execute(
             "SELECT id, field, value, corrected_value, status, evidence, method, raw FROM field_values WHERE document_id = ?",
             (row["id"],),
         ):
             if fv["status"] in ("missing", "rejected"):
+                continue
+            # A value from a document of a case document type waits for a person before any check uses it.
+            if own and fv["status"] == "in_review":
                 continue
             fields[fv["field"]] = Value(
                 field_id=fv["id"],
@@ -223,6 +234,7 @@ def load_documents(conn: sqlite3.Connection, root: Path, case_id: str) -> list[D
                 fields=fields,
                 party_id=row["party_id"] if "party_id" in row.keys() else None,
                 edits=edits,
+                case_type=own,
             )
         )
     return docs
@@ -437,7 +449,7 @@ def _identities(b: Build) -> IdentityFacts:
 
 def _fv(d: Doc, v: Value, value: str | float | None) -> FactValue:
     return FactValue(
-        source=d.types[0],
+        source=CASE_DOCUMENTS if d.case_type else d.types[0],
         label=d.label,
         value=value,
         evidence=d.evidence(v),

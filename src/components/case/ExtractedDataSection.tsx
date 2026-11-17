@@ -370,6 +370,16 @@ function DocumentFields({
                                 <span data-testid="field-proposed">{t("caseType.proposed")}</span>
                               </Chip>
                             )}
+                            {/* A field the checks read that no other document gives (F-15.9). */}
+                            {f.origin === "gap" && f.fills_gap && (
+                              <Chip
+                                tone="info"
+                                className="ml-1.5 align-middle"
+                                title={t("caseType.fillsGapHelp")}
+                              >
+                                <span data-testid="field-fills-gap">{t("caseType.fillsGap")}</span>
+                              </Chip>
+                            )}
                           </td>
                           <td className="px-3 py-2">
                             <FieldValueButton caseId={caseId} field={f} />

@@ -5630,6 +5630,11 @@
             "title": "Field",
             "type": "string"
           },
+          "fills_gap": {
+            "default": false,
+            "title": "Fills Gap",
+            "type": "boolean"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -5671,7 +5676,8 @@
             "enum": [
               "configured",
               "named",
-              "discovered"
+              "discovered",
+              "gap"
             ],
             "title": "Origin",
             "type": "string"

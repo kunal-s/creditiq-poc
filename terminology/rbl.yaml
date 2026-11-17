@@ -2750,6 +2750,9 @@ caseType:
   failed: The type could not be created.
   proposed: Proposed
   proposedHelp: Proposed from the document; confirm or correct it in the review queue
+  fillsGap: Fills a gap
+  fillsGapHelp: No other document of this appraisal gives this value. It counts in the identity checks once confirmed in the review queue.
+  source: Documents typed on this appraisal
   mapping:
     proposed: "Proposed for {item}, awaiting a checker"
     confirmed: "Counts toward {item}"

@@ -12,6 +12,7 @@ from ...pageindex import Page
 from . import llm_extract
 from .fields import Found, extract_scalar
 from .normalise import normalise
+from ...util import fold
 from .tables import build_table
 
 
@@ -136,4 +137,45 @@ def extract_case_type(cfg: IngestionConfig, ct: CaseType, pages: list[Page], mod
         rule = FieldRule()
         for name, (label, got) in found.items():
             out[name] = {**_finish(FieldDef(name=name, type="string"), rule, got), "origin": "discovered", "label": label}
+    gaps = _gap_fields(cfg, ct, pages, model, taken=set(out), trace=trace)
+    # A gap field the model also proposed under its own label is one fact: kept under the gap field's
+    # name, which the checks read, with the document's label.
+    for gname, g in gaps.items():
+        same = [k for k, f in out.items() if f.get("origin") == "discovered" and f["status"] == "found"
+                and fold(str(f["raw_text"])) == fold(str(g["raw_text"]))]
+        if same:
+            g["label"] = out[same[0]].get("label")
+            for k in same:
+                del out[k]
+    out.update(gaps)
     return {"fields": out, "tables": {}, "trace": trace}
+
+
+def _gap_fields(cfg: IngestionConfig, ct: CaseType, pages: list[Page], model: ModelClient | None, *,
+                taken: set[str], trace: list[dict]) -> dict[str, dict]:
+    """F-15.9: the published gap fields, read the same way from every such document: identifiers by
+    pattern first, then the model with each field's hint. A field the person named, or the model
+    proposed under the same name, is read once. Only values found are reported."""
+    out: dict[str, dict] = {}
+    pending: list[FieldDef] = []
+    for name, rule in cfg.fields.gap_fields.items():
+        if name in taken:
+            continue
+        f = FieldDef(name=name, type="string")
+        found = extract_scalar(rule, pages, lambda c, k=_kind(f, rule): normalise(str(c.raw), k)[1] is None) \
+            if (rule.identifier or rule.aliases or rule.patterns) else None
+        done = _finish(f, rule, found) if found else None
+        if done and done["status"] == "found":
+            out[name] = {**done, "origin": "gap"}
+        elif model is not None and rule.llm is not False:
+            pending.append(f)
+    if pending and model is not None:
+        hints = {f.name: cfg.fields.gap_fields[f.name].llm_hint for f in pending}
+        found, _, more = llm_extract.fill(cfg, ct.name, pending, hints, pages, model)
+        trace.extend(more)
+        for f in pending:
+            if f.name in found:
+                done = _finish(f, cfg.fields.gap_fields[f.name], found[f.name])
+                if done["status"] == "found":
+                    out[f.name] = {**done, "origin": "gap"}
+    return out

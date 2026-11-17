@@ -650,6 +650,7 @@ function fv(
     corrected_value: null,
     origin: "configured",
     label: null,
+    fills_gap: false,
     ...extra,
   };
 }

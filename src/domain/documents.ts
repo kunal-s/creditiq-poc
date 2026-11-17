@@ -109,7 +109,10 @@ export function useDocumentTypes() {
   );
   const name = useCallback(
     (id: string) =>
-      byId(id)?.name ?? own.data?.find((c) => c.id === id)?.name ?? id.replace(/_/g, " "),
+      byId(id)?.name ??
+      own.data?.find((c) => c.id === id)?.name ??
+      // The cross-checks' one source for every document of a type made on the appraisal (F-19.10).
+      (id === "case_documents" ? t("caseType.source") : id.replace(/_/g, " ")),
     [byId, own.data],
   );
   return { ...query, byId, name, caseTypes: own.data ?? [] };

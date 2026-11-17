@@ -66,18 +66,42 @@ def test_named_fields_are_read_and_checked_on_the_page(cfg):
 def test_with_no_fields_named_the_model_proposes_them_and_each_goes_to_review(cfg):
     r = _run(cfg, CaseType(id="CDT-2", name="Tax registration letter"))
     d = r.documents[0]
-    assert list(d.fields) == ["permanent_account_number"]  # the repeated fact and the value not on the page are dropped
-    f = d.fields["permanent_account_number"]
-    assert f.origin == "discovered" and f.label == "Permanent Account Number" and f.needs_review
+    # The repeated fact and the value not on the page are dropped; the PAN the model proposed is also the
+    # gap field `pan` (F-15.9), so it is reported once, under that name, with the document's label.
+    assert "permanent_account_number" not in d.fields and "sanction_amount" not in d.fields
+    f = d.fields["pan"]
+    assert f.origin == "gap" and f.label == "Permanent Account Number" and f.needs_review
     assert r.decision == "human_review"
-    assert {"kind": "discovered_field", "field": "permanent_account_number", "instance": 1} in r.review_reasons
+    assert {"kind": "gap_field", "field": "pan", "instance": 1} in r.review_reasons
 
 
 def test_without_a_model_named_fields_are_missing_and_nothing_is_invented(cfg):
     r = _run(cfg, CaseType(id="CDT-3", name="Letter", fields=[CaseField(name="pan_number")]), model=False)
     assert r.documents[0].fields["pan_number"].status == "missing" and r.documents[0].fields["pan_number"].reason == "no_model"
     r = _run(cfg, CaseType(id="CDT-4", name="Letter"), model=False)
-    assert r.documents[0].fields == {} and r.decision == "human_review"
+    # Nothing is proposed without a model; the gap fields an identifier pattern finds are still read.
+    assert {k: f.origin for k, f in r.documents[0].fields.items()} == {"pan": "gap", "cin": "gap"}
+    assert r.decision == "human_review"
+
+
+def test_the_gap_fields_are_read_from_every_such_document_and_held_for_review(cfg):
+    """F-15.9: the same request for every document; a named field of the same name is read once."""
+    r = _run(cfg, CaseType(id="CDT-6", name="Letter", fields=[CaseField(name="issue_date")]), model=False)
+    pan = r.documents[0].fields["pan"]
+    assert pan.origin == "gap" and pan.method == "identifier" and pan.needs_review and re.fullmatch(PAN, pan.value)
+    r = _run(cfg, CaseType(id="CDT-7", name="Letter", fields=[CaseField(name="pan")]))
+    assert r.documents[0].fields["pan"].origin == "named"
+    seen = []
+    def spy(req):
+        seen.append(req)
+        return answerer(req)
+    b = fixture_doc(DOC)
+    for ct in (CaseType(id="CDT-8", name="Letter A"), CaseType(id="CDT-9", name="Letter B", description="x")):
+        client = ModelClient(FixtureProvider(cfg.llm, spy), "record", Store())
+        Ingestor(cfg, Store(), client, None).process_file("C", spec("x.pdf", b).model_copy(update={"case_type": ct}), b)
+    # The gap request is the same whatever the type or the case: field names and hints, no other value.
+    asks = [q.user for q in seen if q.task == "extract"]
+    assert len(asks) == 2 and asks[0] == asks[1] and "- legal_name (string)" in asks[0]
 
 
 def test_a_discovery_replays_from_its_recording(cfg):

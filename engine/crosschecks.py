@@ -109,6 +109,7 @@ class Context:
         types = reader.load_document_types(root).types
         self.type_names = {t.id: t.name for t in types}
         self.type_names[CASE_RECORD] = "Sourcing message"
+        self.type_names[facts_module.CASE_DOCUMENTS] = "Documents typed on this appraisal"
         self.provenance = {t.id: t.provenance for t in types if t.provenance}
         items = {i.id for i in applicable_items(root, case, None)[0]}
         self.expected = {t.id for t in types if set(t.satisfies) & items}

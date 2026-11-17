@@ -36,9 +36,10 @@ class FieldResult(C):
     key_field: bool = False
     needs_review: bool = False
     """A key field below the review threshold (F-17.2): it goes to the review queue before use."""
-    origin: Literal["configured", "named", "discovered"] = "configured"
+    origin: Literal["configured", "named", "discovered", "gap"] = "configured"
     """Where the field came from: the published type's schema, a field a person named for a case
-    document type (F-15.8), or a field the model proposed for one (F-15.8, held for review by F-17.7)."""
+    document type (F-15.8), a field the model proposed for one (F-15.8), or a published gap field read
+    from one (F-15.9); the last two are held for review (F-17.7)."""
     label: str | None = None
     """The field as the document labels it, for a discovered field."""
 

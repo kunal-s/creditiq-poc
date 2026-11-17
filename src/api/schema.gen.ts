@@ -3571,6 +3571,11 @@ export interface components {
       evidence?: components["schemas"]["Evidence"] | null;
       /** Field */
       field: string;
+      /**
+       * Fills Gap
+       * @default false
+       */
+      fills_gap: boolean;
       /** Id */
       id: string;
       /** Label */
@@ -3587,7 +3592,7 @@ export interface components {
        * @default configured
        * @enum {string}
        */
-      origin: "configured" | "named" | "discovered";
+      origin: "configured" | "named" | "discovered" | "gap";
       /** Raw */
       raw?: string | null;
       /**

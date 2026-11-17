@@ -112,6 +112,36 @@ def field_values(conn: sqlite3.Connection, case_id: str, document_id: str | None
         d["evidence"] = Evidence(**json.loads(d["evidence"])) if d["evidence"] else None
         d["confidence_components"] = json.loads(d["confidence_components"])
         out.append(FieldValue(**d))
+    gaps = [f for f in out if f.origin == "gap" and f.status != "missing"]
+    if gaps:
+        given = _given_elsewhere(conn, case_id)
+        for f in gaps:
+            f.fills_gap = not (given.get(f.field, set()) - {f.document_id})
+    return out
+
+
+def _given_elsewhere(conn: sqlite3.Connection, case_id: str) -> dict[str, set[str]]:
+    """F-15.9: for each gap field, the documents of the appraisal that give it, read as the identity
+    facts read it (engine/facts.py): the entity's PAN, GSTIN and CIN, and any of the legal-name fields;
+    a person's own documents (KYC) do not give the entity's."""
+    from .facts import CIN_FIELDS, GSTIN_FIELDS, NAME_FIELDS, PAN_FIELDS, PERSON_DOCS
+    from .pipeline import effective_types
+
+    names = {**{n: "pan" for n in PAN_FIELDS}, **{n: "gstin" for n in GSTIN_FIELDS}, **{n: "cin" for n in CIN_FIELDS},
+             **{n: "legal_name" for n in NAME_FIELDS}}
+    rows = conn.execute(
+        f"""SELECT fv.field, fv.document_id, d.assigned_types, d.classification FROM field_values fv
+            JOIN documents d ON d.id = fv.document_id
+            WHERE fv.case_id = ? AND fv.status NOT IN ('missing', 'rejected') AND fv.value IS NOT NULL
+              AND fv.value NOT IN ('null', '""') AND d.status NOT IN ('duplicate', 'superseded')
+              AND d.file_id NOT IN {_REMOVED} AND fv.field IN ({", ".join("?" * len(names))})""",
+        (case_id, case_id, *names),
+    )
+    out: dict[str, set[str]] = {}
+    for r in rows:
+        if set(effective_types(r)) & PERSON_DOCS:
+            continue
+        out.setdefault(names[r["field"]], set()).add(r["document_id"])
     return out
 
 

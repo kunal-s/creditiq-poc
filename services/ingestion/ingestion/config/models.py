@@ -285,6 +285,10 @@ class TypeFields(Strict):
 
 class FieldsConfig(Strict):
     types: dict[str, TypeFields]
+    gap_fields: dict[str, FieldRule] = Field(default_factory=dict)
+    """F-15.9: the fields the cross-checks read from any document, whatever its type. A document of a
+    case document type is read for each of them, the same request for every document (field names and
+    hints, never another document's value), and every value found waits for a person (F-17.7)."""
 
 
 # --- validators.yaml ---------------------------------------------------------------------------
@@ -645,6 +649,12 @@ class IngestionConfig(Strict):
                 for k in ts.instances.keys:
                     if tid in types and k not in {f.name for f in types[tid].schema_.fields}:
                         problems.append(f"signals.{tid}.instances.keys: unknown field {k}")
+        from ..stages.extract.identifiers import PATTERNS as IDENTIFIER_PATTERNS
+        for gname, grule in self.fields.gap_fields.items():
+            if grule.identifier and grule.identifier not in IDENTIFIER_PATTERNS:
+                problems.append(f"fields.gap_fields.{gname}: unknown identifier {grule.identifier}")
+            if not (grule.identifier or grule.aliases or grule.patterns or grule.llm_hint):
+                problems.append(f"fields.gap_fields.{gname}: needs an identifier, aliases, patterns or a hint for the model")
         for tid, tf in self.fields.types.items():
             if tid not in types:
                 problems.append(f"fields: unknown document type {tid}")

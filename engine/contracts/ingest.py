@@ -77,7 +77,7 @@ class IngestField(_C):
     required: bool = False
     key_field: bool = False
     needs_review: bool = False
-    origin: Literal["configured", "named", "discovered"] = "configured"
+    origin: Literal["configured", "named", "discovered", "gap"] = "configured"
     label: str | None = None
 
 

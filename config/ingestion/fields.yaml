@@ -3,6 +3,16 @@
 #   identifier scan -> label aliases -> patterns -> (optional) model for what is still missing.
 # Patterns: group 1 is the value unless `group` says otherwise; flags i=ignore case, m=multiline,
 # s=dot matches newline; `multi: true` makes every match one list element.
+# F-15.9: the gap fields. The cross-checks read these from any document, whatever its type
+# (engine/facts.py identities: PAN, GSTIN, CIN, legal name). A document of a type a person made for
+# one appraisal (F-09.8) is read for each, with the same request for every document: never another
+# document's value. Every value found waits for a person's confirmation before a check uses it.
+gap_fields:
+  pan: {identifier: pan, llm_hint: "the permanent account number (PAN) of the business the document is about, not of a customer, supplier or official"}
+  gstin: {identifier: gstin, llm_hint: "the GSTIN of the business the document is about, not of a customer or supplier"}
+  cin: {identifier: cin, llm_hint: "the corporate identity number (CIN) of the company the document is about"}
+  legal_name: {llm_hint: "the full legal name of the business the document is about, as printed"}
+
 types:
   certificate_of_incorporation:
     extraction: model   # the model reads each field; code checks the value on its page; the rules below are the fallback without a model

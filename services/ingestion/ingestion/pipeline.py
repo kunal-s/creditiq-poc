@@ -127,12 +127,13 @@ class Ingestor:
         fields = {}
         for k, f in e["fields"].items():
             scored = score_field(cfg, k, f, cls["confidence"], by_no, [])
-            if f.get("origin") == "discovered" and scored["status"] == "found":
+            if f.get("origin") in ("discovered", "gap") and scored["status"] == "found":
                 scored["needs_review"] = True
             fields[k] = scored
         grade = document_grade(pages)
         conf = decide(cfg, grade, cls, fields, [], {})
-        reasons = conf["reasons"] + [{"kind": "discovered_field", "field": k} for k, f in fields.items() if f.get("origin") == "discovered"]
+        reasons = conf["reasons"] + [{"kind": f"{f['origin']}_field", "field": k} for k, f in fields.items()
+                                     if f.get("origin") in ("discovered", "gap")]
         # Only an unreadable document is rejected: a person chose this type, so a weak reading goes back to them.
         if grade in cfg.decision.reject_grades:
             decision = "reject"

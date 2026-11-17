@@ -192,11 +192,13 @@ class FieldValue(BaseModel):
     status: FieldStatus
     missing_reason: str | None = None
     corrected_value: Scalar = None
-    origin: Literal["configured", "named", "discovered"] = "configured"
+    origin: Literal["configured", "named", "discovered", "gap"] = "configured"
     """Where the field came from: the published type's schema, a field a person named for a case
     document type, or a field the model proposed for one (F-15.8; held for review, F-17.7)."""
     label: str | None = None
     """The document's own label for a discovered field."""
+    fills_gap: bool = False
+    """A gap field (F-15.9) no other document of the appraisal gives: this document is its only source."""
 
 
 class RejectionItem(BaseModel):

@@ -981,7 +981,7 @@ flowchart LR
   - if not, it proposes the document's key fields itself, up to a configured number, each with a label and a value. These are marked **discovered**, not configured.
 
   Every value must be found on its page (F-15.4), and the model call is recorded and replayed like any other. The values are shown under the document in Extracted data.
-- **F-15.9** Such a document is also read for the **gap fields**: a published list of the fields the cross-checks read from any document, whatever its type (`config/ingestion/fields.yaml` `gap_fields`; at first PAN, GSTIN, CIN and legal name). The request is the same for every document (field names and definitions, never another document's value, principle of F-15.1), so it stays context-free. Extracted data marks a value that fills a field the case has from no other document.
+- **F-15.9** Such a document is also read for the **gap fields**: a published list of the fields the cross-checks read from any document, whatever its type (`config/ingestion/fields.yaml` `gap_fields`; at first PAN, GSTIN, CIN and legal name). The request is the same for every document (field names and definitions, never another document's value, principle of F-15.1), so it stays context-free. Identifiers are read by their pattern first, the rest by the model. A gap field the person also named is read once, as named; a gap value the model also proposed under the document's own label is reported once, as the gap field, with that label. Extracted data marks a value that fills a field the case has from no other document ("Fills a gap").
 
 **Acceptance**
 - **TC-17:** identifiers, names, dates and the promoter set are extracted with evidence.

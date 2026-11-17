@@ -916,8 +916,9 @@ def cross_check(sections: dict[str, BaseModel], ingestion: dict[str, dict] | Non
             problems.append(f"crosschecks.{rule.id}: unknown tolerance {rule.tolerance!r}")
         if rule.comparison == "tolerance" and not rule.tolerance:
             problems.append(f"crosschecks.{rule.id}: a tolerance comparison needs a tolerance")
-        # The application message is not a document type but a source (F-04).
+        # The application message is not a document type but a source (F-04); nor are the documents of
+        # the types people made on an appraisal, one source for the identity rules that list them (F-19.10).
         for source in rule.sources:
-            if source not in type_ids:
+            if source not in type_ids and source != "case_documents":
                 problems.append(f"crosschecks.{rule.id}: unknown source {source!r}")
     return problems

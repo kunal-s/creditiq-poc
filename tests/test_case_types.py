@@ -80,11 +80,11 @@ def test_discovered_fields_wait_for_a_person(client, published_data_root):
     t = _make(client, analyst, case_id, name="Shop and establishment certificate").json()
     assert t["fields"] == []
     _assign(client, published_data_root, analyst, case_id, t["id"])
-    f = _fields(client, analyst, case_id, doc["id"])["registration_number"]
-    assert f["origin"] == "discovered" and f["label"] == "Registration number" and f["status"] == "in_review"
+    f = _fields(client, analyst, case_id, doc["id"])["document_title"]
+    assert f["origin"] == "discovered" and f["label"] == "Title" and f["status"] == "in_review"
     [item] = [i for i in client.get(f"/api/review?case_id={case_id}", headers=analyst).json()
               if i["kind"] == "field" and i["ref"] == f"field:{f['id']}"]
-    assert item["summary"].startswith("Shop and establishment certificate: Registration number = AAACH5678Q")
+    assert item["summary"].startswith("Shop and establishment certificate: Title = Certificate")
     assert "proposed by the model" in item["summary"]
 
 
@@ -196,3 +196,41 @@ def test_an_item_that_is_not_mandatory_is_mapped_at_once(client, published_data_
     [m] = made.json()["mappings"]
     assert m["status"] == "confirmed" and m["decided_by"] == m["proposed_by"]
     assert not [i for i in client.get(f"/api/review?case_id={case_id}", headers=analyst).json() if i["kind"] == "mapping"]
+
+
+def test_a_gap_field_fills_a_gap_and_counts_in_the_identity_checks_once_confirmed(client, published_data_root):
+    """F-15.9, F-17.7, F-19.10: the PAN read from a case-type document is held for review; it fills a gap
+    (no other document gives the entity's PAN: the director's KYC PAN is a person's); once confirmed it is a
+    source of ID-01 under its type's name."""
+    rm, analyst, case_id = _case(client, published_data_root)
+    doc = _unknown(client, rm, case_id)
+    t = _make(client, analyst, case_id, name="Shop and establishment certificate").json()
+    _assign(client, published_data_root, analyst, case_id, t["id"])
+    pan = _fields(client, analyst, case_id, doc["id"])["pan"]
+    assert pan["origin"] == "gap" and pan["status"] == "in_review" and pan["fills_gap"] is True
+    assert pan["label"] == "Registration number"
+
+    def pan_sources():
+        facts = client.get(f"/api/cases/{case_id}/facts", headers=analyst).json()
+        return {(v["source"], v["label"]) for v in facts["identities"]["entity_pan"]}
+
+    assert all(s != "case_documents" for s, _ in pan_sources())  # waits for a person
+    [item] = [i for i in client.get(f"/api/review?case_id={case_id}", headers=analyst).json()
+              if i["kind"] == "field" and i["ref"] == f"field:{pan['id']}"]
+    assert client.post(f"/api/review/{item['id']}/decision", json={"decision": "confirm"},
+                       headers=analyst).status_code == 200
+    assert ("case_documents", "Shop and establishment certificate") in pan_sources()
+    [id01] = [f for f in client.get(f"/api/cases/{case_id}/findings", headers=analyst).json() if f["rule_id"] == "ID-01"]
+    assert "Shop and establishment certificate" in str(id01) and id01["outcome"] == "pass"
+
+
+def test_a_gap_field_another_document_gives_does_not_fill_a_gap(client, published_data_root, monkeypatch):
+    from engine import reads
+
+    rm, analyst, case_id = _case(client, published_data_root)
+    doc = _unknown(client, rm, case_id)
+    t = _make(client, analyst, case_id, name="Shop and establishment certificate").json()
+    _assign(client, published_data_root, analyst, case_id, t["id"])
+    real = reads._given_elsewhere
+    monkeypatch.setattr(reads, "_given_elsewhere", lambda conn, cid: {**real(conn, cid), "pan": {"DOC-OTHER"}})
+    assert _fields(client, analyst, case_id, doc["id"])["pan"]["fills_gap"] is False

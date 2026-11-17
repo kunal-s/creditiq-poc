@@ -453,7 +453,8 @@
           "enum": [
             "configured",
             "named",
-            "discovered"
+            "discovered",
+            "gap"
           ],
           "title": "Origin",
           "type": "string"

@@ -47,6 +47,38 @@
      "status": "missing",
      "value": null
     },
+    "pan": {
+     "components": {
+      "agreement": 0.8,
+      "classification": 1.0,
+      "page_grade": 1.0,
+      "reading_trust": 1.0,
+      "validation": 1.0
+     },
+     "confidence": 0.96,
+     "key_field": false,
+     "method": "identifier",
+     "needs_review": true,
+     "origin": "gap",
+     "raw_text": "AAACH5678Q",
+     "reason": null,
+     "required": false,
+     "source": {
+      "bbox": [
+       50.0,
+       100.0,
+       300.0,
+       112.0
+      ],
+      "kind": "page",
+      "page": 1,
+      "range": null,
+      "sheet": null,
+      "text": "AAACH5678Q"
+     },
+     "status": "found",
+     "value": "AAACH5678Q"
+    },
     "registration_number": {
      "components": {
       "agreement": 0.8,

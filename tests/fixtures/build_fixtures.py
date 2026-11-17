@@ -417,14 +417,19 @@ def singles() -> list[tuple[File, dict]]:
     # F-09.8, F-15.8: the same scan read as a case document type a person made (the stub puts the
     # type's id in place of "@case"): fields the person named, or fields the model proposed.
     named = File("scan_0412.pdf", "@case", confidence=1.0)
+    # Both are also read for the gap fields (F-15.9): the PAN, by its pattern, held for review; where the
+    # model proposed the same value under the document's label, it is reported once, as the gap field.
+    gap_pan = {**fld("AAACH5678Q", method="identifier", needs_review=True), "origin": "gap"}
     named.add("Certificate\nRegistration number AAACH5678Q\nEntity", "@case", {
         "registration_number": {**fld("AAACH5678Q", method="model", required=False), "key_field": True, "origin": "named"},
         "issue_date": {**fld(None), "key_field": True, "origin": "named"},
+        "pan": gap_pan,
     }, decision="human_review")
     found = File("scan_0412.pdf", "@case", confidence=1.0)
     found.add("Certificate\nRegistration number AAACH5678Q\nEntity", "@case", {
-        "registration_number": {**fld("AAACH5678Q", method="model", needs_review=True), "origin": "discovered",
-                                "label": "Registration number"},
+        "document_title": {**fld("Certificate", method="model", needs_review=True), "origin": "discovered",
+                           "label": "Title"},
+        "pan": {**gap_pan, "label": "Registration number"},
     }, decision="human_review")
     out.append((f, {"company_pan": assigned.result(""), "case-named": named.result(""), "case-discovered": found.result("")}))
 

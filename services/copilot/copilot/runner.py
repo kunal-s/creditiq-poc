@@ -29,6 +29,7 @@ from .recording import sampling_settings
 from .router import Route, route
 from .store import Session, Store
 from .tools import ToolBlocked, ToolCaller, ToolDeps, build_tools
+from . import calllog
 
 Terminal = Literal["answer", "ask_user", "cannot_do", "confirm"]
 _TERMINAL = {"use_case": "answer", "ask": "ask_user", "clarify": "ask_user"}
@@ -93,6 +94,14 @@ async def handle_turn(
         store.trace(at=now(), session_id=sid, turn_id=turn_id, user_id=uid, event=event, detail=detail)
 
     store.add_message(sid, now(), "user", message)
+    # Every model call of this turn is logged against the turn and the case open (copilot/calllog.py).
+    with calllog.call_context(case_ref=(session.context or {}).get("case_id"), run_id=turn_id):
+        return await _turn(cfg, router_model=router_model, runner_model=runner_model, caller=caller, store=store,
+                           principal=principal, session=session, message=message, now=now, turn_id=turn_id, trace=trace)
+
+
+async def _turn(cfg, *, router_model, runner_model, caller, store, principal, session, message, now, turn_id, trace) -> TurnResult:
+    sid = session.session_id
     r: Route = await route(cfg, router_model, principal, session, message)
     trace("route", kind=r.kind, use_case=r.use_case, confidence=r.confidence, slots=sorted(r.slots))
 

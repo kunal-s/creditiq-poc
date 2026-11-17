@@ -82,11 +82,42 @@ def _date_exact(low: str) -> str | None:
     m = re.fullmatch(r"([a-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})", low)
     if m and m[1] in MONTHS:
         return _valid(int(m[3]), MONTHS[m[1]], int(m[2]))
-    m = re.fullmatch(r"([a-z]+)\s+day\s+of\s+([a-z]+),?\s+(.+)", low)  # "Eighteenth day of March Two Thousand Sixteen"
-    if m and m[1] in _ORD and m[2] in MONTHS:
-        y = _words_to_number(m[3].split())
-        return _valid(y, MONTHS[m[2]], _ORD[m[1]]) if y else None
+    # A certificate's date in words: "this Seventh day of February Two thousand seventeen", "Twenty-first day of
+    # June Two thousand twenty-four", "the 7th day of March 2015".
+    m = re.fullmatch(r"(?:(?:this|on|the|dated)\s+)*(.+?)\s+day\s+of\s+([a-z]+),?\s+(?:in\s+the\s+year\s+)?(.+)", low)
+    if m and m[2] in MONTHS:
+        d, y = _day_number(m[1]), _year_number(m[3])
+        return _valid(y, MONTHS[m[2]], d) if d and y else None
     return None
+
+
+def _day_number(s: str) -> int | None:
+    """An ordinal day: "seventh", "twenty-first", "twenty first", "7th", "21"."""
+    if re.fullmatch(r"\d{1,2}(?:st|nd|rd|th)?", s):
+        return int(re.match(r"\d+", s)[0])
+    words = [w for w in re.split(r"[\s-]+", s) if w]
+    if len(words) == 1:
+        return _ORD.get(words[0])
+    if len(words) == 2 and words[0] in ("twenty", "thirty") and _ORD.get(words[1], 10) < 10:
+        return _TENS[words[0]] + _ORD[words[1]]
+    return None
+
+
+def _year_number(s: str) -> int | None:
+    """A year in figures or in words ("Two thousand twenty-four", "Two Thousand and Sixteen"). The year is the
+    words that are numbers at the start; text after them ("under the Companies Act") is not part of it."""
+    m = re.match(r"(\d{4})\b", s)
+    if m:
+        return int(m[1])
+    words = [w for w in re.split(r"[\s,-]+", s.strip(" .")) if w]
+    number = list(words)
+    for i, w in enumerate(words):
+        if w not in _UNITS and w not in _TENS and w not in ("hundred", "thousand", "and"):
+            number = words[:i]
+            break
+    while number and number[-1] == "and":
+        number.pop()
+    return _words_to_number(number) if number else None
 
 
 def _two_quantities(s: str) -> bool:

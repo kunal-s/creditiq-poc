@@ -14,7 +14,9 @@ import json
 import logging
 from collections.abc import Callable
 
-from fastapi import Depends, FastAPI, Header, HTTPException
+from datetime import date
+
+from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
@@ -28,6 +30,8 @@ from .runner import handle_turn
 from .settings import Settings, utc_now
 from .store import Session, Store, pending_action_live
 from .tools import ToolCaller
+from .model_errors import ModelUnavailable
+from . import usage
 
 log = logging.getLogger("copilot")
 
@@ -86,6 +90,26 @@ def create_app(
             log.warning("identity unavailable: %s", e)
             raise HTTPException(503, "identity service unavailable") from None
 
+    def _usage_reader(user: Principal) -> None:
+        if not user.can(["model_usage.read"]):
+            raise HTTPException(403, "reading model usage needs the model_usage.read permission")
+
+    @app.get("/v1/model-log/summary")
+    async def model_log_summary(start: date = Query(alias="from"), end: date = Query(alias="to"), tz: str = "UTC",
+                                user: Principal = Depends(principal)):
+        """The model call log by day, task and model (the Administration's Model usage section)."""
+        _usage_reader(user)
+        return {"service": "copilot", "rows": usage.summary(store.model_log_between(*usage.window(start, end)), start, end, tz)}
+
+    @app.get("/v1/model-log/calls")
+    async def model_log_calls(start: date = Query(alias="from"), end: date = Query(alias="to"), tz: str = "UTC",
+                              status: str | None = None, kind: str | None = None, task: str | None = None,
+                              case_ref: str | None = None, limit: int = 50, offset: int = 0,
+                              user: Principal = Depends(principal)):
+        _usage_reader(user)
+        return usage.calls(store.model_log_between(*usage.window(start, end)), start, end, tz, status=status, kind=kind,
+                           task=task, case_ref=case_ref, limit=limit, offset=offset)
+
     @app.get("/health")
     def health():
         return {"ok": True, "config": cfg.hash[:12], "mode": settings.mode}
@@ -126,6 +150,13 @@ def create_app(
                 except ReplayMiss as e:
                     log.warning("%s", e)
                     yield _sse("error", {"code": "model_unavailable"})
+                    return
+                except ModelUnavailable as e:
+                    # The model could not answer after its retries: say so in the configured words for the kind.
+                    log.warning("model unavailable (%s)", e.kind)
+                    words = cfg.runtime.messages.model_errors
+                    yield _sse("error", {"code": "model_unavailable", "kind": e.kind,
+                                         "message": words.get(e.kind) or words.get("default", "")})
                     return
                 except Exception:  # headers are already sent: end the stream with an event, not a broken connection
                     log.exception("turn failed")

@@ -53,16 +53,19 @@ def test_f02_killed_job_resumes_without_reprocessing(client, published_data_root
     try:
         job = conn.execute("SELECT * FROM jobs WHERE id = ?", (result["job_id"],)).fetchone()
         assert job["status"] == "queued" and "worker killed" in job["error"]
-        processed = conn.execute("SELECT COUNT(*) FROM files WHERE processed_at IS NOT NULL AND case_id = ?",
-                                 (case_id,)).fetchone()[0]
-        assert processed == 1
+        stored = {r[0] for r in conn.execute(
+            "SELECT original_name FROM files WHERE processed_at IS NOT NULL AND case_id = ?", (case_id,))}
+        assert len(stored) == 1
     finally:
         conn.close()
 
     monkeypatch.setattr(pipeline, "_store_file_result", real_store)
     assert jobs.run_pending(published_data_root, client=recorder) == 1
-    # The resumed run sends only the two files not yet stored.
-    assert recorder.requests == [names, names[1:]]
+    # Each file goes in its own request. The first run sent all three (they are read side by side),
+    # stored one and stopped storing the second; the resumed run sends only the two not stored.
+    assert all(len(r) == 1 for r in recorder.requests)
+    assert sorted(r[0] for r in recorder.requests[:3]) == sorted(names)
+    assert sorted(r[0] for r in recorder.requests[3:]) == sorted(set(names) - stored)
     conn = db.connect(published_data_root)
     try:
         assert conn.execute("SELECT status FROM jobs WHERE id = ?", (result["job_id"],)).fetchone()[0] == "done"
@@ -173,3 +176,74 @@ def test_f02_the_api_worker_processes_uploads(published_data_root, monkeypatch):
             time.sleep(0.05)
         else:
             pytest.fail("the worker did not process the upload")
+
+
+def test_f02_files_are_read_side_by_side_and_each_stored_when_read(client, published_data_root):
+    """Several files are read at once, and each is stored the moment its own answer arrives: the
+    service's answer for the first file waits until the second is already stored. Read one after
+    the other, or stored only when all are read, the first answer would never come."""
+    import threading
+    import time
+
+    names = ["bank statement apr-mar.pdf", "Tarun Velankar PAN.pdf", "Sunil Karve PAN.pdf"]
+    case_id, _ = _case_with_upload(client, published_data_root, names)
+    second_stored = threading.Event()
+
+    class Slow(StubIngestClient):
+        def process(self, request, payloads):
+            if request.files[0].original_name == names[0]:
+                deadline = time.monotonic() + 15
+                while time.monotonic() < deadline and not second_stored.is_set():
+                    conn = db.connect(published_data_root)
+                    try:
+                        if conn.execute("SELECT 1 FROM files WHERE case_id = ? AND original_name = ? "
+                                        "AND processed_at IS NOT NULL", (case_id, names[1])).fetchone():
+                            second_stored.set()
+                    finally:
+                        conn.close()
+                    time.sleep(0.05)
+            return super().process(request, payloads)
+
+    assert pipeline.ingest_workers() == 4
+    assert jobs.run_pending(published_data_root, client=Slow()) == 1
+    assert second_stored.is_set()
+
+
+@pytest.mark.parametrize("workers", [1, 2])
+def test_f02_no_more_files_are_read_at_once_than_the_workers(client, published_data_root, monkeypatch, workers):
+    """services.ingest_workers caps the requests in flight to the document service."""
+    import threading
+    import time
+
+    monkeypatch.setattr(pipeline, "ingest_workers", lambda: workers)
+    names = ["bank statement apr-mar.pdf", "Tarun Velankar PAN.pdf", "Sunil Karve PAN.pdf"]
+    _case_with_upload(client, published_data_root, names)
+    lock, now, peak = threading.Lock(), [0], [0]
+
+    class Counting(StubIngestClient):
+        def process(self, request, payloads):
+            with lock:
+                now[0] += 1
+                peak[0] = max(peak[0], now[0])
+            try:
+                time.sleep(0.2)
+                return super().process(request, payloads)
+            finally:
+                with lock:
+                    now[0] -= 1
+
+    assert jobs.run_pending(published_data_root, client=Counting()) == 1
+    assert peak[0] == workers
+
+
+def test_f02_a_running_job_renews_its_lease(client, published_data_root):
+    _case_with_upload(client, published_data_root, ["Sunil Karve PAN.pdf"])
+    conn = db.connect(published_data_root)
+    try:
+        job = jobs.claim(conn)
+        later = datetime.now(timezone.utc) + timedelta(seconds=jobs.LEASE_SECONDS - 5)
+        jobs.renew_lease(conn, job["id"], now=later)
+        # Past the first lease, still held: the job is not taken over while it makes progress.
+        assert jobs.claim(conn, now=later + timedelta(seconds=10)) is None
+    finally:
+        conn.close()

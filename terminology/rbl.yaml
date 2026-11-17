@@ -55,6 +55,7 @@ nav:
     documentTypes: Document Types
     templates: Template Designer
     users: Users and Roles
+    modelUsage: Model Usage
 
 action:
   retry: Try again
@@ -378,6 +379,11 @@ outputs:
     restore: Restore the draft
     close: Close
     copilotOff: "The copilot is not configured: its key is not set."
+    # Why a redraft failed, by the kind of failure the engine reports.
+    copilotBusy: The copilot is busy just now. Try again in a minute.
+    copilotLimit: The copilot's usage limit has been reached. Try again later.
+    copilotUnreachable: The copilot could not be reached. Try again in a little while.
+    copilotRefused: The copilot could not redraft this section's content.
     editHint: The section's paragraphs, one per block of text; each keeps the citations of the paragraph in its place.
     editSave: Save my words
     editNote: Saved with your name and the time; the engine's draft can be restored.
@@ -2200,6 +2206,101 @@ admin:
     branch: Branch
     roles: What each role may do
     rolesHelp: Permissions are enforced by the server; the menu only hides what a role cannot use.
+  modelUsage:
+    purpose: Every request the system made to a language model, by day, service and task, with the tokens it used, what it cost at the configured prices and what failed.
+    filters: Filters
+    from: From
+    to: To
+    service: Service
+    allServices: All services
+    task: Task
+    allTasks: All tasks
+    status: Outcome
+    allOutcomes: All outcomes
+    errorsOnly: Failed only
+    okOnly: Answered only
+    kind: Failure
+    allKinds: All failures
+    caseRef: Appraisal reference
+    calls: Model calls
+    callsNote: "{ok} answered, {errors} failed"
+    tokens: Tokens
+    tokensNote: "{input} in, {output} out"
+    cost: Cost
+    costPartial: Leaves out models whose price is not set
+    costNote: At the configured prices
+    priceNotSet: Price not set
+    latency: p95 latency
+    latencyNote: Highest of any day and task, of calls sent to the model
+    latencyCol: Time taken
+    noLatency: No calls sent
+    live: Sent to the model
+    replayHits: Recorded answers reused
+    replayMisses: No recorded answer
+    dailyTokens: Tokens by day
+    dailyTokensHelp: Input and output tokens of each day's calls.
+    dailyCost: Cost by day
+    dailyCostHelp: At the configured price of each model.
+    noCost: The price of the models used is not set, so no cost can be shown.
+    input: Input
+    output: Output
+    chartLabel: "{title}, {from} to {to}"
+    barLabel: "{day}: {value}"
+    byService: By service and task
+    byServiceHelp: Over the whole range, highest use first.
+    model: Model
+    errors: Failed
+    p95: p95 latency
+    byKind: Failures by kind
+    byKindHelp: Each failed attempt, by what went wrong.
+    noFailures: No call failed in this range.
+    callList: Calls
+    callListHelp: Newest first. Each attempt and each recorded answer is one row.
+    when: When
+    outcome: Outcome
+    appraisal: Appraisal
+    answered: Answered
+    ms: "{n} ms"
+    shown: "{from}–{to} of {total}"
+    previous: Previous
+    next: Next
+    empty: No model calls in this range
+    emptyHelp: Calls appear here as documents are read, memo sections redrafted and questions asked.
+    noMatch: No call matches these filters.
+    unavailable: "Not every source could be read: {names}. The figures leave it out."
+    partialCalls: The list leaves out the sources that could not be read.
+    serviceName:
+      ingestion: Document processing
+      cam: Credit memo copilot
+      copilot: Case assistant
+    taskName:
+      classify: Document type
+      extract: Field reading
+      transactions: Transaction categories
+      cam_section: Memo section redraft
+      router: Question routing
+      runner: Answer
+    sourceName:
+      live: Sent to the model
+      replay_hit: Recorded answer
+      replay_miss: No recorded answer
+    modelName:
+      gpt_5_4_nano: Compact model
+      gpt_4_1_mini: Small model
+      other: Other model
+    kindName:
+      rate_limit_minute: Per-minute limit
+      quota: Quota used up
+      server_unavailable: Server unavailable
+      timeout: Timed out
+      content_filter: Filtered by the provider
+      bad_request: Request not accepted
+      auth: Key not accepted
+      not_configured: Not configured
+      refusal: Declined to answer
+      bad_response: Answer could not be read
+      replay_miss: No recorded answer
+      other: Other failure
   permission:
     case_create: Create appraisals
     case_read: Open own appraisals
@@ -2222,6 +2323,7 @@ admin:
     audit_read: See the audit trail
     config_read: See administration
     config_publish: Change settings and publish them
+    model_usage_read: See model usage
 
 fileStatus:
   registered: Registered

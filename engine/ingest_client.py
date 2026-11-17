@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import os
 import urllib.error
+import urllib.parse
 import urllib.request
 import uuid
 from pathlib import Path
@@ -80,6 +81,19 @@ class HttpIngestClient:
             raise IngestError(f"ingest service unavailable at {self.base_url}: {e}") from e
 
 
+    def model_log(self, path: str, params: dict) -> dict:
+        """A read of the service's model call log (`/v1/model-log/summary` or `/calls`), for Model usage."""
+        query = urllib.parse.urlencode({k: v for k, v in params.items() if v not in (None, "")})
+        req = urllib.request.Request(f"{self.base_url}{path}?{query}",
+                                     headers={"x-api-key": self.api_key} if self.api_key else {})
+        try:
+            with urllib.request.urlopen(req, timeout=10) as resp:   # a read for a screen: never long
+                return json.loads(resp.read())
+        except urllib.error.HTTPError as e:
+            raise IngestError(f"ingest service answered {e.code}") from e
+        except OSError as e:
+            raise IngestError(f"ingest service unavailable at {self.base_url}: {e}") from e
+
     def classify_transactions(self, request: dict) -> dict:
         req = urllib.request.Request(f"{self.base_url}/v1/classify-transactions", data=json.dumps(request).encode(),
                                      method="POST", headers={"Content-Type": "application/json",
@@ -123,6 +137,10 @@ class StubIngestClient:
 
     def classify_transactions(self, request: dict) -> dict:
         raise IngestError("the stub has no model: transactions the rules cannot settle stay for a person")
+
+    def model_log(self, path: str, params: dict) -> dict:
+        """The stub calls no model, so its log is empty."""
+        return {"service": "ingestion", "rows": []} if path.endswith("/summary") else {"total": 0, "rows": []}
 
 
 def get_client() -> IngestClient:

@@ -34,7 +34,25 @@ CREATE TABLE IF NOT EXISTS validations (
 CREATE TABLE IF NOT EXISTS llm_calls (
   key TEXT PRIMARY KEY, provider TEXT, model TEXT, task TEXT, origin TEXT, request BLOB, response BLOB);
 CREATE TABLE IF NOT EXISTS ocr_cache (key TEXT PRIMARY KEY, result BLOB);
+CREATE TABLE IF NOT EXISTS model_log (
+  id TEXT PRIMARY KEY, at TEXT NOT NULL, service TEXT NOT NULL, task TEXT, provider TEXT, model TEXT, mode TEXT,
+  source TEXT NOT NULL, case_ref TEXT, run_id TEXT, request_key TEXT, attempt INTEGER, status TEXT NOT NULL,
+  error_code TEXT, http_status INTEGER, latency_ms REAL, input_tokens INTEGER, output_tokens INTEGER,
+  total_tokens INTEGER, cached_tokens INTEGER, ratelimit_remaining_tokens INTEGER,
+  ratelimit_remaining_requests INTEGER, retry_after_s REAL, message TEXT, kind TEXT);
+CREATE INDEX IF NOT EXISTS model_log_at ON model_log(at);
+CREATE INDEX IF NOT EXISTS model_log_status ON model_log(status);
+CREATE TRIGGER IF NOT EXISTS model_log_no_update BEFORE UPDATE ON model_log
+  BEGIN SELECT RAISE(ABORT, 'model_log is append-only'); END;
+CREATE TRIGGER IF NOT EXISTS model_log_no_delete BEFORE DELETE ON model_log
+  BEGIN SELECT RAISE(ABORT, 'model_log is append-only'); END;
 """
+
+#: The model call log's columns, in table order (llm/calllog.py builds the rows).
+MODEL_LOG_COLUMNS = ("id", "at", "service", "task", "provider", "model", "mode", "source", "case_ref", "run_id",
+                     "request_key", "attempt", "status", "error_code", "http_status", "latency_ms", "input_tokens",
+                     "output_tokens", "total_tokens", "cached_tokens", "ratelimit_remaining_tokens",
+                     "ratelimit_remaining_requests", "retry_after_s", "message", "kind")
 
 
 def _j(v) -> str:
@@ -53,6 +71,10 @@ class Store:
         with self._lock:
             self._conn.execute("PRAGMA journal_mode=WAL")
             self._conn.executescript(SCHEMA)
+            # A store made before the log said what kind of failure each row is.
+            cols = {r[1] for r in self._conn.execute("PRAGMA table_info(model_log)")}
+            if "kind" not in cols:
+                self._conn.execute("ALTER TABLE model_log ADD COLUMN kind TEXT")
 
     @contextmanager
     def tx(self):
@@ -153,6 +175,26 @@ class Store:
         with self.tx() as c:
             c.execute("INSERT OR REPLACE INTO llm_calls VALUES (?,?,?,?,?,jsonb(?),jsonb(?))",
                       (key, row["provider"], row["model"], row["task"], row.get("origin", "live"), _j(row["request"]), _j(row["response"])))
+
+    # --- the model call log (append-only) ----------------------------------------------------
+    def put_model_log(self, row: dict) -> None:
+        marks = ",".join("?" * len(MODEL_LOG_COLUMNS))
+        with self._lock:
+            self._conn.execute(f"INSERT INTO model_log ({','.join(MODEL_LOG_COLUMNS)}) VALUES ({marks})",
+                               tuple(row.get(c) for c in MODEL_LOG_COLUMNS))
+
+    def model_log_between(self, lo: str, hi: str) -> list[dict]:
+        """Rows whose start (UTC ISO) is from `lo` up to `hi`, oldest first."""
+        with self._lock:
+            cur = self._conn.execute(f"SELECT {','.join(MODEL_LOG_COLUMNS)} FROM model_log WHERE at >= ? AND at < ? "
+                                     "ORDER BY at, rowid", (lo, hi))
+            return [dict(zip(MODEL_LOG_COLUMNS, r)) for r in cur.fetchall()]
+
+    def model_log(self) -> list[dict]:
+        """Every row, oldest first (tests and the log's readers)."""
+        with self._lock:
+            cur = self._conn.execute(f"SELECT {','.join(MODEL_LOG_COLUMNS)} FROM model_log ORDER BY at, rowid")
+            return [dict(zip(MODEL_LOG_COLUMNS, r)) for r in cur.fetchall()]
 
     def get(self, key: str) -> dict | None:  # OcrCache protocol
         r = self._q("SELECT json(result) FROM ocr_cache WHERE key=?", (key,))

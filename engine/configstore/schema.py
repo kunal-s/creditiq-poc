@@ -12,7 +12,7 @@ import ast
 import re
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from ..units import DEFAULT_UNIT, DisplayUnit
 
@@ -586,21 +586,49 @@ class CamSectionDef(BaseModel):
         return [CamPartDef(id=self.id, kind=self.kind, title=self.title)] if self.kind else []
 
 
+class ModelRetry(BaseModel):
+    """How a failed model call is retried, by the kind of failure (engine/model_retry.py)."""
+
+    server_attempts: int = Field(3, ge=1)            # total attempts for server_unavailable / timeout
+    server_backoff_s: list[float] = Field(default_factory=lambda: [2.0, 4.0], min_length=1)
+    backoff_jitter: float = Field(0.2, ge=0, lt=1)
+    rate_limit_attempts: int = Field(3, ge=1)
+    rate_limit_wait_s: float = Field(60, gt=0)
+    max_wait_s: float = Field(90, gt=0)
+    breaker_failures: int = Field(5, ge=1)
+    breaker_cooldown_s: float = Field(120, gt=0)
+
+
 class CamCopilotConfig(BaseModel):
     """The model that redrafts a memo section in other words (Regenerate with copilot). Only the
     sampling parameters named here are sent; every answer is recorded and replayed for the same
     request, so a section reads the same each time it is shown."""
 
     enabled: bool = False
-    provider: Literal["openai"] = "openai"
+    provider: Literal["openai", "azure"] = "openai"
     model: str = ""
+    """The model id: the call log, the prices and the names on Model usage use it."""
+    deployment: str | None = None
+    """Azure only: the deployment's name, sent as the request's `model` (base_url is then <endpoint>/openai/v1)."""
     base_url: str = "https://api.openai.com/v1"
     api_key_env: str = "OPENAI_API_KEY"
     temperature: float | None = None
     seed: int | None = None
     timeout_s: int = 60
+    max_retries: int | None = None
+    """Read from a version published with it before `retry` (server_attempts = max_retries + 1)."""
+    retry: ModelRetry | None = None
+    """None in a version published before it: the defaults then apply."""
     system: str = ""
     user: str = ""
+
+    @model_validator(mode="after")
+    def _retry(self) -> "CamCopilotConfig":
+        if self.provider == "azure" and not self.deployment:
+            raise ValueError("copilot provider azure needs `deployment`: the name the model was deployed under")
+        if self.retry is None:
+            self.retry = ModelRetry(**({"server_attempts": self.max_retries + 1} if self.max_retries is not None else {}))
+        return self
 
 
 PdTopicArea = Literal["identity", "turnover", "accounts", "obligations", "policy"]

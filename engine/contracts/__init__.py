@@ -157,6 +157,7 @@ from .facts import (
     TurnoverFigure,
     TurnoverYear,
 )
+from .model_usage import ModelCall, ModelCalls, ModelUsageRow, ModelUsageSummary
 from .documents import (
     Candidate,
     Classification,
@@ -323,6 +324,10 @@ __all__ = [
     "TurnoverFigure",
     "TurnoverYear",
     "Candidate",
+    "ModelCall",
+    "ModelCalls",
+    "ModelUsageRow",
+    "ModelUsageSummary",
     "CaseProposal",
     "CaseCreate",
     "CaseDeleteRequest",

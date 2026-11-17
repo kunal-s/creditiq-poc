@@ -153,7 +153,7 @@ export const ADMIN: SessionUser = {
   roleLabel: "Administrator",
   branch: "Head office",
   navGroups: ["administration", "help"],
-  permissions: ["config.read", "config.publish", "audit.read"],
+  permissions: ["config.read", "config.publish", "audit.read", "model_usage.read"],
 };
 
 export const META: Meta = {

@@ -32,6 +32,7 @@ navByRole:
 # message.send: record a message to the customer for sending (the case assistant's send step).
 # finding.escalation: decide a cross-check discrepancy an analyst escalated (the Credit Manager).
 # config.publish: edit settings on the Administration screen and publish them as a new version (F-00.6).
+# model_usage.read: read the model usage of the document service, the engine and the case assistant (Administration).
 permissions:
   rm: [case.create, case.read, case.delete, document.upload, checklist.read, query.read, message.send]
   analyst: [case.create, case.read, case.read.all, case.delete, document.upload, checklist.read, query.read,
@@ -40,7 +41,7 @@ permissions:
   credit-manager: [case.read, case.read.all, case.delete, checklist.read, query.read, data.read, review.read,
                    review.decide, finding.read, output.read, manual.check, comparison.adjudicate,
                    finding.escalation, scorecard.read, audit.read, config.read]
-  administrator: [config.read, config.publish, audit.read]
+  administrator: [config.read, config.publish, audit.read, model_usage.read]
 
 # Every user signs in with this shared password until F-03 introduces named
 # credentials. Hash format: pbkdf2_sha256$<iterations>$<base64 salt>$<base64 digest>.

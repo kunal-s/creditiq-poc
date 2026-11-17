@@ -41,6 +41,8 @@ import type {
   LogicalDocument,
   DisplayUnit,
   Meta,
+  ModelCalls,
+  ModelUsageSummary,
   OutputFormat,
   Party,
   PdNote,
@@ -153,6 +155,13 @@ async function download(path: string): Promise<DownloadedFile> {
 
 const q = encodeURIComponent;
 
+/** A query string from the values that are set. */
+function params(p: Record<string, string | number | undefined>): string {
+  const out = new URLSearchParams();
+  for (const [k, v] of Object.entries(p)) if (v !== undefined && v !== "") out.set(k, String(v));
+  return out.toString();
+}
+
 export const api = {
   login: (email: string, password: string) =>
     request<LoginResponse>("/api/auth/login", {
@@ -162,6 +171,12 @@ export const api = {
   session: () => request<SessionUser>("/api/auth/session"),
   logout: () => request<undefined>("/api/auth/logout", { method: "POST" }),
   meta: () => request<Meta>("/api/meta"),
+  /** Model usage (Administration): the three model call logs summarised by day, service, task and model. */
+  modelUsageSummary: (p: Record<string, string | number | undefined>) =>
+    request<ModelUsageSummary>(`/api/admin/model-usage/summary?${params(p)}`),
+  /** Model usage: the calls that match, newest first, paged. */
+  modelUsageCalls: (p: Record<string, string | number | undefined>) =>
+    request<ModelCalls>(`/api/admin/model-usage/calls?${params(p)}`),
   displayUnit: () => request<DisplayUnit>("/api/config/display-unit"),
 
   listCases: () => request<CaseSummary[]>("/api/cases"),

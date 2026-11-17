@@ -105,6 +105,9 @@ export default defineConfig({
       reuseExistingServer: true,
       timeout: 60_000,
       env: {
+        // The model settings e2e_recordings.json was recorded under, whatever provider the shipped
+        // services/copilot/config/llm.yaml names; every other file is the shipped one.
+        COPILOT_CONFIG_DIR: resolve("services/copilot/tests/fixtures/model-pinned-config"),
         COPILOT_DATA_DIR: resolve(DATA_ROOT, "copilot"),
         COPILOT_HOST_URL: ENGINE_URL,
         COPILOT_PORT: String(ASSISTANT_PORT),

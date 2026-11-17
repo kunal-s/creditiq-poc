@@ -90,6 +90,10 @@ labels:
 # The key is read from the environment variable named, never from this file.
 copilot:
   enabled: true
+  # provider: openai, or azure for an Azure OpenAI deployment. For azure: base_url is <endpoint>/openai/v1 (the v1
+  # API, no api-version), `deployment` is the deployment's name (sent as the request's model), `model` stays the
+  # model id (the call log, the prices and the names on Model usage use it), and api_key_env is
+  # AZURE_OPENAI_API_KEY (workflow/private/azure.env).
   provider: openai
   model: gpt-5.4-nano          # confirm the exact id against the provider before first live use
   base_url: https://api.openai.com/v1
@@ -97,6 +101,16 @@ copilot:
   temperature: 0
   seed: 1
   timeout_s: 60
+  # How a failed call is retried, by the kind of failure (engine/model_retry.py).
+  retry:
+    server_attempts: 3          # total attempts for server_unavailable / timeout
+    server_backoff_s: [2, 4]    # waits between attempts; plus or minus backoff_jitter; never a wait after the last
+    backoff_jitter: 0.2
+    rate_limit_attempts: 3
+    rate_limit_wait_s: 60       # used when the response names no wait
+    max_wait_s: 90              # a longer wait asked for is not waited: the call fails
+    breaker_failures: 5         # server_unavailable/timeout in a row, across calls, that open the breaker
+    breaker_cooldown_s: 120     # while open, calls fail at once; then one trial call
   system: |
     You redraft one section of a draft credit approval memo for a bank's business-banking credit
     team. Write in plain, formal British English, in the third person, for a credit committee.

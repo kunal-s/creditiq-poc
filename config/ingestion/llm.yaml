@@ -2,6 +2,10 @@
 # Sampling (principle 6, amended 6 Oct 2026): the only parameters ever sent are the two named here; a request
 # carrying any other is refused. Temperature 0 narrows the variation but does not guarantee identical output:
 # determinism rests on recording each answer and replaying it. Prompt text is part of the published version.
+# provider: openai, or azure for an Azure OpenAI deployment. For azure: base_url is <endpoint>/openai/v1 (the v1
+# API, no api-version), `deployment` is the deployment's name (sent as the request's model), `model` stays the
+# model id (the call log, the prices and the names on Model usage use it), and api_key_env is
+# AZURE_OPENAI_API_KEY (workflow/private/azure.env).
 provider: openai
 model: gpt-5.4-nano          # confirm the exact id against the provider before first live use
 base_url: https://api.openai.com/v1
@@ -9,7 +13,16 @@ api_key_env: OPENAI_API_KEY
 temperature: 0
 seed: 1
 timeout_s: 120
-max_retries: 2
+# How a failed call is retried, by the kind of failure (services/ingestion/ingestion/llm/errors.py).
+retry:
+  server_attempts: 3          # total attempts for server_unavailable / timeout
+  server_backoff_s: [2, 4]    # waits between attempts; plus or minus backoff_jitter; never a wait after the last
+  backoff_jitter: 0.2
+  rate_limit_attempts: 3
+  rate_limit_wait_s: 60       # used when the response names no wait
+  max_wait_s: 90              # a longer wait asked for is not waited: the call fails, saying how long
+  breaker_failures: 5         # server_unavailable/timeout in a row, across calls, that open the breaker
+  breaker_cooldown_s: 120     # while open, calls fail at once (server_unavailable); then one trial call
 classify_chars: 6000
 window_chars: 12000
 fill: missing                # the model may read any field the deterministic pass left empty (`llm: false` on a field forbids it)

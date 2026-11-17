@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Bell, LogOut, Menu, PanelRight, ShieldCheck } from "lucide-react";
 import { api } from "@/api/client";
-import { formatDate } from "@/domain/cases";
+import { formatDate, useMeta } from "@/domain/cases";
 import { buildNav, type NavGroup, type NavItem } from "./nav";
 import { CaseNav } from "./CaseNav";
 import { useSession, signOut } from "@/domain/session";
@@ -136,8 +136,11 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const session = useSession();
   const nav = useMemo(buildNav, []);
+  // A feature item waits for the engine's answer, so it never shows and then disappears.
+  const meta = useMeta();
   const allowed = (item: NavItem) =>
-    !item.permission || (session?.user.permissions.includes(item.permission) ?? false);
+    (!item.permission || (session?.user.permissions.includes(item.permission) ?? false)) &&
+    (!item.feature || (meta.data ? (meta.data.features?.[item.feature] ?? true) : false));
   const visible: NavGroup[] = nav
     .filter((group) => session?.user.navGroups.includes(group.gate ?? group.id))
     .map((group) => ({ ...group, items: group.items.filter(allowed) }))

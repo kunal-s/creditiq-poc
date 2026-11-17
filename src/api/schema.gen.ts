@@ -4,6 +4,47 @@
  */
 
 export interface paths {
+  "/api/admin/model-usage/calls": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Model Usage Calls
+     * @description The model calls that match, newest first, paged across the three logs.
+     */
+    get: operations["model_usage_calls_api_admin_model_usage_calls_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/admin/model-usage/summary": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Model Usage Summary
+     * @description Tokens, cost, calls, errors and latency by day, service, task and model, from the three model call logs.
+     *     A source that cannot be read is named in `unavailable`; the rest is still shown.
+     */
+    get: operations["model_usage_summary_api_admin_model_usage_summary_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/admin/settings": {
     parameters: {
       query?: never;
@@ -3406,6 +3447,11 @@ export interface components {
        * @default true
        */
       integrity_checks: boolean;
+      /**
+       * Model Usage
+       * @default true
+       */
+      model_usage: boolean;
     };
     /**
      * FieldValue
@@ -4165,6 +4211,158 @@ export interface components {
       product_default?: string | null;
       /** Products */
       products: components["schemas"]["Option"][];
+    };
+    /**
+     * ModelCall
+     * @description One model call log row: one HTTP attempt or one replay.
+     */
+    ModelCall: {
+      /** At */
+      at: string;
+      /** Attempt */
+      attempt?: number | null;
+      /** Cached Tokens */
+      cached_tokens?: number | null;
+      /** Case Ref */
+      case_ref?: string | null;
+      /** Cost */
+      cost?: number | null;
+      /** Error Code */
+      error_code?: string | null;
+      /** Http Status */
+      http_status?: number | null;
+      /** Id */
+      id: string;
+      /** Input Tokens */
+      input_tokens?: number | null;
+      /** Kind */
+      kind?: string | null;
+      /** Latency Ms */
+      latency_ms?: number | null;
+      /** Message */
+      message?: string | null;
+      /** Mode */
+      mode?: string | null;
+      /** Model */
+      model?: string | null;
+      /** Output Tokens */
+      output_tokens?: number | null;
+      /**
+       * Price Set
+       * @default false
+       */
+      price_set: boolean;
+      /** Provider */
+      provider?: string | null;
+      /** Ratelimit Remaining Requests */
+      ratelimit_remaining_requests?: number | null;
+      /** Ratelimit Remaining Tokens */
+      ratelimit_remaining_tokens?: number | null;
+      /** Request Key */
+      request_key?: string | null;
+      /** Retry After S */
+      retry_after_s?: number | null;
+      /** Run Id */
+      run_id?: string | null;
+      /** Service */
+      service: string;
+      /** Source */
+      source: string;
+      /** Status */
+      status: string;
+      /** Task */
+      task?: string | null;
+      /** Total Tokens */
+      total_tokens?: number | null;
+    };
+    /** ModelCalls */
+    ModelCalls: {
+      /** Rows */
+      rows?: components["schemas"]["ModelCall"][];
+      /** Total */
+      total: number;
+      /** Unavailable */
+      unavailable?: string[];
+    };
+    /**
+     * ModelUsageRow
+     * @description One day, service, task and model.
+     */
+    ModelUsageRow: {
+      /**
+       * Cached Tokens
+       * @default 0
+       */
+      cached_tokens: number;
+      /** Calls */
+      calls: number;
+      /** Cost */
+      cost?: number | null;
+      /** Day */
+      day: string;
+      /** Errors */
+      errors?: {
+        [key: string]: number;
+      };
+      /**
+       * Input Tokens
+       * @default 0
+       */
+      input_tokens: number;
+      /** Latency Ms P50 */
+      latency_ms_p50?: number | null;
+      /** Latency Ms P95 */
+      latency_ms_p95?: number | null;
+      /**
+       * Live Calls
+       * @default 0
+       */
+      live_calls: number;
+      /** Model */
+      model?: string | null;
+      /** Ok */
+      ok: number;
+      /**
+       * Output Tokens
+       * @default 0
+       */
+      output_tokens: number;
+      /**
+       * Price Set
+       * @default false
+       */
+      price_set: boolean;
+      /**
+       * Replay Hits
+       * @default 0
+       */
+      replay_hits: number;
+      /**
+       * Replay Misses
+       * @default 0
+       */
+      replay_misses: number;
+      /** Service */
+      service: string;
+      /** Task */
+      task?: string | null;
+    };
+    /** ModelUsageSummary */
+    ModelUsageSummary: {
+      /** Currency */
+      currency: string;
+      /** Default Days */
+      default_days: number;
+      /** From Date */
+      from_date: string;
+      /** Rows */
+      rows?: components["schemas"]["ModelUsageRow"][];
+      /** Timezone */
+      timezone: string;
+      /** To Date */
+      to_date: string;
+      /** Unavailable */
+      unavailable?: string[];
     };
     /** MonthConduct */
     MonthConduct: {
@@ -5991,6 +6189,83 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  model_usage_calls_api_admin_model_usage_calls_get: {
+    parameters: {
+      query?: {
+        from?: string | null;
+        to?: string | null;
+        service?: string | null;
+        task?: string | null;
+        status?: string | null;
+        kind?: string | null;
+        case_ref?: string | null;
+        limit?: number;
+        offset?: number;
+      };
+      header?: {
+        authorization?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ModelCalls"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  model_usage_summary_api_admin_model_usage_summary_get: {
+    parameters: {
+      query?: {
+        from?: string | null;
+        to?: string | null;
+        service?: string | null;
+        task?: string | null;
+      };
+      header?: {
+        authorization?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ModelUsageSummary"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   admin_settings_api_admin_settings_get: {
     parameters: {
       query?: never;

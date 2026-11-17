@@ -1,11 +1,13 @@
 import type { SessionUser, StageKey } from "@/api/types";
+import type { Feature } from "@/domain/features";
 import { t } from "@/config/terminology";
 
 // Navigation (docs/functional-requirements.md §6). The side menu holds the
 // screens outside a case, gated per role by config/roles.yaml `navByRole`
 // and per item by permission. A case's tabs appear only inside the case.
 
-export type NavItem = { label: string; to: string; permission?: string };
+/** `feature`: shown only where the deployment has the feature on (config/app.yaml `features:`). */
+export type NavItem = { label: string; to: string; permission?: string; feature?: Feature };
 /** A group of the side menu; `gate` is the role's menu group it shows under (its own id when absent). */
 export type NavGroup = { id: string; group: string; items: NavItem[]; gate?: string };
 
@@ -170,6 +172,12 @@ export function buildNav(): NavGroup[] {
           permission: "config.read",
         },
         { label: t("nav.admin.users"), to: "/admin/users", permission: "config.read" },
+        {
+          label: t("nav.admin.modelUsage"),
+          to: "/admin/model-usage",
+          permission: "model_usage.read",
+          feature: "model_usage",
+        },
       ],
     },
     {

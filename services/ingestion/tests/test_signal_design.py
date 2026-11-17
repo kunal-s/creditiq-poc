@@ -201,6 +201,22 @@ def test_dates_tolerate_a_trailing_note_and_refuse_a_range(raw, expected):
 
 
 @pytest.mark.parametrize("raw,expected", [
+    ("this Seventh day of February Two thousand seventeen", "2017-02-07"),     # the MCA certificate's sentence
+    ("Eighteenth day of March Two Thousand Sixteen", "2016-03-18"),
+    ("this Twenty-first day of June Two thousand twenty-four", "2024-06-21"),
+    ("Thirty first day of December Two Thousand and Nineteen", "2019-12-31"),
+    ("Dated this 12th day of March 2015", "2015-03-12"),
+    ("this Seventh day of February Two thousand seventeen under the Companies Act, 2013", "2017-02-07"),
+    ("Thirty-second day of May Two thousand twenty", None),                     # no such day
+    ("Thirtieth day of February Two thousand twenty", None),                    # not a calendar date
+    ("Seventh day of Smarch Two thousand seventeen", None),                     # not a month
+    ("some day of March 2015", None),
+])
+def test_a_date_in_words_reads_as_the_certificate_writes_it(raw, expected):
+    assert to_date(raw) == expected
+
+
+@pytest.mark.parametrize("raw,expected", [
     ("4,027,498 (illustrative)", 4027498),
     ("4,027,498 (FY 2025)", 4027498),
     ("(1,234)", -1234),

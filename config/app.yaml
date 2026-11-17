@@ -194,6 +194,18 @@ features:
   # File integrity checks (F-07A): the Integrity check column and panel on Files, the detailed
   # evidence page, the marks in the document viewer, and the integrity review items.
   integrity_checks: false
+  # Model usage (Administration): tokens, cost, calls, errors and latency of every model call, read
+  # from the model call logs of the document service, the engine and the case assistant.
+  model_usage: true
+
+# Model usage (Administration > Model usage).
+model_usage:
+  default_days: 7
+  currency: USD
+  timezone: Asia/Kolkata      # calls are counted on the day they were made, in this zone
+  prices:                     # per 1,000,000 tokens, from the provider's price sheet for the deployment's region
+    gpt-5.4-nano: {input: null, cached_input: null, output: null}
+    gpt-4.1-mini: {input: null, cached_input: null, output: null}
 
 # Sessions (F-03.3).
 sessions:
@@ -203,3 +215,7 @@ sessions:
 # The document-processing sidecar (AD-2).
 services:
   ingest_url: "http://127.0.0.1:3102"
+  # Files of one upload read at once, one per request to the document service; each is stored the moment it
+  # is read. OCR on the service side is limited separately (INGEST_OCR_WORKERS, default 2).
+  ingest_workers: 4
+  copilot_url: "http://127.0.0.1:8020"   # the case assistant (CREDITIQ_COPILOT_URL overrides it)

@@ -1,6 +1,7 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { t } from "@/config/terminology";
+import { useModelUsageAllowed } from "@/domain/modelUsage";
 import { cn } from "@/lib/utils";
 
 // Administration (FRD §6): what the published configuration says and who may
@@ -23,10 +24,14 @@ const SECTIONS = [
   { to: "/admin/document-types", key: "documentTypes" },
   { to: "/admin/templates", key: "templates" },
   { to: "/admin/users", key: "users" },
+  { to: "/admin/model-usage", key: "modelUsage" },
 ] as const;
 
 function AdminLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  // Model usage shows only where the deployment has it on, to a role that may read it.
+  const usage = useModelUsageAllowed();
+  const sections = SECTIONS.filter((s) => s.key !== "modelUsage" || usage);
   return (
     <div>
       <PageHeader
@@ -38,7 +43,7 @@ function AdminLayout() {
         className="flex gap-1 overflow-x-auto border-b border-border px-4 py-2 sm:px-6"
         aria-label={t("page.admin.sections")}
       >
-        {SECTIONS.map((s) => (
+        {sections.map((s) => (
           <Link
             key={s.to}
             to={s.to}

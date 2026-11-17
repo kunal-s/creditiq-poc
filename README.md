@@ -181,9 +181,14 @@ INGEST_MODEL_MODE=record CREDITIQ_DATA_ROOT="$PWD/../../workflow/data" \
   PYTHONPATH=. .venv/bin/python -m ingestion.cli serve
 ```
 
-That needs `OPENAI_API_KEY`, from the environment, `.env.local` or
-`workflow/private/openai.env`. `live` calls without storing. The model is only
-a fallback: most documents are read by the rules alone.
+That needs the key each model configuration names in `api_key_env`:
+`OPENAI_API_KEY` for OpenAI, `AZURE_OPENAI_API_KEY` for an Azure OpenAI
+deployment (`provider: azure` with `base_url` `<endpoint>/openai/v1` and the
+`deployment` name, in `config/ingestion/llm.yaml`, the `copilot` block of
+`config/cam.yaml` and `services/copilot/config/llm.yaml`). It comes from the
+environment, `.env.local` or `workflow/private/openai.env` / `azure.env`.
+`live` calls without storing. The model is only a fallback: most documents are
+read by the rules alone.
 
 The case assistant has its own switch, `COPILOT_MODEL_MODE` (`replay`,
 `record`, `live`), with the same key lookup. In `replay` it can only repeat

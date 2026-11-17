@@ -52,6 +52,7 @@ import type {
   XvItem,
 } from "../../src/api/types";
 import { checklistPreview } from "../fixtures/data";
+import { usageCalls, usageSummary } from "../fixtures/modelUsage";
 import {
   APPROVAL,
   APPROVAL_MATRIX,
@@ -332,6 +333,9 @@ export class MockApi {
   proposal: CaseProposal = proposal();
   /** The published configuration versions, newest first; a publish from Settings adds one. */
   configVersions: ConfigVersion[] = CONFIG_VERSIONS.map((v) => ({ ...v, origin: "cli" }));
+  /** Administration > Model usage: the summary and the call log the engine reads together. */
+  modelUsage = usageSummary();
+  modelCalls = usageCalls();
   /** The settings an Administrator edits, as the version in force has them (F-00.6). */
   settings: EditableSettings = structuredClone(SETTINGS);
   /** Problems the engine finds in any change, for a test to set: a preview lists them and a
@@ -470,6 +474,39 @@ export class MockApi {
         "POST",
         /^\/api\/admin\/settings\/publish$/,
         (req) => this.publishSettings(req.postDataJSON() as SettingsPublishRequest),
+      ],
+      [
+        "GET",
+        /^\/api\/admin\/model-usage\/summary$/,
+        () =>
+          this.can("model_usage.read")
+            ? { json: this.modelUsage }
+            : this.denied("model_usage.read"),
+      ],
+      [
+        "GET",
+        /^\/api\/admin\/model-usage\/calls$/,
+        (req) => {
+          if (!this.can("model_usage.read")) return this.denied("model_usage.read");
+          const q = new URL(req.url()).searchParams;
+          const rows = this.modelCalls.filter(
+            (c) =>
+              (!q.get("service") || c.service === q.get("service")) &&
+              (!q.get("task") || c.task === q.get("task")) &&
+              (!q.get("status") || c.status === q.get("status")) &&
+              (!q.get("kind") || (c.kind ?? c.error_code) === q.get("kind")) &&
+              (!q.get("case_ref") || c.case_ref === q.get("case_ref")),
+          );
+          const offset = Number(q.get("offset") ?? 0);
+          const limit = Number(q.get("limit") ?? 50);
+          return {
+            json: {
+              total: rows.length,
+              rows: rows.slice(offset, offset + limit),
+              unavailable: this.modelUsage.unavailable ?? [],
+            },
+          };
+        },
       ],
       ["GET", /^\/api\/users$/, () => ({ json: USERS })],
       ["GET", /^\/api\/audit$/, () => ({ json: AUDIT })],

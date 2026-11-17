@@ -10,16 +10,21 @@ The only sampling parameters that may reach a provider are those named in the pu
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
-from collections.abc import Callable
+import random
+import time
+from collections.abc import Awaitable, Callable
 from typing import Any, Literal
 
+from pydantic_ai.exceptions import ModelHTTPError
 from pydantic_ai.messages import ModelMessage, ModelMessagesTypeAdapter, ModelResponse
 from pydantic_ai.models import Model, ModelRequestParameters
 from pydantic_ai.models.wrapper import WrapperModel
 from pydantic_ai.settings import ModelSettings
 
+from . import calllog, model_errors
 from .config import LlmConfig
 from .store import Store
 
@@ -77,23 +82,108 @@ def request_key(model_name: str, messages: list[ModelMessage], settings: ModelSe
 
 
 class RecordingModel(WrapperModel):
-    def __init__(self, wrapped: Model, *, llm: LlmConfig, store: Store, mode: Mode = "replay", now: Callable[[], str]):
+    def __init__(self, wrapped: Model, *, llm: LlmConfig, store: Store, mode: Mode = "replay", now: Callable[[], str],
+                 role: str = "runner", sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+                 monotonic: Callable[[], float] = time.monotonic, rand: Callable[[float, float], float] = random.uniform,
+                 model_id: str | None = None):
+        """`role` ("router" or "runner") is the task the model call log names; `sleep`, `monotonic` and
+        `rand` are injected so a test waits for nothing. `model_id` is the model the log names (on Azure
+        the wrapped model is named by its deployment); it defaults to the wrapped model's name."""
         super().__init__(wrapped)
-        self._llm, self._store, self._mode, self._now = llm, store, mode, now
+        self._llm, self._store, self._mode, self._now, self._role = llm, store, mode, now, role
+        self._sleep, self._monotonic, self._rand = sleep, monotonic, rand
+        self._model_id = model_id or self.model_name
+        # The recordings' key names what was asked of whom: OpenAI's as it always was (the model's name);
+        # Azure's also names the provider and the model id, so it never replays another provider's answer.
+        self._key_name = (self.model_name if llm.provider != "azure"
+                          else f"azure:{self._model_id}:{self.model_name}")
+
+    def _log(self, key: str, **fields) -> None:
+        """One row of the model call log (copilot/calllog.py); never fails the request."""
+        calllog.write(self._store, {"id": None, "service": calllog.SERVICE, "task": self._role,
+                                    "provider": self._llm.provider, "model": self._model_id, "mode": self._mode,
+                                    "request_key": key, "attempt": 1, **calllog.context(), **fields})
 
     async def request(self, messages, model_settings, model_request_parameters) -> ModelResponse:
         assert_sampling(model_settings, self._llm)
-        key, canon = request_key(self.model_name, messages, model_settings, model_request_parameters)
+        key, canon = request_key(self._key_name, messages, model_settings, model_request_parameters)
         if self._mode != "live":
             hit = self._store.get_llm_call(key)
             if hit is not None:
+                self._log(key, at=self._now(), source="replay_hit", status="ok", latency_ms=0)
                 return ModelMessagesTypeAdapter.validate_json(hit)[0]
             if self._mode == "replay":
+                self._log(key, at=self._now(), source="replay_miss", status="error", error_code="replay_miss",
+                          kind="replay_miss", latency_ms=0)
                 raise ReplayMiss(f"no recording for request {key[:12]} (model {self.model_name})")
-        response = await super().request(messages, model_settings, model_request_parameters)
+        response = await self._live(key, messages, model_settings, model_request_parameters)
         if self._mode == "record":
-            self._store.put_llm_call(key, self.model_name, self._now(), canon, ModelMessagesTypeAdapter.dump_json([response]).decode())
+            self._store.put_llm_call(key, self._model_id, self._now(), canon, ModelMessagesTypeAdapter.dump_json([response]).decode())
         return response
+
+    async def _live(self, key, messages, model_settings, model_request_parameters) -> ModelResponse:
+        """Ask the provider under the published retry policy (llm.retry, copilot/model_errors.py): a server
+        that is down or slow is asked again after a backoff, a per-minute limit after the wait it asks
+        for (up to max_wait_s), anything else not at all; while the breaker is open the request fails at
+        once. Every attempt is one row of the model call log. A request that still fails raises
+        ModelUnavailable with its kind; an error that is not the model's is raised as it came."""
+        policy = self._llm.retry
+        br = model_errors.breaker(self._llm.base_url, self.model_name, policy.breaker_failures, policy.breaker_cooldown_s)
+        attempt = server_tries = rate_tries = 0
+        while True:
+            attempt += 1
+            if not br.allow(self._monotonic()):
+                message = f"the model server failed {policy.breaker_failures} times in a row; requests are paused"
+                self._log(key, at=self._now(), source="live", attempt=attempt, status="error", error_code="ModelUnavailable",
+                          kind="server_unavailable", latency_ms=0, message=message)
+                raise model_errors.ModelUnavailable("server_unavailable", message)
+            at, t0 = self._now(), self._monotonic()
+            try:
+                response = await super().request(messages, model_settings, model_request_parameters)
+            except Exception as e:
+                kind = model_errors.kind_of(e)
+                wait = None
+                if kind in model_errors.SERVER:
+                    br.failure(self._monotonic())
+                    server_tries += 1
+                    if server_tries < policy.server_attempts:
+                        base = policy.server_backoff_s[min(server_tries - 1, len(policy.server_backoff_s) - 1)]
+                        wait = base * self._rand(1 - policy.backoff_jitter, 1 + policy.backoff_jitter)
+                elif kind is not None:
+                    br.answered()
+                    if kind == "rate_limit_minute":
+                        rate_tries += 1
+                        asked = model_errors.wait_asked_s(e)
+                        want = asked if asked is not None else policy.rate_limit_wait_s
+                        if want <= policy.max_wait_s and rate_tries < policy.rate_limit_attempts:
+                            wait = want
+                http = isinstance(e, ModelHTTPError)
+                fields = calllog.header_fields(getattr(e, "headers", None), getattr(e, "retry_after", None))
+                if wait is not None:
+                    fields["retry_after_s"] = round(wait, 3)
+                self._log(key, at=at, source="live", attempt=attempt, status="error",
+                          error_code=(e.provider_error_code if http else None) or type(e).__name__, kind=kind,
+                          http_status=e.status_code if http else None, latency_ms=round((self._monotonic() - t0) * 1000, 1),
+                          message=calllog.redact(e.body if http and e.body is not None else str(e)), **fields)
+                if kind is None:
+                    raise
+                if wait is None:
+                    raise model_errors.ModelUnavailable(kind, str(e)) from e
+                await self._sleep(wait)
+                continue
+            if response.finish_reason == "content_filter":
+                # The provider answered, but its content filter withheld or cut the answer: never retried,
+                # never recorded, and worded by its kind like any other failure.
+                br.answered()
+                message = "the answer was withheld by the provider's content filter"
+                self._log(key, at=at, source="live", attempt=attempt, status="error", error_code="content_filter",
+                          kind="content_filter", latency_ms=round((self._monotonic() - t0) * 1000, 1), message=message,
+                          **calllog.usage_fields(response.usage))
+                raise model_errors.ModelUnavailable("content_filter", message)
+            br.success()
+            self._log(key, at=at, source="live", attempt=attempt, status="ok",
+                      latency_ms=round((self._monotonic() - t0) * 1000, 1), **calllog.usage_fields(response.usage))
+            return response
 
     def request_stream(self, *a, **k):  # an unrecorded path must not exist
         raise NotImplementedError("streaming model calls are not recorded; use request()")

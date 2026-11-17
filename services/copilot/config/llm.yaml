@@ -1,4 +1,8 @@
 # The model id and endpoint are configuration; the key comes from the environment (never from this file).
+# provider: openai, or azure for an Azure OpenAI deployment. For azure: base_url is <endpoint>/openai/v1 (the v1
+# API, no api-version), `deployment` is the deployment's name (sent as the request's model), router_model and runner_model stay the
+# model id (the call log, the prices and the names on Model usage use it), and api_key_env is
+# AZURE_OPENAI_API_KEY (workflow/private/azure.env).
 provider: openai
 base_url: https://api.openai.com/v1
 api_key_env: OPENAI_API_KEY
@@ -7,4 +11,13 @@ runner_model: gpt-5.4-nano
 temperature: 0
 seed: 1
 timeout_s: 60
-max_retries: 2
+# How a failed model request is retried, by the kind of failure (copilot/model_errors.py).
+retry:
+  server_attempts: 3          # total attempts for server_unavailable / timeout
+  server_backoff_s: [2, 4]    # waits between attempts; plus or minus backoff_jitter; never a wait after the last
+  backoff_jitter: 0.2
+  rate_limit_attempts: 3
+  rate_limit_wait_s: 60       # used when the response names no wait
+  max_wait_s: 90              # a longer wait asked for is not waited: the request fails
+  breaker_failures: 5         # server_unavailable/timeout in a row, across requests, that open the breaker
+  breaker_cooldown_s: 120     # while open, requests fail at once; then one trial request

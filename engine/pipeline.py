@@ -23,6 +23,7 @@ import hashlib
 import json
 import sqlite3
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -431,6 +432,16 @@ def _check_version(result: IngestResult, ctx: Context) -> None:
         raise IngestError(f"the service used configuration {result.config.version}, expected {ctx.version}")
 
 
+def ingest_workers() -> int:
+    """Files of one job read at once: config/app.yaml services.ingest_workers (CREDITIQ_INGEST_WORKERS overrides it)."""
+    import os
+
+    from .config import load_app_config
+
+    given = os.environ.get("CREDITIQ_INGEST_WORKERS") or (load_app_config().get("services") or {}).get("ingest_workers", 4)
+    return max(1, int(given))
+
+
 def process_files(conn: sqlite3.Connection, root: Path, job_id: str, case_id: str, file_ids: list[str], client) -> None:
     placeholders = ",".join("?" * len(file_ids)) or "''"
     rows = conn.execute(
@@ -439,17 +450,38 @@ def process_files(conn: sqlite3.Connection, root: Path, job_id: str, case_id: st
         (case_id, *file_ids),
     ).fetchall()
     if rows:
+        from .jobs import renew_lease
+
         ctx = Context.load(root)
-        request = IngestRequest(case_ref=case_id, config_version=ctx.version, files=[_ingest_file(r) for r in rows])
-        payloads = {r["id"]: (case_files_dir(case_id, root) / r["stored_name"]).read_bytes() for r in rows}
-        started_at = now_iso()
-        t0 = time.perf_counter()
-        result = client.process(request, payloads)
-        ingest_ms = (time.perf_counter() - t0) * 1000
-        _check_version(result, ctx)
-        _timing(conn, case_id, case_id, "ingest", started_at, ingest_ms)
-        for r in rows:
-            _store_file_result(conn, ctx, case_id, r, result, started_at)
+        files_dir = case_files_dir(case_id, root)
+
+        def read(r: sqlite3.Row) -> tuple[IngestResult, str, float]:
+            """On a worker thread: the service call only. Storing stays on this thread's connection."""
+            request = IngestRequest(case_ref=case_id, config_version=ctx.version, files=[_ingest_file(r)])
+            started_at = now_iso()
+            t0 = time.perf_counter()
+            answer = client.process(request, {r["id"]: (files_dir / r["stored_name"]).read_bytes()})
+            return answer, started_at, (time.perf_counter() - t0) * 1000
+
+        result: IngestResult | None = None
+        # Up to `ingest_workers` files are read at once, one file per request, and each is stored the moment its
+        # answer arrives: the register shows every file as it is done, a resumed job sends only the files not yet
+        # stored, and no request waits on the slowest of many files.
+        with ThreadPoolExecutor(max_workers=min(ingest_workers(), len(rows)), thread_name_prefix="ingest") as pool:
+            futures = {pool.submit(read, r): r for r in rows}
+            try:
+                for done in as_completed(futures):
+                    r = futures[done]
+                    result, started_at, ms = done.result()
+                    _check_version(result, ctx)
+                    _timing(conn, case_id, r["id"], "ingest", started_at, ms)
+                    _store_file_result(conn, ctx, case_id, r, result, started_at)
+                    renew_lease(conn, job_id)
+            except BaseException:
+                for f in futures:
+                    f.cancel()   # files not yet sent stay for the job's next attempt
+                raise
+        assert result is not None
         log_decision(
             conn, at=now_iso(), actor="system", case_id=case_id, action="processing.run",
             detail=dumps({"job_id": job_id, "config_version": result.config.version, "config_hash": result.config.hash,

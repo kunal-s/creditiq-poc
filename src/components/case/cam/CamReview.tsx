@@ -6,7 +6,7 @@ import { CamMemo, Downloads, Sources, SourcesContext } from "@/components/case/O
 import { QueryView } from "@/components/common/States";
 import { Chip } from "@/components/common/Panel";
 import { t } from "@/config/terminology";
-import { api } from "@/api/client";
+import { ApiError, api } from "@/api/client";
 import { camSheets, type Sheet } from "@/domain/camSheet";
 import { useCam, useCamChange, useCamRegenerate } from "@/domain/findings";
 import { camSectionAnchor, configLabel, formatDay, sourcesById } from "@/domain/outputs";
@@ -551,9 +551,27 @@ function PanelFrame({
   );
 }
 
+/** Why a redraft failed, worded by the kind of failure the engine reports (engine/model_retry.py). */
+const COPILOT_KIND: Record<string, string> = {
+  rate_limit_minute: "outputs.review.copilotBusy",
+  quota: "outputs.review.copilotLimit",
+  content_filter: "outputs.review.copilotRefused",
+  refusal: "outputs.review.copilotRefused",
+  not_configured: "outputs.review.copilotOff",
+};
+
 function ErrorLine({ error }: { error: unknown }) {
   if (!error) return null;
-  const message = error instanceof Error ? error.message : String(error);
+  const kind =
+    error instanceof ApiError && error.detail && typeof error.detail === "object"
+      ? (error.detail as { kind?: unknown }).kind
+      : undefined;
+  const message =
+    typeof kind === "string"
+      ? t(COPILOT_KIND[kind] ?? "outputs.review.copilotUnreachable")
+      : error instanceof Error
+        ? error.message
+        : String(error);
   return (
     <p className="mt-2 text-[12px] text-critical-text" data-testid="cam-action-error">
       {message}

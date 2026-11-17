@@ -1,5 +1,70 @@
 {
   "$defs": {
+    "CaseField": {
+      "additionalProperties": false,
+      "properties": {
+        "hint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hint"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "CaseField",
+      "type": "object"
+    },
+    "CaseType": {
+      "additionalProperties": false,
+      "description": "A document type a person made for one case (F-09.8): the file is read by the model, as F-15.8 says.",
+      "properties": {
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "fields": {
+          "items": {
+            "$ref": "#/$defs/CaseField"
+          },
+          "title": "Fields",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "title": "CaseType",
+      "type": "object"
+    },
     "IngestFile": {
       "additionalProperties": false,
       "properties": {
@@ -14,6 +79,17 @@
           ],
           "default": null,
           "title": "Assigned Type"
+        },
+        "case_type": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CaseType"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "content_type": {
           "default": "application/octet-stream",

@@ -153,6 +153,8 @@ class CaseData:
     declared_accounts: list[tuple[str, str]]
     """(bank, last four digits) from the declaration of existing facilities."""
     existing_facilities_declared: bool
+    case_satisfies: dict[str, set[str]] = field(default_factory=dict)
+    """F-09.9: the items each case document type is confirmed to satisfy."""
 
 
 def _last4(value: object) -> str | None:
@@ -181,6 +183,12 @@ def load_case_data(conn: sqlite3.Connection, case: CaseDetail) -> CaseData:
         "SELECT * FROM parties WHERE case_id = ? AND role <> 'borrower' ORDER BY ord", (case.id,)
     ).fetchall()
 
+    case_satisfies: dict[str, set[str]] = {}
+    for r in conn.execute(
+        "SELECT case_type_id, item_id FROM case_type_mappings WHERE case_id = ? AND status = 'confirmed'", (case.id,)
+    ):
+        case_satisfies.setdefault(r["case_type_id"], set()).add(r["item_id"])
+
     return CaseData(
         case=case,
         as_of=date.fromisoformat(case.as_of),
@@ -189,6 +197,7 @@ def load_case_data(conn: sqlite3.Connection, case: CaseDetail) -> CaseData:
         waivers=waivers,
         declared_accounts=_declared_accounts(case, docs),
         existing_facilities_declared=False,
+        case_satisfies=case_satisfies,
     )
 
 
@@ -227,7 +236,12 @@ class Evaluator:
 
     def candidates(self, item: ChecklistItemDef) -> list[Doc]:
         return [
-            d for d in self.data.docs if any(item.id in (self.types[t].satisfies if t in self.types else []) for t in d.types)
+            d
+            for d in self.data.docs
+            if any(
+                item.id in (self.types[t].satisfies if t in self.types else self.data.case_satisfies.get(t, ()))
+                for t in d.types
+            )
         ]
 
     # --- per item ---

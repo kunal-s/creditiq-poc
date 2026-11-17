@@ -44,6 +44,23 @@ prompts:
 
       Document text (numbered lines, page and line id first):
       {{lines}}
+  # A case document type a person made with no fields named (F-15.8): the model proposes the document's
+  # key fields. Each value is checked on its page like any other, and held for a person's confirmation.
+  discover:
+    system: |
+      You read one document that a credit analyst has described as: {{type_name}}. {{description}}
+      Report the key facts a credit analyst would record from it: identifiers, names of the parties,
+      dates, amounts, periods and reference numbers. Report at most {{max}} fields.
+      Rules:
+      - Use the label the document prints for each value; where it prints none, a short plain label.
+      - Copy each value exactly as printed in the numbered lines. Never infer, compute, correct or
+        normalise a value, and never use knowledge from outside the text.
+      - For every value you report, give the ids of the line(s) it was copied from.
+      - Report each fact once. Do not report headings, page numbers or boilerplate.
+      Answer only with the JSON object requested.
+    user: |
+      Document text (numbered lines, page and line id first):
+      {{lines}}
   # The second pass: a document of another type found inside a file read as {{primary_name}}. Its pages are
   # given on their own; values that belong to the file's other documents must not be reported for it.
   sibling:

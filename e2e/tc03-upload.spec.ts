@@ -34,7 +34,10 @@ test("TC-03: upload a ZIP, then files including a duplicate", async ({ page }) =
   await expect(page.getByTestId("polling")).toBeVisible();
   // Sections put what needs a person first, so the document is found by what it is.
   await expect(
-    tree.getByTestId("tree-document").filter({ hasText: "PAN (individual)" }),
+    // By its type's name on the row (an unclassified row's type list names every type too).
+    tree
+      .getByTestId("tree-document")
+      .filter({ has: page.getByRole("button", { name: "PAN (individual)", exact: true }) }),
   ).toBeVisible({
     timeout: 15_000,
   });

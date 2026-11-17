@@ -32,6 +32,7 @@ from . import (
     cam_copilot,
     cam_review,
     cam_templates,
+    case_types,
     keys,
     outbox,
     cases,
@@ -73,6 +74,10 @@ from .configstore import reader as configstore_reader
 from .configstore.schema import ApprovalMatrixSection, ChecklistTaxonomySection, DocumentTypesSection, PolicySection
 from .contracts.ingest import IngestIntegrityFigure
 from .contracts import (
+    CaseDocumentType,
+    CaseDocumentTypeProposal,
+    NewCaseDocumentType,
+    NewCaseTypeMapping,
     BankConduct,
     CellEdit,
     StatementEditRequest,
@@ -1519,3 +1524,43 @@ def config_checklist_taxonomy(_: dict = Depends(current_user)):
 @app.get("/api/config/document-types", response_model=DocumentTypesSection)
 def config_document_types(_: dict = Depends(current_user)):
     return _config(configstore_reader.load_document_types)
+
+
+@app.get("/api/cases/{case_id}/document-types", response_model=list[CaseDocumentType])
+def case_document_types(case_id: str, user: dict = Depends(require("case.read")),
+                        conn: sqlite3.Connection = Depends(get_conn)):
+    """F-09.8: the document types made for this case, oldest first."""
+    _case_for(conn, case_id, user)
+    return case_types.list_for_case(conn, case_id)
+
+
+@app.post("/api/cases/{case_id}/document-types", response_model=CaseDocumentType, status_code=201)
+def make_case_document_type(case_id: str, body: NewCaseDocumentType, user: dict = Depends(require("review.decide")),
+                            conn: sqlite3.Connection = Depends(get_conn)):
+    """F-09.8: make a document type for this case when nothing in the published list fits. It is
+    assigned to a document by the review decision `assign`, like a published type."""
+    _case_for(conn, case_id, user)
+    published = {t.name for t in _config(configstore_reader.load_document_types).types}
+    try:
+        return case_types.create(conn, case_id, body, user, published)
+    except case_types.CaseTypeError as e:
+        raise HTTPException(status_code=e.status, detail=str(e)) from e
+
+
+@app.post("/api/cases/{case_id}/document-types/{type_id}/mappings", response_model=CaseDocumentType, status_code=201)
+def map_case_document_type(case_id: str, type_id: str, body: NewCaseTypeMapping,
+                           user: dict = Depends(require("review.decide")), conn: sqlite3.Connection = Depends(get_conn)):
+    """F-09.9: map a case document type to a checklist item; a mandatory item waits for a checker."""
+    _case_for(conn, case_id, user)
+    try:
+        out = case_types.map_to_item(conn, data_root(), case_id, type_id, body, user)
+    except case_types.CaseTypeError as e:
+        raise HTTPException(status_code=e.status, detail=str(e)) from e
+    pipeline.refresh_case(conn, data_root(), case_id)
+    return out
+
+
+@app.get("/api/admin/case-document-types", response_model=list[CaseDocumentTypeProposal])
+def admin_case_document_types(_: dict = Depends(require("config.read")), conn: sqlite3.Connection = Depends(get_conn)):
+    """F-09.10: the types people made on appraisals, for the Administrator to consider publishing."""
+    return case_types.proposals(conn)

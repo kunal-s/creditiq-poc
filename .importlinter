@@ -22,6 +22,7 @@ source_modules =
     engine.cam_copilot
     engine.cam_review
     engine.cam_templates
+    engine.case_types
     engine.cases
     engine.checklist
     engine.comparison

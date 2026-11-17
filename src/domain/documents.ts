@@ -4,11 +4,15 @@ import { t } from "@/config/terminology";
 export const ACCEPT =
   ".pdf,.jpg,.jpeg,.png,.tif,.tiff,.xlsx,.xls,.csv,.docx,.zip,application/pdf,image/*,application/zip";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useParams } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/api/client";
 import type {
+  CaseDocumentType,
   DocumentStatus,
   DocumentTypeDef,
+  NewCaseDocumentType,
+  NewCaseTypeMapping,
   FileRecord,
   Grade,
   LogicalDocument,
@@ -88,18 +92,67 @@ export function useUpload(caseId: string) {
 }
 
 /** The published closed list of document types (F-09.1). */
+/** The published closed list. Inside an appraisal, `name` also knows the types made for it
+ * (F-09.8), so a document of such a type reads by the name the person gave it; `data` stays the
+ * published list and `caseTypes` holds the appraisal's own. */
 export function useDocumentTypes() {
   const query = useQuery({
     queryKey: ["config", "document-types"],
     queryFn: api.documentTypes,
     staleTime: Infinity,
   });
+  const { caseId } = useParams({ strict: false }) as { caseId?: string };
+  const own = useCaseDocumentTypes(caseId ?? "");
   const byId = useCallback(
     (id: string): DocumentTypeDef | undefined => query.data?.types.find((d) => d.id === id),
     [query.data],
   );
-  const name = useCallback((id: string) => byId(id)?.name ?? id.replace(/_/g, " "), [byId]);
-  return { ...query, byId, name };
+  const name = useCallback(
+    (id: string) =>
+      byId(id)?.name ?? own.data?.find((c) => c.id === id)?.name ?? id.replace(/_/g, " "),
+    [byId, own.data],
+  );
+  return { ...query, byId, name, caseTypes: own.data ?? [] };
+}
+
+/** Whether a type id names a type made for an appraisal, not one of the published list. */
+export function isCaseType(typeId: string | undefined): boolean {
+  return Boolean(typeId?.startsWith("CDT-"));
+}
+
+/** The document types made for this appraisal (F-09.8), oldest first. */
+export function useCaseDocumentTypes(caseId: string) {
+  return useQuery({
+    queryKey: ["cases", caseId, "document-types"],
+    queryFn: () => api.caseDocumentTypes(caseId),
+    enabled: Boolean(caseId),
+  });
+}
+
+/** Make a type for this appraisal; the engine records who made it and when. */
+export function useMakeCaseDocumentType(caseId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (body: NewCaseDocumentType) => api.makeCaseDocumentType(caseId, body),
+    onSuccess: (made) =>
+      client.setQueryData<CaseDocumentType[]>(["cases", caseId, "document-types"], (old) => [
+        ...(old ?? []),
+        made,
+      ]),
+  });
+}
+
+/** Map a case document type to a checklist item (F-09.9). */
+export function useMapCaseDocumentType(caseId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ typeId, ...body }: NewCaseTypeMapping & { typeId: string }) =>
+      api.mapCaseDocumentType(caseId, typeId, body),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ["cases", caseId] });
+      void client.invalidateQueries({ queryKey: ["review"] });
+    },
+  });
 }
 
 /** Rendered page image as an object URL, fetched with the session token. */

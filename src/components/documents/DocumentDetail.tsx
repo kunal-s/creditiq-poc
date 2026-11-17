@@ -3,6 +3,7 @@ import { Eye } from "lucide-react";
 import type { ChecklistItemState, FileRecord, LogicalDocument } from "@/api/types";
 import { useDocViewer } from "@/components/docviewer/DocViewer";
 import { t, tOr } from "@/config/terminology";
+import { useChecklist } from "@/domain/checklist";
 import { pageRange, useDocumentTypes } from "@/domain/documents";
 import {
   confidencePct,
@@ -47,6 +48,11 @@ export function DocumentDetail({
           ? t("validation.pageClear")
           : t("validation.pagesClear", { n: total });
   const problems = hard + unreadable > 0;
+  // A type made for this appraisal counts toward a checklist item only once mapped (F-09.9).
+  const mappings = types.caseTypes.find((x) => x.id === c?.types[0])?.mappings ?? [];
+  const checklist = useChecklist(caseId);
+  const itemName = (id: string) =>
+    checklist.data?.items.find((i) => i.item_id === id)?.name ?? id.replace(/_/g, " ");
 
   // What was read from this document: values with a value, in the order they were extracted.
   const fields = useFields(caseId);
@@ -70,6 +76,16 @@ export function DocumentDetail({
             )}
           </dd>
         </div>
+        {mappings.length > 0 && (
+          <div className="flex gap-2">
+            <dt className="w-28 shrink-0 text-muted-foreground">{t("caseType.countsToward")}</dt>
+            <dd className="min-w-0 text-foreground" data-testid="case-type-mapping">
+              {mappings
+                .map((m) => t(`caseType.mapping.${m.status}`, { item: itemName(m.item_id) }))
+                .join("; ")}
+            </dd>
+          </div>
+        )}
         <div className="flex gap-2">
           <dt className="w-28 shrink-0 text-muted-foreground">{t("validation.readability")}</dt>
           <dd className="min-w-0 text-foreground" data-testid="readability">

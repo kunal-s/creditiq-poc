@@ -568,6 +568,8 @@ class LlmConfig(Strict):
     prompts: dict[str, Prompt]
     transactions: TransactionsLlm = Field(default_factory=TransactionsLlm)
     siblings: SiblingsConfig = Field(default_factory=SiblingsConfig)
+    discover_max_fields: int = Field(default=12, ge=1, le=40)
+    """The most fields the model may propose for a case document type with no named fields (F-15.8)."""
 
 
 # --- confidence.yaml, decision.yaml ------------------------------------------------------------
@@ -685,7 +687,7 @@ class IngestionConfig(Strict):
             for t in r.types:
                 if t not in types:
                     problems.append(f"validators.{r.id}: unknown type {t}")
-        for name in ("classify", "extract", "sibling", "transactions"):
+        for name in ("classify", "extract", "sibling", "transactions", "discover"):
             if name not in self.llm.prompts:
                 problems.append(f"llm.prompts: missing '{name}'")
         for rx in self.routing.reading.boilerplate:

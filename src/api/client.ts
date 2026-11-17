@@ -34,6 +34,10 @@ import type {
   AuditPage,
   PolicyConfig,
   DocumentTypes,
+  CaseDocumentType,
+  CaseDocumentTypeProposal,
+  NewCaseDocumentType,
+  NewCaseTypeMapping,
   FieldValue,
   FileRecord,
   Finding,
@@ -385,6 +389,23 @@ export const api = {
   editAttachment: (itemId: string) => download(`/api/review/${q(itemId)}/attachment`),
 
   documentTypes: () => request<DocumentTypes>("/api/config/document-types"),
+  /** The document types made for this appraisal (F-09.8). */
+  caseDocumentTypes: (id: string) =>
+    request<CaseDocumentType[]>(`/api/cases/${q(id)}/document-types`),
+  makeCaseDocumentType: (id: string, body: NewCaseDocumentType) =>
+    request<CaseDocumentType>(`/api/cases/${q(id)}/document-types`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  /** Map a case document type to a checklist item; a mandatory one waits for a checker (F-09.9). */
+  mapCaseDocumentType: (id: string, typeId: string, body: NewCaseTypeMapping) =>
+    request<CaseDocumentType>(`/api/cases/${q(id)}/document-types/${q(typeId)}/mappings`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  /** Types people made on appraisals, for the Administrator to consider publishing (F-09.10). */
+  caseDocumentTypeProposals: () =>
+    request<CaseDocumentTypeProposal[]>("/api/admin/case-document-types"),
   checklistTaxonomy: () => request<ChecklistTaxonomy>("/api/config/checklist-taxonomy"),
   policyConfig: () => request<PolicyConfig>("/api/config/policy"),
   approvalMatrixConfig: () => request<ApprovalMatrixConfig>("/api/config/approval-matrix"),

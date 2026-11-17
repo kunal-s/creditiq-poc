@@ -110,10 +110,18 @@ class StubIngestClient:
     def process(self, request: IngestRequest, payloads: dict[str, bytes]) -> IngestResult:
         files = []
         for f in request.files:
-            name = f"{f.sha256}@{f.assigned_type}.json" if f.assigned_type else f"{f.sha256}.json"
+            if f.case_type:
+                # A case document type (F-09.8): `<sha256>@case-named.json` when the person named fields,
+                # `@case-discovered.json` when not; the fixture's "@case" stands for the type's id.
+                name = f"{f.sha256}@case-{'named' if f.case_type.fields else 'discovered'}.json"
+            else:
+                name = f"{f.sha256}@{f.assigned_type}.json" if f.assigned_type else f"{f.sha256}.json"
             canned = self._load(name)
             if canned is None:
                 raise IngestError(f"no stub fixture {name} for {f.original_name} in {self.fixtures}")
+            if f.case_type:
+                canned = IngestFileResult.model_validate(
+                    json.loads(canned.model_dump_json().replace('"@case"', json.dumps(f.case_type.id))))
             files.append(canned.model_copy(update={"file_id": f.file_id, "name": f.original_name}))
         return IngestResult.model_validate(
             {"contract_version": "2", "case_ref": request.case_ref, "config": {"version": request.config_version, "hash": "stub"},

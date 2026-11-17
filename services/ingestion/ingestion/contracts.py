@@ -36,6 +36,11 @@ class FieldResult(C):
     key_field: bool = False
     needs_review: bool = False
     """A key field below the review threshold (F-17.2): it goes to the review queue before use."""
+    origin: Literal["configured", "named", "discovered"] = "configured"
+    """Where the field came from: the published type's schema, a field a person named for a case
+    document type (F-15.8), or a field the model proposed for one (F-15.8, held for review by F-17.7)."""
+    label: str | None = None
+    """The field as the document labels it, for a discovered field."""
 
 
 class TableRow(C):
@@ -324,6 +329,21 @@ class IngestResult(C):
     files: list[FileResult]
 
 
+class CaseField(C):
+    name: str
+    hint: str | None = None
+
+
+class CaseType(C):
+    """A document type a person made for one case (F-09.8). The file is read as this type: no
+    classification, and its fields are the ones named here, or proposed by the model when none are."""
+
+    id: str
+    name: str
+    description: str | None = None
+    fields: list[CaseField] = Field(default_factory=list)
+
+
 class FileSpec(C):
     file_id: str
     sha256: str
@@ -333,6 +353,8 @@ class FileSpec(C):
     """Never used to classify (F-09.1)."""
     assigned_type: str | None = None
     """A person's type assignment (F-09.5): classification is skipped, the file is read as this type."""
+    case_type: CaseType | None = None
+    """A person's case document type (F-09.8), instead of `assigned_type`: read as F-15.8 says."""
 
 
 class IngestRequest(C):

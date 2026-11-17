@@ -347,7 +347,9 @@ needs a person is flagged on its row, with what to do."
 | Component | What it is | What it does |
 |---|---|---|
 | **"Assign as:" + candidate buttons** | Up to 3 buttons, each "Type name 86%" | One click assigns that type to an unclassified document and records the decision; a toast confirms "Assigned as {type}" |
-| **Other type…** | CTA | Opens the decision dialog with the full published type list |
+| **Choose a type…** + **Assign** | Select, then button | Every published type, and under "Made for this appraisal" the types made on this appraisal; **Assign** appears once one is chosen and records the same decision |
+| **+ New type** | CTA | Opens **New document type** (below): a type for this appraisal only, when no published type fits |
+| **Other…** | CTA | Opens the decision dialog: assign from the full list, or waive the document as not needed with a reason |
 | **"Resolve: {kind}"** | Amber CTA per open item (Quality exception, Party or label flag, Uncertain split, Manual entry) | Opens the decision dialog for that item |
 | **Check the extracted values →** | Link | On a document in review, jumps to Extracted data anchored at the fields |
 | **"Waiting for credit review"** | Grey note | Shown instead of the buttons to a role without `review.decide` |
@@ -363,6 +365,18 @@ needs a person is flagged on its row, with what to do."
 | **Deficiencies** | Red rows: checklist item name — deficiency | What the checklist found wrong with this document |
 | **Pages table** | Page (clickable) / Grade / Reasons (Low resolution, Blur, Skew, Shadow, OCR below floor, Corrupt, Password protected, Blank, Missing page) + "OCR 72%" | Shown only when some page is hard to read or unreadable. The page number opens the viewer at that page |
 | **Open document** | CTA | Opens the evidence viewer at the first page |
+
+**New document type** (dialog, from **+ New type**; F-09.8 to F-09.10)
+
+| Element | Type | Behaviour |
+|---|---|---|
+| **Name** | Text, required | Up to 80 characters; a published type's name is refused (assign it from the list) |
+| **What the document is** | Text, optional | One sentence; passed to the reading |
+| **Fields to read** | Rows of Field + What to look for, **Add a field** | With none, the note reads that the key fields are proposed from the document and each waits in the review queue |
+| **Counts toward** | Select, optional | Only the case's unsatisfied items that one document satisfies. A mandatory item shows that a Credit Manager confirms the mapping, and asks **Why this document satisfies the item** |
+| **Create and assign** | Primary | Makes the type, assigns it to the document (it is read again as that type), then maps it; toasts "Assigned as {type}" and "Proposed for {item}" |
+
+On **Extracted data**, a field proposed from the document reads by the document's own label with a pale **Proposed** chip. On the document's detail, **Counts toward** shows each mapping: "Proposed for {item}, awaiting a checker", "Counts toward {item}" or "Not accepted for {item}". **Administration › Document types** lists **Proposed from appraisals**: each type made, its fields, and how many appraisals and documents use it.
 
 **Scenario.** Arjun uploads the customer's ZIP. The register shows a folder with 11 files; one row
 is **Duplicate** of another ("Duplicate of statements/HDFC_Apr.pdf"). A merged 23-page PDF has
@@ -963,7 +977,7 @@ the Spread, scrolled where she was.
 
 ### 19.1 Decision dialog (review items)
 
-Opened from the Review queue's **Decide**, from **Other type…** or **Resolve: {kind}** on a
+Opened from the Review queue's **Decide**, from **Other…** or **Resolve: {kind}** on a
 document row.
 
 | Component | What it is | What it does |

@@ -4,6 +4,9 @@
 // for the rest of that test.
 import type { Locator, Page, Request, Route } from "@playwright/test";
 import type {
+  CaseDocumentType,
+  NewCaseDocumentType,
+  NewCaseTypeMapping,
   ChecklistPreviewRequest,
   AdjudicationRequest,
   ApprovingAuthority,
@@ -191,6 +194,8 @@ export class MockApi {
   comparisons = new Map<string, CaseComparison>();
   /** The CAM templates made beside the default (FRD decision C.4-12). */
   camTemplates: CamTemplate[] = [];
+  /** Document types made for an appraisal (F-09.8), as engine/case_types.py keeps them. */
+  caseTypes = new Map<string, CaseDocumentType[]>();
   /** The transactions, narrowed as the engine narrows them (category, month, account, status, needs_review, q). */
   txnList(caseId: string, p: URLSearchParams): Reply {
     const limit = Number(p.get("limit") ?? 200);
@@ -875,6 +880,43 @@ export class MockApi {
         new RegExp(`^/api/review/${id}/decision$`),
         (req, m) => this.decide(m[1]!, req.postDataJSON() as ReviewDecisionRequest),
       ],
+      // Case document types (F-09.8 to F-09.10), refused as engine/case_types.py refuses them.
+      [
+        "GET",
+        new RegExp(`^/api/cases/${id}/document-types$`),
+        (_req, m) => ({ json: this.caseTypes.get(decodeURIComponent(m[1]!)) ?? [] }),
+      ],
+      [
+        "POST",
+        new RegExp(`^/api/cases/${id}/document-types$`),
+        (req, m) =>
+          this.makeCaseType(decodeURIComponent(m[1]!), req.postDataJSON() as NewCaseDocumentType),
+      ],
+      [
+        "POST",
+        new RegExp(`^/api/cases/${id}/document-types/${id}/mappings$`),
+        (req, m) =>
+          this.mapCaseType(
+            decodeURIComponent(m[1]!),
+            decodeURIComponent(m[2]!),
+            req.postDataJSON() as NewCaseTypeMapping,
+          ),
+      ],
+      [
+        "GET",
+        /^\/api\/admin\/case-document-types$/,
+        () => ({
+          json: [...this.caseTypes.values()].flat().map((c) => ({
+            name: c.name,
+            description: c.description ?? null,
+            fields: c.fields ?? [],
+            cases: 1,
+            documents: 1,
+            first_made: c.made_at,
+            last_made: c.made_at,
+          })),
+        }),
+      ],
       [
         "POST",
         new RegExp(`^/api/cases/${id}/fields/${id}/edit$`),
@@ -1366,6 +1408,63 @@ export class MockApi {
     else this.review.push(item);
     this.figureEdits.push({ caseId, fieldId, value: raw, reason, file });
     return { json: item };
+  }
+
+  /** F-09.8: a type made for one appraisal; a published name, or a field named twice, is refused. */
+  private makeCaseType(caseId: string, body: NewCaseDocumentType): Reply {
+    if (!this.can("review.decide")) return this.denied("review.decide");
+    const name = body.name.trim().replace(/\s+/g, " ");
+    if (!name) return refused(422, "a case document type needs a name of up to 80 characters");
+    const fields = (body.fields ?? []).map((f) => ({
+      name: f.name
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "_")
+        .replace(/^_+|_+$/g, ""),
+      hint: f.hint ?? null,
+    }));
+    if (new Set(fields.map((f) => f.name)).size !== fields.length)
+      return refused(422, "the field is named twice");
+    const list = this.caseTypes.get(caseId) ?? [];
+    const made: CaseDocumentType = {
+      id: `CDT-${list.length + 1}`,
+      case_id: caseId,
+      name,
+      description: body.description ?? null,
+      fields,
+      replaces: body.replaces ?? null,
+      made_by: this.user.id,
+      made_at: "2026-09-29T10:00:00Z",
+      mappings: [],
+    };
+    this.caseTypes.set(caseId, [...list, made]);
+    return { status: 201, json: made };
+  }
+
+  /** F-09.9: a mapping to a mandatory item is proposed for a checker, with a reason; one to an
+   * item that is not mandatory is recorded at once. */
+  private mapCaseType(caseId: string, typeId: string, body: NewCaseTypeMapping): Reply {
+    const made = (this.caseTypes.get(caseId) ?? []).find((c) => c.id === typeId);
+    if (!made) return refused(404, `no case document type '${typeId}' on this case`);
+    const item = this.checklists.get(caseId)?.items.find((i) => i.item_id === body.item_id);
+    if (!item) return refused(422, `'${body.item_id}' is not a checklist item of this case`);
+    const reason = (body.reason ?? "").trim() || null;
+    if (item.blocking && !reason)
+      return refused(422, "mapping to a mandatory item needs a reason for the checker");
+    made.mappings = [
+      ...(made.mappings ?? []),
+      {
+        id: `MAP-${(made.mappings ?? []).length + 1}`,
+        item_id: body.item_id,
+        status: item.blocking ? "proposed" : "confirmed",
+        reason,
+        proposed_by: this.user.id,
+        proposed_at: "2026-09-29T10:00:00Z",
+        decided_by: item.blocking ? null : this.user.id,
+        decided_at: item.blocking ? null : "2026-09-29T10:00:00Z",
+      },
+    ];
+    return { status: 201, json: made };
   }
 
   /** F-17.5: a review decision, refused as engine/review.py refuses it. */

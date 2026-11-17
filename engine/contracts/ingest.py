@@ -30,6 +30,22 @@ class IngestFile(_C):
     """Never used to classify (F-09.1)."""
     assigned_type: str | None = None
     """A person's type assignment (F-09.5): classification is skipped and the file is read as this type."""
+    case_type: CaseType | None = None
+    """A person's case document type (F-09.8), instead of `assigned_type`."""
+
+
+class CaseField(_C):
+    name: str
+    hint: str | None = None
+
+
+class CaseType(_C):
+    """A document type a person made for one case (F-09.8): the file is read by the model, as F-15.8 says."""
+
+    id: str
+    name: str
+    description: str | None = None
+    fields: list[CaseField] = Field(default_factory=list)
 
 
 class IngestRequest(_C):
@@ -61,6 +77,8 @@ class IngestField(_C):
     required: bool = False
     key_field: bool = False
     needs_review: bool = False
+    origin: Literal["configured", "named", "discovered"] = "configured"
+    label: str | None = None
 
 
 class IngestTableRow(_C):

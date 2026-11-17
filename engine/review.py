@@ -37,7 +37,7 @@ import json
 import sqlite3
 from pathlib import Path
 
-from . import cases, completeness, figure_edits, jobs
+from . import case_types, cases, completeness, figure_edits, jobs
 from .configstore import reader
 from .contracts import ReviewDecisionRequest, ReviewItem
 from .db import log_decision, transaction
@@ -86,7 +86,8 @@ def _items_served(conn: sqlite3.Connection, root: Path, case_id: str, types: lis
     data = completeness.load_case_data(conn, case)
     items, _ = completeness.applicable_items(root, case, data)
     type_defs = {t.id: t for t in reader.load_document_types(root).types}
-    served = {i for t in types if t in type_defs for i in type_defs[t].satisfies}
+    mapped = case_types.satisfies(conn, case_id)
+    served = {i for t in types if t in type_defs for i in type_defs[t].satisfies} | {i for t in types for i in mapped.get(t, ())}
     return [i for i in items if i.id in served]
 
 
@@ -140,9 +141,10 @@ def decide(
             doc = _doc(conn, detail)
             _require(doc is not None, "the document no longer exists", 409)
             if decision == "assign":
-                type_ids = {t.id for t in reader.load_document_types(root).types}
+                # The closed list, or a type a person made for this case (F-09.8).
+                type_ids = {t.id for t in reader.load_document_types(root).types} | set(case_types.names(conn, case_id))
                 _require(isinstance(body.value, str) and body.value in type_ids,
-                         "assign needs a document type id from the closed list")
+                         "assign needs a document type id from the closed list or one made for this case")
                 conn.execute(
                     "UPDATE documents SET assigned_types = ?, status = 'classified' WHERE id = ?",
                     (json.dumps([body.value]), doc["id"]),
@@ -233,6 +235,12 @@ def decide(
             _require(decision in ("confirm", "waive"), "a finding is confirmed as valid or waived with a reason")
             finding_id = detail.get("finding_id") or item["ref"].removeprefix("finding:")
             resolve_escalation(conn, case_id=case_id, finding_id=finding_id, resolved_by=decided_by)
+        elif kind == "mapping":
+            # F-09.9: a case document type proposed to satisfy a mandatory checklist item.
+            try:
+                log.update(case_types.decide_mapping(conn, detail, decision, user))
+            except case_types.CaseTypeError as e:
+                raise ReviewError(e.status, str(e)) from e
         elif kind == "integrity":
             # F-07A: what the file's own bytes said about its history. A person
             # confirms the file stands out (and asks for the issuer's copy) or

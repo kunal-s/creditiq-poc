@@ -414,7 +414,19 @@ def singles() -> list[tuple[File, dict]]:
     assigned = File("scan_0412.pdf", "company_pan")
     company_pan(assigned, HERONBAY)
     assigned.documents[0]["fields"]["company_name"]["source"]["text"] = HERONBAY["name"]
-    out.append((f, {"company_pan": assigned.result("")}))
+    # F-09.8, F-15.8: the same scan read as a case document type a person made (the stub puts the
+    # type's id in place of "@case"): fields the person named, or fields the model proposed.
+    named = File("scan_0412.pdf", "@case", confidence=1.0)
+    named.add("Certificate\nRegistration number AAACH5678Q\nEntity", "@case", {
+        "registration_number": {**fld("AAACH5678Q", method="model", required=False), "key_field": True, "origin": "named"},
+        "issue_date": {**fld(None), "key_field": True, "origin": "named"},
+    }, decision="human_review")
+    found = File("scan_0412.pdf", "@case", confidence=1.0)
+    found.add("Certificate\nRegistration number AAACH5678Q\nEntity", "@case", {
+        "registration_number": {**fld("AAACH5678Q", method="model", needs_review=True), "origin": "discovered",
+                                "label": "Registration number"},
+    }, decision="human_review")
+    out.append((f, {"company_pan": assigned.result(""), "case-named": named.result(""), "case-discovered": found.result("")}))
 
     # F-17: a photographed return, grade C, a key value below the threshold.
     f = File("gst_sep_photo.pdf", "gstr_3b")

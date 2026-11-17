@@ -413,6 +413,18 @@
           "title": "Key Field",
           "type": "boolean"
         },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label"
+        },
         "method": {
           "anyOf": [
             {
@@ -435,6 +447,16 @@
           "default": false,
           "title": "Needs Review",
           "type": "boolean"
+        },
+        "origin": {
+          "default": "configured",
+          "enum": [
+            "configured",
+            "named",
+            "discovered"
+          ],
+          "title": "Origin",
+          "type": "string"
         },
         "raw_text": {
           "anyOf": [

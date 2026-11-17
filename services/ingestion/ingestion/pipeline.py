@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 
 from . import CONTRACT_VERSION, ENGINE_VERSION
 from .config.models import IngestionConfig
-from .contracts import FileResult, FileSpec, IngestRequest, IngestResult
+from .contracts import CaseType, FileResult, FileSpec, IngestRequest, IngestResult
 from .llm.recorder import ModelClient
 from .pageindex import Page
 from .readers.ocr import OcrEngine
@@ -18,7 +18,7 @@ from .stages import classify as classify_stage
 from .stages import instances as instances_stage
 from .stages import route as route_stage
 from .stages import siblings as siblings_stage
-from .stages.extract.run import extract_instance
+from .stages.extract.run import extract_case_type, extract_instance
 from .integrity.locate import locate as locate_on_pages
 from .integrity.locate import place_objects
 from .stages.integrity_file import run_integrity_file
@@ -118,6 +118,35 @@ class Ingestor:
             self.on_stage(name)
         return out
 
+    def _case_type_file(self, cfg: IngestionConfig, ct: CaseType, pages: list[Page], common: dict, tr: _Trace) -> FileResult:
+        """A file read as a case document type (F-09.8, F-15.8): the whole file is the one document, read by
+        the model only. A discovered field always goes to a person (F-17.7)."""
+        e = self._timed(tr, "extract", lambda: ((x := extract_case_type(cfg, ct, pages, self.model)), {"fields": x["fields"], "trace": x["trace"]}))
+        by_no = {p.no: p for p in pages}
+        cls = common["classification"]
+        fields = {}
+        for k, f in e["fields"].items():
+            scored = score_field(cfg, k, f, cls["confidence"], by_no, [])
+            if f.get("origin") == "discovered" and scored["status"] == "found":
+                scored["needs_review"] = True
+            fields[k] = scored
+        grade = document_grade(pages)
+        conf = decide(cfg, grade, cls, fields, [], {})
+        reasons = conf["reasons"] + [{"kind": "discovered_field", "field": k} for k, f in fields.items() if f.get("origin") == "discovered"]
+        # Only an unreadable document is rejected: a person chose this type, so a weak reading goes back to them.
+        if grade in cfg.decision.reject_grades:
+            decision = "reject"
+        else:
+            decision = "human_review" if reasons or not fields or conf["decision"] != "auto_accept" else "auto_accept"
+        nos = [p.no for p in pages]
+        doc = {"instance_no": 1, "instance_key": None, "page_from": nos[0], "page_to": nos[-1], "document_type": ct.id,
+               "fields": fields, "tables": {}, "validation": [], "confidence": {**conf, "decision": decision, "reasons": reasons},
+               "identity": {}, "defects": [], "origin": "classified", "pages": nos}
+        self.store.save_instance(common["run_id"], 1, None, nos[0], nos[-1], fields, {}, [])
+        self._timed(tr, "score", lambda: (None, [doc["confidence"]]))
+        return FileResult(**common, front_matter_pages=[], documents=[doc], decision=decision,
+                          review_reasons=[{**r, "instance": 1} for r in reasons], trace=tr.entries)
+
     def _run(self, case_ref: str, spec: FileSpec, data: bytes, run_id: str, tr: _Trace, base: dict, carry: dict) -> FileResult:
         cfg = self.cfg
         gate = self._timed(tr, "quality_gate", lambda: ((g := run_gate(data, spec.original_name, spec.content_type, cfg.quality, cfg.routing)), g.to_json()))
@@ -160,6 +189,11 @@ class Ingestor:
             person = {"type": spec.assigned_type, "confidence": 1.0, "tier": "person", "signals": {}, "needs_review": False, "mixed_content": [],
                       "candidates": [{"type": spec.assigned_type, "score": 1.0}], "reason": "assigned by a person"}
             cls = self._timed(tr, "classify", lambda: (person, person))
+        elif spec.case_type:
+            ct = spec.case_type
+            person = {"type": ct.id, "confidence": 1.0, "tier": "person", "signals": {}, "needs_review": False, "mixed_content": [],
+                      "candidates": [{"type": ct.id, "score": 1.0}], "reason": "a case document type assigned by a person"}
+            cls = self._timed(tr, "classify", lambda: (person, person))
         else:
             cls = self._timed(tr, "classify", lambda: ((c := classify_stage.classify(cfg, pages, self.model)), c))
         self.store.save_classification(run_id, cls)
@@ -167,7 +201,7 @@ class Ingestor:
         # page read by OCR has no text of its own) and the type is known.
         scanned = {p.no for p in pages if p.source == "ocr"}
         integrity = self._timed(tr, "integrity_page", lambda: (
-            (i := run_integrity_page(data, gate.kind, integrity, cfg.integrity, cls["type"], scanned,
+            (i := run_integrity_page(data, gate.kind, integrity, cfg.integrity, None if spec.case_type else cls["type"], scanned,
                                      pages, self.ocr, self.store)), i.to_json()))
         carry["integrity"] = integrity.findings
         carry["integrity_recommendation"] = integrity.recommendation["code"]
@@ -177,6 +211,8 @@ class Ingestor:
                       pages=page_infos, classification=cls,
                       integrity=integrity.findings, integrity_recommendation=integrity.recommendation["code"],
                       integrity_facts=integrity.facts, integrity_figures=integrity.figures)
+        if spec.case_type:
+            return self._case_type_file(cfg, spec.case_type, pages, common, tr)
         if cls["type"] is None:
             reasons = [{"kind": "type_unassigned", "detail": cls.get("reason")}]
             _integrity_reason(integrity, reasons)

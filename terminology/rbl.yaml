@@ -1599,7 +1599,14 @@ documents:
   checkValues: Check the extracted values
   assignAs: "Assign as:"
   noneClose: No listed type is close
-  otherType: Other type…
+  otherType: Other…
+  otherTypeHelp: Waive the document as not needed, with a reason
+  chooseType: Choose a type…
+  assign: Assign
+  thisAppraisal: Made for this appraisal
+  publishedList: Published types
+  newType: New type
+  newTypeHelp: None of the published types fits this document
   assigned: "Assigned as {type}"
   resolve: "Resolve: {kind}"
   filter:
@@ -2718,8 +2725,47 @@ ratioBand:
   adverse: Adverse
 
 # Review queue (FRD F-17).
+# A document type made for one appraisal when none of the published list fits (F-09.8 to F-09.10).
+caseType:
+  title: New document type
+  description: For this appraisal only. The document is read as this type, and the type is offered for the other documents of this appraisal.
+  name: Name
+  namePlaceholder: For example, Shop and establishment certificate
+  about: What the document is
+  aboutPlaceholder: Optional, one sentence
+  fields: Fields to read
+  fieldsNone: No fields named. The key fields are proposed from the document, and each waits for confirmation in the review queue.
+  fieldName: Field
+  fieldHint: What to look for
+  fieldHintPlaceholder: What to look for (optional)
+  addField: Add a field
+  removeField: "Remove {name}"
+  countsToward: Counts toward
+  countsNone: No checklist item
+  countsMandatory: "{name} is mandatory: a Credit Manager confirms the mapping before it counts."
+  reason: Why this document satisfies the item
+  create: Create and assign
+  creating: Creating…
+  created: "Assigned as {type}"
+  failed: The type could not be created.
+  proposed: Proposed
+  proposedHelp: Proposed from the document; confirm or correct it in the review queue
+  mapping:
+    proposed: "Proposed for {item}, awaiting a checker"
+    confirmed: "Counts toward {item}"
+    refused: "Not accepted for {item}"
+  admin:
+    title: Proposed from appraisals
+    subtitle: Types people made when no published type fitted. Publish one as a document type to have it recognised on later appraisals.
+    empty: No types have been made on appraisals.
+    fields: "Fields: {list}"
+    fieldsNone: Fields proposed from each document
+    usage: "Appraisals: {cases} · Documents: {documents}"
+    lastMade: "Last made {date}"
+
 reviewKind:
   type: Type assignment
+  mapping: Checklist mapping
   field: Field review
   quality: Quality exception
   party: Party or label flag

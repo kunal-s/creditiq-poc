@@ -2710,6 +2710,152 @@
         "title": "CaseDetail",
         "type": "object"
       },
+      "CaseDocumentType": {
+        "description": "A document type a person made for one case (F-09.8): never offered to the classifier, never\nedited in place, satisfies no checklist item unless mapped (F-09.9).",
+        "properties": {
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/CaseDocumentTypeField"
+            },
+            "title": "Fields",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "made_at": {
+            "title": "Made At",
+            "type": "string"
+          },
+          "made_by": {
+            "title": "Made By",
+            "type": "string"
+          },
+          "mappings": {
+            "items": {
+              "$ref": "#/components/schemas/CaseTypeMapping"
+            },
+            "title": "Mappings",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "replaces": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replaces"
+          }
+        },
+        "required": [
+          "id",
+          "case_id",
+          "name",
+          "made_by",
+          "made_at"
+        ],
+        "title": "CaseDocumentType",
+        "type": "object"
+      },
+      "CaseDocumentTypeField": {
+        "properties": {
+          "hint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hint"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "CaseDocumentTypeField",
+        "type": "object"
+      },
+      "CaseDocumentTypeProposal": {
+        "description": "F-09.10: case document types of one name across appraisals, for the Administrator to consider\npublishing. Counts only: no appraisal or borrower is named.",
+        "properties": {
+          "cases": {
+            "title": "Cases",
+            "type": "integer"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "documents": {
+            "title": "Documents",
+            "type": "integer"
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/CaseDocumentTypeField"
+            },
+            "title": "Fields",
+            "type": "array"
+          },
+          "first_made": {
+            "title": "First Made",
+            "type": "string"
+          },
+          "last_made": {
+            "title": "Last Made",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "cases",
+          "documents",
+          "first_made",
+          "last_made"
+        ],
+        "title": "CaseDocumentTypeProposal",
+        "type": "object"
+      },
       "CaseFacts": {
         "properties": {
           "accounts": {
@@ -3062,6 +3208,78 @@
           "open_review_items"
         ],
         "title": "CaseSummary",
+        "type": "object"
+      },
+      "CaseTypeMapping": {
+        "description": "F-09.9: a case document type mapped to a checklist item. Recorded at once for an item that is\nnot mandatory; for a mandatory one, proposed by the maker and confirmed or refused by a checker.",
+        "properties": {
+          "decided_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided At"
+          },
+          "decided_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided By"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "item_id": {
+            "title": "Item Id",
+            "type": "string"
+          },
+          "proposed_at": {
+            "title": "Proposed At",
+            "type": "string"
+          },
+          "proposed_by": {
+            "title": "Proposed By",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "status": {
+            "enum": [
+              "proposed",
+              "confirmed",
+              "refused"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "item_id",
+          "status",
+          "proposed_by",
+          "proposed_at"
+        ],
+        "title": "CaseTypeMapping",
         "type": "object"
       },
       "CellEdit": {
@@ -5416,6 +5634,17 @@
             "title": "Id",
             "type": "string"
           },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
           "method": {
             "enum": [
               "deterministic",
@@ -5436,6 +5665,16 @@
               }
             ],
             "title": "Missing Reason"
+          },
+          "origin": {
+            "default": "configured",
+            "enum": [
+              "configured",
+              "named",
+              "discovered"
+            ],
+            "title": "Origin",
+            "type": "string"
           },
           "raw": {
             "anyOf": [
@@ -7585,6 +7824,72 @@
           "label"
         ],
         "title": "MonthFigure",
+        "type": "object"
+      },
+      "NewCaseDocumentType": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/CaseDocumentTypeField"
+            },
+            "title": "Fields",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "replaces": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replaces"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "NewCaseDocumentType",
+        "type": "object"
+      },
+      "NewCaseTypeMapping": {
+        "properties": {
+          "item_id": {
+            "title": "Item Id",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "item_id"
+        ],
+        "title": "NewCaseTypeMapping",
         "type": "object"
       },
       "NormComponent": {
@@ -10078,6 +10383,7 @@
           "kind": {
             "enum": [
               "type",
+              "mapping",
               "field",
               "quality",
               "party",
@@ -12286,6 +12592,57 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/admin/case-document-types": {
+      "get": {
+        "description": "F-09.10: the types people made on appraisals, for the Administrator to consider publishing.",
+        "operationId": "admin_case_document_types_api_admin_case_document_types_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CaseDocumentTypeProposal"
+                  },
+                  "title": "Response Admin Case Document Types Api Admin Case Document Types Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Admin Case Document Types"
+      }
+    },
     "/api/admin/settings": {
       "get": {
         "description": "The tolerances, norm thresholds, cross-check rules and approval matrix an Administrator\nedits (F-00.6), as the version now published has them.",
@@ -14196,6 +14553,205 @@
           }
         },
         "summary": "Query Cross Verification"
+      }
+    },
+    "/api/cases/{case_id}/document-types": {
+      "get": {
+        "description": "F-09.8: the document types made for this case, oldest first.",
+        "operationId": "case_document_types_api_cases__case_id__document_types_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CaseDocumentType"
+                  },
+                  "title": "Response Case Document Types Api Cases  Case Id  Document Types Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Document Types"
+      },
+      "post": {
+        "description": "F-09.8: make a document type for this case when nothing in the published list fits. It is\nassigned to a document by the review decision `assign`, like a published type.",
+        "operationId": "make_case_document_type_api_cases__case_id__document_types_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewCaseDocumentType"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseDocumentType"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Make Case Document Type"
+      }
+    },
+    "/api/cases/{case_id}/document-types/{type_id}/mappings": {
+      "post": {
+        "description": "F-09.9: map a case document type to a checklist item; a mandatory item waits for a checker.",
+        "operationId": "map_case_document_type_api_cases__case_id__document_types__type_id__mappings_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "type_id",
+            "required": true,
+            "schema": {
+              "title": "Type Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewCaseTypeMapping"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseDocumentType"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Map Case Document Type"
       }
     },
     "/api/cases/{case_id}/documents": {

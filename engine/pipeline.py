@@ -30,6 +30,7 @@ from .configstore import reader
 from .configstore.schema import DocumentTypeDef
 from .contracts import Candidate, Classification, IngestFile, IngestFileResult, IngestRequest, IngestResult, PageInfo
 from .contracts.ingest import IngestDocument, IngestField
+from . import case_types
 from .db import log_decision, transaction
 from .ingest_client import IngestError
 from .review_items import close_item, raise_item
@@ -74,6 +75,9 @@ class Flat:
     missing_reason: str | None = None
     check_note: str | None = None
     """Why a value is held for review when a validation check on it failed (not only a low confidence)."""
+    origin: str = "configured"
+    """configured, named or discovered (F-15.8)."""
+    label: str | None = None
 
 
 @dataclass
@@ -145,14 +149,16 @@ def _flatten(doc: IngestDocument, dims: dict[int, tuple[float, float]]) -> list[
         page = f.source.page if f.source else None
         bbox = _norm_bbox(f.source.bbox, dims.get(page)) if f.source and page else None
         if f.status == "missing" or f.value is None:
-            out.append(Flat(name, None, f.raw_text, page, None, METHOD.get(f.method or "pattern", "deterministic"), None, {}, "missing", f.reason or "not_found"))
+            out.append(Flat(name, None, f.raw_text, page, None, METHOD.get(f.method or "pattern", "deterministic"), None, {}, "missing",
+                            f.reason or "not_found", origin=f.origin, label=f.label))
             return
         status = "in_review" if (f.needs_review or name in failed) else "accepted"
         method = METHOD[f.method] if f.method else "deterministic"
         note = failed.get(name)
 
         def add(fname: str, value: object, raw: str | None) -> None:
-            out.append(Flat(fname, value, raw, page, bbox, method, f.confidence, dict(f.components), status, None, note))
+            out.append(Flat(fname, value, raw, page, bbox, method, f.confidence, dict(f.components), status, None, note,
+                            origin=f.origin, label=f.label))
 
         if isinstance(f.value, list):
             for i, el in enumerate(f.value):
@@ -245,25 +251,27 @@ def _store_fields(conn: sqlite3.Connection, ctx: Context, case_id: str, doc_id: 
     """Insert the document's field values; returns the document status
     (accepted, or in_review when a key field is below the threshold)."""
     in_review = False
-    label = ", ".join(ctx.type_name(t) for t in types)
+    own = case_types.names(conn, case_id) if any(case_types.is_case_type(t) for t in types) else {}
+    label = ", ".join(own.get(t) or ctx.type_name(t) for t in types)
     for f in unit.fields:
         fv_id = stable_id("FV", doc_id, f.field)
         evidence = {"document_id": doc_id, "page": f.page, "bbox": f.bbox} if f.page and f.status != "missing" else None
         conn.execute(
             """INSERT INTO field_values (id, case_id, document_id, field, value, raw, evidence, method, confidence,
-                   confidence_components, status, missing_reason)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                   confidence_components, status, missing_reason, origin, label)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                ON CONFLICT(id) DO NOTHING""",
             (fv_id, case_id, doc_id, f.field, json.dumps(f.value), f.raw, json.dumps(evidence) if evidence else None, f.method,
-             f.confidence, json.dumps(f.components), f.status, f.missing_reason),
+             f.confidence, json.dumps(f.components), f.status, f.missing_reason, f.origin, f.label),
         )
         if f.status == "in_review":
             in_review = True
             shown = f.raw if f.raw is not None else f.value
-            why = f.check_note or (f"confidence {f.confidence:.2f}" if f.confidence is not None else "held for review")
+            why = f.check_note or ("proposed by the model, to confirm" if f.origin == "discovered" else
+                                   f"confidence {f.confidence:.2f}" if f.confidence is not None else "held for review")
             raise_item(
                 conn, case_id=case_id, kind="field", ref=f"field:{fv_id}",
-                summary=f"{label}: {f.field} = {shown} ({why})",
+                summary=f"{label}: {f.label or f.field} = {shown} ({why})",
                 detail={"document_id": doc_id, "field_value_id": fv_id, "page": f.page},
             )
     return "in_review" if in_review else "accepted"
@@ -467,7 +475,15 @@ def reextract_document(conn: sqlite3.Connection, root: Path, job_id: str, case_i
     file_row = conn.execute("SELECT * FROM files WHERE id = ?", (doc["file_id"],)).fetchone()
     ctx = Context.load(root)
     types = json.loads(doc["assigned_types"])
-    request = IngestRequest(case_ref=case_id, config_version=ctx.version, files=[_ingest_file(file_row, assigned_type=types[0])])
+    if case_types.is_case_type(types[0]):
+        # F-15.8: a case document type is read by the model as the person described it.
+        own = case_types.get(conn, case_id, types[0])
+        if own is None:
+            raise IngestError(f"no case document type {types[0]} on case {case_id}")
+        spec = _ingest_file(file_row).model_copy(update={"case_type": case_types.as_ingest(own)})
+    else:
+        spec = _ingest_file(file_row, assigned_type=types[0])
+    request = IngestRequest(case_ref=case_id, config_version=ctx.version, files=[spec])
     payloads = {file_row["id"]: (case_files_dir(case_id, root) / file_row["stored_name"]).read_bytes()}
     started_at = now_iso()
     t0 = time.perf_counter()

@@ -192,6 +192,11 @@ class FieldValue(BaseModel):
     status: FieldStatus
     missing_reason: str | None = None
     corrected_value: Scalar = None
+    origin: Literal["configured", "named", "discovered"] = "configured"
+    """Where the field came from: the published type's schema, a field a person named for a case
+    document type, or a field the model proposed for one (F-15.8; held for review, F-17.7)."""
+    label: str | None = None
+    """The document's own label for a discovered field."""
 
 
 class RejectionItem(BaseModel):
@@ -231,3 +236,65 @@ class OutboxMessage(BaseModel):
     status: Literal["recorded"]
     created_at: str
     created_by: str
+
+
+class CaseDocumentTypeField(BaseModel):
+    name: str
+    """Dictionary name (lower case, underscores)."""
+    hint: str | None = None
+    """What to look for, in a person's words; passed to the model."""
+
+
+class CaseTypeMapping(BaseModel):
+    """F-09.9: a case document type mapped to a checklist item. Recorded at once for an item that is
+    not mandatory; for a mandatory one, proposed by the maker and confirmed or refused by a checker."""
+
+    id: str
+    item_id: str
+    status: Literal["proposed", "confirmed", "refused"]
+    reason: str | None = None
+    proposed_by: str
+    proposed_at: str
+    decided_by: str | None = None
+    decided_at: str | None = None
+
+
+class NewCaseTypeMapping(BaseModel):
+    item_id: str
+    reason: str | None = None
+
+
+class CaseDocumentType(BaseModel):
+    """A document type a person made for one case (F-09.8): never offered to the classifier, never
+    edited in place, satisfies no checklist item unless mapped (F-09.9)."""
+
+    id: str
+    case_id: str
+    name: str
+    description: str | None = None
+    fields: list[CaseDocumentTypeField] = Field(default_factory=list)
+    """Empty: the model proposes the fields (F-15.8)."""
+    replaces: str | None = None
+    made_by: str
+    made_at: str
+    mappings: list[CaseTypeMapping] = Field(default_factory=list)
+
+
+class NewCaseDocumentType(BaseModel):
+    name: str
+    description: str | None = None
+    fields: list[CaseDocumentTypeField] = Field(default_factory=list)
+    replaces: str | None = None
+
+
+class CaseDocumentTypeProposal(BaseModel):
+    """F-09.10: case document types of one name across appraisals, for the Administrator to consider
+    publishing. Counts only: no appraisal or borrower is named."""
+
+    name: str
+    description: str | None = None
+    fields: list[CaseDocumentTypeField] = Field(default_factory=list)
+    cases: int
+    documents: int
+    first_made: str
+    last_made: str

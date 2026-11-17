@@ -648,6 +648,8 @@ function fv(
     status: "accepted",
     missing_reason: null,
     corrected_value: null,
+    origin: "configured",
+    label: null,
     ...extra,
   };
 }

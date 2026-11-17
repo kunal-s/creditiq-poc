@@ -1,7 +1,7 @@
 import { Fragment, useState } from "react";
 import { ArrowRight, CheckCircle2, ChevronRight, Eye, PencilLine } from "lucide-react";
 import type { FieldStatus, FieldValue, LogicalDocument } from "@/api/types";
-import { Panel } from "@/components/common/Panel";
+import { Chip, Panel } from "@/components/common/Panel";
 import { Details } from "@/components/common/Details";
 import { ErrorState, LoadingBlock } from "@/components/common/States";
 import { FieldValueButton } from "@/components/common/FieldValueButton";
@@ -358,7 +358,19 @@ function DocumentFields({
                           className={cn("align-top", change && "border-b-0")}
                           data-testid="field-row"
                         >
-                          <td className="px-4 py-2 text-muted-foreground">{fieldLabel(f.field)}</td>
+                          <td className="px-4 py-2 text-muted-foreground">
+                            {/* A field proposed from the document reads by the document's own label (F-15.8). */}
+                            {f.label ?? fieldLabel(f.field)}
+                            {f.origin === "discovered" && (
+                              <Chip
+                                tone="info"
+                                className="ml-1.5 align-middle"
+                                title={t("caseType.proposedHelp")}
+                              >
+                                <span data-testid="field-proposed">{t("caseType.proposed")}</span>
+                              </Chip>
+                            )}
+                          </td>
                           <td className="px-3 py-2">
                             <FieldValueButton caseId={caseId} field={f} />
                           </td>

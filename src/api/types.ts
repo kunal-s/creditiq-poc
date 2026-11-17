@@ -62,6 +62,17 @@ export type PartyRole = Party["role"];
 export type DocumentTypeDef = S["DocumentTypeDef"];
 export type DocumentTypeGroup = DocumentTypeDef["group"];
 export type DocumentTypes = S["DocumentTypesSection"];
+/** A document type a person made for one appraisal (F-09.8); never offered to the classifier. */
+export type CaseDocumentType = S["CaseDocumentType"];
+export type CaseDocumentTypeField = S["CaseDocumentTypeField"];
+export type NewCaseDocumentType = S["NewCaseDocumentType"];
+/** A case document type mapped to a checklist item (F-09.9). */
+export type CaseTypeMapping = S["CaseTypeMapping"];
+export type NewCaseTypeMapping = S["NewCaseTypeMapping"];
+/** Case document types of one name across appraisals, for the Administrator (F-09.10). */
+export type CaseDocumentTypeProposal = S["CaseDocumentTypeProposal"];
+/** Where a field came from: the published schema, named by a person, or proposed by the model. */
+export type FieldOrigin = NonNullable<FieldValue["origin"]>;
 export type CaseProgress = S["CaseProgress"];
 export type AssessmentGate = S["AssessmentGate"];
 export type StageProgress = S["StageProgress"];

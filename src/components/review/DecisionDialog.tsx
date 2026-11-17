@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { ErrorState } from "@/components/common/States";
 import { t } from "@/config/terminology";
-import { useDocumentTypes } from "@/domain/documents";
+import { useCaseDocumentTypes, useDocumentTypes } from "@/domain/documents";
 import { refusal } from "@/domain/errors";
 import { formatValue, useParties } from "@/domain/extraction";
 import { decisionsFor, reasonMin, useDecideReview } from "@/domain/review";
@@ -59,6 +59,8 @@ export function DecisionDialog({
   const [reason, setReason] = useState("");
   const decide = useDecideReview();
   const types = useDocumentTypes();
+  // The review queue sits outside the appraisal: its own types are asked for by the item's case.
+  const caseTypes = useCaseDocumentTypes(item.case_id);
   const manual = item.kind === "quality" && decision === "correct";
   const partyCorrect = item.kind === "party" && decision === "correct";
   const parties = useParties(item.case_id);
@@ -94,7 +96,8 @@ export function DecisionDialog({
     );
   };
 
-  const typeSelect = (label: string) => (
+  // Manual entry reads a published type's dictionary: only an assignment offers this appraisal's types.
+  const typeSelect = (label: string, own = true) => (
     <label className="block">
       <span className="field-label">{label}</span>
       <select
@@ -104,11 +107,22 @@ export function DecisionDialog({
         data-testid="assign-type"
       >
         <option value="">{t("review.chooseType")}</option>
-        {(types.data?.types ?? []).map((d) => (
-          <option key={d.id} value={d.id}>
-            {d.name}
-          </option>
-        ))}
+        {own && (caseTypes.data ?? []).length > 0 && (
+          <optgroup label={t("documents.thisAppraisal")}>
+            {(caseTypes.data ?? []).map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </optgroup>
+        )}
+        <optgroup label={t("documents.publishedList")}>
+          {(types.data?.types ?? []).map((d) => (
+            <option key={d.id} value={d.id}>
+              {d.name}
+            </option>
+          ))}
+        </optgroup>
       </select>
       {types.isError && <ErrorState error={types.error} compact />}
     </label>
@@ -246,7 +260,7 @@ export function DecisionDialog({
             >
               <Plus className="h-3 w-3" /> {t("review.addField")}
             </button>
-            {typeSelect(t("review.manualType"))}
+            {typeSelect(t("review.manualType"), false)}
           </div>
         )}
 

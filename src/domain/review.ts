@@ -51,6 +51,8 @@ export function useDecideReview() {
  * manual entry. */
 export const DECISIONS_BY_KIND: Record<ReviewKind, ReviewDecision[]> = {
   type: ["assign", "waive"],
+  // A case document type proposed for a mandatory checklist item: a checker confirms or refuses it.
+  mapping: ["confirm", "waive"],
   field: ["confirm", "correct"],
   quality: ["confirm", "correct", "waive"],
   party: ["confirm", "correct"],
@@ -90,6 +92,7 @@ export function reasonMin(item: ReviewItem, decision: ReviewDecision): number {
 
 export const REVIEW_KINDS: ReviewKind[] = [
   "type",
+  "mapping",
   "field",
   "quality",
   "party",

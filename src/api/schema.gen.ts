@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+  "/api/admin/case-document-types": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Admin Case Document Types
+     * @description F-09.10: the types people made on appraisals, for the Administrator to consider publishing.
+     */
+    get: operations["admin_case_document_types_api_admin_case_document_types_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/admin/settings": {
     parameters: {
       query?: never;
@@ -549,6 +569,51 @@ export interface paths {
      * @description F-14: put what would complete a check that could not run on the pre-login query list.
      */
     post: operations["query_cross_verification_api_cases__case_id__cross_verification_findings__finding_id__query_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/cases/{case_id}/document-types": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Case Document Types
+     * @description F-09.8: the document types made for this case, oldest first.
+     */
+    get: operations["case_document_types_api_cases__case_id__document_types_get"];
+    put?: never;
+    /**
+     * Make Case Document Type
+     * @description F-09.8: make a document type for this case when nothing in the published list fits. It is
+     *     assigned to a document by the review decision `assign`, like a published type.
+     */
+    post: operations["make_case_document_type_api_cases__case_id__document_types_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/cases/{case_id}/document-types/{type_id}/mappings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Map Case Document Type
+     * @description F-09.9: map a case document type to a checklist item; a mandatory item waits for a checker.
+     */
+    post: operations["map_case_document_type_api_cases__case_id__document_types__type_id__mappings_post"];
     delete?: never;
     options?: never;
     head?: never;
@@ -2401,6 +2466,59 @@ export interface components {
       /** Udyam */
       udyam: string | null;
     };
+    /**
+     * CaseDocumentType
+     * @description A document type a person made for one case (F-09.8): never offered to the classifier, never
+     *     edited in place, satisfies no checklist item unless mapped (F-09.9).
+     */
+    CaseDocumentType: {
+      /** Case Id */
+      case_id: string;
+      /** Description */
+      description?: string | null;
+      /** Fields */
+      fields?: components["schemas"]["CaseDocumentTypeField"][];
+      /** Id */
+      id: string;
+      /** Made At */
+      made_at: string;
+      /** Made By */
+      made_by: string;
+      /** Mappings */
+      mappings?: components["schemas"]["CaseTypeMapping"][];
+      /** Name */
+      name: string;
+      /** Replaces */
+      replaces?: string | null;
+    };
+    /** CaseDocumentTypeField */
+    CaseDocumentTypeField: {
+      /** Hint */
+      hint?: string | null;
+      /** Name */
+      name: string;
+    };
+    /**
+     * CaseDocumentTypeProposal
+     * @description F-09.10: case document types of one name across appraisals, for the Administrator to consider
+     *     publishing. Counts only: no appraisal or borrower is named.
+     */
+    CaseDocumentTypeProposal: {
+      /** Cases */
+      cases: number;
+      /** Description */
+      description?: string | null;
+      /** Documents */
+      documents: number;
+      /** Fields */
+      fields?: components["schemas"]["CaseDocumentTypeField"][];
+      /** First Made */
+      first_made: string;
+      /** Last Made */
+      last_made: string;
+      /** Name */
+      name: string;
+    };
     /** CaseFacts */
     CaseFacts: {
       /** Accounts */
@@ -2528,6 +2646,32 @@ export interface components {
         | "Policy"
         | "Outputs"
         | "Completed";
+    };
+    /**
+     * CaseTypeMapping
+     * @description F-09.9: a case document type mapped to a checklist item. Recorded at once for an item that is
+     *     not mandatory; for a mandatory one, proposed by the maker and confirmed or refused by a checker.
+     */
+    CaseTypeMapping: {
+      /** Decided At */
+      decided_at?: string | null;
+      /** Decided By */
+      decided_by?: string | null;
+      /** Id */
+      id: string;
+      /** Item Id */
+      item_id: string;
+      /** Proposed At */
+      proposed_at: string;
+      /** Proposed By */
+      proposed_by: string;
+      /** Reason */
+      reason?: string | null;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "proposed" | "confirmed" | "refused";
     };
     /**
      * CellEdit
@@ -3429,6 +3573,8 @@ export interface components {
       field: string;
       /** Id */
       id: string;
+      /** Label */
+      label?: string | null;
       /**
        * Method
        * @enum {string}
@@ -3436,6 +3582,12 @@ export interface components {
       method: "deterministic" | "model" | "manual" | "person";
       /** Missing Reason */
       missing_reason?: string | null;
+      /**
+       * Origin
+       * @default configured
+       * @enum {string}
+       */
+      origin: "configured" | "named" | "discovered";
       /** Raw */
       raw?: string | null;
       /**
@@ -4223,6 +4375,24 @@ export interface components {
       label: string;
       /** Month */
       month: string;
+    };
+    /** NewCaseDocumentType */
+    NewCaseDocumentType: {
+      /** Description */
+      description?: string | null;
+      /** Fields */
+      fields?: components["schemas"]["CaseDocumentTypeField"][];
+      /** Name */
+      name: string;
+      /** Replaces */
+      replaces?: string | null;
+    };
+    /** NewCaseTypeMapping */
+    NewCaseTypeMapping: {
+      /** Item Id */
+      item_id: string;
+      /** Reason */
+      reason?: string | null;
     };
     /**
      * NormComponent
@@ -5107,6 +5277,7 @@ export interface components {
        */
       kind:
         | "type"
+        | "mapping"
         | "field"
         | "quality"
         | "party"
@@ -5991,6 +6162,37 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  admin_case_document_types_api_admin_case_document_types_get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CaseDocumentTypeProposal"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   admin_settings_api_admin_settings_get: {
     parameters: {
       query?: never;
@@ -7048,6 +7250,114 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["XvItem"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  case_document_types_api_cases__case_id__document_types_get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CaseDocumentType"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  make_case_document_type_api_cases__case_id__document_types_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewCaseDocumentType"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CaseDocumentType"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  map_case_document_type_api_cases__case_id__document_types__type_id__mappings_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+        type_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewCaseTypeMapping"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CaseDocumentType"];
         };
       };
       /** @description Validation Error */

@@ -6,6 +6,7 @@ from __future__ import annotations
 import re
 
 from ...config.models import FieldDef, FieldRule, IngestionConfig, PageScope
+from ...contracts import CaseType
 from ...llm.recorder import ModelClient
 from ...pageindex import Page
 from . import llm_extract
@@ -110,3 +111,29 @@ def extract_instance(cfg: IngestionConfig, doc_type: str, pages: list[Page], mod
         src = {"sheet": res.sheet} if res.sheet else {"page_start": res.page_start, "page_end": res.page_end, "bbox": res.bbox}
         tables[t.name] = {"status": "found", "reason": None, "columns": res.columns, "rows": res.rows, "source": src, "repairs": res.repairs, "unparsed": res.unparsed}
     return {"fields": out_fields, "tables": tables, "trace": trace}
+
+
+def extract_case_type(cfg: IngestionConfig, ct: CaseType, pages: list[Page], model: ModelClient | None) -> dict:
+    """A document of a case document type (F-09.8, F-15.8): only the model reads it, since no rule in the
+    published configuration knows the type. Named fields are read with the extraction prompt, each a key
+    field; with none named, the model proposes the fields itself and every one is marked discovered."""
+    out: dict[str, dict] = {}
+    trace: list[dict] = []
+    if ct.fields:
+        defs = [FieldDef(name=f.name, type="string") for f in ct.fields]
+        rule = FieldRule(key_field=True)
+        for f in defs:
+            out[f.name] = {**_missing(f, rule, "not_found" if model is not None else "no_model"), "origin": "named"}
+        if model is not None:
+            found, reasons, trace = llm_extract.fill(cfg, ct.name, defs, {f.name: f.hint for f in ct.fields}, pages, model)
+            for f in defs:
+                if f.name in found:
+                    out[f.name] = {**_finish(f, rule, found[f.name]), "origin": "named"}
+                elif f.name in reasons:
+                    out[f.name] = {**_missing(f, rule, reasons[f.name]), "origin": "named"}
+    elif model is not None:
+        found, trace = llm_extract.discover(cfg, ct.name, ct.description, pages, model)
+        rule = FieldRule()
+        for name, (label, got) in found.items():
+            out[name] = {**_finish(FieldDef(name=name, type="string"), rule, got), "origin": "discovered", "label": label}
+    return {"fields": out, "tables": {}, "trace": trace}

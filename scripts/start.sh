@@ -25,8 +25,8 @@ export VITE_COPILOT_URL="${VITE_COPILOT_URL:-http://localhost:${COPILOT_PORT}}"
 # environment, else .env.local, else workflow/private/openai.env or azure.env.
 # The case assistant has its own switch, COPILOT_MODEL_MODE, with the same three values; in "replay"
 # it can only repeat answers already recorded in its own store, so use "record" to try it by hand.
-export INGEST_MODEL_MODE="${INGEST_MODEL_MODE:-replay}"
-export COPILOT_MODEL_MODE="${COPILOT_MODEL_MODE:-replay}"
+export INGEST_MODEL_MODE="${INGEST_MODEL_MODE:-record}"
+export COPILOT_MODEL_MODE="${COPILOT_MODEL_MODE:-record}"
 case "$INGEST_MODEL_MODE/$COPILOT_MODEL_MODE" in
   record/*|live/*|*/record|*/live)
     # The keys the three model configurations name (document processing, memo copilot, case assistant).

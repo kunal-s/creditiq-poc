@@ -323,3 +323,20 @@ def test_application_and_customer_ids_are_read_only_with_a_configured_pattern(cl
     assert f["customer_id"]["value"] == "40012345"
     two = _propose(client, sign_in(client, RM), text + " App No LA654321")["fields"]["application_id"]
     assert two["status"] == "unclear" and len(two["candidates"]) == 2
+
+
+def test_a_name_after_an_honorific_stops_at_the_name(client: TestClient):
+    """The name is the capitalised words after the honorific, never the words of the sentence
+    that follow it, whatever case the honorific is written in."""
+    rm = sign_in(client, RM)
+    cases = {
+        "Met the proprietor Mr. Rakesh Velankar at our Pune branch today.": "Rakesh Velankar",
+        "Met MR Rakesh Velankar At Our Branch Today.": "Rakesh Velankar",
+        "Proprietor: Shri RAKESH VELANKAR, visited.": "RAKESH VELANKAR",
+        "Spoke to Shri Ramesh Kumar Barve and Smt. Anita D'Souza yesterday.": "Ramesh Kumar Barve; Anita D'Souza",
+        "Mrs Ishita Barve, director, called.": "Ishita Barve",
+    }
+    for text, names in cases.items():
+        p = _propose(client, rm, text)
+        assert p["fields"]["promoters"]["value"] == names, text
+        _every_value_has_a_span(text, p)

@@ -13,6 +13,7 @@ from datetime import date
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
+from starlette.concurrency import run_in_threadpool
 from starlette.datastructures import UploadFile as FormFile
 
 from . import CONTRACT_VERSION, ENGINE_VERSION
@@ -51,6 +52,7 @@ def create_app(settings: Settings | None = None, store: Store | None = None) -> 
     db = store or Store(st.db_path)
     app = FastAPI(title="CreditIQ ingestion", version=ENGINE_VERSION)
     ocr_cache: dict = {}
+    ocr_lock = threading.Lock()
 
     def auth(request: Request) -> None:
         if st.api_key:
@@ -73,8 +75,9 @@ def create_app(settings: Settings | None = None, store: Store | None = None) -> 
         return load_dir(path, version="dev")
 
     def ingestor(cfg: IngestionConfig) -> Ingestor:
-        if "ocr" not in ocr_cache:
-            ocr_cache["ocr"] = get_engine(cfg.routing.ocr)
+        with ocr_lock:   # requests run side by side: the OCR engines are loaded once
+            if "ocr" not in ocr_cache:
+                ocr_cache["ocr"] = get_engine(cfg.routing.ocr, workers=st.ocr_workers)
         return Ingestor(cfg, db, model_client(cfg, st.model_mode, db), ocr_cache["ocr"])
 
     @app.get("/v1/health")
@@ -92,7 +95,10 @@ def create_app(settings: Settings | None = None, store: Store | None = None) -> 
             raise HTTPException(400, f"bad request: {e}") from e
         payloads = {k: await v.read() for k, v in form.items() if isinstance(v, FormFile)}
         cfg = config_for(req.config_version)
-        return JSONResponse(ingestor(cfg).process_request(req, payloads).model_dump(mode="json"))
+        # Read on a worker thread, so that several requests (the engine sends a few files at once) are read side by
+        # side; OCR among them is limited to the configured number of engines.
+        result = await run_in_threadpool(lambda: ingestor(cfg).process_request(req, payloads).model_dump(mode="json"))
+        return JSONResponse(result)
 
     @app.post("/v1/ingest/stream", dependencies=[Depends(auth)])
     async def ingest_stream(request: Request):

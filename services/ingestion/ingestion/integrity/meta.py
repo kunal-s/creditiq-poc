@@ -26,6 +26,8 @@ from xml.etree import ElementTree
 
 import pypdfium2 as pdfium
 
+from ..readers.pdfium_guard import PDFIUM
+
 __all__ = ["FileMeta", "read_meta", "DATE_SLACK"]
 
 #: Info and XMP timestamps further apart than this disagree. Two programs
@@ -193,26 +195,27 @@ def _read_xmp(data: bytes) -> tuple[dict[str, str], bool]:
 def read_meta(data: bytes) -> FileMeta:
     """Both of the file's records of itself."""
     meta = FileMeta()
-    try:
-        doc = pdfium.PdfDocument(data)
-    except Exception as e:  # noqa: BLE001 - an unreadable file says so, never a default
-        meta.unreadable = f"{type(e).__name__}: {e}"
-        return meta
-    try:
-        for key in ("Title", "Author", "Subject", "Keywords", "Creator", "Producer", "CreationDate", "ModDate"):
-            try:
-                value = doc.get_metadata_value(key)
-            except Exception:  # noqa: BLE001, PERF203 - one absent key is not a failure
-                continue
-            if value:
-                meta.info[key] = str(value).strip()
-        meta.pages = len(doc)
-        for i in range(min(len(doc), 300)):
-            w, h = doc[i].get_size()
-            size = (round(w, 1), round(h, 1))
-            if size not in meta.page_sizes:
-                meta.page_sizes.append(size)
-    finally:
-        doc.close()
+    with PDFIUM:   # pdfium is not thread-safe; files are read side by side
+        try:
+            doc = pdfium.PdfDocument(data)
+        except Exception as e:  # noqa: BLE001 - an unreadable file says so, never a default
+            meta.unreadable = f"{type(e).__name__}: {e}"
+            return meta
+        try:
+            for key in ("Title", "Author", "Subject", "Keywords", "Creator", "Producer", "CreationDate", "ModDate"):
+                try:
+                    value = doc.get_metadata_value(key)
+                except Exception:  # noqa: BLE001, PERF203 - one absent key is not a failure
+                    continue
+                if value:
+                    meta.info[key] = str(value).strip()
+            meta.pages = len(doc)
+            for i in range(min(len(doc), 300)):
+                w, h = doc[i].get_size()
+                size = (round(w, 1), round(h, 1))
+                if size not in meta.page_sizes:
+                    meta.page_sizes.append(size)
+        finally:
+            doc.close()
     meta.xmp, meta.has_xmp = _read_xmp(data)
     return meta

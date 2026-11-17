@@ -616,16 +616,31 @@ def _borrower_field(hits: list[Hit]) -> ProposedField:
     )
 
 
-_PERSON = r"[A-Z][a-z]+(?:[ \t]+[A-Z][a-z]+){0,3}"
+# A name after an honorific: up to four capitalised words (Rakesh, McDonald, D'Souza), or up to
+# four words in capitals. Case-sensitive, so "Mr. Rakesh Jain at our Surat branch" stops at
+# "Jain"; only the honorific itself is matched in any case.
+_NAME_WORD = r"(?:[A-Z]['’])?[A-Z][a-z]+(?:-?[A-Z][a-z]+)*"
+_CAPS_WORD = r"[A-Z]{2,}"
+_PERSON = (rf"{_NAME_WORD}(?:[ \t]+{_NAME_WORD}){{0,3}}(?![A-Za-z])"
+           rf"|{_CAPS_WORD}(?:[ \t]+{_CAPS_WORD}){{0,3}}(?![A-Za-z])")
+
+
+def _up_to_stopword(name: str, lex: Lexicon) -> str:
+    """The name up to its first connecting word: "Rakesh Jain At Our" (a sentence in title case)
+    is "Rakesh Jain"."""
+    words = name.split()
+    for i, w in enumerate(words[1:], start=1):
+        if _is_stop(w, lex):
+            return name[: name.index(w, sum(len(x) for x in words[:i]))].rstrip()
+    return name
 
 
 def _promoter_hits(masked: str, lex: Lexicon, companies: list[Hit]) -> list[Hit]:
     hits: list[Hit] = []
     hon = "|".join(re.escape(h) for h in sorted(lex.honorifics, key=len, reverse=True))
-    for m in re.finditer(rf"\b(?:{hon})\b\.?[ \t]+(?P<n>{_PERSON})", masked, re.I):
-        name = m["n"]
-        if name[0].isupper():
-            hits.append(Hit(name, m.start("n"), m.end("n"), kind="person"))
+    for m in re.finditer(rf"(?<![A-Za-z])(?i:{hon})\.?[ \t]+(?P<n>{_PERSON})", masked):
+        name = _up_to_stopword(m["n"], lex)
+        hits.append(Hit(name, m.start("n"), m.start("n") + len(name), kind="person"))
     role_words = sorted({w for words in lex.roles.values() for w in words}, key=len, reverse=True)
     roles = "|".join(re.escape(w) for w in role_words)
     for m in re.finditer(
@@ -647,7 +662,11 @@ def _promoter_hits(masked: str, lex: Lexicon, companies: list[Hit]) -> list[Hit]
                 hits.append(Hit(text, start, start + len(text), kind="person"))
     for m in re.finditer(rf"(?P<n>[A-Z][a-z]+(?:[ \t]+[A-Z][a-z]+){{1,3}})[ \t]*(?:\(|,|-|–)[ \t]*(?:{roles})\b",
                          masked):
-        hits.append(Hit(m["n"], m.start("n"), m.end("n"), kind="person"))
+        # "Mrs Priya Nair, director": the honorific is not part of the name.
+        lead = re.match(rf"(?i:{hon})\.?[ \t]+", m["n"])
+        start = m.start("n") + (lead.end() if lead else 0)
+        if start < m.end("n"):
+            hits.append(Hit(masked[start:m.end("n")], start, m.end("n"), kind="person"))
     hits = [h for h in hits if not any(c.start <= h.start < c.end for c in companies)]
     hits = [h for h in hits if not all(_is_stop(t, lex) for t in h.value.split())]
     return _dedupe_overlaps(hits)

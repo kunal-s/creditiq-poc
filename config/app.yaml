@@ -215,4 +215,7 @@ sessions:
 # The document-processing sidecar (AD-2).
 services:
   ingest_url: "http://127.0.0.1:3102"
+  # Files of one upload read at once, one per request to the document service; each is stored the moment it
+  # is read. OCR on the service side is limited separately (INGEST_OCR_WORKERS, default 2).
+  ingest_workers: 4
   copilot_url: "http://127.0.0.1:8020"   # the case assistant (CREDITIQ_COPILOT_URL overrides it)

@@ -5,7 +5,9 @@ with an input and output hash, and hands a plain value to the next. Nothing here
 
 from __future__ import annotations
 
+import threading
 import time
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 
 from . import CONTRACT_VERSION, ENGINE_VERSION
@@ -73,6 +75,25 @@ class _Trace:
         self.prev = out
 
 
+_RUN_LOCKS: dict[str, list] = {}          # run id -> [lock, readings holding or waiting for it]
+_RUN_LOCKS_GUARD = threading.Lock()
+
+
+@contextmanager
+def _run_lock(run_id: str):
+    with _RUN_LOCKS_GUARD:
+        entry = _RUN_LOCKS.setdefault(run_id, [threading.Lock(), 0])
+        entry[1] += 1
+    try:
+        with entry[0]:
+            yield
+    finally:
+        with _RUN_LOCKS_GUARD:   # forgotten once no reading of the run holds it or waits for it
+            entry[1] -= 1
+            if entry[1] == 0:
+                del _RUN_LOCKS[run_id]
+
+
 class Ingestor:
     def __init__(self, cfg: IngestionConfig, store: Store, model: ModelClient | None, ocr: OcrEngine | None):
         self.cfg, self.store, self.model, self.ocr = cfg, store, model, ocr
@@ -95,6 +116,12 @@ class Ingestor:
         if actual != spec.sha256:
             return FileResult(**base, status="rejected", reject={"code": "sha_mismatch", "message": f"the bytes hash to {actual[:12]}, not {spec.sha256[:12]}"})
         run_id = run_id_for(case_ref, spec.sha256, self.cfg)
+        # Files are read side by side; one run (the same file for the same case under the same configuration, say a
+        # job's retry while its first attempt is still being read) is read once at a time, as its rows are one set.
+        with _run_lock(run_id):
+            return self._process_run(case_ref, spec, data, run_id, base)
+
+    def _process_run(self, case_ref: str, spec: FileSpec, data: bytes, run_id: str, base: dict) -> FileResult:
         self.store.add_document(spec.sha256, spec.original_name, spec.content_type, len(data), None)
         self.store.begin_run(run_id, case_ref, spec.sha256, spec.original_name, self.cfg.version, self.cfg.hash, ENGINE_VERSION)
         tr = _Trace(self.store, run_id, spec.sha256)

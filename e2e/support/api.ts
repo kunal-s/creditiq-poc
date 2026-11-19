@@ -25,6 +25,7 @@ import type {
   DocumentTypes,
   EditableSettings,
   FieldValue,
+  Recalculation,
   FileRecord,
   Finding,
   LogicalDocument,
@@ -165,6 +166,8 @@ export class MockApi {
   files = new Map<string, FileRecord[]>([[KESTREL, [...ZIP_FILES, ...LOOSE_FILES]]]);
   documents = new Map<string, LogicalDocument[]>([[KESTREL, DOCUMENTS]]);
   fields = new Map<string, FieldValue[]>([[KESTREL, FIELDS]]);
+  /** Each case's recalculations after approved changes on the Extractions tab (none unless a test sets them). */
+  recalculations = new Map<string, Recalculation[]>();
   parties = new Map<string, Party[]>([[KESTREL, PARTIES]]);
   review: ReviewItem[] = structuredClone(REVIEW);
   /** Figures changed for a check, as sent (engine/figure_edits.py): value, reason, file name. */
@@ -610,6 +613,7 @@ export class MockApi {
         },
       ],
       ["GET", new RegExp(`^/api/cases/${id}/fields$`), one(this.fields, [])],
+      ["GET", new RegExp(`^/api/cases/${id}/recalculations$`), one(this.recalculations, [])],
       ["GET", new RegExp(`^/api/cases/${id}/parties$`), one(this.parties, [])],
       ["GET", new RegExp(`^/api/cases/${id}/findings$`), one(this.findings, [])],
       [

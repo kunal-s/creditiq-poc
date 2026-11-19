@@ -32,6 +32,18 @@ class CellSource(BaseModel):
     scale: float = 1.0
     """What the printed amount is multiplied by to give rupees."""
     column: str
+    file_name: str | None = None
+    """The file the statement was read from."""
+    line: str | None = None
+    """The printed line the figure was read from ("Inventories 12,631.51 10,593.90")."""
+    bbox: tuple[float, float, float, float] | None = None
+    """Where on the page, as normalised page coordinates, to open the page at."""
+    field_id: str | None = None
+    """The extracted value behind the figure, as the Extractions tab lists it: where the figure is changed."""
+    changed: bool = False
+    """The figure in force is a person's approved change to what the statement printed (on the Extractions tab)."""
+    document_value: float | None = None
+    """For a changed figure, what the statement printed, in its own unit."""
 
 
 class CellEdit(BaseModel):
@@ -68,7 +80,7 @@ class CellInput(BaseModel):
     source: CellSource | None = None
     edit: CellEdit | None = None
     target: EditTarget | None = None
-    """As on the figure itself: an input that is one of the statement's own lines can be edited from here."""
+    """Not given: a statement figure is changed on the Extractions tab, where a second person checks the change."""
 
 
 class CellWorking(BaseModel):
@@ -83,7 +95,8 @@ class CellWorking(BaseModel):
     source: CellSource | None = None
     edit: CellEdit | None = None
     target: EditTarget | None = None
-    """Present on a figure a person may edit: the statement's own lines, not derived figures or ratios."""
+    """Not given: a statement figure is changed on the Extractions tab (see CellSource.field_id), where a second
+    person checks the change; derived figures and ratios follow from their lines."""
 
 
 class StatementEditRequest(BaseModel):

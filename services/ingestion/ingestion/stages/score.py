@@ -57,7 +57,9 @@ def score_table(cfg: IngestionConfig, name: str, t: dict, pages: dict[int, Page]
     g = cfg.confidence.grade_scores[max(grades, key=lambda x: GRADE_ORDER[x])]
     mine = [c for c in checks if name in c["tables"]]
     parsed = 1.0 - min(0.5, t["unparsed"] / max(len(t["rows"]), 1))
-    return {**t, "confidence": round(g * _val_component(mine) * parsed, 4)}
+    # Rows the model mapped (llm_tables) are one read, not a layout's: they count as a model read does.
+    mapped = AGREEMENT_MODEL / cfg.confidence.single_read if t.get("method") == "model" else 1.0
+    return {**t, "confidence": round(g * _val_component(mine) * parsed * min(mapped, 1.0), 4)}
 
 
 def decide(cfg: IngestionConfig, doc_grade: str, cls: dict, fields: dict, checks: list[dict], tables: dict) -> dict:
@@ -87,6 +89,8 @@ def decide(cfg: IngestionConfig, doc_grade: str, cls: dict, fields: dict, checks
             if tr is not None and all(v.optional for v in (tr if isinstance(tr, list) else [tr])):
                 continue
             reasons.append({"kind": "table_missing", "table": n})
+        elif t["status"] == "found" and t.get("method") == "model":
+            reasons.append({"kind": "table_by_model", "table": n})
     if doc_grade in dc.reject_grades:
         decision = "reject"
     elif reasons:

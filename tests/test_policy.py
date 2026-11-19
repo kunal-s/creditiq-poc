@@ -54,7 +54,8 @@ def test_tc26_ratios_are_assessed_with_their_source_figures(client: TestClient, 
     assert current["outcome"] == "pass" and round(current["actual"], 2) == 1.59
     assert current["required"] == "at least 1.20x"
     assert {i["name"] for i in current["inputs"]} == {"current_assets", "current_liabilities"}
-    assert all(i["evidence"][0] == {"document_id": fs, "page": 4, "bbox": None} for i in current["inputs"])
+    assert all({k: i["evidence"][0][k] for k in ("document_id", "page", "bbox")} == {"document_id": fs, "page": 4, "bbox": None}
+               for i in current["inputs"])
 
     debt_equity = norms["FR-05"]
     assert debt_equity["outcome"] == "deviation" and round(debt_equity["actual"], 2) == 2.67
@@ -421,7 +422,7 @@ def test_amount_requested_cites_the_sourcing_message(client: TestClient, analyst
     finally:
         conn.close()
     amount = _inputs(_policy(client, analyst, case_id)["EL-05"])["amount_requested"]
-    assert amount["basis"] == "document" and amount["evidence"][0] == {"document_id": message_doc, "page": 1, "bbox": None}
+    assert amount["basis"] == "document" and {k: amount["evidence"][0][k] for k in ("document_id", "page", "bbox")} == {"document_id": message_doc, "page": 1, "bbox": None}
 
     direct = make_case(client, analyst, published_data_root, facilities=["cash_credit"], amount_inr=40_000_000,
                        borrower="Orchid Castings Pvt Ltd")

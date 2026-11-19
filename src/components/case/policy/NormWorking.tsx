@@ -81,8 +81,8 @@ function EvidenceEye({
   );
 }
 
-/** How a statement figure was read, and the way to edit it: opens the figure's working in a dialog,
- * so a ratio can be followed down to the printed figure and corrected there. */
+/** How a statement figure was read: opens the figure's working in a dialog, so a ratio can be followed
+ * down to the printed figure, its page, and the value on the Extractions tab where it is changed. */
 function WorkingDetail({
   caseId,
   label,
@@ -113,7 +113,7 @@ function WorkingDetail({
               <DialogTitle>{label}</DialogTitle>
               <DialogDescription>{t("spreadPage.working.title")}</DialogDescription>
             </DialogHeader>
-            <FigureWorking caseId={caseId} label={label} fy="" working={working} />
+            <FigureWorking caseId={caseId} working={working} />
           </DialogContent>
         </Dialog>
       )}

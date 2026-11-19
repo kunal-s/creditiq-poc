@@ -1095,6 +1095,16 @@ class Draft:
                 continue
             for column, cell in zip(self.spread.columns, row.cells):
                 edit = cell.working.edit if cell.working else None
+                src = cell.working.source if cell.working else None
+                if edit is None and src is not None and src.changed and cell.value is not None:
+                    # Changed on the Extractions tab and approved there by a second person.
+                    # What the statement printed, when it reads as a figure; otherwise the note does not guess.
+                    given = ("" if src.document_value is None
+                             else f"; the statements give {self.fin(src.document_value * src.scale)}")
+                    notes.append(_paragraph(
+                        f"{row.label} for {column.fy} is {self.fin(cell.value)}, as changed and approved on the "
+                        f"Extractions tab{given}.", cell.evidence))
+                    continue
                 if edit is None:
                     continue
                 scale = cell.working.source.scale if cell.working.source else 1.0

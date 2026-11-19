@@ -217,3 +217,16 @@ def format_inr(amount: float | int) -> str:
 
 def display_date(d: date) -> str:
     return f"{d.day} {calendar.month_abbr[d.month]} {d.year}"
+
+
+# The column that names a table row, where a table has one: its text leads the row's printed line.
+ROW_LABEL_COLUMNS = ("particulars", "description", "lender", "facility", "name", "bank", "tax_type", "shareholder_name")
+
+
+def printed_row_line(cells: list[tuple[str, object]]) -> str | None:
+    """A table row's printed line, rebuilt from its cells (column, text as printed) when the reading did not
+    give it: the row's label first, then the other cells in their order."""
+    ordered = sorted(cells, key=lambda c: (c[0] not in ROW_LABEL_COLUMNS,
+                                           ROW_LABEL_COLUMNS.index(c[0]) if c[0] in ROW_LABEL_COLUMNS else 0))
+    text = " ".join(str(v) for _, v in ordered if v not in (None, ""))
+    return text[:400] or None

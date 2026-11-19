@@ -132,6 +132,8 @@ def to_number(raw: str) -> int | float | None:
     s = collapse_ws(raw)
     if not s or s in ("-", "--", "—"):
         return None
+    # "(AO) -20.43": a footnote reference in front of the figure is not part of it (and is not a negative's brackets).
+    s = re.sub(r"^\([A-Z]{1,2}\)\s+(?=[-−–(]?\s?(?:₹|Rs\.?|INR)?\s?\d)", "", s)
     # "4,027,498 (illustrative)", "Rs. 75,00,000 (previous year Rs. 90,00,000).": a trailing note in words
     s = re.sub(r"(?<=\d)\s*\([^)]*[A-Za-z][^)]*\)\s*[.,;]?\s*$", "", s)
     if _two_quantities(s):

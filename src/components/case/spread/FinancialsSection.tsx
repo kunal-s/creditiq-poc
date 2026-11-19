@@ -391,15 +391,27 @@ function SourcePanel({ caseId, picked }: { caseId: string; picked: Picked | null
               className={cn("h-1.5 w-1.5 rounded-full", picked.manual ? "bg-flag" : "bg-positive")}
               aria-hidden
             />
-            {t(picked.manual ? "spreadPage.source.manual" : "spreadPage.source.read")}
+            {t(
+              picked.manual
+                ? "spreadPage.source.manual"
+                : picked.working?.state === "derived" || picked.working?.state === "ratio"
+                  ? "spreadPage.source.worked"
+                  : "spreadPage.source.read",
+            )}
           </span>
           {e ? (
             <div className="rounded border border-border bg-surface-muted/50 px-3 py-2.5">
               <p className="flex items-start gap-2 text-[12.5px] font-medium text-foreground">
                 <FileText className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-                {doc?.classification?.types[0]
-                  ? types.name(doc.classification.types[0])
-                  : e.document_id}
+                <span className="min-w-0 break-words">
+                  {/* The document's type once the case's documents are read; until then, or for a
+                    document no longer listed, the file the figure was read from, never an id. */}
+                  {doc?.classification?.types[0]
+                    ? types.name(doc.classification.types[0])
+                    : (picked.working?.source?.file_name ??
+                      picked.working?.inputs?.find((i) => i.source?.file_name)?.source?.file_name ??
+                      t("spreadPage.source.document"))}
+                </span>
               </p>
               <p className="mt-1 text-[12px] text-muted-foreground">
                 {t("spreadPage.source.page", { page: e.page })}
@@ -427,12 +439,7 @@ function SourcePanel({ caseId, picked }: { caseId: string; picked: Picked | null
               <p className="mb-2 text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
                 {t("spreadPage.working.title")}
               </p>
-              <FigureWorking
-                caseId={caseId}
-                label={picked.label}
-                fy={picked.fy}
-                working={picked.working}
-              />
+              <FigureWorking caseId={caseId} working={picked.working} />
             </div>
           )}
         </div>

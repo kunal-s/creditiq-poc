@@ -1,12 +1,10 @@
+import { Link } from "@tanstack/react-router";
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
-import { useState } from "react";
-import type { CellWorking, NormResult, Spread, SpreadRow } from "@/api/types";
-import { EditFigureDialog } from "@/components/case/spread/EditFigureDialog";
+import type { NormResult, Spread, SpreadRow } from "@/api/types";
 import { t } from "@/config/terminology";
 import { actualText, inputLabel, normElementId } from "@/domain/policy";
 import { useSpread } from "@/domain/findings";
 import { cellText } from "@/domain/spread";
-import { useCan } from "@/domain/session";
 import { cn } from "@/lib/utils";
 import { NormDetail, BAND_TEXT, split, statusOf } from "./NormTile";
 
@@ -157,26 +155,23 @@ function Trend({
   );
 }
 
-type Entering = { label: string; fy: string; working: CellWorking };
-
-/** An input the statements do not give, where it can be entered from the page: the spread's own row for it. */
-function entryFor(norm: NormResult, spread: Spread | undefined): Entering[] {
+/** The inputs the statements do not give that are statement figures (a spread row of the statements): each is
+ * supplied on the Extractions tab, where the Credit Manager checks the change. */
+function supplyFor(norm: NormResult, spread: Spread | undefined): string[] {
   if (!spread) return [];
-  const last = spread.columns.length - 1;
   // The norm names what is missing by its label, which is the spread row's own label.
   return (norm.missing ?? []).flatMap((name) => {
-    const row = spread.rows.find((r) => r.label === name || r.key === name);
-    const working = row?.cells[last]?.working;
-    return row && working?.target
-      ? [{ label: row.label, fy: spread.columns[last]!.fy, working }]
-      : [];
+    const row = spread.rows.find(
+      (r) => r.section !== "ratios" && (r.label === name || r.key === name),
+    );
+    return row ? [row.label] : [];
   });
 }
 
 /** The financial ratios as one table: what each ratio tells in plain words, every year side by side with
  * the direction of travel, the latest set against the limits on a scale, and its working opening under
- * its own row. A ratio that cannot be evaluated says what is missing and, where the page has it, lets the
- * figure be entered there. */
+ * its own row. A ratio that cannot be evaluated says what is missing and, for a statement figure, where it
+ * is supplied: the Extractions tab. */
 export function RatioTable({
   caseId,
   norms,
@@ -191,8 +186,6 @@ export function RatioTable({
   detailId: string;
 }) {
   const spread = useSpread(caseId).data;
-  const canEdit = useCan("review.decide");
-  const [entering, setEntering] = useState<Entering | null>(null);
   const years = spread?.columns ?? [];
   const rowFor = (norm: NormResult) =>
     norm.ratio
@@ -240,7 +233,7 @@ export function RatioTable({
                   inputs: (norm.missing ?? []).map((n) => inputLabel(norm, n)).join(", "),
                 })
               : null;
-          const enter = entryFor(norm, spread);
+          const supply = supplyFor(norm, spread);
           const meaning = norm.ratio ? `policy.ratios.meaning.${norm.ratio}` : null;
           return (
             <li
@@ -371,20 +364,19 @@ export function RatioTable({
                   className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 pb-3 pt-0 text-[12px]"
                   data-testid="ratio-actions"
                 >
-                  {canEdit &&
-                    enter.map((e) => (
-                      <button
-                        key={e.label}
-                        type="button"
-                        onClick={() => setEntering(e)}
-                        title={t("policy.ratios.enterHint")}
-                        className="rounded border border-primary/40 px-2 py-1 font-medium text-primary hover:bg-primary/5"
-                        data-testid="ratio-enter"
-                      >
-                        {t("policy.ratios.enter", { label: e.label })}
-                      </button>
-                    ))}
-                  {enter.length === 0 && (
+                  {supply.map((label) => (
+                    <Link
+                      key={label}
+                      to="/appraisals/$caseId/extraction"
+                      params={{ caseId }}
+                      title={t("policy.ratios.supplyHint")}
+                      className="rounded border border-primary/40 px-2 py-1 font-medium text-primary hover:bg-primary/5"
+                      data-testid="ratio-supply"
+                    >
+                      {t("policy.ratios.supply", { label })}
+                    </Link>
+                  ))}
+                  {supply.length === 0 && (
                     <span className="text-muted-foreground">{t("policy.ratios.needsData")}</span>
                   )}
                 </div>
@@ -401,17 +393,6 @@ export function RatioTable({
           );
         })}
       </ul>
-      {entering?.working.target && (
-        <EditFigureDialog
-          caseId={caseId}
-          label={entering.label}
-          fy={entering.fy}
-          target={entering.working.target}
-          source={entering.working.source}
-          current={null}
-          onClose={() => setEntering(null)}
-        />
-      )}
     </div>
   );
 }

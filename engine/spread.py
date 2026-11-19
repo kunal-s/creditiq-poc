@@ -28,7 +28,6 @@ from .contracts import (
     CellInput,
     CellSource,
     CellWorking,
-    EditTarget,
     Evidence,
     Spread,
     SpreadCell,
@@ -107,14 +106,14 @@ def _line(copies: list[dict[str, statements.Line]], name: str, docs: list[facts_
             line = lines[name]
             working = workings.line_working(line, docs[i], name, editable) if i < len(docs) else None
             return SpreadCell(value=line.value, evidence=line.evidence, relies_on_manual=line.manual, working=working)
-    # Not on any copy: unread or unprinted. A person may still enter it, on the first copy of the year.
+    # Not on any copy: unread or unprinted. It is supplied on the Extractions tab (the statement's own figures,
+    # changed there and checked by a second person); here it says which statement it is missing from.
     if not (editable and docs):
         return SpreadCell()
     doc = docs[0]
     source = CellSource(document_id=doc.id, document=doc.label, unit_label=workings.unit_label(doc),
-                        scale=statements.unit_scale(doc), column="current_period")
-    return SpreadCell(working=CellWorking(state="missing", source=source,
-                                          target=EditTarget(document_id=doc.id, line=name, column="current_period")))
+                        scale=statements.unit_scale(doc), column="current_period", file_name=doc.file_name)
+    return SpreadCell(working=CellWorking(state="missing", source=source))
 
 
 def _derived(expression: str, lines: dict[str, SpreadCell], kind: str = "derived", labels: dict[str, str] | None = None) -> SpreadCell:
@@ -125,12 +124,21 @@ def _derived(expression: str, lines: dict[str, SpreadCell], kind: str = "derived
     divisors: list[tuple[str, float]] = []
     value = policy_module.evaluate_expression(tree, values, missing, divisors)
     unique = list(dict.fromkeys(names))
-    inputs = [CellInput(key=n, label=policy_module.INPUT_LABELS.get(n, n), value=lines[n].value if n in lines else None,
-                        state=(lines[n].working.state if n in lines and lines[n].working else "missing"),
-                        parts=list(lines[n].working.inputs) if n in lines and lines[n].working else [])
-              for n in unique]
+
+    def input_of(n: str) -> CellInput:
+        # Each figure the working rests on, traced as far as it goes: a statement line carries where it was read
+        # (its source, and an edit made on it before); a sum carries the lines it adds, each with its own source.
+        w = lines[n].working if n in lines else None
+        own = w is not None and w.state not in ("derived", "ratio")
+        return CellInput(key=n, label=policy_module.INPUT_LABELS.get(n, n), value=lines[n].value if n in lines else None,
+                         state=w.state if w else "missing", parts=list(w.inputs) if w else [],
+                         source=w.source if own else None, edit=w.edit if own else None)
+
+    inputs = [input_of(n) for n in unique]
     shown = re.sub(r"[a-z_]+", lambda m: f"{lines[m[0]].value:,.0f}" if m[0] in lines and lines[m[0]].value is not None else "?", expression)
-    working = CellWorking(state=kind, formula=policy_module.words(expression),  # type: ignore[arg-type]
+    # A figure divided out (a margin) is worked out, not added up, whatever its row is called.
+    state = "ratio" if kind == "derived" and "/" in expression else kind
+    working = CellWorking(state=state, formula=policy_module.words(expression),  # type: ignore[arg-type]
                           substituted=shown.replace("/", "÷").replace("*", "×"), inputs=inputs)
     if missing or any(d == 0 for _, d in divisors):
         return SpreadCell(working=working)

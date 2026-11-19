@@ -1041,6 +1041,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/cases/{case_id}/recalculations": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Case Recalculations
+     * @description Each recalculation an approved change on the Extractions tab set off, the latest first: the change,
+     *     who made and approved it, and every figure, norm, cross-check, readiness and authority it moved.
+     */
+    get: operations["case_recalculations_api_cases__case_id__recalculations_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/cases/{case_id}/reference/confirm": {
     parameters: {
       query?: never;
@@ -2627,12 +2648,27 @@ export interface components {
      * @description Where a figure the statement prints was read, and in what unit.
      */
     CellSource: {
+      /** Bbox */
+      bbox?: [number, number, number, number] | null;
+      /**
+       * Changed
+       * @default false
+       */
+      changed: boolean;
       /** Column */
       column: string;
       /** Document */
       document: string;
       /** Document Id */
       document_id: string;
+      /** Document Value */
+      document_value?: number | null;
+      /** Field Id */
+      field_id?: string | null;
+      /** File Name */
+      file_name?: string | null;
+      /** Line */
+      line?: string | null;
       /** Page */
       page?: number | null;
       /** Printed */
@@ -3337,6 +3373,8 @@ export interface components {
       bbox?: [number, number, number, number] | null;
       /** Document Id */
       document_id: string;
+      /** Line */
+      line?: string | null;
       /** Page */
       page: number;
     };
@@ -5161,6 +5199,78 @@ export interface components {
       ready_for_credit: boolean;
       /** Score Pct */
       score_pct: number;
+    };
+    /**
+     * Recalculation
+     * @description A recalculation of the case after an approved change on the Extractions tab: what was changed, by whom,
+     *     and every figure, norm, cross-check, readiness and authority that moved as a result. Kept in the decision log.
+     */
+    Recalculation: {
+      /** Approved By */
+      approved_by: string;
+      /** At */
+      at: string;
+      /** Case Id */
+      case_id: string;
+      /** Changes */
+      changes?: components["schemas"]["RecalculationChange"][];
+      /** Id */
+      id: string;
+      trigger: components["schemas"]["RecalculationTrigger"];
+    };
+    /**
+     * RecalculationChange
+     * @description One thing worked from the case's figures that read differently after the change.
+     */
+    RecalculationChange: {
+      /** After */
+      after?: number | string | null;
+      /**
+       * Area
+       * @enum {string}
+       */
+      area: "figure" | "norm" | "check" | "readiness" | "authority";
+      /** Before */
+      before?: number | string | null;
+      /** Detail After */
+      detail_after?: string | null;
+      /** Detail Before */
+      detail_before?: string | null;
+      /** Key */
+      key: string;
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: "amount" | "outcome" | "percent" | "text";
+      /** Label */
+      label: string;
+    };
+    /**
+     * RecalculationTrigger
+     * @description The approved change to an extracted value that set a recalculation off.
+     */
+    RecalculationTrigger: {
+      /** Changed By */
+      changed_by?: string | null;
+      /** Document */
+      document: string;
+      /** Document Id */
+      document_id: string;
+      /** Field */
+      field: string;
+      /** Field Value Id */
+      field_value_id: string;
+      /** File Name */
+      file_name?: string | null;
+      /** From Value */
+      from_value?: string | null;
+      /** Label */
+      label: string;
+      /** Reason */
+      reason?: string | null;
+      /** To Value */
+      to_value?: string | null;
     };
     /**
      * ReferenceApproval
@@ -8163,6 +8273,39 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["QueryItem"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  case_recalculations_api_cases__case_id__recalculations_get: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Recalculation"][];
         };
       };
       /** @description Validation Error */

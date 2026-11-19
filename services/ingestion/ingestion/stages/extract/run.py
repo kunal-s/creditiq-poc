@@ -8,7 +8,7 @@ import re
 from ...config.models import FieldDef, FieldRule, IngestionConfig, PageScope
 from ...llm.recorder import ModelClient
 from ...pageindex import Page
-from . import llm_extract
+from . import llm_extract, llm_tables
 from .fields import Found, extract_scalar
 from .normalise import normalise
 from .tables import build_table
@@ -101,12 +101,19 @@ def extract_instance(cfg: IngestionConfig, doc_type: str, pages: list[Page], mod
     for t in td.schema_.tables:
         tr = trules.get(t.name)
         if tr is None:
-            tables[t.name] = {"status": "missing", "reason": "no_rule", "columns": [c.name for c in t.columns], "rows": [], "source": None, "repairs": [], "unparsed": 0}
+            tables[t.name] = {"status": "missing", "reason": "no_rule", "columns": [c.name for c in t.columns], "rows": [], "source": None, "repairs": [], "unparsed": 0, "method": "rules"}
             continue
-        res = next((r for v in (tr if isinstance(tr, list) else [tr]) if (r := build_table(v, t.columns, pages, cfg.routing.reading))), None)
+        variants = tr if isinstance(tr, list) else [tr]
+        res = next((r for v in variants if (r := build_table(v, t.columns, pages, cfg.routing.reading))), None)
+        spec = rules.model_tables.get(t.name) if rules else None
+        if res is None and spec is not None and model is not None:
+            # No layout found it: the model maps its rows, and code reads every figure from the page (llm_tables).
+            res, table_trace = llm_tables.map_table(cfg, td.display_name, t.name, t.description or t.name, t.columns, spec,
+                                                    pages, model, dash_is_zero=any(v.dash_is_zero for v in variants))
+            trace += table_trace
         if res is None:
-            tables[t.name] = {"status": "missing", "reason": "table_not_found", "columns": [c.name for c in t.columns], "rows": [], "source": None, "repairs": [], "unparsed": 0}
+            tables[t.name] = {"status": "missing", "reason": "table_not_found", "columns": [c.name for c in t.columns], "rows": [], "source": None, "repairs": [], "unparsed": 0, "method": "rules"}
             continue
         src = {"sheet": res.sheet} if res.sheet else {"page_start": res.page_start, "page_end": res.page_end, "bbox": res.bbox}
-        tables[t.name] = {"status": "found", "reason": None, "columns": res.columns, "rows": res.rows, "source": src, "repairs": res.repairs, "unparsed": res.unparsed}
+        tables[t.name] = {"status": "found", "reason": None, "columns": res.columns, "rows": res.rows, "source": src, "repairs": res.repairs, "unparsed": res.unparsed, "method": res.method}
     return {"fields": out_fields, "tables": tables, "trace": trace}

@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { Info } from "lucide-react";
 import type {
   CellWorking,
   CrossVerificationView,
@@ -52,18 +53,21 @@ export function pickedNow(spread: Spread, picked: Picked | null): Picked | null 
 }
 
 /** A figure in a table: the marker says where it came from (grey: a page; amber: a person's
- * entry), the colour what the checks made of it, and a click puts it in the source panel. */
+ * entry), the colour what the checks made of it, and a click puts it in the source panel. A figure
+ * worked out from other lines carries an (i): its working, not a page, is what the panel shows. */
 export function FigureCell({
   picked,
   selected,
   tone,
   strong,
+  worked,
   onPick,
 }: {
   picked: Picked;
   selected: boolean;
   tone?: string | undefined;
   strong?: boolean;
+  worked?: boolean;
   onPick: (p: Picked) => void;
 }) {
   if (picked.text === "—") return <span className="text-muted-foreground">—</span>;
@@ -82,6 +86,7 @@ export function FigureCell({
       )}
       data-testid="spread-figure"
       data-selected={selected ? "true" : "false"}
+      title={worked ? t("spreadPage.working.detail") : undefined}
     >
       <span
         className={cn(
@@ -95,6 +100,13 @@ export function FigureCell({
         aria-hidden
       />
       {picked.text}
+      {worked && (
+        <Info
+          className="size-3 shrink-0 text-muted-foreground"
+          aria-hidden
+          data-testid="spread-figure-info"
+        />
+      )}
     </button>
   );
 }
@@ -419,6 +431,11 @@ function StatementRow({
               selected={picked === id}
               tone={cell.relies_on_manual ? "text-destructive" : undefined}
               strong={strong}
+              worked={
+                row.kind !== "line" ||
+                cell.working?.state === "derived" ||
+                cell.working?.state === "ratio"
+              }
               onPick={onPick}
             />
           </td>

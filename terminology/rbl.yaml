@@ -225,11 +225,13 @@ spreadPage:
     title: Source panel
     hint: Select any figure to see where it was read from.
     read: Read from the document
+    worked: Worked out from figures read from the document
     manual: Relies on a person's entry
     page: "Page {page}"
     more: "{n} more pages"
     open: Open the page
     noPage: Not read from a page.
+    document: Financial statements
   reconcile:
     title: Checks against the statements
     summary: "{agree} of {total} agree"
@@ -261,24 +263,21 @@ spreadPage:
     editedBy: "Entered by {name} on {date}"
     reason: "Reason: {reason}"
     inputs: Worked from
-    edit: Edit this figure
-    editInput: Edit
     detail: How it was worked out
-    revert: Put the statement's figure back
-  edit:
-    title: Edit a statement figure
-    subtitle: "{label} · {fy}"
-    entry: "Amount as the statement prints it ({unit})"
-    entryRupees: "That is {rupees} in rupees."
-    entryHint: Type it as it appears on the page, in the same unit, so a missing or extra zero shows.
-    reason: Reason
-    reasonHint: Say what the page shows or why the figure is being changed; at least 3 characters.
-    save: Save the edit
-    cancel: Cancel
-    saved: Figure updated; everything worked from it has been recalculated.
-    revertTitle: Put the statement's figure back
-    revertReason: Why is the statement's figure right?
-    reverted: The statement's figure is back.
+    # Where a statement figure was read (the figure's own working, and each figure a sum or ratio is worked from).
+    source: Where it was read
+    fileAt: "{file} · page {page}"
+    file: "{file}"
+    line: Printed line
+    open: Open the page
+    change: Change it on the Extractions tab
+    see: See it on the Extractions tab
+    changeHint: A statement figure is changed on the Extractions tab, where each change is checked by the Credit Manager; every figure worked from it then follows.
+    changed: "Changed on the Extractions tab and approved. The statement printed {value}."
+    changedNoValue: Changed on the Extractions tab and approved.
+    showSource: "Where {label} comes from"
+    openInput: "Open the page {label} was read from (page {page})"
+    hideSource: "Hide where {label} comes from"
 
 # Views within the Outputs tab.
 outputs:
@@ -743,8 +742,8 @@ policy:
     trendUp: "up {delta} on {fy}"
     trendDown: "down {delta} on {fy}"
     trendFlat: "unchanged on {fy}"
-    enter: "Enter {label}"
-    enterHint: "The statement does not give this figure. Enter it from the page, or as nil if there is none; it is kept with a reason."
+    supply: "Supply {label} on the Extractions tab"
+    supplyHint: "The statement does not give this figure. It is supplied on the Extractions tab, where the Credit Manager checks the change."
     needsData: "Needs figures that come from the bank statements or a sanction letter, not from the financial statements."
     meaning:
       current-ratio: Whether short-term assets cover what falls due within the year.
@@ -2008,6 +2007,7 @@ audit:
     processing_run: Ran document processing
     processing_reextract: Read a document again
     review_decided: Decided a review item
+    case_recalculated: Recalculated the appraisal after an approved change
     reference_imported: Imported RBL's record
     reference_confirmed: Confirmed RBL's record
     comparison_adjudicated: Decided a comparison item
@@ -2738,6 +2738,8 @@ data:
   showFields: Show fields
   hideFields: Hide fields
   tableToggle: "{title} ({n} rows)"
+  # A statement no configured layout found, whose rows the model mapped; its figures are still read from the page.
+  tableByModel: Rows mapped by the model · figures read from the page
   fields: Fields
   col:
     field: Field
@@ -2746,13 +2748,48 @@ data:
     method: Method
     status: Status
     row: Row
+    source: Source
   raw: "As printed: {raw}"
+  # Where a value was read: under each value, and in the source column of a table row.
+  sourcePage: "Page {page}"
+  sourceFileAt: "{file} · page {page}"
+  sourceNone: Not on a page
   cell: "{table}, row {row} · {column}"
   detailsFields: Fields on this document
   readBy: Read by
   asPrinted: As printed
   openEvidence: Open the source page
   composition: Confidence composition
+  focused: The value the other tab pointed to
+  goToFocused: Go to it
+  rowCell: "{row} · {column}"
+
+# The Extractions tab's record of each approved change and what it moved when the appraisal was recalculated.
+recalculation:
+  title: Recalculations
+  subtitle: What each approved change moved
+  changedValue: "{label}"
+  inDocument: "{document} · {file}"
+  fromTo: "{from} → {to}"
+  by: "Changed by {maker} · approved by {checker} · {at}"
+  approvedBy: "Approved by {checker} · {at}"
+  reason: "Reason: {reason}"
+  moved: What changed as a result
+  nothing: Nothing worked from this value changed.
+  showAll: "Show all {n} recalculations"
+  showLatest: Show the latest only
+  area:
+    figure: Figures
+    norm: Policy norms
+    check: Cross-checks
+    readiness: Document readiness
+    authority: Approving authority
+  check:
+    pass: Agrees
+    fail: Differs
+    incomplete: Not fully checked
+    not_applicable: Not applicable
+  none: "—"
 
 fieldStatus:
   accepted: Confirmed

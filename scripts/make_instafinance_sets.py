@@ -7,6 +7,13 @@ real-document templates (the GigsTech sample folder; scripts/tpl_*.py and realis
                                   statement, and a statement for an account not declared (Meridian Trust Bank)
   4_TC-24_request_over_20pct/     Rs 4.95 Cr asked on Rs 24.16 Cr turnover (20.5%): every amount of the report scaled by
                                   one factor so that FY2025-26 revenue is Rs 24.16 Cr; ratios and proportions unchanged
+  5_ to 9_  TC-20                 the clean file with another PAN, another GSTIN, name variants, promoters that differ,
+                                  another CIN (one each; see plant_variant)
+  10_TC-23_borrowings_differ/     instalments to a lender not declared, a sanction letter off the declaration, and an
+                                  overdue facility in the bureau report the declaration omits
+  11_ to 15_  TC-24               under three years in business, bureau rank 8, negative net worth, a loss in the latest
+                                  year, two years of audited statements
+  16_ to 18_  TC-25               the clean file asking Rs 1.80 Cr, 4.25 Cr and 12.00 Cr: one per approving authority
 
 From the report: the three latest audited years (profit and loss, balance sheet, the schedules of borrowings, loans
 and advances, expenses and revenue mix), the comparative year before them, the paid-up and authorised capital, the
@@ -31,8 +38,10 @@ existing term loan (sanctioned Rs 20 Cr over 72 months, outstanding the year's l
 from __future__ import annotations
 
 import calendar
+import io
 import json
 import shutil
+import subprocess
 import sys
 from dataclasses import replace
 from pathlib import Path
@@ -42,6 +51,7 @@ sys.argv = sys.argv[:1]
 import make_test_pack as M          # noqa: E402  (moves the dates to the November 2026 case and installs the builders)
 import realistic_docs as R          # noqa: E402
 import tpl_annual_report as AR      # noqa: E402
+import tpl_gst_registration as G    # noqa: E402
 import tpl_memorandum as MOA        # noqa: E402
 from tests import docsets as D      # noqa: E402
 
@@ -311,14 +321,46 @@ TL_TENURE = 72                                                     # months, at 
 TL_SANCTIONED, TL_EMI = "20,00,00,000", emi(200_000_000, months=TL_TENURE)
 ORCHID = ("Orchid Cooperative Bank", "118820045511", "Current Account")       # TC-22: declared, no statement
 MERIDIAN = ("Meridian Trust Bank", "740030091256")                            # TC-22: a statement, not declared
+# TC-15: the Udyam registration of a Hyderabad trading company (fictional number; a medium enterprise by turnover)
+UDYAM = dict(urn="UDYAM-TS-07-0041836", enterprise_type="Medium", activity="SERVICES", registered="21/09/2020",
+             unit="1. HEAD OFFICE, MADHAPUR", dic="HYDERABAD (TELANGANA)", dfo="HYDERABAD",
+             nic=("46 - Wholesale trade", "4651 - Computers and software", "Services"))
+
+# TC-20, TC-23 and TC-24: what the scenario sets plant. Every name and number is fictional.
+OTHER_PAN = D.OTHER_PAN                                            # another company's PAN, same format
+OTHER_GSTIN = D.gstin_with_check(f"36{OTHER_PAN}1Z")              # that company's GSTIN, in Telangana
+OTHER_CIN = "U63990TG2016PTC654321"                                # year 2016; the company was incorporated in 2017
+THIRD = D.Person("Ravi Teja Kommineni", "08812734", "Director", "26 July 1981", "FXXXX3318U", "XXXX XXXX 5182",
+                 "Plot 44, Jubilee Enclave, Hitech City, Hyderabad 500081, Telangana")   # in the memorandum, no KYC
+VESTA = ("VESTA CAPITAL", 486_500)                                 # TC-23: instalments to a lender not declared
+SANCTION_OFF = ("22,00,00,000", emi(220_000_000, months=TL_TENURE))   # TC-23: the letter, against 20 Cr declared
+ORCHID_CC = ("Orchid Cooperative Bank", "Cash Credit", "3,00,00,000", "2,46,00,000", "16,80,000", "Overdue")
+YOUNG = ("11 December 2023", "U63990TG2023PTC198457")             # TC-24: under three years at the case date
+NEGATIVE_NET_WORTH = -9_800_000                                    # TC-24: FY2025-26 net worth, rupees
+LOSS = -38_500_000                                                 # TC-24: FY2025-26 loss before tax, rupees
 
 
 def build(r: dict, e: D.Entity, *, plant: bool = False, accounts_differ: bool = False,
           request: tuple[str, str] = ("15,00,00,000", "Fifteen Crore"),
-          term_loan: tuple[str, int] = (TL_SANCTIONED, TL_EMI)) -> dict[str, bytes]:
+          term_loan: tuple[str, int] = (TL_SANCTIONED, TL_EMI), variant: str = "") -> dict[str, bytes]:
+    """`variant` plants one scenario on the clean file: another-pan, another-gstin, name-variants, promoters-differ,
+    another-cin, borrowings-differ, young-company, bureau-rank, negative-net-worth, loss-latest-year, two-years
+    (TC-20, TC-23, TC-24); registration-certificates, two-accounts, scanned-certificate (TC-15, TC-18, TC-19)."""
+    if variant == "young-company":    # the whole file carries the later incorporation (certificate, PAN, CIN, reports)
+        e = replace(e, incorporated=YOUNG[0], cin=YOUNG[1])
     gst = gst_by_month(r)
     credits = {m: gst[m] for m in D.STATEMENT_MONTHS}
     years = {fy: year_figures(r, y) for y, fy in SHIFT.items()}         # fy end -> (balance sheet, profit and loss)
+    if variant == "young-company":    # its first statements (FY2023-24) have no comparative year
+        bs0, pl0 = years[2023]
+        years[2023] = ({k: 0.0 for k in bs0}, {k: 0.0 for k in pl0})
+    if variant == "negative-net-worth":   # reserves below minus the share capital; the profit as reported
+        bs, pnl = years[2026]
+        years[2026] = ({**bs, "res": NEGATIVE_NET_WORTH - bs["sc"]}, pnl)
+    if variant == "loss-latest-year":     # the year's costs absorb the profit and more; reserves fall with it
+        bs, pnl = years[2026]
+        pat_was = pnl["pbt"] - pnl["tax"] + pnl.get("adj", 0.0)
+        years[2026] = ({**bs, "res": bs["res"] - pat_was + LOSS}, {**pnl, "pbt": float(LOSS), "tax": 0.0, "adj": 0.0})
     itr_turn = {fy: years[fy][1]["rev"] for fy in years}
     if plant:   # TC-21: the four turnover gaps of the pack's TC-21 fail set, on this company's figures
         for m in ((2026, 1), (2026, 2), (2026, 3)):
@@ -335,9 +377,14 @@ def build(r: dict, e: D.Entity, *, plant: bool = False, accounts_differ: bool = 
     opening = int(r["bs"]["CashAndBankBalances"]["2023-2024"])         # the bank balance at 1 April 2025
     # TC-22: part of each month's receipts goes to the undeclared account instead, so the two accounts together still
     # receive exactly the month's outward supplies (the turnover checks see the same total).
-    elsewhere = {m: int(credits[m] * 0.08) for m in D.STATEMENT_MONTHS} if accounts_differ else {}
+    # TC-18: the same split, but the second account is declared and has its statement.
+    split = accounts_differ or variant == "two-accounts"
+    elsewhere = {m: int(credits[m] * 0.08) for m in D.STATEMENT_MONTHS} if split else {}
+    extra = ([((y, m), D.Txn(f"12 {D.MON[m - 1]} {y}", f"NACH DR {VESTA[0]} 778811 EMI", f"ACH/VESTA/{y}{m:02d}",
+                             debit=VESTA[1])) for (y, m) in D.STATEMENT_MONTHS]
+             if variant == "borrowings-differ" else None)
     txns = D.statement_transactions(D.STATEMENT_MONTHS, {m: credits[m] - elsewhere.get(m, 0) for m in credits},
-                                    opening=opening, emi=tl_emi, emi_party="LOTUSCREST FIN")
+                                    opening=opening, emi=tl_emi, emi_party="LOTUSCREST FIN", extra=extra)
     first, last = D.STATEMENT_MONTHS[0], D.STATEMENT_MONTHS[-1]
     last_day = {1: 31, 2: 28, 3: 31, 4: 30, 5: 31, 6: 30, 7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31}[last[1]]
 
@@ -347,8 +394,11 @@ def build(r: dict, e: D.Entity, *, plant: bool = False, accounts_differ: bool = 
         bs, pnl = years[fy_end]
         bs_prev, pnl_prev = years[fy_end - 1] if fy_end - 1 in years else year_figures(r, "2021-2022")
         n = notes(r, e, year_of[fy_end], year_of[fy_end - 1], pnl, pnl_prev, bs, bs_prev)
+        if variant == "young-company" and fy_end == 2024:       # the first period: no previous year in the notes
+            n = {k: [(lab, cur, None if prev is None else 0, st) for lab, cur, prev, st in v] for k, v in n.items()}
         return R.annual_report(e, revenue=int(pnl["rev"]), profit_before_tax=int(pnl["pbt"]), fy_end=fy_end, signed_on=signed,
-                               figures={"bs": bs, "bs_prev": bs_prev, "pl": pnl, "pl_prev": pnl_prev, "notes": n})
+                               figures={"bs": bs, "bs_prev": bs_prev, "pl": pnl, "pl_prev": pnl_prev, "notes": n},
+                               report_number=fy_end - 2023 if variant == "young-company" else None)
 
     def itr(fy_end: int, filed: str) -> bytes:
         return R.income_tax_return(e, turnover=int(itr_turn[fy_end]), profit=int(years[fy_end][1]["pbt"]),
@@ -364,7 +414,8 @@ def build(r: dict, e: D.Entity, *, plant: bool = False, accounts_differ: bool = 
                                                       lender=f"{e.bank}, {e.branch} Branch"),
         "06_Existing_Facilities_Declaration.pdf": R.facilities_declaration(
             e, facilities=facility,
-            accounts=[(e.bank, e.account, "Current Account")] + ([ORCHID] if accounts_differ else [])),
+            accounts=[(e.bank, e.account, "Current Account")] + ([ORCHID] if accounts_differ else [])
+            + ([(*MERIDIAN, "Current Account")] if variant == "two-accounts" else [])),
         "07_Sanction_Letter_Lotuscrest.pdf": R.sanction_letter(e, amount=tl_sanctioned, rate="10.25% p.a.",
                                                                tenure=f"{TL_TENURE} months", emi=D.inr(tl_emi)),
         "08_Commercial_Bureau_Report.pdf": R.bureau_report(
@@ -383,7 +434,7 @@ def build(r: dict, e: D.Entity, *, plant: bool = False, accounts_differ: bool = 
         docs[f"GSTR3B_{D._label(m)}.pdf"] = D.gstr_3b(e, month=m, taxable=gst[m])
     for m in D.MONTHS[-12:]:
         docs[f"GSTR1_{D._label(m)}.pdf"] = R.gstr_1(e, month=m, taxable=gst[m])
-    if accounts_differ:   # TC-22: the undeclared account's statement, over the same months as the declared one
+    if split:   # TC-22 and TC-18: the second account's statement, over the same months as the first
         months = D.STATEMENT_MONTHS
         other = D.statement_transactions(months, elsewhere, opening=4_500_000, emi_months=set())
         (y0, m0), (y1, m1) = months[0], months[-1]
@@ -391,7 +442,75 @@ def build(r: dict, e: D.Entity, *, plant: bool = False, accounts_differ: bool = 
             e, txns=other, opening=4_500_000, start=f"01 {D.MON[m0 - 1]} {y0}",
             end=f"{calendar.monthrange(y1, m1)[1]} {D.MON[m1 - 1]} {y1}",
             account=MERIDIAN[1], bank=MERIDIAN[0])
+    plant_variant(docs, e, variant, gst=gst, facility=facility, outstanding=outstanding, years=years,
+                  itr_turn=itr_turn, tl_sanctioned=tl_sanctioned)
     return docs
+
+
+def plant_variant(docs: dict[str, bytes], e: D.Entity, variant: str, *, gst, facility, outstanding, years, itr_turn,
+                  tl_sanctioned) -> None:
+    """The documents a scenario adds, replaces or removes (the figures it changes are planted in build())."""
+    accounts = [(e.bank, e.account, "Current Account")]
+    lotus = (e.lender, "Term Loan", tl_sanctioned, outstanding, "0", "Standard")
+    itr26 = lambda **kw: R.income_tax_return(e, turnover=int(itr_turn[2026]), profit=int(years[2026][1]["pbt"]),  # noqa: E731
+                                             ay="2026-27", fy="2025-26", filed="28 September 2026", **kw)
+    if variant == "another-pan":          # ID-01: the tax return and the bureau report carry another company's PAN
+        docs["10_ITR_AY2026-27.pdf"] = itr26(pan=OTHER_PAN)
+        docs["08_Commercial_Bureau_Report.pdf"] = R.bureau_report(e, facilities=[lotus], rank="3", pan=OTHER_PAN)
+    elif variant == "another-gstin":      # ID-02: another company's GSTIN; ours with a wrong check character
+        docs["06_Existing_Facilities_Declaration.pdf"] = R.facilities_declaration(
+            e, facilities=facility, accounts=accounts, gstin=OTHER_GSTIN)
+        bad = e.gstin[:-1] + ("1" if e.gstin[-1] != "1" else "2")
+        docs["08_Commercial_Bureau_Report.pdf"] = R.bureau_report(e, facilities=[lotus], rank="3", gstin=bad)
+    elif variant == "name-variants":      # ID-03: two printings of the name that match, and another name that does not
+        docs["02_Company_PAN.pdf"] = R.company_pan(e, name=e.name.upper().replace("PRIVATE LIMITED", "PVT LTD"))
+        sep = (2026, 9)
+        docs[f"GSTR3B_{D._label(sep)}.pdf"] = R.gstr_3b(e, month=sep, taxable=gst[sep],
+                                                        name=e.name.replace("Private Limited", "Pvt. Ltd."))
+        docs["10_ITR_AY2026-27.pdf"] = itr26(name="Corvane Infotech Solutions Private Limited")
+    elif variant == "promoters-differ":   # ID-04 and ID-08: a director's KYC missing; a third subscriber, no KYC
+        docs["04_Director_KYC.pdf"] = R.director_kyc(e, persons=tuple(p for i, p in enumerate(e.persons) if i != 1))
+        R.SUBSCRIBERS[THIRD.name] = ("son of Srinivasa Rao Kommineni", "business", 5_000)
+        docs["03_Memorandum_and_Articles_of_Association.pdf"] = R.memorandum(
+            replace(e, persons=e.persons + (THIRD,)), directors=(e.persons[0].name, e.persons[1].name, THIRD.name))
+    elif variant == "another-cin":        # ID-05 and ID-07: the certificate's CIN of another year; a typo in another
+        docs["01_Certificate_of_Incorporation.pdf"] = R.certificate_of_incorporation(e, cin=OTHER_CIN)
+        docs["06_Existing_Facilities_Declaration.pdf"] = R.facilities_declaration(
+            e, facilities=facility, accounts=accounts, cin=e.cin[:-1] + ("3" if e.cin[-1] != "3" else "4"))
+    elif variant == "borrowings-differ":  # OB-01 and OB-02 (the instalments to Vesta are planted in build())
+        docs["07_Sanction_Letter_Lotuscrest.pdf"] = R.sanction_letter(e, amount=SANCTION_OFF[0], rate="10.25% p.a.",
+                                                                      tenure=f"{TL_TENURE} months",
+                                                                      emi=D.inr(SANCTION_OFF[1]))
+        docs["08_Commercial_Bureau_Report.pdf"] = R.bureau_report(e, facilities=[lotus, ORCHID_CC], rank="3")
+    elif variant == "bureau-rank":        # EL-02: rank 8, against 6 or better
+        docs["08_Commercial_Bureau_Report.pdf"] = R.bureau_report(e, facilities=[lotus], rank="8")
+    elif variant == "two-years":          # DOC-02: the third year's audited statements left out
+        docs.pop("14_Audited_Financial_Statements_FY2023-24.pdf")
+    elif variant == "registration-certificates":   # TC-15: the GST and Udyam registrations beside the file
+        docs["16_GST_Registration_Certificate.pdf"] = G.gst_registration_certificate(e, officer="K. SRINIVAS REDDY",
+                                                                                   office="MADHAPUR")
+        docs["17_Udyam_Registration_Certificate.pdf"] = R.udyam_certificate(e, owner=e.persons[0].name, **UDYAM)
+    elif variant == "scanned-certificate":         # TC-19: one document as a scan, so its page is read by OCR
+        docs["01_Certificate_of_Incorporation.pdf"] = scan_copy(docs["01_Certificate_of_Incorporation.pdf"])
+
+
+def scan_copy(pdf: bytes, dpi: int = 300) -> bytes:
+    """A clean image-only copy of a document, as a flatbed scanner gives it: no text layer, every page a picture. The
+    file's own dates are fixed, so the same input always gives the same bytes."""
+    import tempfile
+    import time
+
+    from PIL import Image
+
+    with tempfile.TemporaryDirectory() as tmp:
+        src = Path(tmp) / "in.pdf"
+        src.write_bytes(pdf)
+        subprocess.run(["pdftoppm", "-r", str(dpi), "-gray", "-png", str(src), str(Path(tmp) / "p")], check=True)
+        pages = [Image.open(f).convert("L") for f in sorted(Path(tmp).glob("p-*.png"))]
+        out = io.BytesIO()
+        when = time.strptime("2026-11-02 10:30", "%Y-%m-%d %H:%M")
+        pages[0].save(out, "PDF", resolution=dpi, save_all=True, append_images=pages[1:], creationDate=when, modDate=when)
+    return out.getvalue()
 
 
 HONORIFIC = ("Mr.", "Mrs.", "Mr.", "Mrs.", "Mr.")                    # of the five fictional directors, in order
@@ -430,6 +549,31 @@ def write(report: Path, out: Path, only: set[str] | None = None) -> None:
              {"accounts_differ": True}),
             ("TC-24", "4_TC-24_request_over_20pct", small, 49_500_000, ("4,95,00,000", "Four Crore Ninety-Five Lakh"),
              {"term_loan": ("2,75,00,000", emi(27_500_000, months=TL_TENURE))})]
+    fifteen = (150_000_000, ("15,00,00,000", "Fifteen Crore"))
+    sets += [(id_, name, r, *fifteen, {"variant": v}) for id_, name, v in (
+        ("TC-20-PAN", "5_TC-20_another_PAN", "another-pan"),
+        ("TC-20-GSTIN", "6_TC-20_another_GSTIN", "another-gstin"),
+        ("TC-20-NAMES", "7_TC-20_name_variants", "name-variants"),
+        ("TC-20-PROMOTERS", "8_TC-20_promoters_differ", "promoters-differ"),
+        ("TC-20-CIN", "9_TC-20_another_CIN", "another-cin"),
+        ("TC-23", "10_TC-23_borrowings_differ", "borrowings-differ"),
+        ("TC-24-YOUNG", "11_TC-24_under_3_years", "young-company"),
+        ("TC-24-RANK", "12_TC-24_bureau_rank_8", "bureau-rank"),
+        ("TC-24-NETWORTH", "13_TC-24_negative_net_worth", "negative-net-worth"),
+        ("TC-24-LOSS", "14_TC-24_loss_latest_year", "loss-latest-year"),
+        ("TC-24-2YEARS", "15_TC-24_two_years_of_statements", "two-years"))]
+    sets += [("TC-25-CO", "16_TC-25_Rs1.80Cr_credit_officer", r, 18_000_000, ("1,80,00,000", "One Crore Eighty Lakh"), {}),
+             ("TC-25-RCH", "17_TC-25_Rs4.25Cr_regional_credit_head", r, 42_500_000,
+              ("4,25,00,000", "Four Crore Twenty-Five Lakh"), {}),
+             ("TC-25-ZCC", "18_TC-25_Rs12.00Cr_zonal_credit_committee", r, 120_000_000, ("12,00,00,000", "Twelve Crore"),
+              {})]
+    # TC-15 to TC-19 (extraction): one set each, on the clean file.
+    sets += [(id_, name, r, *fifteen, {"variant": v} if v else {}) for id_, name, v in (
+        ("TC-15", "19_TC-15_identity_and_registration", "registration-certificates"),
+        ("TC-16", "20_TC-16_financial_statements_three_years", ""),
+        ("TC-17", "21_TC-17_gst_12_months_filed", ""),
+        ("TC-18", "22_TC-18_two_declared_accounts", "two-accounts"),
+        ("TC-19", "23_TC-19_confidence_and_evidence", "scanned-certificate"))]
     old = json.loads((out / "index.json").read_text())["sets"] if (out / "index.json").exists() else []
     index = {s["folder"]: s for s in old}
     for id_, name, figures, amount, request, opts in sets:
@@ -441,7 +585,8 @@ def write(report: Path, out: Path, only: set[str] | None = None) -> None:
         folder.mkdir(parents=True)
         for fname, data in sorted(build(figures, e, request=request, **opts).items()):
             (folder / fname).write_bytes(data)
-        text = message(e, figures, amount)
+        young = opts.get("variant") == "young-company"
+        text = message(replace(e, incorporated=YOUNG[0], cin=YOUNG[1]) if young else e, figures, amount)
         case = {"borrower": e.name, "constitution": "private_limited", "facilities": ["cash_credit"],
                 "amount_inr": amount, "channel": "email", "collateral_present": False}
         (folder / "00_Sourcing_Message.txt").write_text(text)
@@ -451,6 +596,9 @@ def write(report: Path, out: Path, only: set[str] | None = None) -> None:
     index = [index[n] for _, n, *_ in sets if n in index]
     (out / "index.json").write_text(json.dumps({"case_date": M.CASE_DATE, "sets": index}, indent=1))
     fy = {y: f"FY{e - 1}-{e % 100:02d}" for y, e in SHIFT.items()}
+    for figs in (r, small):          # every year's adjustments, whichever sets were built this time
+        for y in SHIFT:
+            year_figures(figs, y)
     listed = lambda figs: [{"report_year": y, "printed_as": fy[y], "item": item, "report_value": round(a),  # noqa: E731
                             "printed_value": round(b), "why": why}
                            for (y, item), (a, b, why) in sorted(figs.get("adjusted", {}).items())]

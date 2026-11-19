@@ -3209,6 +3209,38 @@
       "CellSource": {
         "description": "Where a figure the statement prints was read, and in what unit.",
         "properties": {
+          "bbox": {
+            "anyOf": [
+              {
+                "maxItems": 4,
+                "minItems": 4,
+                "prefixItems": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bbox"
+          },
+          "changed": {
+            "default": false,
+            "title": "Changed",
+            "type": "boolean"
+          },
           "column": {
             "title": "Column",
             "type": "string"
@@ -3220,6 +3252,50 @@
           "document_id": {
             "title": "Document Id",
             "type": "string"
+          },
+          "document_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Value"
+          },
+          "field_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field Id"
+          },
+          "file_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Name"
+          },
+          "line": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line"
           },
           "page": {
             "anyOf": [
@@ -5072,6 +5148,17 @@
           "document_id": {
             "title": "Document Id",
             "type": "string"
+          },
+          "line": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line"
           },
           "page": {
             "minimum": 1.0,
@@ -10057,6 +10144,227 @@
           "items"
         ],
         "title": "Readiness",
+        "type": "object"
+      },
+      "Recalculation": {
+        "description": "A recalculation of the case after an approved change on the Extractions tab: what was changed, by whom,\nand every figure, norm, cross-check, readiness and authority that moved as a result. Kept in the decision log.",
+        "properties": {
+          "approved_by": {
+            "title": "Approved By",
+            "type": "string"
+          },
+          "at": {
+            "title": "At",
+            "type": "string"
+          },
+          "case_id": {
+            "title": "Case Id",
+            "type": "string"
+          },
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/RecalculationChange"
+            },
+            "title": "Changes",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "trigger": {
+            "$ref": "#/components/schemas/RecalculationTrigger"
+          }
+        },
+        "required": [
+          "id",
+          "case_id",
+          "at",
+          "approved_by",
+          "trigger"
+        ],
+        "title": "Recalculation",
+        "type": "object"
+      },
+      "RecalculationChange": {
+        "description": "One thing worked from the case's figures that read differently after the change.",
+        "properties": {
+          "after": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "After"
+          },
+          "area": {
+            "enum": [
+              "figure",
+              "norm",
+              "check",
+              "readiness",
+              "authority"
+            ],
+            "title": "Area",
+            "type": "string"
+          },
+          "before": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Before"
+          },
+          "detail_after": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail After"
+          },
+          "detail_before": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail Before"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "amount",
+              "outcome",
+              "percent",
+              "text"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "area",
+          "key",
+          "label",
+          "kind"
+        ],
+        "title": "RecalculationChange",
+        "type": "object"
+      },
+      "RecalculationTrigger": {
+        "description": "The approved change to an extracted value that set a recalculation off.",
+        "properties": {
+          "changed_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changed By"
+          },
+          "document": {
+            "title": "Document",
+            "type": "string"
+          },
+          "document_id": {
+            "title": "Document Id",
+            "type": "string"
+          },
+          "field": {
+            "title": "Field",
+            "type": "string"
+          },
+          "field_value_id": {
+            "title": "Field Value Id",
+            "type": "string"
+          },
+          "file_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Name"
+          },
+          "from_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Value"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "to_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Value"
+          }
+        },
+        "required": [
+          "field_value_id",
+          "field",
+          "label",
+          "document_id",
+          "document"
+        ],
+        "title": "RecalculationTrigger",
         "type": "object"
       },
       "ReferenceApproval": {
@@ -16571,6 +16879,66 @@
           }
         },
         "summary": "Case Queries"
+      }
+    },
+    "/api/cases/{case_id}/recalculations": {
+      "get": {
+        "description": "Each recalculation an approved change on the Extractions tab set off, the latest first: the change,\nwho made and approved it, and every figure, norm, cross-check, readiness and authority it moved.",
+        "operationId": "case_recalculations_api_cases__case_id__recalculations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Recalculation"
+                  },
+                  "title": "Response Case Recalculations Api Cases  Case Id  Recalculations Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Recalculations"
       }
     },
     "/api/cases/{case_id}/reference/confirm": {

@@ -47,6 +47,8 @@ class IngestSource(_C):
     bbox: list[float] | None = None
     sheet: str | None = None
     range: str | None = None
+    line: str | None = None
+    """The whole printed line the value was read from."""
 
 
 class IngestField(_C):
@@ -78,6 +80,9 @@ class IngestTable(_C):
     repairs: list[dict[str, Any]] = Field(default_factory=list)
     unparsed: int = 0
     confidence: float = 0.0
+    method: Literal["rules", "model"] = "rules"
+    """rules: a configured layout read the table; model: the model mapped its rows when no layout found it, and
+    every figure was read from the page."""
 
 
 class IngestCheck(_C):

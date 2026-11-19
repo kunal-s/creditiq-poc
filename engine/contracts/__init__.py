@@ -171,6 +171,9 @@ from .documents import (
     RejectionItem,
     LogicalDocument,
     PageInfo,
+    Recalculation,
+    RecalculationChange,
+    RecalculationTrigger,
 )
 from .ingest import (
     DocumentDefect,
@@ -348,6 +351,9 @@ __all__ = [
     "Classification",
     "Evidence",
     "FieldValue",
+    "Recalculation",
+    "RecalculationChange",
+    "RecalculationTrigger",
     "FileRecord",
     "IntegrityReview",
     "IntegrityReviewRequest",

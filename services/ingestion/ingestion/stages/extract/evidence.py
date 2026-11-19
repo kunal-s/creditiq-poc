@@ -16,12 +16,15 @@ class Evidence:
     bbox: list[float] | None
     sheet: str | None = None
     cells: list[str] = field(default_factory=list)
+    line: str = ""
+    """The whole printed line (or lines) the value was read from, so a reader sees it in its context."""
 
     def source(self) -> dict:
         if self.sheet is not None:
             rng = self.cells[0] if len(self.cells) == 1 else f"{self.cells[0]}:{self.cells[-1]}" if self.cells else None
-            return {"kind": "cell", "page": self.page, "sheet": self.sheet, "range": rng, "text": self.text}
-        return {"kind": "page", "page": self.page, "text": self.text, "bbox": self.bbox}
+            return {"kind": "cell", "page": self.page, "sheet": self.sheet, "range": rng, "text": self.text,
+                    "line": self.line or None}
+        return {"kind": "page", "page": self.page, "text": self.text, "bbox": self.bbox, "line": self.line or None}
 
 
 def evidence_for_lines(page: Page, parts: list[tuple[Line, int, int]]) -> Evidence:
@@ -36,7 +39,8 @@ def evidence_for_lines(page: Page, parts: list[tuple[Line, int, int]]) -> Eviden
         if page.source == "sheet":
             cells += [w.cell for w, (x, y) in zip(line.words, line.spans) if x < b and y > a and w.cell]
     text = collapse_ws(" ".join(texts))[:400]
-    return Evidence(page.no, ids, text, union_bbox(boxes), page.sheet if page.source == "sheet" else None, cells)
+    whole = collapse_ws(" ".join(line.text for line, _, _ in parts))[:400]
+    return Evidence(page.no, ids, text, union_bbox(boxes), page.sheet if page.source == "sheet" else None, cells, whole)
 
 
 def lines_overlapping(page: Page, start: int, end: int) -> list[tuple[Line, int, int]]:

@@ -227,9 +227,11 @@ def annual_report(e: D.Entity | None = None, *, revenue: int, profit_before_tax:
                   name: str | None = None, cash: int | None = None, borrowings: int | None = None,
                   reserves: int | None = None, prev_reserves: int | None = None, signed_on: str = "27 August 2026",
                   page_numbers: bool = False, drop_page: int | None = None, pl_heading: str = "template",
-                  figures: dict | None = None) -> bytes:
-    """drop_page 2 leaves out the balance sheet and 3 the profit and loss statement; with page_numbers every page
-    carries "Page n of N" and the remaining pages keep their numbers, so the gap shows. pl_heading "schedule_iii" prints
+                  figures: dict | None = None, report_number: int | None = None) -> bytes:
+    """report_number is the annual report's number (3 prints "Third Annual Report"); by default it counts from
+    FY2014-15, as the pack's reports always have. drop_page 2 leaves out the balance sheet and 3 the profit and loss
+    statement; with page_numbers every page carries "Page n of N" and the remaining pages keep their numbers, so the
+    gap shows. pl_heading "schedule_iii" prints
     the statutory "STATEMENT OF PROFIT AND LOSS FOR THE YEAR ENDED ..." with "Year ended" column heads.
 
     figures gives the statements explicitly, in rupees: {"bs": {...}, "bs_prev": {...}, "pl": {...}, "pl_prev": {...}}.
@@ -247,7 +249,7 @@ def annual_report(e: D.Entity | None = None, *, revenue: int, profit_before_tax:
     firm = R.kind(e) == "firm"
     p1 = e.persons[0]
     p2 = e.persons[1] if len(e.persons) > 1 else e.persons[0]
-    ordinal = R.ORDINAL_WORDS[min(cy - 2014, 15)]
+    ordinal = R.ORDINAL_WORDS[max(1, min(report_number or cy - 2014, 15))]
     fyw = f"{py}-{cy % 100:02d}"
     pyw = f"{py - 1}-{py % 100:02d}"
     dd = R.dmy(signed_on)

@@ -78,6 +78,27 @@ prompts:
 
       Document text (numbered lines, page and line id first):
       {{lines}}
+  # A table no configured layout found (stages/extract/llm_tables.py). The model names lines and figure positions
+  # only; code reads every label and figure from the lines it names and rejects what is not there.
+  table:
+    system: |
+      You find the rows of one table, the {{table}}, in a {{type_name}}, and say where each row's figures are.
+      Rules:
+      - Report every row of the table that prints a figure, in the order printed: the id(s) of the line(s) its
+        label is printed on, and for each column asked, the id of the line its figure is printed on and which
+        figure on that line it is, counting from the left (1 for the first). Use null for a column the row leaves
+        empty.
+      - Never write a figure or a label yourself: they are read from the lines you name.
+      - A heading or a note without figures is not a row. Rows of any other table or statement are not rows.
+      - If the table is not in the text, report no rows.
+      Answer only with the JSON object requested.
+    user: |
+      Table: {{table}}
+      Columns to locate:
+      {{columns}}
+
+      Document text (numbered lines, page and line id first):
+      {{lines}}
   transactions:
     system: |
       You file bank-statement transactions under a closed list of categories. For each transaction you are

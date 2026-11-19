@@ -63,7 +63,8 @@ def _address(office: str, district: dict) -> list[tuple[str, str]]:
     return [(k, got[k]) for k in LABELS if got.get(k)]
 
 
-def gst_registration_certificate(e: D.Entity = D.BASE) -> bytes:
+def gst_registration_certificate(e: D.Entity = D.BASE, *, officer: str = "SANJAY PATIL",
+                                 office: str = "PANVEL") -> bytes:
     """Form GST REG-06, three pages: the certificate with its particulars and approving authority, Annexure A and
     Annexure B. The validity runs from the later of incorporation and 1 July 2017; the certificate is an amended one,
     issued later. Date of Liability is left blank, as the portal prints it."""
@@ -138,8 +139,8 @@ def gst_registration_certificate(e: D.Entity = D.BASE) -> bytes:
     s.put(64.99, 570.07, "Particulars of Approving", HB, 10)    # the cell is one line high; "Authority" is cut off
     s.put(212.86, 570.07, f"{e.state} Goods and Services Tax Act, 2017", HV, 10)
     s.put(38.0, 590.07, "Signature", HB, 10)
-    for top, label, value in ((655.07, "Name", "SANJAY PATIL"), (675.07, "Designation", "Deputy State Tax Officer"),
-                              (695.07, "Jurisdictional Office", "PANVEL"),
+    for top, label, value in ((655.07, "Name", officer), (675.07, "Designation", "Deputy State Tax Officer"),
+                              (695.07, "Jurisdictional Office", office),
                               (715.07, "Date of issue of Certificate", issue)):
         s.put(38.0, top, label, HB, 10)
         s.put(212.33, top, value, HV, 10)

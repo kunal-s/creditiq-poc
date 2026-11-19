@@ -1346,9 +1346,13 @@ def audited_statements(e: D.Entity = BASE, *, revenue: int, profit_before_tax: i
 # --- documents with no type in the app yet --------------------------------------------------------------------------
 
 def udyam_certificate(e: D.Entity = BASE, *, owner: str | None = None, enterprise_type: str = "Small",
-                      urn: str = "UDYAM-MH-33-0012345") -> bytes:
+                      urn: str = "UDYAM-MH-33-0012345", activity: str = "MANUFACTURING", unit: str = "1. MAIN WORKS, TALOJA",
+                      registered: str = "14/08/2020", dic: str = "RAIGAD (MAHARASHTRA)", dfo: str = "MUMBAI",
+                      nic: tuple[str, str, str] = ("25 - Fabricated metal products", "2511 - Structural metal products",
+                                                   "Manufacturing")) -> bytes:
     """A Udyam registration certificate's particulars (Ministry of MSME): URN, enterprise name and type by year, major
-    activity, social category, address, dates, NIC codes. No emblem and no QR code."""
+    activity, social category, address, dates, NIC codes. No emblem and no QR code. The defaults are the pack's
+    manufacturer; another enterprise passes its own activity, unit, district and NIC code."""
     d = Doc()
     d.write("Government of India", font="Helvetica-Bold", size=10, align="c", lead=12)
     d.write("Ministry of Micro, Small and Medium Enterprises", size=9.5, align="c", lead=16)
@@ -1358,16 +1362,16 @@ def udyam_certificate(e: D.Entity = BASE, *, owner: str | None = None, enterpris
     d.table([("S.No.", L, 90, "l"), ("Classification Year", 90, 230, "l"), ("Enterprise Type", 230, 370, "l"), ("Classification Date", 370, R, "l")],
             [["1", "2026-27", enterprise_type, "01/04/2026"], ["2", "2025-26", enterprise_type, "01/04/2025"]], size=8.6, row_h=13)
     d.down(6)
-    d.kv([("MAJOR ACTIVITY", "MANUFACTURING"), ("SOCIAL CATEGORY OF ENTREPRENEUR", "GENERAL"),
-          ("NAME OF ENTREPRENEUR", (owner or e.persons[0].name).upper()), ("NAME OF UNIT(S)", "1. MAIN WORKS, TALOJA"),
+    d.kv([("MAJOR ACTIVITY", activity), ("SOCIAL CATEGORY OF ENTREPRENEUR", "GENERAL"),
+          ("NAME OF ENTREPRENEUR", (owner or e.persons[0].name).upper()), ("NAME OF UNIT(S)", unit),
           ("OFFICIAL ADDRESS OF ENTERPRISE", halves(e.office)[0]), ("", halves(e.office)[1]),
           ("DATE OF INCORPORATION / REGISTRATION", dmy(e.incorporated)),
-          ("DATE OF COMMENCEMENT OF PRODUCTION/BUSINESS", dmy(e.incorporated)), ("DATE OF UDYAM REGISTRATION", "14/08/2020"),
-          ("DISTRICT INDUSTRIES CENTRE", "RAIGAD (MAHARASHTRA)"), ("MSME-DFO", "MUMBAI")], x2=310, size=8.8, lead=13)
+          ("DATE OF COMMENCEMENT OF PRODUCTION/BUSINESS", dmy(e.incorporated)), ("DATE OF UDYAM REGISTRATION", registered),
+          ("DISTRICT INDUSTRIES CENTRE", dic), ("MSME-DFO", dfo)], x2=310, size=8.8, lead=13)
     d.down(4)
     d.write("NATIONAL INDUSTRY CLASSIFICATION CODE(S)", font="Helvetica-Bold", size=9, lead=12)
     d.table([("S.No.", L, 85, "l"), ("NIC 2 Digit", 85, 220, "l"), ("NIC 4 Digit", 220, 360, "l"), ("Activity", 360, R, "l")],
-            [["1", "25 - Fabricated metal products", "2511 - Structural metal products", "Manufacturing"]], size=8.2, row_h=13)
+            [["1", *nic]], size=8.2, row_h=13)
     d.down(8)
     d.para("Disclaimer: This is a system-generated certificate based on the information provided by the entrepreneur; the "
            "registration can be verified on the Udyam Registration portal.", size=8, lead=11)

@@ -231,3 +231,50 @@ class OutboxMessage(BaseModel):
     status: Literal["recorded"]
     created_at: str
     created_by: str
+
+
+class RecalculationTrigger(BaseModel):
+    """The approved change to an extracted value that set a recalculation off."""
+
+    field_value_id: str
+    field: str
+    label: str
+    """The value as a reader names it: "Inventories, current year" for a statement cell."""
+    document_id: str
+    document: str
+    """The document's type, as the Extractions tab heads it."""
+    file_name: str | None = None
+    from_value: str | None = None
+    """What was in force before, as written."""
+    to_value: str | None = None
+    reason: str | None = None
+    changed_by: str | None = None
+    """The person who made the change (the maker)."""
+
+
+class RecalculationChange(BaseModel):
+    """One thing worked from the case's figures that read differently after the change."""
+
+    area: Literal["figure", "norm", "check", "readiness", "authority"]
+    key: str
+    label: str
+    kind: Literal["amount", "outcome", "percent", "text"]
+    """How before and after are written: an amount in rupees, an outcome code (a policy norm's or a
+    cross-check's), a percentage, or words."""
+    before: float | str | None = None
+    after: float | str | None = None
+    detail_before: str | None = None
+    """For a norm, its figure as written ("1.42x"); otherwise absent."""
+    detail_after: str | None = None
+
+
+class Recalculation(BaseModel):
+    """A recalculation of the case after an approved change on the Extractions tab: what was changed, by whom,
+    and every figure, norm, cross-check, readiness and authority that moved as a result. Kept in the decision log."""
+
+    id: str
+    case_id: str
+    at: str
+    approved_by: str
+    trigger: RecalculationTrigger
+    changes: list[RecalculationChange] = Field(default_factory=list)

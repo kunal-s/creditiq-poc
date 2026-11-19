@@ -273,6 +273,23 @@ class PageScope(Strict):
     span: int = 1
 
 
+class ModelTable(Strict):
+    """A table the model may map when no configured layout finds it (FRD F-15.2, F-15.3). The model is shown the
+    candidate pages and names, for each row, the line its label is on and which figure on which line belongs to
+    each column; it never writes a figure. Code reads every figure from the line named and rejects what is not
+    there (F-15.4)."""
+
+    pages: list[str]
+    """A page is a candidate when one of its opening lines matches one of these (the statement's title)."""
+    head_lines: int = 8
+    span: int = 1
+    """Pages read from each candidate page on, so a table that runs over the page is read whole."""
+    max_pages: int = 4
+    label_column: str = "particulars"
+    hints: dict[str, str] = Field(default_factory=dict)
+    """What each column holds, in words, for the model (column name -> hint)."""
+
+
 class TypeFields(Strict):
     extraction: Literal["rules", "model"] = "rules"
     """`model`: the model reads every field that has no identifier rule (and is not `llm: false`) from the
@@ -281,6 +298,8 @@ class TypeFields(Strict):
     fields: dict[str, FieldRule] = Field(default_factory=dict)
     identity: dict[str, str] = Field(default_factory=dict)  # identity key (name, pan, din, dob, gstin, cin) -> schema field
     tables: dict[str, TableRule | list[TableRule]] = Field(default_factory=dict)   # a list is layout variants, tried in order
+    model_tables: dict[str, ModelTable] = Field(default_factory=dict)
+    """Tables the model maps when every layout above fails to find them (and a model is configured)."""
 
 
 class FieldsConfig(Strict):
@@ -710,6 +729,19 @@ class IngestionConfig(Strict):
                     for rx in [tr.start, tr.end, tr.row_start, tr.page_match, *tr.skip_rows, *tr.drop_lines, *[c.header for c in tr.columns]]:
                         if rx:
                             _compile(rx, f"fields.{tid}.tables.{tname}", problems)
+            for tname, mt in tf.model_tables.items():
+                if tname not in tnames:
+                    problems.append(f"fields.{tid}.model_tables.{tname}: not in the type's schema")
+                    continue
+                cols = {c.name for c in tnames[tname].columns}
+                if mt.label_column not in cols:
+                    problems.append(f"fields.{tid}.model_tables.{tname}.label_column: unknown column {mt.label_column}")
+                if set(mt.hints) - cols:
+                    problems.append(f"fields.{tid}.model_tables.{tname}.hints: unknown columns {sorted(set(mt.hints) - cols)}")
+                for rx in mt.pages:
+                    _compile(rx, f"fields.{tid}.model_tables.{tname}.pages", problems)
+                if "table" not in self.llm.prompts:
+                    problems.append("llm.prompts: missing 'table' (model_tables needs it)")
         for r in self.validators.rules:
             for t in r.types:
                 if t not in types:

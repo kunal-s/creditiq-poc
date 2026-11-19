@@ -75,6 +75,8 @@ class Flat:
     missing_reason: str | None = None
     check_note: str | None = None
     """Why a value is held for review when a validation check on it failed (not only a low confidence)."""
+    line: str | None = None
+    """The printed line the value was read from."""
 
 
 @dataclass
@@ -152,8 +154,11 @@ def _flatten(doc: IngestDocument, dims: dict[int, tuple[float, float]]) -> list[
         method = METHOD[f.method] if f.method else "deterministic"
         note = failed.get(name)
 
+        line = f.source.line if f.source else None
+
         def add(fname: str, value: object, raw: str | None) -> None:
-            out.append(Flat(fname, value, raw, page, bbox, method, f.confidence, dict(f.components), status, None, note))
+            out.append(Flat(fname, value, raw, page, bbox, method, f.confidence, dict(f.components), status, None, note,
+                            line))
 
         if isinstance(f.value, list):
             for i, el in enumerate(f.value):
@@ -175,9 +180,13 @@ def _flatten(doc: IngestDocument, dims: dict[int, tuple[float, float]]) -> list[
         for i, row in enumerate(t.rows):
             page = row.source.get("page")
             bbox = _norm_bbox(row.source.get("bbox"), dims.get(page))
+            line = row.source.get("line")
+            # A table the model mapped (no layout found it) keeps that: its figures were still read from the page.
+            method = "model" if t.method == "model" else "deterministic"
             for col, v in row.cells.items():
                 if v is not None:
-                    out.append(Flat(f"{tname}[{i}].{col}", v, row.raw.get(col), page, bbox, "deterministic", t.confidence, {}, "accepted"))
+                    out.append(Flat(f"{tname}[{i}].{col}", v, row.raw.get(col), page, bbox, method, t.confidence, {},
+                                    "accepted", line=line))
     return out
 
 
@@ -249,7 +258,8 @@ def _store_fields(conn: sqlite3.Connection, ctx: Context, case_id: str, doc_id: 
     label = ", ".join(ctx.type_name(t) for t in types)
     for f in unit.fields:
         fv_id = stable_id("FV", doc_id, f.field)
-        evidence = {"document_id": doc_id, "page": f.page, "bbox": f.bbox} if f.page and f.status != "missing" else None
+        evidence = ({"document_id": doc_id, "page": f.page, "bbox": f.bbox, **({"line": f.line} if f.line else {})}
+                    if f.page and f.status != "missing" else None)
         conn.execute(
             """INSERT INTO field_values (id, case_id, document_id, field, value, raw, evidence, method, confidence,
                    confidence_components, status, missing_reason)

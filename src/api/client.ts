@@ -10,8 +10,6 @@ import type {
   CamRegenerateRequest,
   CamRegenerateResult,
   CamWordsRequest,
-  CellEdit,
-  StatementEditRequest,
   ApprovalMatrixConfig,
   ApprovingAuthority,
   Cam,
@@ -35,6 +33,7 @@ import type {
   PolicyConfig,
   DocumentTypes,
   FieldValue,
+  Recalculation,
   FileRecord,
   Finding,
   LoginResponse,
@@ -266,6 +265,9 @@ export const api = {
     request<FieldValue[]>(
       `/api/cases/${q(id)}/fields${documentId ? `?document_id=${q(documentId)}` : ""}`,
     ),
+  /** What each approved change on the Extractions tab moved when the case was recalculated, the latest first. */
+  caseRecalculations: (id: string) =>
+    request<Recalculation[]>(`/api/cases/${q(id)}/recalculations`),
   caseChecklist: (id: string) => request<Readiness>(`/api/cases/${q(id)}/checklist`),
   caseQueries: (id: string) => request<QueryItem[]>(`/api/cases/${q(id)}/queries`),
   caseFindings: (id: string) => request<Finding[]>(`/api/cases/${q(id)}/findings`),
@@ -295,18 +297,6 @@ export const api = {
       body: JSON.stringify(body),
     }),
   caseSpread: (id: string) => request<Spread>(`/api/cases/${q(id)}/spread`),
-  /** Set a statement line to a person's figure, in the unit the statement prints (F-22.3). */
-  editStatementLine: (id: string, body: StatementEditRequest) =>
-    request<CellEdit>(`/api/cases/${q(id)}/statement-edits`, {
-      method: "POST",
-      body: JSON.stringify(body),
-    }),
-  /** Put the statement's own figure back; the edit stays in the history. */
-  revertStatementEdit: (id: string, edit: string, reason: string) =>
-    request<void>(`/api/cases/${q(id)}/statement-edits/${q(edit)}/revert`, {
-      method: "POST",
-      body: JSON.stringify({ reason }),
-    }),
   /** The case's statement transactions, each filed under a category (the Banking view). */
   caseTransactions: (id: string, filter: Record<string, string | number | boolean | undefined>) => {
     const params = new URLSearchParams();

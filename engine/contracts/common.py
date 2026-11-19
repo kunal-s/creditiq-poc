@@ -23,3 +23,5 @@ class Evidence(BaseModel):
     document_id: str
     page: int = Field(ge=1)
     bbox: tuple[float, float, float, float] | None = None
+    line: str | None = None
+    """The printed line the value was read from ("Inventories 12,631.51 10,593.90"), when known."""

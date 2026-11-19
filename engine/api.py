@@ -52,6 +52,7 @@ from . import (
     proposal,
     queries,
     reads,
+    recalculation,
     reference,
     rejections,
     review,
@@ -119,6 +120,7 @@ from .contracts import (
     ReviewDecisionRequest,
     UploadResult,
     FieldValue,
+    Recalculation,
     FileRecord,
     IntegrityReviewRequest,
     Finding,
@@ -443,6 +445,16 @@ def case_fields(
 ):
     _case_for(conn, case_id, user)
     return reads.field_values(conn, case_id, document_id)
+
+
+@app.get("/api/cases/{case_id}/recalculations", response_model=list[Recalculation])
+def case_recalculations(
+    case_id: str, user: dict = Depends(require("data.read")), conn: sqlite3.Connection = Depends(get_conn)
+):
+    """Each recalculation an approved change on the Extractions tab set off, the latest first: the change,
+    who made and approved it, and every figure, norm, cross-check, readiness and authority it moved."""
+    _case_for(conn, case_id, user)
+    return recalculation.history(conn, case_id)
 
 
 # --- Completeness (F-12 to F-14) ---

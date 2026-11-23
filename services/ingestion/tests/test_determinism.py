@@ -38,7 +38,7 @@ def test_rerunning_the_same_inputs_replaces_the_run_with_the_same_answer(cfg):
     a = run(cfg, "Southgate_Entity_PAN.pdf", store)
     b = run(cfg, "Southgate_Entity_PAN.pdf", store)
     assert a.run_id == b.run_id and a.model_dump_json() == b.model_dump_json()
-    assert store._q("SELECT count(*) FROM runs")[0][0] == 1 and store._q("SELECT count(*) FROM stage_results")[0][0] == 8
+    assert store._q("SELECT count(*) FROM runs")[0][0] == 1 and store._q("SELECT count(*) FROM stage_results")[0][0] == 12
 
 
 def test_run_id_depends_on_case_bytes_and_configuration(cfg):
@@ -52,7 +52,8 @@ def test_run_id_depends_on_case_bytes_and_configuration(cfg):
 def test_the_stage_trace_chains_hashes(cfg):
     r = run(cfg, "Southgate_Certificate_of_Incorporation.pdf")
     t = r.trace
-    assert [x.stage for x in t] == ["quality_gate", "read", "route", "classify", "instances", "extract", "validate", "score"]
+    assert [x.stage for x in t] == ["quality_gate", "integrity_file", "read", "route", "classify", "integrity_page", "siblings",
+                                   "instances", "extract", "validate", "integrity_arithmetic", "score"]
     assert t[0].input_hash == r.sha256
     assert all(a.output_hash == b.input_hash for a, b in zip(t, t[1:]))
 

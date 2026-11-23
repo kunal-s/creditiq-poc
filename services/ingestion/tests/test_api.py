@@ -113,4 +113,4 @@ def test_stream_emits_stage_events_then_the_result(tmp_path, dev_config):
     form, files = body()
     r = client(tmp_path, dev_config).post("/v1/ingest/stream", data=form, files=files)
     events = [l.split(": ", 1)[1] for l in r.text.splitlines() if l.startswith("event:")]
-    assert events[0] == "stage" and events[-1] == "result" and events.count("stage") == 8
+    assert events[0] == "stage" and events[-1] == "result" and events.count("stage") == 12

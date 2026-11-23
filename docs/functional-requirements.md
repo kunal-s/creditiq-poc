@@ -149,7 +149,7 @@ flowchart LR
   subgraph S0["Case and intake"]
     A["RM pastes sourcing email<br/>or notes (F-04)"] --> B{"RM confirms<br/>proposed case?"}
     B -- no --> A
-    B -- yes --> C["Case created<br/>checklist derived (F-12)"]
+    B -- yes --> C["Application created<br/>checklist derived (F-12)"]
     C --> D["Upload files / ZIP (F-05)"]
   end
   subgraph S1["1. Quality and classification"]
@@ -170,6 +170,10 @@ flowchart LR
   end
   subgraph S3["3. Validation and completeness"]
     V["Document validation<br/>and checklist status (F-13)"] --> K["Pre-login query list (F-14)"]
+    V --> CC{"Documents and required<br/>fields check passed? (F-13.6)"}
+    CC -- yes --> CS["Case created (F-04.10)"]
+    CC -- no --> K
+    CC -- "no, created anyway<br/>with a recorded reason" --> CS
   end
   subgraph S4["4. Cross-verification"]
     V --> N["Align facts (F-18)"]
@@ -300,8 +304,8 @@ The case's stage is the first of the §5 stages not yet done. The stage progress
 
 | Stage | Entered when |
 |---|---|
-| Intake | The case is created |
-| Documents | A document is uploaded |
+| Application | The RM confirms the proposed application (F-04.7) |
+| Documents | A document is uploaded; the application becomes a case when its document and required-field check passes, or a person creates it with a recorded reason (F-04.10) |
 | Extraction | Every submitted document is classified (or assigned a type by a person) |
 | Completeness | Every classified document is extracted and its key fields accepted |
 | Cross-verification | The checklist's first gate is met, or credit proceeds anyway (recorded) |
@@ -536,17 +540,18 @@ sequenceDiagram
 - **F-04.4** Identifiers that fail their checksum or format are flagged as invalid and never corrected.
 - **F-04.5** Duplicate check: if an existing case matches on PAN, GSTIN or normalised name, the RM is offered **Open it** or **Create anyway**. Create anyway requires a reason.
 - **F-04.6** The minimum fields to create a case come from configuration. The default is borrower name, product and amount.
-- **F-04.7** **No case exists until the RM confirms.** Discarding leaves nothing behind.
-- **F-04.8** On creation:
+- **F-04.7** **No application exists until the RM confirms.** Discarding leaves nothing behind. Confirming creates the **application**: it holds the message, the confirmed header and the uploads (F-05), and its documents are read (F-07 to F-15) as soon as they arrive.
+- **F-04.8** On confirmation:
   - the checklist is derived (F-12);
   - the message becomes the case's first document;
   - declared figures (turnover, loan ask, existing facilities) are stored as the source "RM declaration, unverified" for F-19;
   - edits keep both the proposed and the confirmed value.
 - **F-04.9** Extraction here is rule-based first. A model may be used for names and free text, under principle 6.
+- **F-04.10** **The application becomes a case only when its document check and required-field check pass** (F-13.6). Until then it is listed as an application, with the checks still running or the items they found. A person may create the case anyway, with a recorded reason; who did so, when and why are kept in the decision log, and the open items stay on the query list.
 
 **Acceptance (TC-01)**
 - For each case's sourcing email or notes, every extracted field is either correct or highlighted as unclear.
-- No case is created without confirmation.
+- No application is created without confirmation, and no case is created before its document and required-field check passes, unless a person creates it with a recorded reason.
 
 ### F-05. Document upload: single, multiple and ZIP
 
@@ -688,7 +693,8 @@ F-07 to F-09, F-11 and F-15 are implemented in the document-processing service (
 
 **Requirements**
 
-- **F-08.1** Boundaries are detected from page content: headers, a change of document type, page numbering restarting, and a change of issuer or party. The model is used only where boundaries are uncertain.
+- **F-08.1** Documents are formed from the page types of F-09: consecutive pages of one type form a document, and a new one starts where the type changes or where the document's period, account or person changes. Each document's period is read as a date range from its title lines, then its header and footer, then the year columns of its tables; the model is asked only when none of these gives one, and its answer is checked on the page. A period is never taken from another document, the file name or the upload date. Pages with no period stay with the document before them.
+- **F-08.1a** A document whose title and table columns disagree on its period is flagged for review. A document with no period anywhere is kept as "period not found" for a person to set; checks that need a year skip it and say why.
 - **F-08.2** Each logical document keeps its source file and page range, and is classified separately.
 - **F-08.3** Repeating instances are separate documents with an instance key: twelve GSTR-3Bs, two ITR years, two directors' KYC, one statement per account.
 - **F-08.4** Several images that are pages of one document are grouped. If the grouping is uncertain, it is flagged for review.
@@ -708,35 +714,29 @@ F-07 to F-09, F-11 and F-15 are implemented in the document-processing service (
 
 ```mermaid
 flowchart TD
-  D["Logical document"] --> T1["Tier 1: signals from config<br/>identifier patterns, header phrases,<br/>table structure, characteristic clauses"]
-  T1 --> C1{"Required signals present,<br/>no contrary signal,<br/>margin over runner-up met?"}
-  C1 -- yes --> OK["Type or types assigned<br/>exit tier 1"]
-  C1 -- no --> T2["Tier 2: layout features"]
-  T2 --> C2{"Confident?"}
-  C2 -- yes --> OK2["Assigned, exit tier 2"]
-  C2 -- no --> T3["Tier 3: model reads the page images,<br/>chooses from the closed list or none_of_these"]
-  T3 --> C3{"Above threshold<br/>and not none_of_these?"}
-  C3 -- yes --> OK3["Assigned, exit tier 3"]
-  C3 -- no --> RQ["Unclassified: review queue<br/>with top 3 candidates"]
-  RQ --> P["Person assigns a type (recorded overlay)"]
-  OK --> M["Map type to checklist item(s)"]
-  OK2 --> M
-  OK3 --> M
-  P --> M
+  P["File, read into pages:<br/>header, body, footer and table regions"] --> C["Categories: keywords over the first N pages,<br/>then the next N; keep every category that clears its threshold<br/>(Identity, Financials, Banking)"]
+  C --> T["Per page: keyword score by zone,<br/>within the chosen categories' types"]
+  T -- no type --> A["Same page against every type;<br/>its category is added"]
+  T --> G["Fill from neighbours, up to the configured gap;<br/>a table continuing from the previous page takes its type"]
+  A --> G
+  G --> M["Model, one call per page still unplaced,<br/>with its tables and the closed list"]
+  M --> X["Each table on a page typed on its own;<br/>the page takes every type its tables carry"]
+  X --> OK["Classified: page → one or more types"]
+  X --> U["Unclassified pages, kept with<br/>their three best guesses (F-09.5, F-15.11)"]
 ```
 
 **Requirements**
 
-- **F-09.1** Classification chooses only from the closed list in `config/document_types.yaml`, or `none_of_these`. **The file name is never an input** (it is used only by F-10).
-- **F-09.2** One document may have several types when it satisfies several requirements. An example is a combined ITR acknowledgement and computation.
-- **F-09.3** An exit at tier 1 needs three things: the type's required signals, no contrary signal, and a configured margin over the second candidate. This guards against false positives such as a bank narration reading "GST PAYMENT" or a covering letter that lists every document.
-- **F-09.4** Every classification records:
-  - the signals found;
-  - the exit tier;
+- **F-09.1** Classification chooses only from the closed list in the published document types, or `none_of_these`. **The file name is never an input** (it is used only by F-10). Every type belongs to exactly one category: Identity, Financials or Banking. A type can be switched off in configuration; a switched-off type is never offered to the classifier.
+- **F-09.2** Classification is per page, not per file. A page may carry several types (the end of the balance sheet and the start of the profit and loss), and one document may have several types when it satisfies several requirements (a combined ITR acknowledgement and computation). A page whose title matches many types is treated as an index or cover page, not as each type.
+- **F-09.3** A page is placed by the keyword lists of its type (title words, content words and warning words for look-alikes, each with a weight), matched by zone and with fuzzy matching for longer phrases; short words such as PAN or GST match exactly. A warning word in the title rules a type out; one in the body only lowers its score. A page is placed when its best type clears the threshold by the configured margin over the next. This guards against false positives such as a bank narration reading "GST PAYMENT" or a covering letter that lists every document.
+- **F-09.4** Every page's classification records:
+  - the keywords found, by zone;
+  - how it was placed: keywords, the all-types fallback, neighbour fill, continued table, or the model;
   - the confidence;
   - the top three candidates.
 
-  These are shown on the document's detail panel.
+  These are shown on the document's detail panel. A model answer is recorded and replayed, and a warning word on the page overrides the model's choice.
 - **F-09.5** Unclassified documents go to the review queue with their top three candidates, and **are never assigned to a checklist item** until a person assigns a type. The assignment is a recorded overlay, and extraction then proceeds.
 - **F-09.6** Mapping a type to checklist items is a separate, case-aware step. Which items a type satisfies can depend on constitution and product.
 - **F-09.7** An unclassified document's row on the Documents tab offers, beside its top three candidates, a dropdown of every type in the published list and every type already made for the appraisal (F-09.8). Choosing one is the same recorded assignment as F-09.5.
@@ -889,6 +889,7 @@ flowchart LR
 - **F-13.3** Document defects make the item insufficient. **They do not lower extraction confidence:** a correct reading of a defective document is still a correct reading.
 - **F-13.4** Readiness is the weighted proportion satisfied, using section and item weights. It is compared with the configured gates. A missing or insufficient blocking item prevents the first gate, whatever the proportion.
 - **F-13.5** When every item is satisfied, the case is marked **ready for credit**.
+- **F-13.6** **Document and required-field check.** Before an application becomes a case (F-04.10), two checks run on its documents: the **document check** (every mandatory checklist item has a classified document, F-13.1) and the **required-field check** (every field marked required in the global field list, F-15.10, has a value; the list says which fields, including inputs of derived figures, are required). Each gap is listed by name, with the derived figures it stops (for example "EBITDA cannot be calculated: finance cost missing"), and goes onto the query list (F-14). A late document re-runs both checks.
 
 **Acceptance**
 - **TC-11:** a complete file shows all items satisfied and is marked ready for credit, as confirmed by the reviewer.
@@ -960,7 +961,7 @@ flowchart LR
   - known positions.
 - **F-15.3** Tables:
   - **Bank statements:** rows and columns are reconstructed from word positions. The running balance is the check: single-cell errors are repaired arithmetically before any model call, and every repair is recorded.
-  - **Financial statements:** the model maps row labels and columns to the dictionary, and never emits numbers itself. Numbers come from the page.
+  - **Financial statements:** rows and columns are read by keywords (F-15.13) and mapped to lines by wording and section (F-15.14). Where the model reads a table, it returns line references, never numbers of its own; numbers come from the page.
 - **F-15.4** Every value is checked against the page's word index. **A value that cannot be found on its page is rejected** and shown as missing.
 - **F-15.5** Identifiers are attributed to the right party: the borrower's GSTIN, not a customer's GSTIN printed on the same invoice.
 - **F-15.6** Key fields are the section 5.3 list, to be finalised with RBL:
@@ -982,6 +983,12 @@ flowchart LR
 
   Every value must be found on its page (F-15.4), and the model call is recorded and replayed like any other. The values are shown under the document in Extracted data.
 - **F-15.9** Such a document is also read for the **gap fields**: a published list of the fields the cross-checks read from any document, whatever its type (`config/ingestion/fields.yaml` `gap_fields`; at first PAN, GSTIN, CIN and legal name). The request is the same for every document (field names and definitions, never another document's value, principle of F-15.1), so it stays context-free. Identifiers are read by their pattern first, the rest by the model. A gap field the person also named is read once, as named; a gap value the model also proposed under the document's own label is reported once, as the gap field, with that label. Extracted data marks a value that fills a field the case has from no other document ("Fills a gap").
+- **F-15.10** **Global fields.** Configuration holds one list of the fields the case needs, whatever document they come from: raw fields, each with a hint, and derived fields, each with its inputs; a field both printed and calculated (such as profit after tax) is marked. After every document is read, the fields still empty form the pending list.
+- **F-15.11** **Leftovers.** The pending fields are asked of the model from the case's leftovers only: unclassified pages, short and unclaimed tables, and unclaimed rows. Files are taken in upload order and pages in page order, so a rerun gives the same result. A pending field still empty afterwards is looked for in the pages of other document types that score highest for it; such a value carries its source document and page, never overwrites a value from the field's own document, and always goes to review.
+- **F-15.12** **Additional information.** Leftover rows that fill no field are kept as key and value pairs, and leftover tables with a one-line description, each with its page. They are not shown on screen; the case summary and the assistant read them.
+- **F-15.13** **Tables.** A table's header is the line where most of its column headings match, fuzzily; each column is anchored by its list of headings (bank statements by role: transaction date, value date, narration, reference, debit, credit, signed amount with a Dr/Cr marker, balance; GST returns by taxable value, IGST, CGST, SGST and cess). The unit is read from the caption or the page; an unknown unit is a review item, never rupees by default. When no header is found, an on-premises table-structure model reads the region, then the model with the page's lines and the table's column roles; every cell is checked against the page's words, and a table read this way counts only when its totals tie out.
+- **F-15.14** **Statement lines.** Each printed row maps to a canonical line by its wording, its section and its place relative to the subtotals; the first match no longer wins. The mapped lines must add up to the printed section totals and grand totals within the rounding allowance, and a difference names the rows and becomes a review item.
+- **F-15.15** **Evidence check for model values** (F-15.4): numbers match their line by digits and sign, dates by their parsed value, text by a fuzzy ratio above a configured threshold. The value kept is always the text as printed.
 
 **Acceptance**
 - **TC-17:** identifiers, names, dates and the promoter set are extracted with evidence.
@@ -1538,6 +1545,7 @@ flowchart TD
 | 12 | CAM templates | F-23 | **Decided 21 Oct 2026:** the eight sections of decision 11 are the default template (`config/cam.yaml`). Analysts may make further templates from the draft screen: a name, a description and its sections in order, each drafted from the same parts of the file (each part in one section at most) or left blank for the analyst to write; the risk assessment and the recommendation always close the memo. Each appraisal follows the default until a template is chosen for it; the choice is saved with the case and the screen, the Word and PDF downloads and the PD note's section numbers follow it; edits stay with their sections across a switch. **An exception to rule 4, recorded here:** templates are made at runtime and kept bank-wide in the case store (`cam_templates`), not published as configuration, because a template only arranges what the engine drafts and changes no rule, figure or outcome. A template is never edited in place (a change is a new template), and every template made and every choice of one is kept with who and when, in the decision log |
 
 | 13 | Unclassified documents a person cannot place in the published list | F-09, F-15, F-17, F-19 | **Decided 17 Nov 2026:** a person may assign any published type from the Documents row, or add a case document type (F-09.8 to F-09.10) whose fields are read by the model, named or discovered (F-15.8), and which is also read for the published gap fields (F-15.9). Discovered and gap-field values wait for a person's confirmation (F-17.7) before any check, norm or output uses them. **An exception to rule 4, recorded here:** a case document type is made at runtime and kept with the case, not published as configuration, because it applies to one case, is never used by the classifier, and changes a checklist outcome only through a recorded decision (maker-checker for a mandatory item). It becomes configuration only when the Administrator publishes it (F-09.10) |
+| 14 | Classification and extraction restructure | F-08, F-09, F-13, F-15, F-04 | **Decided 23 Nov 2026:** classification moves from the file to the page: categories first (Identity, Financials and Banking; GST returns under Financials), then page types by keyword score, neighbour fill and the model for pages still unplaced, then each table on a page (F-09). Extraction adds the global field list, the leftover sweep, additional information, table fallbacks, and line mapping by section with a tie-out (F-15.10 to F-15.15). Nine further types (provisional and projected statements, CMA data, stock statement, GSTR-9, Form 26AS, ITR acknowledgement, partnership deed, Udyam registration) are added, each switched on or off in configuration. Similarity search is not used. Confirming the message creates an application; it becomes a case once its document and required-field check passes, or when a person creates it anyway with a recorded reason (F-04.10) |
 
 ## C.5 The base this build starts from
 

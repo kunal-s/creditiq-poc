@@ -47,7 +47,7 @@ def test_stages_are_recorded_in_order_with_timings_outside_the_result(cfg):
     store = Store()
     r = Ingestor(cfg, store, None, None).process_file("CASE", spec(N, fixture_doc(N)), fixture_doc(N))
     st = store.get_stages(r.run_id)
-    assert [s["stage"] for s in st][:3] == ["quality_gate", "read", "route"] and all(isinstance(s["ms"], int) for s in st)
+    assert [s["stage"] for s in st][:3] == ["quality_gate", "integrity_file", "read"] and all(isinstance(s["ms"], int) for s in st)
 
 
 def test_the_database_persists_across_connections(cfg, tmp_path):

@@ -142,7 +142,7 @@ types:
       # The unit the statements print their amounts in, read from the face ("All Amounts are in INR Thousands", "(Rs. in lakhs)",
       # a filed statement's "Level of rounding used in financial statements  Millions"); absent means rupees.
       amount_unit: {llm: false, patterns: ['^\s*Level of rounding used in financial statements\s+(thousands?|lakhs?|lacs?|crores?|millions?)\b', '(?:amounts?|figures|values)?\s*(?:are\s+)?in\s+(?:INR|Rs\.?|₹)?\s*(thousands?|lakhs?|lacs?|crores?|millions?)\b', '(?:INR|Rs\.?|₹)\s*in\s+(thousands?|lakhs?|lacs?|crores?|millions?)\b']}
-    tables:
+    tables: &financial_statement_tables  # provisional statements read the same layouts
       # Each statement lists layout variants, tried in order: the summary layout, then the filed-accounts layout (a Notes column
       # between the label and the amounts; the period dates in the column headings), then the XBRL filing layout.
       #
@@ -546,3 +546,114 @@ types:
           - {name: name, header: '^Name$'}
           - {name: relationship, header: '^Relationship$'}
           - {name: pan, header: '^PAN$'}
+
+  # ---- Types added for the restructure (decision 14). The model reads each field and code checks it on its page.
+  # Their tables (other than the provisional statements, which share the audited layouts) come with Epic 5.
+  provisional_financial_statements:
+    extraction: model
+    identity: {name: company_name}
+    fields:
+      company_name: {llm_hint: 'the full legal name of the company whose statements these are, as printed'}
+      period_from: {llm_hint: 'the first day of the period the statements cover, copied as printed; null if only the end is printed'}
+      period_to: {llm_hint: 'the last day of the period the statements cover ("for the nine months ended 31 December 2025", "as at 31 December 2025"), copied as printed'}
+      statement_basis: {llm_hint: 'the words that say these statements are provisional or unaudited, copied as printed from the title or a heading'}
+      certified_by: {llm_hint: 'the firm or chartered accountant that certifies or prepared the statements, as printed; null if none'}
+      certification_date: {llm_hint: 'the date the statements were certified or signed, copied as printed; null if none'}
+      amount_unit: {llm: false, patterns: ['(?:amounts?|figures|values)?\s*(?:are\s+)?in\s+(?:INR|Rs\.?|₹)?\s*(thousands?|lakhs?|lacs?|crores?|millions?)\b', '(?:INR|Rs\.?|₹)\s*in\s+(thousands?|lakhs?|lacs?|crores?|millions?)\b']}
+    tables: *financial_statement_tables
+
+  projected_financial_statements:
+    extraction: model
+    identity: {name: company_name}
+    fields:
+      company_name: {llm_hint: 'the full legal name of the company the projections are for, as printed'}
+      years_projected: {llm_hint: 'each year the statements project or estimate, one entry per year, as printed in the column headings (for example "FY 2026-27 (Projected)")'}
+      prepared_by: {llm_hint: 'the firm or person that prepared the projections, as printed; null if none'}
+      amount_unit: {llm: false, patterns: ['(?:amounts?|figures|values)?\s*(?:are\s+)?in\s+(?:INR|Rs\.?|₹)?\s*(thousands?|lakhs?|lacs?|crores?|millions?)\b', '(?:INR|Rs\.?|₹)\s*in\s+(thousands?|lakhs?|lacs?|crores?|millions?)\b']}
+
+  cma_data:
+    extraction: model
+    identity: {name: company_name}
+    fields:
+      company_name: {llm_hint: 'the full legal name of the borrower the CMA data is prepared for, as printed'}
+      years: {llm_hint: 'each year column of the CMA data, one entry per year with the year as printed and its basis as printed ("Actual", "Audited", "Estimate", "Projected")'}
+      amount_unit: {llm: false, patterns: ['(?:amounts?|figures|values)?\s*(?:are\s+)?in\s+(?:INR|Rs\.?|₹)?\s*(thousands?|lakhs?|lacs?|crores?|millions?)\b', '(?:INR|Rs\.?|₹)\s*in\s+(thousands?|lakhs?|lacs?|crores?|millions?)\b']}
+
+  stock_statement:
+    extraction: model
+    identity: {name: borrower_name}
+    fields:
+      borrower_name: {llm_hint: 'the name of the borrower submitting the statement, as printed'}
+      as_of_date: {llm_hint: 'the date the stock and book debts are stated as at, copied as printed'}
+      lender: {llm_hint: 'the bank or lender the statement is addressed to, as printed'}
+      account_number: {llm_hint: 'the loan or cash credit account number the statement is for, as printed; null if none'}
+      raw_material: {llm_hint: 'the value of raw material stock, as printed'}
+      work_in_progress: {llm_hint: 'the value of work in progress, as printed'}
+      finished_goods: {llm_hint: 'the value of finished goods stock, as printed'}
+      total_stock: {llm_hint: 'the total value of stock, as printed'}
+      book_debts: {llm_hint: 'the total of book debts (sundry debtors, receivables), as printed'}
+      book_debts_ageing: {llm_hint: 'the book debts by age, one entry per ageing bucket with the bucket and the amount, each as printed'}
+      creditors: {llm_hint: 'the total of sundry creditors (trade payables) for goods, as printed; null if not stated'}
+      drawing_power: {llm_hint: 'the drawing power worked out on the statement, as printed; null if not stated'}
+      signed_date: {llm_hint: 'the date the statement was signed, copied as printed'}
+
+  gstr_9:
+    extraction: model
+    identity: {name: legal_name, gstin: gstin}
+    fields:
+      gstin: {identifier: gstin, validators: ['format:gstin']}
+      legal_name: {llm_hint: 'the legal name of the registered person, as printed'}
+      financial_year: {llm_hint: 'the financial year the annual return is for, as printed'}
+      filing_date: {llm_hint: 'the date the return was filed, copied as printed; null if not printed'}
+      arn: {llm_hint: 'the acknowledgement reference number (ARN), as printed; null if not printed'}
+      total_outward_taxable_value: {llm_hint: 'the total taxable value of outward supplies on which tax is payable for the year (tables 4 and 5), as printed'}
+      total_tax_paid: {llm_hint: 'the total tax paid for the year (table 9), as printed'}
+
+  form_26as:
+    extraction: model
+    identity: {name: name, pan: pan}
+    fields:
+      pan: {identifier: pan, validators: ['format:pan']}
+      name: {llm_hint: 'the name of the assessee, as printed'}
+      assessment_year: {llm_hint: 'the assessment year of the statement, as printed'}
+      total_tds_on_receipts: {llm_hint: 'the total tax deducted at source on the assessee''s receipts (Part A), as printed'}
+      tax_paid: {llm_hint: 'the total of tax paid other than TDS or TCS (advance tax and self-assessment tax), as printed; null if none'}
+      refund: {llm_hint: 'the total refund paid, as printed; null if none'}
+
+  itr_acknowledgement:
+    extraction: model
+    identity: {name: name, pan: pan}
+    fields:
+      pan: {identifier: pan, validators: ['format:pan']}
+      name: {llm_hint: 'the name of the assessee, as printed on the acknowledgement'}
+      assessment_year: {llm_hint: 'the assessment year, as printed'}
+      itr_form: {llm_hint: 'the ITR form filed (for example "ITR-6"), as printed'}
+      filing_date: {llm_hint: 'the date the return was filed, copied as printed'}
+      acknowledgement_number: {llm_hint: 'the acknowledgement number, as printed'}
+      total_income: {llm_hint: 'the total income stated on the acknowledgement, as printed'}
+      tax_payable: {llm_hint: 'the net tax payable stated on the acknowledgement, as printed'}
+
+  partnership_deed:
+    extraction: model
+    identity: {name: firm_name}
+    fields:
+      firm_name: {llm_hint: 'the name of the partnership firm, as printed'}
+      deed_date: {llm_hint: 'the date the deed was made, copied as printed'}
+      registration_number: {llm_hint: 'the firm''s registration number with the Registrar of Firms, as printed; null if none'}
+      registered_address: {llm_hint: 'the principal place of business of the firm, as printed'}
+      nature_of_business: {llm_hint: 'the business the firm carries on, as printed'}
+      partners: {llm_hint: 'the partners, one entry per partner with the name, the profit share and the capital contribution, each as printed'}
+
+  udyam_registration:
+    extraction: model
+    identity: {name: enterprise_name, pan: pan}
+    fields:
+      udyam_number: {patterns: ['(UDYAM-[A-Z]{2}-\d{2}-\d{7})'], llm_hint: 'the Udyam registration number (UDYAM-XX-00-0000000), as printed'}
+      enterprise_name: {llm_hint: 'the name of the enterprise, as printed'}
+      enterprise_type: {llm_hint: 'the type of enterprise (micro, small or medium), as printed'}
+      registration_date: {llm_hint: 'the date of Udyam registration, copied as printed'}
+      date_of_incorporation: {llm_hint: 'the date of incorporation or registration of the enterprise, copied as printed'}
+      pan: {identifier: pan, validators: ['format:pan']}
+      major_activity: {llm_hint: 'the major activity (manufacturing or services), as printed'}
+      nic_codes: {llm_hint: 'the National Industry Classification codes, one entry per code with its description, as printed'}
+      address: {llm_hint: 'the official address of the enterprise, as printed'}

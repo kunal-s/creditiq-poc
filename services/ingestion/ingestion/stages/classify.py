@@ -52,7 +52,10 @@ def _search(rx: str, ev: Evidence, zone: str) -> bool:
 
 def score_types(cfg: IngestionConfig, ev: Evidence) -> list[dict]:
     out = []
+    enabled = cfg.document_types.enabled_ids()
     for tid, ts in cfg.signals.types.items():
+        if tid not in enabled:
+            continue
         met = [next((rx for rx in r.any if _search(rx, ev, r.zone)), None) for r in ts.required]
         sup = [x for x in ts.supporting if _search(x.rx, ev, "any")]
         con = [x.rx for x in ts.contrary if _search(x.rx, ev, x.zone)]
@@ -164,8 +167,9 @@ def _guard(cfg: IngestionConfig, type_id: str, entry: dict) -> str | None:
 
 
 def _tier2(cfg: IngestionConfig, pages: list[Page], model: ModelClient) -> dict:
-    ids = list(cfg.document_types.by_id())
-    types = "\n".join(f"- {d.document_type}: {d.display_name} ({d.category})" for d in cfg.document_types.documents)
+    offered = [d for d in cfg.document_types.documents if d.enabled]
+    ids = [d.document_type for d in offered]
+    types = "\n".join(f"- {d.document_type}: {d.display_name} ({d.category})" for d in offered)
     lines, budget = [], cfg.llm.classify_chars
     for p in pages:
         for l in p.content_lines():

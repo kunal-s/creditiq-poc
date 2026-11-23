@@ -39,8 +39,6 @@ from .contracts import (
 from .units import money
 from .util import parse_date
 
-BASIS = {"audited_financial_statements": "audited"}
-
 PROFIT_AND_LOSS = [
     "revenue_from_operations", "other_income", "cost_of_materials_consumed", "purchases_of_stock_in_trade",
     "changes_in_inventories", "employee_benefits_expense", "other_expenses", "total_expenses", "ebitda", "depreciation",
@@ -79,10 +77,11 @@ def _columns(conn: sqlite3.Connection, root: Path, case: CaseDetail):
     """Columns in order (audited by year, then provisional, then projected),
     each with its documents; several copies of one year merge line by line."""
     start = reader.load_alignment(root).financial_year_start_month
+    basis_of = reader.load_statements(root).spread_basis
     groups: dict[tuple[str, int], list[facts_module.Doc]] = {}
     ends: dict[tuple[str, int], date] = {}
     for d in facts_module.load_documents(conn, root, case.id):
-        basis = next((BASIS[t] for t in d.types if t in BASIS), None)
+        basis = next((basis_of[t] for t in d.types if t in basis_of), None)
         end = statements.period_end(d) if basis else None
         if not (basis and end):
             continue

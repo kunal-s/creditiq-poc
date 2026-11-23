@@ -93,7 +93,8 @@
           }
         ],
         "tables": []
-      }
+      },
+      "enabled": true
     },
     {
       "document_type": "memorandum_articles_of_association",
@@ -196,7 +197,8 @@
             ]
           }
         ]
-      }
+      },
+      "enabled": true
     },
     {
       "document_type": "company_pan",
@@ -227,7 +229,8 @@
           }
         ],
         "tables": []
-      }
+      },
+      "enabled": true
     },
     {
       "document_type": "director_kyc",
@@ -303,7 +306,8 @@
           }
         ],
         "tables": []
-      }
+      },
+      "enabled": true
     },
     {
       "document_type": "board_resolution_borrowing",
@@ -401,7 +405,8 @@
           }
         ],
         "tables": []
-      }
+      },
+      "enabled": true
     },
     {
       "document_type": "audited_financial_statements",
@@ -587,7 +592,8 @@
             ]
           }
         ]
-      }
+      },
+      "enabled": true
     },
     {
       "document_type": "income_tax_return",
@@ -682,7 +688,8 @@
             ]
           }
         ]
-      }
+      },
+      "enabled": true
     },
     {
       "document_type": "gstr_3b",
@@ -825,7 +832,8 @@
             ]
           }
         ]
-      }
+      },
+      "enabled": true
     },
     {
       "document_type": "gstr_1",
@@ -900,7 +908,8 @@
             ]
           }
         ]
-      }
+      },
+      "enabled": true
     },
     {
       "document_type": "bank_statement",
@@ -1020,7 +1029,8 @@
             ]
           }
         ]
-      }
+      },
+      "enabled": true
     },
     {
       "document_type": "existing_facilities_declaration",
@@ -1106,7 +1116,8 @@
             ]
           }
         ]
-      }
+      },
+      "enabled": true
     },
     {
       "document_type": "sanction_letter",
@@ -1169,7 +1180,8 @@
             ]
           }
         ]
-      }
+      },
+      "enabled": true
     },
     {
       "document_type": "commercial_bureau_report",
@@ -1274,6 +1286,534 @@
             ]
           }
         ]
+      },
+      "enabled": true
+    },
+    {
+      "document_type": "provisional_financial_statements",
+      "display_name": "Provisional Financial Statements",
+      "category": "financials",
+      "priority": "optional",
+      "enabled": true,
+      "schema": {
+        "fields": [
+          {
+            "name": "company_name",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "period_from",
+            "type": "date",
+            "required": false
+          },
+          {
+            "name": "period_to",
+            "type": "date",
+            "required": true
+          },
+          {
+            "name": "statement_basis",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "certified_by",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "certification_date",
+            "type": "date",
+            "required": false
+          },
+          {
+            "name": "amount_unit",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "tables": [
+          {
+            "name": "balance_sheet",
+            "description": "Balance sheet / statement of financial position",
+            "columns": [
+              {
+                "name": "particulars",
+                "type": "string"
+              },
+              {
+                "name": "current_period",
+                "type": "number"
+              },
+              {
+                "name": "previous_period",
+                "type": "number"
+              }
+            ]
+          },
+          {
+            "name": "profit_and_loss",
+            "description": "Statement of profit and loss",
+            "columns": [
+              {
+                "name": "particulars",
+                "type": "string"
+              },
+              {
+                "name": "current_period",
+                "type": "number"
+              },
+              {
+                "name": "previous_period",
+                "type": "number"
+              }
+            ]
+          },
+          {
+            "name": "cash_flow",
+            "description": "Cash flow statement",
+            "columns": [
+              {
+                "name": "particulars",
+                "type": "string"
+              },
+              {
+                "name": "current_period",
+                "type": "number"
+              },
+              {
+                "name": "previous_period",
+                "type": "number"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "document_type": "projected_financial_statements",
+      "display_name": "Projected Financial Statements",
+      "category": "financials",
+      "priority": "optional",
+      "enabled": true,
+      "schema": {
+        "fields": [
+          {
+            "name": "company_name",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "years_projected",
+            "type": "array",
+            "required": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "prepared_by",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "amount_unit",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "cma_data",
+      "display_name": "CMA Data",
+      "category": "financials",
+      "priority": "optional",
+      "enabled": true,
+      "schema": {
+        "fields": [
+          {
+            "name": "company_name",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "years",
+            "type": "array",
+            "required": true,
+            "items": {
+              "type": "object",
+              "fields": [
+                {
+                  "name": "year",
+                  "type": "string"
+                },
+                {
+                  "name": "basis",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          {
+            "name": "amount_unit",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "stock_statement",
+      "display_name": "Stock Statement",
+      "category": "banking_operations",
+      "priority": "optional",
+      "enabled": true,
+      "schema": {
+        "fields": [
+          {
+            "name": "borrower_name",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "as_of_date",
+            "type": "date",
+            "required": true
+          },
+          {
+            "name": "lender",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "account_number",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "raw_material",
+            "type": "number",
+            "required": false
+          },
+          {
+            "name": "work_in_progress",
+            "type": "number",
+            "required": false
+          },
+          {
+            "name": "finished_goods",
+            "type": "number",
+            "required": false
+          },
+          {
+            "name": "total_stock",
+            "type": "number",
+            "required": false
+          },
+          {
+            "name": "book_debts",
+            "type": "number",
+            "required": false
+          },
+          {
+            "name": "book_debts_ageing",
+            "type": "array",
+            "required": false,
+            "items": {
+              "type": "object",
+              "fields": [
+                {
+                  "name": "bucket",
+                  "type": "string"
+                },
+                {
+                  "name": "amount",
+                  "type": "number"
+                }
+              ]
+            }
+          },
+          {
+            "name": "creditors",
+            "type": "number",
+            "required": false
+          },
+          {
+            "name": "drawing_power",
+            "type": "number",
+            "required": false
+          },
+          {
+            "name": "signed_date",
+            "type": "date",
+            "required": false
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "gstr_9",
+      "display_name": "GSTR-9",
+      "category": "financials",
+      "priority": "optional",
+      "enabled": true,
+      "schema": {
+        "fields": [
+          {
+            "name": "gstin",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "legal_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "financial_year",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "filing_date",
+            "type": "date",
+            "required": false
+          },
+          {
+            "name": "arn",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "total_outward_taxable_value",
+            "type": "number",
+            "required": false
+          },
+          {
+            "name": "total_tax_paid",
+            "type": "number",
+            "required": false
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "form_26as",
+      "display_name": "Form 26AS",
+      "category": "financials",
+      "priority": "optional",
+      "enabled": true,
+      "schema": {
+        "fields": [
+          {
+            "name": "pan",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "assessment_year",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "total_tds_on_receipts",
+            "type": "number",
+            "required": false
+          },
+          {
+            "name": "tax_paid",
+            "type": "number",
+            "required": false
+          },
+          {
+            "name": "refund",
+            "type": "number",
+            "required": false
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "itr_acknowledgement",
+      "display_name": "ITR Acknowledgement",
+      "category": "financials",
+      "priority": "optional",
+      "enabled": true,
+      "schema": {
+        "fields": [
+          {
+            "name": "pan",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "assessment_year",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "itr_form",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "filing_date",
+            "type": "date",
+            "required": false
+          },
+          {
+            "name": "acknowledgement_number",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "total_income",
+            "type": "number",
+            "required": false
+          },
+          {
+            "name": "tax_payable",
+            "type": "number",
+            "required": false
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "partnership_deed",
+      "display_name": "Partnership Deed",
+      "category": "constitution_kyc",
+      "priority": "optional",
+      "enabled": true,
+      "schema": {
+        "fields": [
+          {
+            "name": "firm_name",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "deed_date",
+            "type": "date",
+            "required": false
+          },
+          {
+            "name": "registration_number",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "registered_address",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "nature_of_business",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "partners",
+            "type": "array",
+            "required": false,
+            "items": {
+              "type": "object",
+              "fields": [
+                {
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "name": "share_percent",
+                  "type": "string"
+                },
+                {
+                  "name": "capital",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "udyam_registration",
+      "display_name": "Udyam Registration Certificate",
+      "category": "constitution_kyc",
+      "priority": "optional",
+      "enabled": true,
+      "schema": {
+        "fields": [
+          {
+            "name": "udyam_number",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "enterprise_name",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "enterprise_type",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "registration_date",
+            "type": "date",
+            "required": false
+          },
+          {
+            "name": "date_of_incorporation",
+            "type": "date",
+            "required": false
+          },
+          {
+            "name": "pan",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "major_activity",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "nic_codes",
+            "type": "array",
+            "required": false,
+            "items": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "address",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "tables": []
       }
     }
   ]

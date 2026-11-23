@@ -10,8 +10,9 @@ from .conftest import CONFIG
 
 def test_loads_every_type(cfg):
     # The nine of the PoC's first scope, then the declaration of existing facilities, the sanction
-    # letter and the commercial bureau report (test plan TC-20, TC-23).
-    assert len(cfg.document_types.documents) == 13
+    # letter and the commercial bureau report (test plan TC-20, TC-23), then the nine added for the
+    # restructure (decision 14).
+    assert len(cfg.document_types.documents) == 22
     assert cfg.document_types.by_id()["director_kyc"].schema_.fields[1].name == "din"  # added 6 Oct
 
 

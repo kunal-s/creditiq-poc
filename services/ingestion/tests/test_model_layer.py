@@ -13,7 +13,7 @@ from .conftest import fixture_doc, spec, values
 
 BR = "Southgate_Board_Resolution_draft.pdf"
 FS = "Southgate_Audited_FS_FY2025.pdf"
-PROV = "Southgate_Provisional_FY2026.pdf"
+PROV = "Southgate_Title_Deed_Coimbatore_Unit.pdf"  # a document of no listed type
 
 
 def run(cfg, store, mode, name, answerer=model_answers.answerer):

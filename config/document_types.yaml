@@ -119,3 +119,64 @@ types:
     description: A credit information company's report on the borrower, with its credit facilities, credit rank and related parties.
     partner_output: true
     party_list: {field: related_parties, name_key: name, pan_key: pan, designation_key: relationship, role: director}
+
+  # Types added for the restructure (decision 14). They satisfy no checklist item until one is mapped.
+  - id: provisional_financial_statements
+    name: Provisional financial statements
+    group: financials
+    provenance: borrower_supplied
+    description: Unaudited or provisional balance sheet and statement of profit and loss for a part or whole year, often certified by a chartered accountant.
+    instance_key: period
+
+  - id: projected_financial_statements
+    name: Projected financial statements
+    group: financials
+    provenance: borrower_supplied
+    description: Estimated and projected balance sheet and statement of profit and loss for coming years.
+
+  - id: cma_data
+    name: CMA data
+    group: working_capital
+    provenance: borrower_supplied
+    description: Credit monitoring arrangement data, with the operating statement, balance sheet analysis, current assets and liabilities, and the maximum permissible bank finance, for past, estimated and projected years.
+
+  - id: stock_statement
+    name: Stock statement
+    group: working_capital
+    provenance: borrower_supplied
+    description: The borrower's statement of stock and book debts as at a date, submitted to a lender for drawing power.
+    instance_key: period
+
+  - id: gstr_9
+    name: GSTR-9
+    group: tax
+    provenance: borrower_supplied
+    description: Annual GST return (GSTR-9) for a financial year.
+    instance_key: year
+
+  - id: form_26as
+    name: Form 26AS
+    group: tax
+    provenance: independent
+    description: Annual tax statement of tax deducted and paid against a PAN, for an assessment year.
+    instance_key: year
+
+  - id: itr_acknowledgement
+    name: ITR acknowledgement
+    group: tax
+    provenance: borrower_supplied
+    description: Acknowledgement of an income tax return filed, for an assessment year.
+    instance_key: year
+
+  - id: partnership_deed
+    name: Partnership deed
+    group: constitution
+    provenance: borrower_supplied
+    description: The deed constituting a partnership firm, with its partners, their shares and capital.
+    party_list: {field: partners, name_key: name, role: partner}
+
+  - id: udyam_registration
+    name: Udyam registration certificate
+    group: registration
+    provenance: independent
+    description: Certificate of registration of a micro, small or medium enterprise, with its Udyam number and classification.

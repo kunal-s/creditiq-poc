@@ -1289,6 +1289,16 @@ def test_every_check_short_of_documents_names_each_document_in_one_wording(clien
         "Declaration of existing facilities": "the declaration of existing facilities",
         "Sanction letter": "the sanction letter",
         "Commercial bureau report": "the commercial bureau report",
+        "Provisional financial statements": "the provisional financial statements",
+        "Projected financial statements": "the projected financial statements",
+        "CMA data": "the CMA data",
+        "Stock statement": "the stock statement",
+        "GSTR-9": "the GSTR-9",
+        # Proper names whose first word is lower-cased today; the wording is to be settled.
+        "Form 26AS": "the form 26AS",
+        "ITR acknowledgement": "the ITR acknowledgement",
+        "Partnership deed": "the partnership deed",
+        "Udyam registration certificate": "the udyam registration certificate",
     }
     assert xv_cards.documents(["Director KYC", "GSTR-3B", "Income tax return"]) == (
         "the director KYC, the GSTR-3B and the income tax return")

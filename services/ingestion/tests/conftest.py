@@ -50,9 +50,11 @@ IN_SCOPE = {
     "Southgate_CCB_CA_Statements_12m.pdf": "bank_statement",
     # A declaration of nil facilities is a declaration of existing facilities that declares none.
     "Southgate_Nil_Facilities_Declaration.pdf": "existing_facilities_declaration",
+    # Types added for the restructure (decision 14).
+    "Southgate_Provisional_FY2026.pdf": "provisional_financial_statements",
+    "Southgate_Stock_BookDebt_30Jun2026.pdf": "stock_statement",
 }
-OUT_OF_SCOPE = ["Southgate_Provisional_FY2026.pdf", "Southgate_Stock_BookDebt_30Jun2026.pdf",
-                "Southgate_Title_Deed_Coimbatore_Unit.pdf"]
+OUT_OF_SCOPE = ["Southgate_Title_Deed_Coimbatore_Unit.pdf"]
 
 
 @pytest.fixture(autouse=True)

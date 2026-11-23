@@ -135,6 +135,8 @@ types:
       - any: ['income[\s-]*tax\s+return', 'form\s+itr[\s-]*\d?', '\bitr[\s-]*(v|[1-7])\b', 'return\s+of\s+income', 'itr\s+acknowledg(e)?ment', 'acknowledg(e)?ment\s+of\s+(receipt\s+of\s+)?(income[\s-]*tax\s+)?return']
         zone: head
       - any: ['assessment\s+year', '\bAY\s*20\d{2}', 'previous\s+year']
+      # The return or its computation itself, so an acknowledgement on its own is an ITR acknowledgement (decision 14).
+      - any: ['computation\s+of\s+(total\s+)?income', 'gross\s+total\s+income', 'part\s+b[\s-]*ti\b', 'form\s+itr[\s-]*[1-7]\b', 'return\s+of\s+income']
     supporting:
       - 'assessment\s+year'
       - 'form\s+itr'
@@ -214,3 +216,124 @@ types:
       - 'narration|particulars'
       - 'value\s+date'
     contrary: ['gstr-?3b\s+returns', {rx: 'form\s+gstr', zone: head}]
+
+  # ---- Types added for the restructure (decision 14). Interim title patterns in today's format, so each type can be
+  # placed until the keyword lists of Stories 1.3 and 1.4 replace them (Epic 2). Each is switched on or off by
+  # `enabled` in document_types.json.
+  provisional_financial_statements:
+    required:
+      - any: ['provisional\s+(financial\s+statements|accounts|balance\s+sheet|statement\s+of\s+profit)', 'unaudited\s+(financial\s+statements|accounts)']
+        zone: head
+    supporting:
+      - {rx: 'provisional', weight: 2}
+      - 'balance[\s-]*sheet'
+      - 'statement\s+of\s+profit\s+and\s+loss'
+      - 'unaudited'
+      - '(nine|six|three)\s+months|half[\s-]*year|period\s+ended'
+      - '{CIN}'
+    contrary: ['independent\s+auditor', 'projected', 'statement\s+of\s+account']
+
+  projected_financial_statements:
+    required:
+      - any: ['projected\s+(financial\s+statements|balance\s+sheet|profit|statement)', 'financial\s+projections', 'estimated\s+and\s+projected']
+        zone: head
+    supporting:
+      - {rx: 'projected', weight: 2}
+      - 'estimated'
+      - 'balance[\s-]*sheet'
+      - 'profit\s+and\s+loss|profitability'
+      - 'assumptions'
+    contrary: ['independent\s+auditor', 'credit\s+monitoring\s+arrangement', 'statement\s+of\s+account']
+
+  cma_data:
+    required:
+      - any: ['credit\s+monitoring\s+arrangement', '\bcma\s+(data|statement|report)', 'maximum\s+permissible\s+bank\s+finance']
+        zone: head
+    supporting:
+      - 'operating\s+statement'
+      - 'analysis\s+of\s+balance\s+sheet'
+      - 'comparative\s+statement\s+of\s+current\s+assets'
+      - 'maximum\s+permissible\s+bank\s+finance|\bmpbf\b'
+      - 'fund\s+flow'
+      - '\bform\s+(ii|iii|iv|v|vi)\b'
+    contrary: ['statement\s+of\s+account']
+
+  stock_statement:
+    required:
+      - any: ['stock\s+(and\s+book[\s-]*debts?\s+)?statement', 'statement\s+of\s+stock', 'drawing\s+power\s+(statement|calculation)']
+        zone: head
+    supporting:
+      - 'book[\s-]*debts?'
+      - 'raw\s+materials?'
+      - 'work\s+in\s+progress'
+      - 'finished\s+goods'
+      - 'drawing\s+power'
+      - 'hypothecation'
+      - 'sundry\s+(debtors|creditors)'
+    contrary: ['statement\s+of\s+account', 'balance\s+sheet\s+as\s+(at|on)', 'independent\s+auditor']
+
+  gstr_9:
+    required:
+      - any: ['gstr[\s-]*9(?![\s-]*c)\b', 'form\s+gstr[\s-]*9(?![\s-]*c)\b']
+        zone: head
+      - any: ['annual\s+return', 'financial\s+year']
+    supporting:
+      - 'annual\s+return'
+      - 'outward\s+supplies'
+      - 'details\s+of\s+tax\s+paid'
+      - 'pt\.?\s*ii|part\s+ii'
+      - '{GSTIN}'
+    contrary: ['gstr[\s-]*3b', 'gstr[\s-]*1\b', 'income[\s-]*tax\s+return']
+
+  form_26as:
+    required:
+      - any: ['form\s*(no\.?\s*)?26\s*as', 'annual\s+tax\s+statement']
+        zone: head
+    supporting:
+      - 'tax\s+deducted\s+at\s+source'
+      - 'tan\s+of\s+deductor'
+      - 'part\s+[a-h]\b'
+      - 'assessment\s+year'
+      - 'section\s+19[2-6]'
+      - '{PAN}'
+    contrary: ['statement\s+of\s+account', 'return\s+of\s+income']
+
+  itr_acknowledgement:
+    required:
+      - any: ['income\s+tax\s+return\s+acknowledg(e)?ment', 'itr[\s-]*v\b', 'acknowledg(e)?ment\s+of\s+(receipt\s+of\s+)?(income[\s-]*tax\s+)?return']
+        zone: head
+      - any: ['assessment\s+year', '\bAY\s*20\d{2}']
+    supporting:
+      - 'acknowledg(e)?ment\s+(no|number)'
+      - 'date\s+of\s+filing'
+      - 'e-?filing'
+      - 'verification'
+      - 'total\s+income'
+      - '{PAN}'
+    # Until a page can carry two types (Epic 3), a file with the computation of income stays an income tax return.
+    contrary: ['statement\s+of\s+account', 'computation\s+of\s+(total\s+)?income', 'gross\s+total\s+income', 'part\s+b[\s-]*ti\b']
+
+  partnership_deed:
+    required:
+      - any: ['deed\s+of\s+partnership', 'partnership\s+deed']
+        zone: head
+    supporting:
+      - 'partners?'
+      - 'name\s+of\s+the\s+firm|firm\s+name'
+      - 'profit[\s-]*sharing\s+ratio|share\s+of\s+(the\s+)?profits?'
+      - 'capital\s+contribution'
+      - 'indian\s+partnership\s+act'
+      - 'witness(es)?'
+    contrary: ['memorandum\s+of\s+association', 'statement\s+of\s+account']
+
+  udyam_registration:
+    required:
+      - any: ['udyam\s+registration\s+(certificate|number)']
+        zone: head
+    supporting:
+      - {rx: 'UDYAM-[A-Z]{2}-\d{2}-\d{7}', weight: 2}
+      - 'micro|small|medium'
+      - 'major\s+activity'
+      - 'national\s+industr(y|ial)\s+classification|\bnic\b'
+      - 'ministry\s+of\s+micro'
+    contrary: ['certificate\s+of\s+incorporation']

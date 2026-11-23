@@ -36,8 +36,9 @@ def kind(cfg, *pages: Page):
 
 TITLES = [
     ("income_tax_return", ["INCOME TAX RETURN DOCUMENT SET", "ITR + Computation of Income + Acknowledgement", "Assessment Year 2025-26"]),
-    ("income_tax_return", ["ITR-V Acknowledgement", "Assessment Year 2024-25", "PAN AAHCS6612M"]),
-    ("income_tax_return", ["Indian Income Tax Return Acknowledgement", "Assessment Year: 2023-24"]),
+    # An acknowledgement on its own is its own type (decision 14); with the computation it stays a return.
+    ("itr_acknowledgement", ["ITR-V Acknowledgement", "Assessment Year 2024-25", "PAN AAHCS6612M"]),
+    ("itr_acknowledgement", ["Indian Income Tax Return Acknowledgement", "Assessment Year: 2023-24", "Acknowledgement Number 123456789012", "PAN AAHCS6612M"]),
     ("income_tax_return", ["FORM ITR-6", "Assessment Year 2025-26", "Computation of Total Income"]),
     ("audited_financial_statements", ["Independent Auditor's Report", "To the Members of Southgate Textiles Private Limited", "Balance Sheet", "Statement of Profit and Loss"]),
     ("audited_financial_statements", ["Audited Financial Statements", "for the year ended 31 March 2025", "Balance-Sheet"]),
@@ -64,7 +65,8 @@ def test_a_document_is_recognised_by_what_it_is_not_by_one_fixed_phrase(cfg, exp
 
 def test_the_acknowledgement_on_a_late_page_still_counts(cfg):
     cover = page(1, "INCOME TAX RETURN DOCUMENT SET", "Assessment Year 2025-26")
-    filler = [page(n, "Particulars", "Amount", "Profit before tax 15,490,378") for n in (2, 3, 4)]
+    # A return holds its computation of income (decision 14: an acknowledgement alone is its own type).
+    filler = [page(n, "Computation of Total Income", "Particulars", "Amount", "Profit before tax 15,490,378") for n in (2, 3, 4)]
     assert kind(cfg, cover, *filler, page(5, "ITR ACKNOWLEDGEMENT", "Assessment Year 2025-26")) == "income_tax_return"
 
 
@@ -73,7 +75,8 @@ def test_the_acknowledgement_on_a_late_page_still_counts(cfg):
 
 def test_a_passing_mention_in_the_body_does_not_make_a_type(cfg):
     ret = page(1, "INCOME TAX RETURN DOCUMENT SET", "Assessment Year 2025-26", "Taxpayer Southgate", "PAN AAHCS6612M",
-               "Status Company", "Registered office Coimbatore", "Figures are taken from the audited financial statements and the Balance Sheet.")
+               "Status Company", "Registered office Coimbatore", "Gross Total Income 1,54,90,378",
+               "Figures are taken from the audited financial statements and the Balance Sheet.")
     c = classify(cfg, [ret], None)
     assert c["type"] == "income_tax_return"
     afs = next(x for x in c["candidates"] if x["type"] == "audited_financial_statements") if any(
@@ -94,7 +97,7 @@ def test_a_covering_letter_that_lists_documents_is_not_any_of_them(cfg):
 
 
 def test_a_page_titled_provisional_is_not_audited(cfg):
-    assert kind(cfg, page(1, "Provisional Financial Statements", "Balance Sheet as at 30 June 2026", "Unaudited")) is None
+    assert kind(cfg, page(1, "Provisional Financial Statements", "Balance Sheet as at 30 June 2026", "Unaudited")) == "provisional_financial_statements"
 
 
 # --- the text is normalised before it is matched ---------------------------------------------------

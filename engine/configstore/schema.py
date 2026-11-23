@@ -722,6 +722,10 @@ class StatementsSection(BaseModel):
     """GST turnover: every row of the return's table that matches is summed."""
     itr_lines: dict[str, StatementLine] = Field(default_factory=dict)
     """Lines of an income tax return's computation, compared with the books (TX-02, TX-03)."""
+    spread_basis: dict[str, Literal["audited", "provisional", "projected"]] = Field(
+        default_factory=lambda: {"audited_financial_statements": "audited"})
+    """Document type to the spread column it fills (F-22). A version published before this setting existed
+    reads as audited statements only, which is what the spread filled then."""
 
 
 class MatrixAuthority(BaseModel):
@@ -880,6 +884,10 @@ def cross_check(sections: dict[str, BaseModel], ingestion: dict[str, dict] | Non
         if sorted(ingest_ids) != sorted(set(type_ids) - engine_only):
             problems.append(f"document_types: ids differ from config/ingestion/document_types.json "
                             f"(only in one: {sorted(set(ingest_ids) ^ (set(type_ids) - engine_only))})")
+    statements_cfg = sections.get("statements")
+    if isinstance(statements_cfg, StatementsSection):
+        problems += [f"statements.spread_basis: unknown document type {tid!r}"
+                     for tid in statements_cfg.spread_basis if tid not in type_ids]
     covered = {item for t in types.types for item in t.satisfies}
     for item in sorted(item_ids - covered):
         problems.append(f"checklist item {item!r} is satisfied by no document type")

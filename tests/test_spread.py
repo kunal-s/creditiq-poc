@@ -109,3 +109,20 @@ def test_further_schedule_iii_lines_show_where_printed(client: TestClient, publi
     # The lines everyone reads keep their place and their order.
     assert keys.index("revenue_from_operations") < keys.index("cost_of_materials_consumed") < keys.index("ebitda")
     assert keys.index("current_liabilities") < keys.index("net_fixed_assets") < keys.index("inventories")
+
+
+def test_provisional_statements_fill_the_provisional_column_from_configuration(client: TestClient, published_data_root: Path):
+    """statements.spread_basis (decision 14): the type fills its column; the period end is the provisional period's."""
+    from tests.fixtures.build_fixtures import statement_tables
+    from tests.triangulation import add_doc
+
+    analyst = sign_in(client, ANALYST)
+    case_id = make_case(client, analyst, published_data_root)
+    audited(published_data_root, case_id, "2025-03-31")
+    tables = statement_tables("2026-03-31", scale=0.75)
+    doc = {"company_name": "Kestrel Tools Private Limited", "period_to": "31 December 2025",
+           **{name: [dict(r["cells"]) for r in t["rows"]] for name, t in tables.items()}}
+    add_doc(published_data_root, case_id, "provisional_financial_statements", doc)
+    spread = _spread(client, analyst, case_id)
+    assert [(c["fy"], c["basis"]) for c in spread["columns"]] == [("FY 2024-25", "audited"), ("FY 2025-26", "provisional")]
+    assert _row(spread, "revenue_from_operations")["cells"][1]["value"] == round(118_000_000 * 0.75)

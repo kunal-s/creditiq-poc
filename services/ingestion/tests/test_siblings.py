@@ -52,8 +52,11 @@ def edited(cfg, **siblings):
 
 def test_the_group_is_the_other_types_of_the_category(cfg):
     assert group_of(cfg, "certificate_of_incorporation") == [
-        "memorandum_articles_of_association", "company_pan", "director_kyc", "board_resolution_borrowing"]
-    assert group_of(cfg, "audited_financial_statements") == ["income_tax_return"]
+        "memorandum_articles_of_association", "company_pan", "director_kyc", "board_resolution_borrowing",
+        "partnership_deed", "udyam_registration"]
+    assert group_of(cfg, "audited_financial_statements") == [
+        "income_tax_return", "provisional_financial_statements", "projected_financial_statements", "cma_data",
+        "gstr_9", "form_26as", "itr_acknowledgement"]
 
 
 def test_a_bundle_becomes_one_document_per_type_each_on_its_own_pages(cfg):

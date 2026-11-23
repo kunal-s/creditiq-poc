@@ -82,6 +82,14 @@ derived:
 # GST turnover from table 3.1 of each GSTR-3B: every matching row is summed.
 # (a) taxable, (b) zero rated and (c) nil rated or exempted outward supplies
 # are sales; (d) inward reverse-charge and (e) non-GST supplies are not.
+# Which document type fills which spread column (F-22). CMA data fills the projected column from its estimated
+# and projected years once its tables are read (decision 14).
+spread_basis:
+  audited_financial_statements: audited
+  provisional_financial_statements: provisional
+  projected_financial_statements: projected
+  cma_data: projected
+
 gst_outward: {table: outward_supplies, row: '^\((a|b|c)\)', column: taxable_value}
 
 # The lines of an income tax return's computation compared with the books

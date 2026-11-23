@@ -60,7 +60,7 @@ def group_of(cfg: IngestionConfig, doc_type: str) -> list[str]:
     """The other types of `doc_type`'s category, in configuration order."""
     by_id = cfg.document_types.by_id()
     cat = by_id[doc_type].category
-    return [t for t in by_id if t != doc_type and by_id[t].category == cat]
+    return [t for t in by_id if t != doc_type and by_id[t].category == cat and by_id[t].enabled]
 
 
 def _page_signals(cfg: IngestionConfig, page: Page, types: set[str]) -> list[dict]:

@@ -22,7 +22,12 @@ NINE = {
 FACILITIES = {"existing_facilities_declaration", "sanction_letter", "commercial_bureau_report"}
 # GSTR-1 is read for the turnover cross-checks; GSTR-3B is what the checklist item asks for.
 SALES = {"gstr_1"}
-TYPES = NINE | FACILITIES | SALES
+# Added for the classification and extraction restructure (FRD decision 14); each can be switched off.
+ADDED = {
+    "provisional_financial_statements", "projected_financial_statements", "cma_data", "stock_statement", "gstr_9",
+    "form_26as", "itr_acknowledgement", "partnership_deed", "udyam_registration",
+}
+TYPES = NINE | FACILITIES | SALES | ADDED
 
 SWITCHED_OFF = {"BR-01", "BR-02", "BR-03", "BR-04", "FS-01", "FS-02"}
 
@@ -71,7 +76,7 @@ def test_the_service_accepts_the_published_configuration():
     out = subprocess.run([str(INGESTION_VENV), "-m", "ingestion.cli", "config-validate", str(ROOT / "config" / "ingestion")],
                          cwd=ROOT / "services" / "ingestion", env={"PYTHONPATH": "."}, capture_output=True, text=True)
     assert out.returncode == 0, out.stderr
-    assert "13 document types" in out.stdout
+    assert "22 document types" in out.stdout
 
 
 def test_cross_check_reports_a_dangling_reference():

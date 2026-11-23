@@ -63,6 +63,9 @@ class DocumentTypeDef(Strict):
     display_name: str
     category: str
     priority: Literal["mandatory", "optional"] = "mandatory"
+    enabled: bool = True
+    """A switched-off type is never offered to the classifier: not scored, not looked for by the second
+    pass, not in the model's list. A person can still assign it, and its rules stay checked at publish."""
     schema_: SchemaDef = Field(alias="schema")
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
@@ -77,6 +80,10 @@ class DocumentTypesConfig(Strict):
 
     def by_id(self) -> dict[str, DocumentTypeDef]:
         return {d.document_type: d for d in self.documents}
+
+    def enabled_ids(self) -> set[str]:
+        """The types the classifier may choose (`enabled`)."""
+        return {d.document_type for d in self.documents if d.enabled}
 
 
 # --- signals.yaml ------------------------------------------------------------------------------

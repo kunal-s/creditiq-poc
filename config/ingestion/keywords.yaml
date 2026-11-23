@@ -1,0 +1,639 @@
+# How pages are typed (FRD F-09, decision 14). DRAFT for review: nothing reads this file yet (Epic 2 builds the scorer).
+#
+# A page is read into zones: the title lines, the footer band and the body. A title line is not a table row (a line with
+# amounts), and either sits in the header band or stands out in print: on a digital page by the PDF's own font data
+# (larger than the page's body text, or bold), on a scanned page by the height of its letters. Each phrase below is matched after folding case,
+# punctuation and hyphen-broken words; a phrase of `fuzzy.min_length` letters or more also matches a near spelling
+# (scan errors), a shorter one only exactly (PAN must not match PAD).
+#
+# Two levels:
+#   parts  what one page, or one table on a page, is: a balance sheet, an auditor's report, a page of transactions.
+#          A part can belong to several document types (a balance sheet is in audited, provisional and projected
+#          statements), so its words say WHAT the page is, never whose or which basis.
+#   types  the document types of document_types.json. Each lists the parts it is made of, and the words that tell it
+#          from its look-alikes (audited against provisional). These are read over the whole run of pages the parts
+#          form, so a balance sheet page with no "audited" on it still joins the audited statements it sits in.
+#
+# Scoring, for each part on a page:
+#   - a `title` phrase counts only in the title zone (title lines, header band, footer band); in the body it is a
+#     mention and counts nothing;
+#   - a `content` phrase counts anywhere, once, at its weight (default 1): being printed large adds nothing;
+#   - a `title` phrase counts once, at its best zone: title zone x zone_weights.title, footer x zone_weights.footer;
+#   - score = min(sum, full) / full, so listing more alternatives never lowers a score;
+#   - a `warning` phrase in the title zone rules the part or type out; elsewhere it takes its weight off the sum;
+#   - a part with `needs_title` scores 0 unless one of its title phrases is in the title zone.
+# A type decides between look-alikes over the run of pages its parts form: its own `title`, `content` and `warning`
+# phrases are scored over the run like a part's, and a type with `needs_part` takes the run only when one of those
+# parts is in it (an income tax return needs its computation or its form; an acknowledgement alone is its own type).
+# A run may carry two types when both qualify (an acknowledgement filed with its computation: both).
+# `unverified: true` marks a type drafted without a sample page; its lists are a first guess.
+# A page takes a part when the part's score reaches `page_threshold` and leads the next part by `margin`.
+
+settings:
+  zones:
+    header_band: 0.12        # top share of the page height
+    footer_band: 0.08        # bottom share
+    # A title line is a line that is not a table row and either sits in the header band, or stands out in print:
+    title_size_ratio: 1.15   # digital page: font size at least this times the page's body size (the size most characters use)
+    title_bold_share: 0.6    # digital page: at least this share of the line's characters in a bold face
+    title_height_ratio: 1.3  # scanned page (no font data): letters at least this times taller than the page's typical line
+  zone_weights: {title: 3, footer: 2, body: 1}
+  full: 6                    # a part with this much evidence scores 1.0 (a part may set its own)
+  page_threshold: 0.5
+  margin: 0.15
+  fuzzy: {min_length: 8, min_ratio: 0.88}
+  categories:
+    first_pages: 3           # N: categories are scored on the first N pages, then the next N if none qualifies
+    threshold: 0.5           # a category qualifies when one of its types' parts scores this on those pages
+  max_gap: 2                 # longest run of unplaced pages filled from same-type neighbours
+
+parts:
+  # ======================================== Identity ==============================================================
+  incorporation_certificate:
+    needs_title: true        # CIN, PAN and the Companies Act are printed on every company document
+    title:
+      - certificate of incorporation
+      - fresh certificate of incorporation
+      - certificate of incorporation consequent upon
+    content:
+      - {phrase: registrar of companies, weight: 2}
+      - {phrase: corporate identity number, weight: 2}
+      - {identifier: cin, weight: 1}
+      - central registration centre
+      - ministry of corporate affairs
+      - companies act
+      - {phrase: is incorporated, weight: 2}
+      - company limited by shares
+      - given under my hand
+  memorandum:
+    title:
+      - memorandum of association
+      - memorandum and articles of association
+    content:
+      - {phrase: name clause, weight: 2}
+      - {phrase: objects clause, weight: 2}
+      - {phrase: liability clause, weight: 2}
+      - {phrase: capital clause, weight: 2}
+      - subscription clause
+      - authorised share capital
+      - divided into equity shares
+      - the liability of the members is limited
+      - subscribers
+  articles:
+    title:
+      - articles of association
+    content:
+      - {phrase: interpretation, weight: 1}
+      - share capital and variation of rights
+      - borrowing powers
+      - board of directors
+      - general meetings
+      - {phrase: the company shall, weight: 1}
+      - transfer of shares
+      - {phrase: table f, weight: 1}
+  pan_letter:
+    title:
+      - intimation of allotment of permanent account number
+      - permanent account number card
+      - e-pan
+      - pan card
+    content:
+      - {phrase: income tax department, weight: 2}
+      - {phrase: assessing officer, weight: 1}
+      - {phrase: permanent account number, weight: 1}
+      - {identifier: pan, weight: 1}
+      - computer-generated intimation letter
+      - date of incorporation formation
+      - form 49a
+    warning:
+      - {phrase: director kyc, zone: title}
+      - {phrase: assessment year, zone: title}
+  kyc_person:
+    title:
+      - director kyc
+      - dir-3 kyc
+      - kyc of director
+      - ckyc
+      - know your customer
+      - kyc summary sheet
+    content:
+      - {phrase: director identification number, weight: 2}
+      - {phrase: date of birth, weight: 1}
+      - residential address
+      - {phrase: aadhaar, weight: 1}
+      - nationality
+      - relationship with company
+      - father's name
+      - {phrase: din, weight: 1}
+    warning:
+      - {phrase: certificate of incorporation, zone: title}
+  board_resolution:
+    title:
+      - certified true copy of the resolution
+      - board resolution
+      - extract of the minutes
+      - extract from the minutes
+      - resolution passed at the meeting of the board
+    content:
+      - {phrase: resolved that, weight: 2}
+      - {phrase: resolved further that, weight: 2}
+      - board of directors
+      - {phrase: borrow, weight: 2}
+      - section 179
+      - section 180
+      - authorised to execute
+      - consent of the board
+    warning:
+      - {phrase: declaration of nil, zone: title}
+      - {phrase: memorandum of association, zone: title}
+  partnership_deed:
+    title:
+      - deed of partnership
+      - partnership deed
+      - supplementary deed of partnership
+    content:
+      - {phrase: indian partnership act, weight: 2}
+      - {phrase: profit sharing ratio, weight: 2}
+      - share of profits
+      - capital contribution
+      - name of the firm
+      - the partners
+      - partner
+      - witnesses
+      - registrar of firms
+    warning:
+      - {phrase: limited liability partnership agreement, zone: title}
+      - {phrase: memorandum of association, zone: title}
+  udyam_certificate:
+    title:
+      - udyam registration certificate
+      - udyam registration number
+    content:
+      - {phrase: ministry of micro small and medium enterprises, weight: 2}
+      - type of enterprise
+      - major activity
+      - national industry classification
+      - social category
+      - date of udyam registration
+      - date of commencement of production
+      - {phrase: udyam, weight: 1}
+
+  # ======================================== Financials ============================================================
+  statements_cover:
+    needs_title: true        # letterhead words (registered office, CIN) are on every company document
+    title:
+      - financial statements
+      - annual report
+      - annual accounts
+      - provisional financial statements
+      - projected financial statements
+    content:
+      - statutory auditors
+      - {phrase: contents, weight: 1}
+      - for the year ended
+      - for the period ended
+      - corporate identity number
+      - registered office
+  auditor_report:
+    title:
+      - independent auditor's report
+      - auditor's report
+      - report on the audit of the financial statements
+    content:
+      - {phrase: basis for opinion, weight: 2}
+      - {phrase: key audit matters, weight: 2}
+      - {phrase: we have audited, weight: 2}
+      - true and fair view
+      - material misstatement
+      - reasonable assurance
+      - standards on auditing
+      - companies (auditor's report) order
+      - {phrase: udin, weight: 2}
+      - firm registration
+      - membership no
+  accountant_certificate:
+    title:
+      - compilation report
+      - accountant's certificate
+      - certificate on provisional financial statements
+      - report on compilation
+    content:
+      - {phrase: we have compiled, weight: 2}
+      - {phrase: compilation engagement, weight: 2}
+      - {phrase: not audited, weight: 2}
+      - based on information provided by the management
+      - {phrase: udin, weight: 1}
+      - chartered accountants
+      - membership no
+  balance_sheet:
+    title:
+      - balance sheet
+      - statement of financial position
+      - statement of assets and liabilities
+    content:
+      - {phrase: equity and liabilities, weight: 2}
+      - share capital
+      - reserves and surplus
+      - other equity
+      - long-term borrowings
+      - short-term borrowings
+      - trade payables
+      - inventories
+      - trade receivables
+      - cash and cash equivalents
+      - cash and bank balances
+      - {phrase: non-current assets, weight: 1}
+      - {phrase: current liabilities, weight: 1}
+      - {phrase: total assets, weight: 1}
+      - sundry debtors
+      - sundry creditors
+      - capital account
+  profit_and_loss:
+    title:
+      - statement of profit and loss
+      - profit and loss account
+      - income statement
+      - statement of income and expenditure
+      - trading and profit and loss account
+    content:
+      - {phrase: revenue from operations, weight: 2}
+      - other income
+      - total income
+      - cost of materials consumed
+      - employee benefits expense
+      - finance costs
+      - depreciation and amortisation
+      - {phrase: profit before tax, weight: 2}
+      - tax expense
+      - earnings per share
+      - gross profit
+    warning:
+      - {phrase: computation of total income, zone: title}
+      - {phrase: gross total income, weight: 3}
+  cash_flow:
+    title:
+      - cash flow statement
+      - statement of cash flows
+    content:
+      - {phrase: cash flows from operating activities, weight: 2}
+      - investing activities
+      - financing activities
+      - net increase in cash
+      - cash and cash equivalents at the end
+  notes:
+    title:
+      - notes to the financial statements
+      - notes forming part of the financial statements
+      - significant accounting policies
+    content:
+      - {phrase: note, weight: 0.5}
+      - basis of preparation
+      - accounting policies
+      - related party
+      - contingent liabilities
+  projection_assumptions:
+    title:
+      - assumptions
+      - key assumptions
+      - basis of projections
+    content:
+      - {phrase: projected, weight: 2}
+      - {phrase: estimated, weight: 1}
+      - growth rate
+      - capacity utilisation
+      - assumed
+  cma_forms:   # unverified: no sample yet
+    title:
+      - credit monitoring arrangement
+      - cma data
+      - operating statement
+      - analysis of balance sheet
+      - comparative statement of current assets and current liabilities
+      - computation of maximum permissible bank finance
+      - fund flow statement
+    content:
+      - {phrase: maximum permissible bank finance, weight: 2}
+      - {phrase: mpbf, weight: 2}
+      - {phrase: form ii, weight: 1}
+      - {phrase: form iii, weight: 1}
+      - {phrase: form iv, weight: 1}
+      - {phrase: form v, weight: 1}
+      - {phrase: form vi, weight: 1}
+      - working capital gap
+      - holding period
+      - {phrase: actuals, weight: 1}
+      - {phrase: estimates, weight: 1}
+      - {phrase: projections, weight: 1}
+  itr_acknowledgement_page:
+    title:
+      - income tax return acknowledgement
+      - indian income tax return acknowledgement
+      - itr-v
+      - acknowledgement of receipt of return
+    content:
+      - {phrase: acknowledgement number, weight: 2}
+      - {phrase: assessment year, weight: 1}
+      - date of filing
+      - electronically transmitted
+      - {phrase: e-filing, weight: 1}
+      - total income
+      - {identifier: pan, weight: 1}
+  itr_computation:
+    title:
+      - computation of total income
+      - computation of income
+      - statement of total income
+    content:
+      - {phrase: gross total income, weight: 2}
+      - {phrase: deductions under chapter vi-a, weight: 2}
+      - income from business or profession
+      - as per statement of profit and loss
+      - total tax payable
+      - taxes paid
+      - refund due
+      - {phrase: assessment year, weight: 1}
+      - name of assessee
+  itr_form:
+    title:
+      - form itr-6
+      - form itr-5
+      - form itr-4
+      - form itr-3
+      - indian income tax return
+    content:
+      - {phrase: part a-gen, weight: 2}
+      - {phrase: part b-ti, weight: 2}
+      - {phrase: part b-ttti, weight: 2}
+      - schedule bp
+      - schedule oi
+      - {phrase: assessment year, weight: 1}
+      - verification
+  tax_credit_statement:   # unverified: no sample yet
+    title:
+      - form 26as
+      - annual tax statement
+    content:
+      - {phrase: tax deducted at source, weight: 2}
+      - {phrase: tan of deductor, weight: 2}
+      - name of deductor
+      - total amount paid credited
+      - total tax deducted
+      - {phrase: assessment year, weight: 1}
+      - section 194
+      - {phrase: part a, weight: 0.5}
+    warning:
+      - {phrase: return of income, zone: title}
+  gstr3b_return:
+    title:
+      - form gstr-3b
+      - gstr-3b
+      - monthly return gstr-3b
+    content:
+      - {phrase: details of outward supplies and inward supplies liable to reverse charge, weight: 3}
+      - outward taxable supplies
+      - eligible itc
+      - eligible input tax credit
+      - {phrase: payment of tax, weight: 1}
+      - integrated tax
+      - central tax
+      - state ut tax
+      - {phrase: return period, weight: 1}
+      - {phrase: arn, weight: 1}
+      - {identifier: gstin, weight: 1}
+      - nil rated
+      - zero rated
+    warning:
+      - {phrase: statement of account, zone: title}
+  gstr1_return:
+    title:
+      - form gstr-1
+      - gstr-1
+      - details of outward supplies of goods or services
+    content:
+      - {phrase: rule 59(1), weight: 2}
+      - {phrase: b2b invoices, weight: 2}
+      - {phrase: b2c, weight: 1}
+      - taxable outward supplies
+      - no of records
+      - credit debit notes
+      - hsn-wise summary
+      - {phrase: return period, weight: 1}
+      - {identifier: gstin, weight: 1}
+    warning:
+      - {phrase: gstr-3b, zone: title}
+      - {phrase: statement of account, zone: title}
+  gstr9_return:   # unverified: no sample yet
+    title:
+      - form gstr-9
+      - gstr-9
+      - annual return
+    content:
+      - {phrase: pt ii details of outward and inward supplies, weight: 2}
+      - details of tax paid as declared in returns
+      - {phrase: financial year, weight: 1}
+      - {identifier: gstin, weight: 1}
+      - particulars of the transactions for the previous fy
+      - demands and refunds
+    warning:
+      - {phrase: gstr-9c, zone: title}
+      - {phrase: gstr-3b, zone: title}
+
+  # ======================================== Banking ===============================================================
+  transactions:
+    title:
+      - statement of account
+      - account statement
+      - statement of transactions
+      - transaction statement
+      - bank statement
+      - {phrase: passbook, weight: 0.5}
+    content:
+      - {phrase: opening balance, weight: 2}
+      - closing balance
+      - {phrase: account number, weight: 1}
+      - {identifier: ifsc, weight: 1}
+      - value date
+      - {phrase: narration, weight: 1}
+      - particulars
+      - {phrase: withdrawal, weight: 1}
+      - deposit
+      - {phrase: debit, weight: 0.5}
+      - {phrase: credit, weight: 0.5}
+      - {phrase: balance, weight: 0.5}
+      - cheque
+      # What every bank prints in its narrations; short words match only exactly. A page of rows with no headings
+      # (a statement's later pages) is placed by these, and by the table continuing from the page before (Epic 3).
+      - {phrase: neft, weight: 1}
+      - {phrase: rtgs, weight: 1}
+      - {phrase: imps, weight: 1}
+      - {phrase: upi, weight: 1}
+      - {phrase: nach, weight: 1}
+      - {phrase: chq, weight: 0.5}
+    warning:
+      - {phrase: permanent account number, weight: 3}   # "account number" inside a PAN is not a bank account
+      - {phrase: balance sheet, zone: title}
+      - {phrase: gstr-3b, zone: title}
+      - {phrase: statement of profit and loss, zone: title}
+  stock_statement:
+    title:
+      - stock statement
+      - stock and book-debt statement
+      - stock and book debts statement
+      - statement of stock
+      - drawing power statement
+    content:
+      - {phrase: drawing power, weight: 2}
+      - {phrase: book debts, weight: 2}
+      - raw material
+      - work in progress
+      - finished goods
+      - hypothecation
+      - sundry creditors
+      - {phrase: ageing, weight: 1}
+      - eligible
+      - margin
+      - sanctioned cash credit limit
+    warning:
+      - {phrase: balance sheet as at, zone: title}
+      - {phrase: statement of account, zone: title}
+  facilities_declaration:
+    title:
+      - declaration of nil existing facilities
+      - declaration of existing credit facilities
+      - declaration of existing facilities
+      - existing credit facilities and bank accounts
+    content:
+      - {phrase: hereby declare, weight: 2}
+      - {phrase: existing credit facilities, weight: 2}
+      - name of lender
+      - nature of facility
+      - sanctioned limit
+      - outstanding
+      - banking arrangements
+      - authorised signatory
+    warning:
+      - {phrase: sanction letter, zone: title}
+      - {phrase: credit information report, zone: title}
+      - {phrase: resolved that, weight: 2}
+  sanction_letter:
+    title:
+      - sanction letter
+      - letter of sanction
+      - sanction of credit facilities
+    content:
+      - {phrase: pleased to sanction, weight: 2}
+      - {phrase: sanctioned amount, weight: 2}
+      - rate of interest
+      - tenure
+      - repayment
+      - security
+      - hypothecation
+      - terms and conditions
+      - processing fee
+      - {phrase: emi, weight: 1}
+    warning:
+      - {phrase: declaration of existing, zone: title}
+      - {phrase: credit information report, zone: title}
+  bureau_report:
+    title:
+      - commercial credit information report
+      - company credit information report
+      - company credit report
+    content:
+      - {phrase: credit rank, weight: 2}
+      - credit facilities
+      - {phrase: days past due, weight: 2}
+      - {phrase: dpd, weight: 1}
+      - overdue
+      - related parties
+      - report date
+      - sanctioned outstanding overdue
+      - end of report
+    warning:
+      - {phrase: sanction letter, zone: title}
+      - {phrase: declaration of existing, zone: title}
+
+types:
+  # Identity
+  certificate_of_incorporation: {parts: [incorporation_certificate]}
+  memorandum_articles_of_association: {parts: [memorandum, articles]}
+  company_pan: {parts: [pan_letter]}
+  director_kyc: {parts: [kyc_person]}
+  board_resolution_borrowing: {parts: [board_resolution]}
+  partnership_deed: {parts: [partnership_deed]}
+  udyam_registration: {parts: [udyam_certificate]}
+
+  # Financials: three types share the statement parts; their own words decide over the run.
+  audited_financial_statements:
+    parts: [statements_cover, auditor_report, balance_sheet, profit_and_loss, cash_flow, notes]
+    title:
+      - audited financial statements
+      - audited accounts
+      - independent auditor's report
+    content:
+      - {phrase: we have audited, weight: 2}
+      - {phrase: udin, weight: 1}
+      - {phrase: basis for opinion, weight: 2}
+    warning:
+      - {phrase: provisional, zone: title}
+      - {phrase: unaudited, zone: title}
+      - {phrase: projected, zone: title}
+      - {phrase: estimated, zone: title}
+      - {phrase: unaudited, weight: 1}     # in the body only lowers the score: notes may mention unaudited quarterly results
+  provisional_financial_statements:
+    parts: [statements_cover, accountant_certificate, balance_sheet, profit_and_loss, cash_flow, notes]
+    title:
+      - provisional financial statements
+      - provisional balance sheet
+      - provisional accounts
+      - unaudited financial statements
+    content:
+      - {phrase: provisional, weight: 3}
+      - {phrase: unaudited, weight: 2}
+      - {phrase: we have compiled, weight: 2}
+      - nine months ended
+      - six months ended
+      - half year ended
+      - for the period ended
+    warning:
+      - {phrase: independent auditor's report, zone: title}
+      - {phrase: projected, zone: title}
+  projected_financial_statements:
+    unverified: true
+    parts: [statements_cover, projection_assumptions, balance_sheet, profit_and_loss, cash_flow]
+    title:
+      - projected financial statements
+      - projected balance sheet
+      - projected profit and loss
+      - financial projections
+      - estimated and projected
+    content:
+      - {phrase: projected, weight: 3}
+      - {phrase: estimated, weight: 1}
+      - {phrase: projections, weight: 2}
+    warning:
+      - {phrase: independent auditor's report, zone: title}
+      - {phrase: credit monitoring arrangement, zone: title}
+  cma_data:
+    unverified: true
+    parts: [cma_forms]
+  income_tax_return:
+    parts: [itr_acknowledgement_page, itr_computation, itr_form]
+    needs_part: [itr_computation, itr_form]
+  itr_acknowledgement:
+    parts: [itr_acknowledgement_page]
+  form_26as:
+    unverified: true
+    parts: [tax_credit_statement]
+  gstr_3b: {parts: [gstr3b_return]}
+  gstr_1: {parts: [gstr1_return]}
+  gstr_9:
+    unverified: true
+    parts: [gstr9_return]
+
+  # Banking
+  bank_statement: {parts: [transactions]}
+  stock_statement: {parts: [stock_statement]}
+  existing_facilities_declaration: {parts: [facilities_declaration]}
+  sanction_letter: {parts: [sanction_letter]}
+  commercial_bureau_report: {parts: [bureau_report]}

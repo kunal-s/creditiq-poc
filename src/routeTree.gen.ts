@@ -21,6 +21,7 @@ import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminChecklistRouteImport } from './routes/admin.checklist'
 import { Route as AdminDocumentTypesRouteImport } from './routes/admin.document-types'
+import { Route as AdminModelUsageRouteImport } from './routes/admin.model-usage'
 import { Route as AdminPolicyRouteImport } from './routes/admin.policy'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminTemplatesRouteImport } from './routes/admin.templates'
@@ -102,6 +103,11 @@ const AdminChecklistRoute = AdminChecklistRouteImport.update({
 const AdminDocumentTypesRoute = AdminDocumentTypesRouteImport.update({
   id: '/document-types',
   path: '/document-types',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminModelUsageRoute = AdminModelUsageRouteImport.update({
+  id: '/model-usage',
+  path: '/model-usage',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminPolicyRoute = AdminPolicyRouteImport.update({
@@ -235,6 +241,7 @@ export interface FileRoutesByFullPath {
   '/sign-in': typeof SignInRoute
   '/admin/checklist': typeof AdminChecklistRoute
   '/admin/document-types': typeof AdminDocumentTypesRoute
+  '/admin/model-usage': typeof AdminModelUsageRoute
   '/admin/policy': typeof AdminPolicyRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/templates': typeof AdminTemplatesRoute
@@ -270,6 +277,7 @@ export interface FileRoutesByTo {
   '/sign-in': typeof SignInRoute
   '/admin/checklist': typeof AdminChecklistRoute
   '/admin/document-types': typeof AdminDocumentTypesRoute
+  '/admin/model-usage': typeof AdminModelUsageRoute
   '/admin/policy': typeof AdminPolicyRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/templates': typeof AdminTemplatesRoute
@@ -306,6 +314,7 @@ export interface FileRoutesById {
   '/sign-in': typeof SignInRoute
   '/admin/checklist': typeof AdminChecklistRoute
   '/admin/document-types': typeof AdminDocumentTypesRoute
+  '/admin/model-usage': typeof AdminModelUsageRoute
   '/admin/policy': typeof AdminPolicyRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/templates': typeof AdminTemplatesRoute
@@ -344,6 +353,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/admin/checklist'
     | '/admin/document-types'
+    | '/admin/model-usage'
     | '/admin/policy'
     | '/admin/settings'
     | '/admin/templates'
@@ -379,6 +389,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/admin/checklist'
     | '/admin/document-types'
+    | '/admin/model-usage'
     | '/admin/policy'
     | '/admin/settings'
     | '/admin/templates'
@@ -414,6 +425,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/admin/checklist'
     | '/admin/document-types'
+    | '/admin/model-usage'
     | '/admin/policy'
     | '/admin/settings'
     | '/admin/templates'
@@ -540,6 +552,13 @@ declare module '@tanstack/react-router' {
       path: '/document-types'
       fullPath: '/admin/document-types'
       preLoaderRoute: typeof AdminDocumentTypesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/model-usage': {
+      id: '/admin/model-usage'
+      path: '/model-usage'
+      fullPath: '/admin/model-usage'
+      preLoaderRoute: typeof AdminModelUsageRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/policy': {
@@ -702,6 +721,7 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminChecklistRoute: typeof AdminChecklistRoute
   AdminDocumentTypesRoute: typeof AdminDocumentTypesRoute
+  AdminModelUsageRoute: typeof AdminModelUsageRoute
   AdminPolicyRoute: typeof AdminPolicyRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminTemplatesRoute: typeof AdminTemplatesRoute
@@ -712,6 +732,7 @@ interface AdminRouteChildren {
 const AdminRouteChildren: AdminRouteChildren = {
   AdminChecklistRoute: AdminChecklistRoute,
   AdminDocumentTypesRoute: AdminDocumentTypesRoute,
+  AdminModelUsageRoute: AdminModelUsageRoute,
   AdminPolicyRoute: AdminPolicyRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminTemplatesRoute: AdminTemplatesRoute,

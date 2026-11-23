@@ -55,6 +55,7 @@ nav:
     documentTypes: Document Types
     templates: Template Designer
     users: Users and Roles
+    modelUsage: Model Usage
 
 action:
   retry: Try again
@@ -224,11 +225,13 @@ spreadPage:
     title: Source panel
     hint: Select any figure to see where it was read from.
     read: Read from the document
+    worked: Worked out from figures read from the document
     manual: Relies on a person's entry
     page: "Page {page}"
     more: "{n} more pages"
     open: Open the page
     noPage: Not read from a page.
+    document: Financial statements
   reconcile:
     title: Checks against the statements
     summary: "{agree} of {total} agree"
@@ -260,24 +263,21 @@ spreadPage:
     editedBy: "Entered by {name} on {date}"
     reason: "Reason: {reason}"
     inputs: Worked from
-    edit: Edit this figure
-    editInput: Edit
     detail: How it was worked out
-    revert: Put the statement's figure back
-  edit:
-    title: Edit a statement figure
-    subtitle: "{label} · {fy}"
-    entry: "Amount as the statement prints it ({unit})"
-    entryRupees: "That is {rupees} in rupees."
-    entryHint: Type it as it appears on the page, in the same unit, so a missing or extra zero shows.
-    reason: Reason
-    reasonHint: Say what the page shows or why the figure is being changed; at least 3 characters.
-    save: Save the edit
-    cancel: Cancel
-    saved: Figure updated; everything worked from it has been recalculated.
-    revertTitle: Put the statement's figure back
-    revertReason: Why is the statement's figure right?
-    reverted: The statement's figure is back.
+    # Where a statement figure was read (the figure's own working, and each figure a sum or ratio is worked from).
+    source: Where it was read
+    fileAt: "{file} · page {page}"
+    file: "{file}"
+    line: Printed line
+    open: Open the page
+    change: Change it on the Extractions tab
+    see: See it on the Extractions tab
+    changeHint: A statement figure is changed on the Extractions tab, where each change is checked by the Credit Manager; every figure worked from it then follows.
+    changed: "Changed on the Extractions tab and approved. The statement printed {value}."
+    changedNoValue: Changed on the Extractions tab and approved.
+    showSource: "Where {label} comes from"
+    openInput: "Open the page {label} was read from (page {page})"
+    hideSource: "Hide where {label} comes from"
 
 # Views within the Outputs tab.
 outputs:
@@ -378,6 +378,11 @@ outputs:
     restore: Restore the draft
     close: Close
     copilotOff: "The copilot is not configured: its key is not set."
+    # Why a redraft failed, by the kind of failure the engine reports.
+    copilotBusy: The copilot is busy just now. Try again in a minute.
+    copilotLimit: The copilot's usage limit has been reached. Try again later.
+    copilotUnreachable: The copilot could not be reached. Try again in a little while.
+    copilotRefused: The copilot could not redraft this section's content.
     editHint: The section's paragraphs, one per block of text; each keeps the citations of the paragraph in its place.
     editSave: Save my words
     editNote: Saved with your name and the time; the engine's draft can be restored.
@@ -737,8 +742,8 @@ policy:
     trendUp: "up {delta} on {fy}"
     trendDown: "down {delta} on {fy}"
     trendFlat: "unchanged on {fy}"
-    enter: "Enter {label}"
-    enterHint: "The statement does not give this figure. Enter it from the page, or as nil if there is none; it is kept with a reason."
+    supply: "Supply {label} on the Extractions tab"
+    supplyHint: "The statement does not give this figure. It is supplied on the Extractions tab, where the Credit Manager checks the change."
     needsData: "Needs figures that come from the bank statements or a sanction letter, not from the financial statements."
     meaning:
       current-ratio: Whether short-term assets cover what falls due within the year.
@@ -2009,6 +2014,7 @@ audit:
     processing_run: Ran document processing
     processing_reextract: Read a document again
     review_decided: Decided a review item
+    case_recalculated: Recalculated the appraisal after an approved change
     reference_imported: Imported RBL's record
     reference_confirmed: Confirmed RBL's record
     comparison_adjudicated: Decided a comparison item
@@ -2207,6 +2213,101 @@ admin:
     branch: Branch
     roles: What each role may do
     rolesHelp: Permissions are enforced by the server; the menu only hides what a role cannot use.
+  modelUsage:
+    purpose: Every request the system made to a language model, by day, service and task, with the tokens it used, what it cost at the configured prices and what failed.
+    filters: Filters
+    from: From
+    to: To
+    service: Service
+    allServices: All services
+    task: Task
+    allTasks: All tasks
+    status: Outcome
+    allOutcomes: All outcomes
+    errorsOnly: Failed only
+    okOnly: Answered only
+    kind: Failure
+    allKinds: All failures
+    caseRef: Appraisal reference
+    calls: Model calls
+    callsNote: "{ok} answered, {errors} failed"
+    tokens: Tokens
+    tokensNote: "{input} in, {output} out"
+    cost: Cost
+    costPartial: Leaves out models whose price is not set
+    costNote: At the configured prices
+    priceNotSet: Price not set
+    latency: p95 latency
+    latencyNote: Highest of any day and task, of calls sent to the model
+    latencyCol: Time taken
+    noLatency: No calls sent
+    live: Sent to the model
+    replayHits: Recorded answers reused
+    replayMisses: No recorded answer
+    dailyTokens: Tokens by day
+    dailyTokensHelp: Input and output tokens of each day's calls.
+    dailyCost: Cost by day
+    dailyCostHelp: At the configured price of each model.
+    noCost: The price of the models used is not set, so no cost can be shown.
+    input: Input
+    output: Output
+    chartLabel: "{title}, {from} to {to}"
+    barLabel: "{day}: {value}"
+    byService: By service and task
+    byServiceHelp: Over the whole range, highest use first.
+    model: Model
+    errors: Failed
+    p95: p95 latency
+    byKind: Failures by kind
+    byKindHelp: Each failed attempt, by what went wrong.
+    noFailures: No call failed in this range.
+    callList: Calls
+    callListHelp: Newest first. Each attempt and each recorded answer is one row.
+    when: When
+    outcome: Outcome
+    appraisal: Appraisal
+    answered: Answered
+    ms: "{n} ms"
+    shown: "{from}–{to} of {total}"
+    previous: Previous
+    next: Next
+    empty: No model calls in this range
+    emptyHelp: Calls appear here as documents are read, memo sections redrafted and questions asked.
+    noMatch: No call matches these filters.
+    unavailable: "Not every source could be read: {names}. The figures leave it out."
+    partialCalls: The list leaves out the sources that could not be read.
+    serviceName:
+      ingestion: Document processing
+      cam: Credit memo copilot
+      copilot: Case assistant
+    taskName:
+      classify: Document type
+      extract: Field reading
+      transactions: Transaction categories
+      cam_section: Memo section redraft
+      router: Question routing
+      runner: Answer
+    sourceName:
+      live: Sent to the model
+      replay_hit: Recorded answer
+      replay_miss: No recorded answer
+    modelName:
+      gpt_5_4_nano: Compact model
+      gpt_4_1_mini: Small model
+      other: Other model
+    kindName:
+      rate_limit_minute: Per-minute limit
+      quota: Quota used up
+      server_unavailable: Server unavailable
+      timeout: Timed out
+      content_filter: Filtered by the provider
+      bad_request: Request not accepted
+      auth: Key not accepted
+      not_configured: Not configured
+      refusal: Declined to answer
+      bad_response: Answer could not be read
+      replay_miss: No recorded answer
+      other: Other failure
   permission:
     case_create: Create appraisals
     case_read: Open own appraisals
@@ -2229,6 +2330,7 @@ admin:
     audit_read: See the audit trail
     config_read: See administration
     config_publish: Change settings and publish them
+    model_usage_read: See model usage
 
 fileStatus:
   registered: Registered
@@ -2643,6 +2745,8 @@ data:
   showFields: Show fields
   hideFields: Hide fields
   tableToggle: "{title} ({n} rows)"
+  # A statement no configured layout found, whose rows the model mapped; its figures are still read from the page.
+  tableByModel: Rows mapped by the model · figures read from the page
   fields: Fields
   col:
     field: Field
@@ -2651,13 +2755,48 @@ data:
     method: Method
     status: Status
     row: Row
+    source: Source
   raw: "As printed: {raw}"
+  # Where a value was read: under each value, and in the source column of a table row.
+  sourcePage: "Page {page}"
+  sourceFileAt: "{file} · page {page}"
+  sourceNone: Not on a page
   cell: "{table}, row {row} · {column}"
   detailsFields: Fields on this document
   readBy: Read by
   asPrinted: As printed
   openEvidence: Open the source page
   composition: Confidence composition
+  focused: The value the other tab pointed to
+  goToFocused: Go to it
+  rowCell: "{row} · {column}"
+
+# The Extractions tab's record of each approved change and what it moved when the appraisal was recalculated.
+recalculation:
+  title: Recalculations
+  subtitle: What each approved change moved
+  changedValue: "{label}"
+  inDocument: "{document} · {file}"
+  fromTo: "{from} → {to}"
+  by: "Changed by {maker} · approved by {checker} · {at}"
+  approvedBy: "Approved by {checker} · {at}"
+  reason: "Reason: {reason}"
+  moved: What changed as a result
+  nothing: Nothing worked from this value changed.
+  showAll: "Show all {n} recalculations"
+  showLatest: Show the latest only
+  area:
+    figure: Figures
+    norm: Policy norms
+    check: Cross-checks
+    readiness: Document readiness
+    authority: Approving authority
+  check:
+    pass: Agrees
+    fail: Differs
+    incomplete: Not fully checked
+    not_applicable: Not applicable
+  none: "—"
 
 fieldStatus:
   accepted: Confirmed

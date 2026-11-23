@@ -20,16 +20,17 @@ from __future__ import annotations
 
 import ctypes
 import math
-import threading
 from dataclasses import dataclass
 
 import pypdfium2 as pdfium
 import pypdfium2.raw as pdfium_c
 
+from ..readers.pdfium_guard import PDFIUM
+
 __all__ = ["Box", "Char", "Run", "Covered", "Picture", "PagePicture", "PageDoc", "PICTURE_PAGE_COVERAGE"]
 
-#: pdfium is not thread-safe: two threads in it at once abort the process.
-_PDFIUM = threading.RLock()
+#: pdfium is not thread-safe: the one lock every pypdfium2 call in the service holds.
+_PDFIUM = PDFIUM
 
 #: A filled shape hides what is under it only if it is opaque. A translucent
 #: highlight leaves the text readable, so it is not a cover.

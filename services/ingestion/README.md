@@ -26,6 +26,7 @@ are JSONB, queryable in SQL.
 ```bash
 cd services/ingestion
 python3.12 -m venv .venv && .venv/bin/pip install -r requirements.txt     # + requirements-ocr.txt for scans
+.venv/bin/pip install --no-deps --require-hashes -r requirements-ocr.txt   # OCR for scans (PaddleOCR, without python-bidi)
 CREDITIQ_DATA_ROOT=../../workflow/data INGEST_CONFIG_DIR=../../config/ingestion .venv/bin/python -m ingestion.cli serve
 ```
 
@@ -36,6 +37,7 @@ CREDITIQ_DATA_ROOT=../../workflow/data INGEST_CONFIG_DIR=../../config/ingestion 
 | `INGEST_PORT`, `INGEST_HOST` | 3102, 127.0.0.1 | anything but loopback needs `INGEST_API_KEY` |
 | `INGEST_API_KEY` | | `x-api-key` or `Authorization: Bearer`; empty means loopback callers only |
 | `INGEST_MODEL_MODE` | `replay` | `replay` (recordings only, a miss is an error), `record`, `live` |
+| `INGEST_OCR_WORKERS` | 2 | pages read by OCR at once, each in its own process with an equal share of the cores; requests themselves run side by side (the engine sends `services.ingest_workers` files at once) |
 | `OPENAI_API_KEY` | | the variable named by `llm.yaml: api_key_env` |
 
 ```bash

@@ -85,6 +85,12 @@ INPUT_LABELS = {
     "other_current_assets": "Other current assets",
     "other_current_liabilities": "Other current liabilities",
     "short_term_provisions": "Short-term provisions",
+    # Ind AS lines a statement filed in XBRL prints on their own (config/statements.yaml).
+    "bank_balances_other_than_cash": "Bank balances other than cash and cash equivalents",
+    "other_current_financial_assets": "Other current financial assets",
+    "current_tax_assets": "Current tax assets (net)",
+    "other_current_financial_liabilities": "Other current financial liabilities",
+    "current_tax_liabilities": "Current tax liabilities",
     "current_assets": "Current assets",
     "current_liabilities": "Current liabilities",
     "amount_requested": "Amount requested",

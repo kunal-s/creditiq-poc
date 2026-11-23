@@ -273,6 +273,23 @@ class PageScope(Strict):
     span: int = 1
 
 
+class ModelTable(Strict):
+    """A table the model may map when no configured layout finds it (FRD F-15.2, F-15.3). The model is shown the
+    candidate pages and names, for each row, the line its label is on and which figure on which line belongs to
+    each column; it never writes a figure. Code reads every figure from the line named and rejects what is not
+    there (F-15.4)."""
+
+    pages: list[str]
+    """A page is a candidate when one of its opening lines matches one of these (the statement's title)."""
+    head_lines: int = 8
+    span: int = 1
+    """Pages read from each candidate page on, so a table that runs over the page is read whole."""
+    max_pages: int = 4
+    label_column: str = "particulars"
+    hints: dict[str, str] = Field(default_factory=dict)
+    """What each column holds, in words, for the model (column name -> hint)."""
+
+
 class TypeFields(Strict):
     extraction: Literal["rules", "model"] = "rules"
     """`model`: the model reads every field that has no identifier rule (and is not `llm: false`) from the
@@ -281,6 +298,8 @@ class TypeFields(Strict):
     fields: dict[str, FieldRule] = Field(default_factory=dict)
     identity: dict[str, str] = Field(default_factory=dict)  # identity key (name, pan, din, dob, gstin, cin) -> schema field
     tables: dict[str, TableRule | list[TableRule]] = Field(default_factory=dict)   # a list is layout variants, tried in order
+    model_tables: dict[str, ModelTable] = Field(default_factory=dict)
+    """Tables the model maps when every layout above fails to find them (and a model is configured)."""
 
 
 class FieldsConfig(Strict):
@@ -554,15 +573,35 @@ class SiblingsConfig(Strict):
     """Key fields (required, or named in the type's identity) that must be found for the part to count."""
 
 
+class RetryConfig(Strict):
+    """How a failed model call is retried, by the kind of failure (llm/errors.py). Operational waits,
+    not decision rules (CLAUDE.md rule 5 is about rules): the published version holds them."""
+
+    server_attempts: int = Field(3, ge=1)            # total attempts for server_unavailable / timeout
+    server_backoff_s: list[float] = Field(default_factory=lambda: [2.0, 4.0], min_length=1)
+    """Waits between those attempts, in order (the last repeats); never a wait after the last attempt."""
+    backoff_jitter: float = Field(0.2, ge=0, lt=1)  # each wait is moved by up to this share, either way
+    rate_limit_attempts: int = Field(3, ge=1)
+    rate_limit_wait_s: float = Field(60, gt=0)       # when a per-minute limit names no wait
+    max_wait_s: float = Field(90, gt=0)              # a longer wait asked for is not waited: the call fails
+    breaker_failures: int = Field(5, ge=1)           # server failures in a row, across calls, that open the breaker
+    breaker_cooldown_s: float = Field(120, gt=0)     # while open, calls fail at once; then one trial call
+
+
 class LlmConfig(Strict):
     """The model layer (FRD AD-5a). Prompt text and sampling settings are part of the published version."""
 
-    provider: Literal["openai", "stub"] = "openai"
+    provider: Literal["openai", "azure", "stub"] = "openai"
     model: str = "gpt-5.4-nano"
+    """The model id. The call log, the prices and the names on Model usage use it, whatever the deployment is called."""
+    deployment: str | None = None
+    """Azure only: the deployment's name, sent as the request's `model` (base_url is then <endpoint>/openai/v1)."""
     base_url: str = "https://api.openai.com/v1"
     api_key_env: str = "OPENAI_API_KEY"
     timeout_s: float = 120
-    max_retries: int = 2
+    max_retries: int | None = None
+    """Superseded by `retry`; still read from versions published before it (server_attempts = max_retries + 1)."""
+    retry: RetryConfig | None = None
     classify_chars: int = 6000
     window_chars: int = 12000
     temperature: float | None = None
@@ -574,6 +613,15 @@ class LlmConfig(Strict):
     siblings: SiblingsConfig = Field(default_factory=SiblingsConfig)
     discover_max_fields: int = Field(default=12, ge=1, le=40)
     """The most fields the model may propose for a case document type with no named fields (F-15.8)."""
+
+    @model_validator(mode="after")
+    def _retry(self) -> "LlmConfig":
+        """A version published before the `retry` block had `max_retries` (retries after the first attempt)."""
+        if self.provider == "azure" and not self.deployment:
+            raise ValueError("provider azure needs `deployment`: the name the model was deployed under")
+        if self.retry is None:
+            self.retry = RetryConfig(**({"server_attempts": self.max_retries + 1} if self.max_retries is not None else {}))
+        return self
 
 
 # --- confidence.yaml, decision.yaml ------------------------------------------------------------
@@ -693,6 +741,19 @@ class IngestionConfig(Strict):
                     for rx in [tr.start, tr.end, tr.row_start, tr.page_match, *tr.skip_rows, *tr.drop_lines, *[c.header for c in tr.columns]]:
                         if rx:
                             _compile(rx, f"fields.{tid}.tables.{tname}", problems)
+            for tname, mt in tf.model_tables.items():
+                if tname not in tnames:
+                    problems.append(f"fields.{tid}.model_tables.{tname}: not in the type's schema")
+                    continue
+                cols = {c.name for c in tnames[tname].columns}
+                if mt.label_column not in cols:
+                    problems.append(f"fields.{tid}.model_tables.{tname}.label_column: unknown column {mt.label_column}")
+                if set(mt.hints) - cols:
+                    problems.append(f"fields.{tid}.model_tables.{tname}.hints: unknown columns {sorted(set(mt.hints) - cols)}")
+                for rx in mt.pages:
+                    _compile(rx, f"fields.{tid}.model_tables.{tname}.pages", problems)
+                if "table" not in self.llm.prompts:
+                    problems.append("llm.prompts: missing 'table' (model_tables needs it)")
         for r in self.validators.rules:
             for t in r.types:
                 if t not in types:

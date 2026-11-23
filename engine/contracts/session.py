@@ -51,6 +51,8 @@ class Features(BaseModel):
 
     integrity_checks: bool = True
     """File integrity checks (F-07A) on screen."""
+    model_usage: bool = True
+    """The Administration's Model usage section."""
 
 
 class Meta(BaseModel):

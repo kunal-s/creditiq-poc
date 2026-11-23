@@ -11,6 +11,7 @@ the Administration screen (F-00.6); nothing that runs on a case may import it
 from __future__ import annotations
 
 import json
+from datetime import date
 import logging
 import os
 import sqlite3
@@ -23,6 +24,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from python_multipart.exceptions import MultipartParseError
 
 from . import (
+    model_usage,
     bank_conduct,
     bank_txns,
     admin_config,
@@ -51,6 +53,7 @@ from . import (
     proposal,
     queries,
     reads,
+    recalculation,
     reference,
     rejections,
     review,
@@ -122,12 +125,15 @@ from .contracts import (
     ReviewDecisionRequest,
     UploadResult,
     FieldValue,
+    Recalculation,
     FileRecord,
     IntegrityReviewRequest,
     Finding,
     LoginRequest,
     LoginResponse,
     LogicalDocument,
+    ModelCalls,
+    ModelUsageSummary,
     DisplayUnit,
     Meta,
     QueryItem,
@@ -261,7 +267,8 @@ def meta(_: dict = Depends(current_user)) -> dict:
         "bank_stages": [{"id": o["id"], "label": o["label"]} for o in option_list("bank_stages")],
         "bank_stage_default": option_default("bank_stages"),
         "case_create_minimum": cfg["case_create_minimum"],
-        "features": {"integrity_checks": feature_enabled("integrity_checks")},
+        "features": {"integrity_checks": feature_enabled("integrity_checks"),
+                     "model_usage": feature_enabled("model_usage")},
     }
 
 
@@ -443,6 +450,16 @@ def case_fields(
 ):
     _case_for(conn, case_id, user)
     return reads.field_values(conn, case_id, document_id)
+
+
+@app.get("/api/cases/{case_id}/recalculations", response_model=list[Recalculation])
+def case_recalculations(
+    case_id: str, user: dict = Depends(require("data.read")), conn: sqlite3.Connection = Depends(get_conn)
+):
+    """Each recalculation an approved change on the Extractions tab set off, the latest first: the change,
+    who made and approved it, and every figure, norm, cross-check, readiness and authority it moved."""
+    _case_for(conn, case_id, user)
+    return recalculation.history(conn, case_id)
 
 
 # --- Completeness (F-12 to F-14) ---
@@ -804,6 +821,10 @@ def cam_regenerate(case_id: str, section_id: str, body: CamRegenerateRequest,
     cfg = configstore_reader.load_cam(data_root()).copilot
     try:
         paragraphs, recorded = cam_copilot.regenerate(conn, memo, section_id, body.instruction, cfg)
+    except cam_copilot.CopilotError as e:
+        # The kind of failure, for the screen to word it (terminology/rbl.yaml); the engine's words beside it.
+        detail = {"message": str(e), "kind": e.kind} if e.kind else str(e)
+        raise HTTPException(status_code=e.status, detail=detail) from e
     except cam_review.ReviewError as e:
         raise HTTPException(status_code=e.status, detail=str(e)) from e
     return CamRegenerateResult(paragraphs=paragraphs, model=cfg.model, recorded=recorded)
@@ -1519,6 +1540,35 @@ def config_approval_matrix(_: dict = Depends(require("config.read"))):
 @app.get("/api/config/checklist-taxonomy", response_model=ChecklistTaxonomySection)
 def config_checklist_taxonomy(_: dict = Depends(current_user)):
     return _config(configstore_reader.load_checklist_taxonomy)
+
+
+def _model_usage_on() -> None:
+    if not feature_enabled("model_usage"):
+        raise HTTPException(status_code=404, detail="model usage is not part of this deployment")
+
+
+@app.get("/api/admin/model-usage/summary", response_model=ModelUsageSummary)
+def model_usage_summary(request: Request, start: date | None = Query(None, alias="from"),
+                        end: date | None = Query(None, alias="to"), service: str | None = None, task: str | None = None,
+                        _: dict = Depends(require("model_usage.read")), conn: sqlite3.Connection = Depends(get_conn)):
+    """Tokens, cost, calls, errors and latency by day, service, task and model, from the three model call logs.
+    A source that cannot be read is named in `unavailable`; the rest is still shown."""
+    _model_usage_on()
+    token = request.headers.get("authorization", "").removeprefix("Bearer ").strip() or None
+    return model_usage.read_summary(conn, start=start, end=end, service=service, task=task, token=token)
+
+
+@app.get("/api/admin/model-usage/calls", response_model=ModelCalls)
+def model_usage_calls(request: Request, start: date | None = Query(None, alias="from"),
+                      end: date | None = Query(None, alias="to"), service: str | None = None, task: str | None = None,
+                      status: str | None = None, kind: str | None = None, case_ref: str | None = None,
+                      limit: int = 50, offset: int = 0,
+                      _: dict = Depends(require("model_usage.read")), conn: sqlite3.Connection = Depends(get_conn)):
+    """The model calls that match, newest first, paged across the three logs."""
+    _model_usage_on()
+    token = request.headers.get("authorization", "").removeprefix("Bearer ").strip() or None
+    return model_usage.read_calls(conn, start=start, end=end, service=service, task=task, status=status, kind=kind,
+                                  case_ref=case_ref, limit=limit, offset=offset, token=token)
 
 
 @app.get("/api/config/document-types", response_model=DocumentTypesSection)

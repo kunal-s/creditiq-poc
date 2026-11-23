@@ -119,6 +119,8 @@ class Value:
     """Still waiting for a person's review (F-17.2)."""
     raw: str | None = None
     """The text as the document prints it ("3,586", "-")."""
+    read: object | None = None
+    """What the document gave, when a person's approved change (the Extractions tab) is in force instead."""
 
 
 @dataclass
@@ -147,6 +149,8 @@ class Doc:
     """The live edits of this document's statement lines, by line and column."""
     case_type: bool = False
     """Of a type made for this appraisal (F-09.8): its values count once a person confirmed them (F-19.10)."""
+    file_name: str | None = None
+    """The name of the file the document was read from."""
 
     @property
     def label(self) -> str:
@@ -193,8 +197,9 @@ def load_documents(conn: sqlite3.Connection, root: Path, case_id: str) -> list[D
     types.update(case_types.names(conn, case_id))
     docs: list[Doc] = []
     for row in conn.execute(
-        """SELECT d.* FROM documents d WHERE d.case_id = ? AND d.status IN ('accepted', 'in_review', 'extracted',
-           'classified') ORDER BY d.created_at, d.id""",
+        """SELECT d.*, f.original_name AS file_name FROM documents d LEFT JOIN files f ON f.id = d.file_id
+           WHERE d.case_id = ? AND d.status IN ('accepted', 'in_review', 'extracted', 'classified')
+           ORDER BY d.created_at, d.id""",
         (case_id,),
     ):
         doc_types = effective_types(row)
@@ -218,6 +223,7 @@ def load_documents(conn: sqlite3.Connection, root: Path, case_id: str) -> list[D
                 manual=fv["method"] == "manual" or fv["status"] == "corrected",
                 pending=fv["status"] == "in_review",
                 raw=fv["raw"],
+                read=json.loads(fv["value"]) if fv["status"] == "corrected" and fv["value"] is not None else None,
             )
         edits = {
             (e["line"], e["column_name"]): StatementEdit(e["id"], e["line"], e["column_name"], e["original"], e["value"],
@@ -235,6 +241,7 @@ def load_documents(conn: sqlite3.Connection, root: Path, case_id: str) -> list[D
                 party_id=row["party_id"] if "party_id" in row.keys() else None,
                 edits=edits,
                 case_type=own,
+                file_name=row["file_name"],
             )
         )
     return docs

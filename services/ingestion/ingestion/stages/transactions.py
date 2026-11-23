@@ -13,10 +13,11 @@ import re
 from pydantic import BaseModel, Field
 
 from ..config.models import IngestionConfig
-from ..llm.provider import ModelRequest
+from ..llm.provider import ModelError, ModelRequest
 from ..llm.recorder import ModelClient
 
 UNKNOWN = "unknown"
+UNAVAILABLE = "model_unavailable"   # the reason a batch the model could not answer carries, with its kind
 CONFIDENCE = ("high", "medium", "low")
 _CONTROL = re.compile(r"[\x00-\x1f\x7f]+")
 
@@ -51,6 +52,9 @@ class ClassifyResponse(BaseModel):
     model: str
     calls: int
     results: list[Result]
+    failed_batches: int = 0
+    """Batches the model could not answer after its retries: their transactions are filed `unknown` with
+    the reason `model_unavailable:<kind>`, to be classified another time, never taken as an answer."""
 
 
 def _schema(ids: list[str]) -> dict:
@@ -70,6 +74,7 @@ def classify(cfg: IngestionConfig, model: ModelClient, req: ClassifyRequest) -> 
     pr = cfg.llm.prompts["transactions"]
     size = cfg.llm.transactions.batch_size
     out: list[Result] = []
+    failed = 0
     calls_before = model.calls
     for direction in ("credit", "debit"):
         cats = [c for c in req.categories if c.direction == direction]
@@ -86,7 +91,15 @@ def classify(cfg: IngestionConfig, model: ModelClient, req: ClassifyRequest) -> 
             lines = "\n".join(json.dumps({"key": i.key, "amount": round(i.amount), "narration": _clean(i.narration)},
                                           ensure_ascii=False) for i in batch)
             user = pr.user.replace("{{direction}}", direction).replace("{{categories}}", listing).replace("{{items}}", lines).strip()
-            answer = model.call(ModelRequest("transactions", system, user, _schema(ids)))
+            try:
+                answer = model.call(ModelRequest("transactions", system, user, _schema(ids)))
+            except ModelError as e:
+                if e.code == "replay_miss":
+                    raise       # a transaction with no recording is an error, never a guess
+                failed += 1     # this batch waits for another time; the others are kept
+                for i in batch:
+                    out.append(Result(key=i.key, category=UNKNOWN, confidence="low", reason=f"{UNAVAILABLE}:{e.kind}"))
+                continue
             given = {i.key for i in batch}
             seen: set[str] = set()
             for r in answer.get("results", []):
@@ -100,4 +113,4 @@ def classify(cfg: IngestionConfig, model: ModelClient, req: ClassifyRequest) -> 
                     out.append(Result(key=i.key, category=UNKNOWN, confidence="low", reason="the model gave no answer"))
     order = {i.key: n for n, i in enumerate(req.items)}
     out.sort(key=lambda r: order.get(r.key, 0))
-    return ClassifyResponse(model=model.name, calls=model.calls - calls_before, results=out)
+    return ClassifyResponse(model=model.name, calls=model.calls - calls_before, results=out, failed_batches=failed)

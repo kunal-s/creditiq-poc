@@ -148,7 +148,7 @@ def _card(found: dict[str, list[dict]], rule: str, scope: str | None = None) -> 
 
 
 def _page(document_id: str, page: int) -> dict:
-    return {"document_id": document_id, "page": page, "bbox": None}
+    return {"document_id": document_id, "page": page, "bbox": None, "line": None}
 
 
 def _rows(column: dict, kind: str = "row") -> list[dict]:

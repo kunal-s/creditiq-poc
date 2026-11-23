@@ -1,5 +1,5 @@
 import { Fragment, useState } from "react";
-import { ArrowRight, CheckCircle2, ChevronRight, Eye, PencilLine } from "lucide-react";
+import { ArrowRight, CheckCircle2, ChevronRight, Crosshair, Eye, PencilLine } from "lucide-react";
 import type { FieldStatus, FieldValue, LogicalDocument } from "@/api/types";
 import { Chip, Panel } from "@/components/common/Panel";
 import { Details } from "@/components/common/Details";
@@ -29,6 +29,7 @@ import { usePendingChanges } from "@/domain/figureEdits";
 import { useCan } from "@/domain/session";
 import { cn } from "@/lib/utils";
 import { StackTable } from "@/components/common/StackTable";
+import { RecalculationPanel } from "@/components/case/RecalculationPanel";
 
 /** "awaiting": figures changed by a person and waiting for their check (figureEdits.ts). */
 const FILTERS = ["all", "in_review", "awaiting", "missing", "corrected"] as const;
@@ -61,9 +62,17 @@ function tableRowOf(f: FieldValue): string | null {
   return m ? `${f.document_id}:${m[1]}` : null;
 }
 
-/** Extracted fields by document, with confidence and page (F-15, F-16). A figure on a financial
- * statement can be changed by the Credit Analyst and is checked by the Credit Manager. */
-export function ExtractedDataSection({ caseId }: { caseId: string }) {
+/** Extracted fields by document, with confidence, page and the line each was read from (F-15, F-16). A figure on
+ * a financial statement can be changed here, and only here, by the Credit Analyst, and is checked by the Credit
+ * Manager; once approved the appraisal is recalculated and the change and what it moved are listed beside.
+ * `focus` is a value another tab pointed to (?field=): its document opens with the value marked. */
+export function ExtractedDataSection({
+  caseId,
+  focus,
+}: {
+  caseId: string;
+  focus?: string | undefined;
+}) {
   const fields = useFields(caseId);
   const documents = useCaseDocuments(caseId);
   const pending = usePendingChanges(caseId);
@@ -87,19 +96,23 @@ export function ExtractedDataSection({ caseId }: { caseId: string }) {
     );
   }
   const all = fields.data;
+  const focused = focus ? all.find((f) => f.id === focus) : undefined;
   const count = (s: FieldStatus) => all.filter((f) => f.status === s).length;
   const awaiting = all.filter((f) => pending.has(f.id)).length;
   // A checker opens on the changes waiting for them; everyone else on what the reading left to check.
   const filter: Filter =
     chosen ??
-    (checker && awaiting > 0
-      ? "awaiting"
-      : count("in_review") > 0
-        ? "in_review"
-        : awaiting > 0
-          ? "awaiting"
-          : "all");
-  // Nothing to check and nothing chosen: each document is one folded row, opened on request.
+    (focused
+      ? "all"
+      : checker && awaiting > 0
+        ? "awaiting"
+        : count("in_review") > 0
+          ? "in_review"
+          : awaiting > 0
+            ? "awaiting"
+            : "all");
+  // Nothing to check and nothing chosen: each document is one folded row, opened on request (the document a
+  // value was pointed to from another tab opens).
   const folded = chosen === null && filter === "all";
   const matches = (f: FieldValue) =>
     filter === "all" ? true : filter === "awaiting" ? pending.has(f.id) : f.status === filter;
@@ -139,7 +152,8 @@ export function ExtractedDataSection({ caseId }: { caseId: string }) {
             </button>
           ))}
         </div>
-        {folded && all.length > 0 && (
+        {focused && <FocusedValue caseId={caseId} field={focused} all={all} />}
+        {folded && all.length > 0 && !focused && (
           <p
             className="flex items-center gap-2 rounded border border-border bg-surface px-4 py-2.5 text-[12.5px] text-foreground"
             data-testid="data-nothing-to-check"
@@ -171,11 +185,12 @@ export function ExtractedDataSection({ caseId }: { caseId: string }) {
                 </h3>
                 {members.map((g) => (
                   <DocumentFields
-                    key={`${g.doc.id}-${folded ? "folded" : filter}`}
+                    key={`${g.doc.id}-${folded ? "folded" : filter}-${focus ?? ""}`}
                     caseId={caseId}
                     doc={g.doc}
                     fields={g.fields}
-                    folded={folded}
+                    folded={folded && g.doc.id !== focused?.document_id}
+                    focus={focused?.id}
                     filtered={filter !== "all"}
                     editable={section === "financials"}
                   />
@@ -241,7 +256,93 @@ export function ExtractedDataSection({ caseId }: { caseId: string }) {
             </div>
           )}
         </Panel>
+        <RecalculationPanel caseId={caseId} />
       </div>
+    </div>
+  );
+}
+
+/** Where a value was read: the page, and the line as printed (the file heads its document's panel). */
+function FieldSource({ field }: { field: FieldValue }) {
+  const e = field.evidence;
+  if (!e || field.status === "missing") return null;
+  return (
+    <span
+      className="mt-0.5 block min-w-0 text-[11px] leading-snug text-muted-foreground"
+      data-testid="field-source"
+    >
+      <span className="tabular">{t("data.sourcePage", { page: e.page })}</span>
+      {e.line && (
+        <>
+          {" · "}
+          <span
+            className="break-words text-foreground/80"
+            title={e.line}
+            data-testid="field-source-line"
+          >
+            {e.line}
+          </span>
+        </>
+      )}
+    </span>
+  );
+}
+
+/** The value another tab pointed to (?field=): what it is, where it was read, and the way to its row, which a
+ * reader asks for rather than the page jumping there. */
+function FocusedValue({
+  caseId,
+  field,
+  all,
+}: {
+  caseId: string;
+  field: FieldValue;
+  all: FieldValue[];
+}) {
+  const documents = useCaseDocuments(caseId);
+  const files = useCaseFiles(caseId);
+  const doc = documents.data?.find((d) => d.id === field.document_id);
+  const file = files.data?.find((f) => f.id === doc?.file_id);
+  // A table cell is named by its row's own label, as the statement prints it.
+  const row = field.field.match(/^(\w+\[\d+\])\.(\w+)$/);
+  const rowLabel = row
+    ? all.find((f) => f.document_id === field.document_id && f.field === `${row[1]}.particulars`)
+        ?.value
+    : null;
+  const label = rowLabel
+    ? t("data.rowCell", { row: String(rowLabel), column: fieldLabel(row![2]!) })
+    : fieldLabel(field.field);
+  return (
+    <div
+      className="flex flex-wrap items-start gap-x-3 gap-y-1.5 rounded border border-info/30 bg-info-soft px-4 py-2.5 text-[12.5px]"
+      data-testid="field-focused"
+    >
+      <Crosshair className="mt-0.5 size-4 shrink-0 text-info" aria-hidden />
+      <div className="min-w-0 flex-1 space-y-0.5">
+        <p className="field-label">{t("data.focused")}</p>
+        <p className="font-medium text-foreground">
+          {label} · {formatValue(effectiveValue(field))}
+        </p>
+        {field.evidence && (
+          <p className="break-words text-[11.5px] text-muted-foreground">
+            {file
+              ? t("data.sourceFileAt", { file: file.original_name, page: field.evidence.page })
+              : t("data.sourcePage", { page: field.evidence.page })}
+            {field.evidence.line ? ` · ${field.evidence.line}` : ""}
+          </p>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={() =>
+          document.getElementById(`field-${field.id}`)?.scrollIntoView({ block: "center" })
+        }
+        className="inline-flex h-7 items-center gap-1 rounded border border-border bg-surface px-2.5 text-[12px] font-medium text-primary hover:bg-muted"
+        data-testid="field-focused-go"
+      >
+        {t("data.goToFocused")}
+        <ArrowRight className="size-3.5" aria-hidden />
+      </button>
     </div>
   );
 }
@@ -253,10 +354,13 @@ function DocumentFields({
   folded = false,
   filtered = false,
   editable = false,
+  focus,
 }: {
   caseId: string;
   doc: LogicalDocument;
   fields: FieldValue[];
+  /** The value another tab pointed to, marked where it shows. */
+  focus?: string | undefined;
   /** Shown as one row (its counts), its fields on request. */
   folded?: boolean;
   /** The page shows one status only: its tables open on what it shows. */
@@ -355,8 +459,14 @@ function DocumentFields({
                     return (
                       <Fragment key={f.id}>
                         <tr
-                          className={cn("align-top", change && "border-b-0")}
+                          id={`field-${f.id}`}
+                          className={cn(
+                            "align-top",
+                            change && "border-b-0",
+                            f.id === focus && "bg-info-soft/60",
+                          )}
                           data-testid="field-row"
+                          data-focused={f.id === focus ? "true" : undefined}
                         >
                           <td className="px-4 py-2 text-muted-foreground">
                             {/* A field proposed from the document reads by the document's own label (F-15.8). */}
@@ -383,6 +493,7 @@ function DocumentFields({
                           </td>
                           <td className="px-3 py-2">
                             <FieldValueButton caseId={caseId} field={f} />
+                            <FieldSource field={f} />
                           </td>
                           <td className="px-4 py-2">
                             <FieldStatusCell field={f} editable={editable} changeBelow />
@@ -426,6 +537,7 @@ function DocumentFields({
               table={table}
               editable={editable}
               filtered={filtered}
+              focus={focus}
             />
           ))}
           <div className="border-t border-border px-4 py-3">
@@ -435,7 +547,8 @@ function DocumentFields({
                   <tr className="text-left text-[10.5px] uppercase tracking-wide text-muted-foreground">
                     <th className="py-1 pr-3 font-medium">{t("data.col.field")}</th>
                     <th className="py-1 pr-3 font-medium">{t("data.readBy")}</th>
-                    <th className="py-1 font-medium">{t("data.asPrinted")}</th>
+                    <th className="py-1 pr-3 font-medium">{t("data.asPrinted")}</th>
+                    <th className="py-1 font-medium">{t("data.col.source")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -443,10 +556,21 @@ function DocumentFields({
                     <tr key={f.id} className="border-t border-border align-top">
                       <td className="py-1 pr-3 text-muted-foreground">{fieldLabel(f.field)}</td>
                       <td className="py-1 pr-3">{t(`fieldMethod.${f.method}`)}</td>
-                      <td className="py-1" data-testid="as-printed">
+                      <td className="py-1 pr-3" data-testid="as-printed">
                         {f.raw && f.status !== "missing" && f.raw !== formatValue(effectiveValue(f))
                           ? f.raw
                           : "—"}
+                      </td>
+                      <td
+                        className="break-words py-1 text-muted-foreground"
+                        data-testid="field-details-source"
+                      >
+                        {f.evidence && f.status !== "missing"
+                          ? `${t("data.sourceFileAt", {
+                              file: file?.original_name ?? "",
+                              page: f.evidence.page,
+                            })}${f.evidence.line ? ` · ${f.evidence.line}` : ""}`
+                          : t("data.sourceNone")}
                       </td>
                     </tr>
                   ))}
@@ -468,18 +592,23 @@ function FieldTableView({
   table,
   editable,
   filtered,
+  focus,
 }: {
   caseId: string;
   table: FieldTable;
   editable: boolean;
   filtered: boolean;
+  focus?: string | undefined;
 }) {
   const pending = usePendingChanges(caseId);
   const needs = table.rows.some((r) =>
     Object.values(r.cells).some((f) => f && (f.status === "in_review" || pending.has(f.id))),
   );
+  const holdsFocus = table.rows.some((r) => Object.values(r.cells).some((f) => f?.id === focus));
+  // No layout found this table: the model mapped its rows, and every figure was read from the page.
+  const byModel = table.rows.some((r) => Object.values(r.cells).some((f) => f?.method === "model"));
   // A financial statement's tables are its figures: they open with the document.
-  const [open, setOpen] = useState(needs || filtered || editable);
+  const [open, setOpen] = useState(needs || filtered || editable || holdsFocus);
   return (
     <div
       className="overflow-x-auto border-t border-border first:border-t-0"
@@ -497,6 +626,11 @@ function FieldTableView({
           aria-hidden
         />
         {t("data.tableToggle", { title: table.title, n: table.rows.length })}
+        {byModel && (
+          <span className="ml-1 font-normal normal-case" data-testid="field-table-by-model">
+            <Chip tone="info">{t("data.tableByModel")}</Chip>
+          </span>
+        )}
       </button>
       {open && (
         <table className="mt-1 w-full text-[12.5px]">
@@ -508,37 +642,66 @@ function FieldTableView({
                   {c.label}
                 </th>
               ))}
+              <th className="px-3 py-2 font-medium">{t("data.col.source")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {table.rows.map((row) => (
-              <tr key={row.index} className="align-top" data-testid="field-table-row">
-                <td className="tabular px-4 py-2 text-muted-foreground">{row.index + 1}</td>
-                {table.columns.map((c) => {
-                  const f = row.cells[c.key];
-                  return (
-                    <td
-                      key={c.key}
-                      className={cn(
-                        "px-3 py-2",
-                        f && (f.status === "in_review" || pending.has(f.id)) && "bg-flag-soft",
-                      )}
-                    >
-                      {f ? (
-                        // The pencil sits beside the figure; a status and a waiting change
-                        // wrap below it.
-                        <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
-                          <FieldValueButton caseId={caseId} field={f} />
-                          <FieldStatusCell field={f} editable={editable} quiet />
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
+            {table.rows.map((row) => {
+              const read = Object.values(row.cells).find((f) => f?.evidence);
+              return (
+                <tr key={row.index} className="align-top" data-testid="field-table-row">
+                  <td className="tabular px-4 py-2 text-muted-foreground">{row.index + 1}</td>
+                  {table.columns.map((c) => {
+                    const f = row.cells[c.key];
+                    return (
+                      <td
+                        key={c.key}
+                        id={f ? `field-${f.id}` : undefined}
+                        data-focused={f && f.id === focus ? "true" : undefined}
+                        className={cn(
+                          "px-3 py-2",
+                          f && (f.status === "in_review" || pending.has(f.id)) && "bg-flag-soft",
+                          f && f.id === focus && "bg-info-soft/60",
+                        )}
+                      >
+                        {f ? (
+                          // The pencil sits beside the figure; a status and a waiting change
+                          // wrap below it.
+                          <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
+                            <FieldValueButton caseId={caseId} field={f} />
+                            <FieldStatusCell field={f} editable={editable} quiet />
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
+                    );
+                  })}
+                  <td
+                    className="min-w-[10rem] max-w-[22rem] px-3 py-2 text-[11px] leading-snug text-muted-foreground"
+                    data-testid="field-table-source"
+                  >
+                    {read?.evidence ? (
+                      <>
+                        <span className="tabular">
+                          {t("data.sourcePage", { page: read.evidence.page })}
+                        </span>
+                        {read.evidence.line && (
+                          <span
+                            className="block break-words text-foreground/80"
+                            title={read.evidence.line}
+                          >
+                            {read.evidence.line}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      t("data.sourceNone")
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       )}

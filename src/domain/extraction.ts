@@ -10,6 +10,15 @@ export function useFields(caseId: string) {
   });
 }
 
+/** The case's recalculations: each approved change to an extracted value and what it moved. Read again with
+ * everything under the case, so it follows an approval at once. */
+export function useRecalculations(caseId: string) {
+  return useQuery({
+    queryKey: ["cases", caseId, "recalculations"],
+    queryFn: () => api.caseRecalculations(caseId),
+  });
+}
+
 export function useParties(caseId: string) {
   return useQuery({
     queryKey: ["cases", caseId, "parties"],

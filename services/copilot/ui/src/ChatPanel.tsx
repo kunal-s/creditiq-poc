@@ -329,7 +329,7 @@ function ActionCard({
 }
 
 export function ChatPanel({ endpoint, getToken, context, labels, suggestions, storageKey, className, onClose, autoFocus, contextLabel, tones = {} }: ChatPanelProps) {
-  const { messages, busy, error, send, reset, action, actionBusy, actionError, confirm, cancel } = useCopilotChat({
+  const { messages, busy, error, errorText, send, reset, action, actionBusy, actionError, confirm, cancel } = useCopilotChat({
     endpoint,
     getToken,
     context,
@@ -473,7 +473,7 @@ export function ChatPanel({ endpoint, getToken, context, labels, suggestions, st
         )}
         {error && (
           <p role="alert" className="mt-4 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-[12px] text-destructive">
-            {labels.errors[error]}
+            {errorText ?? labels.errors[error]}
           </p>
         )}
         <div ref={end} />

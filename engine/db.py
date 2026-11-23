@@ -573,12 +573,87 @@ MIGRATIONS: list[str] = [
     UPDATE cases SET product = 'bbg';
     CREATE INDEX cases_application_id ON cases(application_id);
     """,
-    # 21: case document types (F-09.8 to F-09.10, F-15.8; decision 13). A type a person makes for one
+    # 21: the model call log (engine/model_log.py): one row per HTTP attempt and per recorded answer
+    # of the CAM copilot, with tokens, latency and outcome. Append-only. Never the prompt or the answer.
+    """
+    CREATE TABLE model_log (
+        id TEXT PRIMARY KEY,
+        at TEXT NOT NULL,
+        service TEXT NOT NULL,
+        task TEXT,
+        provider TEXT,
+        model TEXT,
+        mode TEXT,
+        source TEXT NOT NULL,              -- live | replay_hit | replay_miss
+        case_ref TEXT,
+        run_id TEXT,
+        request_key TEXT,
+        attempt INTEGER,
+        status TEXT NOT NULL,              -- ok | error
+        error_code TEXT,
+        http_status INTEGER,
+        latency_ms REAL,
+        input_tokens INTEGER,
+        output_tokens INTEGER,
+        total_tokens INTEGER,
+        cached_tokens INTEGER,
+        ratelimit_remaining_tokens INTEGER,
+        ratelimit_remaining_requests INTEGER,
+        retry_after_s REAL,
+        message TEXT
+    );
+    CREATE INDEX model_log_at ON model_log(at);
+    CREATE INDEX model_log_status ON model_log(status);
+    CREATE TRIGGER model_log_no_update BEFORE UPDATE ON model_log
+        BEGIN SELECT RAISE(ABORT, 'model_log is append-only'); END;
+    CREATE TRIGGER model_log_no_delete BEFORE DELETE ON model_log
+        BEGIN SELECT RAISE(ABORT, 'model_log is append-only'); END;
+    """,
+    # 22: what kind of failure each model call log row is (engine/model_retry.py). A store whose
+    # version 21 was another change (a working copy that numbered its own migration 21 before the
+    # model call log took the number) has no model_log yet: it is created here first, exactly as 21
+    # creates it, so every store reaches 22 with the same table.
+    """
+    CREATE TABLE IF NOT EXISTS model_log (
+        id TEXT PRIMARY KEY,
+        at TEXT NOT NULL,
+        service TEXT NOT NULL,
+        task TEXT,
+        provider TEXT,
+        model TEXT,
+        mode TEXT,
+        source TEXT NOT NULL,              -- live | replay_hit | replay_miss
+        case_ref TEXT,
+        run_id TEXT,
+        request_key TEXT,
+        attempt INTEGER,
+        status TEXT NOT NULL,              -- ok | error
+        error_code TEXT,
+        http_status INTEGER,
+        latency_ms REAL,
+        input_tokens INTEGER,
+        output_tokens INTEGER,
+        total_tokens INTEGER,
+        cached_tokens INTEGER,
+        ratelimit_remaining_tokens INTEGER,
+        ratelimit_remaining_requests INTEGER,
+        retry_after_s REAL,
+        message TEXT
+    );
+    CREATE INDEX IF NOT EXISTS model_log_at ON model_log(at);
+    CREATE INDEX IF NOT EXISTS model_log_status ON model_log(status);
+    CREATE TRIGGER IF NOT EXISTS model_log_no_update BEFORE UPDATE ON model_log
+        BEGIN SELECT RAISE(ABORT, 'model_log is append-only'); END;
+    CREATE TRIGGER IF NOT EXISTS model_log_no_delete BEFORE DELETE ON model_log
+        BEGIN SELECT RAISE(ABORT, 'model_log is append-only'); END;
+    ALTER TABLE model_log ADD COLUMN kind TEXT;
+    """,
+    # 23: case document types (F-09.8 to F-09.10, F-15.8; decision 13). A type a person makes for one
     # case when nothing in the published list fits; never edited in place (a change is a new type that
     # names the one it replaces). A field value says where its field came from: the published schema,
     # a field the person named, or one the model proposed (with the document's own label).
     """
-    CREATE TABLE case_document_types (
+    CREATE TABLE IF NOT EXISTS case_document_types (
         id TEXT PRIMARY KEY,
         case_id TEXT NOT NULL REFERENCES cases(id),
         name TEXT NOT NULL,
@@ -588,13 +663,13 @@ MIGRATIONS: list[str] = [
         made_by TEXT NOT NULL,
         made_at TEXT NOT NULL
     );
-    CREATE INDEX case_document_types_case ON case_document_types(case_id);
-    CREATE TRIGGER case_document_types_no_update BEFORE UPDATE ON case_document_types
+    CREATE INDEX IF NOT EXISTS case_document_types_case ON case_document_types(case_id);
+    CREATE TRIGGER IF NOT EXISTS case_document_types_no_update BEFORE UPDATE ON case_document_types
         BEGIN SELECT RAISE(ABORT, 'a case document type is never edited in place'); END;
 
     -- F-09.9: a person maps a case document type to a checklist item. Recorded at once for an item
     -- that is not mandatory; proposed by a maker and confirmed (or refused) by a checker for one that is.
-    CREATE TABLE case_type_mappings (
+    CREATE TABLE IF NOT EXISTS case_type_mappings (
         id TEXT PRIMARY KEY,
         case_id TEXT NOT NULL REFERENCES cases(id),
         case_type_id TEXT NOT NULL REFERENCES case_document_types(id),
@@ -607,7 +682,7 @@ MIGRATIONS: list[str] = [
         decided_at TEXT,
         CHECK (status IN ('proposed', 'confirmed', 'refused'))
     );
-    CREATE INDEX case_type_mappings_case ON case_type_mappings(case_id, case_type_id);
+    CREATE INDEX IF NOT EXISTS case_type_mappings_case ON case_type_mappings(case_id, case_type_id);
 
     ALTER TABLE field_values ADD COLUMN origin TEXT NOT NULL DEFAULT 'configured';
     ALTER TABLE field_values ADD COLUMN label TEXT;

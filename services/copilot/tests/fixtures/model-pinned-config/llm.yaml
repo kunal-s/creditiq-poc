@@ -1,0 +1,22 @@
+# The case assistant's configuration for the browser integration tests (playwright.config.ts): the shipped
+# config/ with the model settings e2e_recordings.json was recorded under, whatever provider the shipped
+# config/llm.yaml names. Every other file is a link to the shipped one.
+# The model id and endpoint are configuration; the key comes from the environment (never from this file).
+provider: openai
+base_url: https://api.openai.com/v1
+api_key_env: OPENAI_API_KEY
+router_model: gpt-5.4-nano     # confirm the exact id against the provider before first live use
+runner_model: gpt-5.4-nano
+temperature: 0
+seed: 1
+timeout_s: 60
+# How a failed model request is retried, by the kind of failure (copilot/model_errors.py).
+retry:
+  server_attempts: 3          # total attempts for server_unavailable / timeout
+  server_backoff_s: [2, 4]    # waits between attempts; plus or minus backoff_jitter; never a wait after the last
+  backoff_jitter: 0.2
+  rate_limit_attempts: 3
+  rate_limit_wait_s: 60       # used when the response names no wait
+  max_wait_s: 90              # a longer wait asked for is not waited: the request fails
+  breaker_failures: 5         # server_unavailable/timeout in a row, across requests, that open the breaker
+  breaker_cooldown_s: 120     # while open, requests fail at once; then one trial request

@@ -8,11 +8,13 @@ data from the first day.
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 from pathlib import Path
 
 from . import completeness
 from .contracts.ingest import IngestIntegrityFigure, IngestIntegrityFinding
+from .util import printed_row_line
 from .contracts import (
     CaseDetail,
     Classification,
@@ -112,6 +114,7 @@ def field_values(conn: sqlite3.Connection, case_id: str, document_id: str | None
         d["evidence"] = Evidence(**json.loads(d["evidence"])) if d["evidence"] else None
         d["confidence_components"] = json.loads(d["confidence_components"])
         out.append(FieldValue(**d))
+    _row_lines(out)
     gaps = [f for f in out if f.origin == "gap" and f.status != "missing"]
     if gaps:
         given = _given_elsewhere(conn, case_id)
@@ -143,6 +146,23 @@ def _given_elsewhere(conn: sqlite3.Connection, case_id: str) -> dict[str, set[st
             continue
         out.setdefault(names[r["field"]], set()).add(r["document_id"])
     return out
+
+
+_CELL = re.compile(r"^(\w+\[\d+\])\.(\w+)$")
+
+
+def _row_lines(values: list[FieldValue]) -> None:
+    """A table cell read before the service returned each row's printed line gets the line rebuilt from its row."""
+    rows: dict[tuple[str, str], list[tuple[str, FieldValue]]] = {}
+    for v in values:
+        m = _CELL.match(v.field)
+        if m and v.evidence is not None and not v.evidence.line:
+            rows.setdefault((v.document_id, m[1]), []).append((m[2], v))
+    for cells in rows.values():
+        line = printed_row_line([(c, v.raw if v.raw not in (None, "") else v.value) for c, v in cells
+                                 if v.status != "missing"])
+        for _, v in cells:
+            v.evidence.line = line
 
 
 def findings(conn: sqlite3.Connection, case_id: str) -> list[Finding]:

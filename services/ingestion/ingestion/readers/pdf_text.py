@@ -12,6 +12,7 @@ from PIL import Image
 
 from ..config.models import ReadingConfig
 from ..pageindex import Word
+from .pdfium_guard import PDFIUM
 
 
 @dataclass
@@ -34,15 +35,16 @@ class PdfError(Exception):
 
 def probe_pdf(data: bytes) -> int:
     """Page count, or PdfError('encrypted' | 'corrupt')."""
-    try:
-        doc = pdfium.PdfDocument(data)
-    except pdfium.PdfiumError as e:
-        msg = str(e).lower()
-        raise PdfError("encrypted" if "password" in msg else "corrupt", str(e)) from e
-    try:
-        return len(doc)
-    finally:
-        doc.close()
+    with PDFIUM:
+        try:
+            doc = pdfium.PdfDocument(data)
+        except pdfium.PdfiumError as e:
+            msg = str(e).lower()
+            raise PdfError("encrypted" if "password" in msg else "corrupt", str(e)) from e
+        try:
+            return len(doc)
+        finally:
+            doc.close()
 
 
 def _axis_aligned(obj: dict, max_deg: float) -> bool:
@@ -73,8 +75,9 @@ def read_text_layer(data: bytes, cfg: ReadingConfig) -> list[RawPdfPage]:
 
 
 def render_page(data: bytes, page_no: int, dpi: int) -> Image.Image:
-    doc = pdfium.PdfDocument(data)
-    try:
-        return doc[page_no - 1].render(scale=dpi / 72).to_pil().convert("RGB")
-    finally:
-        doc.close()
+    with PDFIUM:
+        doc = pdfium.PdfDocument(data)
+        try:
+            return doc[page_no - 1].render(scale=dpi / 72).to_pil().convert("RGB")
+        finally:
+            doc.close()

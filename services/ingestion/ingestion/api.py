@@ -9,15 +9,19 @@ import queue
 import threading
 from functools import lru_cache
 
-from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
+from datetime import date
+
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
+from starlette.concurrency import run_in_threadpool
 from starlette.datastructures import UploadFile as FormFile
 
 from . import CONTRACT_VERSION, ENGINE_VERSION
 from .config.loader import ConfigError, ConfigStore, load_dir
 from .config.models import IngestionConfig
 from .contracts import IngestRequest
-from .llm.openai import OpenAIProvider
+from .llm.calllog import call_context
+from .llm.openai import MODEL_PROVIDERS, OpenAIProvider
 from .llm.recorder import ModelClient
 from .pipeline import Ingestor
 from .readers.ocr import get_engine
@@ -26,10 +30,21 @@ from .stages.quality import run_gate
 from .llm.provider import ModelError
 from .stages import transactions as txn_stage
 from .stages.read import document_grade, read_document
+from . import usage
 from .store import Store
 from .util import sha256_hex
 
 LOOPBACK = {"127.0.0.1", "::1", "localhost", "testclient"}
+
+
+def model_client(cfg: IngestionConfig, mode: str, store) -> ModelClient | None:
+    """The model behind a configuration version: OpenAI or an Azure OpenAI deployment (both through the
+    OpenAI-compatible sender), or none when the version names no model provider ("stub")."""
+    import os
+
+    if cfg.llm.provider not in MODEL_PROVIDERS:
+        return None
+    return ModelClient(OpenAIProvider(cfg.llm, os.environ.get(cfg.llm.api_key_env)), mode, store)
 
 
 def create_app(settings: Settings | None = None, store: Store | None = None) -> FastAPI:
@@ -37,6 +52,7 @@ def create_app(settings: Settings | None = None, store: Store | None = None) -> 
     db = store or Store(st.db_path)
     app = FastAPI(title="CreditIQ ingestion", version=ENGINE_VERSION)
     ocr_cache: dict = {}
+    ocr_lock = threading.Lock()
 
     def auth(request: Request) -> None:
         if st.api_key:
@@ -59,13 +75,10 @@ def create_app(settings: Settings | None = None, store: Store | None = None) -> 
         return load_dir(path, version="dev")
 
     def ingestor(cfg: IngestionConfig) -> Ingestor:
-        import os
-
-        if "ocr" not in ocr_cache:
-            ocr_cache["ocr"] = get_engine(cfg.routing.ocr)
-        provider = OpenAIProvider(cfg.llm, os.environ.get(cfg.llm.api_key_env))
-        model = ModelClient(provider, st.model_mode, db) if cfg.llm.provider == "openai" else None
-        return Ingestor(cfg, db, model, ocr_cache["ocr"])
+        with ocr_lock:   # requests run side by side: the OCR engines are loaded once
+            if "ocr" not in ocr_cache:
+                ocr_cache["ocr"] = get_engine(cfg.routing.ocr, workers=st.ocr_workers)
+        return Ingestor(cfg, db, model_client(cfg, st.model_mode, db), ocr_cache["ocr"])
 
     @app.get("/v1/health")
     def health():
@@ -82,7 +95,10 @@ def create_app(settings: Settings | None = None, store: Store | None = None) -> 
             raise HTTPException(400, f"bad request: {e}") from e
         payloads = {k: await v.read() for k, v in form.items() if isinstance(v, FormFile)}
         cfg = config_for(req.config_version)
-        return JSONResponse(ingestor(cfg).process_request(req, payloads).model_dump(mode="json"))
+        # Read on a worker thread, so that several requests (the engine sends a few files at once) are read side by
+        # side; OCR among them is limited to the configured number of engines.
+        result = await run_in_threadpool(lambda: ingestor(cfg).process_request(req, payloads).model_dump(mode="json"))
+        return JSONResponse(result)
 
     @app.post("/v1/ingest/stream", dependencies=[Depends(auth)])
     async def ingest_stream(request: Request):
@@ -114,16 +130,30 @@ def create_app(settings: Settings | None = None, store: Store | None = None) -> 
     def classify_transactions(body: txn_stage.ClassifyRequest):
         """File bank-statement transactions under the categories sent with the request. Answers come from
         recordings in replay mode (the default); a transaction with no recording is an error, never a guess."""
-        import os
-
         cfg = config_for(body.config_version)
-        if cfg.llm.provider != "openai":
+        model = model_client(cfg, st.model_mode, db)
+        if model is None:
             raise HTTPException(409, "no model is configured")
-        model = ModelClient(OpenAIProvider(cfg.llm, os.environ.get(cfg.llm.api_key_env)), st.model_mode, db)
         try:
-            return txn_stage.classify(cfg, model, body).model_dump(mode="json")
+            # The request names no case (by design: no case, borrower or account leaves the engine), so
+            # these calls are logged without one.
+            with call_context(case_ref=None, run_id=None):
+                return txn_stage.classify(cfg, model, body).model_dump(mode="json")
         except ModelError as e:
             raise HTTPException(502, detail={"code": e.code, "message": str(e)}) from e
+
+    @app.get("/v1/model-log/summary", dependencies=[Depends(auth)])
+    def model_log_summary(start: date = Query(alias="from"), end: date = Query(alias="to"), tz: str = "UTC"):
+        """The model call log by day, task and model (the Administration's Model usage section)."""
+        return {"service": "ingestion", "rows": usage.summary(db.model_log_between(*usage.window(start, end)), start, end, tz)}
+
+    @app.get("/v1/model-log/calls", dependencies=[Depends(auth)])
+    def model_log_calls(start: date = Query(alias="from"), end: date = Query(alias="to"), tz: str = "UTC",
+                        status: str | None = None, kind: str | None = None, task: str | None = None,
+                        case_ref: str | None = None, limit: int = 50, offset: int = 0):
+        """The model calls in the range that match, newest first."""
+        return usage.calls(db.model_log_between(*usage.window(start, end)), start, end, tz, status=status, kind=kind,
+                           task=task, case_ref=case_ref, limit=limit, offset=offset)
 
     @app.post("/v1/parse", dependencies=[Depends(auth)])
     async def parse(file: UploadFile = File(...), config_version: str = Form("dev")):

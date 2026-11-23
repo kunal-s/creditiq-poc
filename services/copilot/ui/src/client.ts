@@ -4,10 +4,13 @@ import type { ChatMessage, ErrorKey, PendingAction, SourceRef, Terminal, TurnRes
 export class ChatError extends Error {
   readonly key: ErrorKey;
   readonly status: number | undefined;
-  constructor(key: ErrorKey, status?: number) {
+  /** The service's own words for the failure, when it sent them (its configured message for the kind). */
+  readonly text: string | undefined;
+  constructor(key: ErrorKey, status?: number, text?: string) {
     super(key);
     this.key = key;
     this.status = status;
+    this.text = text;
   }
 }
 
@@ -48,7 +51,8 @@ export async function sendTurn(o: SendOptions): Promise<TurnResult> {
         const result = asTurnResult(data);
         if (result) return result;
       } else if (event === "error") {
-        throw new ChatError("unavailable");
+        const message = (data as { message?: unknown }).message;
+        throw new ChatError("unavailable", undefined, typeof message === "string" && message ? message : undefined);
       }
     }
   } catch (e) {

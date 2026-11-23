@@ -22,6 +22,10 @@ from ...util import collapse_ws
 from .normalise import to_date, to_number
 
 NUM_RX = re.compile(r"^[(\-−–]?\s?(?:₹|Rs\.?)?\s?[\d,]*\d(?:\.\d+)?\)?(?:\s?(?:Cr|Dr)\.?)?$|^-$", re.I)
+# A footnote reference printed before a figure ("(A) 22,737.19", "(AB) 4,057.6"): it points to a note below the
+# statement and is not part of the figure. Capital letters only, so a list marker such as "(a) Share capital",
+# which a label follows, is never taken for one.
+FOOTNOTE_RX = re.compile(r"^\([A-Z]{1,2}\)$")
 
 
 @dataclass
@@ -42,11 +46,25 @@ class TableResult:
     sheet: str | None = None
     repairs: list[dict] = field(default_factory=list)
     unparsed: int = 0
+    method: str = "rules"
+    """rules: a configured layout read it; model: the model mapped its rows and code read the figures (llm_tables)."""
 
 
-def segments(line: Line, gap: float) -> list[Seg]:
+def figure_words(words: list[Word], gap: float) -> list[Word]:
+    """The words of a data line without the footnote references that stand in front of its figures: a reference
+    set apart from the words before it (a column away from the label) and right against the figure after it. One
+    that runs on from a label ("Total (A)  50,000") is part of the label and stays."""
+    def is_reference(i: int, w: Word) -> bool:
+        if not FOOTNOTE_RX.match(w.text) or i + 1 >= len(words) or not NUM_RX.match(words[i + 1].text):
+            return False
+        apart = i == 0 or w.x0 - words[i - 1].x1 > gap
+        return apart and words[i + 1].x0 - w.x1 <= gap
+    return [w for i, w in enumerate(words) if not is_reference(i, w)]
+
+
+def segments(line: Line, gap: float, words: list[Word] | None = None) -> list[Seg]:
     out: list[list[Word]] = []
-    for w in line.words:
+    for w in (line.words if words is None else words):
         if out and w.x0 - out[-1][-1].x1 <= gap:
             out[-1].append(w)
         else:
@@ -173,9 +191,12 @@ def build_table(rule: TableRule, defs: list[ColumnDef], pages: list[Page], readi
             anchors = _anchor(cols, block, gap)
         else:
             hdr = next((i for i, l in enumerate(lines) if start_rx.search(l.text)), None)
-            if hdr is not None:
-                if end_rx and any(end_rx.search(l.text) for l in lines[:hdr]):
-                    break   # the table ended above this page's header (the next statement repeats the same heading)
+            ends = next((i for i, l in enumerate(lines[:hdr]) if end_rx.search(l.text)), None) if end_rx and hdr is not None else None
+            if ends is not None:
+                # The table ends on this page, above the next statement's heading (which repeats the same column
+                # heading): its last rows are the lines above that end, read with the columns it already has.
+                data, stop = lines[:ends], True
+            elif hdr is not None:
                 block = lines[hdr:hdr + 1 + rule.header_lines]
                 anchors = {**anchors, **_anchor(cols, block, gap)}   # a column the repeated header does not head keeps its anchor
                 data = lines[hdr + 1 + rule.header_lines:]
@@ -190,7 +211,7 @@ def build_table(rule: TableRule, defs: list[ColumnDef], pages: list[Page], readi
             if any(rx.search(line.text) for rx in drop):
                 continue
             cells: dict[str, list[Seg]] = {}
-            segs = split_at_numeric_columns(segments(line, gap), cols, anchors)
+            segs = split_at_numeric_columns(segments(line, gap, figure_words(line.words, gap)), cols, anchors)
             if rule.attach == "heading" and not any(NUM_RX.match(sg.text) for sg in segs):
                 cells[label_col] = segs  # a heading may run across the columns: all of it is the label
             else:
@@ -200,7 +221,8 @@ def build_table(rule: TableRule, defs: list[ColumnDef], pages: list[Page], readi
                         cells.setdefault(col, []).append(seg)
             if cells:
                 dls.append(_DL(p, line, cells, pi * 100000 + line.words[0].yc))
-        last_page = pi
+        if pi == pi0 or any(d.page is p for d in dls[-1:]):
+            last_page = pi   # the table reaches a page only where a line of it was read there
         if stop:
             break
 
@@ -277,10 +299,12 @@ def build_table(rule: TableRule, defs: list[ColumnDef], pages: list[Page], readi
                 cells_out[d.name] = r
         boxes = [tuple(b) for d in members if (b := d.line.bbox())]
         pg = members[0].page
-        src: dict = {"page": s.page.no, "bbox": union_bbox(boxes), "line_ids": [d.line.id for d in members]}
+        src: dict = {"page": s.page.no, "bbox": union_bbox(boxes), "line_ids": [d.line.id for d in members],
+                     "line": collapse_ws(" ".join(d.line.text for d in members))[:400]}
         if pg.source == "sheet":
             cells = [w.cell for d in members for w in d.line.words if w.cell]
-            src = {"sheet": pg.sheet, "range": f"{cells[0]}:{cells[-1]}" if len(cells) > 1 else cells[0] if cells else None, "line_ids": src["line_ids"]}
+            src = {"sheet": pg.sheet, "range": f"{cells[0]}:{cells[-1]}" if len(cells) > 1 else cells[0] if cells else None,
+                   "line_ids": src["line_ids"], "line": src["line"]}
         rows.append({"cells": cells_out, "raw": {k: v for k, v in raw.items() if by_name[k].emit}, "source": src})
     if not rows:
         return None

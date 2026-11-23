@@ -34,16 +34,19 @@ decision or an escalation recorded meanwhile is never overridden.
 from __future__ import annotations
 
 import json
+import logging
 import sqlite3
 from pathlib import Path
 
-from . import case_types, cases, completeness, figure_edits, jobs
+from . import case_types, cases, completeness, figure_edits, jobs, recalculation
 from .configstore import reader
 from .contracts import ReviewDecisionRequest, ReviewItem
 from .db import log_decision, transaction
 from .pipeline import effective_types, refresh_case
 from .review_items import close_item, reopen_item, resolve_escalation
 from .util import dumps, now_iso, stable_id
+
+log = logging.getLogger("creditiq.review")
 
 FINDING_COMMENT = "a comment is required for every decision on a discrepancy"
 
@@ -98,6 +101,10 @@ def decide(
     permissions = set(user["permissions"])
     decided_by = user["id"]
     queue_reextract: str | None = None
+    # A decision that puts a person's value in force recalculates the case: what it reads now is kept, to say
+    # afterwards what the change moved (engine/recalculation.py).
+    change = _value_change(conn, item_id, body, user)
+    before = _snapshot(conn, root, change[0]) if change else None
 
     with transaction(conn):
         # Read under the write lock: a decision, or an escalation from the cross-verification board,
@@ -259,10 +266,61 @@ def decide(
                      detail=dumps(log))
 
     refresh_case(conn, root, case_id)
+    if change and before is not None:
+        _record_recalculation(conn, root, case_id, change, before, decided_by)
     row = conn.execute("SELECT * FROM review_items WHERE id = ?", (item_id,)).fetchone()
     from .reads import review_item
 
     return review_item(row)
+
+
+def _snapshot(conn: sqlite3.Connection, root: Path, case_id: str) -> recalculation.Snapshot | None:
+    """The case as it reads now, for the recalculation record; None when it cannot be read. The record is a
+    report on the decision, so it never stands in the decision's way."""
+    try:
+        return recalculation.snapshot(conn, root, case_id)
+    except Exception:   # noqa: BLE001 - reported in the log; the decision goes ahead without its record
+        log.exception("case %s: the figures before the change could not be read for the recalculation record", case_id)
+        return None
+
+
+def _record_recalculation(conn: sqlite3.Connection, root: Path, case_id: str, change: tuple[str, str, dict],
+                          before: recalculation.Snapshot, decided_by: str) -> None:
+    """Write what the decision moved. The decision is already in force and its checks have re-run; a failure here
+    is logged and leaves the decision as it is."""
+    try:
+        after = recalculation.snapshot(conn, root, case_id)
+        what = recalculation.trigger(conn, root, change[1], **change[2])
+        if after is not None and what is not None:
+            with transaction(conn):
+                recalculation.record(conn, case_id, approved_by=decided_by, what=what, before=before, after=after)
+    except Exception:   # noqa: BLE001 - reported in the log; the decision stands
+        log.exception("case %s: the recalculation after field %s could not be recorded", case_id, change[1])
+
+
+def _value_change(conn: sqlite3.Connection, item_id: str, body: ReviewDecisionRequest,
+                  user: dict) -> tuple[str, str, dict] | None:
+    """(case id, field value id, what changes) when this decision puts a different value in force: a checker
+    approving a changed figure, or correcting a value held for review. None for every other decision."""
+    item = conn.execute("SELECT * FROM review_items WHERE id = ?", (item_id,)).fetchone()
+    if item is None or item["status"] != "open":
+        return None
+    detail = json.loads(item["detail"] or "{}")
+    fv_id = detail.get("field_value_id")
+    if not fv_id:
+        return None
+    if item["kind"] == "manual_entry" and body.decision == "confirm":
+        return item["case_id"], fv_id, {"from_value": detail.get("from"), "to_value": detail.get("to"),
+                                        "reason": detail.get("reason"), "changed_by": detail.get("maker_name")}
+    if item["kind"] == "field" and body.decision == "correct" and body.value is not None:
+        fv = conn.execute("SELECT value, corrected_value, status FROM field_values WHERE id = ?", (fv_id,)).fetchone()
+        if fv is None:
+            return None
+        was = fv["corrected_value"] if fv["status"] == "corrected" and fv["corrected_value"] is not None else fv["value"]
+        return item["case_id"], fv_id, {"from_value": json.loads(was) if was is not None else None,
+                                        "to_value": body.value, "reason": (body.reason or "").strip() or None,
+                                        "changed_by": user["name"]}
+    return None
 
 
 def _manual_entry(

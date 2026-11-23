@@ -2,6 +2,10 @@
 # Sampling (principle 6, amended 6 Oct 2026): the only parameters ever sent are the two named here; a request
 # carrying any other is refused. Temperature 0 narrows the variation but does not guarantee identical output:
 # determinism rests on recording each answer and replaying it. Prompt text is part of the published version.
+# provider: openai, or azure for an Azure OpenAI deployment. For azure: base_url is <endpoint>/openai/v1 (the v1
+# API, no api-version), `deployment` is the deployment's name (sent as the request's model), `model` stays the
+# model id (the call log, the prices and the names on Model usage use it), and api_key_env is
+# AZURE_OPENAI_API_KEY (workflow/private/azure.env).
 provider: openai
 model: gpt-5.4-nano          # confirm the exact id against the provider before first live use
 base_url: https://api.openai.com/v1
@@ -9,7 +13,16 @@ api_key_env: OPENAI_API_KEY
 temperature: 0
 seed: 1
 timeout_s: 120
-max_retries: 2
+# How a failed call is retried, by the kind of failure (services/ingestion/ingestion/llm/errors.py).
+retry:
+  server_attempts: 3          # total attempts for server_unavailable / timeout
+  server_backoff_s: [2, 4]    # waits between attempts; plus or minus backoff_jitter; never a wait after the last
+  backoff_jitter: 0.2
+  rate_limit_attempts: 3
+  rate_limit_wait_s: 60       # used when the response names no wait
+  max_wait_s: 90              # a longer wait asked for is not waited: the call fails, saying how long
+  breaker_failures: 5         # server_unavailable/timeout in a row, across calls, that open the breaker
+  breaker_cooldown_s: 120     # while open, calls fail at once (server_unavailable); then one trial call
 classify_chars: 6000
 window_chars: 12000
 fill: missing                # the model may read any field the deterministic pass left empty (`llm: false` on a field forbids it)
@@ -79,6 +92,27 @@ prompts:
     user: |
       Fields to report:
       {{fields}}
+
+      Document text (numbered lines, page and line id first):
+      {{lines}}
+  # A table no configured layout found (stages/extract/llm_tables.py). The model names lines and figure positions
+  # only; code reads every label and figure from the lines it names and rejects what is not there.
+  table:
+    system: |
+      You find the rows of one table, the {{table}}, in a {{type_name}}, and say where each row's figures are.
+      Rules:
+      - Report every row of the table that prints a figure, in the order printed: the id(s) of the line(s) its
+        label is printed on, and for each column asked, the id of the line its figure is printed on and which
+        figure on that line it is, counting from the left (1 for the first). Use null for a column the row leaves
+        empty.
+      - Never write a figure or a label yourself: they are read from the lines you name.
+      - A heading or a note without figures is not a row. Rows of any other table or statement are not rows.
+      - If the table is not in the text, report no rows.
+      Answer only with the JSON object requested.
+    user: |
+      Table: {{table}}
+      Columns to locate:
+      {{columns}}
 
       Document text (numbered lines, page and line id first):
       {{lines}}

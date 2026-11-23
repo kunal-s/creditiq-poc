@@ -149,3 +149,16 @@ def test_a_value_named_by_a_failed_check_is_held_for_review_with_the_reason():
     assert din.status == "in_review" and din.check_note == '"0742168" is not in the DIN format'
     assert all(f.status != "in_review" for f in units[0].fields if f.field != "din" and f.status != "missing")
     assert all(f.status != "in_review" for f in units[1].fields)       # the other person's sheet is untouched
+
+
+@pytest.mark.skipif(not REAL, reason="no recorded service output")
+def test_a_table_the_model_mapped_keeps_that_on_every_cell():
+    """A statement no layout found and the model mapped (the service's llm_tables) is stored as read by the model;
+    a table a layout read stays deterministic."""
+    raw = json.loads((HERE / "service_output" / "Southgate_CCB_CA_Statements_12m.json").read_text())
+    raw["documents"][0]["tables"]["transactions"]["method"] = "model"
+    fr = IngestFileResult.model_validate(raw)
+    cells = [f for f in pipeline.units_of(fr)[0].fields if f.field.startswith("transactions[")]
+    assert cells and {f.method for f in cells} == {"model"}
+    _, plain = _unit_of("Southgate_CCB_CA_Statements_12m")
+    assert {f.method for f in plain[0].fields if f.field.startswith("transactions[")} == {"deterministic"}

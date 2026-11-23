@@ -234,7 +234,8 @@ def _read_figures(data: bytes, small: list[tuple], t: dict, ocr, cache) -> list[
     figures: list[tuple] = []
     if not small or ocr is None:
         return figures
-    with PageDoc(data) as doc:
+    drawn = []
+    with PageDoc(data) as doc:   # every picture drawn first, then read: pdfium's lock is not held while OCR runs
         for no, index, box, where, rect in small[:MAX_EVIDENCE]:
             page = doc._doc[index]
             left, bottom, right, top = page.get_bbox()
@@ -243,13 +244,15 @@ def _read_figures(data: bytes, small: list[tuple], t: dict, ocr, cache) -> list[
                 img = page.render(scale=300 / 72.0, crop=crop, draw_annots=False).to_pil().convert("RGB")
             except Exception:  # noqa: BLE001 - a picture that cannot be drawn is not read
                 continue
-            text = " ".join(w.text for w in _ocr(img, 300.0, ocr, cache))
-            # One value, not a stamp or a seal with a sentence and a date in it: a
-            # pasted figure reads as a few words at most, one carrying the digits.
-            short = 0 < len(text.split()) <= t["figure_picture"]["max_words"]
-            digits = any(sum(ch.isdigit() for ch in tok) >= t["figure_picture"]["min_digits"] for tok in text.split())
-            if short and digits and (where == "picture" or _AMOUNT_OR_DATE.search(text)):
-                figures.append((no, rect, text, where))
+            drawn.append((no, img, where, rect))
+    for no, img, where, rect in drawn:
+        text = " ".join(w.text for w in _ocr(img, 300.0, ocr, cache))
+        # One value, not a stamp or a seal with a sentence and a date in it: a
+        # pasted figure reads as a few words at most, one carrying the digits.
+        short = 0 < len(text.split()) <= t["figure_picture"]["max_words"]
+        digits = any(sum(ch.isdigit() for ch in tok) >= t["figure_picture"]["min_digits"] for tok in text.split())
+        if short and digits and (where == "picture" or _AMOUNT_OR_DATE.search(text)):
+            figures.append((no, rect, text, where))
     return figures
 
 

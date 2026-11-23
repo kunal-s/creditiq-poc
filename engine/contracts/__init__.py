@@ -157,6 +157,7 @@ from .facts import (
     TurnoverFigure,
     TurnoverYear,
 )
+from .model_usage import ModelCall, ModelCalls, ModelUsageRow, ModelUsageSummary
 from .documents import (
     Candidate,
     Classification,
@@ -176,6 +177,9 @@ from .documents import (
     NewCaseDocumentType,
     NewCaseTypeMapping,
     PageInfo,
+    Recalculation,
+    RecalculationChange,
+    RecalculationTrigger,
 )
 from .ingest import (
     DocumentDefect,
@@ -329,6 +333,10 @@ __all__ = [
     "TurnoverFigure",
     "TurnoverYear",
     "Candidate",
+    "ModelCall",
+    "ModelCalls",
+    "ModelUsageRow",
+    "ModelUsageSummary",
     "CaseProposal",
     "CaseCreate",
     "CaseDeleteRequest",
@@ -353,6 +361,9 @@ __all__ = [
     "CaseDocumentTypeProposal",
     "CaseTypeMapping",
     "FieldValue",
+    "Recalculation",
+    "RecalculationChange",
+    "RecalculationTrigger",
     "FileRecord",
     "IntegrityReview",
     "IntegrityReviewRequest",

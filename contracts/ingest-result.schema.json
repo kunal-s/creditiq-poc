@@ -1406,6 +1406,18 @@
           "title": "Kind",
           "type": "string"
         },
+        "line": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Line"
+        },
         "page": {
           "anyOf": [
             {
@@ -1475,6 +1487,15 @@
           "default": 0.0,
           "title": "Confidence",
           "type": "number"
+        },
+        "method": {
+          "default": "rules",
+          "enum": [
+            "rules",
+            "model"
+          ],
+          "title": "Method",
+          "type": "string"
         },
         "reason": {
           "anyOf": [

@@ -24,3 +24,9 @@ messages:
   context_case_differs: "This conversation is about the case that is open ({open}). Open {named} to ask about it."
   action_expired: That draft is no longer open. Ask me to draft the email again.
   action_cancelled: Cancelled. Nothing was sent.
+  # When the model could not answer after its retries, by the kind of failure.
+  model_errors:
+    rate_limit_minute: The assistant is busy just now. Try again in a minute.
+    quota: The assistant's usage limit has been reached. Try again later.
+    content_filter: The assistant could not answer that question.
+    default: The assistant could not be reached. Try again in a little while.

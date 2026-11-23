@@ -218,10 +218,14 @@ types:
             - {name: current_period, header: '^Period$', nth: 0, align: right}
             - {name: previous_period, header: '^Period$', nth: 1, align: right}
         # The period columns are headed "01/04/2025 / to / 31/03/2026" over three lines; the start date anchors each column.
-        - page_match: '^\[210000\]\s+Statement of profit and loss'
+        # The "[210000]" heading may head an earnings-per-share breakdown first (four period columns, one pair per class
+        # of share), with the statement itself on a later page that repeats only its "[Abstract]" line: either marks a page.
+        - page_match: '^\[210000\]\s+Statement of profit and loss|^\s*Statement of profit and loss \[Abstract\]\s*$'
           start: '^\d{2}/\d{2}/\d{4}\s+\d{2}/\d{2}/\d{4}$'
           header_lines: 3
-          end: '^\[\d{6}[a-z]?\]'
+          # The statement ends at the next statement's code, or where its earnings-per-share text block begins (the
+          # block's content, printed after the line items, is a note in words and figures, not a line of the statement).
+          end: '^\[\d{6}[a-z]?\]|^\s*Textual information \(\d+\)\s*$'
           multi_page: true
           row_start: '^[-(]?\d'
           row_start_col: current_period
@@ -256,6 +260,24 @@ types:
             - {name: particulars, header: '^\[Abstract\]$'}
             - {name: current_period, header: '^\d{2}/\d{2}/\d{4}$', nth: 0, align: right}
             - {name: previous_period, header: '^\d{2}/\d{2}/\d{4}$', nth: 1, align: right}
+
+    # When none of the layouts above finds a statement, the model maps its rows from the pages that name it; every
+    # figure is still read from the page (stages/extract/llm_tables.py), and the document goes to a person once.
+    model_tables:
+      balance_sheet:
+        pages: ['balance\s+sheet', 'statement\s+of\s+(assets\s+and\s+liabilities|financial\s+position)', '\[110000\]']
+        span: 2
+        hints: &period_hints
+          current_period: the figure for the year the statements are for (the first figure column)
+          previous_period: the figure for the year before (the comparative column)
+      profit_and_loss:
+        pages: ['profit\s*(and|&)\s*loss', 'income\s+(and\s+expenditure|statement)', '\[210000\]']
+        span: 2
+        hints: *period_hints
+      cash_flow:
+        pages: ['cash[\s-]*flow', '\[320000\]']
+        span: 2
+        hints: *period_hints
 
   income_tax_return:
     # The model reads the fields from the first page and the computation sections (Part B-TI and B-TTI); code checks every

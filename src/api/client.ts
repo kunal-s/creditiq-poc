@@ -10,8 +10,6 @@ import type {
   CamRegenerateRequest,
   CamRegenerateResult,
   CamWordsRequest,
-  CellEdit,
-  StatementEditRequest,
   ApprovalMatrixConfig,
   ApprovingAuthority,
   Cam,
@@ -39,12 +37,15 @@ import type {
   NewCaseDocumentType,
   NewCaseTypeMapping,
   FieldValue,
+  Recalculation,
   FileRecord,
   Finding,
   LoginResponse,
   LogicalDocument,
   DisplayUnit,
   Meta,
+  ModelCalls,
+  ModelUsageSummary,
   OutputFormat,
   Party,
   PdNote,
@@ -157,6 +158,13 @@ async function download(path: string): Promise<DownloadedFile> {
 
 const q = encodeURIComponent;
 
+/** A query string from the values that are set. */
+function params(p: Record<string, string | number | undefined>): string {
+  const out = new URLSearchParams();
+  for (const [k, v] of Object.entries(p)) if (v !== undefined && v !== "") out.set(k, String(v));
+  return out.toString();
+}
+
 export const api = {
   login: (email: string, password: string) =>
     request<LoginResponse>("/api/auth/login", {
@@ -166,6 +174,12 @@ export const api = {
   session: () => request<SessionUser>("/api/auth/session"),
   logout: () => request<undefined>("/api/auth/logout", { method: "POST" }),
   meta: () => request<Meta>("/api/meta"),
+  /** Model usage (Administration): the three model call logs summarised by day, service, task and model. */
+  modelUsageSummary: (p: Record<string, string | number | undefined>) =>
+    request<ModelUsageSummary>(`/api/admin/model-usage/summary?${params(p)}`),
+  /** Model usage: the calls that match, newest first, paged. */
+  modelUsageCalls: (p: Record<string, string | number | undefined>) =>
+    request<ModelCalls>(`/api/admin/model-usage/calls?${params(p)}`),
   displayUnit: () => request<DisplayUnit>("/api/config/display-unit"),
 
   listCases: () => request<CaseSummary[]>("/api/cases"),
@@ -255,6 +269,9 @@ export const api = {
     request<FieldValue[]>(
       `/api/cases/${q(id)}/fields${documentId ? `?document_id=${q(documentId)}` : ""}`,
     ),
+  /** What each approved change on the Extractions tab moved when the case was recalculated, the latest first. */
+  caseRecalculations: (id: string) =>
+    request<Recalculation[]>(`/api/cases/${q(id)}/recalculations`),
   caseChecklist: (id: string) => request<Readiness>(`/api/cases/${q(id)}/checklist`),
   caseQueries: (id: string) => request<QueryItem[]>(`/api/cases/${q(id)}/queries`),
   caseFindings: (id: string) => request<Finding[]>(`/api/cases/${q(id)}/findings`),
@@ -284,18 +301,6 @@ export const api = {
       body: JSON.stringify(body),
     }),
   caseSpread: (id: string) => request<Spread>(`/api/cases/${q(id)}/spread`),
-  /** Set a statement line to a person's figure, in the unit the statement prints (F-22.3). */
-  editStatementLine: (id: string, body: StatementEditRequest) =>
-    request<CellEdit>(`/api/cases/${q(id)}/statement-edits`, {
-      method: "POST",
-      body: JSON.stringify(body),
-    }),
-  /** Put the statement's own figure back; the edit stays in the history. */
-  revertStatementEdit: (id: string, edit: string, reason: string) =>
-    request<void>(`/api/cases/${q(id)}/statement-edits/${q(edit)}/revert`, {
-      method: "POST",
-      body: JSON.stringify({ reason }),
-    }),
   /** The case's statement transactions, each filed under a category (the Banking view). */
   caseTransactions: (id: string, filter: Record<string, string | number | boolean | undefined>) => {
     const params = new URLSearchParams();

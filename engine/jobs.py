@@ -62,6 +62,17 @@ def claim(conn: sqlite3.Connection, *, now: datetime | None = None) -> sqlite3.R
         return conn.execute("SELECT * FROM jobs WHERE id = ?", (row["id"],)).fetchone()
 
 
+def renew_lease(conn: sqlite3.Connection, job_id: str, *, now: datetime | None = None) -> None:
+    """A job that is still making progress keeps its lease: called after each file is stored, so a
+    long job is never taken over by another worker while this one is still reading."""
+    now = now or _now()
+    with transaction(conn):
+        conn.execute(
+            "UPDATE jobs SET lease_until = ? WHERE id = ? AND status = 'running'",
+            ((now + timedelta(seconds=LEASE_SECONDS)).isoformat(), job_id),
+        )
+
+
 def _finish(conn: sqlite3.Connection, job_id: str, status: str, error: str | None = None) -> None:
     conn.execute(
         "UPDATE jobs SET status = ?, error = ?, finished_at = ?, lease_until = NULL WHERE id = ?",

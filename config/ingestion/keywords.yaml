@@ -4,7 +4,8 @@
 # amounts), and either sits in the header band or stands out in print: on a digital page by the PDF's own font data
 # (larger than the page's body text, or bold), on a scanned page by the height of its letters. Each phrase below is matched after folding case,
 # punctuation and hyphen-broken words; a phrase of `fuzzy.min_length` letters or more also matches a near spelling
-# (scan errors), a shorter one only exactly (PAN must not match PAD).
+# of a run of whole words (scan errors), a shorter one only exactly (PAN must not match PAD). A warning word matches
+# only exactly: the near spellings that matter are opposites (audited, unaudited).
 #
 # Two levels:
 #   parts  what one page, or one table on a page, is: a balance sheet, an auditor's report, a page of transactions.
@@ -22,6 +23,7 @@
 #   - score = min(sum, full) / full, so listing more alternatives never lowers a score;
 #   - a `warning` phrase in the title zone rules the part or type out; elsewhere it takes its weight off the sum;
 #   - a part with `needs_title` scores 0 unless one of its title phrases is in the title zone.
+# A type marked `default` takes the pages of the parts it shares when no look-alike's own words claim them.
 # A type decides between look-alikes over the run of pages its parts form: its own `title`, `content` and `warning`
 # phrases are scored over the run like a part's, and a type with `needs_part` takes the run only when one of those
 # parts is in it (an income tax return needs its computation or its form; an acknowledgement alone is its own type).
@@ -30,6 +32,8 @@
 # A page takes a part when the part's score reaches `page_threshold` and leads the next part by `margin`.
 
 settings:
+  classifier: keywords       # keywords | signals: which scorer types documents (signals.yaml until Epic 3 passes)
+  model_guard_min_score: 0.2 # the model's choice stands only when the document shows this much of that type's words
   zones:
     header_band: 0.12        # top share of the page height
     footer_band: 0.08        # bottom share
@@ -37,11 +41,11 @@ settings:
     title_size_ratio: 1.15   # digital page: font size at least this times the page's body size (the size most characters use)
     title_bold_share: 0.6    # digital page: at least this share of the line's characters in a bold face
     title_height_ratio: 1.3  # scanned page (no font data): letters at least this times taller than the page's typical line
-  zone_weights: {title: 3, footer: 2, body: 1}
+  zone_weights: {title: 3, footer: 2}   # what a title phrase counts for in each zone; content phrases count their weight anywhere
   full: 6                    # a part with this much evidence scores 1.0 (a part may set its own)
   page_threshold: 0.5
   margin: 0.15
-  fuzzy: {min_length: 8, min_ratio: 0.88}
+  fuzzy: {min_length: 8, min_ratio: 0.88}   # a near spelling: about one wrong letter in 8, word by word
   categories:
     first_pages: 3           # N: categories are scored on the first N pages, then the next N if none qualifies
     threshold: 0.5           # a category qualifies when one of its types' parts scores this on those pages
@@ -368,6 +372,8 @@ parts:
       - schedule oi
       - {phrase: assessment year, weight: 1}
       - verification
+    warning:
+      - {phrase: return acknowledgement, zone: title}   # "Indian income tax return acknowledgement" is the acknowledgement
   tax_credit_statement:   # unverified: no sample yet
     title:
       - form 26as
@@ -565,6 +571,7 @@ types:
 
   # Financials: three types share the statement parts; their own words decide over the run.
   audited_financial_statements:
+    default: true            # statements that do not say provisional or projected are taken as audited
     parts: [statements_cover, auditor_report, balance_sheet, profit_and_loss, cash_flow, notes]
     title:
       - audited financial statements
@@ -572,6 +579,7 @@ types:
       - independent auditor's report
     content:
       - {phrase: we have audited, weight: 2}
+      - {phrase: independent auditor, weight: 2}
       - {phrase: udin, weight: 1}
       - {phrase: basis for opinion, weight: 2}
     warning:

@@ -44,6 +44,9 @@ class FieldResult(C):
     from one (F-15.9); the last two are held for review (F-17.7)."""
     label: str | None = None
     """The field as the document labels it, for a discovered field."""
+    correction: str | None = None
+    """An identifier read by undoing a scan's confusion and confirmed by a check (GSTIN check digit, the PAN inside a
+    GSTIN of the same document): what was printed and what was read. Always held for review."""
 
 
 class TableRow(C):

@@ -157,7 +157,7 @@ def _flatten(doc: IngestDocument, dims: dict[int, tuple[float, float]]) -> list[
             return
         status = "in_review" if (f.needs_review or name in failed) else "accepted"
         method = METHOD[f.method] if f.method else "deterministic"
-        note = failed.get(name)
+        note = failed.get(name) or f.correction
 
         line = f.source.line if f.source else None
 

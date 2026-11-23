@@ -81,6 +81,8 @@ class IngestField(_C):
     needs_review: bool = False
     origin: Literal["configured", "named", "discovered", "gap"] = "configured"
     label: str | None = None
+    correction: str | None = None
+    """An identifier read by undoing a scan's confusion, confirmed by a check; held for review with this note."""
 
 
 class IngestTableRow(_C):

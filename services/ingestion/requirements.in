@@ -11,6 +11,7 @@ openpyxl
 pillow
 numpy<2.4   # paddlex 3.x (requirements-ocr.in) needs numpy<2.4; one pin keeps both lock files installable together
 pyhanko==0.38.0   # digital signatures (F-07A); MIT, as are its own dependencies
+rapidfuzz   # fuzzy keyword matching for page typing (decision 14); MIT
 # Dev
 pytest
 import-linter

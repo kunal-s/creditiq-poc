@@ -408,6 +408,18 @@
           "title": "Confidence",
           "type": "number"
         },
+        "correction": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Correction"
+        },
         "key_field": {
           "default": false,
           "title": "Key Field",

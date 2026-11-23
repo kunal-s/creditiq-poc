@@ -309,8 +309,18 @@ class TypeFields(Strict):
     """Tables the model maps when every layout above fails to find them (and a model is configured)."""
 
 
+class IdentifierReading(Strict):
+    """Story 2.6: the characters a scan confuses, read as an identifier's position requires, to find a PAN or GSTIN the
+    format misses as printed. A reading counts only when a check confirms it, and it always goes to review."""
+
+    digit_as_letter: dict[str, str] = Field(default_factory=dict)
+    letter_as_digit: dict[str, str] = Field(default_factory=dict)
+    max_corrections: int = Field(default=2, ge=1, le=4)
+
+
 class FieldsConfig(Strict):
     types: dict[str, TypeFields]
+    identifier_reading: IdentifierReading | None = None
     gap_fields: dict[str, FieldRule] = Field(default_factory=dict)
     """F-15.9: the fields the cross-checks read from any document, whatever its type. A document of a
     case document type is read for each of them, the same request for every document (field names and
@@ -662,6 +672,98 @@ class DecisionConfig(Strict):
 # --- the whole thing ---------------------------------------------------------------------------
 
 
+# --- keywords.yaml (page typing by keywords, FRD F-09, decision 14) -----------------------------------------------
+
+
+class KwEntry(Strict):
+    """One phrase, or one identifier format, with its weight. A plain string is a phrase of weight 1."""
+
+    phrase: str | None = None
+    identifier: str | None = None
+    weight: float = Field(default=1.0, gt=0)
+    zone: Literal["title"] | None = None
+    """For a warning: `title` rules the part or type out when the phrase is in the title zone; without it the
+    phrase only takes its weight off the score."""
+
+    @model_validator(mode="before")
+    @classmethod
+    def _plain(cls, v):
+        return {"phrase": v} if isinstance(v, str) else v
+
+    @model_validator(mode="after")
+    def _one(self):
+        if (self.phrase is None) == (self.identifier is None):
+            raise ValueError("a keyword entry gives exactly one of `phrase` and `identifier`")
+        return self
+
+
+class KwWords(Strict):
+    title: list[KwEntry] = Field(default_factory=list)
+    content: list[KwEntry] = Field(default_factory=list)
+    warning: list[KwEntry] = Field(default_factory=list)
+    full: float | None = Field(default=None, gt=0)
+    """The evidence that scores 1.0 (default: settings.full)."""
+
+    def has_words(self) -> bool:
+        return bool(self.title or self.content or self.warning)
+
+
+class KwPart(KwWords):
+    needs_title: bool = False
+    """The part scores 0 unless one of its title phrases is in the title zone."""
+
+
+class KwType(KwWords):
+    parts: list[str] = Field(min_length=1)
+    needs_part: list[str] = Field(default_factory=list)
+    """The type takes a run of pages only when one of these parts is placed in it."""
+    unverified: bool = False
+    """Drafted without a sample page."""
+    default: bool = False
+    """Takes the pages of the parts it shares with look-alike types when none of them has its own words in the run
+    (audited statements: provisional and projected statements say what they are)."""
+
+
+class KwZones(Strict):
+    header_band: float = Field(gt=0, lt=0.5)
+    footer_band: float = Field(gt=0, lt=0.5)
+    title_size_ratio: float = Field(gt=1)
+    title_bold_share: float = Field(gt=0, le=1)
+    title_height_ratio: float = Field(gt=1)
+
+
+class KwFuzzy(Strict):
+    min_length: int = Field(ge=1)
+    min_ratio: float = Field(gt=0, le=1)
+
+
+class KwCategories(Strict):
+    first_pages: int = Field(ge=1)
+    threshold: float = Field(gt=0, le=1)
+
+
+class KwSettings(Strict):
+    classifier: Literal["keywords", "signals"] = "signals"
+    """Which scorer types documents: the keyword lists here, or the patterns of signals.yaml (kept until the
+    page typing of Epic 3 passes)."""
+    zones: KwZones
+    zone_weights: dict[Literal["title", "footer"], float]
+    full: float = Field(gt=0)
+    page_threshold: float = Field(gt=0, le=1)
+    margin: float = Field(ge=0, lt=1)
+    fuzzy: KwFuzzy
+    categories: KwCategories
+    max_gap: int = Field(ge=0)
+    model_guard_min_score: float = Field(default=0.2, ge=0, le=1)
+    """The model's choice stands only when the document shows at least this much of that type's words."""
+
+
+class KeywordsConfig(Strict):
+    settings: KwSettings
+    parts: dict[str, KwPart]
+    types: dict[str, KwType]
+
+
 class IngestionConfig(Strict):
     version: str
     hash: str
@@ -675,11 +777,18 @@ class IngestionConfig(Strict):
     llm: LlmConfig
     confidence: ConfidenceConfig
     decision: DecisionConfig
+    keywords: KeywordsConfig | None = None
+    """Absent in a version published before keywords.yaml existed: that version types documents by its signals."""
+
+    def uses_keywords(self) -> bool:
+        return self.keywords is not None and self.keywords.settings.classifier == "keywords"
 
     def check_consistency(self) -> list[str]:
         """Cross-section checks run at publish: every reference points at something real."""
         problems: list[str] = []
         types = self.document_types.by_id()
+        if self.keywords is not None:
+            problems += self._check_keywords(set(types))
         for tid in types:
             if tid not in self.signals.types:
                 problems.append(f"signals: no entry for document type {tid}")
@@ -771,6 +880,31 @@ class IngestionConfig(Strict):
         for rx in self.routing.reading.boilerplate:
             _compile(rx, "routing.reading.boilerplate", problems)
         return problems
+
+    def _check_keywords(self, type_ids: set[str]) -> list[str]:
+        """keywords.yaml: every document type is listed, every part and identifier it names exists, and no phrase
+        is both a keyword and a warning word of the same part or type (Story 1.9)."""
+        from ..stages.extract.identifiers import PATTERNS as IDENTIFIER_PATTERNS
+        kw = self.keywords
+        assert kw is not None
+        out = [f"keywords: no entry for document type {t}" for t in sorted(type_ids - set(kw.types))]
+        out += [f"keywords: unknown document type {t}" for t in sorted(set(kw.types) - type_ids)]
+        for where, words in [*((f"keywords.parts.{n}", p) for n, p in kw.parts.items()),
+                             *((f"keywords.types.{n}", t) for n, t in kw.types.items())]:
+            for e in (*words.title, *words.content, *words.warning):
+                if e.identifier and e.identifier not in IDENTIFIER_PATTERNS:
+                    out.append(f"{where}: unknown identifier {e.identifier}")
+            plus = {e.phrase.lower() for e in (*words.title, *words.content) if e.phrase}
+            out += [f"{where}: {e.phrase!r} is both a keyword and a warning word" for e in words.warning
+                    if e.phrase and e.phrase.lower() in plus]
+        for n, t in kw.types.items():
+            out += [f"keywords.types.{n}: unknown part {p}" for p in t.parts if p not in kw.parts]
+            out += [f"keywords.types.{n}.needs_part: {p} is not one of its parts" for p in t.needs_part if p not in t.parts]
+            if not any(kw.parts[p].title for p in t.parts if p in kw.parts) and not t.title:
+                out.append(f"keywords.types.{n}: no title phrase in any of its parts")
+        used = {p for t in kw.types.values() for p in t.parts}
+        out += [f"keywords.parts.{p}: used by no document type" for p in sorted(set(kw.parts) - used)]
+        return out
 
 
 def _compile(rx: str, where: str, problems: list[str], flags: str = "i") -> None:

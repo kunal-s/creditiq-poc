@@ -7,7 +7,7 @@ import re
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 
-from ...config.models import FieldRule, Pattern, re_flags
+from ...config.models import FieldRule, IdentifierReading, Pattern, re_flags
 from ...pageindex import Page
 from ...util import collapse_ws
 from . import identifiers
@@ -19,6 +19,8 @@ class Found:
     raw: object            # str, or list[str] for array fields
     method: str            # identifier | alias | pattern | model
     evidence: Evidence
+    corrected: str | None = None
+    """An identifier found only by undoing a scan's confusion (Story 2.6): the value read; `raw` stays as printed."""
 
 
 def _pages(pages: list[Page], rule: FieldRule) -> list[Page]:
@@ -28,13 +30,28 @@ def _pages(pages: list[Page], rule: FieldRule) -> list[Page]:
     return [p for p in pages if rx.search(p.text())]
 
 
-def _identifier(kind: str, pages: list[Page]) -> Iterator[Found]:
+def _identifier(kind: str, pages: list[Page], reading: IdentifierReading | None = None) -> Iterator[Found]:
     for p in pages:
         text = p.text()
         m = identifiers.find(kind, text)
         if m:
             ev = evidence_for_lines(p, lines_overlapping(p, m.start(), m.end()))
             yield Found(m.group(0), "identifier", ev)
+    if reading is None:
+        return
+    # No page prints it in the format: a reading that undoes a scan's confusion, confirmed by a check on this document
+    # alone (principle 7): a GSTIN by its check digit, a PAN by the GSTINs of the same pages.
+    whole = "\n".join(p.text() for p in pages)
+    pans = {g[2:12] for g in re.findall(identifiers.PATTERNS["gstin"], whole) if identifiers.gstin_checksum_ok(g)}
+    pans |= {v[2:12] for _, v in identifiers.corrected("gstin", whole, reading.digit_as_letter, reading.letter_as_digit,
+                                                       reading.max_corrections)}
+    for p in pages:
+        text = p.text()
+        for printed, value in identifiers.corrected(kind, text, reading.digit_as_letter, reading.letter_as_digit,
+                                                    reading.max_corrections, pans):
+            at = text.find(printed)
+            ev = evidence_for_lines(p, lines_overlapping(p, at, at + len(printed)))
+            yield Found(printed, "identifier", ev, corrected=value)
 
 
 def _alias(aliases: list[str], rule: FieldRule, pages: list[Page]) -> Iterator[Found]:
@@ -131,24 +148,26 @@ def _pattern(pats: list[Pattern], pages: list[Page]) -> Iterator[Found]:
                 yield Found(collapse_ws(m.group(pat.group)), "pattern", ev)
 
 
-def candidates(rule: FieldRule, pages: list[Page]) -> Iterator[Found]:
-    """Every place the rule finds a value, in a fixed order: identifier scan, then label aliases (in
-    the order configured, each over the pages in order), then patterns."""
+def candidates(rule: FieldRule, pages: list[Page], reading: IdentifierReading | None = None) -> Iterator[Found]:
+    """Every place the rule finds a value, in a fixed order: identifier scan (the values printed in the format first,
+    then readings that undo a scan's confusion), then label aliases (in the order configured, each over the pages in
+    order), then patterns."""
     cand = _pages(pages, rule)
     if rule.identifier:
-        yield from _identifier(rule.identifier, cand)
+        yield from _identifier(rule.identifier, cand, reading)
     if rule.aliases:
         yield from _alias(rule.aliases, rule, cand)
     if rule.patterns:
         yield from _pattern(rule.pattern_list(), cand)
 
 
-def extract_scalar(rule: FieldRule, pages: list[Page], accept: Callable[[Found], bool] | None = None) -> Found | None:
+def extract_scalar(rule: FieldRule, pages: list[Page], accept: Callable[[Found], bool] | None = None,
+                   reading: IdentifierReading | None = None) -> Found | None:
     """The first candidate `accept` allows, so a label that is followed by something that is not a
     value (a heading, a sentence) does not hide the real one further down. When none is accepted the
     first candidate is returned, so the field is reported with the text as printed and why it failed."""
     first = None
-    for f in candidates(rule, pages):
+    for f in candidates(rule, pages, reading):
         if first is None:
             first = f
         if accept is None or accept(f):

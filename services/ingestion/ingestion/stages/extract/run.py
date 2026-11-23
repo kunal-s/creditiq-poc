@@ -34,6 +34,11 @@ def _finish(f: FieldDef, rule: FieldRule, found: Found) -> dict:
             value, raw_text = list(raw_list), "; ".join(map(str, raw_list))
         return {**base, "status": "found", "reason": None, "value": value, "raw_text": raw_text}
     raw = str(found.raw)
+    if found.corrected:
+        # Read by undoing a scan's confusion, confirmed by a check (Story 2.6): the value read, the text as printed,
+        # and a person confirms it.
+        return {**base, "status": "found", "reason": None, "value": found.corrected, "raw_text": raw,
+                "correction": f'printed "{raw}", read as {found.corrected} by a check on this document; please confirm'}
     value, why = normalise(raw, _kind(f, rule))
     if why:
         return {**base, "status": "missing", "reason": why, "value": None, "raw_text": raw}
@@ -72,7 +77,8 @@ def extract_instance(cfg: IngestionConfig, doc_type: str, pages: list[Page], mod
             pending.append(f)
             continue
         accept = None if f.type == "array" else (lambda c, k=_kind(f, rule): normalise(str(c.raw), k)[1] is None)
-        found = extract_scalar(rule, pages, accept) if (rule.identifier or rule.aliases or rule.patterns) else None
+        found = (extract_scalar(rule, pages, accept, cfg.fields.identifier_reading)
+                 if (rule.identifier or rule.aliases or rule.patterns) else None)
         if found:
             out_fields[f.name] = _finish(f, rule, found)
             if out_fields[f.name]["status"] == "found":
@@ -169,8 +175,8 @@ def _gap_fields(cfg: IngestionConfig, ct: CaseType, pages: list[Page], model: Mo
         if name in taken:
             continue
         f = FieldDef(name=name, type="string")
-        found = extract_scalar(rule, pages, lambda c, k=_kind(f, rule): normalise(str(c.raw), k)[1] is None) \
-            if (rule.identifier or rule.aliases or rule.patterns) else None
+        found = extract_scalar(rule, pages, lambda c, k=_kind(f, rule): normalise(str(c.raw), k)[1] is None,
+                               cfg.fields.identifier_reading) if (rule.identifier or rule.aliases or rule.patterns) else None
         done = _finish(f, rule, found) if found else None
         if done and done["status"] == "found":
             out[name] = {**done, "origin": "gap"}

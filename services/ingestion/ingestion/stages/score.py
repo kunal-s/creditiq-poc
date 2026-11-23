@@ -45,7 +45,8 @@ def score_field(cfg: IngestionConfig, name: str, f: dict, cls_conf: float, pages
     if grade == "C":
         caps.append(cc.caps["grade_c_page"])
     conf = round(min(caps) * base, 4)
-    return {**f, "confidence": conf, "components": comps, "needs_review": bool(f["key_field"] and conf < cc.key_field_review_threshold)}
+    return {**f, "confidence": conf, "components": comps,
+            "needs_review": bool((f["key_field"] and conf < cc.key_field_review_threshold) or f.get("correction"))}
 
 
 def score_table(cfg: IngestionConfig, name: str, t: dict, pages: dict[int, Page], checks: list[dict]) -> dict:

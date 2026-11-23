@@ -7,6 +7,14 @@
 # (engine/facts.py identities: PAN, GSTIN, CIN, legal name). A document of a type a person made for
 # one appraisal (F-09.8) is read for each, with the same request for every document: never another
 # document's value. Every value found waits for a person's confirmation before a check uses it.
+# Story 2.6: characters a scan confuses, read as a PAN's or GSTIN's position requires, to find one the format misses as
+# printed ("AAACR5O55K"). Used to find the value only; a reading counts when a check on the same document confirms it
+# (a GSTIN's check digit, or a PAN that is the PAN inside one of the document's GSTINs), and it always goes to review.
+identifier_reading:
+  digit_as_letter: {"0": O, "1": I, "2": Z, "5": S, "8": B}
+  letter_as_digit: {O: "0", D: "0", Q: "0", I: "1", L: "1", Z: "2", S: "5", B: "8"}
+  max_corrections: 2
+
 gap_fields:
   pan: {identifier: pan, llm_hint: "the permanent account number (PAN) of the business the document is about, not of a customer, supplier or official"}
   gstin: {identifier: gstin, llm_hint: "the GSTIN of the business the document is about, not of a customer or supplier"}

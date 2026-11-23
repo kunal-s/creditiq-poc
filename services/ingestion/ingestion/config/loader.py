@@ -10,7 +10,7 @@ import yaml
 
 from ..util import hash_of
 from .models import (
-    ConfidenceConfig, DecisionConfig, DocumentTypesConfig, FieldsConfig, IngestionConfig, LlmConfig,
+    ConfidenceConfig, DecisionConfig, DocumentTypesConfig, FieldsConfig, IngestionConfig, KeywordsConfig, LlmConfig,
     IntegrityConfig, QualityConfig, RoutingConfig, SignalsConfig, ValidatorsConfig,
 )
 
@@ -25,7 +25,9 @@ FILES = {
     "llm": "llm.yaml",
     "confidence": "confidence.yaml",
     "decision": "decision.yaml",
+    "keywords": "keywords.yaml",   # optional: a version published before it existed types by signals
 }
+OPTIONAL = {"keywords"}
 
 
 class ConfigError(ValueError):
@@ -52,6 +54,8 @@ def load_dir(path: Path | str, *, version: str = "dev", overlay: Path | str | No
     for key, fname in FILES.items():
         f = path / fname
         if not f.exists():
+            if key in OPTIONAL:
+                continue
             raise ConfigError(f"missing configuration file {fname} in {path}")
         data = _read(f)
         if overlay and (Path(overlay) / fname).exists():
@@ -75,6 +79,7 @@ def _build(raw: dict, version: str) -> IngestionConfig:
             llm=LlmConfig.model_validate(raw["llm"]),
             confidence=ConfidenceConfig.model_validate(raw["confidence"]),
             decision=DecisionConfig.model_validate(raw["decision"]),
+            keywords=KeywordsConfig.model_validate(raw["keywords"]) if raw.get("keywords") else None,
         )
     except Exception as e:  # pydantic's message already names the section and key
         raise ConfigError(str(e)) from e
@@ -117,6 +122,8 @@ def _load_published(base: str, version: str) -> IngestionConfig:
     for key in FILES:
         f = d / f"ingestion.{key}.json"
         if not f.is_file():
+            if key in OPTIONAL:
+                continue
             raise ConfigError(f"version {version} has no ingestion section {key}")
         data = json.loads(f.read_text(encoding="utf-8"))
         if manifest["section_hashes"].get(f"ingestion.{key}") != _engine_hash(data):

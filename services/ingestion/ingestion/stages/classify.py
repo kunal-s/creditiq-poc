@@ -15,6 +15,7 @@ from ..llm.provider import ModelError, ModelRequest
 from ..llm.recorder import ModelClient
 from ..llm.schema_gen import classify_schema
 from ..pageindex import Page
+from . import keywords
 
 FLAGS = re.I | re.M
 
@@ -37,13 +38,15 @@ class Evidence:
 
     body: str
     head: str
+    pages: list[Page] | None = None
+    """The pages themselves, for the keyword scorer (keywords.yaml), which reads them by zone."""
 
 
 def evidence(pages: list[Page], n: int, head_lines: int) -> Evidence:
     real = [p for p in pages if not p.blank][:n]
     body = _PAGE_BREAK.join(normalise(p.text()) for p in real)
     head = _PAGE_BREAK.join(normalise("\n".join(l.text for l in p.content_lines()[:head_lines])) for p in real)
-    return Evidence(body, head)
+    return Evidence(body, head, real)
 
 
 def _search(rx: str, ev: Evidence, zone: str) -> bool:
@@ -51,6 +54,10 @@ def _search(rx: str, ev: Evidence, zone: str) -> bool:
 
 
 def score_types(cfg: IngestionConfig, ev: Evidence) -> list[dict]:
+    """Every enabled type scored on the evidence, best first: by the keyword lists when keywords.yaml says so
+    (settings.classifier), otherwise by the patterns of signals.yaml."""
+    if cfg.uses_keywords():
+        return keywords.score_types(cfg, ev.pages or [])
     out = []
     enabled = cfg.document_types.enabled_ids()
     for tid, ts in cfg.signals.types.items():
@@ -70,6 +77,15 @@ def score_types(cfg: IngestionConfig, ev: Evidence) -> list[dict]:
     return out
 
 
+def thresholds(cfg: IngestionConfig) -> tuple[float, float]:
+    """The score a type must reach to be placed, and its lead over the next: the keyword settings when the keyword
+    scorer types documents, otherwise the signals'."""
+    if cfg.uses_keywords():
+        s = cfg.keywords.settings  # type: ignore[union-attr]
+        return s.page_threshold, s.margin
+    return cfg.signals.classify_threshold, cfg.signals.tier1_margin
+
+
 def classify(cfg: IngestionConfig, pages: list[Page], model: ModelClient | None) -> dict:
     sig = cfg.signals
     ranked = score_types(cfg, evidence(pages, sig.signal_pages, sig.head_lines))
@@ -79,7 +95,8 @@ def classify(cfg: IngestionConfig, pages: list[Page], model: ModelClient | None)
     margin = top["score"] - (max(others) if others else 0.0)
     result = {"type": None, "confidence": 0.0, "tier": "none", "signals": {}, "candidates": candidates,
               "needs_review": True, "reason": None, "mixed_content": []}
-    if top["eligible"] and top["score"] >= sig.classify_threshold and margin >= sig.tier1_margin:
+    threshold, lead = thresholds(cfg)
+    if top["eligible"] and top["score"] >= threshold and margin >= lead:
         result.update(type=top["type"], confidence=top["score"], tier="signals", signals=top["signals"], needs_review=False,
                       reason=f"signals matched: {len(top['signals']['supporting'])} supporting, margin {margin:.2f}")
     elif (opening := _opening_part(cfg, pages)) is not None:
@@ -89,7 +106,7 @@ def classify(cfg: IngestionConfig, pages: list[Page], model: ModelClient | None)
         result.update(type=entry["type"], confidence=entry["score"], tier="signals", signals=entry["signals"], needs_review=False,
                       reason=f"the file holds several documents; placed by the one it opens with (pages {part[0]}-{part[-1]})")
     else:
-        why = "no type met the signal rules" if not top["eligible"] else f"margin {margin:.2f} below {sig.tier1_margin}"
+        why = "no type met the signal rules" if not top["eligible"] else f"margin {margin:.2f} below {lead}"
         result["reason"] = why
         if model is None:
             result["reason"] = f"{why}; no model configured"
@@ -116,7 +133,7 @@ def _page_heads(cfg: IngestionConfig, page: Page) -> str | None:
     """The type a page names itself as: eligible on that page alone, at the classification threshold."""
     ranked = score_types(cfg, evidence([page], 1, cfg.signals.head_lines))
     top = ranked[0]
-    return top["type"] if top["eligible"] and top["score"] >= cfg.signals.classify_threshold else None
+    return top["type"] if top["eligible"] and top["score"] >= thresholds(cfg)[0] else None
 
 
 def _page_shows_other(cfg: IngestionConfig, page: Page, first: str) -> bool:
@@ -150,7 +167,8 @@ def _opening_part(cfg: IngestionConfig, pages: list[Page]) -> tuple[dict, list[i
     ranked = score_types(cfg, evidence(part, sig.signal_pages, sig.head_lines))
     top = ranked[0]
     margin = top["score"] - (ranked[1]["score"] if len(ranked) > 1 else 0.0)
-    if top["type"] != first or not top["eligible"] or top["score"] < sig.classify_threshold or margin < sig.tier1_margin:
+    threshold, lead = thresholds(cfg)
+    if top["type"] != first or not top["eligible"] or top["score"] < threshold or margin < lead:
         return None
     return top, [p.no for p in part]
 
@@ -158,6 +176,13 @@ def _opening_part(cfg: IngestionConfig, pages: list[Page]) -> tuple[dict, list[i
 def _guard(cfg: IngestionConfig, type_id: str, entry: dict) -> str | None:
     """Why the document does not support the model's choice, or None."""
     g = cfg.signals.tier2_guard
+    if cfg.uses_keywords():
+        if entry["signals"]["contrary"]:
+            return "the document carries words that rule that type out (" + entry["signals"]["contrary"][0] + ")"
+        floor = cfg.keywords.settings.model_guard_min_score  # type: ignore[union-attr]
+        if entry["score"] < floor:
+            return f"it shows too little of that type's words (score {entry['score']:.2f}, below {floor})"
+        return None
     if g.block_on_contrary and entry["signals"]["contrary"]:
         return "the document carries a signal that rules that type out (" + entry["signals"]["contrary"][0] + ")"
     required = cfg.signals.types[type_id].required
@@ -198,6 +223,7 @@ def _mixed(cfg: IngestionConfig, pages: list[Page], doc_type: str) -> list[dict]
             continue
         ranked = score_types(cfg, evidence([p], 1, cfg.signals.head_lines))
         top = ranked[0]
-        if top["eligible"] and top["type"] != doc_type and top["score"] >= cfg.signals.mixed_min_score:
+        if (top["eligible"] and top["type"] != doc_type and top["score"] >= cfg.signals.mixed_min_score
+                and not keywords.within(cfg, top["type"], doc_type)):   # an acknowledgement inside a return is the return's
             out.append({"page": p.no, "type": top["type"], "score": top["score"]})
     return out

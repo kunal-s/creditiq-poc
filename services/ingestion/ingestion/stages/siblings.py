@@ -25,6 +25,7 @@ from dataclasses import dataclass, field
 from ..config.models import IngestionConfig
 from ..llm.recorder import ModelClient
 from ..pageindex import Page
+from . import keywords
 from .classify import evidence, score_types
 from .extract.run import extract_instance
 from .instances import split_instances
@@ -84,7 +85,9 @@ def runs(cfg: IngestionConfig, doc_type: str, pages: list[Page]) -> list[tuple[s
         hits = _page_signals(cfg, p, watch)
         if hits:
             top = hits[0]
-            if any(h["type"] == doc_type for h in hits):
+            # A page of a part the file's own type also has stays with it (keywords.within: an acknowledgement inside
+            # a return); with signals no type is within another.
+            if any(h["type"] == doc_type for h in hits) or keywords.within(cfg, top["type"], doc_type):
                 cur = None                      # the file's own type: the part above ends here
                 continue
             if cur is None or cur[0] != top["type"]:

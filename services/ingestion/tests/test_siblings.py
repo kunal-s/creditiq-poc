@@ -105,7 +105,8 @@ def test_parts_that_would_take_every_page_leave_the_classification_standing(cfg)
 def test_a_page_flagged_as_mixed_content_becomes_its_own_document(cfg, order, pages):
     r, _ = run(cfg, merged(*order), assigned=None)      # classified by its signals, not by a person
     assert r.classification.tier == "signals" and r.classification.mixed_content    # the service saw the other page ...
-    assert [(d.document_type, d.pages) for d in r.documents] == [
+    # Which of the two the file is labelled by depends on the scorer; both documents, on their own pages, is the point.
+    assert sorted((d.document_type, d.pages) for d in r.documents) == [
         ("certificate_of_incorporation", pages[0]), ("company_pan", pages[1])]
     assert not any(x["kind"] == "mixed_content" for x in r.review_reasons)          # ... and it is now accounted for
 

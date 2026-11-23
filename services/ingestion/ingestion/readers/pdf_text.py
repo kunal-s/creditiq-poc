@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import math
+import re
 from dataclasses import dataclass
 
 import pdfplumber
@@ -56,6 +57,18 @@ def _axis_aligned(obj: dict, max_deg: float) -> bool:
     return ang <= max_deg or abs(ang - 180) <= max_deg
 
 
+_BOLD = re.compile(r"bold|black|heavy|semibold|demibold", re.I)
+
+
+def _typeface(chars: list[dict]) -> dict:
+    """A word's font size (the largest of its characters) and whether most of its characters are bold, as the
+    PDF's own font data gives them: the title zone is read from these (keywords.yaml `zones`)."""
+    if not chars:
+        return {}
+    bold = sum(1 for c in chars if _BOLD.search(str(c.get("fontname", ""))))
+    return {"size": round(max(float(c.get("size", 0) or 0) for c in chars), 2), "bold": bold * 2 > len(chars)}
+
+
 def read_text_layer(data: bytes, cfg: ReadingConfig) -> list[RawPdfPage]:
     out: list[RawPdfPage] = []
     with pdfplumber.open(io.BytesIO(data)) as pdf:
@@ -65,8 +78,10 @@ def read_text_layer(data: bytes, cfg: ReadingConfig) -> list[RawPdfPage]:
             if cfg.drop_rotated_text:
                 kept = [c for c in chars if _axis_aligned(c, cfg.max_rotation_deg)]
             view = page.filter(lambda o: o.get("object_type") != "char" or _axis_aligned(o, cfg.max_rotation_deg)) if cfg.drop_rotated_text else page
-            raw_words = view.extract_words(x_tolerance=cfg.x_tolerance, y_tolerance=cfg.y_tolerance, keep_blank_chars=False, use_text_flow=False)
-            words = [Word(w["text"], float(w["x0"]), float(w["top"]), float(w["x1"]), float(w["bottom"])) for w in raw_words]
+            raw_words = view.extract_words(x_tolerance=cfg.x_tolerance, y_tolerance=cfg.y_tolerance, keep_blank_chars=False,
+                                           use_text_flow=False, return_chars=True)
+            words = [Word(w["text"], float(w["x0"]), float(w["top"]), float(w["x1"]), float(w["bottom"]), **_typeface(w["chars"]))
+                     for w in raw_words]
             n = len(kept)
             bad = sum(1 for c in kept if c.get("text") in ("�",) or str(c.get("text", "")).startswith("(cid:"))
             out.append(RawPdfPage(i, float(page.width), float(page.height), words, n, (bad / n) if n else 0.0,

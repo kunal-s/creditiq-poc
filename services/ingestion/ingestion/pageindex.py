@@ -20,6 +20,10 @@ class Word:
     y1: float
     conf: float = 1.0
     cell: str | None = None  # "B7" for spreadsheet cells
+    size: float | None = None
+    """Font size in points, from a digital page's own font data; None for OCR and spreadsheet words."""
+    bold: bool = False
+    """Most of the word's characters are set in a bold face (digital pages only)."""
 
     @property
     def xc(self) -> float:

@@ -181,6 +181,53 @@
         "title": "AccountMonth",
         "type": "object"
       },
+      "AdditionalInformation": {
+        "properties": {
+          "document": {
+            "title": "Document",
+            "type": "string"
+          },
+          "document_id": {
+            "title": "Document Id",
+            "type": "string"
+          },
+          "document_type": {
+            "title": "Document Type",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "pair",
+              "table"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "document_id",
+          "document",
+          "document_type",
+          "page",
+          "kind",
+          "label",
+          "value"
+        ],
+        "title": "AdditionalInformation",
+        "type": "object"
+      },
       "Adjudication": {
         "properties": {
           "decided_at": {
@@ -14561,6 +14608,82 @@
           }
         },
         "summary": "Get Case"
+      }
+    },
+    "/api/cases/{case_id}/additional-information": {
+      "get": {
+        "description": "What the case's documents print that no field and no table claimed, each item with its page (Story 6.5).\nFor the assistant; no screen shows it.",
+        "operationId": "case_additional_information_api_cases__case_id__additional_information_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "document_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Document Type"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AdditionalInformation"
+                  },
+                  "title": "Response Case Additional Information Api Cases  Case Id  Additional Information Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Case Additional Information"
       }
     },
     "/api/cases/{case_id}/approving-authority": {

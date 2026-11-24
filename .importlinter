@@ -33,6 +33,7 @@ source_modules =
     engine.db
     engine.deps
     engine.exports
+    engine.extra_data
     engine.facts
     engine.filetypes
     engine.identifiers

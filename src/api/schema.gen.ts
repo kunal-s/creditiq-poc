@@ -306,6 +306,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/cases/{case_id}/additional-information": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Case Additional Information
+     * @description What the case's documents print that no field and no table claimed, each item with its page (Story 6.5).
+     *     For the assistant; no screen shows it.
+     */
+    get: operations["case_additional_information_api_cases__case_id__additional_information_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/cases/{case_id}/approving-authority": {
     parameters: {
       query?: never;
@@ -1622,6 +1643,26 @@ export interface components {
       month: string;
       /** Net */
       net: number;
+    };
+    /** AdditionalInformation */
+    AdditionalInformation: {
+      /** Document */
+      document: string;
+      /** Document Id */
+      document_id: string;
+      /** Document Type */
+      document_type: string;
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: "pair" | "table";
+      /** Label */
+      label: string;
+      /** Page */
+      page: number;
+      /** Value */
+      value: string;
     };
     /** Adjudication */
     Adjudication: {
@@ -7072,6 +7113,41 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  case_additional_information_api_cases__case_id__additional_information_get: {
+    parameters: {
+      query?: {
+        document_type?: string | null;
+      };
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AdditionalInformation"][];
+        };
       };
       /** @description Validation Error */
       422: {

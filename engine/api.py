@@ -35,6 +35,7 @@ from . import (
     cam_review,
     cam_templates,
     case_types,
+    extra_data,
     keys,
     outbox,
     cases,
@@ -75,6 +76,7 @@ from .config import (
 )
 from .configstore import reader as configstore_reader
 from .configstore.schema import ApprovalMatrixSection, ChecklistTaxonomySection, DocumentTypesSection, PolicySection
+from .contracts.extra import AdditionalInformation
 from .contracts.ingest import IngestIntegrityFigure
 from .contracts import (
     CaseDocumentType,
@@ -414,6 +416,22 @@ def case_rejections(
     _case_for(conn, case_id, user)
     try:
         return rejections.build(conn, data_root(), case_id, document_type)
+    except configstore_reader.NoPublishedConfig as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+
+
+@app.get("/api/cases/{case_id}/additional-information", response_model=list[AdditionalInformation])
+def case_additional_information(
+    case_id: str,
+    document_type: str | None = None,
+    user: dict = Depends(require("case.read")),
+    conn: sqlite3.Connection = Depends(get_conn),
+):
+    """What the case's documents print that no field and no table claimed, each item with its page (Story 6.5).
+    For the assistant; no screen shows it."""
+    _case_for(conn, case_id, user)
+    try:
+        return extra_data.build(conn, data_root(), case_id, document_type)
     except configstore_reader.NoPublishedConfig as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
 

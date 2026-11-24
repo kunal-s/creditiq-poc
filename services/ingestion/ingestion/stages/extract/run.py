@@ -10,9 +10,10 @@ from ...contracts import CaseType
 from ...llm.recorder import ModelClient
 from ...pageindex import Page
 from . import llm_extract, llm_tables
-from . import kwtables
+from . import kwtables, units
+from .evidence import evidence_for_lines
 from .fields import Found, extract_scalar
-from .normalise import normalise
+from .normalise import normalise, number_forms
 from ...util import fold
 from .tables import build_table
 
@@ -63,7 +64,7 @@ def scoped_pages(scopes: list[PageScope], pages: list[Page]) -> list[Page]:
     return [p for p in pages if p.no in keep]
 
 
-def extract_instance(cfg: IngestionConfig, doc_type: str, pages: list[Page], model: ModelClient | None,
+def _extract_instance(cfg: IngestionConfig, doc_type: str, pages: list[Page], model: ModelClient | None,
                      prompt: str = "extract", subs: dict[str, str] | None = None) -> dict:
     td = cfg.document_types.by_id()[doc_type]
     rules = cfg.fields.types.get(doc_type)
@@ -124,17 +125,59 @@ def extract_instance(cfg: IngestionConfig, doc_type: str, pages: list[Page], mod
         if res is None and spec is not None and model is not None:
             # No layout found it: the model maps its rows, and code reads every figure from the page (llm_tables).
             res, table_trace = llm_tables.map_table(cfg, td.display_name, t.name, t.description or t.name, t.columns, spec,
-                                                    pages, model, dash_is_zero=any(v.dash_is_zero for v in variants))
+                                                    pages, model, dash_is_zero=any(v.dash_is_zero for v in variants)
+                                                    or bool(kt and kt.dash_is_zero))
             trace += table_trace
         if res is None:
             tables[t.name] = {"status": "missing", "reason": "table_not_found", "columns": [c.name for c in t.columns], "rows": [], "source": None, "repairs": [], "unparsed": 0, "method": "rules"}
             continue
         src = {"sheet": res.sheet} if res.sheet else {"page_start": res.page_start, "page_end": res.page_end, "bbox": res.bbox}
         tables[t.name] = {"status": "found", "reason": None, "columns": res.columns, "rows": res.rows, "source": src, "repairs": res.repairs, "unparsed": res.unparsed, "method": res.method}
+    _unit(cfg, td, rules, pages, out_fields, tables)
     return {"fields": out_fields, "tables": tables, "trace": trace}
 
 
-def extract_case_type(cfg: IngestionConfig, ct: CaseType, pages: list[Page], model: ModelClient | None) -> dict:
+def _unit(cfg: IngestionConfig, td, rules, pages: list[Page], out_fields: dict, tables: dict) -> None:
+    """The unit the document's amounts are printed in (fields.yaml units): stated in a table's caption or a page's
+    title lines. It fills `amount_unit` when the field's own rules found none, as the engine's name for it; a value
+    they found is put in that name. A type that must state its unit and does not is marked so, never read as rupees."""
+    names = {f.name for f in td.schema_.fields}
+    if "amount_unit" not in names:
+        return
+    before: dict[int, int] = {}
+    for t in tables.values():
+        rows = t.get("rows") or []
+        src = rows[0].get("source", {}) if rows else {}
+        page = next((p for p in pages if p.no == src.get("page")), None)
+        ids = src.get("line_ids") or []
+        if page and ids:
+            idx = next((i for i, l in enumerate(page.content_lines()) if l.id == ids[0]), None)
+            if idx is not None:
+                before[page.no] = max(before.get(page.no, -1), idx - 1)
+    zones = {}
+    if cfg.keywords:
+        from .. import keywords as K
+        zones = {p.no: [l for l, z in K.line_zones(cfg.keywords, p) if z in ("title", "footer")] for p in pages}
+    f = out_fields.get("amount_unit") or {}
+    if f.get("status") == "found":
+        named = units.in_line(f"in {f.get('raw_text') or f.get('value')}", cfg.fields.units)
+        if named:
+            f["value"] = named
+        return
+    got = units.find(pages, cfg.fields.units, before, zones)
+    if got is None:
+        if td.document_type in cfg.fields.units.required:
+            out_fields["amount_unit"] = {**f, "status": "missing", "reason": "unit_not_stated", "value": None}
+        return
+    page = next(p for p in pages if p.no == got.page)
+    line = next(l for l in page.content_lines() if l.id == got.line_id)
+    found = Found(got.text, "pattern", evidence_for_lines(page, [(line, 0, len(line.text))]))
+    rule = (rules.fields.get("amount_unit") if rules else None) or FieldRule()
+    fd = next(x for x in td.schema_.fields if x.name == "amount_unit")
+    out_fields["amount_unit"] = {**_finish(fd, rule, found), "value": got.name}
+
+
+def _extract_case_type(cfg: IngestionConfig, ct: CaseType, pages: list[Page], model: ModelClient | None) -> dict:
     """A document of a case document type (F-09.8, F-15.8): only the model reads it, since no rule in the
     published configuration knows the type. Named fields are read with the extraction prompt, each a key
     field; with none named, the model proposes the fields itself and every one is marked discovered."""
@@ -199,3 +242,15 @@ def _gap_fields(cfg: IngestionConfig, ct: CaseType, pages: list[Page], model: Mo
                 if done["status"] == "found":
                     out[f.name] = {**done, "origin": "gap"}
     return out
+
+
+def extract_instance(cfg: IngestionConfig, doc_type: str, pages: list[Page], model: ModelClient | None,
+                     prompt: str = "extract", subs: dict[str, str] | None = None) -> dict:
+    """One document's fields and tables, its amounts read in the configured number forms (fields.yaml numbers)."""
+    with number_forms(cfg.fields.numbers):
+        return _extract_instance(cfg, doc_type, pages, model, prompt, subs)
+
+
+def extract_case_type(cfg: IngestionConfig, ct: CaseType, pages: list[Page], model: ModelClient | None) -> dict:
+    with number_forms(cfg.fields.numbers):
+        return _extract_case_type(cfg, ct, pages, model)

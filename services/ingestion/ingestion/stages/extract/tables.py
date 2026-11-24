@@ -99,13 +99,20 @@ def split_at_numeric_columns(segs: list[Seg], cols: list[ColRule], anchors: dict
     otherwise) is that column's cell, even when wrapped text ends just before it and the gap alone
     would glue them into one segment."""
     edges = [(anchors[c.name][1], True) if c.align == "right" else (anchors[c.name][0], False) for c in cols[1:] if c.name in anchors]
+    spans = [anchors[c.name] for c in cols[1:] if c.name in anchors]
     if not edges:
         return _split_adjacent_numbers(segs, cols, anchors)
+
+    def in_column(w: Word, last: bool) -> bool:
+        """On a value column's edge; or wholly under its heading and ending its run of text (a number with words after
+        it is part of a sentence, not a cell)."""
+        return (any(abs((w.x1 if right else w.x0) - e) <= 3 for e, right in edges)
+                or (last and any(a - 3 <= w.x0 and w.x1 <= b + 3 for a, b in spans)))
     out: list[Seg] = []
     for seg in segs:
         cur: list[Word] = []
         for w in seg.words:
-            if cur and NUM_RX.match(w.text) and any(abs((w.x1 if right else w.x0) - e) <= 3 for e, right in edges):
+            if cur and NUM_RX.match(w.text) and in_column(w, w is seg.words[-1]):
                 out.append(Seg(" ".join(x.text for x in cur), cur[0].x0, cur[-1].x1, cur))
                 cur = []
             cur.append(w)
@@ -341,8 +348,12 @@ def build_table(rule: TableRule, defs: list[ColumnDef], pages: list[Page], readi
             src = {"sheet": pg.sheet, "range": f"{cells[0]}:{cells[-1]}" if len(cells) > 1 else cells[0] if cells else None,
                    "line_ids": src["line_ids"], "line": src["line"]}
         rows.append({"cells": cells_out, "raw": {k: v for k, v in raw.items() if by_name[k].emit}, "source": src})
-    if header is not None and header.drop_trailing_text:
-        while rows and not any(isinstance(v, (int, float)) for k, v in rows[-1]["cells"].items() if k != label_col):
+    def has_figures(r: dict) -> bool:
+        return any(isinstance(v, (int, float)) for k, v in r["cells"].items() if k != label_col)
+
+    if header is not None and header.drop_trailing_text and any(has_figures(r) for r in rows):
+        # Only a table that has figures ends with its last row of them: a list of names has none, and keeps its rows.
+        while rows and not has_figures(rows[-1]):
             rows.pop()
     if not rows:
         return None

@@ -265,6 +265,8 @@ class KwTable(Strict):
     """A line holding one of these opens the region the header is looked for in (a return's "3.1")."""
     end_words: list[str] = Field(default_factory=list)
     """A line holding one of these ends the table."""
+    end_starts: list[str] = Field(default_factory=list)
+    """A line opening with one of these ends the table (the signature block's "For <company>")."""
     header_span: int = Field(default=2, ge=0, le=4)
     """Lines below the header line that may still be its headings (headings that wrap)."""
     min_headings: int = Field(default=2, ge=1)
@@ -287,6 +289,10 @@ class KwTable(Strict):
     dash_is_zero: bool = False
     repair: dict | None = None
     y_tol: float | None = None
+    signed: dict[str, str] | None = None
+    """One amount column for both directions (Story 5.10): {amount, marker, debit, credit}, the columns by role. Each
+    row's amount goes to debit or credit by its marker column or the marker printed with it (numbers.debit_markers,
+    credit_markers), or by its sign; then the running balance is checked."""
 
 
 class TableRule(Strict):
@@ -364,8 +370,45 @@ class IdentifierReading(Strict):
     max_corrections: int = Field(default=2, ge=1, le=4)
 
 
+class NumberForms(Strict):
+    """How amounts are printed (Story 5.4): what reads as nil, the debit and credit markers, and how a scan's broken
+    figures are put back. Brackets and a leading minus are always negative."""
+
+    nil_words: list[str] = Field(default_factory=lambda: ["nil"])
+    """A cell holding only one of these is 0."""
+    debit_markers: list[str] = Field(default_factory=lambda: ["dr"])
+    """Before or after a figure, with or without a full stop ("Dr 1,234", "1,234 Dr."): it is negative."""
+    credit_markers: list[str] = Field(default_factory=lambda: ["cr"])
+    """Before or after a figure: it stays positive; the marker is dropped."""
+    trailing_minus: bool = True
+    """"1,234-" is negative, as accounting software prints it."""
+    space_grouping: bool = True
+    """Digits a scan split with spaces ("1 23 456") are one figure when the pieces form a valid Indian or Western
+    grouping and no comma is printed; otherwise the cell is left unread rather than two figures joined."""
+
+
+class Units(Strict):
+    """The unit a document's amounts are printed in (Story 5.3): each unit's printed forms, its name the engine reads
+    (the key), and which document types must state one."""
+
+    words: dict[str, list[str]] = Field(default_factory=lambda: {
+        "thousand": ["thousand", "thousands", "'000", "000s", "000's", "000"],
+        "lakh": ["lakh", "lakhs", "lac", "lacs"],
+        "crore": ["crore", "crores", "cr"],
+        "million": ["million", "millions", "mn"],
+        "rupee": ["rupees", "rupee", "indian rupees", "inr", "rs", "₹"]})
+    currency: list[str] = Field(default_factory=lambda: ["rs", "inr", "₹", "rupees"])
+    """Currency words that may stand beside a unit in a bracket: "(Rs. '000)"."""
+    reach: int = Field(default=4, ge=1)
+    """A unit word counts when it is at most this many words after "in" ("Amount in Rs. Lacs")."""
+    required: list[str] = Field(default_factory=list)
+    """Document types whose amounts must state their unit: one that does not goes to review, never read as rupees."""
+
+
 class FieldsConfig(Strict):
     types: dict[str, TypeFields]
+    numbers: NumberForms = Field(default_factory=NumberForms)
+    units: Units = Field(default_factory=Units)
     identifier_reading: IdentifierReading | None = None
     gap_fields: dict[str, FieldRule] = Field(default_factory=dict)
     """F-15.9: the fields the cross-checks read from any document, whatever its type. A document of a

@@ -16,7 +16,8 @@ from ...config.models import ColRule, ColumnDef, IngestionConfig, KwEntry, KwTab
 from ...pageindex import Line, Page
 from .. import keywords as K
 from ..periods import DATE, _date_of, _year_end_of, in_line, vocab
-from .tables import NUM_RX, Header, Seg, TableResult, build_table, segments
+from .normalise import to_number
+from .tables import NUM_RX, Header, Seg, TableResult, build_table, repair_running_balance, segments
 
 _YEAR = re.compile(r"\b(20\d{2})\b")
 
@@ -25,12 +26,14 @@ def _rule(spec: KwTable, defs: list[ColumnDef]) -> TableRule:
     """The table's rule for the row reader: its columns in the schema's order, the label first."""
     types = {d.name: d.type for d in defs}
     names = [spec.label] + [d.name for d in defs if d.name != spec.label] + [c for c in spec.ignore if c not in types]
-    cols = [ColRule(name=n, header="", align=spec.align.get(n, "right" if types.get(n) == "number" else "left"),
-                    emit=n not in spec.ignore, join=spec.join.get(n, " ")) for n in names]
+    signed = set((spec.signed or {}).get(k) for k in ("amount", "marker")) - {None}
+    names += [c for c in signed if c not in names]
+    cols = [ColRule(name=n, header="", align=spec.align.get(n, "right" if types.get(n) == "number" or n == (spec.signed or {}).get("amount") else "left"),
+                    emit=n not in spec.ignore or n in signed, join=spec.join.get(n, " ")) for n in names]
     return TableRule(start="", columns=cols, row_start=spec.row_start, row_start_col=spec.row_start_col,
                      text_only=spec.text_only, attach=spec.attach, skip_rows=spec.skip_rows, drop_lines=spec.drop_lines,
                      max_attach=spec.max_attach, multi_page=spec.multi_page, optional=spec.optional,
-                     dash_is_zero=spec.dash_is_zero, repair=spec.repair, y_tol=spec.y_tol)
+                     dash_is_zero=spec.dash_is_zero, repair=None if spec.signed else spec.repair, y_tol=spec.y_tol)
 
 
 class KwHeader(Header):
@@ -42,6 +45,8 @@ class KwHeader(Header):
         self.fy = self.kw.settings.identity.financial_year_start_month if self.kw else 4
         self.vocab = vocab(self.kw.settings.periods if self.kw else None)
         self.titles: dict[int, str] = {}
+        self.start_gate = bool(spec.start_words)
+        self.part_gate = bool(spec.part)
         self.footers: set[int] = set()
         self.drop_trailing_text = True
         self.row = re.compile(self.kw.settings.matching.table_row) if self.kw else None
@@ -103,6 +108,12 @@ class KwHeader(Header):
             # The header line itself must name a column; a line above the table that happens to hold a year does not.
             if not self._dated(first):
                 return None
+        # Every line straight below the header that holds headings is part of it, though it names no new column (a
+        # header printed twice, or wrapped).
+        for li in range(1, len(block)):
+            if li - 1 <= used and any(self._matched(ph, sg.text, spec.heading_cover)
+                                      for sg in segments(block[li], self.gap) for ph in spec.headings.values()):
+                used = max(used, li)
         periods = self._period_columns(block, anchors)
         for col, (seg, li) in zip([c for c in spec.periods if c not in anchors], periods):
             anchors[col] = (seg.x0, seg.x1)
@@ -159,11 +170,11 @@ class KwHeader(Header):
         return out
 
     def _opens(self, line: Line) -> bool:
-        """Whether the line opens the region the header is looked for in: a title of the table's part, or one of its
-        start words."""
-        if self.spec.start_words and self._has(self.spec.start_words, line.text):
+        """Whether the line opens the region the header is looked for in: one of the table's start words (where the
+        document prints any), or a title of its part (where the document titles its parts)."""
+        if self.start_gate and self._has(self.spec.start_words, line.text):
             return True
-        if self.spec.part and self.kw and id(line) in self.titles:
+        if self.part_gate and id(line) in self.titles:
             from ..pages import _titles_of
             return self.spec.part in _titles_of(self.kw, line.text)
         return False
@@ -189,9 +200,19 @@ class KwHeader(Header):
         return best
 
     def find(self, pages: list[Page]):
-        for pi, p in enumerate(pages):
+        for p in pages:
             self._mark_titles(p)
-            got = self._search(p.content_lines())
+        # Start words gate the search where the document prints any (a return that does not number its tables is
+        # searched everywhere); the part's title gates it where the document titles any part, so a balance sheet is
+        # not read from the profit and loss page of statements that have none, while an untitled spreadsheet is.
+        from ..pages import _titles_of
+        lines = [l for p in pages for l in p.content_lines()]
+        self.start_gate = bool(self.spec.start_words) and any(self._has(self.spec.start_words, l.text) for l in lines)
+        self.part_gate = bool(self.spec.part and self.kw) and any(_titles_of(self.kw, self.titles[id(l)])
+                                                                 for l in lines if id(l) in self.titles)
+        titled = self.start_gate or self.part_gate
+        for pi, p in enumerate(pages):
+            got = self._search(p.content_lines(), gated=titled)
             if got:
                 _, li, extra, anchors = got
                 return pi, li, extra, anchors
@@ -217,7 +238,11 @@ class KwHeader(Header):
 
     def ends(self, line: Line) -> bool:
         spec = self.spec
-        if spec.end_words and self._has(spec.end_words, line.text):
+        # End words end the table on a heading line, never on a row (a "5." heading, not the 5 of "5,18,590").
+        if spec.end_words and not self._data(line) and self._has(spec.end_words, line.text):
+            return True
+        first = K.fold(line.text, self.confused).split()[:1]
+        if first and any(K.fold(w, self.confused) == first[0] for w in spec.end_starts):
             return True
         # The header of another table of the same document ends this one.
         if any(o._block([line], 0) for o in self.others):
@@ -236,6 +261,34 @@ def read(cfg: IngestionConfig, spec: KwTable, defs: list[ColumnDef], pages: list
     for p in pages:
         header._mark_titles(p)
     res = build_table(_rule(spec, defs), defs, pages, cfg.routing.reading, header)
-    if res is not None:
-        res.method = "keywords"
+    if res is None:
+        return None
+    res.method = "keywords"
+    if spec.signed:
+        _split_signed(res, spec, cfg)
+        if spec.repair and spec.repair.get("kind") == "running_balance":
+            repair_running_balance(res, spec.repair, {d.name: d.type for d in defs})
     return res
+
+
+def _split_signed(res: TableResult, spec: KwTable, cfg: IngestionConfig) -> None:
+    """Each row's single amount put in its debit or credit column, by the row's marker (its own column, or printed
+    with the figure) or else by its sign; the amount and marker columns are not reported."""
+    s = spec.signed or {}
+    amt, mark, debit, credit = s.get("amount"), s.get("marker"), s.get("debit", "debit"), s.get("credit", "credit")
+    forms = cfg.fields.numbers
+    dr = {w.lower().rstrip(".") for w in forms.debit_markers}
+    cr = {w.lower().rstrip(".") for w in forms.credit_markers}
+    for row in res.rows:
+        raw = row["raw"]
+        if row["cells"].get(debit) is None and row["cells"].get(credit) is None and raw.get(amt):
+            text = raw[amt]
+            marker = (raw.get(mark) or "").strip().lower().rstrip(".")
+            suffix = re.search(r"(?i)\b([a-z]{2})\.?\s*$", text)
+            word = marker or (suffix.group(1).lower() if suffix else "")
+            value = to_number(re.sub(r"(?i)\b[a-z]{2}\.?\s*$", "", text).strip()) if suffix else to_number(text)
+            if value is not None:
+                is_debit = word in dr or (word not in cr and value < 0)
+                row["cells"][debit if is_debit else credit] = abs(value)
+        for k in (amt, mark):
+            raw.pop(k, None)

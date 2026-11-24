@@ -4,8 +4,11 @@ that does not parse returns None and the field is reported missing with the raw 
 from __future__ import annotations
 
 import re
+from contextlib import contextmanager
+from contextvars import ContextVar
 from decimal import Decimal, InvalidOperation
 
+from ...config.models import NumberForms
 from ...util import collapse_ws
 
 MONTHS = {m: i for i, m in enumerate(["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"], start=1)}
@@ -128,19 +131,65 @@ def _two_quantities(s: str) -> bool:
     return re.search(r"\d[\d,.\s]*[^\d,.\s][^\d]*\d", body) is not None
 
 
+_FORMS: ContextVar[NumberForms] = ContextVar("number_forms", default=NumberForms())
+
+
+@contextmanager
+def number_forms(forms: NumberForms):
+    """The configured number forms (fields.yaml numbers) for the extraction inside the block."""
+    token = _FORMS.set(forms)
+    try:
+        yield
+    finally:
+        _FORMS.reset(token)
+
+
+def _markers(words: list[str]) -> str:
+    return "|".join(re.escape(w) for w in sorted(words, key=len, reverse=True)) or r"(?!x)x"
+
+
+def _split_figure(s: str, forms: NumberForms) -> str | None:
+    """A figure a scan broke with spaces, put back when the pieces form a grouping; None when they do not."""
+    m = re.fullmatch(r"(\d+(?: \d+)+)(\.\d+)?", s)
+    if not m:
+        return s
+    if not forms.space_grouping:
+        return None
+    parts = m.group(1).split(" ")
+    indian = len(parts[-1]) == 3 and 1 <= len(parts[0]) <= 2 and all(len(p) == 2 for p in parts[1:-1])
+    western = len(parts[0]) <= 3 and all(len(p) == 3 for p in parts[1:])
+    return "".join(parts) + (m.group(2) or "") if indian or western else None
+
+
 def to_number(raw: str) -> int | float | None:
+    forms = _FORMS.get()
     s = collapse_ws(raw)
     if not s or s in ("-", "--", "—"):
         return None
+    if s.lower().rstrip(".") in [w.lower().rstrip(".") for w in forms.nil_words]:
+        return 0
+    dr, cr = _markers(forms.debit_markers), _markers(forms.credit_markers)
+    marked_debit = bool(re.search(rf"(?i)(?:^(?:{dr})\.?\s+(?=[\d(₹R])|(?<![A-Za-z])(?:{dr})\.?$)", s))
+    s = re.sub(rf"(?i)^(?:{dr}|{cr})\.?\s+(?=[\d(₹R])", "", s)
+    s = re.sub(rf"(?i)(?<![A-Za-z])(?:{dr}|{cr})\.?$", "", s).strip()
+    trailing = forms.trailing_minus and bool(re.search(r"\d\s*[-−–]$", s))
+    if trailing:
+        s = re.sub(r"\s*[-−–]$", "", s)
     # "(AO) -20.43": a footnote reference in front of the figure is not part of it (and is not a negative's brackets).
     s = re.sub(r"^\([A-Z]{1,2}\)\s+(?=[-−–(]?\s?(?:₹|Rs\.?|INR)?\s?\d)", "", s)
     # "4,027,498 (illustrative)", "Rs. 75,00,000 (previous year Rs. 90,00,000).": a trailing note in words
     s = re.sub(r"(?<=\d)\s*\([^)]*[A-Za-z][^)]*\)\s*[.,;]?\s*$", "", s)
     if _two_quantities(s):
         return None
-    neg = s.startswith("(") and s.rstrip(" CrDr.").endswith(")") or bool(re.match(r"^[-−–]\s*", s)) or bool(re.search(r"(?<![A-Za-z])Dr\.?$", s))
-    digits = re.sub(r"(?i)(?:₹|rs\.?|inr)", "", s)
-    digits = re.sub(r"(?i)\b(?:cr|dr)\.?$", "", digits.strip())
+    neg = (s.startswith("(") and s.endswith(")")) or bool(re.match(r"^[-−–]\s*", s)) or marked_debit or trailing
+    digits = re.sub(r"(?i)(?:₹|rs\.?|inr)", "", s).strip().strip("()").strip()
+    digits = re.sub(r"^[-−–]\s*", "", digits)
+    if "," not in digits:
+        digits = _split_figure(digits, forms)
+        if digits is None:
+            return None
+    elif re.search(r"\d\s+\d", digits):
+        return None          # with commas printed, a space between digits parts two figures: never join them
     digits = re.sub(r"[^\d.]", "", digits.replace(",", ""))
     if not digits or digits.count(".") > 1:
         return None

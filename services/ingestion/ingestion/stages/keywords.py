@@ -92,6 +92,11 @@ def line_zones(kw: KeywordsConfig, page: Page) -> list[tuple]:
     z = kw.settings.zones
     labelled: list[tuple] = []
     lines = page.content_lines()
+    if not page.height:
+        # A spreadsheet's sheet has no page to place a line on: no header band, no footer band, no print.
+        labelled = [(l, "body") for l in lines]
+        page._kw_lines = labelled  # type: ignore[attr-defined]
+        return labelled
     sized = [w for l in lines for w in l.words if w.size]
     if sized:
         by_size: Counter = Counter()

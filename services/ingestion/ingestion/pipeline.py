@@ -356,6 +356,11 @@ class Ingestor:
             igrade = document_grade(ipages)
             conf = decide(cfg, igrade, ucls, fields, checks, tables)
             key = None
+            unit = fields.get("amount_unit")
+            if unit and unit["status"] == "missing" and unit.get("reason") == "unit_not_stated":
+                conf = {**conf, "decision": max(conf["decision"], "human_review", key=RANK.get),
+                        "reasons": [*conf["reasons"], {"kind": "unit_not_stated",
+                                                       "detail": "no page states the unit its amounts are in; a person sets it"}]}
             if ident is not None:
                 # The document's own period, account or person (Epic 4); a period not found or in conflict goes to a person.
                 key = ident.key

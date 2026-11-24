@@ -363,14 +363,10 @@ types:
             - {name: previous_period, header: '^\d{2}/\d{2}/\d{4}$', nth: 1, align: right}
 
   income_tax_return:
-    # The model reads the fields from the first page and the computation sections (Part B-TI and B-TTI); code checks every
-    # value against its page and validators.yaml checks the figures against each other. Identifiers stay rule-based.
+    # The model reads the fields from the first page and the pages that score highest for them (the computation
+    # sections, Part B-TI and B-TTI, by their aliases); code checks every value against its page and validators.yaml checks the figures against each other. Identifiers stay rule-based.
     # The aliases and patterns below are the fallback when no model is configured; with a model they are not used.
     extraction: model
-    model_pages:
-      - {match: 'PART B[\s_-]*TI\s*-\s*COMPUTATION OF TOTAL INCOME', span: 4}
-      - {match: 'FINANCIAL YEAR 20\d{2}-\d{2}', span: 1}
-      - {match: '^\s*VERIFICATION\b', span: 1}
     identity: {name: taxpayer_name, pan: pan}
     fields:
       pan: {identifier: pan, validators: ['format:pan']}
@@ -466,8 +462,6 @@ types:
         multi_page: true
   bank_statement:
     extraction: model   # the model reads each field; code checks the value on its page; the rules below are the fallback without a model
-    model_pages:
-      - {match: 'Statement Summary', span: 1}
     identity: {name: account_holder_name}
     fields:
       account_holder_name: {aliases: ['Account Name'], llm_hint: 'the name of the account holder, as printed'}

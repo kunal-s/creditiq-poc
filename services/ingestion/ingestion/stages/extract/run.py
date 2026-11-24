@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import re
 
-from ...config.models import FieldDef, FieldRule, IngestionConfig, ModelTable, PageScope
+from ...config.models import FieldDef, FieldRule, IngestionConfig, ModelTable
 from ...contracts import CaseType
 from ...llm.recorder import ModelClient
 from ...pageindex import Page
@@ -14,6 +14,7 @@ from . import extra as extra_data
 from . import kwtables, units
 from .evidence import evidence_for_lines
 from .fields import Found, extract_scalar
+from .identifiers import PATTERNS as IDENTIFIER_PATTERNS
 from .normalise import normalise, number_forms
 from ...util import fold
 from .tables import build_table
@@ -53,15 +54,25 @@ def _missing(f: FieldDef, rule: FieldRule, reason: str) -> dict:
             "required": f.required, "key_field": bool(rule.key_field) or f.required}
 
 
-def scoped_pages(scopes: list[PageScope], pages: list[Page]) -> list[Page]:
-    """The pages the model reads: the first page, and each configured section (its first match and the pages after it)."""
-    keep = {pages[0].no} if pages else set()
-    for sc in scopes:
-        rx = re.compile(sc.match, re.I)
-        for i, p in enumerate(pages):
-            if rx.search(p.text()):
-                keep.update(q.no for q in pages[i:i + sc.span])
-                break
+def cue_pages(rules: dict[str, FieldRule], names: list[str], pages: list[Page], limit: int) -> list[Page]:
+    """Story 6.7: the pages the model reads for the fields `names`: the first page, and the `limit` pages on which the
+    most of those fields have a cue (an alias, a pattern, or the identifier's own form), in page order. A document
+    of no more pages than that is read whole; with no cue anywhere, its first pages are read."""
+    if len(pages) <= limit + 1:
+        return pages
+    cues: list[list[re.Pattern]] = []
+    for n in names:
+        rule = rules.get(n, FieldRule())
+        rxs = [re.compile(a, re.I) for a in rule.aliases] + [re.compile(p.regex, re.I | re.M) for p in rule.pattern_list()]
+        if rule.identifier and rule.identifier in IDENTIFIER_PATTERNS:
+            rxs.append(re.compile(IDENTIFIER_PATTERNS[rule.identifier]))
+        if rxs:
+            cues.append(rxs)
+    scored = [(sum(1 for rxs in cues if any(rx.search(p.text()) for rx in rxs)), p) for p in pages[1:]]
+    best = [p for s, p in sorted(scored, key=lambda x: (-x[0], x[1].no)) if s > 0][:limit]
+    if not best:
+        return pages[:limit + 1]
+    keep = {pages[0].no} | {p.no for p in best}
     return [p for p in pages if p.no in keep]
 
 
@@ -97,7 +108,7 @@ def _extract_instance(cfg: IngestionConfig, doc_type: str, pages: list[Page], mo
     trace: list[dict] = []
     if pending and model is not None:
         hints = {f.name: rules_f.get(f.name, FieldRule()).llm_hint for f in pending}
-        read = scoped_pages(rules.model_pages, pages) if model_first and rules.model_pages else pages
+        read = cue_pages(rules_f, [f.name for f in pending], pages, cfg.llm.fill_pages) if model_first else pages
         found, reasons, trace = llm_extract.fill(cfg, td.display_name, pending, hints, read, model, prompt, subs)
         for f in pending:
             rule = rules_f.get(f.name, FieldRule())

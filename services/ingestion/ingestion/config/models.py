@@ -375,9 +375,11 @@ class ModelTable(Strict):
 
 class TypeFields(Strict):
     extraction: Literal["rules", "model"] = "rules"
-    """`model`: the model reads every field that has no identifier rule (and is not `llm: false`) from the
-    pages in `model_pages`, plus the first page; code verifies each value on its page. Validators then check it."""
+    """`model`: the model reads every field that has no identifier rule (and is not `llm: false`) from the first
+    page and the pages that score highest for the fields it reads (Story 6.7: llm.fill_pages); code verifies each
+    value on its page. Validators then check it."""
     model_pages: list[PageScope] = Field(default_factory=list)
+    """Superseded by scoring (Story 6.7) and no longer read; accepted so that versions published before it load."""
     fields: dict[str, FieldRule] = Field(default_factory=dict)
     identity: dict[str, str] = Field(default_factory=dict)  # identity key (name, pan, din, dob, gstin, cin) -> schema field
     tables: dict[str, TableRule | list[TableRule]] = Field(default_factory=dict)   # a list is layout variants, tried in order
@@ -764,6 +766,9 @@ class LlmConfig(Strict):
     evidence_text_ratio: float = Field(default=90, ge=50, le=100)
     """How close (rapidfuzz partial ratio, 0-100) a model's text value must be to the line it names (Story 6.6).
     Numbers and dates are matched by value, not by this ratio; the printed text is what is kept."""
+    fill_pages: int = Field(default=6, ge=1)
+    """Story 6.7: besides the first page, the most pages the model reads for a document's fields: those on which the
+    most of the fields still to read have a cue (an alias, pattern or identifier). A shorter document is read whole."""
     discover_max_fields: int = Field(default=12, ge=1, le=40)
     """The most fields the model may propose for a case document type with no named fields (F-15.8)."""
 

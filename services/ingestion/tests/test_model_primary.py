@@ -6,7 +6,7 @@ from ingestion.llm.openai import FixtureProvider
 from ingestion.llm.recorder import ModelClient
 from ingestion.pipeline import Ingestor
 from ingestion.store import Store
-from ingestion.stages.extract.run import scoped_pages
+from ingestion.stages.extract.run import cue_pages
 from ingestion.stages.validate import validate_instance
 
 from .conftest import fixture_doc, spec
@@ -61,15 +61,17 @@ def test_a_value_that_is_not_on_the_cited_line_is_rejected(cfg):
     assert f.status == "missing" and f.reason == "not_found_on_page"
 
 
-def test_the_model_reads_only_the_first_page_and_the_configured_sections(cfg):
-    from ingestion.config.models import PageScope
+def test_the_model_reads_the_first_page_and_the_pages_that_score_highest_for_its_fields(cfg):
+    """Story 6.7 (scenario 31): no page pattern per type; the pages on which the fields still to read have a cue."""
     from ingestion.stages.read import read_document
     pages = read_document(fixture_doc(ITR), "pdf", cfg.quality, cfg.routing, None)
-    section = scoped_pages([PageScope(match="COMPUTATION OF (?:TOTAL )?INCOME", span=1)], pages)
+    rules = cfg.fields.types["income_tax_return"].fields
     hit = next(p.no for p in pages if re.search("COMPUTATION OF (?:TOTAL )?INCOME", p.text(), re.I))
-    assert [p.no for p in section] == sorted({pages[0].no, hit})
-    assert [p.no for p in scoped_pages([], pages)] == [pages[0].no]
-    assert cfg.fields.types["income_tax_return"].extraction == "model"
+    chosen = [p.no for p in cue_pages(rules, ["total_income", "gross_total_income"], pages, 1)]
+    assert chosen[0] == pages[0].no and len(chosen) <= 2
+    assert all(re.search("Total Income", next(p for p in pages if p.no == n).text(), re.I) for n in chosen[1:])
+    assert [p.no for p in cue_pages(rules, ["total_income"], pages, len(pages))] == [p.no for p in pages]
+    assert hit and cfg.fields.types["income_tax_return"].extraction == "model"
 
 
 def test_itr_figures_are_checked_against_each_other(cfg):

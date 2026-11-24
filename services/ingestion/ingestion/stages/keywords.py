@@ -20,16 +20,23 @@ from dataclasses import dataclass
 
 from rapidfuzz.distance import Levenshtein
 
-from ..config.models import IngestionConfig, KeywordsConfig, KwEntry, KwWords
+from functools import lru_cache
+
+from ..config.models import IngestionConfig, KeywordsConfig, KwEntry, KwMatching, KwWords
 from ..pageindex import Page
 from .extract.identifiers import PATTERNS
 
-_AMOUNT = re.compile(r"\d{1,3}(?:,\d{2,3})+(?:\.\d+)?")
+_DEFAULT = KwMatching()
+
+
+@lru_cache(maxsize=32)
+def _rx(pattern: str) -> re.Pattern:
+    return re.compile(pattern)
 _DASHES = {ord(c): "-" for c in "‐‑‒–—―−"}
 _DROP = {ord(c): None for c in "​‌‍­﻿'’‘`"}
 
 
-def fold(text: str) -> str:
+def fold(text: str, confused: dict[str, str] | None = None) -> str:
     """What phrases are matched against: compatibility forms folded, apostrophes dropped, a word broken by a hyphen
     at a line end joined, runs of three or more single letters joined ("S T A T E M E N T"), lower case, and every
     other mark a space."""
@@ -37,17 +44,15 @@ def fold(text: str) -> str:
     t = re.sub(r"(\w)-\s*\n\s*(\w)", r"\1\2", t)
     t = re.sub(r"(?<!\w)(?:\w ){2,}\w(?!\w)", lambda m: m.group(0).replace(" ", ""), t)
     t = re.sub(r"[^0-9a-z&]+", " ", t.lower())
-    return " ".join(_letters(w) for w in t.split())
+    table = str.maketrans({k: v.lower() for k, v in (_DEFAULT.confused_digits if confused is None else confused).items()})
+    return " ".join(_letters(w, table) for w in t.split())
 
 
-_CONFUSED = str.maketrans("0158", "olsb")
-
-
-def _letters(word: str) -> str:
-    """A word with letters and a digit a scan confuses with a letter (0/O, 1/l, 5/S, 8/B) is read as letters:
-    "B0ARD" is board. A number, or a code like 3b or 26as, is left as it is."""
-    if sum(c.isalpha() for c in word) >= 2 and any(c in "0158" for c in word) and not word[:1].isdigit():
-        return word.translate(_CONFUSED)
+def _letters(word: str, table: dict) -> str:
+    """A word with letters and a digit a scan confuses with a letter (keywords.yaml matching.confused_digits) is read as
+    letters: "B0ARD" is board. A number, or a code that starts with a digit (3b, 26as), is left as it is."""
+    if sum(c.isalpha() for c in word) >= 2 and any(ord(c) in table for c in word) and not word[:1].isdigit():
+        return word.translate(table)
     return word
 
 
@@ -56,13 +61,15 @@ class Zones:
     title: str
     footer: str
     body: str
+    confused: dict[str, str] | None = None
 
     def __post_init__(self) -> None:
-        self.f = {"title": fold(self.title), "footer": fold(self.footer), "body": fold(self.body)}
+        self.f = {k: fold(getattr(self, k), self.confused) for k in ("title", "footer", "body")}
 
     @staticmethod
     def join(zs: list[Zones]) -> Zones:
-        return Zones(*("\n".join(getattr(z, k) for z in zs) for k in ("title", "footer", "body")))
+        return Zones(*("\n".join(getattr(z, k) for z in zs) for k in ("title", "footer", "body")),
+                     confused=zs[0].confused if zs else None)
 
 
 def zones(kw: KeywordsConfig, page: Page) -> Zones:
@@ -71,7 +78,8 @@ def zones(kw: KeywordsConfig, page: Page) -> Zones:
     if cached is not None:
         return cached
     labels = line_zones(kw, page)
-    out = Zones(*("\n".join(l.text for l, z in labels if z == k) for k in ("title", "footer", "body")))
+    out = Zones(*("\n".join(l.text for l, z in labels if z == k) for k in ("title", "footer", "body")),
+                confused=kw.settings.matching.confused_digits)
     page._kw_zones = out  # type: ignore[attr-defined]
     return out
 
@@ -94,7 +102,7 @@ def line_zones(kw: KeywordsConfig, page: Page) -> list[tuple]:
     typical = statistics.median(heights) if heights else 0.0
     for l, h in zip(lines, heights):
         top = min(w.y0 for w in l.words) / (page.height or 1)
-        row = _AMOUNT.search(l.text) is not None
+        row = _rx(kw.settings.matching.table_row).search(l.text) is not None
         if row:
             stands_out = False
         elif sized:
@@ -121,7 +129,7 @@ def _found(kw: KeywordsConfig, e: KwEntry, z: Zones, zone: str, *, exact: bool =
     if e.identifier:
         return re.search(PATTERNS[e.identifier], getattr(z, zone)) is not None
     text = z.f[zone]
-    p = fold(e.phrase or "")
+    p = fold(e.phrase or "", kw.settings.matching.confused_digits)
     if not p or not text:
         return False
     if f" {p} " in f" {text} ":
@@ -242,13 +250,14 @@ def score_types(cfg: IngestionConfig, pages: list[Page]) -> list[dict]:
                 if ps[pn].score > best:
                     best, best_part = ps[pn].score, pn
         own = score_words(kw, t, run) if t.has_words() else None
-        score = best * (0.5 + 0.5 * own.score) if own else best
+        base = s.scoring.lookalike_base
+        score = best * (base + (1 - base) * own.score) if own else best
         # A needed part counts on a page where it is the best part: an acknowledgement that also names the return is
         # not a page of the return's form.
         needs = (not t.needs_part) or any(_best_part(ps) in t.needs_part and ps[_best_part(ps)].score >= s.page_threshold
                                           for ps in per_page)
         if not needs:
-            score *= 0.5
+            score *= s.scoring.missing_part_factor
         ruled = own.ruled_out if own else None
         hits = next((ps[best_part] for ps in per_page if best_part and ps[best_part].score == best), None)
         signals = {"required": (hits.title if hits else []) + (own.title if own else []),
@@ -273,7 +282,7 @@ def score_types(cfg: IngestionConfig, pages: list[Page]) -> list[dict]:
             continue
         mine = set(kw.types[tid].parts)
         if any(o != tid and rows[o]["eligible"] and mine < set(kw.types[o].parts) for o in rows):
-            r["score"] = round(r["score"] * 0.5, 4)
+            r["score"] = round(r["score"] * s.scoring.subsumed_factor, 4)
             r["eligible"] = r["score"] >= s.page_threshold
     out = sorted(rows.values(), key=lambda r: (-r["score"], r["type"]))
     return out

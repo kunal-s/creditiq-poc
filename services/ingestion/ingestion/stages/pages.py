@@ -78,7 +78,7 @@ def _sub_page(kw, page: Page, lines: list) -> Page:
 
 def _titles_of(kw, text: str) -> set[str]:
     """The parts whose title phrases a title line holds."""
-    z = K.Zones(text, "", "")
+    z = K.Zones(text, "", "", confused=kw.settings.matching.confused_digits)
     return {pn for pn, p in kw.parts.items() if any(K._found(kw, e, z, "title") for e in p.title)}
 
 

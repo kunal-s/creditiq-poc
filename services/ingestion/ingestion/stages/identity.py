@@ -25,9 +25,7 @@ from ..llm.recorder import ModelClient
 from ..pageindex import Page
 from . import keywords as K
 from .extract.identifiers import PATTERNS
-from .periods import Period, in_line, page_level
-
-_AMOUNT = re.compile(r"\d{1,3}(?:,\d{2,3})+(?:\.\d+)?")
+from .periods import Period, in_line, page_level, vocab
 
 
 @dataclass
@@ -63,53 +61,62 @@ def _accepted(rule: KwIdentity, ps: list[Period]) -> list[Period]:
     return [p for p in ps if p.kind in rule.period and p.kind != "columns"]
 
 
+def _reader(cfg: IngestionConfig):
+    """The financial year's first month and the configured period words."""
+    s = cfg.keywords.settings
+    return s.identity.financial_year_start_month, vocab(s.periods)
+
+
 def _page_period(cfg: IngestionConfig, rule: KwIdentity, page: Page, zones=("title", "footer")) -> tuple[Period | None, str | None]:
-    fy = cfg.keywords.settings.identity.financial_year_start_month
+    fy, v = _reader(cfg)
     for zone in zones:
         lines = _zone_lines(cfg, page, zone)
         for line in lines:
-            got = _accepted(rule, in_line(line, fy))
+            got = _accepted(rule, in_line(line, fy, v))
             if got:
                 return got[0], zone
-        got = _accepted(rule, page_level(lines, fy))
+        got = _accepted(rule, page_level(lines, fy, v))
         if got:
             return got[0], zone
     return None, None
 
 
 def _columns(cfg: IngestionConfig, pages: list[Page]) -> tuple[Period | None, int | None]:
-    fy = cfg.keywords.settings.identity.financial_year_start_month
+    fy, v = _reader(cfg)
     for p in pages:
         for l in p.content_lines():
-            got = [x for x in in_line(l.text, fy) if x.kind == "columns"]
+            got = [x for x in in_line(l.text, fy, v) if x.kind == "columns"]
             if got:
                 return got[0], p.no
     return None, None
 
 
 def _account(cfg: IngestionConfig, page: Page) -> str | None:
-    """The account number after the first label, in the configured order, that a number of 9 to 20 digits (or masked
-    digits) follows; a label may wrap across lines."""
+    """The account number after the first label, in the configured order, that a number of the configured length (or
+    masked digits) follows; a label may wrap across lines."""
     text = page.text()
+    least, most = cfg.keywords.settings.identity.account_digits
     for label in cfg.keywords.settings.identity.account_labels:
         rx = r"\s+".join(map(re.escape, label.split()))
-        m = re.search(rf"\b{rx}\s*[:.]?\s*([0-9Xx*]{{9,20}})\b", text, re.I)
+        m = re.search(rf"\b{rx}\s*[:.]?\s*([0-9Xx*]{{{least},{most}}})\b", text, re.I)
         if m:
             return m.group(1).upper()
     return None
 
 
-def _person(page: Page) -> str | None:
-    """The person a personal document is about: the DIN beside its label, else an individual's PAN (its fourth letter
-    is P), else a masked PAN."""
+def _person(cfg: IngestionConfig, page: Page) -> str | None:
+    """The person a personal document is about, by the configured rules in order: the DIN beside its label, else an
+    individual's PAN (its fourth letter the configured one), else a masked PAN."""
+    rules = cfg.keywords.settings.identity.person
     text = page.text()
-    m = re.search(r"(?:director\s+identification\s+number|\bDIN)\s*[:.]?\s*(\d{8})\b", text, re.I)
+    labels = "|".join(r"\s+".join(map(re.escape, x.split())) for x in rules.din_labels)
+    m = re.search(rf"\b(?:{labels})\s*[:.]?\s*(\d{{8}})\b", text, re.I) if labels else None
     if m:
         return "DIN " + m.group(1)
     for p in re.findall(PATTERNS["pan"], text):
-        if p[3] == "P":
+        if p[3] == rules.individual_pan_letter.upper():
             return "PAN " + p
-    m = re.search(PATTERNS["masked_pan"], text)
+    m = re.search(PATTERNS["masked_pan"], text) if rules.masked_pan else None
     return "PAN " + m.group(0) if m else None
 
 
@@ -117,7 +124,7 @@ def _key_of(cfg: IngestionConfig, rule: KwIdentity, page: Page) -> str | None:
     if rule.by == "account":
         return _account(cfg, page)
     if rule.by == "person":
-        return _person(page)
+        return _person(cfg, page)
     if rule.by == "period":
         p, _ = _page_period(cfg, rule, page, ("title", "body") if rule.body else ("title",))
         return p.end.isoformat() if p else None
@@ -125,8 +132,8 @@ def _key_of(cfg: IngestionConfig, rule: KwIdentity, page: Page) -> str | None:
 
 
 def _periods_named(cfg: IngestionConfig, rule: KwIdentity, page: Page) -> set[tuple]:
-    fy = cfg.keywords.settings.identity.financial_year_start_month
-    return {(p.start, p.end) for l in page.content_lines() for p in _accepted(rule, in_line(l.text, fy))}
+    fy, v = _reader(cfg)
+    return {(p.start, p.end) for l in page.content_lines() for p in _accepted(rule, in_line(l.text, fy, v))}
 
 
 def _part_index(cfg: IngestionConfig, order: list[str], page: Page) -> int | None:
@@ -197,7 +204,7 @@ def identify(cfg: IngestionConfig, doc_type: str, pages: list[Page], model: Mode
         ident.account = next((a for p in pages if (a := _account(cfg, p))), None)
         ident.key = ident.account
     if rule.by == "person":
-        ident.person = next((x for p in pages if (x := _person(p))), None)
+        ident.person = next((x for p in pages if (x := _person(cfg, p))), None)
         ident.key = ident.person
     if not rule.period:
         return ident
@@ -257,12 +264,14 @@ def _engine_key(p: Period) -> str:
 
 def _row_dates(cfg: IngestionConfig, pages: list[Page]) -> Period | None:
     from .periods import DATE, _date_of
+    row = re.compile(cfg.keywords.settings.matching.table_row)
+    reach = cfg.keywords.settings.identity.row_date_chars
     seen = []
     for p in pages:
         for l in p.content_lines():
-            if not _AMOUNT.search(l.text):
+            if not row.search(l.text):
                 continue
-            m = DATE.search(l.text[:24])
+            m = DATE.search(l.text[:reach])
             if m and (d := _date_of(m)):
                 seen.append(d)
     if len(seen) < 2:
@@ -297,11 +306,12 @@ def _ask(cfg: IngestionConfig, rule: KwIdentity, doc_type: str, pages: list[Page
         ident.trace.append({"model_error": e.code})
         return None
     text, lid = ans.get("text"), ans.get("line_id")
-    if not text or lid not in by_id or K.fold(text) not in K.fold(by_id[lid][0]):
+    confused = cfg.keywords.settings.matching.confused_digits
+    if not text or lid not in by_id or K.fold(text, confused) not in K.fold(by_id[lid][0], confused):
         ident.trace.append({"model": ans, "outcome": "not on its line"})
         return None
-    fy = cfg.keywords.settings.identity.financial_year_start_month
-    got = _accepted(rule, in_line(text, fy))
+    fy, v = _reader(cfg)
+    got = _accepted(rule, in_line(text, fy, v))
     if not got:
         ident.trace.append({"model": ans, "outcome": "not a period this type accepts"})
         return None

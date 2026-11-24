@@ -758,14 +758,86 @@ class KwCategories(Strict):
     threshold: float = Field(gt=0, le=1)
 
 
+class KwPeriods(Strict):
+    """The words a period is printed with (stages/periods.py). Each phrase matches across any spacing; a "." in it may be
+    left out ("a.y." reads AY, A.Y., A. Y.), and a "-" may be a space ("half-year"). Dates, month names and the
+    financial year's start are read separately."""
+
+    range_joiners: list[str] = Field(default_factory=lambda: ["to", "till", "until", "-", "–", "—"])
+    """What joins two dates into a range: "01 Apr 2025 to 31 Mar 2026"."""
+    year_end: list[str] = Field(default_factory=lambda: ["year ended"])
+    """Before a date: the financial year that ends on it."""
+    period_end: dict[str, int] = Field(default_factory=lambda: {"period ended": 12, "quarter ended": 3, "half-year ended": 6})
+    """Before a date: the months, so many, that end on it."""
+    count_units: dict[str, int] = Field(default_factory=lambda: {"months": 1, "month": 1, "year": 12})
+    """After a number ("nine months ended"): how many months one unit is."""
+    count_ended: list[str] = Field(default_factory=lambda: ["ended", "period ended"])
+    """What follows the unit: "nine months ended", "nine months period ended"."""
+    number_words: dict[str, int] = Field(default_factory=lambda: {
+        "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+        "eleven": 11, "twelve": 12, "half": 6})
+    as_of: list[str] = Field(default_factory=lambda: ["as at", "as on"])
+    """Before a date: that one day."""
+    column_headings: list[str] = Field(default_factory=lambda: ["as at", "as on", "year ended", "period ended"])
+    """Printed twice or more on one line, these make it a table's column headings, not a heading's period."""
+    heading_words: list[str] = Field(default_factory=lambda: ["ended", "as at", "as on", "dated", "from"])
+    """Just before two dates, these make them a heading's dates, not a table's year columns."""
+    assessment_year: list[str] = Field(default_factory=lambda: ["assessment year", "a.y."])
+    financial_year: list[str] = Field(default_factory=lambda: ["financial year", "f.y."])
+    period_labels: list[str] = Field(default_factory=lambda: ["tax period", "return period", "period"])
+    """Before a month: "Return Period 12/2025", "Period Apr"."""
+    year_labels: list[str] = Field(default_factory=lambda: ["year", "financial year", "f.y."])
+    """Before the year a page names, for a month or quarter printed alone: "Year 2025-26"."""
+    quarter_labels: list[str] = Field(default_factory=lambda: ["quarter", "q"])
+    quarter_joiners: list[str] = Field(default_factory=lambda: ["-", "–", "to"])
+    """Between a quarter's first and last month: "Apr-Jun 2025"."""
+
+
+class KwPersonRules(Strict):
+    """How a personal document (a director's KYC) names its person, in order."""
+
+    din_labels: list[str] = Field(default_factory=lambda: ["director identification number", "din"])
+    """Before a DIN: the person's DIN."""
+    individual_pan_letter: str = Field(default="P", min_length=1, max_length=1)
+    """The fourth letter of an individual's PAN (a company's is C): a PAN with it is the person's."""
+    masked_pan: bool = True
+    """With neither, a masked PAN (AXXXX1234K) names the person."""
+
+
 class KwIdentitySettings(Strict):
     financial_year_start_month: int = Field(default=4, ge=1, le=12)
     """The month a financial year starts in: April, so "FY 2025-26" is 1 April 2025 to 31 March 2026."""
     account_labels: list[str] = Field(default_factory=lambda: ["account number", "account no", "a/c no", "a/c number"])
     """The labels an account number follows on a bank statement."""
+    account_digits: tuple[int, int] = (9, 20)
+    """The length of an account number after its label, fewest and most digits (or masked digits)."""
+    row_date_chars: int = Field(default=24, ge=8)
+    """How far into a table row its date is looked for, for a statement's period derived from its transactions."""
+    person: KwPersonRules = Field(default_factory=KwPersonRules)
     cover_min_periods: int = Field(default=3, ge=2)
     """A page at the head of a run listing this many periods of its type is a cover (a compilation of returns), not
     the first of them."""
+
+
+class KwScoring(Strict):
+    """The constants of the keyword scorer (stages/keywords.py)."""
+
+    lookalike_base: float = Field(default=0.5, ge=0, le=1)
+    """A type with its own words scores its best part times (base + (1 - base) x its own words' score over the run):
+    with none of them, it keeps this share of its part's score."""
+    missing_part_factor: float = Field(default=0.5, ge=0, le=1)
+    """A type lacking a part it needs (a return without its computation) keeps this share of its score."""
+    subsumed_factor: float = Field(default=0.5, ge=0, le=1)
+    """A type all of whose parts another eligible type has keeps this share of its score."""
+
+
+class KwMatching(Strict):
+    confused_digits: dict[str, str] = Field(default_factory=lambda: {"0": "o", "1": "l", "5": "s", "8": "b"})
+    """Inside a word with letters, a digit a scan confuses with a letter is read as that letter ("B0ARD" is board); a
+    number, or a code that starts with a digit (3b, 26as), is left as it is. For matching words only; identifiers have
+    their own map (fields.yaml identifier_reading)."""
+    table_row: str = r"\d{1,3}(?:,\d{2,3})+(?:\.\d+)?"
+    """A line with an amount like this is a table row: never a title, and where a statement's transaction dates are."""
 
 
 class KwSettings(Strict):
@@ -781,6 +853,9 @@ class KwSettings(Strict):
     categories: KwCategories
     max_gap: int = Field(ge=0)
     identity: KwIdentitySettings = Field(default_factory=KwIdentitySettings)
+    scoring: KwScoring = Field(default_factory=KwScoring)
+    matching: KwMatching = Field(default_factory=KwMatching)
+    periods: KwPeriods = Field(default_factory=KwPeriods)
     index_min_types: int = Field(default=3, ge=2)
     """A page whose titles name this many parts or more, of more than one document type, is a cover or index page."""
     model_guard_min_score: float = Field(default=0.2, ge=0, le=1)

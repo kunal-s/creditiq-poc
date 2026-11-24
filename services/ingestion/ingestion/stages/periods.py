@@ -4,6 +4,9 @@ One reader for every document type: the ways Indian financial documents print th
 a start and end date. Which kinds a type accepts, and where on its pages they are looked for, is configuration
 (keywords.yaml, each type's `identity`). Nothing here reads a clock: a period comes from the document's own text.
 
+The words each kind is printed with are configuration (keywords.yaml settings.periods); dates and month names are read
+here, and the financial year starts in the configured month.
+
 Kinds:
   year_end        "for the year ended 31 March 2026"            the financial year that ends on that date
   period_end      "for the nine months ended 31 December 2025"   the months stated, ending on that date
@@ -23,6 +26,8 @@ import re
 from dataclasses import dataclass
 from datetime import date, timedelta
 
+from ..config.models import KwPeriods
+
 MONTHS = {m.lower(): i for i, m in enumerate(calendar.month_name) if m}
 MONTHS.update({m.lower(): i for i, m in enumerate(calendar.month_abbr) if m})
 MONTHS["sept"] = 9
@@ -32,8 +37,60 @@ DATE = re.compile(
     rf"\b(\d{{1,2}})(?:st|nd|rd|th)?{_SEP}{_MON}\.?{_SEP}(\d{{4}}|\d{{2}})\b"      # 31 March 2026, 31-Mar-26
     r"|\b(\d{1,2})[./-](\d{1,2})[./-](\d{4})\b"                                     # 31.03.2026, 31/03/2026 (day first)
     r"|\b(\d{4})-(\d{2})-(\d{2})\b", re.I)                                          # 2026-03-31
-WORDS_N = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9,
-           "ten": 10, "eleven": 11, "twelve": 12, "half": 6}
+
+
+def _phrase(p: str) -> str:
+    """A configured phrase as a pattern: any spacing between words, a "." that may be left out, a "-" that may be a space."""
+    out = []
+    for ch in p.strip():
+        if ch == " ":
+            out.append(r"\s+")
+        elif ch == ".":
+            out.append(r"\.?\s?")
+        elif ch == "-" and len(p.strip()) > 1:
+            out.append(r"[\s-]*")
+        else:
+            out.append(re.escape(ch))
+    return "".join(out)
+
+
+def _alt(phrases) -> str:
+    return "(?:" + "|".join(sorted((_phrase(x) for x in phrases), key=len, reverse=True)) + ")"
+
+
+class Vocab:
+    """The configured words (keywords.yaml settings.periods), compiled once."""
+
+    def __init__(self, cfg: KwPeriods):
+        self.cfg = cfg
+        self.joined = re.compile(rf"\s*{_alt(cfg.range_joiners)}\s*")
+        self.columns = re.compile(rf"\b{_alt(cfg.column_headings)}\b")
+        self.heading = re.compile(rf"\b{_alt(cfg.heading_words)}\b")
+        nums = "|".join(sorted(map(re.escape, cfg.number_words), key=len, reverse=True))
+        self.count = re.compile(rf"\b(\d{{1,2}}|{nums})\s*(?:-\s*)?({'|'.join(map(_phrase, cfg.count_units))})\s+"
+                                rf"{_alt(cfg.count_ended)}\s*(?:on\s*)?$")
+        self.units = {k.lower(): v for k, v in cfg.count_units.items()}
+        self.year_end = re.compile(rf"\b({_alt(cfg.year_end)})\s*(?:on\s*)?$")
+        self.period_end = [(re.compile(rf"\b{_phrase(k)}\s*(?:on\s*)?$"), v) for k, v in cfg.period_end.items()]
+        self.as_of = re.compile(rf"\b({_alt(cfg.as_of)})\s*$")
+        self.ay = re.compile(rf"\b{_alt(cfg.assessment_year)}\s*:?\s*(20\d{{2}})\s*[-–/]\s*(\d{{2,4}})", re.I)
+        self.fy = re.compile(rf"\b{_alt(cfg.financial_year)}\s*:?\s*(20\d{{2}})(?:\s*[-–/]\s*(\d{{2,4}}))?", re.I)
+        self.quarter = re.compile(rf"\b{_MON}\w*\s*{_alt(cfg.quarter_joiners)}\s*{_MON}\w*\s*\)?\s*,?\s*(20\d{{2}})?", re.I)
+        self.numeric_month = re.compile(rf"\b{_alt(cfg.period_labels)}\s*:?\s*(0[1-9]|1[0-2])\s*[/-]?\s*(20\d{{2}})\b", re.I)
+        self.page_year = re.compile(rf"\b{_alt(cfg.year_labels)}\s*:?\s*(20\d{{2}})\s*[-–/]\s*(\d{{2,4}})", re.I)
+        self.page_quarter = re.compile(rf"\b{_alt(cfg.quarter_labels)}\s*([1-4])\b", re.I)
+        self.page_month = re.compile(rf"\b{_alt(cfg.period_labels)}[ \t]*:?[ \t]*{_MON}\w*\b(?![ \t\-,']*\d)", re.I)
+
+
+_VOCABS: dict[int, Vocab] = {}
+
+
+def vocab(cfg: KwPeriods | None = None) -> Vocab:
+    cfg = cfg or KwPeriods()
+    v = _VOCABS.get(id(cfg))
+    if v is None or v.cfg is not cfg:
+        v = _VOCABS[id(cfg)] = Vocab(cfg)
+    return v
 
 
 @dataclass(frozen=True)
@@ -114,8 +171,14 @@ def _two_years(a: str, b: str) -> int | None:
     return None
 
 
-def in_line(line: str, fy_start: int = 4) -> list[Period]:
+def _year_end_of(year: int, fy_start: int) -> date:
+    """The last day of the financial year that ends in `year`."""
+    return date(year, fy_start, 1) - timedelta(days=1) if fy_start > 1 else date(year, 12, 31)
+
+
+def in_line(line: str, fy_start: int = 4, v: Vocab | None = None) -> list[Period]:
     """Every period the line prints, in the order printed."""
+    v = v or vocab()
     t = " ".join(line.split())
     low = t.lower()
     out: list[Period] = []
@@ -125,43 +188,45 @@ def in_line(line: str, fy_start: int = 4) -> list[Period]:
     # Two dates joined by "to" or a dash: a range.
     for (m1, d1), (m2, d2) in zip(dates, dates[1:]):
         between = low[m1.end():m2.start()]
-        if re.fullmatch(r"\s*(?:to|till|until|-|–|—)\s*", between) and d1 <= d2:
+        if v.joined.fullmatch(between) and d1 <= d2:
             out.append(Period(d1, d2, "range", t[m1.start():m2.end()]))
     joined = {id(m) for p in out for m, _ in dates if t[m.start():m.end()] in p.text}
     single = [(m, d) for m, d in dates if id(m) not in joined]
 
     # Column headings printed as a row ("As at 31 March  As at 31 March", the years below): not a heading's period.
-    if len(re.findall(r"\b(?:as\s+(?:at|on)|year\s+ended|period\s+ended)\b", low)) >= 2:
+    if len(v.columns.findall(low)) >= 2:
         years = [int(y) for y in re.findall(r"\b(20\d{2})\b", low)]
         if dates or years:
-            d = max([d for _, d in dates] or [date(max(years), 3, 31)])
+            d = max([d for _, d in dates] or [_year_end_of(max(years), fy_start)])
             return out + [Period(d, d, "columns", t)]
     # Two or more dates no word joins: a table's year columns.
-    if len(single) >= 2 and not re.search(r"\b(?:ended|as\s+(?:at|on)|dated|from)\b", low[: single[0][0].start()][-40:] or ""):
+    if len(single) >= 2 and not v.heading.search(low[: single[0][0].start()][-40:] or ""):
         out.append(Period(max(d for _, d in single), max(d for _, d in single), "columns", t))
         return out
 
     for m, d in single:
         before = low[max(0, m.start() - 60):m.start()]
-        n = re.search(r"\b(\d{1,2}|" + "|".join(WORDS_N) + r")\s*(?:-\s*)?(?:months?|year)\s+(?:period\s+)?ended\s*(?:on\s*)?$", before)
+        n = v.count.search(before)
+        ye = v.year_end.search(before)
+        pe = next(((rx.search(before), k) for rx, k in v.period_end if rx.search(before)), (None, 0))
+        ao = v.as_of.search(before)
         if n:
-            k = WORDS_N.get(n.group(1)) or int(n.group(1))
-            out.append(Period(_months_back(d, k), d, "period_end", t[m.start() - (len(before) - n.start()):m.end()].strip()))
-        elif re.search(r"\byear\s+ended\s*(?:on\s*)?$", before):
-            out.append(Period(_year_before(d), d, "year_end",
-                              t[m.start() - (len(before) - before.rfind("year")):m.end()].strip()))
-        elif re.search(r"\b(?:period|quarter|half[\s-]*year)\s+ended\s*(?:on\s*)?$", before):
-            out.append(Period(_months_back(d, 3 if "quarter" in before else 6 if "half" in before else 12), d, "period_end",
-                              t[max(0, m.start() - 30):m.end()].strip()))
-        elif re.search(r"\bas\s+(?:at|on)\s*$", before):
-            out.append(Period(d, d, "as_of", t[m.start() - (len(before) - before.rfind("as ")):m.end()].strip()))
+            count = v.cfg.number_words.get(n.group(1)) or int(n.group(1))
+            unit = next((k for u, k in v.units.items() if re.fullmatch(_phrase(u), n.group(2), re.I)), 1)
+            out.append(Period(_months_back(d, count * unit), d, "period_end", t[m.start() - (len(before) - n.start()):m.end()].strip()))
+        elif ye:
+            out.append(Period(_year_before(d), d, "year_end", t[m.start() - (len(before) - ye.start()):m.end()].strip()))
+        elif pe[0]:
+            out.append(Period(_months_back(d, pe[1]), d, "period_end", t[m.start() - (len(before) - pe[0].start()):m.end()].strip()))
+        elif ao:
+            out.append(Period(d, d, "as_of", t[m.start() - (len(before) - ao.start()):m.end()].strip()))
 
-    for m in re.finditer(r"\b(?:assessment\s+year|a\.?\s?y\.?)\s*:?\s*(20\d{2})\s*[-–/]\s*(\d{2,4})", t, re.I):
+    for m in v.ay.finditer(t):
         y = _two_years(m.group(1), m.group(2))
         if y:
             s, e = _fy(y - 1, fy_start)
             out.append(Period(s, e, "assessment_year", m.group(0)))
-    for m in re.finditer(r"\b(?:financial\s+year|f\.?\s?y\.?)\s*:?\s*(20\d{2})(?:\s*[-–/]\s*(\d{2,4}))?", t, re.I):
+    for m in v.fy.finditer(t):
         if m.group(2):
             y = _two_years(m.group(1), m.group(2))
         else:
@@ -170,7 +235,7 @@ def in_line(line: str, fy_start: int = 4) -> list[Period]:
             s, e = _fy(y, fy_start)
             out.append(Period(s, e, "financial_year", m.group(0)))
     # A quarter: Q1 2025-26, Quarter 1 (Apr-Jun), Apr-Jun 2025.
-    for m in re.finditer(rf"\b{_MON}\w*\s*(?:-|–|to)\s*{_MON}\w*\s*\)?\s*,?\s*(20\d{{2}})?", t, re.I):
+    for m in v.quarter.finditer(t):
         a, b = _month(m.group(1)), _month(m.group(2))
         if a and b and (b - a) % 12 == 2 and m.group(3):
             y = int(m.group(3))
@@ -183,24 +248,25 @@ def in_line(line: str, fy_start: int = 4) -> list[Period]:
             continue
         y, mo = _year(m.group(2)), _month(m.group(1))
         out.append(Period(date(y, mo, 1), _month_end(y, mo), "month", m.group(0)))
-    for m in re.finditer(r"\b(?:tax|return)?\s*period\s*:?\s*(0[1-9]|1[0-2])\s*[/-]?\s*(20\d{2})\b", t, re.I):
+    for m in v.numeric_month.finditer(t):
         y, mo = int(m.group(2)), int(m.group(1))
         out.append(Period(date(y, mo, 1), _month_end(y, mo), "month", m.group(0)))
     return out
 
 
-def page_level(lines: list[str], fy_start: int = 4) -> list[Period]:
+def page_level(lines: list[str], fy_start: int = 4, v: Vocab | None = None) -> list[Period]:
     """Periods a page prints across lines: a month or quarter named alone after a period label ("Period Apr"), read
     within the financial year the page names ("Year 2025-26")."""
+    v = v or vocab()
     text = "\n".join(" ".join(l.split()) for l in lines)       # lines kept apart: a month is not read across them
-    fy = re.search(r"\b(?:year|financial\s+year|f\.?\s?y\.?)\s*:?\s*(20\d{2})\s*[-–/]\s*(\d{2,4})", text, re.I)
+    fy = v.page_year.search(text)
     if not fy:
         return []
     y0 = _two_years(fy.group(1), fy.group(2))
     if y0 is None:
         return []
     out = []
-    q = re.search(r"\b(?:quarter|q)\s*([1-4])\b", text, re.I)
+    q = v.page_quarter.search(text)
     if q:
         n = int(q.group(1))
         first = fy_start + 3 * (n - 1)
@@ -209,7 +275,7 @@ def page_level(lines: list[str], fy_start: int = 4) -> list[Period]:
         end = _month_end(y0 + (last - 1) // 12, (last - 1) % 12 + 1)
         out.append(Period(start, end, "quarter", q.group(0) + " " + fy.group(0)))
         return out
-    m = re.search(rf"\b(?:tax\s+|return\s+)?period[ \t]*:?[ \t]*{_MON}\w*\b(?![ \t\-,']*\d)", text, re.I)
+    m = v.page_month.search(text)
     if m:
         mo = _month(m.group(1))
         y = y0 if mo >= fy_start else y0 + 1

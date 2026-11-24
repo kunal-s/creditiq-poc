@@ -246,6 +246,49 @@ class ColRule(Strict):
     join: str = " "   # how text from wrapped lines is joined
 
 
+class KwTable(Strict):
+    """A table found by its column headings (Epic 5 of the classification restructure), for every layout of it: the
+    header is the line, with the lines just below it, where most configured headings match (fuzzily, as keywords do);
+    each column sits under its heading; year columns are told apart by the dates in their headings, latest first."""
+
+    label: str
+    """The column of the row labels; it sits at the left when no heading names it."""
+    headings: dict[str, list[str]] = Field(default_factory=dict)
+    """Each column's headings as printed in its layouts ("Particulars", "Narration", "Withdrawal Amt.")."""
+    periods: list[str] = Field(default_factory=list)
+    """Year columns, latest first: each takes the heading whose date or year comes in that order."""
+    ignore: list[str] = Field(default_factory=list)
+    """Columns read to place the others (a Notes column), not reported."""
+    part: str | None = None
+    """The keyword part the table is (keywords.yaml): a title line of another part ends it."""
+    start_words: list[str] = Field(default_factory=list)
+    """A line holding one of these opens the region the header is looked for in (a return's "3.1")."""
+    end_words: list[str] = Field(default_factory=list)
+    """A line holding one of these ends the table."""
+    header_span: int = Field(default=2, ge=0, le=4)
+    """Lines below the header line that may still be its headings (headings that wrap)."""
+    min_headings: int = Field(default=2, ge=1)
+    """How many columns a line's headings must name to be the header."""
+    heading_cover: float = Field(default=0.5, gt=0, le=1)
+    """A heading counts only when it makes up at least this share of its segment's letters: "Tax Payable" heads a
+    column, "6.1 Payment of tax" does not."""
+    align: dict[str, Literal["left", "right"]] = Field(default_factory=dict)
+    """A column's alignment where its type does not say (numbers are right-aligned, text left)."""
+    join: dict[str, str] = Field(default_factory=dict)
+    row_start: str | None = None
+    row_start_col: str | None = None
+    text_only: Literal["row", "continuation"] = "row"
+    attach: Literal["nearest", "heading"] = "nearest"
+    skip_rows: list[str] = Field(default_factory=list)
+    drop_lines: list[str] = Field(default_factory=list)
+    max_attach: float = 24.0
+    multi_page: bool = False
+    optional: bool = False
+    dash_is_zero: bool = False
+    repair: dict | None = None
+    y_tol: float | None = None
+
+
 class TableRule(Strict):
     page_match: str | None = None
     start: str
@@ -305,6 +348,9 @@ class TypeFields(Strict):
     fields: dict[str, FieldRule] = Field(default_factory=dict)
     identity: dict[str, str] = Field(default_factory=dict)  # identity key (name, pan, din, dob, gstin, cin) -> schema field
     tables: dict[str, TableRule | list[TableRule]] = Field(default_factory=dict)   # a list is layout variants, tried in order
+    table_keywords: dict[str, KwTable] = Field(default_factory=dict)
+    """Tables found by their column headings, for any layout (Epic 5); tried before the layouts above, which stay as
+    a fallback until the keyword reading reads every table they do."""
     model_tables: dict[str, ModelTable] = Field(default_factory=dict)
     """Tables the model maps when every layout above fails to find them (and a model is configured)."""
 

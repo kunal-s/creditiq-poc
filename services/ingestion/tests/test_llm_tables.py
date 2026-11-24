@@ -95,7 +95,7 @@ def test_a_table_a_layout_finds_is_not_sent_to_the_model(cfg):
     ])
     reader = Reader(lambda req: [])
     out = extract_instance(cfg, TYPE, [bs], reader)
-    assert out["tables"]["balance_sheet"]["method"] == "rules"
+    assert out["tables"]["balance_sheet"]["method"] != "model"     # read by code (its headings, or a layout)
     asked = [r for r in reader.requests if r.task == "table"]
     assert all("Balance sheet / statement of financial position" not in r.user for r in asked)
 

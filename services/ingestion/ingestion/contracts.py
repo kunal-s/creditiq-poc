@@ -64,7 +64,7 @@ class TableResult(C):
     repairs: list[dict[str, Any]] = Field(default_factory=list)
     unparsed: int = 0
     confidence: float = 0.0
-    method: Literal["rules", "model"] = "rules"
+    method: Literal["rules", "layout", "keywords", "model"] = "rules"
     """rules: a configured layout read the table; model: the model mapped its rows when no layout found it, and
     every figure was read from the page."""
 

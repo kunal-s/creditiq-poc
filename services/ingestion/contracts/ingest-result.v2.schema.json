@@ -1596,6 +1596,8 @@
           "default": "rules",
           "enum": [
             "rules",
+            "layout",
+            "keywords",
             "model"
           ],
           "title": "Method",

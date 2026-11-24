@@ -120,6 +120,19 @@ types:
     # fallback when no model is configured.
     extraction: model
     identity: {name: company_name}
+    # Tables found by their column headings, for any layout (Epic 5): tried first; the layouts below are the fallback.
+    table_keywords:
+      balance_sheet: &statement_table
+        label: particulars
+        part: balance_sheet
+        headings:
+          particulars: [particulars, description, items]
+          notes: [notes, note, note no, schedule, sch]
+        ignore: [notes]
+        periods: [current_period, previous_period]     # year columns, latest first, by the dates in their headings
+        dash_is_zero: true
+      profit_and_loss: {<<: *statement_table, part: profit_and_loss}
+      cash_flow: {<<: *statement_table, part: cash_flow}
     fields:
       # Statements filed in XBRL print each value on a labelled line ("Name of audit firm  PRICE WATERHOUSE ..."); the hints
       # point the model at those lines, and the rule-read fields try the labelled line first.
@@ -334,6 +347,54 @@ types:
       return_status: {patterns: ['Return status:\s*([A-Za-z]+)'], llm: false}
       arn: {aliases: ['2\(c\)\.?\s*ARN', 'ARN'], llm_hint: 'the ARN (acknowledgement reference number) of the return, table 2(c), as printed'}
     # Two layouts, tried in order: the portal's own printout, then the summary layout.
+    table_keywords:   # by the columns' roles, within the return's own numbered tables
+      outward_supplies:
+        label: description
+        start_words: ["3.1", details of outward supplies]
+        end_words: ["3.1.1", "3.2", eligible itc]
+        headings:
+          description: [nature of supplies, nature of supply, description]
+          taxable_value: [total taxable value, taxable value, taxable]
+          igst: [integrated tax, igst]
+          cgst: [central tax, cgst]
+          sgst: [state ut tax, sgst]
+          cess: [cess]
+        ignore: [cess]
+        min_headings: 3
+        row_start_col: description
+        row_start: '^\([a-z]\s?\)\s'
+      input_tax_credit:
+        label: description
+        start_words: [eligible itc, eligible input tax credit]
+        end_words: [values of exempt, "5.", interest and late fee]
+        headings:
+          description: [details]
+          igst: [integrated tax, igst]
+          cgst: [central tax, cgst]
+          sgst: [state ut tax, sgst]
+          cess: [cess]
+        ignore: [cess]
+        min_headings: 3
+        row_start_col: description
+        row_start: '^(?:\(\d\)|\([A-Za-z]\)|[A-D]\.)\s'
+        skip_rows: ['^[AB]\.\s']
+      tax_payment:
+        label: tax_type
+        start_words: [payment of tax]
+        end_words: [verified and filed, verification]
+        headings:
+          tax_type: [description, descripti]
+          tax_amount: [tax payable, tax]
+          paid_itc: [paid through itc]
+          itc_igst: [integrated tax, integrated]
+          itc_cgst: [central tax, central]
+          itc_sgst: [state ut tax, state ut]
+          itc_cess: [cess]
+          paid_cash: [paid in cash, tax paid in cash]
+          interest: [interest]
+          late_fee: [late fee, late]
+        min_headings: 3
+        header_span: 4
     tables:
       outward_supplies:
         - start: '^Nature of Supplies\s+Total taxable\s+Integrated\s+Central'
@@ -455,6 +516,25 @@ types:
       drawing_power: {aliases: ['Drawing Power', 'DP'], llm_hint: 'the drawing power of a cash credit or overdraft account, the amount only, as printed; null if not stated'}
       customer_id: {aliases: ['Customer ID', 'Cust(?:omer)?\.? ID', 'CIF(?: No\.?| Number)?'], llm_hint: 'the customer ID or CIF number, as printed'}
       holder_address: {aliases: ['Address'], llm_hint: 'the address printed under the account holder name, as printed'}
+    table_keywords:
+      transactions:
+        label: date
+        part: transactions
+        headings:   # each column by its role, as banks head it
+          date: [date, txn date, transaction date, tran date, posting date]
+          value_date: [value date, value dt]
+          description: [particulars, narration, description, transaction details, details, remarks]
+          reference_number: [reference, ref no, chq no, cheque no, chq ref no, instrument no, utr no]
+          debit: [debit, withdrawal, withdrawals, withdrawal amt, debit amount, dr]
+          credit: [credit, deposit, deposits, deposit amt, credit amount, cr]
+          balance: [balance, closing balance, running balance, balance amt]
+        min_headings: 4
+        join: {reference_number: ""}
+        row_start_col: date
+        row_start: '^(\d{1,2}[\s/-][A-Za-z]{3}[\s/-]\d{2,4}|\d{4}-\d{2}-\d{2}|\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4})$'
+        multi_page: true
+        end_words: [statement summary]
+        repair: {kind: running_balance, debit: debit, credit: credit, balance: balance}
     tables:
       transactions:
         start: '^Date\s+Particulars\s+Reference'
@@ -560,6 +640,10 @@ types:
   provisional_financial_statements:
     extraction: model
     identity: {name: company_name}
+    table_keywords:
+      balance_sheet: {<<: *statement_table, part: balance_sheet}
+      profit_and_loss: {<<: *statement_table, part: profit_and_loss}
+      cash_flow: {<<: *statement_table, part: cash_flow}
     fields:
       company_name: {llm_hint: 'the full legal name of the company whose statements these are, as printed'}
       period_from: {llm_hint: 'the first day of the period the statements cover, copied as printed; null if only the end is printed'}

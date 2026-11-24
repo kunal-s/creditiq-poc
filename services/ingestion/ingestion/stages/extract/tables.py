@@ -165,15 +165,40 @@ class _DL:
     is_start: bool = False
 
 
-def build_table(rule: TableRule, defs: list[ColumnDef], pages: list[Page], reading: ReadingConfig) -> TableResult | None:
-    found = _find_header(pages, rule)
-    if not found:
-        return None
-    pi0, li0 = found
+class Header:
+    """Where a table's header is and where its columns sit, when it is not a configured layout's pattern (kwtables.py):
+    `find` gives (page index, line index, header lines, anchors) of the first header; `repeat` the same on a later
+    page, or None; `ends` whether a line ends the table."""
+
+    def find(self, pages: list[Page]) -> tuple[int, int, int, dict[str, tuple[float, float]]] | None: ...
+    def repeat(self, lines: list[Line]) -> tuple[int, int, dict[str, tuple[float, float]]] | None: ...
+    def ends(self, line: Line) -> bool: ...
+    def drops(self, line: Line) -> bool:
+        """A line that is no part of the table wherever it falls (a page's footer)."""
+        return False
+    drop_trailing_text = False
+    """Text-only rows after the table's last row with figures are dropped (the note printed under a table)."""
+
+
+def build_table(rule: TableRule, defs: list[ColumnDef], pages: list[Page], reading: ReadingConfig,
+                header: Header | None = None) -> TableResult | None:
+    if header is not None:
+        hit = header.find(pages)
+        if not hit:
+            return None
+        pi0, li0, first_lines, first_anchors = hit
+    else:
+        found = _find_header(pages, rule)
+        if not found:
+            return None
+        pi0, li0 = found
     gap = reading.column_gap
     cols = rule.columns
     end_rx = re.compile(rule.end, re.I) if rule.end else None
-    start_rx = re.compile(rule.start, re.I)
+    start_rx = re.compile(rule.start, re.I) if rule.start else None
+
+    def is_end(line: Line) -> bool:
+        return bool(end_rx and end_rx.search(line.text)) or bool(header and header.ends(line))
     row_rx = re.compile(rule.row_start, re.I) if rule.row_start else None
     drop = [re.compile(x, re.I) for x in rule.drop_lines]
     label_col = cols[0].name
@@ -186,16 +211,26 @@ def build_table(rule: TableRule, defs: list[ColumnDef], pages: list[Page], readi
         p = pages[pi]
         lines = p.content_lines()
         if pi == pi0:
-            block = lines[li0:li0 + 1 + rule.header_lines]
-            data = lines[li0 + 1 + rule.header_lines:]
-            anchors = _anchor(cols, block, gap)
+            if header is not None:
+                data, anchors = lines[li0 + 1 + first_lines:], first_anchors
+            else:
+                block = lines[li0:li0 + 1 + rule.header_lines]
+                data = lines[li0 + 1 + rule.header_lines:]
+                anchors = _anchor(cols, block, gap)
         else:
-            hdr = next((i for i, l in enumerate(lines) if start_rx.search(l.text)), None)
-            ends = next((i for i, l in enumerate(lines[:hdr]) if end_rx.search(l.text)), None) if end_rx and hdr is not None else None
+            again = header.repeat(lines) if header is not None else None
+            if header is not None:
+                hdr = again[0] if again else None
+            else:
+                hdr = next((i for i, l in enumerate(lines) if start_rx.search(l.text)), None)
+            ends = next((i for i, l in enumerate(lines[:hdr]) if is_end(l)), None) if hdr is not None else None
             if ends is not None:
                 # The table ends on this page, above the next statement's heading (which repeats the same column
                 # heading): its last rows are the lines above that end, read with the columns it already has.
                 data, stop = lines[:ends], True
+            elif hdr is not None and again is not None:
+                anchors = {**anchors, **again[2]}
+                data = lines[hdr + 1 + again[1]:]
             elif hdr is not None:
                 block = lines[hdr:hdr + 1 + rule.header_lines]
                 anchors = {**anchors, **_anchor(cols, block, gap)}   # a column the repeated header does not head keeps its anchor
@@ -205,10 +240,10 @@ def build_table(rule: TableRule, defs: list[ColumnDef], pages: list[Page], readi
         if not anchors.get(label_col):
             return None
         for line in data:
-            if end_rx and end_rx.search(line.text):
+            if is_end(line):
                 stop = True
                 break
-            if any(rx.search(line.text) for rx in drop):
+            if any(rx.search(line.text) for rx in drop) or (header is not None and header.drops(line)):
                 continue
             cells: dict[str, list[Seg]] = {}
             segs = split_at_numeric_columns(segments(line, gap, figure_words(line.words, gap)), cols, anchors)
@@ -306,6 +341,9 @@ def build_table(rule: TableRule, defs: list[ColumnDef], pages: list[Page], readi
             src = {"sheet": pg.sheet, "range": f"{cells[0]}:{cells[-1]}" if len(cells) > 1 else cells[0] if cells else None,
                    "line_ids": src["line_ids"], "line": src["line"]}
         rows.append({"cells": cells_out, "raw": {k: v for k, v in raw.items() if by_name[k].emit}, "source": src})
+    if header is not None and header.drop_trailing_text:
+        while rows and not any(isinstance(v, (int, float)) for k, v in rows[-1]["cells"].items() if k != label_col):
+            rows.pop()
     if not rows:
         return None
     first, last = pages[pi0], pages[last_page]

@@ -102,7 +102,9 @@ def main() -> None:
                        "key": d.instance_key, "origin": d.origin,
                        "period": getattr(d, "period", None), "period_status": getattr(d, "period_status", None),
                        "fields": {k: (f.value if f.status == "found" else None) for k, f in d.fields.items()},
-                       "tables": {k: (len(t.rows) if t.status == "found" else t.reason) for k, t in d.tables.items()}}
+                       "tables": {k: (len(t.rows) if t.status == "found" else t.reason) for k, t in d.tables.items()},
+                       "table_rows": {k: [r.cells for r in t.rows] for k, t in d.tables.items() if t.status == "found"},
+                       "table_method": {k: getattr(t, "method", None) for k, t in d.tables.items() if t.status == "found"}}
                       for d in res.documents],
         })
 

@@ -10,6 +10,7 @@ from ...contracts import CaseType
 from ...llm.recorder import ModelClient
 from ...pageindex import Page
 from . import llm_extract, llm_tables
+from . import kwtables
 from .fields import Found, extract_scalar
 from .normalise import normalise
 from ...util import fold
@@ -107,12 +108,18 @@ def extract_instance(cfg: IngestionConfig, doc_type: str, pages: list[Page], mod
     tables: dict[str, dict] = {}
     trules = rules.tables if rules else {}
     for t in td.schema_.tables:
-        tr = trules.get(t.name)
-        if tr is None:
+        tr = trules.get(t.name) or []
+        if not tr and not (rules and t.name in rules.table_keywords):
             tables[t.name] = {"status": "missing", "reason": "no_rule", "columns": [c.name for c in t.columns], "rows": [], "source": None, "repairs": [], "unparsed": 0, "method": "rules"}
             continue
         variants = tr if isinstance(tr, list) else [tr]
-        res = next((r for v in variants if (r := build_table(v, t.columns, pages, cfg.routing.reading))), None)
+        kt = rules.table_keywords.get(t.name) if rules else None
+        # By its headings first (any layout); the configured layouts stay as a fallback until they are retired.
+        res = kwtables.read(cfg, kt, t.columns, pages, list(rules.table_keywords.values())) if kt else None
+        if res is None:
+            res = next((r for v in variants if (r := build_table(v, t.columns, pages, cfg.routing.reading))), None)
+            if res is not None:
+                res.method = "layout"
         spec = rules.model_tables.get(t.name) if rules else None
         if res is None and spec is not None and model is not None:
             # No layout found it: the model maps its rows, and code reads every figure from the page (llm_tables).

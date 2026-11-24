@@ -51,6 +51,22 @@ def checks(columns: list[SpreadColumn], groups: list[list[facts_module.Doc]], cf
                 detail=(f"Total assets {_fmt(a[0].value)} and total equity and liabilities {_fmt(b[0].value)} "
                         + ("agree." if ok else f"differ by {_fmt(abs(diff))}.")),
                 evidence=a[0].evidence[:1] + b[0].evidence[:1], lines=list(BALANCE)))
+    # Each year's lines as mapped against the totals the statement prints (Story 5.13): a mapping that took a wrong row,
+    # or a printed row mapped to no line, shows as a difference that names the rows to look at.
+    for i, col in enumerate(columns):
+        for doc in groups[i][:1]:
+            for t in statements.tie_outs(doc, cfg):
+                what = t.section.replace("_", " ").replace(", ", " + ")
+                detail = (f"{t.total_label} {_fmt(t.printed)}; the lines mapped in {what} add up to {_fmt(t.mapped)}"
+                          + (", which agree." if t.agrees else f"; they differ by {_fmt(abs(t.difference))}."))
+                if not t.agrees and t.unmapped:
+                    detail += " Rows printed there that map to no line: " + "; ".join(t.unmapped[:6]) + "."
+                out.append(SpreadCheck(
+                    id=f"tieout:{col.key}:{t.table}:{t.section}", kind="balance", fy=col.fy,
+                    label=f"{what.capitalize()} as mapped against the printed total, {col.fy}",
+                    outcome="agrees" if t.agrees else "differs", left_label=t.total_label, left=t.printed,
+                    right_label="Lines mapped", right=t.mapped, difference=t.difference, tolerance=t.tolerance,
+                    detail=detail, evidence=t.evidence[:1], lines=t.lines))
     # Each year's figures against the comparative the next audited year's statements print.
     for i in range(len(columns) - 1):
         earlier, later = columns[i], columns[i + 1]

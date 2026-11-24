@@ -681,20 +681,48 @@ class CamSectionConfig(BaseModel):
 
 
 class StatementLine(BaseModel):
-    """A row of a statement table, found by its printed label."""
+    """A row of a statement table, found by its printed label (Epic 5c of the classification restructure).
+
+    The label is matched by its wordings after its numbering ("(a)", "1.", "II.", "A.", "i)") is removed and case,
+    punctuation and hyphens are folded: a label that is a wording wins over one that begins with it, which wins over
+    one that holds it. With a `section`, only a row in that section of the table counts, where the table prints its
+    section headings (statements.yaml sections)."""
 
     table: str
-    row: str
-    """Regular expression, case-insensitive, matched against the row's first column."""
+    wordings: list[str] = Field(default_factory=list)
+    """How the line is printed ("Share capital", "Equity share capital")."""
+    row: str | None = None
+    """A regular expression for the label instead of wordings (kept for configurations published before wordings)."""
+    section: str | None = None
+    """The section of the table the line belongs to (current_liabilities): "Borrowings" under non-current liabilities
+    is not the "Borrowings" under current liabilities."""
+    group: str | None = None
+    """The top-level group of the table the line belongs to (assets): the "TOTAL" printed under the assets is total
+    assets, the one under equity and liabilities is not."""
     column: str | None = None
     """Overrides the section's column (for example `previous_period`)."""
     label: str = "particulars"
     """The column that holds the row's printed label."""
 
+    @model_validator(mode="after")
+    def _one(self):
+        if bool(self.wordings) == bool(self.row):
+            raise ValueError("a statement line gives its wordings or a row pattern, not both and not neither")
+        return self
+
+
+class StatementSection(BaseModel):
+    """A section of a statement table: the headings that open it and the label of its printed total."""
+
+    headings: list[str]
+    total: list[str] = Field(default_factory=list)
+    """The printed total of the section ("Total current liabilities"), which its mapped lines must add up to."""
+
 
 class GstLine(BaseModel):
     table: str
-    row: str
+    wordings: list[str] = Field(default_factory=list)
+    row: str | None = None
     column: str
     label: str = "description"
 
@@ -722,6 +750,15 @@ class StatementsSection(BaseModel):
     """GST turnover: every row of the return's table that matches is summed."""
     itr_lines: dict[str, StatementLine] = Field(default_factory=dict)
     """Lines of an income tax return's computation, compared with the books (TX-02, TX-03)."""
+    groups: dict[str, dict[str, list[str]]] = Field(default_factory=dict)
+    """Per statement table, its top-level groups (equity and liabilities, assets) and the headings that open each."""
+    sections: dict[str, dict[str, StatementSection]] = Field(default_factory=dict)
+    """Per statement table, its sections in printed order (equity, non-current liabilities, ...), each with the
+    headings that open it and its printed total."""
+    grand_totals: dict[str, list[str]] = Field(default_factory=dict)
+    """A printed total line and the sections whose mapped lines must add up to it (total assets: the asset sections)."""
+    tie_out_rounding: float = Field(default=0.5, ge=0)
+    """A section's mapped lines agree with its printed total within this many units of print per line summed."""
     spread_basis: dict[str, Literal["audited", "provisional", "projected"]] = Field(
         default_factory=lambda: {"audited_financial_statements": "audited"})
     """Document type to the spread column it fills (F-22). A version published before this setting existed

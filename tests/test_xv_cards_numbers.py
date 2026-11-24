@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from engine import cases, crosschecks, db, facts, pipeline, xv_cards
+from engine import cases, crosschecks, db, facts, pipeline, statements, xv_cards
 from engine.configstore import reader
 from tests.conftest import ANALYST, make_case, sign_in
 from tests.triangulation import add_doc, audited, months, row_index
@@ -553,8 +553,8 @@ def test_the_gst_rows_name_the_rows_of_table_3_1_the_figure_sums(client, analyst
     root = published_data_root
     # The rows of table 3.1 the configuration sums into a month's figure, found as the facts find them
     # (engine/statements.py): the heading names exactly those.
-    pattern = re.compile(reader.load_statements(root).gst_outward.row, re.IGNORECASE)
-    summed = [k for k, label in TABLE_3_1.items() if pattern.search(label)]
+    spec = reader.load_statements(root).gst_outward
+    summed = [k for k, label in TABLE_3_1.items() if statements.matches(spec, label)]
     assert summed == ["a", "b", "c"]
     assert GST_HEADINGS[2] == "3.1" + "+".join(f"({k})" for k in summed) + " outward supplies"
 

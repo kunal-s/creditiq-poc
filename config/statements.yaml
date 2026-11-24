@@ -12,58 +12,80 @@ column: current_period
 display_unit: crore
 
 lines:
-  revenue_from_operations: {table: profit_and_loss, row: '^([IVX]+\.?\s*)?revenue from operations'}
-  other_income:            {table: profit_and_loss, row: '^([IVX]+\.?\s*)?other income'}
-  depreciation:            {table: profit_and_loss, row: '^depreciation'}
-  finance_costs:           {table: profit_and_loss, row: '^finance costs?'}
-  profit_before_tax:       {table: profit_and_loss, row: '^([IVX]+\.?\s*)?(total )?profit before tax'}
-  profit_after_tax:        {table: profit_and_loss, row: '^([IVX]+\.?\s*)?(profit\s*[/(]*\s*\(?loss\)?\s*for the (year|period)|profit (for the (year|period)|after tax))|^total profit \(loss\) for (the )?period$'}
-  share_capital:           {table: balance_sheet, row: '^\(\w\)\s*share capital|^equity share capital$'}
-  reserves_and_surplus:    {table: balance_sheet, row: '^\(\w\)\s*reserves and surplus|^other equity$'}
-  long_term_borrowings:    {table: balance_sheet, row: '^\(\w\)\s*long-term borrowings|^borrowings, non-current$'}
-  short_term_borrowings:   {table: balance_sheet, row: '^\(\w\)\s*short-term borrowings|^borrowings, current$'}
-  trade_payables:          {table: balance_sheet, row: '^\(\w\)\s*trade payables|^trade payables, current$'}
-  other_current_liabilities: {table: balance_sheet, row: '^(\(\w\)\s*)?other current liabilities$|^\(\w\)\s*other current liabilities'}
-  short_term_provisions:   {table: balance_sheet, row: '^\(\w\)\s*short-term provisions|^provisions, current$'}
-  inventories:             {table: balance_sheet, row: '^\(\w\)\s*inventories|^inventories$'}
-  trade_receivables:       {table: balance_sheet, row: '^\(\w\)\s*trade receivables|^trade receivables, current$'}
-  cash_and_bank_balances:  {table: balance_sheet, row: '^\(\w\)\s*cash and (bank balances|cash equivalents)|^cash and cash equivalents$'}
-  short_term_loans_and_advances: {table: balance_sheet, row: '^\(\w\)\s*short-term loans and advances|^loans, current$'}
-  other_current_assets:    {table: balance_sheet, row: '^\(\w\)\s*other current assets|^other current assets$'}
+  # Each line by how it is printed; numbering ("(a)", "1.", "II.") and case, punctuation and hyphens do not matter. A
+  # balance-sheet line names its section, so "Borrowings" under non-current liabilities is not the one under current.
+  revenue_from_operations: {table: profit_and_loss, section: income, wordings: [revenue from operations, income from operations, sales, net sales, turnover]}
+  other_income:            {table: profit_and_loss, section: income, wordings: [other income]}
+  depreciation:            {table: profit_and_loss, section: expenses, wordings: [depreciation and amortisation expense, depreciation and amortization expense, depreciation]}
+  finance_costs:           {table: profit_and_loss, section: expenses, wordings: [finance costs, finance cost, interest and finance charges]}
+  profit_before_tax:       {table: profit_and_loss, wordings: [profit before tax, total profit before tax, profit loss before tax]}
+  profit_after_tax:        {table: profit_and_loss, wordings: [profit for the year, profit for the period, profit loss for the year, profit loss for the period, total profit loss for period, profit after tax, net profit]}
+  share_capital:           {table: balance_sheet, section: equity, wordings: [share capital, equity share capital, capital account]}
+  reserves_and_surplus:    {table: balance_sheet, section: equity, wordings: [reserves and surplus, other equity]}
+  long_term_borrowings:    {table: balance_sheet, section: non_current_liabilities, wordings: [long term borrowings, borrowings non current, non current borrowings, borrowings]}
+  short_term_borrowings:   {table: balance_sheet, section: current_liabilities, wordings: [short term borrowings, borrowings current, current borrowings, borrowings]}
+  trade_payables:          {table: balance_sheet, section: current_liabilities, wordings: [trade payables, trade payables current, sundry creditors]}
+  other_current_liabilities: {table: balance_sheet, section: current_liabilities, wordings: [other current liabilities]}
+  short_term_provisions:   {table: balance_sheet, section: current_liabilities, wordings: [short term provisions, provisions current, provisions]}
+  inventories:             {table: balance_sheet, section: current_assets, wordings: [inventories, closing stock]}
+  trade_receivables:       {table: balance_sheet, section: current_assets, wordings: [trade receivables, trade receivables current, sundry debtors]}
+  cash_and_bank_balances:  {table: balance_sheet, section: current_assets, wordings: [cash and bank balances, cash and cash equivalents]}
+  short_term_loans_and_advances: {table: balance_sheet, section: current_assets, wordings: [short term loans and advances, loans current, loans]}
+  other_current_assets:    {table: balance_sheet, section: current_assets, wordings: [other current assets]}
   # The two totals a balance sheet must agree on; read for the spread's reconciliation, not worked from.
-  total_assets:            {table: balance_sheet, row: '^total assets'}
-  total_equity_and_liabilities: {table: balance_sheet, row: '^total (equity\s*(&|and)\s*liabilities|liabilities and equity)'}
+  total_assets:            {table: balance_sheet, group: assets, wordings: [total assets, total]}
+  total_equity_and_liabilities: {table: balance_sheet, group: equity_and_liabilities, wordings: [total equity and liabilities, total liabilities and equity, total]}
   # Further Schedule III lines (document-fields). A statement that does not print one simply has no such line.
-  share_application_money: {table: balance_sheet, row: '^\(\w\)\s*share application money'}
-  deferred_tax_liability:  {table: balance_sheet, row: '^(\(\w\)\s*)?deferred tax liabilit'}
-  other_long_term_liabilities: {table: balance_sheet, row: '^\(\w\)\s*other long-term liabilities|^other non-current liabilities$'}
-  long_term_provisions:    {table: balance_sheet, row: '^\(\w\)\s*long-term provisions|^provisions, non-current$'}
-  net_fixed_assets:        {table: balance_sheet, row: '^\(\w\)\s*(property, plant and equipment|tangible assets|fixed assets)|^property, plant and equipment$'}
-  capital_work_in_progress: {table: balance_sheet, row: '^(\(\w\)\s*)?capital work-in-progress'}
-  intangible_assets:       {table: balance_sheet, row: '^\(\w\)\s*intangible assets|^other intangible assets$'}
-  non_current_investments: {table: balance_sheet, row: '^(\(\w\)\s*)?non-current investments'}
-  deferred_tax_asset:      {table: balance_sheet, row: '^(\(\w\)\s*)?deferred tax assets?'}
-  long_term_loans_and_advances: {table: balance_sheet, row: '^\(\w\)\s*long-term loans and advances|^loans, non-current$'}
-  other_non_current_assets: {table: balance_sheet, row: '^(\(\w\)\s*)?other non-current assets'}
-  current_investments:     {table: balance_sheet, row: '^(\(\w\)\s*)?current investments'}
-  total_income:            {table: profit_and_loss, row: '^([IVX]+\.?\s*)?total (income|revenue)'}
-  cost_of_materials_consumed: {table: profit_and_loss, row: '^cost of (raw )?materials? consumed'}
-  purchases_of_stock_in_trade: {table: profit_and_loss, row: '^purchases? of stock-in-trade'}
-  changes_in_inventories:  {table: profit_and_loss, row: '^changes in inventor'}
-  employee_benefits_expense: {table: profit_and_loss, row: '^employee benefits? expenses?'}
-  other_expenses:          {table: profit_and_loss, row: '^other expenses'}
-  total_expenses:          {table: profit_and_loss, row: '^([IVX]+\.?\s*)?total expenses'}
-  exceptional_items:       {table: profit_and_loss, row: '^([IVX]+\.?\s*)?exceptional'}
-  tax_expense:             {table: profit_and_loss, row: '^([IVX]+\.?\s*)?(total )?tax expense(?!\s+of discontinued)'}
+  share_application_money: {table: balance_sheet, section: equity, wordings: [share application money pending allotment, share application money]}
+  deferred_tax_liability:  {table: balance_sheet, section: non_current_liabilities, wordings: [deferred tax liabilities, deferred tax liability, deferred tax liabilities net]}
+  other_long_term_liabilities: {table: balance_sheet, section: non_current_liabilities, wordings: [other long term liabilities, other non current liabilities]}
+  long_term_provisions:    {table: balance_sheet, section: non_current_liabilities, wordings: [long term provisions, provisions non current, provisions]}
+  net_fixed_assets:        {table: balance_sheet, section: non_current_assets, wordings: [property plant and equipment, tangible assets, fixed assets]}
+  capital_work_in_progress: {table: balance_sheet, section: non_current_assets, wordings: [capital work in progress]}
+  intangible_assets:       {table: balance_sheet, section: non_current_assets, wordings: [intangible assets, other intangible assets]}
+  non_current_investments: {table: balance_sheet, section: non_current_assets, wordings: [non current investments, investments]}
+  deferred_tax_asset:      {table: balance_sheet, section: non_current_assets, wordings: [deferred tax assets, deferred tax asset, deferred tax assets net]}
+  long_term_loans_and_advances: {table: balance_sheet, section: non_current_assets, wordings: [long term loans and advances, loans non current, loans]}
+  other_non_current_assets: {table: balance_sheet, section: non_current_assets, wordings: [other non current assets]}
+  current_investments:     {table: balance_sheet, section: current_assets, wordings: [current investments, investments]}
+  total_income:            {table: profit_and_loss, wordings: [total income, total revenue]}
+  cost_of_materials_consumed: {table: profit_and_loss, section: expenses, wordings: [cost of materials consumed, cost of raw materials consumed, cost of material consumed]}
+  purchases_of_stock_in_trade: {table: profit_and_loss, section: expenses, wordings: [purchases of stock in trade, purchase of stock in trade]}
+  changes_in_inventories:  {table: profit_and_loss, section: expenses, wordings: [changes in inventories]}
+  employee_benefits_expense: {table: profit_and_loss, section: expenses, wordings: [employee benefits expense, employee benefit expenses, employee benefits expenses, employee benefit expense]}
+  other_expenses:          {table: profit_and_loss, section: expenses, wordings: [other expenses]}
+  total_expenses:          {table: profit_and_loss, wordings: [total expenses]}
+  exceptional_items:       {table: profit_and_loss, wordings: [exceptional items, exceptional item]}
+  tax_expense:             {table: profit_and_loss, wordings: [tax expense, total tax expense, tax expenses]}
   # Ind AS lines (statements filed in XBRL) that the older layout folds into another line: there, cash and bank
   # balances hold the bank balances, other current assets the other financial assets, and other current liabilities
   # the other financial liabilities and the tax due. A statement that does not print one reads it as nil.
-  bank_balances_other_than_cash: {table: balance_sheet, row: '^bank balances? other than cash and cash equivalents'}
-  other_current_financial_assets: {table: balance_sheet, row: '^other current financial assets$'}
-  current_tax_assets:      {table: balance_sheet, row: '^current tax assets( \(net\))?$'}
-  other_current_financial_liabilities: {table: balance_sheet, row: '^other current financial liabilities$'}
-  current_tax_liabilities: {table: balance_sheet, row: '^current tax liabilities( \(net\))?$'}
-  cash_flow_from_operations: {table: cash_flow, row: '^net cash (flows? )?(generated )?(from|used in|\(used in\)|from\s*/\s*\(used in\)|from \(used in\))\s*operating activities'}
+  bank_balances_other_than_cash: {table: balance_sheet, section: current_assets, wordings: [bank balances other than cash and cash equivalents, bank balance other than cash and cash equivalents]}
+  other_current_financial_assets: {table: balance_sheet, section: current_assets, wordings: [other current financial assets, other financial assets]}
+  current_tax_assets:      {table: balance_sheet, section: current_assets, wordings: [current tax assets, current tax assets net]}
+  other_current_financial_liabilities: {table: balance_sheet, section: current_liabilities, wordings: [other current financial liabilities, other financial liabilities]}
+  current_tax_liabilities: {table: balance_sheet, section: current_liabilities, wordings: [current tax liabilities, current tax liabilities net]}
+  cash_flow_from_operations: {table: cash_flow, wordings: [net cash from operating activities, net cash generated from operating activities, net cash flow from operating activities, net cash flows from operating activities, net cash used in operating activities, net cash from used in operating activities, net cash generated from used in operating activities]}
+
+# Each statement table's sections in the order printed: the headings that open one, and its printed total, which the
+# lines mapped in it must add up to (the tie-out, within tie_out_rounding units of print per line summed).
+groups:
+  balance_sheet:
+    equity_and_liabilities: [equity and liabilities]
+    assets: [assets]
+sections:
+  balance_sheet:
+    equity: {headings: [shareholders funds, equity], total: [total shareholders funds, total equity]}
+    non_current_liabilities: {headings: [non current liabilities], total: [total non current liabilities]}
+    current_liabilities: {headings: [current liabilities], total: [total current liabilities]}
+    non_current_assets: {headings: [non current assets], total: [total non current assets]}
+    current_assets: {headings: [current assets], total: [total current assets]}
+grand_totals:   # a printed total line and the sections whose mapped lines must add up to it
+  total_income: [income]
+  total_expenses: [expenses]
+  total_assets: [non_current_assets, current_assets]
+  total_equity_and_liabilities: [equity, non_current_liabilities, current_liabilities]
+tie_out_rounding: 0.5
 
 # Rows a statement may leave out when it has nothing to report; read as nil and marked not printed.
 absent_is_nil: [inventories, other_current_assets, current_investments, bank_balances_other_than_cash,
@@ -90,10 +112,10 @@ spread_basis:
   projected_financial_statements: projected
   cma_data: projected
 
-gst_outward: {table: outward_supplies, row: '^\((a|b|c)\)', column: taxable_value}
+gst_outward: {table: outward_supplies, wordings: [outward taxable supplies, other outward supplies], column: taxable_value}
 
 # The lines of an income tax return's computation compared with the books
 # (TX-02 book profit, TX-03 turnover). Rows found by their printed label.
 itr_lines:
-  profit_before_tax: {table: income_computation, row: '(net )?profit (before tax )?as per (the )?(statement of )?(profit and loss|p\s*&\s*l)', column: amount}
-  turnover:          {table: income_computation, row: '^(revenue from operations|gross receipts|turnover|sales turnover|total sales)', column: amount}
+  profit_before_tax: {table: income_computation, wordings: [profit as per profit and loss, profit as per statement of profit and loss, profit before tax as per profit and loss, profit before tax as per statement of profit and loss, profit as per p and l], column: amount}
+  turnover:          {table: income_computation, wordings: [revenue from operations, gross receipts, turnover, sales turnover, total sales], column: amount}

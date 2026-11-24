@@ -227,7 +227,9 @@ def build(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> Spread:
     for section, names in (("profit_and_loss", PROFIT_AND_LOSS), ("balance_sheet", BALANCE_SHEET)):
         for name in names:
             cells = [lines[name] for lines in lines_by_column]
-            if name in WHEN_PRINTED and all(c.value is None for c in cells):
+            # A Schedule III line no year prints carries no row: missing, or nil because its section ties out.
+            if name in WHEN_PRINTED and all(c.value is None or (c.working is not None and c.working.state == "not_printed")
+                                            for c in cells):
                 continue
             rows.append(SpreadRow(key=name, label=policy_module.INPUT_LABELS[name], section=section, kind="line",
                                   unit="inr", cells=cells))

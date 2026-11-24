@@ -147,6 +147,9 @@ types:
         ignore: [notes]
         periods: [current_period, previous_period]     # year columns, latest first, by the dates in their headings
         dash_is_zero: true
+        hints:   # for the model, when no header is found (it reads the column headings; no position is assumed)
+          current_period: the figure for the year the statements are for
+          previous_period: the figure for the year before (the comparative year)
       profit_and_loss: {<<: *statement_table, part: profit_and_loss}
       cash_flow: {<<: *statement_table, part: cash_flow, optional: true}   # a small company may file no cash flow
     fields:
@@ -240,24 +243,6 @@ types:
             - {name: particulars, header: '^\[Abstract\]$'}
             - {name: current_period, header: '^\d{2}/\d{2}/\d{4}$', nth: 0, align: right}
             - {name: previous_period, header: '^\d{2}/\d{2}/\d{4}$', nth: 1, align: right}
-
-    # When neither the headings nor the XBRL layouts find a statement, the model maps its rows from the pages that name it; every
-    # figure is still read from the page (stages/extract/llm_tables.py), and the document goes to a person once.
-    model_tables:
-      balance_sheet:
-        pages: ['balance\s+sheet', 'statement\s+of\s+(assets\s+and\s+liabilities|financial\s+position)', '\[110000\]']
-        span: 2
-        hints: &period_hints
-          current_period: the figure for the year the statements are for (the first figure column)
-          previous_period: the figure for the year before (the comparative column)
-      profit_and_loss:
-        pages: ['profit\s*(and|&)\s*loss', 'income\s+(and\s+expenditure|statement)', '\[210000\]']
-        span: 2
-        hints: *period_hints
-      cash_flow:
-        pages: ['cash[\s-]*flow', '\[320000\]']
-        span: 2
-        hints: *period_hints
 
   income_tax_return:
     # The model reads the fields from the first page and the computation sections (Part B-TI and B-TTI); code checks every

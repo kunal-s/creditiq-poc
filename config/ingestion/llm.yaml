@@ -133,7 +133,9 @@ prompts:
         label is printed on, and for each column asked, the id of the line its figure is printed on and which
         figure on that line it is, counting from the left (1 for the first). Use null for a column the row leaves
         empty.
-      - Never write a figure or a label yourself: they are read from the lines you name.
+      - For a text column, name the line and which piece of text on it, counting from the left: pieces are set
+        apart by wide gaps, figures are not counted, and the row's label is the first piece on its line.
+      - Never write a figure, a label or any text yourself: they are read from the lines you name.
       - A heading or a note without figures is not a row. Rows of any other table or statement are not rows.
       - If the table is not in the text, report no rows.
       Answer only with the JSON object requested.

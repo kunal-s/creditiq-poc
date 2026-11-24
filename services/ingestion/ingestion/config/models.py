@@ -289,6 +289,13 @@ class KwTable(Strict):
     dash_is_zero: bool = False
     repair: dict | None = None
     y_tol: float | None = None
+    model: bool = True
+    """When no header is found, the model maps the table from the pages the keyword scorer chooses for it (its part,
+    or its headings); every value is read from the line it names, and the document goes to a person once for it."""
+    hints: dict[str, str] = Field(default_factory=dict)
+    """What a column holds, in words, for the model, where its name does not say."""
+    model_pages: int = Field(default=4, ge=1)
+    """The most pages shown to the model for the table."""
     signed: dict[str, str] | None = None
     """One amount column for both directions (Story 5.10): {amount, marker, debit, credit}, the columns by role. Each
     row's amount goes to debit or credit by its marker column or the marker printed with it (numbers.debit_markers,
@@ -335,8 +342,9 @@ class ModelTable(Strict):
     each column; it never writes a figure. Code reads every figure from the line named and rejects what is not
     there (F-15.4)."""
 
-    pages: list[str]
-    """A page is a candidate when one of its opening lines matches one of these (the statement's title)."""
+    pages: list[str] = Field(default_factory=list)
+    """A page is a candidate when one of its opening lines matches one of these. Empty: the keyword scorer chooses the
+    pages (the table's part, or its headings), as every table in table_keywords does."""
     head_lines: int = 8
     span: int = 1
     """Pages read from each candidate page on, so a table that runs over the page is read whole."""
@@ -344,6 +352,8 @@ class ModelTable(Strict):
     label_column: str = "particulars"
     hints: dict[str, str] = Field(default_factory=dict)
     """What each column holds, in words, for the model (column name -> hint)."""
+    text_columns: bool = True
+    """Text columns other than the label are mapped too (the model names their line and piece of text)."""
 
 
 class TypeFields(Strict):

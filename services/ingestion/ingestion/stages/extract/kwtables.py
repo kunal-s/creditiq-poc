@@ -309,3 +309,24 @@ def _split_signed(res: TableResult, spec: KwTable, cfg: IngestionConfig) -> None
                 row["cells"][debit if is_debit else credit] = abs(value)
         for k in (amt, mark):
             raw.pop(k, None)
+
+
+def candidate_pages(cfg: IngestionConfig, spec: KwTable, pages: list[Page]) -> list[Page]:
+    """The pages to show the model for a table no header was found for (Story 6.7): those where the table's part scores
+    as a page placed by keywords does, or, for a table with no part, those holding the most of its headings, or else the
+    document's first pages; at most `model_pages`, in page order."""
+    kw = cfg.keywords
+    if kw and spec.part and spec.part in kw.parts:
+        th = kw.settings.page_threshold
+        hit = [p for p in pages if K.part_scores(kw, p)[spec.part].score >= th]
+        return hit[:spec.model_pages]
+    header = KwHeader(cfg, spec, cfg.routing.reading.column_gap)
+    counted = []
+    for p in pages:
+        n = sum(1 for l in p.content_lines() for ph in spec.headings.values() if header._has(ph, l.text))
+        if n >= 2:
+            counted.append((n, p))
+    best = sorted(counted, key=lambda x: -x[0])[:spec.model_pages]
+    if not best:
+        return pages[:spec.model_pages]     # nothing names it: the document's own pages, in order
+    return sorted((p for _, p in best), key=lambda p: p.no)

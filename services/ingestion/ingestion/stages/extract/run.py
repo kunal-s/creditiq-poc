@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import re
 
-from ...config.models import FieldDef, FieldRule, IngestionConfig, PageScope
+from ...config.models import FieldDef, FieldRule, IngestionConfig, ModelTable, PageScope
 from ...contracts import CaseType
 from ...llm.recorder import ModelClient
 from ...pageindex import Page
@@ -122,11 +122,16 @@ def _extract_instance(cfg: IngestionConfig, doc_type: str, pages: list[Page], mo
             if res is not None:
                 res.method = "layout"
         spec = rules.model_tables.get(t.name) if rules else None
+        shown = None
+        if spec is None and kt is not None and kt.model:
+            # No header found: the model maps the table from the pages the keyword scorer chooses for it.
+            spec = ModelTable(label_column=kt.label, hints=kt.hints, max_pages=kt.model_pages)
+            shown = kwtables.candidate_pages(cfg, kt, pages)
         if res is None and spec is not None and model is not None:
-            # No layout found it: the model maps its rows, and code reads every figure from the page (llm_tables).
+            # No header or layout found it: the model maps its rows, and code reads every value from the page (llm_tables).
             res, table_trace = llm_tables.map_table(cfg, td.display_name, t.name, t.description or t.name, t.columns, spec,
                                                     pages, model, dash_is_zero=any(v.dash_is_zero for v in variants)
-                                                    or bool(kt and kt.dash_is_zero))
+                                                    or bool(kt and kt.dash_is_zero), shown=shown)
             trace += table_trace
         if res is None:
             tables[t.name] = {"status": "missing", "reason": "table_not_found", "columns": [c.name for c in t.columns], "rows": [], "source": None, "repairs": [], "unparsed": 0, "method": "rules"}

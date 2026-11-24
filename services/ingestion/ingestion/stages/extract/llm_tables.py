@@ -16,8 +16,8 @@ from ...llm.provider import ModelError, ModelRequest
 from ...llm.recorder import ModelClient
 from ...pageindex import Line, Page, Word, union_bbox
 from ...util import collapse_ws
-from .normalise import to_number
-from .tables import FOOTNOTE_RX, NUM_RX, TableResult, figure_words
+from .normalise import to_date, to_number
+from .tables import FOOTNOTE_RX, NUM_RX, TableResult, figure_words, segments
 
 DASHES = ("-", "–", "—")
 
@@ -45,13 +45,24 @@ def label_text(lines: list[Line], gap: float) -> str:
     return collapse_ws(" ".join(words))
 
 
-def table_schema(columns: list[str]) -> dict:
+def text_segments(line: Line, gap: float) -> list[str]:
+    """The pieces of text a line prints apart from its figures, left to right (a narration, a reference, a name)."""
+    return [sg.text for sg in segments(line, gap, figure_words(line.words, gap)) if not NUM_RX.match(sg.text)]
+
+
+def table_schema(columns: list[str], text_columns: list[str] | None = None) -> dict:
+    """Each figure column is named by its line and which figure on it; each text column by its line and which piece
+    of text on it (counting the label's own piece), so the model points at a value and never writes one."""
     cell = {"type": "object", "properties": {"line_id": {"type": ["string", "null"]}, "figure": {"type": ["integer", "null"]}},
             "required": ["line_id", "figure"], "additionalProperties": False}
+    text = {"type": "object", "properties": {"line_id": {"type": ["string", "null"]}, "segment": {"type": ["integer", "null"]}},
+            "required": ["line_id", "segment"], "additionalProperties": False}
+    texts = text_columns or []
+    every = columns + texts
     row = {"type": "object",
            "properties": {"label_line_ids": {"type": "array", "items": {"type": "string"}},
-                          "cells": {"type": "object", "properties": {c: cell for c in columns}, "required": columns,
-                                    "additionalProperties": False}},
+                          "cells": {"type": "object", "properties": {**{c: cell for c in columns}, **{c: text for c in texts}},
+                                    "required": every, "additionalProperties": False}},
            "required": ["label_line_ids", "cells"], "additionalProperties": False}
     return {"type": "object", "properties": {"rows": {"type": "array", "items": row}}, "required": ["rows"],
             "additionalProperties": False}
@@ -62,10 +73,12 @@ def _column_line(c: ColumnDef, hint: str | None) -> str:
 
 
 def map_table(cfg: IngestionConfig, type_name: str, name: str, title: str, defs: list[ColumnDef], spec: ModelTable,
-              pages: list[Page], model: ModelClient, dash_is_zero: bool = True) -> tuple[TableResult | None, list[dict]]:
-    """The table as the model maps it and the page gives it, or None; with trace entries for what was rejected."""
+              pages: list[Page], model: ModelClient, dash_is_zero: bool = True,
+              shown: list[Page] | None = None) -> tuple[TableResult | None, list[dict]]:
+    """The table as the model maps it and the page gives it, or None; with trace entries for what was rejected.
+    `shown`: the pages to show the model, when chosen by the keyword scorer instead of `spec.pages`."""
     trace: list[dict] = []
-    shown = candidate_pages(pages, spec)
+    shown = shown if shown is not None else candidate_pages(pages, spec)
     if not shown:
         return None, [{"call": "table", "table": name, "skipped": "no_candidate_page"}]
     gap = cfg.routing.reading.column_gap
@@ -78,13 +91,15 @@ def map_table(cfg: IngestionConfig, type_name: str, name: str, title: str, defs:
             budget -= len(row) + 1
             by_id[line.id] = (p, line)
     figure_cols = [c.name for c in defs if c.type == "number"]
+    text_cols = [c.name for c in defs if c.type != "number" and c.name != spec.label_column] if spec.text_columns else []
     pr = cfg.llm.prompts["table"]
     user = (pr.user.replace("{{table}}", title)
-            .replace("{{columns}}", "\n".join(_column_line(c, spec.hints.get(c.name)) for c in defs if c.name in figure_cols))
+            .replace("{{columns}}", "\n".join(_column_line(c, spec.hints.get(c.name)) for c in defs
+                                              if c.name in figure_cols or c.name in text_cols))
             .replace("{{lines}}", "\n".join(f"{i}: {pl[1].text}" for i, pl in by_id.items())).strip())
     system = pr.system.replace("{{type_name}}", type_name).replace("{{table}}", title).strip()
     try:
-        ans = model.call(ModelRequest("table", system, user, table_schema(figure_cols)))
+        ans = model.call(ModelRequest("table", system, user, table_schema(figure_cols, text_cols)))
     except ModelError as e:
         return None, [{"call": "table", "table": name, "error": e.code, "message": str(e)[:200]}]
 
@@ -94,7 +109,9 @@ def map_table(cfg: IngestionConfig, type_name: str, name: str, title: str, defs:
         if not ids or any(i not in by_id for i in ids):
             trace.append({"table": name, "row": k, "rejected": "bad_label_line"})
             continue
-        label = label_text([by_id[i][1] for i in ids], gap)
+        # A text table's label is the first piece of text on each label line; the other pieces are its text columns'.
+        label = (collapse_ws(" ".join((text_segments(by_id[i][1], gap) or [""])[0] for i in ids)) if text_cols
+                 else label_text([by_id[i][1] for i in ids], gap))
         if not label:
             trace.append({"table": name, "row": k, "rejected": "no_label_on_line"})
             continue
@@ -120,8 +137,23 @@ def map_table(cfg: IngestionConfig, type_name: str, name: str, title: str, defs:
             cells[col], raw[col] = value, token
             if lid not in used:
                 used.append(lid)
-        if all(cells[c] is None for c in figure_cols):
-            trace.append({"table": name, "row": k, "rejected": "no_figure"})
+        for col in text_cols:
+            ent = (r.get("cells") or {}).get(col) or {}
+            lid, n = ent.get("line_id"), ent.get("segment")
+            if lid is None or n is None:
+                continue
+            parts = text_segments(by_id[lid][1], gap) if lid in by_id else []
+            if not isinstance(n, int) or not 1 <= n <= len(parts):
+                trace.append({"table": name, "row": k, "column": col, "rejected": "text_not_on_line"})
+                continue
+            token = parts[n - 1]
+            kind = next((d.type for d in defs if d.name == col), "string")
+            cells[col] = to_date(token) if kind == "date" else token
+            raw[col] = token
+            if lid not in used:
+                used.append(lid)
+        if all(cells[c] is None for c in figure_cols + text_cols):
+            trace.append({"table": name, "row": k, "rejected": "no_value"})
             continue
         page = by_id[ids[0]][0]
         lines = [by_id[i][1] for i in used]

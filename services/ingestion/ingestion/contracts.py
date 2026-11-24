@@ -141,6 +141,29 @@ class Defect(C):
     pages: list[int] = Field(default_factory=list)
 
 
+class ExtraPair(C):
+    label: str
+    values: list[str]
+    page: int
+    line_id: str
+
+
+class ExtraTable(C):
+    description: str | None = None
+    described_by: Literal["heading", "columns", "model", "none"]
+    page: int
+    columns: list[str] = Field(default_factory=list)
+    rows: list[list[str]]
+    line_ids: list[str] = Field(default_factory=list)
+
+
+class ExtraData(C):
+    """What the document prints that no field and no table claimed (Story 6.4), each item with its page."""
+
+    pairs: list[ExtraPair] = Field(default_factory=list)
+    tables: list[ExtraTable] = Field(default_factory=list)
+
+
 class Document(C):
     instance_no: int
     instance_key: str | None = None
@@ -168,6 +191,8 @@ class Document(C):
     disagree); not_found (a person sets it); none (the type has no period). Absent when documents are split by signals."""
     period_source: dict[str, Any] | None = None
     """Where the period was read (title, footer, body, columns, rows, model), on which page, and any note."""
+    extra: ExtraData | None = None
+    """Story 6.4: what the document prints that no field and no table claimed."""
 
 
 class IntegrityEvidence(C):

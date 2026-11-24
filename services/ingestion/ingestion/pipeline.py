@@ -379,6 +379,8 @@ class Ingestor:
             doc = {"instance_no": n, "instance_key": key, "page_from": ipages[0].no, "page_to": ipages[-1].no, "document_type": utype,
                    "fields": fields, "tables": tables, "validation": checks, "confidence": conf, "identity": identity, "defects": defects,
                    "origin": origin, "pages": [p.no for p in ipages]}
+            if e.get("extra") and (e["extra"]["pairs"] or e["extra"]["tables"]):
+                doc["extra"] = e["extra"]
             if ident is not None:
                 doc["period"] = ident.period.to_json() if ident.period else None
                 doc["period_status"] = ident.status

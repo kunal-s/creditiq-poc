@@ -165,4 +165,6 @@ def map_table(cfg: IngestionConfig, type_name: str, name: str, title: str, defs:
         return None, trace + [{"call": "table", "table": name, "rejected": "no_rows"}]
     nos = [r["source"]["page"] for r in rows]
     allbox = union_bbox(tuple(r["source"]["bbox"]) for r in rows if r["source"].get("bbox"))
-    return TableResult([d.name for d in defs], rows, min(nos), max(nos), allbox, None, [], unparsed, method="model"), trace
+    claimed = [i for r in rows for i in (r["source"].get("line_ids") or [])]
+    return TableResult([d.name for d in defs], rows, min(nos), max(nos), allbox, None, [], unparsed, method="model",
+                       claimed=claimed), trace

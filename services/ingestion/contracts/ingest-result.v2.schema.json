@@ -287,6 +287,17 @@
           "title": "Document Type",
           "type": "string"
         },
+        "extra": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ExtraData"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "fields": {
           "additionalProperties": {
             "$ref": "#/$defs/FieldResult"
@@ -438,6 +449,122 @@
         "model"
       ],
       "title": "EngineRef",
+      "type": "object"
+    },
+    "ExtraData": {
+      "additionalProperties": false,
+      "description": "What the document prints that no field and no table claimed (Story 6.4), each item with its page.",
+      "properties": {
+        "pairs": {
+          "items": {
+            "$ref": "#/$defs/ExtraPair"
+          },
+          "title": "Pairs",
+          "type": "array"
+        },
+        "tables": {
+          "items": {
+            "$ref": "#/$defs/ExtraTable"
+          },
+          "title": "Tables",
+          "type": "array"
+        }
+      },
+      "title": "ExtraData",
+      "type": "object"
+    },
+    "ExtraPair": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "line_id": {
+          "title": "Line Id",
+          "type": "string"
+        },
+        "page": {
+          "title": "Page",
+          "type": "integer"
+        },
+        "values": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Values",
+          "type": "array"
+        }
+      },
+      "required": [
+        "label",
+        "values",
+        "page",
+        "line_id"
+      ],
+      "title": "ExtraPair",
+      "type": "object"
+    },
+    "ExtraTable": {
+      "additionalProperties": false,
+      "properties": {
+        "columns": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Columns",
+          "type": "array"
+        },
+        "described_by": {
+          "enum": [
+            "heading",
+            "columns",
+            "model",
+            "none"
+          ],
+          "title": "Described By",
+          "type": "string"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "line_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Line Ids",
+          "type": "array"
+        },
+        "page": {
+          "title": "Page",
+          "type": "integer"
+        },
+        "rows": {
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "title": "Rows",
+          "type": "array"
+        }
+      },
+      "required": [
+        "described_by",
+        "page",
+        "rows"
+      ],
+      "title": "ExtraTable",
       "type": "object"
     },
     "FieldResult": {

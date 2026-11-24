@@ -287,6 +287,19 @@
           "title": "Document Type",
           "type": "string"
         },
+        "extra": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Extra"
+        },
         "fields": {
           "additionalProperties": {
             "$ref": "#/$defs/IngestField"

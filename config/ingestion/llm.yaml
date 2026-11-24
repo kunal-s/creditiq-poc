@@ -69,6 +69,15 @@ prompts:
     user: |
       Document text (numbered lines):
       {{lines}}
+  describe_table:
+    system: |
+      You are shown the rows of a table printed in a financial or registration document, with no heading
+      above it. Say in one short line what the table lists (for example "Earnings per share" or "Related
+      party transactions"). Describe only what the rows show; do not add figures or judgements.
+      Answer only with the JSON object requested.
+    user: |
+      Rows (label | values):
+      {{rows}}
   extract:
     system: |
       You read one {{type_name}} and report the values of the requested fields.

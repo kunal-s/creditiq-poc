@@ -49,6 +49,8 @@ class TableResult:
     unparsed: int = 0
     method: str = "rules"
     """rules: a configured layout read it; model: the model mapped its rows and code read the figures (llm_tables)."""
+    claimed: list[str] = field(default_factory=list)
+    """Every line the table used, its header lines included: what is left over is the document's extra data."""
 
 
 def figure_words(words: list[Word], gap: float) -> list[Word]:
@@ -218,6 +220,7 @@ def build_table(rule: TableRule, defs: list[ColumnDef], pages: list[Page], readi
     label_col = cols[0].name
 
     dls: list[_DL] = []
+    used: list[str] = []
     anchors: dict[str, tuple[float, float]] = {}
     stop = False
     last_page = pi0
@@ -227,10 +230,12 @@ def build_table(rule: TableRule, defs: list[ColumnDef], pages: list[Page], readi
         if pi == pi0:
             if header is not None:
                 data, anchors = lines[li0 + 1 + first_lines:], first_anchors
+                used += [l.id for l in lines[li0:li0 + 1 + first_lines]]
             else:
                 block = lines[li0:li0 + 1 + rule.header_lines]
                 data = lines[li0 + 1 + rule.header_lines:]
                 anchors = _anchor(cols, block, gap)
+                used += [l.id for l in block]
         else:
             again = header.repeat(lines) if header is not None else None
             if header is not None:
@@ -245,10 +250,12 @@ def build_table(rule: TableRule, defs: list[ColumnDef], pages: list[Page], readi
             elif hdr is not None and again is not None:
                 anchors = {**anchors, **again[2]}
                 data = lines[hdr + 1 + again[1]:]
+                used += [l.id for l in lines[hdr:hdr + 1 + again[1]]]
             elif hdr is not None:
                 block = lines[hdr:hdr + 1 + rule.header_lines]
                 anchors = {**anchors, **_anchor(cols, block, gap)}   # a column the repeated header does not head keeps its anchor
                 data = lines[hdr + 1 + rule.header_lines:]
+                used += [l.id for l in block]
             else:
                 data = lines
         if not anchors.get(label_col):
@@ -401,7 +408,8 @@ def build_table(rule: TableRule, defs: list[ColumnDef], pages: list[Page], readi
         return None
     first, last = pages[pi0], pages[last_page]
     allbox = union_bbox(tuple(r["source"]["bbox"]) for r in rows if r["source"].get("bbox"))
-    res = TableResult([d.name for d in defs], rows, first.no, last.no, allbox, first.sheet if first.source == "sheet" else None, [], unparsed)
+    res = TableResult([d.name for d in defs], rows, first.no, last.no, allbox, first.sheet if first.source == "sheet" else None, [], unparsed,
+                      claimed=used + [d.line.id for d in dls])
     if rule.repair and rule.repair.get("kind") == "running_balance":
         repair_running_balance(res, rule.repair, types)
     return res

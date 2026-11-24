@@ -432,6 +432,18 @@ class Units(Strict):
     """Document types whose amounts must state their unit: one that does not goes to review, never read as rupees."""
 
 
+class ExtraDataConfig(Strict):
+    """What counts as a document's extra data (Story 6.4)."""
+
+    min_table_rows: int = Field(default=3, ge=2)
+    """Consecutive label-and-value lines no field or table claimed that make a table rather than separate pairs."""
+    max_label_chars: int = Field(default=80, ge=10)
+    max_value_chars: int = Field(default=60, ge=5)
+    """Longer text after a colon is a sentence, not a value."""
+    heading_reach: int = Field(default=3, ge=0)
+    """How many lines above such a table its heading may be printed."""
+
+
 class FieldsConfig(Strict):
     types: dict[str, TypeFields]
     numbers: NumberForms = Field(default_factory=NumberForms)
@@ -439,6 +451,7 @@ class FieldsConfig(Strict):
     identifier_reading: IdentifierReading | None = None
     required_fields: dict[str, RequiredField] = Field(default_factory=dict)
     """The case's required fields (Story 1.7, Epic 6)."""
+    extra_data: ExtraDataConfig = Field(default_factory=ExtraDataConfig)
 
     @property
     def gap_fields(self) -> dict[str, RequiredField]:

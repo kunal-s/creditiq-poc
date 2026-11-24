@@ -10,6 +10,7 @@ from ...contracts import CaseType
 from ...llm.recorder import ModelClient
 from ...pageindex import Page
 from . import llm_extract, llm_tables
+from . import extra as extra_data
 from . import kwtables, units
 from .evidence import evidence_for_lines
 from .fields import Found, extract_scalar
@@ -70,6 +71,7 @@ def _extract_instance(cfg: IngestionConfig, doc_type: str, pages: list[Page], mo
     rules = cfg.fields.types.get(doc_type)
     rules_f = rules.fields if rules else {}
     out_fields: dict[str, dict] = {}
+    claimed: set[str] = set()
     pending: list[FieldDef] = []
     model_first = bool(rules and rules.extraction == "model" and model is not None)
     for f in td.schema_.fields:
@@ -84,6 +86,7 @@ def _extract_instance(cfg: IngestionConfig, doc_type: str, pages: list[Page], mo
         if found:
             out_fields[f.name] = _finish(f, rule, found)
             if out_fields[f.name]["status"] == "found":
+                claimed.update(found.evidence.line_ids)
                 continue
         else:
             out_fields[f.name] = _missing(f, rule, "not_found")
@@ -100,6 +103,7 @@ def _extract_instance(cfg: IngestionConfig, doc_type: str, pages: list[Page], mo
             rule = rules_f.get(f.name, FieldRule())
             if f.name in found:
                 out_fields[f.name] = _finish(f, rule, found[f.name])
+                claimed.update(found[f.name].evidence.line_ids)
             elif f.name in reasons:
                 out_fields[f.name] = _missing(f, rule, reasons[f.name])
     elif pending and model is None:
@@ -136,10 +140,13 @@ def _extract_instance(cfg: IngestionConfig, doc_type: str, pages: list[Page], mo
         if res is None:
             tables[t.name] = {"status": "missing", "reason": "table_not_found", "columns": [c.name for c in t.columns], "rows": [], "source": None, "repairs": [], "unparsed": 0, "method": "rules"}
             continue
+        claimed.update(res.claimed)
         src = {"sheet": res.sheet} if res.sheet else {"page_start": res.page_start, "page_end": res.page_end, "bbox": res.bbox}
         tables[t.name] = {"status": "found", "reason": None, "columns": res.columns, "rows": res.rows, "source": src, "repairs": res.repairs, "unparsed": res.unparsed, "method": res.method}
     _unit(cfg, td, rules, pages, out_fields, tables)
-    return {"fields": out_fields, "tables": tables, "trace": trace}
+    extra, more = extra_data.collect(pages, claimed, cfg.routing.reading.column_gap, cfg.fields.extra_data, model,
+                                     cfg.llm.prompts.get("describe_table"))
+    return {"fields": out_fields, "tables": tables, "trace": trace + more, "extra": extra}
 
 
 def _unit(cfg: IngestionConfig, td, rules, pages: list[Page], out_fields: dict, tables: dict) -> None:

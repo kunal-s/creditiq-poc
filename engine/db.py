@@ -692,6 +692,10 @@ MIGRATIONS: list[str] = [
     """
     ALTER TABLE documents ADD COLUMN period TEXT;
     """,
+    # 25: what a document prints that no field and no table claimed (Story 6.4), for the case summary and the assistant.
+    """
+    ALTER TABLE documents ADD COLUMN extra TEXT;
+    """,
 ]
 
 

@@ -197,6 +197,9 @@ class IngestDocument(_C):
     period_status: Literal["found", "derived", "conflict", "not_found", "none"] | None = None
     period_source: dict[str, Any] | None = None
     """The pages the document was read from; a document found by the second pass need not be contiguous."""
+    extra: dict[str, Any] | None = None
+    """What the document prints that no field and no table claimed, each item with its page (Story 6.4): pairs
+    (label, values) and tables (description, columns, rows). Read by the case summary and the assistant only."""
     classification: IngestClassification | None = None
     """How a document found by the second pass was recognised; absent for the file's own type."""
 

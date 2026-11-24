@@ -237,6 +237,23 @@ class FieldRule(Strict):
         return [p if isinstance(p, Pattern) else Pattern(regex=p) for p in self.patterns]
 
 
+class RequiredField(FieldRule):
+    """A field the case needs (Story 1.7): what reads it, where it comes from, its scope, and how it may be found when
+    its own documents leave it empty (Epic 6). The reading settings (aliases, identifier, llm_hint) are a FieldRule's."""
+
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    kind: Literal["text", "identifier", "date", "date_range", "amount", "list", "table"]
+    per: Literal["case", "financial_year", "month", "account", "person", "facility"]
+    sweep: bool = False
+    """Whether other document types' pages may be searched for it (always sent to review)."""
+    case_documents: bool = False
+    """Also read from every document of a case document type (F-15.9)."""
+    used_by: list[str] = Field(min_length=1)
+    sources: list[str] = Field(alias="from", min_length=1)
+    """type.field, type.line:<statement line> or type.table:<table>."""
+
+
 class ColRule(Strict):
     name: str
     header: str
@@ -420,10 +437,14 @@ class FieldsConfig(Strict):
     numbers: NumberForms = Field(default_factory=NumberForms)
     units: Units = Field(default_factory=Units)
     identifier_reading: IdentifierReading | None = None
-    gap_fields: dict[str, FieldRule] = Field(default_factory=dict)
-    """F-15.9: the fields the cross-checks read from any document, whatever its type. A document of a
-    case document type is read for each of them, the same request for every document (field names and
-    hints, never another document's value), and every value found waits for a person (F-17.7)."""
+    required_fields: dict[str, RequiredField] = Field(default_factory=dict)
+    """The case's required fields (Story 1.7, Epic 6)."""
+
+    @property
+    def gap_fields(self) -> dict[str, RequiredField]:
+        """F-15.9: the required fields read from any document of a case document type, the same request for every
+        document (field names and hints, never another document's value); every value found waits for a person."""
+        return {k: f for k, f in self.required_fields.items() if f.case_documents}
 
 
 # --- validators.yaml ---------------------------------------------------------------------------
@@ -1020,11 +1041,22 @@ class IngestionConfig(Strict):
                     if tid in types and k not in {f.name for f in types[tid].schema_.fields}:
                         problems.append(f"signals.{tid}.instances.keys: unknown field {k}")
         from ..stages.extract.identifiers import PATTERNS as IDENTIFIER_PATTERNS
-        for gname, grule in self.fields.gap_fields.items():
+        for gname, grule in self.fields.required_fields.items():
+            where = f"fields.required_fields.{gname}"
             if grule.identifier and grule.identifier not in IDENTIFIER_PATTERNS:
-                problems.append(f"fields.gap_fields.{gname}: unknown identifier {grule.identifier}")
+                problems.append(f"{where}: unknown identifier {grule.identifier}")
             if not (grule.identifier or grule.aliases or grule.patterns or grule.llm_hint):
-                problems.append(f"fields.gap_fields.{gname}: needs an identifier, aliases, patterns or a hint for the model")
+                problems.append(f"{where}: needs an identifier, aliases, patterns or a hint for the model")
+            for src in grule.sources:
+                tid, _, what = src.partition(".")
+                if tid not in types:
+                    problems.append(f"{where}.from: unknown document type {tid}")
+                    continue
+                if what.startswith("table:"):
+                    if what[6:] not in {t.name for t in types[tid].schema_.tables}:
+                        problems.append(f"{where}.from: {tid} has no table {what[6:]}")
+                elif not what.startswith("line:") and what not in {f.name for f in types[tid].schema_.fields}:
+                    problems.append(f"{where}.from: {tid} has no field {what}")
         for tid, tf in self.fields.types.items():
             if tid not in types:
                 problems.append(f"fields: unknown document type {tid}")

@@ -36,11 +36,129 @@ units:
   reach: 4                         # a unit word counts at most this many words after "in"
   required: [audited_financial_statements, provisional_financial_statements, projected_financial_statements, cma_data]
 
-gap_fields:
-  pan: {identifier: pan, llm_hint: "the permanent account number (PAN) of the business the document is about, not of a customer, supplier or official"}
-  gstin: {identifier: gstin, llm_hint: "the GSTIN of the business the document is about, not of a customer or supplier"}
-  cin: {identifier: cin, llm_hint: "the corporate identity number (CIN) of the company the document is about"}
-  legal_name: {llm_hint: "the full legal name of the business the document is about, as printed"}
+# The case's required fields (Story 1.7, Epic 6): every field something downstream reads (used_by). `from` names the
+# document fields (type.field), statement lines (type.line:key, config/statements.yaml) and tables (type.table:name)
+# that supply it; `per` is its scope. Where its own documents leave it empty it is pending: it is then read from the
+# leftovers of the case's documents (unplaced pages, lines and tables no field claimed), and, where `sweep` is true,
+# from the pages of other document types that score highest for it. A value found that way carries its page and
+# always waits for a person. `case_documents`: also read from every document of a case document type (F-15.9).
+required_fields:
+  # Entity
+  legal_name:
+    {kind: text, per: case, sweep: true, case_documents: true, used_by: [identity checks, CAM],
+     from: [certificate_of_incorporation.company_name, company_pan.company_name, gstr_3b.legal_name, gstr_1.legal_name, gstr_9.legal_name,
+            income_tax_return.taxpayer_name, partnership_deed.firm_name, udyam_registration.enterprise_name],
+     aliases: [Name of the Company, Name of Company, Legal Name, Name of the Assessee],
+     llm_hint: "the full legal name of the business the document is about, as printed"}
+  cin:
+    {kind: identifier, identifier: cin, per: case, sweep: true, case_documents: true, used_by: [identity checks, CAM],
+     from: [certificate_of_incorporation.cin, memorandum_articles_of_association.cin],
+     llm_hint: "the corporate identity number (CIN) of the company the document is about"}
+  pan:
+    {kind: identifier, identifier: pan, per: case, sweep: true, case_documents: true, used_by: [identity checks, CAM],
+     from: [company_pan.pan, certificate_of_incorporation.pan, income_tax_return.pan, itr_acknowledgement.pan, form_26as.pan],
+     llm_hint: "the permanent account number (PAN) of the business the document is about, not of a customer, supplier or official"}
+  gstin:
+    {kind: identifier, identifier: gstin, per: case, sweep: true, case_documents: true, used_by: [identity checks, CAM],
+     from: [gstr_3b.gstin, gstr_1.gstin, gstr_9.gstin],
+     llm_hint: "the GSTIN of the business the document is about, not of a customer or supplier"}
+  date_of_incorporation:
+    {kind: date, per: case, sweep: true, used_by: [vintage norm, document ages, CAM],
+     from: [certificate_of_incorporation.date_of_incorporation, company_pan.date_of_incorporation, udyam_registration.date_of_incorporation],
+     aliases: [Date of Incorporation, Incorporated on],
+     llm_hint: "the date the company was incorporated, copied as printed"}
+  company_type:
+    {kind: text, per: case, sweep: true, used_by: [CAM], from: [certificate_of_incorporation.company_type],
+     aliases: [Company Category, Type of Company],
+     llm_hint: "the type of company as printed, for example \"Company limited by shares\" or \"Private Limited\""}
+  registered_address:
+    {kind: text, per: case, sweep: true, used_by: [CAM],
+     from: [certificate_of_incorporation.registered_address, memorandum_articles_of_association.registered_office, partnership_deed.registered_address],
+     aliases: [Registered Office, Registered Address],
+     llm_hint: "the address of the business's registered office, as printed"}
+
+  # Promoters and authority: read only from their own documents
+  director_name: {kind: text, per: person, used_by: [promoter checks, parties], from: [director_kyc.person_name], llm_hint: "the director's full name, as printed"}
+  director_din: {kind: identifier, identifier: din, per: person, used_by: [promoter checks, CAM], from: [director_kyc.din], llm_hint: "the director identification number (DIN)"}
+  director_pan: {kind: identifier, identifier: pan, per: person, used_by: [promoter checks], from: [director_kyc.pan], llm_hint: "the director's own PAN"}
+  director_designation: {kind: text, per: person, used_by: [parties], from: [director_kyc.designation], llm_hint: "the director's designation, as printed"}
+  directors: {kind: list, per: case, used_by: [authority checks], from: [memorandum_articles_of_association.directors], llm_hint: "the names of the directors or subscribers, as printed"}
+  borrowing_limit: {kind: amount, per: case, used_by: [authority checks, CAM], from: [board_resolution_borrowing.borrowing_limit], llm_hint: "the borrowing limit the resolution authorises, the amount as printed"}
+  resolution_date: {kind: date, per: case, used_by: [authority checks, document ages], from: [board_resolution_borrowing.resolution_date], llm_hint: "the date the resolution was passed, as printed"}
+  authorized_signatories:
+    {kind: list, per: case, used_by: [authority checks, CAM],
+     from: [board_resolution_borrowing.authorized_persons, board_resolution_borrowing.authorized_signatories],
+     llm_hint: "the persons the resolution authorises to sign, as printed"}
+  purpose_of_borrowing: {kind: text, per: case, used_by: [CAM], from: [board_resolution_borrowing.purpose_of_borrowing], llm_hint: "the purpose of the borrowing the resolution states"}
+
+  # Financial statements, per financial year: the inputs of the norms, ratios and derived figures. A current-asset or
+  # current-liability line a statement does not print is nil where its section ties out, so it is pending only when not.
+  revenue_from_operations:
+    {kind: amount, per: financial_year, sweep: true, used_by: [turnover checks, norms, spread, CAM],
+     from: [audited_financial_statements.line:revenue_from_operations, provisional_financial_statements.line:revenue_from_operations],
+     aliases: [Revenue from operations, Turnover, Net Sales, Sales],
+     llm_hint: "the revenue from operations (turnover) for the year, the amount as printed"}
+  profit_before_tax:
+    {kind: amount, per: financial_year, sweep: true, used_by: [interest cover, EBITDA, ITR check, CAM],
+     from: [audited_financial_statements.line:profit_before_tax, provisional_financial_statements.line:profit_before_tax],
+     aliases: [Profit before tax], llm_hint: "the profit before tax for the year, the amount as printed"}
+  profit_after_tax:
+    {kind: amount, per: financial_year, sweep: true, used_by: [norms, DSCR, CAM], from: [audited_financial_statements.line:profit_after_tax],
+     aliases: [Profit for the year, Profit after tax, Net profit], llm_hint: "the profit after tax for the year, the amount as printed"}
+  finance_costs:
+    {kind: amount, per: financial_year, sweep: true, used_by: [interest cover, EBITDA], from: [audited_financial_statements.line:finance_costs],
+     aliases: [Finance costs, Interest and finance charges], llm_hint: "the finance costs (interest) for the year, the amount as printed"}
+  depreciation:
+    {kind: amount, per: financial_year, sweep: true, used_by: [DSCR, EBITDA], from: [audited_financial_statements.line:depreciation],
+     aliases: [Depreciation and amortisation expense, Depreciation], llm_hint: "the depreciation and amortisation for the year, the amount as printed"}
+  share_capital:
+    {kind: amount, per: financial_year, sweep: true, used_by: [net worth], from: [audited_financial_statements.line:share_capital],
+     aliases: [Share capital, Equity share capital], llm_hint: "the share capital at the year end, the amount as printed"}
+  reserves_and_surplus:
+    {kind: amount, per: financial_year, sweep: true, used_by: [net worth], from: [audited_financial_statements.line:reserves_and_surplus],
+     aliases: [Reserves and surplus, Other equity], llm_hint: "the reserves and surplus (other equity) at the year end, the amount as printed"}
+  long_term_borrowings:
+    {kind: amount, per: financial_year, sweep: true, used_by: [TOL/TNW, debt/equity, obligations], from: [audited_financial_statements.line:long_term_borrowings],
+     aliases: [Long-term borrowings], llm_hint: "the long-term (non-current) borrowings at the year end, the amount as printed"}
+  short_term_borrowings:
+    {kind: amount, per: financial_year, sweep: true, used_by: [total borrowings, current liabilities], from: [audited_financial_statements.line:short_term_borrowings],
+     aliases: [Short-term borrowings], llm_hint: "the short-term (current) borrowings at the year end, the amount as printed"}
+  trade_payables:
+    {kind: amount, per: financial_year, sweep: true, used_by: [working capital cycle, current liabilities], from: [audited_financial_statements.line:trade_payables],
+     aliases: [Trade payables, Sundry creditors], llm_hint: "the trade payables at the year end, the amount as printed"}
+  inventories:
+    {kind: amount, per: financial_year, sweep: true, used_by: [working capital cycle, current assets], from: [audited_financial_statements.line:inventories],
+     aliases: [Inventories, Closing stock], llm_hint: "the inventories at the year end, the amount as printed"}
+  trade_receivables:
+    {kind: amount, per: financial_year, sweep: true, used_by: [working capital cycle, current assets], from: [audited_financial_statements.line:trade_receivables],
+     aliases: [Trade receivables, Sundry debtors], llm_hint: "the trade receivables at the year end, the amount as printed"}
+  cash_and_bank_balances:
+    {kind: amount, per: financial_year, sweep: true, used_by: [current assets, balance check], from: [audited_financial_statements.line:cash_and_bank_balances],
+     aliases: [Cash and bank balances, Cash and cash equivalents], llm_hint: "the cash and bank balances at the year end, the amount as printed"}
+  other_current_assets: {kind: amount, per: financial_year, used_by: [current assets], from: [audited_financial_statements.line:other_current_assets], llm_hint: "other current assets at the year end, the amount as printed"}
+  short_term_loans_and_advances: {kind: amount, per: financial_year, used_by: [current assets], from: [audited_financial_statements.line:short_term_loans_and_advances], llm_hint: "short-term loans and advances at the year end, the amount as printed"}
+  other_current_liabilities: {kind: amount, per: financial_year, used_by: [current liabilities], from: [audited_financial_statements.line:other_current_liabilities], llm_hint: "other current liabilities at the year end, the amount as printed"}
+  short_term_provisions: {kind: amount, per: financial_year, used_by: [current liabilities], from: [audited_financial_statements.line:short_term_provisions], llm_hint: "short-term provisions at the year end, the amount as printed"}
+
+  # Tax and GST
+  itr_total_income: {kind: amount, per: financial_year, used_by: [ITR against statements], from: [income_tax_return.total_income, itr_acknowledgement.total_income], llm_hint: "the total income the return states, the amount as printed"}
+  itr_filing_date: {kind: date, per: financial_year, used_by: [document ages, completeness], from: [income_tax_return.filing_date, itr_acknowledgement.filing_date], llm_hint: "the date the return was filed, as printed"}
+  gst_outward_supplies: {kind: amount, per: month, used_by: [turnover checks], from: [gstr_3b.table:outward_supplies], llm_hint: "the taxable value of outward supplies for the period, the amount as printed"}
+  gst_filing_date: {kind: date, per: month, used_by: [document ages, completeness], from: [gstr_3b.filing_date, gstr_1.filing_date], llm_hint: "the date the return was filed, as printed"}
+
+  # Banking, per account
+  account_number: {kind: identifier, per: account, used_by: [account set, completeness, CAM], from: [bank_statement.account_number], llm_hint: "the account number, as printed"}
+  bank_name: {kind: text, per: account, used_by: [account set, completeness, CAM], from: [bank_statement.bank_name], llm_hint: "the name of the bank, as printed"}
+  account_holder_name: {kind: text, per: account, used_by: [identity checks], from: [bank_statement.account_holder_name], llm_hint: "the name of the account holder, as printed"}
+  statement_period: {kind: date_range, per: account, used_by: [coverage, document ages], from: [bank_statement.statement_period_start, bank_statement.statement_period_end], llm_hint: "the period the statement covers, the two dates as printed"}
+  opening_balance: {kind: amount, per: account, used_by: [balance continuity], from: [bank_statement.opening_balance], llm_hint: "the opening balance of the statement, the amount as printed"}
+
+  # Facilities and bureau
+  existing_facilities: {kind: table, per: case, used_by: [obligations, CAM], from: [existing_facilities_declaration.table:facilities], llm_hint: "the existing credit facilities declared"}
+  declaration_date: {kind: date, per: case, used_by: [document ages], from: [existing_facilities_declaration.declaration_date], llm_hint: "the date of the declaration, as printed"}
+  sanction_reference: {kind: text, per: facility, used_by: [obligations], from: [sanction_letter.reference_number], llm_hint: "the sanction letter's reference number, as printed"}
+  bureau_rank: {kind: text, per: case, used_by: [bureau norm], from: [commercial_bureau_report.credit_rank], llm_hint: "the commercial bureau rank, as printed"}
+  bureau_report_date: {kind: date, per: case, used_by: [bureau norm, document ages], from: [commercial_bureau_report.report_date], llm_hint: "the date of the bureau report, as printed"}
 
 types:
   certificate_of_incorporation:

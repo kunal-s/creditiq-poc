@@ -364,7 +364,9 @@ export interface paths {
      *     credit manager hold it, the RM does not.
      *
      *     Refused with 409 while completeness is not satisfied; the body names the blockers so the
-     *     screen can say which one. Pressing it twice is harmless: the case is returned unchanged.
+     *     screen can say which one. With a `reason`, the case is created anyway and the reason, the
+     *     person and what was still open are recorded (F-04.10). Pressing it twice is harmless: the
+     *     case is returned unchanged.
      */
     post: operations["open_assessment_api_cases__case_id__assessment_post"];
     delete?: never;
@@ -1837,10 +1839,14 @@ export interface components {
        * @default 0
        */
       open_exceptions: number;
+      /** Opened Anyway */
+      opened_anyway?: string | null;
       /** Opened At */
       opened_at?: string | null;
       /** Opened By */
       opened_by?: string | null;
+      /** Required Fields */
+      required_fields?: components["schemas"]["RequiredFieldGap"][];
       /**
        * Score Pct
        * @default 0
@@ -3207,6 +3213,14 @@ export interface components {
       offset: number;
       /** Statements */
       statements?: string[];
+    };
+    /**
+     * CreateCaseRequest
+     * @description Creating the case with its checks not passed (F-04.10): the reason is recorded in the decision log.
+     */
+    CreateCaseRequest: {
+      /** Reason */
+      reason: string;
     };
     /**
      * CrossVerificationView
@@ -5380,7 +5394,8 @@ export interface components {
        * Source Kind
        * @enum {string}
        */
-      source_kind: "checklist" | "quality" | "label" | "party" | "finding" | "cam";
+      source_kind:
+        "checklist" | "quality" | "label" | "party" | "finding" | "cam" | "required_field";
       /** Source Ref */
       source_ref: string;
       /** Text */
@@ -5585,6 +5600,18 @@ export interface components {
       rule?: string | null;
       /** Status */
       status: string;
+    };
+    /**
+     * RequiredFieldGap
+     * @description A required field no document received supplies (F-13.6), and what cannot be worked out without it.
+     */
+    RequiredFieldGap: {
+      /** Field */
+      field: string;
+      /** Label */
+      label: string;
+      /** Stops */
+      stops?: string[];
     };
     /** ReviewDecisionRequest */
     ReviewDecisionRequest: {
@@ -7237,7 +7264,11 @@ export interface operations {
       };
       cookie?: never;
     };
-    requestBody?: never;
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["CreateCaseRequest"] | null;
+      };
+    };
     responses: {
       /** @description Successful Response */
       200: {

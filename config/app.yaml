@@ -181,6 +181,9 @@ query_phrasing:
   party_refiled: "The file \"{file}\" is named for {label_party} but carries the details of {party}. Please confirm whose document it is."
   party_conflict: "The file \"{file}\" carries the identity number of {party} but the name of {label_party}. Please confirm whose document it is."
   party_unmatched: "The file \"{file}\" ({content}) does not match anyone on this application. Please confirm whose document it is and how they are connected to the borrower."
+  # A required field (config/ingestion/fields.yaml required_fields) no document received shows (F-13.6).
+  required_field: "{field} is not shown in the documents received{stops}. Please provide it."
+  required_field_stops: "; without it {stops} cannot be worked out"
 
 # What a document held for review is described as, when it has no reason code of its own.
 rejection_phrasing:

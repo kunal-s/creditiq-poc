@@ -48,7 +48,8 @@ export function useProposeCase() {
 export function useOpenAssessment(caseId: string) {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: () => api.openAssessment(caseId),
+    /** With a reason, the case is created with conditions not met and the reason is recorded (F-04.10). */
+    mutationFn: (reason?: string) => api.openAssessment(caseId, reason),
     onSuccess: () =>
       client.invalidateQueries({
         predicate: (q) =>

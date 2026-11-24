@@ -134,3 +134,36 @@ def test_nothing_is_asked_when_nothing_is_pending(case, published_data_root):
     finally:
         conn.close()
     assert service.requests == []
+
+
+# --- Story 7.1: the required-field check before the case is created (F-04.10, F-13.6) ---
+
+
+def test_scenario_21_no_depreciation_names_what_it_stops_and_the_case_needs_a_reason(client: TestClient,
+                                                                                    published_data_root: Path):
+    from tests.conftest import TEST_AS_OF
+
+    root = published_data_root
+    headers = sign_in(client, ANALYST)
+    case_id = make_case(client, headers, root, assessment_open=False, borrower="Kestrel Tools Pvt Ltd")
+    end = f"{int(TEST_AS_OF[:4]) - (0 if TEST_AS_OF[5:7] > '03' else 1)}-03-31"
+    audited(root, case_id, end, set_rows={"Depreciation and amortisation": None})
+    progress = client.get(f"/api/cases/{case_id}/progress", headers=headers).json()
+    gate = progress["gate"]
+    gaps = {g["label"]: g["stops"] for g in gate["required_fields"]}
+    year = f"FY {int(end[:4]) - 1}-{end[2:4]}"
+    assert "required_fields" in gate["blockers"]
+    assert gaps[f"Depreciation, {year}"] == ["EBITDA", "DSCR"]
+    queries = client.get(f"/api/cases/{case_id}/queries", headers=headers).json()
+    texts = [q["text"] for q in (queries.get("items") if isinstance(queries, dict) else queries)]
+    assert any(t.startswith(f"Depreciation, {year} is not shown in the documents received; without it EBITDA and DSCR")
+               for t in texts), texts
+
+    refused = client.post(f"/api/cases/{case_id}/assessment", headers=headers)
+    assert refused.status_code == 409 and "required_fields" in refused.json()["detail"]["blockers"]
+    made = client.post(f"/api/cases/{case_id}/assessment", headers=headers,
+                       json={"reason": "Depreciation to follow with the revised statements; credit to proceed."})
+    assert made.status_code == 200, made.text
+    after = client.get(f"/api/cases/{case_id}/progress", headers=headers).json()["gate"]
+    assert after["open"] and after["opened_anyway"].startswith("Depreciation to follow")
+    assert any(g["label"] == f"Depreciation, {year}" for g in after["required_fields"])   # still on the list

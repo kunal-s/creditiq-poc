@@ -71,6 +71,16 @@ def build(conn: sqlite3.Connection, root: Path, case_id: str) -> list[dict]:
                 add("documents_to_redo", phr["redo"].format(name=d.name, deficiency=d.request), "checklist", ref,
                     d.evidence)
 
+    # Required fields no document received supplies (F-13.6), with what cannot be worked out without them.
+    if case.as_of:
+        from datetime import date
+
+        from . import pending
+
+        for gap in pending.required_gaps(conn, root, case_id, date.fromisoformat(case.as_of[:10])):
+            stops = phr["required_field_stops"].format(stops=_join_names(list(gap.stops))) if gap.stops else ""
+            add("clarifications", phr["required_field"].format(field=gap.label, stops=stops), "required_field", gap.field)
+
     # Quality exceptions (F-07.4): the configured re-scan request.
     reason_text = reader.reason_codes(root)
     types = {t.id: t for t in reader.load_document_types(root).types}

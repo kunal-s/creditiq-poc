@@ -621,6 +621,17 @@
             "title": "Open Exceptions",
             "type": "integer"
           },
+          "opened_anyway": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opened Anyway"
+          },
           "opened_at": {
             "anyOf": [
               {
@@ -642,6 +653,13 @@
               }
             ],
             "title": "Opened By"
+          },
+          "required_fields": {
+            "items": {
+              "$ref": "#/components/schemas/RequiredFieldGap"
+            },
+            "title": "Required Fields",
+            "type": "array"
           },
           "score_pct": {
             "default": 0,
@@ -4509,6 +4527,22 @@
           "kind"
         ],
         "title": "CoverageRule",
+        "type": "object"
+      },
+      "CreateCaseRequest": {
+        "description": "Creating the case with its checks not passed (F-04.10): the reason is recorded in the decision log.",
+        "properties": {
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "CreateCaseRequest",
         "type": "object"
       },
       "CrossVerificationView": {
@@ -10404,7 +10438,8 @@
               "label",
               "party",
               "finding",
-              "cam"
+              "cam",
+              "required_field"
             ],
             "title": "Source Kind",
             "type": "string"
@@ -11065,6 +11100,32 @@
           "reason"
         ],
         "title": "RejectionItem",
+        "type": "object"
+      },
+      "RequiredFieldGap": {
+        "description": "A required field no document received supplies (F-13.6), and what cannot be worked out without it.",
+        "properties": {
+          "field": {
+            "title": "Field",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "stops": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Stops",
+            "type": "array"
+          }
+        },
+        "required": [
+          "field",
+          "label"
+        ],
+        "title": "RequiredFieldGap",
         "type": "object"
       },
       "ReviewDecisionRequest": {
@@ -14744,7 +14805,7 @@
     },
     "/api/cases/{case_id}/assessment": {
       "post": {
-        "description": "F-13: create the case, opening cross-verification, policy checks and the outputs.\n\n`review.decide`, because it is the decision that intake is complete: the analyst and the\ncredit manager hold it, the RM does not.\n\nRefused with 409 while completeness is not satisfied; the body names the blockers so the\nscreen can say which one. Pressing it twice is harmless: the case is returned unchanged.",
+        "description": "F-13: create the case, opening cross-verification, policy checks and the outputs.\n\n`review.decide`, because it is the decision that intake is complete: the analyst and the\ncredit manager hold it, the RM does not.\n\nRefused with 409 while completeness is not satisfied; the body names the blockers so the\nscreen can say which one. With a `reason`, the case is created anyway and the reason, the\nperson and what was still open are recorded (F-04.10). Pressing it twice is harmless: the\ncase is returned unchanged.",
         "operationId": "open_assessment_api_cases__case_id__assessment_post",
         "parameters": [
           {
@@ -14829,6 +14890,23 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/CreateCaseRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {

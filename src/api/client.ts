@@ -199,8 +199,11 @@ export const api = {
   createCase: (body: CaseCreate) =>
     request<CaseDetail>("/api/cases", { method: "POST", body: JSON.stringify(body) }),
   /** F-13: create the case, opening cross-verification, policy checks and the outputs. */
-  openAssessment: (id: string) =>
-    request<CaseDetail>(`/api/cases/${q(id)}/assessment`, { method: "POST" }),
+  openAssessment: (id: string, reason?: string) =>
+    request<CaseDetail>(`/api/cases/${q(id)}/assessment`, {
+      method: "POST",
+      ...(reason ? { body: JSON.stringify({ reason }) } : {}),
+    }),
   /** Take the PAN, GSTIN or CIN every document agrees on onto the case (F-10). */
   recordIdentifier: (id: string, field: "pan" | "gstin" | "cin", value: string) =>
     request<CaseDetail>(`/api/cases/${q(id)}/identifiers/${q(field)}`, {

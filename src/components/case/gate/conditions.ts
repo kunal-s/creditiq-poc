@@ -35,5 +35,12 @@ export function gateConditions(gate: AssessmentGate): GateCondition[] {
         ? t("assessment.condition.openExceptions", { n: gate.open_exceptions ?? 0 })
         : t("assessment.condition.openExceptionsClear"),
     },
+    {
+      key: "required_fields",
+      met: !blocked("required_fields"),
+      label: blocked("required_fields")
+        ? t("assessment.condition.requiredFields", { n: gate.required_fields?.length ?? 0 })
+        : t("assessment.condition.requiredFieldsClear"),
+    },
   ];
 }

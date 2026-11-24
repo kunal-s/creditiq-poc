@@ -8,8 +8,9 @@ import {
   Loader2,
   ShieldCheck,
   Target,
+  TextSearch,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type { AssessmentGate, Readiness } from "@/api/types";
 import { Chip, Panel } from "@/components/common/Panel";
 import { t } from "@/config/terminology";
@@ -64,6 +65,12 @@ export function ReadinessPanel({
     .map((c) => c.label)
     .join("; ");
   const files = conditions.find((c) => c.key === "open_exceptions");
+  const required = conditions.find((c) => c.key === "required_fields");
+  const gaps = gate?.required_fields ?? [];
+  const tiles = 2 + (files ? 1 : 0) + (required ? 1 : 0);
+  // Creating the case with conditions not met (F-04.10): only with a reason, which the engine records.
+  const [anyway, setAnyway] = useState(false);
+  const [reason, setReason] = useState("");
   const gates = [
     {
       label: t("readiness.reviewGate"),
@@ -127,7 +134,7 @@ export function ReadinessPanel({
               <button
                 type="button"
                 disabled={!gate.can_open || mutation.isPending}
-                onClick={() => mutation.mutate()}
+                onClick={() => mutation.mutate(undefined)}
                 title={
                   gate.can_open
                     ? t("assessment.createHelp")
@@ -175,6 +182,11 @@ export function ReadinessPanel({
                 {t("assessment.created", { at: gate.opened_at.slice(0, 10) })}
               </p>
             )}
+            {gate?.open && gate.opened_anyway && (
+              <p className="mt-0.5 text-[12px] text-muted-foreground" data-testid="created-anyway">
+                {t("assessment.anyway.recorded", { reason: gate.opened_anyway })}
+              </p>
+            )}
             {blockingFindings > 0 && (
               <Link
                 to="/appraisals/$caseId/cross-verification"
@@ -192,7 +204,11 @@ export function ReadinessPanel({
         <ul
           className={cn(
             "grid divide-y divide-border border-t border-border md:divide-x md:divide-y-0",
-            files ? "md:grid-cols-3" : "md:grid-cols-2",
+            tiles >= 4
+              ? "md:grid-cols-2 xl:grid-cols-4"
+              : tiles === 3
+                ? "md:grid-cols-3"
+                : "md:grid-cols-2",
           )}
           data-testid="gate-conditions"
         >
@@ -294,7 +310,118 @@ export function ReadinessPanel({
               )}
             </Tile>
           )}
+
+          {required && (
+            <Tile
+              condition="required_fields"
+              met={required.met}
+              label={required.label}
+              icon={<TextSearch className="h-3.5 w-3.5" />}
+              title={t("assessment.tile.requiredFields")}
+            >
+              {required.met ? (
+                <p className="flex items-center gap-2 text-[12px]">
+                  <CheckCircle2 className="h-5 w-5 text-primary" aria-hidden />
+                  <span className="text-muted-foreground">
+                    {t("assessment.tile.requiredFieldsClear")}
+                  </span>
+                </p>
+              ) : (
+                <>
+                  <p className="text-[12px]">
+                    <span className="mr-1 text-[20px] font-semibold leading-none tabular-nums text-foreground">
+                      {gaps.length}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {t("assessment.tile.requiredFieldsOpen")}
+                    </span>
+                  </p>
+                  <ul className="mt-2 space-y-1.5 text-[12px]" data-testid="gate-required-fields">
+                    {gaps.map((g) => (
+                      <li key={g.field} data-testid="required-field-gap" data-field={g.field}>
+                        <p className="font-medium text-foreground">{g.label}</p>
+                        {(g.stops ?? []).length > 0 && (
+                          <p className="text-[11.5px] text-muted-foreground">
+                            {t("assessment.tile.stops", { stops: (g.stops ?? []).join(", ") })}
+                          </p>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </Tile>
+          )}
         </ul>
+
+        {/* Creating the case with conditions not met: a reason is required and recorded (F-04.10). */}
+        {pending && !gate.can_open && mayCreate && (
+          <div className="border-t border-border px-4 py-2.5" data-testid="create-anyway">
+            {!anyway ? (
+              <button
+                type="button"
+                onClick={() => setAnyway(true)}
+                className="text-[12px] font-medium text-primary hover:underline"
+                data-testid="create-anyway-open"
+              >
+                {t("assessment.anyway.open")}
+              </button>
+            ) : (
+              <form
+                className="grid gap-2"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (reason.trim()) mutation.mutate(reason.trim());
+                }}
+              >
+                <p className="text-[12.5px] font-semibold text-foreground">
+                  {t("assessment.anyway.title")}
+                </p>
+                <p className="text-[12px] text-muted-foreground">{t("assessment.anyway.help")}</p>
+                <label className="grid gap-1">
+                  <span className="field-label">{t("assessment.anyway.reason")}</span>
+                  <textarea
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    rows={3}
+                    maxLength={2000}
+                    placeholder={t("assessment.anyway.placeholder")}
+                    className="w-full rounded border border-border bg-surface px-2 py-1.5 text-[12.5px] focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    data-testid="create-anyway-reason"
+                  />
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="submit"
+                    disabled={!reason.trim() || mutation.isPending}
+                    className={cn(
+                      "inline-flex items-center gap-2 rounded px-3 py-1.5 text-[12.5px] font-medium",
+                      reason.trim() && !mutation.isPending
+                        ? "bg-primary text-primary-foreground hover:opacity-90"
+                        : "cursor-not-allowed border border-border text-muted-foreground",
+                    )}
+                    data-testid="create-anyway-submit"
+                  >
+                    {mutation.isPending && (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                    )}
+                    {t("assessment.anyway.submit")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAnyway(false);
+                      setReason("");
+                    }}
+                    className="rounded border border-border px-3 py-1.5 text-[12.5px] text-muted-foreground hover:bg-surface-muted"
+                  >
+                    {t("assessment.anyway.cancel")}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        )}
 
         {/* The counts by status and each gate. */}
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-border px-4 py-2.5">

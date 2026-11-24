@@ -11,6 +11,7 @@ F-24 exist.
 
 from __future__ import annotations
 
+import json
 import sqlite3
 from pathlib import Path
 
@@ -18,6 +19,7 @@ from . import completeness
 from .config import feature_enabled
 from .configstore import reader
 from .contracts import AssessmentGate, CaseDetail, CaseProgress, Readiness, Stage, StageKey, StageProgress
+from .contracts.case import RequiredFieldGap
 from .store import MESSAGE_FILE_NAME
 
 _IN_FLIGHT = {"received", "graded", "split"}
@@ -49,10 +51,15 @@ def open_exceptions(conn: sqlite3.Connection, case_id: str) -> int:
     ).fetchone()[0]
 
 
-def _gate(conn: sqlite3.Connection, case: CaseDetail, readiness: Readiness) -> AssessmentGate:
+def _gate(conn: sqlite3.Connection, root: Path, case: CaseDetail, readiness: Readiness) -> AssessmentGate:
     """The F-13 gate. `can_open` says the case may be created now; `open` says it has been.
     The blockers are keys, not sentences: the screens word them from the terminology."""
+    from datetime import date
+
+    from . import pending
+
     exceptions = open_exceptions(conn, case.id)
+    gaps = pending.required_gaps(conn, root, case.id, date.fromisoformat(case.as_of[:10])) if case.as_of else []
     blockers: list[str] = []
     if not readiness.gate_met:
         blockers.append("review_gate")
@@ -60,6 +67,11 @@ def _gate(conn: sqlite3.Connection, case: CaseDetail, readiness: Readiness) -> A
         blockers.append("blocking_items")
     if exceptions:
         blockers.append("open_exceptions")
+    if gaps:
+        blockers.append("required_fields")
+    anyway = conn.execute(
+        "SELECT detail FROM decision_log WHERE case_id = ? AND action = 'case.created_anyway' ORDER BY seq DESC LIMIT 1",
+        (case.id,)).fetchone()
     return AssessmentGate(
         open=bool(case.assessment_opened_at),
         can_open=not blockers,
@@ -70,6 +82,8 @@ def _gate(conn: sqlite3.Connection, case: CaseDetail, readiness: Readiness) -> A
         gate_pct=readiness.gate_pct,
         blocking_open=readiness.blocking_open,
         open_exceptions=exceptions,
+        required_fields=[RequiredFieldGap(field=g.field, label=g.label, stops=list(g.stops)) for g in gaps],
+        opened_anyway=json.loads(anyway["detail"]).get("reason") if anyway else None,
     )
 
 
@@ -155,7 +169,7 @@ def compute(conn: sqlite3.Connection, root: Path, case: CaseDetail, *, running_j
     # outputs stay unstarted until a person creates the case, which they may do once the review
     # gate is met, nothing blocking is open and no file is still an exception. The gate is
     # written once: a late document moves the stage back, but the case stays created.
-    gate = _gate(conn, case, readiness)
+    gate = _gate(conn, root, case, readiness)
 
     # 4. Cross-verification (F-18, F-19): starts once a check has compared
     # two sources; done when every failed check has a person's decision.

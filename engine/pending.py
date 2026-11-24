@@ -53,8 +53,11 @@ class Pending:
 
 
 def _label(name: str, period_end: str | None, kind: str | None = None) -> str:
+    from .policy import INPUT_LABELS
+
     text = name.replace("_", " ")
     text = text.upper() if kind == "identifier" and " " not in text else text[:1].upper() + text[1:]
+    text = INPUT_LABELS.get(name, text)
     if period_end:
         d = date.fromisoformat(period_end)
         text += f", FY {d.year - 1}-{str(d.year)[2:]}"
@@ -87,10 +90,13 @@ def _year_lines(docs: list[facts_module.Doc], root: Path, types: set[str]) -> di
     return out
 
 
-def pending(conn: sqlite3.Connection, root: Path, case_id: str, as_of: date) -> list[Pending]:
-    """Story 6.1: the required fields of the case and of each required year that nothing has supplied yet."""
+def pending(conn: sqlite3.Connection, root: Path, case_id: str, as_of: date,
+            docs: list[facts_module.Doc] | None = None, year_lines: dict | None = None) -> list[Pending]:
+    """Story 6.1: the required fields of the case and of each required year that nothing has supplied yet.
+    `year_lines`, when given, is filled with each source set's lines by year (the required-field check reuses it)."""
     required = (reader.load_ingestion_section(root, "fields") or {}).get("required_fields") or {}
-    docs = facts_module.load_documents(conn, root, case_id)
+    docs = facts_module.load_documents(conn, root, case_id) if docs is None else docs
+    cache: dict = {} if year_lines is None else year_lines
     filled = {r["field"] for r in conn.execute(
         f"SELECT field FROM field_values WHERE case_id = ? AND origin IN ({','.join('?' * len(FILLED_ORIGINS))})",
         (case_id, *FILLED_ORIGINS))}
@@ -106,7 +112,10 @@ def pending(conn: sqlite3.Connection, root: Path, case_id: str, as_of: date) -> 
                 out.append(Pending(name, _label(name, None, spec.get("kind")), sweep, sources))
         elif per == "financial_year" and all(".line:" in s for s in sources):
             keys = {s.split(".line:", 1)[1] for s in sources}
-            lines = _year_lines(docs, root, {s.split(".", 1)[0] for s in sources})
+            types = frozenset(s.split(".", 1)[0] for s in sources)
+            if types not in cache:
+                cache[types] = _year_lines(docs, root, set(types))
+            lines = cache[types]
             for end in years:
                 p = Pending(name, _label(name, end.isoformat()), sweep, sources, end.isoformat())
                 if not (lines.get(end, set()) & keys) and p.field not in filled:
@@ -217,3 +226,61 @@ def _store(conn: sqlite3.Connection, case_id: str, doc: sqlite3.Row, p: Pending,
                summary=f"{p.label} = {v.get('raw_text')} (source: {where}, page {v['page']}; please confirm)",
                detail={"document_id": doc["id"], "field_value_id": fv_id, "page": int(v["page"]), "origin": origin})
     return {"field": p.field, "document_id": doc["id"], "page": int(v["page"]), "origin": origin, "field_value_id": fv_id}
+
+
+# --- The required-field check (Story 7.1, F-13.6) ---------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class Gap:
+    """A required field no document received supplies, and what cannot be worked out without it."""
+
+    field: str
+    label: str
+    stops: tuple[str, ...]
+
+
+def _names(expression: str) -> set[str]:
+    import ast
+
+    return {n.id for n in ast.walk(ast.parse(expression, mode="eval")) if isinstance(n, ast.Name)}
+
+
+def stopped_by(root: Path, key: str) -> list[str]:
+    """The derived figures (statements.yaml derived) and policy norms whose working uses `key`, by their labels."""
+    from .policy import INPUT_LABELS
+
+    derived = reader.load_statements(root).derived
+    uses: dict[str, set[str]] = {}
+
+    def expand(name: str, seen: frozenset = frozenset()) -> set[str]:
+        if name not in derived or name in seen:
+            return {name}
+        return {name} | {x for n in _names(derived[name]) for x in expand(n, seen | {name})}
+
+    for name, expr in derived.items():
+        uses[INPUT_LABELS.get(name, name.replace("_", " "))] = {x for n in _names(expr) for x in expand(n)}
+    policy = reader.load_policy(root)
+    ratios = {r.key: r.label for r in policy.ratios + policy.available_ratios}
+    for norm in policy.norms:
+        label = norm.label or ratios.get(norm.ratio or "") or norm.id
+        uses[label] = {x for n in _names(norm.expression) for x in expand(n)}
+    return [label for label, inputs in uses.items() if key in inputs]
+
+
+def required_gaps(conn: sqlite3.Connection, root: Path, case_id: str, as_of: date) -> list[Gap]:
+    """F-13.6: the required fields still pending among the documents received. A field counts once a document that
+    supplies it is on file (a statement for the year, a certificate for the CIN): a document not received is the
+    document check's, not this one's. A value found by the fill counts, even while it waits for a person."""
+    docs = facts_module.load_documents(conn, root, case_id)
+    on_file = {t for d in docs for t in d.types}
+    years: dict[frozenset, dict] = {}
+    out: list[Gap] = []
+    for p in pending(conn, root, case_id, as_of, docs, years):
+        if not (p.source_types & on_file):
+            continue
+        if p.period_end:
+            if date.fromisoformat(p.period_end) not in years.get(frozenset(p.source_types), {}):
+                continue          # no statement for that year: the document check asks for it
+        out.append(Gap(p.field, p.label, tuple(stopped_by(root, p.name))))
+    return out

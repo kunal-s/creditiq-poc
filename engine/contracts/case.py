@@ -130,6 +130,20 @@ class StageProgress(BaseModel):
     """Units waiting for a person or blocking the stage."""
 
 
+class CreateCaseRequest(BaseModel):
+    """Creating the case with its checks not passed (F-04.10): the reason is recorded in the decision log."""
+
+    reason: str = Field(min_length=1, max_length=2000)
+
+
+class RequiredFieldGap(BaseModel):
+    """A required field no document received supplies (F-13.6), and what cannot be worked out without it."""
+
+    field: str
+    label: str
+    stops: list[str] = Field(default_factory=list)
+
+
 class AssessmentGate(BaseModel):
     """The F-13 gate between intake and assessment: cross-verification, policy checks and the
     outputs open only once completeness is satisfied and a person creates the case."""
@@ -142,11 +156,15 @@ class AssessmentGate(BaseModel):
     opened_by: str | None = None
     blockers: list[str] = Field(default_factory=list)
     """Why it cannot be created yet, keyed for the screens:
-    `review_gate`, `blocking_items`, `open_exceptions`."""
+    `review_gate`, `blocking_items`, `open_exceptions`, `required_fields`."""
     score_pct: float = 0
     gate_pct: float = 0
     blocking_open: int = 0
     open_exceptions: int = 0
+    required_fields: list[RequiredFieldGap] = Field(default_factory=list)
+    """The required-field check (F-13.6): each gap among the documents received."""
+    opened_anyway: str | None = None
+    """The reason recorded when a person created the case with the checks not passed (F-04.10)."""
 
 
 class CaseProgress(BaseModel):

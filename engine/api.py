@@ -76,6 +76,7 @@ from .config import (
 )
 from .configstore import reader as configstore_reader
 from .configstore.schema import ApprovalMatrixSection, ChecklistTaxonomySection, DocumentTypesSection, PolicySection
+from .contracts.case import CreateCaseRequest
 from .contracts.extra import AdditionalInformation
 from .contracts.ingest import IngestIntegrityFigure
 from .contracts import (
@@ -333,6 +334,7 @@ def case_progress(
 @app.post("/api/cases/{case_id}/assessment", response_model=CaseDetail)
 def open_assessment(
     case_id: str,
+    body: CreateCaseRequest | None = None,
     user: dict = Depends(require("review.decide")),
     conn: sqlite3.Connection = Depends(get_conn),
 ):
@@ -342,11 +344,13 @@ def open_assessment(
     credit manager hold it, the RM does not.
 
     Refused with 409 while completeness is not satisfied; the body names the blockers so the
-    screen can say which one. Pressing it twice is harmless: the case is returned unchanged.
+    screen can say which one. With a `reason`, the case is created anyway and the reason, the
+    person and what was still open are recorded (F-04.10). Pressing it twice is harmless: the
+    case is returned unchanged.
     """
     case = _case_for(conn, case_id, user)
     try:
-        return cases.open_assessment(conn, data_root(), case, user["id"])
+        return cases.open_assessment(conn, data_root(), case, user["id"], body.reason if body else None)
     except cases.GateNotMet as e:
         raise HTTPException(status_code=409, detail={"error": "assessment_not_open", "blockers": e.blockers}) from e
     except configstore_reader.NoPublishedConfig as e:

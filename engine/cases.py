@@ -425,11 +425,14 @@ class GateNotMet(RuntimeError):
         self.blockers = blockers
 
 
-def open_assessment(conn: sqlite3.Connection, root: Path, case: CaseDetail, actor: str) -> CaseDetail:
+def open_assessment(conn: sqlite3.Connection, root: Path, case: CaseDetail, actor: str,
+                    reason: str | None = None) -> CaseDetail:
     """Create the case: open cross-verification, policy checks and the outputs (F-13).
 
-    Refuses while the review gate is unmet, a blocking checklist item is open or a file is
-    still an exception. Writing is idempotent: a case already created is returned unchanged,
+    Refuses while the review gate is unmet, a blocking checklist item is open, a file is still an
+    exception or a required field is missing (F-13.6), unless a person gives a reason for creating it
+    anyway (F-04.10): who, when, why and what was still open go into the decision log, and the open
+    items stay on the query list. Writing is idempotent: a case already created is returned unchanged,
     so a second press neither moves the timestamp nor logs again.
     """
     from . import progress as progress_module
@@ -437,7 +440,9 @@ def open_assessment(conn: sqlite3.Connection, root: Path, case: CaseDetail, acto
     if case.assessment_opened_at:
         return case
     gate = progress_module.compute(conn, root, case).gate
-    if gate is None or not gate.can_open:
+    reason = (reason or "").strip()
+    anyway = gate is not None and not gate.can_open and bool(reason)
+    if gate is None or (not gate.can_open and not anyway):
         raise GateNotMet(list(gate.blockers) if gate else ["review_gate"])
     at = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "+00:00")
     with transaction(conn):
@@ -454,6 +459,13 @@ def open_assessment(conn: sqlite3.Connection, root: Path, case: CaseDetail, acto
             case_id=case.id,
             detail=json.dumps({"score_pct": gate.score_pct, "gate_pct": gate.gate_pct}),
         )
+        if anyway:
+            log_decision(
+                conn, at=at, actor=actor, action="case.created_anyway", case_id=case.id,
+                detail=json.dumps({"reason": reason, "blockers": gate.blockers,
+                                   "required_fields": [g.label for g in gate.required_fields],
+                                   "blocking_open": gate.blocking_open, "open_exceptions": gate.open_exceptions}),
+            )
     return get_case(conn, case.id) or case
 
 

@@ -2567,7 +2567,7 @@ assessment:
   gateTitleBlocked: Not ready to create the case yet
   gateTitleOpen: Case created
   conditionsMet: "{met} of {total} conditions met"
-  conditionsHelp: "The case can be created once all three are met: the weighted score reaches the review gate, no blocking requirement is open, and every file has been read."
+  conditionsHelp: "The case can be created once every condition is met: the weighted score reaches the review gate, no blocking requirement is open, every file has been read, and every required figure and identifier is found."
   createBlocked: "Every condition must be met first:"
   tile:
     met: Met
@@ -2583,6 +2583,10 @@ assessment:
     files: Files read
     filesUnread: file(s) could not be read
     showFiles: Open the files
+    requiredFields: Required fields
+    requiredFieldsOpen: not found in the documents received
+    requiredFieldsClear: Every required field was found
+    stops: "Needed for {stops}"
   gateIntro: The cross-checks, the policy checks and the outputs open once the case is created.
   lockedTitle: Opens once the case is created
   lockedBody: This step runs after intake. Finish the checklist on the Document readiness step, then create the case.
@@ -2594,6 +2598,17 @@ assessment:
     blockingItemsClear: Every blocking requirement is satisfied
     openExceptions: "{n} file(s) could not be read"
     openExceptionsClear: Every file was read
+    requiredFields: "{n} required field(s) not found in the documents received"
+    requiredFieldsClear: Every required field was found
+  anyway:
+    open: Create the case anyway
+    title: Create the case with conditions not met
+    help: What is still open stays on the query list. The reason is recorded with your name and the time.
+    reason: Reason
+    placeholder: Why the case should go ahead now
+    submit: Create the case
+    cancel: Cancel
+    recorded: "Created with conditions not met. Reason: {reason}"
   error:
     notReady: The case cannot be created yet. The conditions above are not all met.
     failed: The case could not be created. Try again.

@@ -531,6 +531,14 @@ def process_files(conn: sqlite3.Connection, root: Path, job_id: str, case_id: st
             detail=dumps({"job_id": job_id, "config_version": result.config.version, "config_hash": result.config.hash,
                           "engine_version": result.engine.version, "model": result.engine.model, "files": [r["id"] for r in rows]}),
         )
+        # Epic 6: the case's required fields its documents left empty, read from the leftovers and other types' pages.
+        from datetime import date
+
+        from . import cases, pending
+
+        case = cases.get_case(conn, case_id)
+        if case is not None and case.as_of:
+            pending.fill(conn, root, case_id, date.fromisoformat(case.as_of[:10]), client, ctx.version)
     refresh_case(conn, root, case_id, running_job=job_id, client=client)
 
 

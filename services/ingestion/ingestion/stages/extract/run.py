@@ -60,6 +60,16 @@ def cue_pages(rules: dict[str, FieldRule], names: list[str], pages: list[Page], 
     of no more pages than that is read whole; with no cue anywhere, its first pages are read."""
     if len(pages) <= limit + 1:
         return pages
+    scored = list(zip(cue_scores(rules, names, pages[1:]), pages[1:]))
+    best = [p for s, p in sorted(scored, key=lambda x: (-x[0], x[1].no)) if s > 0][:limit]
+    if not best:
+        return pages[:limit + 1]
+    keep = {pages[0].no} | {p.no for p in best}
+    return [p for p in pages if p.no in keep]
+
+
+def cue_scores(rules: dict[str, FieldRule], names: list[str], pages: list[Page]) -> list[int]:
+    """For each page, how many of the fields `names` have a cue on it (an alias, a pattern, the identifier's form)."""
     cues: list[list[re.Pattern]] = []
     for n in names:
         rule = rules.get(n, FieldRule())
@@ -68,12 +78,7 @@ def cue_pages(rules: dict[str, FieldRule], names: list[str], pages: list[Page], 
             rxs.append(re.compile(IDENTIFIER_PATTERNS[rule.identifier]))
         if rxs:
             cues.append(rxs)
-    scored = [(sum(1 for rxs in cues if any(rx.search(p.text()) for rx in rxs)), p) for p in pages[1:]]
-    best = [p for s, p in sorted(scored, key=lambda x: (-x[0], x[1].no)) if s > 0][:limit]
-    if not best:
-        return pages[:limit + 1]
-    keep = {pages[0].no} | {p.no for p in best}
-    return [p for p in pages if p.no in keep]
+    return [sum(1 for rxs in cues if any(rx.search(p.text()) for rx in rxs)) for p in pages]
 
 
 def _extract_instance(cfg: IngestionConfig, doc_type: str, pages: list[Page], model: ModelClient | None,

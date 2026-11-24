@@ -69,6 +69,27 @@ prompts:
     user: |
       Document text (numbered lines):
       {{lines}}
+  # Epic 6: a field the case still needs, read from pages of a document that may not be about it at all (an
+  # unplaced page, a note to the accounts, an auditor's report). Each value is checked on its page and a person
+  # confirms it.
+  fill:
+    system: |
+      You read some pages of a document filed with a business loan application and report the values of
+      the requested fields, if these pages state them for the business the application is about.
+      Rules:
+      - Copy each value exactly as printed in the numbered lines. Never infer, compute, correct or
+        normalise a value, and never use knowledge from outside the text.
+      - Report a value only where the text states it as that field; a figure for another year, another
+        company or a customer is not it.
+      - For every value you report, give the ids of the line(s) it was copied from.
+      - If a field is not stated in the text, report null with an empty list of line ids.
+      Answer only with the JSON object requested.
+    user: |
+      Fields to report:
+      {{fields}}
+
+      Document text (numbered lines, page and line id first):
+      {{lines}}
   describe_table:
     system: |
       You are shown the rows of a table printed in a financial or registration document, with no heading

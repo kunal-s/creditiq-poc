@@ -81,6 +81,28 @@ class HttpIngestClient:
             raise IngestError(f"ingest service unavailable at {self.base_url}: {e}") from e
 
 
+    def fill(self, request: dict, payload: bytes) -> dict:
+        """Epic 6: read pending fields from named pages of one file (POST /v1/fill); see engine/pending.py."""
+        boundary = uuid.uuid4().hex
+        fid = request["file"]["file_id"]
+        body = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"request\"\r\nContent-Type: application/json\r\n\r\n".encode()
+                + json.dumps(request).encode() + b"\r\n"
+                + f"--{boundary}\r\nContent-Disposition: form-data; name=\"{fid}\"; filename=\"{fid}\"\r\n"
+                  f"Content-Type: {request['file'].get('content_type') or 'application/octet-stream'}\r\n\r\n".encode()
+                + payload + b"\r\n" + f"--{boundary}--\r\n".encode())
+        headers = {"Content-Type": f"multipart/form-data; boundary={boundary}"}
+        if self.api_key:
+            headers["x-api-key"] = self.api_key
+        req = urllib.request.Request(f"{self.base_url}/v1/fill", data=body, method="POST", headers=headers)
+        try:
+            with urllib.request.urlopen(req, timeout=self.timeout_s) as resp:
+                return json.loads(resp.read())
+        except urllib.error.HTTPError as e:
+            detail = e.read().decode("utf-8", "replace")[:300]
+            raise IngestError(f"ingest service answered {e.code}: {detail}") from e
+        except OSError as e:
+            raise IngestError(f"ingest service unavailable at {self.base_url}: {e}") from e
+
     def model_log(self, path: str, params: dict) -> dict:
         """A read of the service's model call log (`/v1/model-log/summary` or `/calls`), for Model usage."""
         query = urllib.parse.urlencode({k: v for k, v in params.items() if v not in (None, "")})
@@ -120,6 +142,17 @@ class StubIngestClient:
         if not path.is_file():
             return None
         return IngestFileResult.model_validate(json.loads(path.read_text(encoding="utf-8")))
+
+    def fill(self, request: dict, payload: bytes) -> dict:
+        """Epic 6: the canned answer for a file (`<sha256>@fill.json`, the service's own FillResult), the values of
+        the fields and pages asked only. A file with no such fixture has nothing found on it: nothing is made up."""
+        path = self.fixtures / f"{request['file']['sha256']}@fill.json"
+        if not path.is_file():
+            return {"found": [], "pages_read": [], "trace": []}
+        canned = json.loads(path.read_text(encoding="utf-8"))
+        asked = {(f["name"], f.get("period_end")) for f in request["fields"]}
+        found = [v for v in canned.get("found", []) if (v["field"], v.get("period_end")) in asked and v["page"] in request["pages"]]
+        return {**canned, "found": found}
 
     def process(self, request: IngestRequest, payloads: dict[str, bytes]) -> IngestResult:
         files = []

@@ -413,3 +413,44 @@ class IngestRequest(C):
     case_ref: str
     config_version: str
     files: list[FileSpec]
+
+
+# --- Filling the case's pending fields (Epic 6) ------------------------------------------------------------------
+
+
+class FillField(C):
+    """A required field to read (fields.yaml required_fields), for one financial year when it is a yearly one."""
+
+    name: str
+    period_end: str | None = None
+    """ISO date the financial year ends on, for a field read per financial year."""
+
+
+class FillRequest(C):
+    """Read some of a case's pending fields from some pages of one file (Stories 6.2 and 6.8). Only field names,
+    hints and page numbers are sent: never another document's value."""
+
+    case_ref: str
+    config_version: str
+    file: FileSpec
+    pages: list[int]
+    """The pages that may be read; with `select`, the model reads those of them that score highest for the fields."""
+    fields: list[FillField]
+    select: bool = True
+
+
+class FillValue(C):
+    field: str
+    period_end: str | None = None
+    value: Any = None
+    raw_text: str
+    method: Literal["rules", "model"]
+    page: int
+    bbox: list[float] | None = None
+    line: str | None = None
+
+
+class FillResult(C):
+    found: list[FillValue] = Field(default_factory=list)
+    pages_read: list[int] = Field(default_factory=list)
+    trace: list[dict[str, Any]] = Field(default_factory=list)

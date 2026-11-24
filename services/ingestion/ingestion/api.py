@@ -19,7 +19,7 @@ from starlette.datastructures import UploadFile as FormFile
 from . import CONTRACT_VERSION, ENGINE_VERSION
 from .config.loader import ConfigError, ConfigStore, load_dir
 from .config.models import IngestionConfig
-from .contracts import IngestRequest
+from .contracts import FillRequest, IngestRequest
 from .llm.calllog import call_context
 from .llm.openai import MODEL_PROVIDERS, OpenAIProvider
 from .llm.recorder import ModelClient
@@ -98,6 +98,20 @@ def create_app(settings: Settings | None = None, store: Store | None = None) -> 
         # Read on a worker thread, so that several requests (the engine sends a few files at once) are read side by
         # side; OCR among them is limited to the configured number of engines.
         result = await run_in_threadpool(lambda: ingestor(cfg).process_request(req, payloads).model_dump(mode="json"))
+        return JSONResponse(result)
+
+    @app.post("/v1/fill", dependencies=[Depends(auth)])
+    async def fill(request: Request):
+        """Epic 6: read a case's pending fields from named pages of one file (multipart: `request`, then the file)."""
+        form = await request.form()
+        try:
+            req = FillRequest.model_validate_json(str(form.get("request")))
+        except Exception as e:
+            raise HTTPException(400, f"bad request: {e}") from e
+        part = form.get(req.file.file_id)
+        data = await part.read() if isinstance(part, FormFile) else None
+        cfg = config_for(req.config_version)
+        result = await run_in_threadpool(lambda: ingestor(cfg).fill(req, data).model_dump(mode="json"))
         return JSONResponse(result)
 
     @app.post("/v1/ingest/stream", dependencies=[Depends(auth)])

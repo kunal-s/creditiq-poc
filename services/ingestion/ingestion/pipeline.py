@@ -12,7 +12,8 @@ from dataclasses import dataclass, field
 
 from . import CONTRACT_VERSION, ENGINE_VERSION
 from .config.models import IngestionConfig
-from .contracts import CaseType, FileResult, FileSpec, IngestRequest, IngestResult
+from . import fill as fill_stage
+from .contracts import CaseType, FileResult, FileSpec, FillRequest, FillResult, IngestRequest, IngestResult
 from .llm.calllog import call_context
 from .llm.recorder import ModelClient
 from .pageindex import Page
@@ -164,6 +165,16 @@ class Ingestor:
                             config={"version": self.cfg.version, "hash": self.cfg.hash}, engine=self.engine_ref(), files=files)
 
     # ------------------------------------------------------------------------------------
+    def fill(self, req: FillRequest, data: bytes | None) -> FillResult:
+        """Epic 6: read a case's pending fields from the pages of one file the engine names (fill.py)."""
+        if data is None or sha256_hex(data) != req.file.sha256:
+            return FillResult(trace=[{"call": "fill", "error": "missing_or_changed_file"}])
+        gate = run_gate(data, req.file.original_name, req.file.content_type, self.cfg.quality, self.cfg.routing)
+        if gate.status == "rejected":
+            return FillResult(trace=[{"call": "fill", "error": gate.reason or "unsupported"}])
+        pages = read_document(data, gate.kind, self.cfg.quality, self.cfg.routing, self.ocr, self.store)
+        return fill_stage.fill(self.cfg, req, pages, self.model)
+
     def process_file(self, case_ref: str, spec: FileSpec, data: bytes | None) -> FileResult:
         base = {"file_id": spec.file_id, "sha256": spec.sha256, "name": spec.original_name}
         if data is None:

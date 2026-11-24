@@ -15,6 +15,7 @@ from ...llm.recorder import ModelClient
 from ...llm.schema_gen import extract_schema
 from ...pageindex import Line, Page
 from ...util import fold
+from . import printed
 from .evidence import Evidence, evidence_for_lines
 from .fields import Found
 
@@ -40,31 +41,51 @@ def _field_line(f: FieldDef, hint: str | None) -> str:
     return f"- {f.name} ({kind}){': ' + (hint or f.description) if (hint or f.description) else ''}"
 
 
-def _verify(raw: str, text_f: str) -> bool:
-    return bool(raw) and fold(raw) in text_f
+def _locate(raw: str, ids: list[str], by_id: dict[str, tuple[Page, Line]], ratio: float) -> tuple[str, dict] | None:
+    """The text the named lines print for `raw` (Story 6.6), and where: on one line, or across the lines joined (a
+    value that wraps)."""
+    spans = {}
+    for i in ids:
+        hit = printed.find(raw, by_id[i][1].text, ratio)
+        if hit is not None:
+            spans[i] = hit
+            return by_id[i][1].text[hit[0]:hit[1]], spans
+    joined = " ".join(by_id[i][1].text for i in ids)
+    hit = printed.find(raw, joined, ratio)
+    if hit is None:
+        return None
+    return joined[hit[0]:hit[1]], {}
 
 
-def ground(val, ids: list[str], by_id: dict[str, tuple[Page, Line]]) -> tuple[list, list[str], Evidence] | str:
-    """A model's value checked against the lines it names (F-15.4): the elements, the raw values found
-    there, and their evidence; or the reason it is rejected (bad_evidence, not_found_on_page)."""
+def ground(val, ids: list[str], by_id: dict[str, tuple[Page, Line]], ratio: float = 90
+           ) -> tuple[list, list[str], Evidence, dict[str, str]] | str:
+    """A model's value checked against the lines it names (F-15.4, Story 6.6): the elements, the raw values found
+    there, their evidence, and for each the text as printed; or the reason it is rejected (bad_evidence,
+    not_found_on_page)."""
     if not ids or any(i not in by_id for i in ids):
         return "bad_evidence"
-    ev_text = fold(" ".join(by_id[i][1].text for i in ids))
     elems = val if isinstance(val, list) else [val]
     raws = [(e.get("name") or next(iter(e.values()), "")) if isinstance(e, dict) else str(e) for e in elems]
-    ok = [r for r in raws if _verify(str(r), ev_text)]
+    shown: dict[str, str] = {}
+    spans: dict = {}
+    for r in raws:
+        got = _locate(str(r), ids, by_id, ratio)
+        if got is not None:
+            shown[str(r)] = got[0]
+            if not spans:
+                spans = got[1]
+    ok = [r for r in raws if str(r) in shown]
     if not ok:
         return "not_found_on_page"
     parts = []
     for i in ids:
         page, line = by_id[i]
-        needle = str(ok[0])
-        pos = line.text.casefold().find(needle.casefold())
-        parts.append((page, line, pos, pos + len(needle)) if pos >= 0 else (page, line, 0, len(line.text)))
+        a, b = spans.get(i, (0, len(line.text)))
+        parts.append((page, line, a, b))
     page0 = parts[0][0]
     ev = evidence_for_lines(page0, [(l, a, b) for (pg, l, a, b) in parts if pg is page0])
     ev.line_ids = list(ids)
-    return elems, ok, ev
+    return elems, ok, ev, shown
 
 
 def _slug(label: str) -> str:
@@ -108,12 +129,12 @@ def discover(cfg: IngestionConfig, type_name: str, description: str | None, page
             name, fact = _slug(label), (fold(str(val)), tuple(ids))
             if name in found or fact in facts or len(found) >= limit:
                 continue
-            grounded = ground(str(val), ids, by_id)
+            grounded = ground(str(val), ids, by_id, cfg.llm.evidence_text_ratio)
             if isinstance(grounded, str):
                 trace.append({"field": name, "rejected": grounded, "value": val})
                 continue
-            _, ok, ev = grounded
-            found[name] = (label, Found(str(ok[0]), "model", ev))
+            _, ok, ev, shown = grounded
+            found[name] = (label, Found(shown[str(ok[0])], "model", ev))
             facts.add(fact)
     return found, trace
 
@@ -150,21 +171,21 @@ def fill(cfg: IngestionConfig, type_name: str, fields: list[FieldDef], hints: di
             val, ids = ent.get("value"), ent.get("line_ids") or []
             if val in (None, "", []):
                 continue
-            grounded = ground(val, ids, by_id)
+            grounded = ground(val, ids, by_id, cfg.llm.evidence_text_ratio)
             if isinstance(grounded, str):
                 reasons[name] = grounded
                 trace.append({"field": name, "rejected": grounded, "value": val})
                 continue
-            elems, ok, ev = grounded
+            elems, ok, ev, shown = grounded
             if f.type == "array":
                 if f.items and f.items.type == "object":
                     keys = [s.name for s in f.items.fields]
                     value_raw = [e if isinstance(e, dict) else {keys[0]: e} for e in elems if (e.get(keys[0]) if isinstance(e, dict) else e) in ok]
                     found[name] = Found(value_raw, "model", ev)
                 else:
-                    found[name] = Found(ok, "model", ev)
+                    found[name] = Found([shown[str(r)] for r in ok], "model", ev)
             else:
-                found[name] = Found(str(ok[0]), "model", ev)
+                found[name] = Found(shown[str(ok[0])], "model", ev)
             del pending[name]
             reasons.pop(name, None)
     return found, reasons, trace

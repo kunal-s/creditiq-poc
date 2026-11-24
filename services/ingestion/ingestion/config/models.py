@@ -727,6 +727,9 @@ class LlmConfig(Strict):
     prompts: dict[str, Prompt]
     transactions: TransactionsLlm = Field(default_factory=TransactionsLlm)
     siblings: SiblingsConfig = Field(default_factory=SiblingsConfig)
+    evidence_text_ratio: float = Field(default=90, ge=50, le=100)
+    """How close (rapidfuzz partial ratio, 0-100) a model's text value must be to the line it names (Story 6.6).
+    Numbers and dates are matched by value, not by this ratio; the printed text is what is kept."""
     discover_max_fields: int = Field(default=12, ge=1, le=40)
     """The most fields the model may propose for a case document type with no named fields (F-15.8)."""
 

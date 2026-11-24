@@ -50,6 +50,10 @@ settings:
     first_pages: 3           # N: categories are scored on the first N pages, then the next N if none qualifies
     threshold: 0.5           # a category qualifies when one of its types' parts scores this on those pages
   max_gap: 2                 # longest run of unplaced pages filled from same-type neighbours
+  identity:
+    financial_year_start_month: 4      # "FY 2025-26" is 1 April 2025 to 31 March 2026
+    account_labels: [account number, account no, a/c no, a/c number, account]   # in order; "account" last, for a wrapped label
+    cover_min_periods: 3               # a leading page listing this many periods of its type is a cover, not the first
   index_min_types: 3         # a page whose titles name this many parts, of more than one document type, is a cover or index page
 
 parts:
@@ -560,18 +564,23 @@ parts:
       - {phrase: sanction letter, zone: title}
       - {phrase: declaration of existing, zone: title}
 
+# identity: how a document of the type is told from another of its type in one file (by its period, account or
+# person), and which kinds of period it prints (stages/periods.py; Epic 4 of the restructure).
 types:
   # Identity
   certificate_of_incorporation: {parts: [incorporation_certificate]}
   memorandum_articles_of_association: {parts: [memorandum, articles]}
   company_pan: {parts: [pan_letter]}
-  director_kyc: {parts: [kyc_person]}
+  director_kyc:
+    parts: [kyc_person]
+    identity: {by: person}
   board_resolution_borrowing: {parts: [board_resolution]}
   partnership_deed: {parts: [partnership_deed]}
   udyam_registration: {parts: [udyam_certificate]}
 
   # Financials: three types share the statement parts; their own words decide over the run.
   audited_financial_statements:
+    identity: {by: period, period: [year_end, as_of, financial_year], columns: true}
     default: true            # statements that do not say provisional or projected are taken as audited
     parts: [statements_cover, auditor_report, balance_sheet, profit_and_loss, cash_flow, notes]
     title:
@@ -590,6 +599,7 @@ types:
       - {phrase: estimated, zone: title}
       - {phrase: unaudited, weight: 1}     # in the body only lowers the score: notes may mention unaudited quarterly results
   provisional_financial_statements:
+    identity: {by: period, period: [period_end, year_end, range, as_of], columns: true}
     parts: [statements_cover, accountant_certificate, balance_sheet, profit_and_loss, cash_flow, notes]
     title:
       - provisional financial statements
@@ -627,22 +637,34 @@ types:
     unverified: true
     parts: [cma_forms]
   income_tax_return:
+    identity: {by: period, period: [assessment_year]}
     parts: [itr_acknowledgement_page, itr_computation, itr_form]
     needs_part: [itr_computation, itr_form]
   itr_acknowledgement:
+    identity: {by: period, period: [assessment_year]}
     parts: [itr_acknowledgement_page]
   form_26as:
+    identity: {by: period, period: [assessment_year, financial_year]}
     unverified: true
     parts: [tax_credit_statement]
-  gstr_3b: {parts: [gstr3b_return]}
-  gstr_1: {parts: [gstr1_return]}
+  gstr_3b:
+    parts: [gstr3b_return]
+    identity: {by: period, period: [month, quarter], body: true}   # printed in the return's details block
+  gstr_1:
+    parts: [gstr1_return]
+    identity: {by: period, period: [month, quarter], body: true}   # printed in the return's details block
   gstr_9:
+    identity: {by: period, period: [financial_year]}
     unverified: true
     parts: [gstr9_return]
 
   # Banking
-  bank_statement: {parts: [transactions]}
-  stock_statement: {parts: [stock_statement]}
+  bank_statement:
+    parts: [transactions]
+    identity: {by: account, period: [range], body: true, derive_from_rows: true}
+  stock_statement:
+    parts: [stock_statement]
+    identity: {by: period, period: [as_of]}
   existing_facilities_declaration: {parts: [facilities_declaration]}
   sanction_letter: {parts: [sanction_letter]}
   commercial_bureau_report: {parts: [bureau_report]}

@@ -266,20 +266,23 @@ def test_f07a_the_figures_read_are_served_apart_from_the_file_list(client, publi
     assert page.status_code == 200 and page.headers["content-type"] == "image/png"
 
 
-def test_store_migrates_to_version_23(published_data_root):
+def test_store_migrates_to_version_24(published_data_root):
     from engine import db
 
     conn = db.connect(published_data_root)
     try:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == len(db.MIGRATIONS) == 23
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == len(db.MIGRATIONS) == 24
         tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
         finding_columns = {r["name"] for r in conn.execute("PRAGMA table_info(findings)")}
         case_columns = {r["name"] for r in conn.execute("PRAGMA table_info(cases)")}
         file_columns = {r["name"] for r in conn.execute("PRAGMA table_info(files)")}
         log_columns = {r["name"] for r in conn.execute("PRAGMA table_info(model_log)")}
+        document_columns = {r["name"] for r in conn.execute("PRAGMA table_info(documents)")}
     finally:
         conn.close()
     assert {"reference_records", "reference_items", "comparison_adjudications"} <= tables
+    # 24: the period a document covers.
+    assert "period" in document_columns
     # 23: case document types and their checklist mappings.
     assert {"case_document_types", "case_type_mappings"} <= tables
     # 22: the kind of failure on each model call log row.

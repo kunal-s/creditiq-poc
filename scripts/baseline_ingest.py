@@ -100,6 +100,7 @@ def main() -> None:
                 within(cfg, d.document_type, o.document_type) and set(d.pages) <= set(o.pages) for o in res.documents)]),
             "found": [{"type": d.document_type, "pages": d.pages or list(range(d.page_from, d.page_to + 1)),
                        "key": d.instance_key, "origin": d.origin,
+                       "period": getattr(d, "period", None), "period_status": getattr(d, "period_status", None),
                        "fields": {k: (f.value if f.status == "found" else None) for k, f in d.fields.items()},
                        "tables": {k: (len(t.rows) if t.status == "found" else t.reason) for k, t in d.tables.items()}}
                       for d in res.documents],
@@ -121,6 +122,8 @@ def main() -> None:
     for (e, g), n in confusion.most_common(15):
         lines.append(f"| {e} | {g} | {n} |")
     lines += ["", "Pages placed per rung: " + ", ".join(f"{k} {v}" for k, v in rungs.most_common())]
+    statuses = Counter(d["period_status"] or "-" for f in files for d in f["found"])
+    lines += ["", "Document periods: " + ", ".join(f"{k} {v}" for k, v in statuses.most_common())]
     docs_ok = sum(f["documents"] == f["expected_documents"] for f in files)
     lines += ["", f"Files with the expected number of documents: {docs_ok} of {len(files)}",
               f"Files not processed: {sum(f['status'] != 'processed' for f in files)}", "",

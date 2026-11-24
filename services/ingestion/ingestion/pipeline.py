@@ -19,6 +19,7 @@ from .pageindex import Page
 from .readers.ocr import OcrEngine
 from .stages import classify as classify_stage
 from .stages import instances as instances_stage
+from .stages import identity as identity_stage
 from .stages import pages as pages_stage
 from .stages import route as route_stage
 from .stages import siblings as siblings_stage
@@ -346,7 +347,8 @@ class Ingestor:
         """Each document scored and decided, and the file's result: its documents, its decision and why."""
         docs, decisions, reasons = [], [], []
         codes = {r.id: r.defect for r in cfg.validators.rules if r.defect}
-        for n, (ipages, e, checks, ucls, origin) in enumerate(units, start=1):
+        for n, (ipages, e, checks, ucls, origin, *rest) in enumerate(units, start=1):
+            ident = rest[0] if rest else None
             utype = ucls["type"]
             rule = cfg.signals.types[utype].instances
             fields = {k: score_field(cfg, k, f, ucls["confidence"], by_no, checks) for k, f in e["fields"].items()}
@@ -354,7 +356,13 @@ class Ingestor:
             igrade = document_grade(ipages)
             conf = decide(cfg, igrade, ucls, fields, checks, tables)
             key = None
-            if rule and rule.keys:
+            if ident is not None:
+                # The document's own period, account or person (Epic 4); a period not found or in conflict goes to a person.
+                key = ident.key
+                if ident.status in ("not_found", "conflict"):
+                    conf = {**conf, "decision": max(conf["decision"], "human_review", key=RANK.get),
+                            "reasons": [*conf["reasons"], {"kind": f"period_{ident.status}", "detail": ident.note}]}
+            elif rule and rule.keys:
                 key = " | ".join(str(fields[k]["value"] or fields[k]["raw_text"]) for k in rule.keys if fields[k]["status"] == "found") or None
             tf = cfg.fields.types.get(utype)
             identity = {}
@@ -366,6 +374,10 @@ class Ingestor:
             doc = {"instance_no": n, "instance_key": key, "page_from": ipages[0].no, "page_to": ipages[-1].no, "document_type": utype,
                    "fields": fields, "tables": tables, "validation": checks, "confidence": conf, "identity": identity, "defects": defects,
                    "origin": origin, "pages": [p.no for p in ipages]}
+            if ident is not None:
+                doc["period"] = ident.period.to_json() if ident.period else None
+                doc["period_status"] = ident.status
+                doc["period_source"] = {"source": ident.source, "page": ident.page, "note": ident.note}
             if origin == "sibling":
                 doc["classification"] = ucls
             docs.append(doc)
@@ -393,10 +405,12 @@ class Ingestor:
         front: list[int] = []
         plan: list[tuple[str, list[Page]]] = []
         for t, run_pages in runs:
-            f, groups = instances_stage.split_instances(cfg, t, run_pages)
+            f, groups = identity_stage.split(cfg, t, run_pages)
             front += [n for n in f if n not in front]
             plan += [(t, g) for g in groups]
-        self._timed(tr, "instances", lambda: (None, {"front_matter": front, "instances": [{"type": t, "pages": [p.no for p in g]} for t, g in plan]}))
+        idents = [identity_stage.identify(cfg, t, g, self.model) for t, g in plan]
+        self._timed(tr, "instances", lambda: (None, {"instances": [{"type": t, "pages": [p.no for p in g], **i.to_json()}
+                                                                   for (t, g), i in zip(plan, idents)]}))
         extracted = [extract_instance(cfg, t, g, self.model) for t, g in plan]
         self._timed(tr, "extract", lambda: (None, [{"type": t, "fields": e["fields"], "tables": {k: {**x, "rows": len(x["rows"])} for k, x in e["tables"].items()},
                                                      "trace": e["trace"]} for (t, _), e in zip(plan, extracted)]))
@@ -409,8 +423,8 @@ class Ingestor:
         common.update(integrity=integrity.findings, integrity_recommendation=integrity.recommendation["code"])
         carry["integrity"] = integrity.findings
         carry["integrity_recommendation"] = integrity.recommendation["code"]
-        units = [(g, e, checks, _unit_classification(cfg, typing, t, g), "classified")
-                 for (t, g), e, checks in zip(plan, extracted, checks_all)]
+        units = [(g, e, checks, _unit_classification(cfg, typing, t, g), "classified", i)
+                 for (t, g), e, checks, i in zip(plan, extracted, checks_all, idents)]
         left = _unplaced(typing, unplaced)
         extra = [{"kind": "pages_unplaced", "pages": u["pages"], "candidates": u["candidates"]} for u in left]
         return self._assemble(cfg, run_id, {p.no: p for p in pages}, units, front, integrity, common, tr, extra, left)

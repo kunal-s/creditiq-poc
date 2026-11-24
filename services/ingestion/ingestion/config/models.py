@@ -713,12 +713,28 @@ class KwPart(KwWords):
     """The part scores 0 unless one of its title phrases is in the title zone."""
 
 
+class KwIdentity(Strict):
+    """How a document of the type is told from another of the same type in one file, and the period it covers."""
+
+    by: Literal["period", "account", "person", "none"] = "none"
+    period: list[Literal["year_end", "period_end", "as_of", "range", "financial_year", "assessment_year", "month",
+                         "quarter", "columns"]] = Field(default_factory=list)
+    """The kinds of period the type prints (stages/periods.py); empty: the type has no period."""
+    body: bool = False
+    """Look for the period in the body too, after the title and footer (a bank statement's details block)."""
+    columns: bool = False
+    """Fall back to the latest of its tables' year columns, and flag a title that disagrees with them."""
+    derive_from_rows: bool = False
+    """With no period printed, take the first and last transaction dates, marked as derived."""
+
+
 class KwType(KwWords):
     parts: list[str] = Field(min_length=1)
     needs_part: list[str] = Field(default_factory=list)
     """The type takes a run of pages only when one of these parts is placed in it."""
     unverified: bool = False
     """Drafted without a sample page."""
+    identity: KwIdentity | None = None
     default: bool = False
     """Takes the pages of the parts it shares with look-alike types when none of them has its own words in the run
     (audited statements: provisional and projected statements say what they are)."""
@@ -742,6 +758,16 @@ class KwCategories(Strict):
     threshold: float = Field(gt=0, le=1)
 
 
+class KwIdentitySettings(Strict):
+    financial_year_start_month: int = Field(default=4, ge=1, le=12)
+    """The month a financial year starts in: April, so "FY 2025-26" is 1 April 2025 to 31 March 2026."""
+    account_labels: list[str] = Field(default_factory=lambda: ["account number", "account no", "a/c no", "a/c number"])
+    """The labels an account number follows on a bank statement."""
+    cover_min_periods: int = Field(default=3, ge=2)
+    """A page at the head of a run listing this many periods of its type is a cover (a compilation of returns), not
+    the first of them."""
+
+
 class KwSettings(Strict):
     classifier: Literal["keywords", "signals"] = "signals"
     """Which scorer types documents: the keyword lists here, or the patterns of signals.yaml (kept until the
@@ -754,6 +780,7 @@ class KwSettings(Strict):
     fuzzy: KwFuzzy
     categories: KwCategories
     max_gap: int = Field(ge=0)
+    identity: KwIdentitySettings = Field(default_factory=KwIdentitySettings)
     index_min_types: int = Field(default=3, ge=2)
     """A page whose titles name this many parts or more, of more than one document type, is a cover or index page."""
     model_guard_min_score: float = Field(default=0.2, ge=0, le=1)
@@ -877,7 +904,7 @@ class IngestionConfig(Strict):
                 if t not in types:
                     problems.append(f"validators.{r.id}: unknown type {t}")
         for name in ("classify", "extract", "sibling", "transactions", "discover",
-                     *(("classify_page",) if self.uses_keywords() else ())):
+                     *(("classify_page", "period") if self.uses_keywords() else ())):
             if name not in self.llm.prompts:
                 problems.append(f"llm.prompts: missing '{name}'")
         for rx in self.routing.reading.boilerplate:

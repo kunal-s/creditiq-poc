@@ -98,6 +98,8 @@ class Unit:
     fields: list[Flat] = field(default_factory=list)
     origin: str = "classified"
     """classified: the file's own type. sibling: another document of its category found in the file (F-08.1)."""
+    period: dict | None = None
+    """The period the service read from the document's own pages, with its status and where (decision 14)."""
 
 
 def document_grade(pages: list[PageInfo]) -> str:
@@ -245,7 +247,8 @@ def units_of(fr: IngestFileResult) -> list[Unit]:
             # file, or every document of a file typed page by page (a page may then belong to two documents).
             dcls = _classification_of(d.classification) if d.classification else cls
             units.append(Unit(key, d.page_from, d.page_to, _page_infos(fr, d.page_from, d.page_to, d.pages or None),
-                              dcls, d.instance_key, dict(d.identity), [x.model_dump() for x in d.defects], _flatten(d, dims), d.origin))
+                              dcls, d.instance_key, dict(d.identity), [x.model_dump() for x in d.defects], _flatten(d, dims), d.origin,
+                              {"range": d.period, "status": d.period_status, **(d.period_source or {})} if d.period_status else None))
         units += _unplaced_units(fr)
         return units
     if fr.unplaced:
@@ -360,11 +363,11 @@ def _store_document(conn: sqlite3.Connection, ctx: Context, case_id: str, file_r
         status = "extracted"
     conn.execute(
         """INSERT INTO documents (id, case_id, file_id, page_from, page_to, pages, grade, classification, status,
-               instance_key, duplicate_of, config_version, doc_key, identity, defects, split_uncertain, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               instance_key, duplicate_of, config_version, doc_key, identity, defects, split_uncertain, created_at, period)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (doc_id, case_id, file_row["id"], unit.page_from, unit.page_to, json.dumps([p.model_dump() for p in unit.pages]), grade,
          unit.classification.model_dump_json(), status, unit.instance_key, None, ctx.version, unit.doc_key, dumps(unit.identity),
-         json.dumps(unit.defects), 1 if unit.origin == "sibling" else 0, now_iso()),
+         json.dumps(unit.defects), 1 if unit.origin == "sibling" else 0, now_iso(), json.dumps(unit.period) if unit.period else None),
     )
     where = f"{_file_label(file_row)} p{unit.page_from}" + (f"-{unit.page_to}" if unit.page_to != unit.page_from else "")
     if status == "in_exception":

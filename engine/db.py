@@ -687,6 +687,11 @@ MIGRATIONS: list[str] = [
     ALTER TABLE field_values ADD COLUMN origin TEXT NOT NULL DEFAULT 'configured';
     ALTER TABLE field_values ADD COLUMN label TEXT;
     """,
+    # 24: the period a document covers, as the service read it from the document's own pages: its date range, whether
+    # it was found, derived, in conflict or not found, and where (decision 14, Epic 4 of the classification restructure).
+    """
+    ALTER TABLE documents ADD COLUMN period TEXT;
+    """,
 ]
 
 

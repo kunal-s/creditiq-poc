@@ -192,6 +192,10 @@ class IngestDocument(_C):
     """classified: the file's own type. sibling: another document of the same category found inside the
     file by the service's second pass (F-08.1), read on its own pages."""
     pages: list[int] = Field(default_factory=list)
+    period: dict[str, str] | None = None
+    """The period the document covers, read from its own pages: start, end, kind, text (decision 14)."""
+    period_status: Literal["found", "derived", "conflict", "not_found", "none"] | None = None
+    period_source: dict[str, Any] | None = None
     """The pages the document was read from; a document found by the second pass need not be contiguous."""
     classification: IngestClassification | None = None
     """How a document found by the second pass was recognised; absent for the file's own type."""

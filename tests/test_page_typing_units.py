@@ -25,3 +25,14 @@ def test_a_shared_page_belongs_to_both_documents_and_unplaced_pages_go_to_a_pers
         (["sanction_letter"], [1, 2]), (["commercial_bureau_report"], [2, 3]), ([], [4])]
     last = units[-1].classification
     assert [c.type_id for c in last.candidates] == ["stock_statement"] and last.why_unclassified == "signals_weak"
+
+
+def test_a_documents_period_travels_with_it():
+    d = _doc("gstr_3b", [1])
+    d.update(period={"start": "2025-12-01", "end": "2025-12-31", "kind": "month", "text": "Return Period 12/2025"},
+             period_status="found", period_source={"source": "body", "page": 1, "note": None}, instance_key="Dec 2025")
+    fr = IngestFileResult.model_validate({
+        "file_id": "f", "sha256": "b" * 64, "name": "gst.pdf", "status": "processed",
+        "pages": [{"page": 1, "source": "text_layer", "grade": "A", "reading_trust": 1.0}], "documents": [d]})
+    [u] = units_of(fr)
+    assert u.instance_key == "Dec 2025" and u.period["status"] == "found" and u.period["range"]["end"] == "2025-12-31"

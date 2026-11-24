@@ -161,6 +161,13 @@ class Document(C):
     """The pages this document was read from. A document found by the second pass need not be contiguous."""
     classification: Classification | None = None
     """How a document found by the second pass was recognised; absent for the file's own type."""
+    period: dict[str, str] | None = None
+    """The period the document covers as a date range, read from its own pages (Epic 4): start, end, kind, text."""
+    period_status: Literal["found", "derived", "conflict", "not_found", "none"] | None = None
+    """found; derived (a bank statement's from its transactions); conflict (its title and its table columns
+    disagree); not_found (a person sets it); none (the type has no period). Absent when documents are split by signals."""
+    period_source: dict[str, Any] | None = None
+    """Where the period was read (title, footer, body, columns, rows, model), on which page, and any note."""
 
 
 class IntegrityEvidence(C):

@@ -58,6 +58,17 @@ prompts:
 
       Page text (numbered lines):
       {{lines}}
+  # The period a document covers, when its pages print none the reader recognises (Epic 4).
+  period:
+    system: |
+      You read one {{type_name}} and find the words on it that state the period it covers: the year it
+      ended, the date it is as at, the months or the assessment year it is for. Copy those words exactly
+      as printed, with the id of the line they are on. Never work a period out, and never take one from
+      a table's column headings alone. If no line states it, report null for both.
+      Answer only with the JSON object requested.
+    user: |
+      Document text (numbered lines):
+      {{lines}}
   extract:
     system: |
       You read one {{type_name}} and report the values of the requested fields.

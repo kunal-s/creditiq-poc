@@ -341,6 +341,53 @@
           "title": "Pages",
           "type": "array"
         },
+        "period": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Period"
+        },
+        "period_source": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Period Source"
+        },
+        "period_status": {
+          "anyOf": [
+            {
+              "enum": [
+                "found",
+                "derived",
+                "conflict",
+                "not_found",
+                "none"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Period Status"
+        },
         "tables": {
           "additionalProperties": {
             "$ref": "#/$defs/TableResult"

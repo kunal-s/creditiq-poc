@@ -36,9 +36,14 @@ def _rule(spec: KwTable, defs: list[ColumnDef]) -> TableRule:
                      dash_is_zero=spec.dash_is_zero, repair=None if spec.signed else spec.repair, y_tol=spec.y_tol)
 
 
+_WRAP_END = re.compile(r"(?:[:,&/\-]|\b(?:and|or|of|the|for|to|in|on|with|by))\s*$", re.I)
+
+
 class KwHeader(Header):
-    def __init__(self, cfg: IngestionConfig, spec: KwTable, gap: float, others: list[KwTable] | None = None):
+    def __init__(self, cfg: IngestionConfig, spec: KwTable, gap: float, others: list[KwTable] | None = None,
+                 label_type: str | None = None):
         self.cfg, self.spec, self.gap = cfg, spec, gap
+        self.label_is_date = label_type == "date"
         self.others = [KwHeader(cfg, o, gap) for o in (others or []) if o is not spec]
         self.kw = cfg.keywords
         self.confused = self.kw.settings.matching.confused_digits if self.kw else None
@@ -127,6 +132,13 @@ class KwHeader(Header):
             anchors[spec.label] = (left, max(left, min(others) - self.gap))
         return score, used, anchors
 
+    def continues(self, previous: str, text: str) -> bool:
+        """A label that is visibly unfinished (a bracket left open, or ending on a comma, colon, dash, ampersand or a
+        joining word) carries on in the text-only line below it, as does a line starting in lower case."""
+        prev = previous.strip()
+        return bool(prev) and (prev.count("(") > prev.count(")") or bool(_WRAP_END.search(prev))
+                               or text.strip()[:1].islower())
+
     def _data(self, line: Line) -> bool:
         """A line with an amount, or with a plain number that is not a year or a date: a row, not a heading."""
         if self.row and self.row.search(line.text):
@@ -191,6 +203,10 @@ class KwHeader(Header):
                 if not open_:
                     continue
             got = self._block(lines, i)
+            # A header another table of the document names more fully is that table's (IGST, CGST and SGST head both
+            # a return's outward supplies and its input tax credit; "taxable value" only the first).
+            if got and any((o := other._block(lines, i)) and o[0] > got[0] for other in self.others):
+                got = None
             if got and (best is None or got[0] > best[0]):
                 best = (got[0], i, got[1], got[2])
                 if got[0] >= len(spec.headings) + len(spec.periods):
@@ -257,7 +273,8 @@ class KwHeader(Header):
 def read(cfg: IngestionConfig, spec: KwTable, defs: list[ColumnDef], pages: list[Page],
          others: list[KwTable] | None = None) -> TableResult | None:
     """The table, by its headings; `others` are the document type's other tables, whose headers end it."""
-    header = KwHeader(cfg, spec, cfg.routing.reading.column_gap, others)
+    label_type = next((d.type for d in defs if d.name == spec.label), None)
+    header = KwHeader(cfg, spec, cfg.routing.reading.column_gap, others, label_type)
     for p in pages:
         header._mark_titles(p)
     res = build_table(_rule(spec, defs), defs, pages, cfg.routing.reading, header)

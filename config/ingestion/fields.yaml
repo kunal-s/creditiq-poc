@@ -77,15 +77,11 @@ types:
     table_keywords:
       shareholding:
         label: shareholder_name
-        start_words: [subscription clause, subscribers]
-        end_words: [dated this, witness to the above]
         headings:
           shareholder_name: [name address description and occupation of subscriber, name of subscriber, name of subscribers, name]
-          number_of_shares: [number of shares, no of shares, no of equity shares, shares taken, shares, "no"]   # "No." alone heads it in some MoAs
+          number_of_shares: [number of shares, no of shares, no of equity shares, shares taken, shares]
           signature: [signature]
         ignore: [signature]
-        text_only: continuation
-        skip_rows: ['^Total']
   company_pan:
     extraction: model   # the model reads each field; code checks the value on its page; the rules below are the fallback without a model
     identity: {name: company_name, pan: pan}
@@ -140,7 +136,7 @@ types:
     # fallback when no model is configured.
     extraction: model
     identity: {name: company_name}
-    # Tables found by their column headings, for any layout (Epic 5): tried first; the layouts below are the fallback.
+    # Tables found by their column headings, for any layout (Epic 5); the XBRL filing layouts below read that format.
     table_keywords:
       balance_sheet: &statement_table
         label: particulars
@@ -245,7 +241,7 @@ types:
             - {name: current_period, header: '^\d{2}/\d{2}/\d{4}$', nth: 0, align: right}
             - {name: previous_period, header: '^\d{2}/\d{2}/\d{4}$', nth: 1, align: right}
 
-    # When none of the layouts above finds a statement, the model maps its rows from the pages that name it; every
+    # When neither the headings nor the XBRL layouts find a statement, the model maps its rows from the pages that name it; every
     # figure is still read from the page (stages/extract/llm_tables.py), and the document goes to a person once.
     model_tables:
       balance_sheet:
@@ -292,7 +288,6 @@ types:
       income_computation:
         label: particulars
         part: itr_computation
-        end_words: [reconciliation]
         headings:
           particulars: [particulars, description, head of income]
           amount: [amount]
@@ -308,12 +303,9 @@ types:
       filing_date: {aliases: ['2\(d\)\.?\s*Date of ARN', 'Date of Filing'], llm_hint: 'the date of filing or ARN date, table 2(d), copied as printed'}
       return_status: {patterns: ['Return status:\s*([A-Za-z]+)'], llm: false}
       arn: {aliases: ['2\(c\)\.?\s*ARN', 'ARN'], llm_hint: 'the ARN (acknowledgement reference number) of the return, table 2(c), as printed'}
-    # Two layouts, tried in order: the portal's own printout, then the summary layout.
-    table_keywords:   # by the columns' roles, within the return's own numbered tables
+    table_keywords:   # each table by its columns' headings
       outward_supplies:
         label: description
-        start_words: ["3.1", details of outward supplies]
-        end_words: ["3.1.1", "3.2", eligible itc]
         headings:
           description: [nature of supplies, nature of supply, description]
           taxable_value: [total taxable value, taxable value, taxable]
@@ -322,13 +314,8 @@ types:
           sgst: [state ut tax, sgst]
           cess: [cess]
         ignore: [cess]
-        min_headings: 3
-        row_start_col: description
-        row_start: '^\([a-z]\s?\)\s'
       input_tax_credit:
         label: description
-        start_words: [eligible itc, eligible input tax credit]
-        end_words: [values of exempt, "5.", interest and late fee]
         headings:
           description: [details]
           igst: [integrated tax, igst]
@@ -336,16 +323,10 @@ types:
           sgst: [state ut tax, sgst]
           cess: [cess]
         ignore: [cess]
-        min_headings: 3
-        row_start_col: description
-        row_start: '^(?:\(\d\)|\([A-Za-z]\)|[A-D]\.)\s'
-        skip_rows: ['^[AB]\.\s']
       tax_payment:
         label: tax_type
-        start_words: [payment of tax]
-        end_words: [verified and filed, verification]
         headings:
-          tax_type: [description, descripti]
+          tax_type: [description]
           tax_amount: [tax payable, tax]
           paid_itc: [paid through itc]
           itc_igst: [integrated tax, integrated]
@@ -355,8 +336,6 @@ types:
           paid_cash: [paid in cash, tax paid in cash]
           interest: [interest]
           late_fee: [late fee, late]
-        min_headings: 3
-        header_span: 4
   gstr_1:
     extraction: model   # the model reads each field; code checks the value on its page; the rules below are the fallback without a model
     identity: {name: legal_name, gstin: gstin}
@@ -371,7 +350,6 @@ types:
     table_keywords:
       outward_supplies:
         label: description
-        end_words: ["9a", amended]
         headings:
           description: [description]
           records: [no of records, records]
@@ -382,11 +360,7 @@ types:
           sgst: [state ut tax, state ut, sgst]
           cess: [cess]
         ignore: [doc_type]
-        min_headings: 3
         multi_page: true
-        attach: heading
-        row_start_col: description
-        row_start: '^Total\b'
   bank_statement:
     extraction: model   # the model reads each field; code checks the value on its page; the rules below are the fallback without a model
     model_pages:
@@ -424,12 +398,8 @@ types:
           dr_cr: [dr cr, cr dr, dr/cr, cr/dr, type]              # ... with its marker
         signed: {amount: amount, marker: dr_cr, debit: debit, credit: credit}
         ignore: [amount, dr_cr]
-        min_headings: 4
         join: {reference_number: ""}
-        row_start_col: date
-        row_start: '^(\d{1,2}[\s/-][A-Za-z]{3}[\s/-]\d{2,4}|\d{4}-\d{2}-\d{2}|\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4})$'
         multi_page: true
-        end_words: [statement summary]
         repair: {kind: running_balance, debit: debit, credit: credit, balance: balance}
   # Declaration of existing facilities: a table of facilities and one of bank accounts. A nil
   # declaration prints neither; its letterhead carries the identifiers.
@@ -446,18 +416,14 @@ types:
     table_keywords:
       facilities:
         label: lender
-        end_words: [we also declare, we further declare]
         headings:
           lender: [name of lender, lender, name of bank financial institution]
           facility: [nature of facility, type of facility, facility]
           sanctioned_amount: [sanctioned limit, sanctioned amount, sanction limit, limit]
           outstanding: [amount outstanding, balance outstanding, outstanding]
           emi: [monthly instalment, instalment, emi]
-        skip_rows: ['^Total\b']
       bank_accounts:
         label: bank
-        end_words: [place, authorised signatory, authorized signatory]
-        end_starts: [for]      # a line opening with these ends the table: the signature block "For <company>"
         headings:
           bank: [name of bank, bank]
           account_number: [account number, account no, a c no]
@@ -474,7 +440,6 @@ types:
     table_keywords:
       facilities:
         label: facility
-        end_words: [terms and conditions, security]
         headings:
           facility: [nature of facility, type of facility, facility]
           sanctioned_amount: [sanctioned amount, sanction amount, limit, amount]
@@ -498,7 +463,6 @@ types:
     table_keywords:
       credit_facilities:
         label: lender
-        end_words: [related parties, end of report]
         headings:
           lender: [lender, credit grantor, institution, member]
           facility: [facility, account type, credit type]
@@ -508,13 +472,12 @@ types:
           status: [asset classification, status]
       related_parties:
         label: name
-        end_words: [end of report]
         headings:
           name: [name]
           relationship: [relationship, designation]
           pan: [pan]
   # ---- Types added for the restructure (decision 14). The model reads each field and code checks it on its page.
-  # Their tables (other than the provisional statements, which share the audited layouts) come with Epic 5.
+  # Their tables, other than the provisional statements' (found by headings like the audited), are not read yet.
   provisional_financial_statements:
     extraction: model
     identity: {name: company_name}

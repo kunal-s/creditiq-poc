@@ -411,8 +411,6 @@ parts:
       - schedule oi
       - {phrase: assessment year, weight: 1}
       - verification
-    warning:
-      - {phrase: return acknowledgement, zone: title}   # "Indian income tax return acknowledgement" is the acknowledgement
   tax_credit_statement:   # unverified: no sample yet
     title:
       - form 26as
@@ -506,16 +504,7 @@ parts:
       - {phrase: credit, weight: 0.5}
       - {phrase: balance, weight: 0.5}
       - cheque
-      # What every bank prints in its narrations; short words match only exactly. A page of rows with no headings
-      # (a statement's later pages) is placed by these, and by the table continuing from the page before (Epic 3).
-      - {phrase: neft, weight: 1}
-      - {phrase: rtgs, weight: 1}
-      - {phrase: imps, weight: 1}
-      - {phrase: upi, weight: 1}
-      - {phrase: nach, weight: 1}
-      - {phrase: chq, weight: 0.5}
     warning:
-      - {phrase: permanent account number, weight: 3}   # "account number" inside a PAN is not a bank account
       - {phrase: balance sheet, zone: title}
       - {phrase: gstr-3b, zone: title}
       - {phrase: statement of profit and loss, zone: title}
@@ -623,7 +612,6 @@ types:
       - independent auditor's report
     content:
       - {phrase: we have audited, weight: 2}
-      - {phrase: independent auditor, weight: 2}
       - {phrase: udin, weight: 1}
       - {phrase: basis for opinion, weight: 2}
     warning:

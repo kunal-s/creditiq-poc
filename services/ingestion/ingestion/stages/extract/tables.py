@@ -21,6 +21,7 @@ from ...pageindex import Line, Page, Word, union_bbox
 from ...util import collapse_ws
 from .normalise import to_date, to_number
 
+_MONTH_WORDS = re.compile(r"(?i)\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\b")
 NUM_RX = re.compile(r"^[(\-−–]?\s?(?:₹|Rs\.?)?\s?[\d,]*\d(?:\.\d+)?\)?(?:\s?(?:Cr|Dr)\.?)?$|^-$", re.I)
 # A footnote reference printed before a figure ("(A) 22,737.19", "(AB) 4,057.6"): it points to a note below the
 # statement and is not part of the figure. Capital letters only, so a list marker such as "(a) Share capital",
@@ -184,7 +185,13 @@ class Header:
         """A line that is no part of the table wherever it falls (a page's footer)."""
         return False
     drop_trailing_text = False
-    """Text-only rows after the table's last row with figures are dropped (the note printed under a table)."""
+    """Label-only rows after the table's last fuller row are dropped (a note, an end marker or a signature under it)."""
+    label_is_date = False
+    """The table's rows are labelled by a date (a bank statement): a row starts only where its label reads as one."""
+
+    def continues(self, previous: str, text: str) -> bool:
+        """Whether a text-only line carries on the label of the row above it (a wrapped label)."""
+        return False
 
 
 def build_table(rule: TableRule, defs: list[ColumnDef], pages: list[Page], reading: ReadingConfig,
@@ -271,20 +278,54 @@ def build_table(rule: TableRule, defs: list[ColumnDef], pages: list[Page], readi
     def text_of(dl: _DL, col: str) -> str:
         return " ".join(s.text for s in dl.cells.get(col, []))
 
+    carried: set[int] = set()
+    last_start: _DL | None = None
     for dl in dls:
         has_label = bool(dl.cells.get(label_col))
         has_values = any(c != label_col for c in dl.cells)
         if row_rx:
             dl.is_start = bool(row_rx.search(text_of(dl, rule.row_start_col or label_col).strip()))
+        elif header is not None and header.label_is_date:
+            label = text_of(dl, label_col).strip()
+            # The label is a date and nothing else ("Opening Balance (01 Apr 2025)" holds one, but is not one).
+            dl.is_start = has_label and to_date(label) is not None and not re.search(r"[A-Za-z]{4,}", re.sub(_MONTH_WORDS, "", label))
         else:
             dl.is_start = (has_label and has_values) or (has_label and rule.text_only == "row")
+            if (dl.is_start and not has_values and header is not None and last_start is not None
+                    and header.continues(text_of(last_start, label_col), text_of(dl, label_col))):
+                dl.is_start = False
+                carried.add(id(dl))
+        if dl.is_start:
+            last_start = dl
     starts = [d for d in dls if d.is_start]
     if not starts:
         return None
     groups: dict[int, list[_DL]] = {id(s): [s] for s in starts}
     dropped = 0
+    if header is not None and header.label_is_date:
+        # A dated row's text wraps onto as many lines as such rows wrap elsewhere in the table; lines beyond that, after
+        # the last dated row, are what is printed under the table (a statement's summary), not part of its last row.
+        after = [d for d in dls if not d.is_start and d.y_abs > starts[-1].y_abs]
+        within = [sum(1 for d in dls if not d.is_start and a.y_abs < d.y_abs < b.y_abs) for a, b in zip(starts, starts[1:])]
+        # ... and as close to the line above it as wrapped lines are elsewhere in the table.
+        ordered = sorted(dls, key=lambda d: d.y_abs)
+        above = {id(d): ordered[i - 1].y_abs for i, d in enumerate(ordered) if i}
+        wraps = [d.y_abs - above[id(d)] for d in dls if not d.is_start and d not in after and id(d) in above
+                 and d.y_abs - above[id(d)] < 1000]
+        reach = max(wraps, default=0.0) * 1.2
+        keep = 0
+        for d in after:
+            if keep < max(within, default=0) and id(d) in above and d.y_abs - above[id(d)] <= reach:
+                keep += 1
+                continue
+            break
+        for d in after[keep:]:
+            d.cells = {}
     for d in dls:
         if d.is_start:
+            continue
+        if not d.cells:
+            dropped += 1
             continue
         label_only = bool(d.cells.get(label_col)) and not any(c != label_col for c in d.cells)
         prior = [s for s in starts if s.y_abs <= d.y_abs]
@@ -295,7 +336,7 @@ def build_table(rule: TableRule, defs: list[ColumnDef], pages: list[Page], readi
             else:
                 dropped += 1
             continue
-        if not row_rx and rule.text_only == "continuation" and label_only and prior:
+        if (not row_rx and rule.text_only == "continuation" and label_only and prior) or (id(d) in carried and prior):
             near = prior[-1]  # a wrapped label belongs to the row above it
         else:
             near = min(starts, key=lambda s: (abs(s.y_abs - d.y_abs), s.y_abs > d.y_abs))  # a tie goes to the earlier row
@@ -348,12 +389,13 @@ def build_table(rule: TableRule, defs: list[ColumnDef], pages: list[Page], readi
             src = {"sheet": pg.sheet, "range": f"{cells[0]}:{cells[-1]}" if len(cells) > 1 else cells[0] if cells else None,
                    "line_ids": src["line_ids"], "line": src["line"]}
         rows.append({"cells": cells_out, "raw": {k: v for k, v in raw.items() if by_name[k].emit}, "source": src})
-    def has_figures(r: dict) -> bool:
-        return any(isinstance(v, (int, float)) for k, v in r["cells"].items() if k != label_col)
+    def fuller(r: dict) -> bool:
+        return any(v not in (None, "") for k, v in r["cells"].items() if k != label_col)
 
-    if header is not None and header.drop_trailing_text and any(has_figures(r) for r in rows):
-        # Only a table that has figures ends with its last row of them: a list of names has none, and keeps its rows.
-        while rows and not has_figures(rows[-1]):
+    if header is not None and header.drop_trailing_text and any(fuller(r) for r in rows):
+        # A table ends with its last row that fills more than its label: what follows with a label only is a note, an
+        # end marker or a signature printed under it.
+        while rows and not fuller(rows[-1]):
             rows.pop()
     if not rows:
         return None

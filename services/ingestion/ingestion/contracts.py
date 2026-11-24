@@ -123,6 +123,14 @@ class PageInfo(C):
     sheet: str | None = None
     blank: bool = False
     words: int = 0
+    types: list[str] = Field(default_factory=list)
+    """The document types the page carries (F-09.2), when pages are typed one by one (keywords.yaml)."""
+    placed_by: str | None = None
+    """How its first placed section was placed: keywords, all_types, continued, gap, model, or index (a cover page)."""
+    type_candidates: list[Candidate] = Field(default_factory=list)
+    """Its three best guesses."""
+    sections: list[dict[str, Any]] = Field(default_factory=list)
+    """Where a title opens another document's part on the page: each section's first line, types and how placed."""
 
 
 class Defect(C):
@@ -316,6 +324,9 @@ class FileResult(C):
     """Every figure the page checks read, with its place, font and size."""
     decision: Literal["auto_accept", "human_review", "reject"] | None = None
     review_reasons: list[dict[str, Any]] = Field(default_factory=list)
+    unplaced: list[dict[str, Any]] = Field(default_factory=list)
+    """Runs of pages no document type placed (F-09.5, F-09.8): their pages and three best guesses. Kept for a person,
+    and for the sweep of leftovers (F-15.11)."""
     trace: list[TraceEntry] = Field(default_factory=list)
 
 

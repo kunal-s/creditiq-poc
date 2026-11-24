@@ -11,7 +11,7 @@ HALLUCINATE: dict[str, str] = {}   # field -> a value that is not on the page (s
 
 
 def answerer(req: ModelRequest) -> dict:
-    if req.task == "classify":
+    if req.task in ("classify", "classify_page"):
         return {"type": "none_of_these", "reason": "the text is not any of the listed kinds"}
     fields = re.findall(r"^- (\w+) \(", req.user, re.M)
     lines = dict(re.findall(r"^(p\d+\.l\d+): (.*)$", req.user, re.M))

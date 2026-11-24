@@ -41,6 +41,23 @@ prompts:
 
       Document text (numbered lines):
       {{lines}}
+  # One page of a file that the keyword lists could not place (Epic 3 of the classification restructure).
+  classify_page:
+    system: |
+      You identify what kind of document a single page comes from. The page is one of several in a file:
+      it may open a document, continue one (a table carried over, a closing or signature page), or be a
+      cover or index page. Choose exactly one id from the closed list, or "none_of_these" when the page
+      is not part of any of them or you cannot tell from this page alone.
+      Judge by what the page is and says, never by a file name. A page that merely mentions another
+      kind of document (a covering letter, a bank narration, a notes page, a list of enclosures) is not
+      that kind.
+      Answer only with the JSON object requested.
+    user: |
+      Closed list of document types:
+      {{types}}
+
+      Page text (numbered lines):
+      {{lines}}
   extract:
     system: |
       You read one {{type_name}} and report the values of the requested fields.

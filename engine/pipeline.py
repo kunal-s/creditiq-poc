@@ -241,16 +241,36 @@ def units_of(fr: IngestFileResult) -> list[Unit]:
         units = []
         for d in fr.documents:
             key = hashlib.sha256(f"{fr.sha256}|{d.document_type}|{d.instance_no}|{d.page_from}-{d.page_to}".encode()).hexdigest()[:16]
-            # A part the service found inside the file carries its own classification and its own pages.
+            # A document carries its own classification and pages when the service gives them: a part found inside a
+            # file, or every document of a file typed page by page (a page may then belong to two documents).
             dcls = _classification_of(d.classification) if d.classification else cls
-            units.append(Unit(key, d.page_from, d.page_to, _page_infos(fr, d.page_from, d.page_to, d.pages if d.origin == "sibling" else None),
+            units.append(Unit(key, d.page_from, d.page_to, _page_infos(fr, d.page_from, d.page_to, d.pages or None),
                               dcls, d.instance_key, dict(d.identity), [x.model_dump() for x in d.defects], _flatten(d, dims), d.origin))
+        units += _unplaced_units(fr)
         return units
+    if fr.unplaced:
+        return _unplaced_units(fr)
     if not fr.pages:
         return []
     last = max(p.page for p in fr.pages)
     key = hashlib.sha256(f"{fr.sha256}|-|1|1-{last}".encode()).hexdigest()[:16]
     return [Unit(key, 1, last, _page_infos(fr, 1, last), cls)]
+
+
+def _unplaced_units(fr: IngestFileResult) -> list[Unit]:
+    """Each run of pages the service could not place: an unclassified document, with its best guesses, for a person to
+    assign (F-09.5)."""
+    out = []
+    for u in fr.unplaced:
+        nos = sorted(int(n) for n in u.get("pages", []))
+        if not nos:
+            continue
+        key = hashlib.sha256(f"{fr.sha256}|-|unplaced|{nos[0]}-{nos[-1]}".encode()).hexdigest()[:16]
+        cands = [Candidate(type_id=c["type"], confidence=float(c["score"])) for c in u.get("candidates", [])[:3]]
+        cls = Classification(types=[], confidence=0.0, exit_tier="none", candidates=cands,
+                             why_unclassified="model_found_none" if "model" in str(u.get("note", "")) else "signals_weak")
+        out.append(Unit(key, nos[0], nos[-1], _page_infos(fr, nos[0], nos[-1], nos), cls))
+    return out
 
 
 # --- Storing one document ---

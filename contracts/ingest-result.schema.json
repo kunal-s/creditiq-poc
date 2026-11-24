@@ -714,6 +714,14 @@
           },
           "title": "Trace",
           "type": "array"
+        },
+        "unplaced": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Unplaced",
+          "type": "array"
         }
       },
       "required": [
@@ -1309,6 +1317,18 @@
           "title": "Page",
           "type": "integer"
         },
+        "placed_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Placed By"
+        },
         "reading_trust": {
           "title": "Reading Trust",
           "type": "number"
@@ -1318,6 +1338,14 @@
             "type": "string"
           },
           "title": "Reasons",
+          "type": "array"
+        },
+        "sections": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Sections",
           "type": "array"
         },
         "sheet": {
@@ -1340,6 +1368,20 @@
           ],
           "title": "Source",
           "type": "string"
+        },
+        "type_candidates": {
+          "items": {
+            "$ref": "#/$defs/IngestCandidate"
+          },
+          "title": "Type Candidates",
+          "type": "array"
+        },
+        "types": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Types",
+          "type": "array"
         },
         "width": {
           "default": 0.0,

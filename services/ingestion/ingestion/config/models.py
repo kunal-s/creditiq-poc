@@ -754,6 +754,8 @@ class KwSettings(Strict):
     fuzzy: KwFuzzy
     categories: KwCategories
     max_gap: int = Field(ge=0)
+    index_min_types: int = Field(default=3, ge=2)
+    """A page whose titles name this many parts or more, of more than one document type, is a cover or index page."""
     model_guard_min_score: float = Field(default=0.2, ge=0, le=1)
     """The model's choice stands only when the document shows at least this much of that type's words."""
 
@@ -874,7 +876,8 @@ class IngestionConfig(Strict):
             for t in r.types:
                 if t not in types:
                     problems.append(f"validators.{r.id}: unknown type {t}")
-        for name in ("classify", "extract", "sibling", "transactions", "discover"):
+        for name in ("classify", "extract", "sibling", "transactions", "discover",
+                     *(("classify_page",) if self.uses_keywords() else ())):
             if name not in self.llm.prompts:
                 problems.append(f"llm.prompts: missing '{name}'")
         for rx in self.routing.reading.boilerplate:

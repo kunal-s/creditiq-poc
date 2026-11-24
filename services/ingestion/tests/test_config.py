@@ -111,8 +111,10 @@ def test_threshold_edit_changes_hash_and_behaviour(cfg, tmp_path):
 
 def test_every_type_names_a_document_fields_category(cfg):
     cats = {t.document_type: t.category for t in cfg.document_types.documents}
-    assert set(cats.values()) == {"constitution_kyc", "financials", "banking_operations", "supporting"}
-    assert cats["company_pan"] == cats["certificate_of_incorporation"] == "constitution_kyc"
+    # The three categories of the classification restructure (decision 14); GST returns are Financials.
+    assert set(cats.values()) == {"identity", "financials", "banking"}
+    assert cats["company_pan"] == cats["certificate_of_incorporation"] == "identity"
+    assert cats["gstr_3b"] == cats["gstr_1"] == "financials"
 
 
 @pytest.mark.parametrize("change, message", [

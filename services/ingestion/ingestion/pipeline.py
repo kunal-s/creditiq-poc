@@ -19,6 +19,7 @@ from .pageindex import Page
 from .readers.ocr import OcrEngine
 from .stages import classify as classify_stage
 from .stages import instances as instances_stage
+from .stages import pages as pages_stage
 from .stages import route as route_stage
 from .stages import siblings as siblings_stage
 from .stages.extract.run import extract_case_type, extract_instance
@@ -53,6 +54,60 @@ def _integrity_reason(integrity, reasons: list[dict]) -> str:
     if code not in ("no_notable_issue", "not_applicable"):
         reasons.append({"kind": "integrity", "code": code, "detail": integrity.recommendation["why"]})
     return code
+
+
+def _unit_classification(cfg: IngestionConfig, typing, doc_type: str, pages: list[Page]) -> dict:
+    """How a document typed page by page was placed: its strongest page's score and words, the ways its pages were
+    placed, and the model's tier when the model placed any of them."""
+    secs = [x for p in pages for x in typing.pages.get(p.no, []) if doc_type in x.types]
+    scored = [x for x in secs if x.placed_by in ("keywords", "all_types")]
+    best = max(scored, key=lambda x: x.score) if scored else (secs[0] if secs else None)
+    how: dict[str, int] = {}
+    for x in secs:
+        how[x.placed_by or "?"] = how.get(x.placed_by or "?", 0) + 1
+    by_model = how.get("model", 0) > 0
+    conf = best.score if best and best.placed_by in ("keywords", "all_types") else cfg.signals.tier2_confidence
+    return {"type": doc_type, "confidence": round(conf, 4), "tier": "model" if by_model else "signals",
+            "signals": best.signals if best else {}, "needs_review": False,
+            # The document's own type first, then the other guesses its strongest page had.
+            "candidates": ([{"type": doc_type, "score": round(conf, 4)}]
+                           + [{"type": t, "score": sc} for t, sc in (best.candidates if best else []) if t != doc_type])[:3],
+            "reason": "pages placed by " + ", ".join(f"{k} ({v})" for k, v in sorted(how.items())), "mixed_content": []}
+
+
+def _file_classification(cfg: IngestionConfig, typing, runs: list, unplaced: list[list[int]]) -> dict:
+    """The file's classification, for what reads one type per file: the type of the first document; none when no page
+    was placed."""
+    if runs:
+        t, run_pages = runs[0]
+        return _unit_classification(cfg, typing, t, run_pages)
+    secs = [x for v in typing.pages.values() for x in v]
+    top = max(secs, key=lambda x: x.score) if secs else None
+    asked = [e for e in typing.trace if e["step"] == "model"]
+    error = next((e.get("model_error") for e in asked if e.get("model_error")), None)
+    if error:
+        why, extra = f"no page placed by the keyword lists; model unavailable ({error})", {"model_error": error}
+    elif asked:
+        why, extra = "the model found none of the listed types: " + "; ".join(sorted({e.get("reason") or "" for e in asked}))[:300], {}
+    else:
+        why, extra = "no page placed by the keyword lists; no model configured", {}
+    return {"type": None, "confidence": 0.0, "tier": "none", "signals": {}, "needs_review": True, "mixed_content": [],
+            "candidates": [{"type": t, "score": sc} for t, sc in (top.candidates if top else [])][:3], "reason": why, **extra}
+
+
+def _unplaced(typing, unplaced: list[list[int]]) -> list[dict]:
+    """Each run of unplaced pages with its three best guesses (F-09.5): kept for a person and for the leftover sweep."""
+    out = []
+    for run in unplaced:
+        secs = [x for no in run for x in typing.pages.get(no, [])]
+        best: dict[str, float] = {}
+        for x in secs:
+            for t, sc in x.candidates:
+                best[t] = max(best.get(t, 0.0), sc)
+        notes = sorted({x.note for x in secs if x.note})
+        out.append({"pages": run, "candidates": [{"type": t, "score": round(sc, 4)} for t, sc in sorted(best.items(), key=lambda kv: (-kv[1], kv[0]))[:3]],
+                    **({"note": "; ".join(notes)} if notes else {})})
+    return out
 
 
 def run_id_for(case_ref: str, sha256: str, cfg: IngestionConfig) -> str:
@@ -213,6 +268,8 @@ class Ingestor:
         grade = document_grade(pages)
         route = self._timed(tr, "route", lambda: ((r := route_stage.profile(pages)), r))
 
+        typing = None
+        runs, unplaced = [], []
         if spec.assigned_type:
             if spec.assigned_type not in cfg.document_types.by_id():
                 return FileResult(**base, status="rejected", run_id=run_id, reject={"code": "bad_assignment", "message": f"{spec.assigned_type} is not a document type in configuration {cfg.version}"},
@@ -225,6 +282,12 @@ class Ingestor:
             person = {"type": ct.id, "confidence": 1.0, "tier": "person", "signals": {}, "needs_review": False, "mixed_content": [],
                       "candidates": [{"type": ct.id, "score": 1.0}], "reason": "a case document type assigned by a person"}
             cls = self._timed(tr, "classify", lambda: (person, person))
+        elif cfg.uses_keywords():
+            # Each page, and each section a title opens, typed by the keyword lists (F-09, decision 14).
+            typing = self._timed(tr, "classify", lambda: ((t := pages_stage.type_pages(cfg, pages, self.model)), {
+                "categories": t.categories, "pages": {no: t.page_info(no) for no in t.pages}, "trace": t.trace}))
+            runs, unplaced = pages_stage.documents(typing, pages)
+            cls = _file_classification(cfg, typing, runs, unplaced)
         else:
             cls = self._timed(tr, "classify", lambda: ((c := classify_stage.classify(cfg, pages, self.model)), c))
         self.store.save_classification(run_id, cls)
@@ -237,7 +300,7 @@ class Ingestor:
         carry["integrity"] = integrity.findings
         carry["integrity_recommendation"] = integrity.recommendation["code"]
         carry["integrity_figures"] = integrity.figures
-        page_infos = [p.summary() for p in pages]
+        page_infos = [{**p.summary(), **(typing.page_info(p.no) if typing and p.no in typing.pages else {})} for p in pages]
         common = dict(**base, status="processed", run_id=run_id, source={"kind": gate.kind, "pages": gate.pages}, grade=grade, route=route,
                       pages=page_infos, classification=cls,
                       integrity=integrity.findings, integrity_recommendation=integrity.recommendation["code"],
@@ -247,7 +310,10 @@ class Ingestor:
         if cls["type"] is None:
             reasons = [{"kind": "type_unassigned", "detail": cls.get("reason")}]
             _integrity_reason(integrity, reasons)
-            return FileResult(**common, decision="reject" if grade == "U" else "human_review", review_reasons=reasons, trace=tr.entries)
+            return FileResult(**common, decision="reject" if grade == "U" else "human_review", review_reasons=reasons,
+                              unplaced=_unplaced(typing, unplaced) if typing else [], trace=tr.entries)
+        if typing is not None:
+            return self._typed_pages(cfg, run_id, pages, typing, runs, unplaced, integrity, common, carry, tr)
 
         # F-08.1/F-08.2: the other documents of the same category in this file. Found before the file's own
         # document is read, so each document is read on its own pages only (principle 7).
@@ -273,6 +339,11 @@ class Ingestor:
         own_cls = {**cls, "mixed_content": [m for m in cls.get("mixed_content") or [] if m["page"] not in found.taken]}
         units = [(ipages, e, checks, own_cls, "classified") for ipages, e, checks in zip(groups, extracted, checks_all)]
         units += [(part.pages, part.extracted, part.checks, part.classification, "sibling") for part in found.parts]
+        return self._assemble(cfg, run_id, by_no, units, front, integrity, common, tr)
+
+    def _assemble(self, cfg: IngestionConfig, run_id: str, by_no: dict, units: list, front: list[int], integrity, common: dict,
+                  tr: _Trace, extra_reasons: list[dict] | None = None, unplaced: list[dict] | None = None) -> FileResult:
+        """Each document scored and decided, and the file's result: its documents, its decision and why."""
         docs, decisions, reasons = [], [], []
         codes = {r.id: r.defect for r in cfg.validators.rules if r.defect}
         for n, (ipages, e, checks, ucls, origin) in enumerate(units, start=1):
@@ -303,10 +374,44 @@ class Ingestor:
             self.store.save_instance(run_id, n, key, ipages[0].no, ipages[-1].no, fields, tables, checks)
         self._timed(tr, "score", lambda: (None, [d["confidence"] for d in docs]))
         decision = max(decisions, key=RANK.get) if decisions else "human_review"
+        reasons += extra_reasons or []
+        if extra_reasons:
+            decision = max(decision, "human_review", key=RANK.get)
         if not docs:
             reasons.append({"kind": "no_pages", "detail": "no readable page"})
         # F-07A: integrity never rejects, and the extraction above has already
         # run. A file whose own structure contradicts itself goes to a person.
         if _integrity_reason(integrity, reasons) in INTEGRITY_ESCALATES:
             decision = max(decision, "human_review", key=RANK.get)
-        return FileResult(**common, front_matter_pages=front, documents=docs, decision=decision, review_reasons=reasons, trace=tr.entries)
+        return FileResult(**common, front_matter_pages=front, documents=docs, decision=decision, review_reasons=reasons,
+                          unplaced=unplaced or [], trace=tr.entries)
+
+    def _typed_pages(self, cfg: IngestionConfig, run_id: str, pages: list[Page], typing, runs: list, unplaced: list[list[int]],
+                     integrity, common: dict, carry: dict, tr: _Trace) -> FileResult:
+        """The documents of a file typed page by page: each run of pages carrying one type is split into its instances
+        and read on its own pages (principle 7); pages left unplaced go to a person with their best guesses."""
+        front: list[int] = []
+        plan: list[tuple[str, list[Page]]] = []
+        for t, run_pages in runs:
+            f, groups = instances_stage.split_instances(cfg, t, run_pages)
+            front += [n for n in f if n not in front]
+            plan += [(t, g) for g in groups]
+        self._timed(tr, "instances", lambda: (None, {"front_matter": front, "instances": [{"type": t, "pages": [p.no for p in g]} for t, g in plan]}))
+        extracted = [extract_instance(cfg, t, g, self.model) for t, g in plan]
+        self._timed(tr, "extract", lambda: (None, [{"type": t, "fields": e["fields"], "tables": {k: {**x, "rows": len(x["rows"])} for k, x in e["tables"].items()},
+                                                     "trace": e["trace"]} for (t, _), e in zip(plan, extracted)]))
+        checks_all = [validate_instance(cfg, t, g, e["fields"], e["tables"]) for (t, g), e in zip(plan, extracted)]
+        self._timed(tr, "validate", lambda: (None, checks_all))
+        primary = common["classification"]["type"]
+        mine = [e for (t, _), e in zip(plan, extracted) if t == primary]
+        integrity = self._timed(tr, "integrity_arithmetic", lambda: (
+            (i := run_integrity_arithmetic(integrity, cfg.integrity, primary, pages, mine)), i.to_json()))
+        common.update(integrity=integrity.findings, integrity_recommendation=integrity.recommendation["code"])
+        carry["integrity"] = integrity.findings
+        carry["integrity_recommendation"] = integrity.recommendation["code"]
+        units = [(g, e, checks, _unit_classification(cfg, typing, t, g), "classified")
+                 for (t, g), e, checks in zip(plan, extracted, checks_all)]
+        left = _unplaced(typing, unplaced)
+        extra = [{"kind": "pages_unplaced", "pages": u["pages"], "candidates": u["candidates"]} for u in left]
+        return self._assemble(cfg, run_id, {p.no: p for p in pages}, units, front, integrity, common, tr, extra, left)
+

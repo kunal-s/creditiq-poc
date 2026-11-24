@@ -37,7 +37,7 @@
     {
       "document_type": "certificate_of_incorporation",
       "display_name": "Certificate of Incorporation",
-      "category": "constitution_kyc",
+      "category": "identity",
       "priority": "mandatory",
       "schema": {
         "fields": [
@@ -99,7 +99,7 @@
     {
       "document_type": "memorandum_articles_of_association",
       "display_name": "Memorandum and Articles of Association",
-      "category": "constitution_kyc",
+      "category": "identity",
       "priority": "mandatory",
       "schema": {
         "fields": [
@@ -203,7 +203,7 @@
     {
       "document_type": "company_pan",
       "display_name": "Company PAN",
-      "category": "constitution_kyc",
+      "category": "identity",
       "priority": "mandatory",
       "schema": {
         "fields": [
@@ -235,7 +235,7 @@
     {
       "document_type": "director_kyc",
       "display_name": "Director KYC",
-      "category": "constitution_kyc",
+      "category": "identity",
       "priority": "mandatory",
       "schema": {
         "fields": [
@@ -312,7 +312,7 @@
     {
       "document_type": "board_resolution_borrowing",
       "display_name": "Board Resolution for Borrowing",
-      "category": "constitution_kyc",
+      "category": "identity",
       "priority": "mandatory",
       "schema": {
         "fields": [
@@ -694,7 +694,7 @@
     {
       "document_type": "gstr_3b",
       "display_name": "GSTR-3B",
-      "category": "banking_operations",
+      "category": "financials",
       "priority": "mandatory",
       "schema": {
         "fields": [
@@ -838,7 +838,7 @@
     {
       "document_type": "gstr_1",
       "display_name": "GSTR-1",
-      "category": "supporting",
+      "category": "financials",
       "priority": "optional",
       "schema": {
         "fields": [
@@ -914,7 +914,7 @@
     {
       "document_type": "bank_statement",
       "display_name": "Bank Statement",
-      "category": "banking_operations",
+      "category": "banking",
       "priority": "mandatory",
       "schema": {
         "fields": [
@@ -1035,7 +1035,7 @@
     {
       "document_type": "existing_facilities_declaration",
       "display_name": "Declaration of Existing Facilities",
-      "category": "supporting",
+      "category": "banking",
       "priority": "optional",
       "schema": {
         "fields": [
@@ -1122,7 +1122,7 @@
     {
       "document_type": "sanction_letter",
       "display_name": "Sanction Letter",
-      "category": "supporting",
+      "category": "banking",
       "priority": "optional",
       "schema": {
         "fields": [
@@ -1186,7 +1186,7 @@
     {
       "document_type": "commercial_bureau_report",
       "display_name": "Commercial Bureau Report",
-      "category": "supporting",
+      "category": "banking",
       "priority": "optional",
       "schema": {
         "fields": [
@@ -1469,7 +1469,7 @@
     {
       "document_type": "stock_statement",
       "display_name": "Stock Statement",
-      "category": "banking_operations",
+      "category": "banking",
       "priority": "optional",
       "enabled": true,
       "schema": {
@@ -1700,7 +1700,7 @@
     {
       "document_type": "partnership_deed",
       "display_name": "Partnership Deed",
-      "category": "constitution_kyc",
+      "category": "identity",
       "priority": "optional",
       "enabled": true,
       "schema": {
@@ -1759,7 +1759,7 @@
     {
       "document_type": "udyam_registration",
       "display_name": "Udyam Registration Certificate",
-      "category": "constitution_kyc",
+      "category": "identity",
       "priority": "optional",
       "enabled": true,
       "schema": {

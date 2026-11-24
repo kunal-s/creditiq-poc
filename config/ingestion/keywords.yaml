@@ -50,6 +50,7 @@ settings:
     first_pages: 3           # N: categories are scored on the first N pages, then the next N if none qualifies
     threshold: 0.5           # a category qualifies when one of its types' parts scores this on those pages
   max_gap: 2                 # longest run of unplaced pages filled from same-type neighbours
+  index_min_types: 3         # a page whose titles name this many parts, of more than one document type, is a cover or index page
 
 parts:
   # ======================================== Identity ==============================================================

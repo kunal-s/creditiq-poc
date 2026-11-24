@@ -26,6 +26,7 @@ sys.path.insert(0, str(ROOT / "services" / "ingestion"))
 from ingestion.config.loader import load_dir  # noqa: E402
 from ingestion.contracts import FileSpec  # noqa: E402
 from ingestion.pipeline import Ingestor  # noqa: E402
+from ingestion.stages.keywords import within  # noqa: E402
 from ingestion.store import Store  # noqa: E402
 from ingestion.util import sha256_hex  # noqa: E402
 
@@ -64,15 +65,21 @@ def main() -> None:
     files, page_hits, per_type = [], Counter(), defaultdict(Counter)
     confusion: Counter = Counter()
     fields, tables = defaultdict(Counter), defaultdict(Counter)
+    rungs: Counter = Counter()
     for i, (rel, entry) in enumerate(key.items()):
         data = (ROOT / rel).read_bytes()
         spec = FileSpec(file_id=f"f{i}", sha256=sha256_hex(data), original_name=Path(rel).name, content_type="application/pdf")
         res = ing.process_file("BASELINE", spec, data)
         exp = expected_pages(entry, published)
+        for info in res.pages:
+            if not info.blank:
+                rungs[getattr(info, "placed_by", None) or "unplaced"] += 1
         pred = predicted_pages(res, max(exp))
         for p, t in exp.items():
             got = pred.get(p, set())
-            ok = (got == {t}) if t else not got
+            # A page may also carry a type all of whose parts the expected type has (an acknowledgement filed with its
+            # computation is both): that extra is not an error.
+            ok = (t in got and all(u == t or within(cfg, u, t) for u in got)) if t else not got
             page_hits["correct" if ok else "wrong"] += 1
             per_type[t or "(none)"]["correct" if ok else "wrong"] += 1
             if not ok:
@@ -88,7 +95,9 @@ def main() -> None:
             "file_type": res.classification.type if res.classification else None,
             "tier": res.classification.tier if res.classification else None,
             "candidates": [c.model_dump() for c in res.classification.candidates] if res.classification else [],
-            "expected_documents": len(exp_docs), "documents": len(res.documents),
+            "expected_documents": len(exp_docs),
+            "documents": len([d for d in res.documents if not any(
+                within(cfg, d.document_type, o.document_type) and set(d.pages) <= set(o.pages) for o in res.documents)]),
             "found": [{"type": d.document_type, "pages": d.pages or list(range(d.page_from, d.page_to + 1)),
                        "key": d.instance_key, "origin": d.origin,
                        "fields": {k: (f.value if f.status == "found" else None) for k, f in d.fields.items()},
@@ -111,6 +120,7 @@ def main() -> None:
     lines += ["", "Most common errors (expected → got, pages):", "", "| Expected | Got | Pages |", "|---|---|---|"]
     for (e, g), n in confusion.most_common(15):
         lines.append(f"| {e} | {g} | {n} |")
+    lines += ["", "Pages placed per rung: " + ", ".join(f"{k} {v}" for k, v in rungs.most_common())]
     docs_ok = sum(f["documents"] == f["expected_documents"] for f in files)
     lines += ["", f"Files with the expected number of documents: {docs_ok} of {len(files)}",
               f"Files not processed: {sum(f['status'] != 'processed' for f in files)}", "",

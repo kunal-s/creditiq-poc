@@ -159,6 +159,12 @@ class IngestPage(_C):
     sheet: str | None = None
     blank: bool = False
     words: int = 0
+    types: list[str] = Field(default_factory=list)
+    """The document types the page carries, when the service types pages one by one (decision 14)."""
+    placed_by: str | None = None
+    """keywords, all_types, continued, gap, model, or index (a cover page)."""
+    type_candidates: list[IngestCandidate] = Field(default_factory=list)
+    sections: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class DocumentDefect(_C):
@@ -318,6 +324,8 @@ class IngestFileResult(_C):
     integrity_figures: list[IngestIntegrityFigure] = Field(default_factory=list)
     decision: Literal["auto_accept", "human_review", "reject"] | None = None
     review_reasons: list[dict[str, Any]] = Field(default_factory=list)
+    unplaced: list[dict[str, Any]] = Field(default_factory=list)
+    """Runs of pages no document type placed: {pages, candidates}. Each becomes an unclassified document."""
     trace: list[IngestTrace] = Field(default_factory=list)
 
 

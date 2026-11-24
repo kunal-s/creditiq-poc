@@ -17,6 +17,15 @@ from ingestion.store import Store
 
 from .conftest import fixture_doc, spec
 
+@pytest.fixture(scope="module")
+def cfg(cfg):
+    """The second pass belongs to the classifier of signals.yaml, kept behind keywords.yaml settings.classifier until
+    page typing is signed off; with the keyword lists, pages are typed one by one (test_pages.py)."""
+    c = cfg.model_copy(deep=True)
+    c.keywords.settings.classifier = "signals"
+    return c
+
+
 COI = "Southgate_Certificate_of_Incorporation.pdf"
 PAN = "Southgate_Entity_PAN.pdf"
 MOA = "Southgate_MOA_AOA.pdf"
@@ -55,8 +64,8 @@ def test_the_group_is_the_other_types_of_the_category(cfg):
         "memorandum_articles_of_association", "company_pan", "director_kyc", "board_resolution_borrowing",
         "partnership_deed", "udyam_registration"]
     assert group_of(cfg, "audited_financial_statements") == [
-        "income_tax_return", "provisional_financial_statements", "projected_financial_statements", "cma_data",
-        "gstr_9", "form_26as", "itr_acknowledgement"]
+        "income_tax_return", "gstr_3b", "gstr_1", "provisional_financial_statements", "projected_financial_statements",
+        "cma_data", "gstr_9", "form_26as", "itr_acknowledgement"]
 
 
 def test_a_bundle_becomes_one_document_per_type_each_on_its_own_pages(cfg):
@@ -74,9 +83,9 @@ def test_a_bundle_becomes_one_document_per_type_each_on_its_own_pages(cfg):
     assert [d.instance_no for d in r.documents] == [1, 2, 3]
 
 
-def test_a_document_that_only_mentions_another_type_does_not_create_it(results):
+def test_a_document_that_only_mentions_another_type_does_not_create_it(cfg):
     # The certificate prints the company's PAN, but no page of it is headed as a PAN letter.
-    r = results[COI]
+    r, _ = run(cfg, fixture_doc(COI), assigned=None)
     assert [(d.document_type, d.origin) for d in r.documents] == [("certificate_of_incorporation", "classified")]
     assert r.documents[0].fields["pan"].value == "AAHCS6612M"
 

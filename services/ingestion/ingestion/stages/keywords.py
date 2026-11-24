@@ -70,8 +70,19 @@ def zones(kw: KeywordsConfig, page: Page) -> Zones:
     cached = getattr(page, "_kw_zones", None)
     if cached is not None:
         return cached
+    labels = line_zones(kw, page)
+    out = Zones(*("\n".join(l.text for l, z in labels if z == k) for k in ("title", "footer", "body")))
+    page._kw_zones = out  # type: ignore[attr-defined]
+    return out
+
+
+def line_zones(kw: KeywordsConfig, page: Page) -> list[tuple]:
+    """Each content line of the page with its zone: title, footer or body."""
+    cached = getattr(page, "_kw_lines", None)
+    if cached is not None:
+        return cached
     z = kw.settings.zones
-    title, footer, body = [], [], []
+    labelled: list[tuple] = []
     lines = page.content_lines()
     sized = [w for l in lines for w in l.words if w.size]
     if sized:
@@ -93,14 +104,13 @@ def zones(kw: KeywordsConfig, page: Page) -> Zones:
         else:
             stands_out = h >= z.title_height_ratio * typical
         if stands_out or (top <= z.header_band and not row):
-            title.append(l.text)
+            labelled.append((l, "title"))
         elif top >= 1 - z.footer_band:
-            footer.append(l.text)
+            labelled.append((l, "footer"))
         else:
-            body.append(l.text)
-    out = Zones("\n".join(title), "\n".join(footer), "\n".join(body))
-    page._kw_zones = out  # type: ignore[attr-defined]
-    return out
+            labelled.append((l, "body"))
+    page._kw_lines = labelled  # type: ignore[attr-defined]
+    return labelled
 
 
 def _found(kw: KeywordsConfig, e: KwEntry, z: Zones, zone: str, *, exact: bool = False) -> bool:
@@ -125,6 +135,9 @@ def _found(kw: KeywordsConfig, e: KwEntry, z: Zones, zone: str, *, exact: bool =
     share = 1 - f.min_ratio
 
     def near(a: str, b: str) -> bool:
+        # A near spelling never changes a number: form numbers and codes (GSTR-9, 3B, ITR-6) tell documents apart.
+        if re.sub(r"\D", "", a) != re.sub(r"\D", "", b):
+            return False
         allowed = int(len(a) * share)
         return a == b if allowed == 0 else Levenshtein.distance(a, b, score_cutoff=allowed) <= allowed
 

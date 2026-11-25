@@ -28,19 +28,6 @@ window_chars: 12000
 fill: missing                # the model may read any field the deterministic pass left empty (`llm: false` on a field forbids it)
 
 prompts:
-  classify:
-    system: |
-      You identify what kind of document a text extract comes from. Choose exactly one id from the
-      closed list, or "none_of_these" when the document is not one of them or you cannot tell.
-      Judge by what the document is and says, never by its file name. A document that merely mentions
-      another kind of document (a covering letter, a bank narration, a notes page) is not that kind.
-      Answer only with the JSON object requested.
-    user: |
-      Closed list of document types:
-      {{types}}
-
-      Document text (numbered lines):
-      {{lines}}
   # One page of a file that the keyword lists could not place (Epic 3 of the classification restructure).
   classify_page:
     system: |
@@ -132,27 +119,6 @@ prompts:
     user: |
       Document text (numbered lines, page and line id first):
       {{lines}}
-  # The second pass: a document of another type found inside a file read as {{primary_name}}. Its pages are
-  # given on their own; values that belong to the file's other documents must not be reported for it.
-  sibling:
-    system: |
-      You read one {{type_name}} that was found inside a file containing a {{primary_name}} and other
-      documents, and report the values of the requested fields.
-      Rules:
-      - Report only values the {{type_name}} itself states. A value the lines only mention in passing,
-        or that belongs to another document in the file, is not its value: report null.
-      - Copy each value exactly as printed in the numbered lines. Never infer, compute, correct or
-        normalise a value, and never use knowledge from outside the text.
-      - For every value you report, give the ids of the line(s) it was copied from.
-      - If a field is not stated in the text, report null with an empty list of line ids.
-      - For list fields, report one entry per item, each copied as printed.
-      Answer only with the JSON object requested.
-    user: |
-      Fields to report:
-      {{fields}}
-
-      Document text (numbered lines, page and line id first):
-      {{lines}}
   # A table no configured layout found (stages/extract/llm_tables.py). The model names lines and figure positions
   # only; code reads every label and figure from the lines it names and rejects what is not there.
   table:
@@ -202,12 +168,3 @@ prompts:
 transactions:
   batch_size: 40
 
-# The second pass (FRD F-08.1, F-08.2): after a file is classified, the other document types of the same
-# category (document_types.json `category`) are looked for in it. A page opens a part of type T when T's own
-# signals are met on that page alone; following pages without signals of their own stay with it. The part
-# counts only when at least `min_key_fields` of T's key fields are read and verified on its pages; its pages
-# then leave the file's classified document.
-siblings:
-  enabled: true
-  page_min_score: 0.5
-  min_key_fields: 1

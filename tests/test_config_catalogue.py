@@ -52,7 +52,7 @@ def test_every_checklist_item_is_satisfied_by_some_document_type(published_data_
 def test_one_version_carries_the_engine_and_the_service_configuration(published_data_root: Path):
     ing = {n: reader.load_ingestion_section(published_data_root, n) for n in writer.INGESTION_SECTIONS}
     assert {d["document_type"] for d in ing["document_types"]["documents"]} == TYPES
-    assert set(ing["signals"]["types"]) == TYPES and "reason_codes" in ing["quality"]
+    assert set(ing["keywords"]["types"]) == TYPES and "reason_codes" in ing["quality"]
     version = reader.published_version(published_data_root)
     assert {f"ingestion.{n}" for n in writer.INGESTION_SECTIONS} <= set(version["section_hashes"])
 

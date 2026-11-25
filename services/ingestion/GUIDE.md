@@ -7,9 +7,9 @@ publishing (`creditiq config publish`): it compiles every regex and checks every
 ## Add a document type
 
 1. **`document_types.json`**: add the type with its `fields` and `tables` (name, type, required).
-2. **`signals.yaml`**: add `required` (all must match), `supporting`, `contrary` regexes. Choose
-   `required` phrases that appear on every document of the kind and rarely elsewhere; put the phrases
-   of look-alikes under `contrary` (a provisional statement against an audited one).
+2. **`keywords.yaml`**: add the type under `types` with its category and `parts`, and each part's title,
+   content and warning phrases (a phrase a look-alike prints, under `warning`). Say how its documents are
+   told apart under `identity` (by period, account or person) and, for a look-alike, which type wins a tie.
 3. **`fields.yaml`**: for each field say where it is printed.
 4. **`validators.yaml`**: name the checks a clerk would make.
 5. Add a fixture with its expected values and run the tests.

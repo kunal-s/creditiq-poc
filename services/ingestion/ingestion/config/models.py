@@ -86,127 +86,6 @@ class DocumentTypesConfig(Strict):
         return {d.document_type for d in self.documents if d.enabled}
 
 
-# --- signals.yaml ------------------------------------------------------------------------------
-
-
-class InstanceRule(Strict):
-    """A file may hold several instances of one type (two directors, eight returns).
-    Either `start` (a page matching it opens a new instance) or `key_pattern` (a page carrying a
-    different value for the key than the instance before it opens a new one; pages without the key
-    stay with the instance they follow). Earlier pages are front matter."""
-
-    start: str | None = None
-    key_pattern: str | None = None  # one capture group: the value that tells instances apart
-    first_key_pattern: str | None = None
-    """Tried before `key_pattern`: when it finds a key on any page it alone splits the file (an identifier printed
-    in every page header is a steadier key than a value that schedules also mention)."""
-    keys: list[str] = Field(default_factory=list)
-    zone: Literal["head", "any"] = "any"
-    """`head`: the start or key counts only in a page's opening lines (`head_lines`), its heading. A statement
-    that names last year's date in its notes or comparative columns then does not open a new instance."""
-    leading: Literal["front_matter", "first"] = "front_matter"
-    """Pages before the first start or key: `front_matter` (a cover sheet), or `first`, part of the first instance
-    (an auditor's report ahead of the statements it reports on)."""
-
-    @model_validator(mode="after")
-    def _one_way(self) -> "InstanceRule":
-        if bool(self.start) == bool(self.key_pattern):
-            raise ValueError("instances: give exactly one of `start` and `key_pattern`")
-        if self.first_key_pattern:
-            if not self.key_pattern:
-                raise ValueError("instances: `first_key_pattern` goes with `key_pattern`")
-            if re.compile(self.first_key_pattern).groups != 1:
-                raise ValueError("instances: first_key_pattern needs exactly one capture group")
-        return self
-
-
-class Required(Strict):
-    """One requirement of a type. It is met when any alternative matches. `zone: head` means the
-    match must be in the opening lines of a page (a title), so a passing mention in the body does not count."""
-
-    any: list[str] = Field(min_length=1)
-    zone: Literal["head", "any"] = "any"
-
-
-class Supporting(Strict):
-    rx: str
-    weight: float = Field(default=1.0, gt=0)
-
-
-class Contrary(Strict):
-    rx: str
-    zone: Literal["head", "any"] = "any"
-
-
-class TypeSignals(Strict):
-    corroboration: float | None = Field(default=None, gt=0)  # supporting weight that counts as full corroboration (default: the section's)
-    required: list[Required] = Field(default_factory=list)
-    supporting: list[Supporting] = Field(default_factory=list)
-    contrary: list[Contrary] = Field(default_factory=list)
-    instances: InstanceRule | None = None
-
-    @model_validator(mode="before")
-    @classmethod
-    def _shorthand(cls, data):
-        if not isinstance(data, dict):
-            return data
-        d = dict(data)
-        d["required"] = [{"any": [x]} if isinstance(x, str) else x for x in d.get("required", [])]
-        d["supporting"] = [{"rx": x} if isinstance(x, str) else x for x in d.get("supporting", [])]
-        d["contrary"] = [{"rx": x} if isinstance(x, str) else x for x in d.get("contrary", [])]
-        return d
-
-
-class Tier2Guard(Strict):
-    """A model's choice of type is accepted only if the document still agrees with that type's own
-    signals: the model never overrides a contrary signal, and the type's required signals must mostly
-    be present. Otherwise the file goes to review with the model's suggestion as a candidate."""
-
-    block_on_contrary: bool = True
-    min_required_fraction: float = 0.5
-
-
-_MACRO = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)\}")
-
-
-class SignalsConfig(Strict):
-    tier1_margin: float = 0.2
-    classify_threshold: float = 0.6
-    tier2_confidence: float = 0.7
-    tier2_guard: Tier2Guard = Field(default_factory=Tier2Guard)
-    corroboration: float = Field(default=3.0, gt=0)  # supporting weight that counts as full corroboration
-    signal_pages: int = 20      # non-blank pages read for classification
-    head_lines: int = 6         # the opening lines of a page that count as its title zone
-    mixed_content_check: bool = True
-    mixed_min_score: float = 0.75
-    patterns: dict[str, str] = Field(default_factory=dict)  # named fragments, used as {NAME} inside any signal
-    types: dict[str, TypeSignals]
-
-    @model_validator(mode="after")
-    def _expand_patterns(self) -> "SignalsConfig":
-        """Named fragments (a PAN, a GSTIN) are written once and expanded here, so the matching code
-        only ever sees plain regular expressions."""
-        def sub(rx: str, where: str) -> str:
-            def one(m: re.Match) -> str:
-                if m[1] not in self.patterns:
-                    raise ValueError(f"{where}: unknown pattern {{{m[1]}}}")
-                return f"(?:{self.patterns[m[1]]})"
-            return _MACRO.sub(one, rx)
-
-        for tid, ts in self.types.items():
-            for r in ts.required:
-                r.any = [sub(x, f"signals.{tid}.required") for x in r.any]
-            for x in ts.supporting:
-                x.rx = sub(x.rx, f"signals.{tid}.supporting")
-            for x in ts.contrary:
-                x.rx = sub(x.rx, f"signals.{tid}.contrary")
-            if ts.instances:
-                i = ts.instances
-                i.start = sub(i.start, f"signals.{tid}.instances") if i.start else None
-                i.key_pattern = sub(i.key_pattern, f"signals.{tid}.instances") if i.key_pattern else None
-        return self
-
-
 # --- fields.yaml -------------------------------------------------------------------------------
 
 
@@ -714,9 +593,8 @@ class TransactionsLlm(Strict):
 
 
 class SiblingsConfig(Strict):
-    """The second pass (FRD F-08.1, F-08.2): the other document types of the classified type's category,
-    looked for in the same file. A type counts as present only where a page carries its own signals and
-    its key fields are read and verified on those pages."""
+    """No longer read: every page is typed on its own (F-09, decision 14), so a document of another type inside a
+    file is found by its pages. Accepted so that versions published with it still load."""
 
     enabled: bool = True
     page_min_score: float = Field(default=0.5, ge=0.0, le=1.0)
@@ -970,6 +848,8 @@ class KwScoring(Strict):
     """A type lacking a part it needs (a return without its computation) keeps this share of its score."""
     subsumed_factor: float = Field(default=0.5, ge=0, le=1)
     """A type all of whose parts another eligible type has keeps this share of its score."""
+    model_confidence: float = Field(default=0.7, ge=0, le=1)
+    """The confidence a document carries when the model placed its pages (it has no keyword score of its own)."""
 
 
 class KwMatching(Strict):
@@ -982,9 +862,9 @@ class KwMatching(Strict):
 
 
 class KwSettings(Strict):
-    classifier: Literal["keywords", "signals"] = "signals"
-    """Which scorer types documents: the keyword lists here, or the patterns of signals.yaml (kept until the
-    page typing of Epic 3 passes)."""
+    classifier: str | None = None
+    """No longer read: documents are always typed by the keyword lists. Accepted so that versions published with
+    the switch still load."""
     zones: KwZones
     zone_weights: dict[Literal["title", "footer"], float]
     full: float = Field(gt=0)
@@ -1013,7 +893,6 @@ class IngestionConfig(Strict):
     version: str
     hash: str
     document_types: DocumentTypesConfig
-    signals: SignalsConfig
     fields: FieldsConfig
     validators: ValidatorsConfig
     quality: QualityConfig
@@ -1022,42 +901,14 @@ class IngestionConfig(Strict):
     llm: LlmConfig
     confidence: ConfidenceConfig
     decision: DecisionConfig
-    keywords: KeywordsConfig | None = None
-    """Absent in a version published before keywords.yaml existed: that version types documents by its signals."""
-
-    def uses_keywords(self) -> bool:
-        return self.keywords is not None and self.keywords.settings.classifier == "keywords"
+    keywords: KeywordsConfig
+    """How pages are typed and documents told apart (F-09, decision 14)."""
 
     def check_consistency(self) -> list[str]:
         """Cross-section checks run at publish: every reference points at something real."""
         problems: list[str] = []
         types = self.document_types.by_id()
-        if self.keywords is not None:
-            problems += self._check_keywords(set(types))
-        for tid in types:
-            if tid not in self.signals.types:
-                problems.append(f"signals: no entry for document type {tid}")
-        for tid, ts in self.signals.types.items():
-            if tid not in types:
-                problems.append(f"signals: unknown document type {tid}")
-            for r in ts.required:
-                for rx in r.any:
-                    _compile(rx, f"signals.{tid}.required", problems)
-            for x in (*ts.supporting, *ts.contrary):
-                _compile(x.rx, f"signals.{tid}", problems)
-            if ts.instances:
-                for label, rx in (("start", ts.instances.start), ("key_pattern", ts.instances.key_pattern)):
-                    if rx:
-                        _compile(rx, f"signals.{tid}.instances.{label}", problems)
-                if ts.instances.key_pattern:
-                    try:
-                        if re.compile(ts.instances.key_pattern).groups != 1:
-                            problems.append(f"signals.{tid}.instances.key_pattern: needs exactly one capture group")
-                    except re.error:
-                        pass  # already reported by _compile
-                for k in ts.instances.keys:
-                    if tid in types and k not in {f.name for f in types[tid].schema_.fields}:
-                        problems.append(f"signals.{tid}.instances.keys: unknown field {k}")
+        problems += self._check_keywords(set(types))
         from ..stages.extract.identifiers import PATTERNS as IDENTIFIER_PATTERNS
         for gname, grule in self.fields.required_fields.items():
             where = f"fields.required_fields.{gname}"
@@ -1130,8 +981,7 @@ class IngestionConfig(Strict):
             for t in r.types:
                 if t not in types:
                     problems.append(f"validators.{r.id}: unknown type {t}")
-        for name in ("classify", "extract", "sibling", "transactions", "discover",
-                     *(("classify_page", "period") if self.uses_keywords() else ())):
+        for name in ("extract", "transactions", "discover", "classify_page", "period"):
             if name not in self.llm.prompts:
                 problems.append(f"llm.prompts: missing '{name}'")
         for rx in self.routing.reading.boilerplate:

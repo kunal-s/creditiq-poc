@@ -304,6 +304,14 @@ def _ask(cfg: IngestionConfig, page: Page, model: ModelClient) -> dict:
     return {"type": t if t in ids else None, "reason": str(ans.get("reason", ""))[:300]}
 
 
+def assigned(cfg: IngestionConfig, pages: list[Page], type_id: str) -> PageTyping:
+    """Every page typed as the type a person gave the file (F-09.5): its documents are then split by period, account or
+    person like any other (stages/identity.py)."""
+    secs = {p.no: [Section(p.no, p.content_lines(), False, [type_id], "person", 1.0, [(type_id, 1.0)])]
+            for p in pages if not p.blank}
+    return PageTyping(secs, [], [{"assigned": type_id}], cfg)
+
+
 def documents(typing: PageTyping, pages: list[Page]) -> tuple[list[tuple[str, list[Page]]], list[list[int]]]:
     """(type, pages) for each run of consecutive non-blank pages carrying one type, in page order; and the runs of
     pages left unplaced."""

@@ -46,7 +46,7 @@ def _load_yaml(path: Path) -> dict:
 
 
 INGESTION_SECTIONS = {
-    "document_types": "document_types.json", "signals": "signals.yaml", "fields": "fields.yaml", "validators": "validators.yaml",
+    "document_types": "document_types.json", "fields": "fields.yaml", "validators": "validators.yaml",
     "quality": "quality.yaml", "routing": "routing.yaml", "llm": "llm.yaml", "confidence": "confidence.yaml", "decision": "decision.yaml",
     "integrity": "integrity.yaml",  # F-07A
     "keywords": "keywords.yaml",    # page typing by keywords (decision 14)

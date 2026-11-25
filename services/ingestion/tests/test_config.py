@@ -66,7 +66,7 @@ def _edited(tmp_path, fname, fn):
 
 
 def test_bad_regex_is_rejected_at_load(tmp_path):
-    d = _edited(tmp_path, "signals.yaml", lambda x: x["types"]["company_pan"]["required"].append("(unclosed"))
+    d = _edited(tmp_path, "routing.yaml", lambda x: x["reading"]["boilerplate"].append("(unclosed"))
     with pytest.raises(ConfigError, match="bad regex"):
         load_dir(d)
 
@@ -89,8 +89,8 @@ def test_weights_must_sum_to_one(tmp_path):
         load_dir(d)
 
 
-def test_a_type_without_signals_is_rejected(tmp_path):
-    d = _edited(tmp_path, "signals.yaml", lambda x: x["types"].pop("gstr_3b"))
+def test_a_type_without_keywords_is_rejected(tmp_path):
+    d = _edited(tmp_path, "keywords.yaml", lambda x: x["types"].pop("gstr_3b"))
     with pytest.raises(ConfigError, match="no entry for document type gstr_3b"):
         load_dir(d)
 
@@ -128,13 +128,7 @@ def test_an_unknown_identifier_format_or_normaliser_is_rejected(tmp_path, change
         load_dir(d)
 
 
-def test_the_second_pass_prompt_is_required(tmp_path):
-    d = _edited(tmp_path, "llm.yaml", lambda x: x["prompts"].pop("sibling"))
-    with pytest.raises(ConfigError, match="missing 'sibling'"):
-        load_dir(d)
-
-
-def test_the_second_pass_settings_are_checked(tmp_path):
-    d = _edited(tmp_path, "llm.yaml", lambda x: x["siblings"].update(min_key_fields=0))
-    with pytest.raises(ConfigError):
+def test_the_page_prompt_is_required(tmp_path):
+    d = _edited(tmp_path, "llm.yaml", lambda x: x["prompts"].pop("classify_page"))
+    with pytest.raises(ConfigError, match="missing 'classify_page'"):
         load_dir(d)

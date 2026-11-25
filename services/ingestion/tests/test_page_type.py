@@ -27,3 +27,17 @@ def test_one_page_is_read_as_the_type_a_person_gave_it(cfg):
 def test_pages_the_file_does_not_have_are_refused(cfg):
     r = read(cfg, assigned_type="audited_financial_statements", pages=[99])
     assert r.status == "rejected" and r.reject.code == "no_such_pages"
+
+
+def test_a_file_a_person_gives_a_type_is_split_by_period_like_any_other(cfg):
+    """Every page typed as the type the person gave; the returns of two years stay two documents (F-09.5)."""
+    data = fixture_doc("Southgate_ITR_FY2024_FY2025.pdf")
+    name = "Southgate_ITR_FY2024_FY2025.pdf"
+    own = Ingestor(cfg, Store(), None, None).process_file(
+        "C", FileSpec(file_id="f1", sha256=sha256_hex(data), original_name=name, content_type="application/pdf"), data)
+    given = Ingestor(cfg, Store(), None, None).process_file(
+        "C", FileSpec(file_id="f1", sha256=sha256_hex(data), original_name=name, content_type="application/pdf",
+                      assigned_type="income_tax_return"), data)
+    assert given.classification.tier == "person"
+    keys = lambda r: sorted(d.instance_key or "" for d in r.documents if d.document_type == "income_tax_return")
+    assert len(keys(given)) == 2 and keys(given) == keys(own)

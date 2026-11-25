@@ -32,7 +32,6 @@
 # A page takes a part when the part's score reaches `page_threshold` and leads the next part by `margin`.
 
 settings:
-  classifier: keywords       # keywords | signals: which scorer types documents (signals.yaml until Epic 3 passes)
   model_guard_min_score: 0.2 # the model's choice stands only when the document shows this much of that type's words
   zones:
     header_band: 0.12        # top share of the page height

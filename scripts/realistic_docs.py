@@ -7,7 +7,7 @@ Never reproduced (CLAUDE.md rule 8): the national or state emblem, any seal or s
 watermarks, digital-signature boxes and signature images. A signatory line reads "Sd/-". Every page carries the
 one-line footer. Every name and number is fictional; the fictional lenders, bureau and analytics firm are not real.
 
-Where the app reads a table or a field by its label (config/ingestion/fields.yaml, signals.yaml), the realistic
+Where the app reads a table or a field by its label (config/ingestion/fields.yaml, keywords.yaml), the realistic
 layout keeps the label the real documents use; where real issuers word it differently (bank statement columns), the
 wording chosen is one real banks use that the app reads, and the README says so.
 """

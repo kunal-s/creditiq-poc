@@ -95,13 +95,12 @@ def test_a_commercial_bureau_report_is_recognised_and_read(shipped):
     (lambda: docgen.bureau_report([("Tidewater Finance Limited", "Term loan", "1,20,00,000", "75,00,000", "0", "Standard")], []),
      "commercial_bureau_report"),
 ])
-def test_each_new_type_is_placed_by_its_own_signals_with_a_clear_margin(shipped, build, expected):
+def test_each_new_type_is_placed_by_its_own_keywords_on_every_page(shipped, build, expected):
     r = _read(shipped, "file.pdf", build())
     c = r.classification
     assert c.type == expected and c.candidates[0].type == expected
-    # No other type, old or new, comes close or claims a page.
-    assert c.candidates[1].score <= c.confidence - shipped.signals.tier1_margin
-    assert c.mixed_content == []
+    # Every page is placed as that type, and none as any other.
+    assert all(p.types == [expected] for p in r.pages) and r.unplaced == []
 
 
 def test_fields_the_documents_print_need_no_model(shipped):

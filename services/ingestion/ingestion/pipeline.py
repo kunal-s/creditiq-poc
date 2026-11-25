@@ -18,12 +18,9 @@ from .llm.calllog import call_context
 from .llm.recorder import ModelClient
 from .pageindex import Page
 from .readers.ocr import OcrEngine
-from .stages import classify as classify_stage
-from .stages import instances as instances_stage
 from .stages import identity as identity_stage
 from .stages import pages as pages_stage
 from .stages import route as route_stage
-from .stages import siblings as siblings_stage
 from .stages.extract.run import extract_case_type, extract_instance
 from .integrity.locate import locate as locate_on_pages
 from .integrity.locate import place_objects
@@ -68,7 +65,7 @@ def _unit_classification(cfg: IngestionConfig, typing, doc_type: str, pages: lis
     for x in secs:
         how[x.placed_by or "?"] = how.get(x.placed_by or "?", 0) + 1
     by_model = how.get("model", 0) > 0
-    conf = best.score if best and best.placed_by in ("keywords", "all_types") else cfg.signals.tier2_confidence
+    conf = best.score if best and best.placed_by in ("keywords", "all_types") else cfg.keywords.settings.scoring.model_confidence
     return {"type": doc_type, "confidence": round(conf, 4), "tier": "model" if by_model else "signals",
             "signals": best.signals if best else {}, "needs_review": False,
             # The document's own type first, then the other guesses its strongest page had.
@@ -295,19 +292,19 @@ class Ingestor:
             person = {"type": spec.assigned_type, "confidence": 1.0, "tier": "person", "signals": {}, "needs_review": False, "mixed_content": [],
                       "candidates": [{"type": spec.assigned_type, "score": 1.0}], "reason": "assigned by a person"}
             cls = self._timed(tr, "classify", lambda: (person, person))
+            typing = pages_stage.assigned(cfg, pages, spec.assigned_type)
+            runs, unplaced = pages_stage.documents(typing, pages)
         elif spec.case_type:
             ct = spec.case_type
             person = {"type": ct.id, "confidence": 1.0, "tier": "person", "signals": {}, "needs_review": False, "mixed_content": [],
                       "candidates": [{"type": ct.id, "score": 1.0}], "reason": "a case document type assigned by a person"}
             cls = self._timed(tr, "classify", lambda: (person, person))
-        elif cfg.uses_keywords():
+        else:
             # Each page, and each section a title opens, typed by the keyword lists (F-09, decision 14).
             typing = self._timed(tr, "classify", lambda: ((t := pages_stage.type_pages(cfg, pages, self.model)), {
                 "categories": t.categories, "pages": {no: t.page_info(no) for no in t.pages}, "trace": t.trace}))
             runs, unplaced = pages_stage.documents(typing, pages)
             cls = _file_classification(cfg, typing, runs, unplaced)
-        else:
-            cls = self._timed(tr, "classify", lambda: ((c := classify_stage.classify(cfg, pages, self.model)), c))
         self.store.save_classification(run_id, cls)
         # F-07A phase 2: what each page draws, now that the pages are read (a
         # page read by OCR has no text of its own) and the type is known.
@@ -330,34 +327,7 @@ class Ingestor:
             _integrity_reason(integrity, reasons)
             return FileResult(**common, decision="reject" if grade == "U" else "human_review", review_reasons=reasons,
                               unplaced=_unplaced(typing, unplaced) if typing else [], trace=tr.entries)
-        if typing is not None:
-            return self._typed_pages(cfg, run_id, pages, typing, runs, unplaced, integrity, common, carry, tr)
-
-        # F-08.1/F-08.2: the other documents of the same category in this file. Found before the file's own
-        # document is read, so each document is read on its own pages only (principle 7).
-        found = self._timed(tr, "siblings", lambda: ((r := siblings_stage.find(cfg, cls["type"], pages, self.model)), r.to_json()))
-        own_pages = [p for p in pages if p.no not in found.taken]
-        front, groups = self._timed(tr, "instances", lambda: ((r := instances_stage.split_instances(cfg, cls["type"], own_pages)), {"front_matter": r[0], "instances": [[p.no for p in g] for g in r[1]]}))
-        by_no = {p.no: p for p in pages}
-        extracted = []
-        for n, ipages in enumerate(groups, start=1):
-            extracted.append(extract_instance(cfg, cls["type"], ipages, self.model))
-        self._timed(tr, "extract", lambda: (None, [{"fields": e["fields"], "tables": {k: {**t, "rows": len(t["rows"])} for k, t in e["tables"].items()}, "trace": e["trace"]} for e in extracted]))
-
-        checks_all = [validate_instance(cfg, cls["type"], g, e["fields"], e["tables"]) for g, e in zip(groups, extracted)]
-        self._timed(tr, "validate", lambda: (None, checks_all))
-        # F-07A: whether the printed figures add up, now that they are read.
-        integrity = self._timed(tr, "integrity_arithmetic", lambda: (
-            (i := run_integrity_arithmetic(integrity, cfg.integrity, cls["type"], pages, extracted)), i.to_json()))
-        common.update(integrity=integrity.findings, integrity_recommendation=integrity.recommendation["code"])
-        carry["integrity"] = integrity.findings
-        carry["integrity_recommendation"] = integrity.recommendation["code"]
-
-        # A page another type showed outright is no longer mixed content once a part found here holds it.
-        own_cls = {**cls, "mixed_content": [m for m in cls.get("mixed_content") or [] if m["page"] not in found.taken]}
-        units = [(ipages, e, checks, own_cls, "classified") for ipages, e, checks in zip(groups, extracted, checks_all)]
-        units += [(part.pages, part.extracted, part.checks, part.classification, "sibling") for part in found.parts]
-        return self._assemble(cfg, run_id, by_no, units, front, integrity, common, tr)
+        return self._typed_pages(cfg, run_id, pages, typing, runs, unplaced, integrity, common, carry, tr)
 
     def _assemble(self, cfg: IngestionConfig, run_id: str, by_no: dict, units: list, front: list[int], integrity, common: dict,
                   tr: _Trace, extra_reasons: list[dict] | None = None, unplaced: list[dict] | None = None) -> FileResult:
@@ -367,7 +337,6 @@ class Ingestor:
         for n, (ipages, e, checks, ucls, origin, *rest) in enumerate(units, start=1):
             ident = rest[0] if rest else None
             utype = ucls["type"]
-            rule = cfg.signals.types[utype].instances
             fields = {k: score_field(cfg, k, f, ucls["confidence"], by_no, checks) for k, f in e["fields"].items()}
             tables = {k: score_table(cfg, k, t, by_no, checks) for k, t in e["tables"].items()}
             igrade = document_grade(ipages)
@@ -384,8 +353,6 @@ class Ingestor:
                 if ident.status in ("not_found", "conflict"):
                     conf = {**conf, "decision": max(conf["decision"], "human_review", key=RANK.get),
                             "reasons": [*conf["reasons"], {"kind": f"period_{ident.status}", "detail": ident.note}]}
-            elif rule and rule.keys:
-                key = " | ".join(str(fields[k]["value"] or fields[k]["raw_text"]) for k in rule.keys if fields[k]["status"] == "found") or None
             tf = cfg.fields.types.get(utype)
             identity = {}
             for ikey, fname in (tf.identity if tf else {}).items():

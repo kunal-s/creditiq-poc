@@ -88,23 +88,6 @@ def test_itr_figures_are_checked_against_each_other(cfg):
     assert get(wrong_years, "itr_years_consecutive")["outcome"] == "fail"
 
 
-def test_a_header_identifier_keeps_one_return_whole_when_schedules_mention_other_years(cfg):
-    """A schedule that mentions "assessment year 2025-26" inside a 2024-25 return must not open a second instance."""
-    from types import SimpleNamespace
-
-    from ingestion.stages.instances import split_instances
-
-    def pg(no, body):
-        return SimpleNamespace(no=no, blank=False, text=lambda b=body: b)
-
-    head = "Acknowledgement Number : 633495911241125   Date of Filing : 13-Dec-2025\n"
-    pages = [pg(1, head + "INDIAN INCOME TAX RETURN Assessment Year 2025-26"),
-             pg(2, head + "Tax under section 115JB in assessment year 2024-25"),
-             pg(3, head + "Schedule MATC assessment year 2025-26")]
-    front, groups = split_instances(cfg, "income_tax_return", pages)
-    assert front == [] and [[p.no for p in g] for g in groups] == [[1, 2, 3]]
-
-
 def test_every_type_is_read_by_the_model_first_and_every_model_field_has_a_hint(cfg):
     """The published configuration reads every type model-first; a field the model reads says where it is printed.
     Identifier fields stay rule-based, and `llm: false` fields are never given to the model."""

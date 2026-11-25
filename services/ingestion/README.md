@@ -5,15 +5,15 @@ into instances, extracts the fields and tables of the document type's schema wit
 validates them and scores confidence. FRD F-07 to F-09, F-11, F-15 (decision AD-2a).
 
 ```
-upload → 1 quality gate → 2 read + route → 3 classify → 3b instances → 4 extract → 5 validate → 6 confidence
+upload → 1 quality gate → 2 read + route → 3 type each page → 3b documents and their identity → 4 extract → 5 validate → 6 confidence
 ```
 
 | Stage | What it does | Configured by |
 |---|---|---|
 | 1 Quality gate | size, type by content, encrypted, corrupt, page cap; reject with a plain re-scan request | `quality.yaml` |
 | 2 Read + route | text layer (pdfplumber), OCR for scans and photos (PaddleOCR), cells for spreadsheets; word index with boxes; grade A/B/C/U per page | `routing.yaml`, `quality.yaml` |
-| 3 Classify | tier 1 signals; tier 2 the model chooses from the closed list or `none_of_these`; the file name is never read | `signals.yaml`, `llm.yaml` |
-| 3b Instances | a file may hold several of one type (two directors, eight returns); a page matching `start` opens one | `signals.yaml` |
+| 3 Type each page | category, then each page (and each section a title opens) by keyword score over its title, body and footer; neighbours fill gaps; the model for pages still unplaced; a page may carry two types; the file name is never read | `keywords.yaml`, `llm.yaml` |
+| 3b Documents | runs of pages of one type, split by period, account or person (two directors, eight returns); a page a person gives a type is read as that type | `keywords.yaml` |
 | 4 Extract | identifier, label alias, pattern; the model fills only what is left, and every value is verified on its cited lines; tables from word positions | `fields.yaml`, `document_types.json`, `llm.yaml` |
 | 5 Validate | format and checksum, cross-field and table rules; reports, never edits | `validators.yaml`, `fields.yaml` |
 | 6 Confidence | `min(caps) × Σ weight × component`; decision `auto_accept` / `human_review` / `reject` | `confidence.yaml`, `decision.yaml` |

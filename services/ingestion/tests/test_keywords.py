@@ -1,13 +1,13 @@
 """Page typing by keywords (Epic 2 of the classification restructure, FRD F-09, decision 14; keywords.yaml).
 
-Scenarios 1 to 4 of the plan, the matching and zone rules, the configuration check, and the switch back to signals."""
+Scenarios 1 to 4 of the plan, the matching and zone rules, and the configuration check."""
 
 import pytest
 
 from ingestion.config.models import KwEntry, KwPart
 from ingestion.pageindex import Page, Word, build_lines
 from ingestion.stages import keywords as K
-from ingestion.stages.classify import classify
+from ingestion.stages import pages as pages_stage
 
 
 def page(no: int, *lines, height: float = 800) -> Page:
@@ -28,12 +28,13 @@ def page(no: int, *lines, height: float = 800) -> Page:
 
 
 def kind(cfg, *pages):
-    return classify(cfg, list(pages), None)["type"]
+    """The type the pages are read as: the one placed on most of them, or None where none is placed."""
+    runs, _ = pages_stage.documents(pages_stage.type_pages(cfg, list(pages), None), list(pages))
+    return max(runs, key=lambda r: len(r[1]))[0] if runs else None
 
 
 @pytest.fixture(scope="module")
 def kcfg(cfg):
-    assert cfg.uses_keywords(), "the published lists type documents (keywords.yaml settings.classifier)"
     return cfg
 
 
@@ -142,18 +143,6 @@ def test_adding_a_keyword_places_a_missed_page_with_no_code_change(kcfg):
     fixed.keywords.parts["stock_statement"].title.append(KwEntry(phrase="inventory and receivables position"))
     q = page(1, ("Inventory and Receivables Position", 14.0, True), "Item A 1,86,42,300", "Item B 1,80,69,000")
     assert kind(fixed, q) == "stock_statement"
-
-
-def test_the_signals_still_type_documents_when_the_switch_says_so(kcfg):
-    from .conftest import fixture_doc
-    from ingestion.stages.read import read_document
-    old = kcfg.model_copy(deep=True)
-    old.keywords.settings.classifier = "signals"
-    assert not old.uses_keywords()
-    pages = read_document(fixture_doc("Southgate_Audited_FS_FY2025.pdf"), "pdf", old.quality, old.routing, None)
-    a, b = classify(old, pages, None), classify(kcfg, pages, None)
-    assert a["type"] == b["type"] == "audited_financial_statements"
-    assert "part" not in a["signals"] and b["signals"]["part"]
 
 
 def test_a_part_that_needs_its_title_scores_nothing_without_it(kcfg):

@@ -11,12 +11,11 @@ import yaml
 from ..util import hash_of
 from .models import (
     ConfidenceConfig, DecisionConfig, DocumentTypesConfig, FieldsConfig, IngestionConfig, KeywordsConfig, LlmConfig,
-    IntegrityConfig, QualityConfig, RoutingConfig, SignalsConfig, ValidatorsConfig,
+    IntegrityConfig, QualityConfig, RoutingConfig, ValidatorsConfig,
 )
 
 FILES = {
     "document_types": "document_types.json",
-    "signals": "signals.yaml",
     "fields": "fields.yaml",
     "validators": "validators.yaml",
     "quality": "quality.yaml",
@@ -25,9 +24,9 @@ FILES = {
     "llm": "llm.yaml",
     "confidence": "confidence.yaml",
     "decision": "decision.yaml",
-    "keywords": "keywords.yaml",   # optional: a version published before it existed types by signals
+    "keywords": "keywords.yaml",
 }
-OPTIONAL = {"keywords"}
+OPTIONAL: set[str] = set()
 
 
 class ConfigError(ValueError):
@@ -70,7 +69,6 @@ def _build(raw: dict, version: str) -> IngestionConfig:
         cfg = IngestionConfig(
             version=version, hash=h,
             document_types=DocumentTypesConfig.model_validate(raw["document_types"]),
-            signals=SignalsConfig.model_validate(raw["signals"]),
             fields=FieldsConfig.model_validate(raw["fields"]),
             validators=ValidatorsConfig.model_validate(raw["validators"]),
             quality=QualityConfig.model_validate(raw["quality"]),
@@ -79,7 +77,7 @@ def _build(raw: dict, version: str) -> IngestionConfig:
             llm=LlmConfig.model_validate(raw["llm"]),
             confidence=ConfidenceConfig.model_validate(raw["confidence"]),
             decision=DecisionConfig.model_validate(raw["decision"]),
-            keywords=KeywordsConfig.model_validate(raw["keywords"]) if raw.get("keywords") else None,
+            keywords=KeywordsConfig.model_validate(raw["keywords"]),
         )
     except Exception as e:  # pydantic's message already names the section and key
         raise ConfigError(str(e)) from e

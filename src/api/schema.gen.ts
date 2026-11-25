@@ -722,6 +722,48 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/cases/{case_id}/documents/{document_id}/pages/{page}/type": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Retype Document Page
+     * @description Story 7.2: read one page of a document as another type, in a document of its own; the document it came from
+     *     is read again without it. Recorded with the reason; the reading runs as a job.
+     */
+    post: operations["retype_document_page_api_cases__case_id__documents__document_id__pages__page__type_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/cases/{case_id}/documents/{document_id}/period": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Set Document Period
+     * @description Story 7.2: the period a document covers, as a person reads it from the document, where none was found or its
+     *     title and its columns disagree. Recorded with the reason and what was there before; the checks run again.
+     */
+    put: operations["set_document_period_api_cases__case_id__documents__document_id__period_put"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/cases/{case_id}/facts": {
     parameters: {
       query?: never;
@@ -3174,6 +3216,11 @@ export interface components {
       /** Version */
       version: string;
     };
+    /** CorrectionQueued */
+    CorrectionQueued: {
+      /** Job Id */
+      job_id?: string | null;
+    };
     /**
      * CoverageRule
      * @description What "complete" means for an item beyond presence (F-13.2), always
@@ -3321,6 +3368,25 @@ export interface components {
       id: "rupee" | "thousand" | "lakh" | "crore";
       /** Label */
       label: string;
+    };
+    /**
+     * DocumentPeriod
+     * @description The period a document covers (decision 14): as read from its own pages, or as a person set it (Story 7.2).
+     */
+    DocumentPeriod: {
+      /** End */
+      end?: string | null;
+      /** Note */
+      note?: string | null;
+      /** Source */
+      source?: string | null;
+      /** Start */
+      start?: string | null;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "found" | "derived" | "conflict" | "not_found" | "none" | "set";
     };
     /** DocumentTypeDef */
     DocumentTypeDef: {
@@ -3731,7 +3797,7 @@ export interface components {
        * @default configured
        * @enum {string}
        */
-      origin: "configured" | "named" | "discovered" | "gap";
+      origin: "configured" | "named" | "discovered" | "gap" | "leftover" | "sweep";
       /** Raw */
       raw?: string | null;
       /**
@@ -4372,6 +4438,7 @@ export interface components {
       pages: components["schemas"]["PageInfo"][];
       /** Party Id */
       party_id?: string | null;
+      period?: components["schemas"]["DocumentPeriod"] | null;
       /**
        * Status
        * @enum {string}
@@ -4903,6 +4970,16 @@ export interface components {
       route: "text" | "ocr" | "sheet";
     };
     /**
+     * PageTypeRequest
+     * @description Read one page of a document as another type, in a document of its own.
+     */
+    PageTypeRequest: {
+      /** Reason */
+      reason: string;
+      /** Type Id */
+      type_id: string;
+    };
+    /**
      * Party
      * @description A person or entity on the case: director, partner, proprietor,
      *     guarantor or the borrower itself (F-10.2).
@@ -5100,6 +5177,18 @@ export interface components {
       question_ids: string[];
       /** Title */
       title: string;
+    };
+    /**
+     * PeriodRequest
+     * @description The period a document covers, as a person reads it from the document: an ISO date range.
+     */
+    PeriodRequest: {
+      /** End */
+      end: string;
+      /** Reason */
+      reason: string;
+      /** Start */
+      start: string;
     };
     /**
      * PersonEntry
@@ -7922,6 +8011,83 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  retype_document_page_api_cases__case_id__documents__document_id__pages__page__type_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+        document_id: string;
+        page: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PageTypeRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CorrectionQueued"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  set_document_period_api_cases__case_id__documents__document_id__period_put: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path: {
+        case_id: string;
+        document_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PeriodRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CorrectionQueued"];
+        };
       };
       /** @description Validation Error */
       422: {

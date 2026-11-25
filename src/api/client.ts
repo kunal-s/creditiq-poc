@@ -236,6 +236,18 @@ export const api = {
     });
   },
   caseDocuments: (id: string) => request<LogicalDocument[]>(`/api/cases/${q(id)}/documents`),
+  /** Read one page of a document as another type, in a document of its own (recorded with the reason). */
+  retypePage: (id: string, documentId: string, page: number, typeId: string, reason: string) =>
+    request<{ job_id?: string | null }>(
+      `/api/cases/${q(id)}/documents/${q(documentId)}/pages/${page}/type`,
+      { method: "POST", body: JSON.stringify({ type_id: typeId, reason }) },
+    ),
+  /** Set the period a document covers (recorded with the reason and what was there before). */
+  setDocumentPeriod: (id: string, documentId: string, start: string, end: string, reason: string) =>
+    request<{ job_id?: string | null }>(`/api/cases/${q(id)}/documents/${q(documentId)}/period`, {
+      method: "PUT",
+      body: JSON.stringify({ start, end, reason }),
+    }),
   /** The rendered page image (PNG); `page` is the absolute page in the source file. */
   pageImage: async (id: string, documentId: string, page: number) => {
     const response = await send(`/api/cases/${q(id)}/documents/${q(documentId)}/pages/${page}`);

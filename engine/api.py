@@ -35,6 +35,7 @@ from . import (
     cam_review,
     cam_templates,
     case_types,
+    corrections,
     extra_data,
     keys,
     outbox,
@@ -77,6 +78,7 @@ from .config import (
 from .configstore import reader as configstore_reader
 from .configstore.schema import ApprovalMatrixSection, ChecklistTaxonomySection, DocumentTypesSection, PolicySection
 from .contracts.case import CreateCaseRequest
+from .contracts.corrections import CorrectionQueued, PageTypeRequest, PeriodRequest
 from .contracts.extra import AdditionalInformation
 from .contracts.ingest import IngestIntegrityFigure
 from .contracts import (
@@ -1177,6 +1179,43 @@ async def replace_file(
             conn.close()
 
     return await run_in_threadpool(register)
+
+
+@app.post("/api/cases/{case_id}/documents/{document_id}/pages/{page}/type", response_model=CorrectionQueued)
+def retype_document_page(
+    case_id: str,
+    document_id: str,
+    page: int,
+    body: PageTypeRequest,
+    user: dict = Depends(require("review.decide")),
+    conn: sqlite3.Connection = Depends(get_conn),
+):
+    """Story 7.2: read one page of a document as another type, in a document of its own; the document it came from
+    is read again without it. Recorded with the reason; the reading runs as a job."""
+    _case_for(conn, case_id, user)
+    try:
+        return CorrectionQueued(job_id=corrections.retype_page(conn, data_root(), case_id, document_id, page,
+                                                               body.type_id, body.reason, user["id"]))
+    except corrections.CorrectionError as e:
+        raise HTTPException(status_code=e.status, detail=str(e)) from e
+
+
+@app.put("/api/cases/{case_id}/documents/{document_id}/period", response_model=CorrectionQueued)
+def set_document_period(
+    case_id: str,
+    document_id: str,
+    body: PeriodRequest,
+    user: dict = Depends(require("review.decide")),
+    conn: sqlite3.Connection = Depends(get_conn),
+):
+    """Story 7.2: the period a document covers, as a person reads it from the document, where none was found or its
+    title and its columns disagree. Recorded with the reason and what was there before; the checks run again."""
+    _case_for(conn, case_id, user)
+    try:
+        corrections.set_period(conn, data_root(), case_id, document_id, body.start, body.end, body.reason, user["id"])
+    except corrections.CorrectionError as e:
+        raise HTTPException(status_code=e.status, detail=str(e)) from e
+    return CorrectionQueued()
 
 
 @app.get("/api/cases/{case_id}/documents/{document_id}/pages/{page}", response_class=Response)

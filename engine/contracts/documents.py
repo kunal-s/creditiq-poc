@@ -150,6 +150,20 @@ class Classification(BaseModel):
     document's own words matched no type well enough. None once classified."""
 
 
+class DocumentPeriod(BaseModel):
+    """The period a document covers (decision 14): as read from its own pages, or as a person set it (Story 7.2)."""
+
+    start: str | None = None
+    end: str | None = None
+    status: Literal["found", "derived", "conflict", "not_found", "none", "set"]
+    """found; derived (from its rows); conflict (its title and its columns disagree); not_found; none (its type has no
+    period); set (by a person)."""
+    source: str | None = None
+    """Where it was read (title, footer, body, columns, rows, model), or person."""
+    note: str | None = None
+    """What the reading noted, or the reason a person gave."""
+
+
 class LogicalDocument(BaseModel):
     """One logical document: a file and a page range (F-08)."""
 
@@ -168,6 +182,7 @@ class LogicalDocument(BaseModel):
     duplicate_of: str | None = None
     label_mismatch: bool = False
     config_version: str | None = None
+    period: DocumentPeriod | None = None
 
 
 FieldMethod = Literal["deterministic", "model", "manual", "person"]
@@ -192,9 +207,11 @@ class FieldValue(BaseModel):
     status: FieldStatus
     missing_reason: str | None = None
     corrected_value: Scalar = None
-    origin: Literal["configured", "named", "discovered", "gap"] = "configured"
+    origin: Literal["configured", "named", "discovered", "gap", "leftover", "sweep"] = "configured"
     """Where the field came from: the published type's schema, a field a person named for a case
-    document type, or a field the model proposed for one (F-15.8; held for review, F-17.7)."""
+    document type, or a field the model proposed for one (F-15.8; held for review, F-17.7); or a required
+    field of the case found on this document's page after its own documents left it empty (Epic 6:
+    leftover, sweep; held for review)."""
     label: str | None = None
     """The document's own label for a discovered field."""
     fills_gap: bool = False

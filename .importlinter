@@ -32,6 +32,7 @@ source_modules =
     engine.contracts
     engine.db
     engine.deps
+    engine.corrections
     engine.exports
     engine.extra_data
     engine.facts

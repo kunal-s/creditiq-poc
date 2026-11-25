@@ -121,6 +121,14 @@ class Doc:
     def label(self) -> str:
         return self.row["archive_path"] or self.row["original_name"]
 
+    def key_or(self, *names: str) -> object:
+        """The period a document is for: the one a person set (Story 7.2) before any value read, else the value read,
+        else the instance key."""
+        period = json.loads(self.row["period"]) if "period" in self.row.keys() and self.row["period"] else {}
+        if period.get("source") == "person":
+            return self.row["instance_key"]
+        return self.value(*names) or self.row["instance_key"]
+
     def value(self, *names: str) -> object:
         for name in names:
             v = self.fields.get(name)
@@ -285,10 +293,10 @@ class Evaluator:
             kind = cov.kind
             if kind == "financial_year":
                 target = fy_end(self.as_of, cov.offset)
-                docs = [d for d in usable if fy_end_of(d.value("financial_year") or d.row["instance_key"]) == target]
+                docs = [d for d in usable if fy_end_of(d.key_or("financial_year")) == target]
                 if not docs:
                     others = sorted(
-                        {fy_end_of(d.value("financial_year") or d.row["instance_key"]) for d in usable} - {None}
+                        {fy_end_of(d.key_or("financial_year")) for d in usable} - {None}
                     )
                     missing = self.missing_request(item)
                     # The years received, by the financial year alone, so the brackets do not nest.
@@ -388,7 +396,7 @@ class Evaluator:
 
     def assessment_years(self, item: ChecklistItemDef, docs: list[Doc], count: int) -> list[Deficiency]:
         required = self._required_ays(count)
-        have = {assessment_year_start(d.value("assessment_year") or d.row["instance_key"]) for d in docs}
+        have = {assessment_year_start(d.key_or("assessment_year")) for d in docs}
         absent = [y for y in required if y not in have]
         if not absent:
             return []
@@ -411,7 +419,7 @@ class Evaluator:
                 missing = self._partner_missing_periods(d)
                 have |= set(window) - missing
                 continue
-            have |= set(period_months(d.value("tax_period") or d.row["instance_key"], d.value("financial_year")))
+            have |= set(period_months(d.key_or("tax_period"), d.value("financial_year")))
         absent = [p for p in window if p not in have]
         if not absent:
             return []
@@ -573,7 +581,7 @@ class Evaluator:
         when = parse_date(d.value(*names))
         if when is None and age.measured_from == "period_end":
             # A return has no period-end date of its own: it is the last day of its last month.
-            months = period_months(d.value("tax_period") or d.row["instance_key"], d.value("financial_year"))
+            months = period_months(d.key_or("tax_period"), d.value("financial_year"))
             if months:
                 return month_end(*months[-1]), "tax_period"
         return when, names[0] if names else ""

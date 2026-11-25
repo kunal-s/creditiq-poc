@@ -132,6 +132,26 @@ export function useCaseDocumentTypes(caseId: string) {
   });
 }
 
+/** Give one page of a document its own type: the engine records it and reads the page again as that type. */
+export function useRetypePage(caseId: string, documentId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ page, typeId, reason }: { page: number; typeId: string; reason: string }) =>
+      api.retypePage(caseId, documentId, page, typeId, reason),
+    onSuccess: () => void client.invalidateQueries({ queryKey: ["cases", caseId] }),
+  });
+}
+
+/** Set the period a document covers: the engine records it, with what was there before, and runs the checks again. */
+export function useSetDocumentPeriod(caseId: string, documentId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ start, end, reason }: { start: string; end: string; reason: string }) =>
+      api.setDocumentPeriod(caseId, documentId, start, end, reason),
+    onSuccess: () => void client.invalidateQueries({ queryKey: ["cases", caseId] }),
+  });
+}
+
 /** Make a type for this appraisal; the engine records who made it and when. */
 export function useMakeCaseDocumentType(caseId: string) {
   const client = useQueryClient();

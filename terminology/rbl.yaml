@@ -2552,6 +2552,40 @@ validation:
   foundWithinDetail: "Found on {pages} of a file that holds several documents, and read from those pages only. It counts towards its own checklist item. Confirm it as a document of its own, or waive it as part of the file's other document, in the"
   defects: Deficiencies
   openDocument: Open document
+  # A person's corrections on a document: its period, and a page given its own type.
+  period:
+    label: Period
+    none: Not found on the document
+    range: "{start} to {end}"
+    status:
+      found: read from the document
+      derived: worked out from its rows
+      conflict: its title and its columns disagree
+      not_found: not found on the document
+      set: set by a person
+    reason: "Reason given: {reason}"
+    set: Set the period
+    change: Change the period
+    start: From
+    end: To
+    reasonLabel: Reason
+    reasonPlaceholder: Where the document states this period
+    save: Save the period
+    cancel: Cancel
+    failed: The period could not be saved. Check the dates and try again.
+  alsoIn: Also in
+  pageType:
+    action: Change type
+    title: "Read page {page} as another type"
+    help: The page is read again as the type chosen, as a document of its own; this document is read again without it. The reason is recorded with your name.
+    type: Type
+    choose: Choose a type
+    reasonLabel: Reason
+    reasonPlaceholder: What the page is
+    save: Read the page as this type
+    cancel: Cancel
+    queued: The page is being read again as the type chosen.
+    failed: The page could not be sent for reading. Try again.
 
 # The gate between intake and assessment (F-13). The first three stages run freely; the
 # cross-checks, the policy checks and the outputs open only once a person creates the case,

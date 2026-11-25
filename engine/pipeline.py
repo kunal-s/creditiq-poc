@@ -542,9 +542,11 @@ def process_files(conn: sqlite3.Connection, root: Path, job_id: str, case_id: st
     refresh_case(conn, root, case_id, running_job=job_id, client=client)
 
 
-def reextract_document(conn: sqlite3.Connection, root: Path, job_id: str, case_id: str, document_id: str, client) -> None:
+def reextract_document(conn: sqlite3.Connection, root: Path, job_id: str, case_id: str, document_id: str, client,
+                       pages: list[int] | None = None) -> None:
     """After a person assigns a type (F-09.5): read the file again as that type. The document
-    keeps its row; further instances the new type finds in the file become new rows."""
+    keeps its row; further instances the new type finds in the file become new rows. With `pages`,
+    only those pages are read (a document read again without a page a person gave its own type)."""
     doc = conn.execute("SELECT * FROM documents WHERE id = ? AND case_id = ?", (document_id, case_id)).fetchone()
     if doc is None or not doc["assigned_types"]:
         return
@@ -559,6 +561,8 @@ def reextract_document(conn: sqlite3.Connection, root: Path, job_id: str, case_i
         spec = _ingest_file(file_row).model_copy(update={"case_type": case_types.as_ingest(own)})
     else:
         spec = _ingest_file(file_row, assigned_type=types[0])
+    if pages:
+        spec = spec.model_copy(update={"pages": sorted(pages)})
     request = IngestRequest(case_ref=case_id, config_version=ctx.version, files=[spec])
     payloads = {file_row["id"]: (case_files_dir(case_id, root) / file_row["stored_name"]).read_bytes()}
     started_at = now_iso()
@@ -570,7 +574,8 @@ def reextract_document(conn: sqlite3.Connection, root: Path, job_id: str, case_i
     units = units_of(fr) if fr.status == "processed" else []
     # The document read as the assigned type, on the same pages; never a part of another type found in the file.
     own = [u for u in units if types[0] in u.classification.types] or units
-    mine = next((u for u in own if (u.page_from, u.page_to) == (doc["page_from"], doc["page_to"])), None) or (own[0] if own else None)
+    mine = (None if pages else next((u for u in own if (u.page_from, u.page_to) == (doc["page_from"], doc["page_to"])), None)) \
+        or (own[0] if own else None)
     if mine is None:
         raise IngestError(f"the service returned no document for {file_row['original_name']} read as {types[0]}")
     with transaction(conn):
@@ -595,6 +600,51 @@ def reextract_document(conn: sqlite3.Connection, root: Path, job_id: str, case_i
             detail=dumps({"job_id": job_id, "document_id": document_id, "type_id": types[0], "config_version": result.config.version}),
         )
     refresh_case(conn, root, case_id, running_job=job_id, client=client)
+
+
+def document_pages(doc: sqlite3.Row) -> list[int]:
+    """The pages a document was read from (its page list, else its range)."""
+    nos = [int(p.get("n")) for p in json.loads(doc["pages"] or "[]") if p.get("n")]
+    return sorted(set(nos)) or list(range(doc["page_from"], doc["page_to"] + 1))
+
+
+def retype_page(conn: sqlite3.Connection, root: Path, job_id: str, case_id: str, document_id: str, page: int,
+                type_id: str, client) -> None:
+    """Story 7.2: a person gave one page of a document its own type. The page is read as that type into a document of
+    its own; the document it came from is read again, as its own type, without it, or is superseded when that was its
+    only page. A type assigned to a whole document stays the review decision `assign` (F-09.5)."""
+    doc = conn.execute("SELECT * FROM documents WHERE id = ? AND case_id = ?", (document_id, case_id)).fetchone()
+    if doc is None:
+        return
+    file_row = conn.execute("SELECT * FROM files WHERE id = ?", (doc["file_id"],)).fetchone()
+    ctx = Context.load(root)
+    spec = _ingest_file(file_row, assigned_type=type_id).model_copy(update={"pages": [page]})
+    request = IngestRequest(case_ref=case_id, config_version=ctx.version, files=[spec])
+    payloads = {file_row["id"]: (case_files_dir(case_id, root) / file_row["stored_name"]).read_bytes()}
+    result = client.process(request, payloads)
+    _check_version(result, ctx)
+    fr = result.files[0]
+    units = [u for u in (units_of(fr) if fr.status == "processed" else []) if type_id in u.classification.types]
+    if not units:
+        raise IngestError(f"the service returned no document for page {page} of {file_row['original_name']} read as {type_id}")
+    rest = [n for n in document_pages(doc) if n != page]
+    own_types = effective_types(doc)
+    with transaction(conn):
+        for unit in units:
+            new_id = _store_document(conn, ctx, case_id, file_row, unit)
+            if new_id:
+                conn.execute("UPDATE documents SET assigned_types = ? WHERE id = ?", (json.dumps([type_id]), new_id))
+        if not rest or not own_types:
+            conn.execute("UPDATE documents SET status = 'superseded' WHERE id = ?", (document_id,))
+        else:
+            conn.execute("UPDATE documents SET assigned_types = ? WHERE id = ?", (json.dumps(own_types), document_id))
+        log_decision(conn, at=now_iso(), actor="system", case_id=case_id, action="processing.page_retyped",
+                     detail=dumps({"job_id": job_id, "document_id": document_id, "page": page, "type_id": type_id,
+                                   "remaining": rest}))
+    if rest and own_types:
+        reextract_document(conn, root, job_id, case_id, document_id, client, pages=rest)
+    else:
+        refresh_case(conn, root, case_id, running_job=job_id, client=client)
 
 
 def recheck_integrity(conn: sqlite3.Connection, root: Path, job_id: str, case_id: str, file_id: str, client) -> None:

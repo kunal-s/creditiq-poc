@@ -4480,6 +4480,23 @@
         "title": "ConfigVersion",
         "type": "object"
       },
+      "CorrectionQueued": {
+        "properties": {
+          "job_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Id"
+          }
+        },
+        "title": "CorrectionQueued",
+        "type": "object"
+      },
       "CoverageRule": {
         "description": "What \"complete\" means for an item beyond presence (F-13.2), always\nmeasured from the case's fixed as_of date (principle 8).",
         "properties": {
@@ -4815,6 +4832,72 @@
           "example"
         ],
         "title": "DisplayUnitOption",
+        "type": "object"
+      },
+      "DocumentPeriod": {
+        "description": "The period a document covers (decision 14): as read from its own pages, or as a person set it (Story 7.2).",
+        "properties": {
+          "end": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "start": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start"
+          },
+          "status": {
+            "enum": [
+              "found",
+              "derived",
+              "conflict",
+              "not_found",
+              "none",
+              "set"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "DocumentPeriod",
         "type": "object"
       },
       "DocumentTypeDef": {
@@ -5850,7 +5933,9 @@
               "configured",
               "named",
               "discovered",
-              "gap"
+              "gap",
+              "leftover",
+              "sweep"
             ],
             "title": "Origin",
             "type": "string"
@@ -7609,6 +7694,16 @@
             ],
             "title": "Party Id"
           },
+          "period": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DocumentPeriod"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "status": {
             "enum": [
               "received",
@@ -9130,6 +9225,27 @@
         "title": "PageInfo",
         "type": "object"
       },
+      "PageTypeRequest": {
+        "description": "Read one page of a document as another type, in a document of its own.",
+        "properties": {
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "type_id": {
+            "title": "Type Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type_id",
+          "reason"
+        ],
+        "title": "PageTypeRequest",
+        "type": "object"
+      },
       "Party": {
         "description": "A person or entity on the case: director, partner, proprietor,\nguarantor or the borrower itself (F-10.2).",
         "properties": {
@@ -9675,6 +9791,34 @@
           "question_ids"
         ],
         "title": "PdTopic",
+        "type": "object"
+      },
+      "PeriodRequest": {
+        "description": "The period a document covers, as a person reads it from the document: an ISO date range.",
+        "properties": {
+          "end": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "title": "End",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "start": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "reason"
+        ],
+        "title": "PeriodRequest",
         "type": "object"
       },
       "PersonEntry": {
@@ -16162,6 +16306,165 @@
           }
         },
         "summary": "Document Page"
+      }
+    },
+    "/api/cases/{case_id}/documents/{document_id}/pages/{page}/type": {
+      "post": {
+        "description": "Story 7.2: read one page of a document as another type, in a document of its own; the document it came from\nis read again without it. Recorded with the reason; the reading runs as a job.",
+        "operationId": "retype_document_page_api_cases__case_id__documents__document_id__pages__page__type_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "page",
+            "required": true,
+            "schema": {
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PageTypeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorrectionQueued"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Retype Document Page"
+      }
+    },
+    "/api/cases/{case_id}/documents/{document_id}/period": {
+      "put": {
+        "description": "Story 7.2: the period a document covers, as a person reads it from the document, where none was found or its\ntitle and its columns disagree. Recorded with the reason and what was there before; the checks run again.",
+        "operationId": "set_document_period_api_cases__case_id__documents__document_id__period_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "title": "Document Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PeriodRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorrectionQueued"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Document Period"
       }
     },
     "/api/cases/{case_id}/facts": {

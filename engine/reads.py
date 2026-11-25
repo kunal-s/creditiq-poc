@@ -31,6 +31,7 @@ from .contracts import (
     Readiness,
     ReviewItem,
 )
+from .contracts.documents import DocumentPeriod
 
 #: The files a person has taken off the case: kept for the audit trail, shown nowhere.
 _REMOVED = "(SELECT id FROM files WHERE case_id = ? AND status = 'removed')"
@@ -91,6 +92,11 @@ def documents(conn: sqlite3.Connection, case_id: str) -> list[LogicalDocument]:
             }
         d["classification"] = Classification(**classification) if classification else None
         d["label_mismatch"] = bool(d["label_mismatch"])
+        period = json.loads(d["period"]) if d.get("period") else None
+        d["period"] = DocumentPeriod(
+            start=(period.get("range") or {}).get("start"), end=(period.get("range") or {}).get("end"),
+            status=period["status"], source=period.get("source"), note=period.get("reason") or period.get("note"),
+        ) if period and period.get("status") else None
         out.append(LogicalDocument(**d))
     return out
 

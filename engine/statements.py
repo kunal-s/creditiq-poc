@@ -331,6 +331,8 @@ def itr_lines(doc, cfg: StatementsSection) -> dict[str, Line]:
 def period_end(doc) -> date | None:
     """The year end a financial statement is for, from its printed financial year, or the end of the period
     a provisional statement covers."""
+    if getattr(doc, "period_key", None):
+        return fy_end_of(doc.period_key)          # a period a person set wins over the one read
     v = doc.get("financial_year") or doc.get("period_to")
     return fy_end_of(v.value) if v else None
 

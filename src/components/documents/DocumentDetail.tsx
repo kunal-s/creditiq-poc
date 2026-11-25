@@ -13,7 +13,7 @@ import {
   groupFields,
   useFields,
 } from "@/domain/extraction";
-import { GradeChip } from "./chips";
+import { DocumentPages, DocumentPeriodRow } from "./DocumentCorrections";
 
 /** Values shown on the document itself; the rest are one click away. */
 const KEY_VALUES = 6;
@@ -26,11 +26,14 @@ export function DocumentDetail({
   doc,
   file,
   defects,
+  siblings = [],
 }: {
   caseId: string;
   doc: LogicalDocument;
   file: FileRecord | undefined;
   defects: ChecklistItemState[];
+  /** The other documents read from the same file: a page may belong to two. */
+  siblings?: LogicalDocument[];
 }) {
   const viewer = useDocViewer();
   const types = useDocumentTypes();
@@ -172,43 +175,8 @@ export function DocumentDetail({
         </div>
       )}
 
-      {problems && (
-        <div className="min-w-0" data-testid="doc-details">
-          <p className="field-label">{t("validation.pages")}</p>
-          <table className="mt-1 w-full text-[12px]">
-            <thead>
-              <tr className="text-left text-[10.5px] uppercase tracking-wide text-muted-foreground">
-                <th className="py-1 pr-2 font-medium">{t("validation.page")}</th>
-                <th className="py-1 pr-2 font-medium">{t("validation.grade")}</th>
-                <th className="py-1 font-medium">{t("validation.reasons")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {doc.pages.map((p) => (
-                <tr key={p.n} className="border-t border-border align-top">
-                  <td className="tabular py-1 pr-2">
-                    <button
-                      type="button"
-                      className="text-primary hover:underline"
-                      onClick={() => viewer.open({ caseId, documentId: doc.id, page: p.n })}
-                    >
-                      {p.n}
-                    </button>
-                  </td>
-                  <td className="py-1 pr-2">
-                    <GradeChip grade={p.grade} />
-                  </td>
-                  <td className="py-1 text-muted-foreground" data-testid="page-reasons">
-                    {(p.reasons ?? []).map((r) => tOr(`gradeReason.${r}`, r)).join(", ") || "—"}
-                    {typeof p.ocr_confidence === "number" &&
-                      ` · ${t("validation.ocr", { pct: Math.round(p.ocr_confidence * 100) })}`}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <DocumentPeriodRow caseId={caseId} doc={doc} />
+      <DocumentPages caseId={caseId} doc={doc} siblings={siblings} />
 
       <button
         type="button"

@@ -350,6 +350,7 @@ function FileRows({
           integrityEmpty={i === 0 && noIntegrity}
           panel={i === 0 ? panel : null}
           shownDefects={firstDefects[i]!.length}
+          siblings={documents}
         />
       ))}
     </div>
@@ -588,6 +589,7 @@ function DocumentRow({
   panel,
   shownDefects,
   actions,
+  siblings,
 }: {
   caseId: string;
   doc: LogicalDocument;
@@ -602,6 +604,8 @@ function DocumentRow({
   panel: ReactNode;
   /** The checklist defects not already shown on an earlier part of the same file. */
   shownDefects: number;
+  /** Every document read from the same file. */
+  siblings: LogicalDocument[];
 }) {
   const viewer = useDocViewer();
   const types = useDocumentTypes();
@@ -733,7 +737,15 @@ function DocumentRow({
           <DocumentActions doc={doc} items={items} borrower={borrower} />
         </div>
       )}
-      {open && <DocumentDetail caseId={caseId} doc={doc} file={file} defects={defects} />}
+      {open && (
+        <DocumentDetail
+          caseId={caseId}
+          doc={doc}
+          file={file}
+          defects={defects}
+          siblings={siblings}
+        />
+      )}
     </div>
   );
 }

@@ -167,3 +167,19 @@ def test_scenario_21_no_depreciation_names_what_it_stops_and_the_case_needs_a_re
     after = client.get(f"/api/cases/{case_id}/progress", headers=headers).json()["gate"]
     assert after["open"] and after["opened_anyway"].startswith("Depreciation to follow")
     assert any(g["label"] == f"Depreciation, {year}" for g in after["required_fields"])   # still on the list
+
+
+def test_a_value_the_fill_found_reads_with_its_origin(client: TestClient, case, published_data_root):
+    root = published_data_root
+    add_doc(root, case, "certificate_of_incorporation", {"company_name": "Kestrel Tools Private Limited"})
+    afs = audited(root, case, "2026-03-31")
+    _on_disk(root, case)
+    conn = db.connect(root)
+    try:
+        pending.fill(conn, root, case, AS_OF, Service({("audited_financial_statements", "cin", None): (CIN, CIN, 1)}), "v")
+    finally:
+        conn.close()
+    fields = client.get(f"/api/cases/{case}/fields", headers=sign_in(client, ANALYST))
+    assert fields.status_code == 200, fields.text
+    cin = [f for f in fields.json() if f["document_id"] == afs and f["field"] == "cin"]
+    assert cin and cin[0]["origin"] == "sweep" and cin[0]["status"] == "in_review"

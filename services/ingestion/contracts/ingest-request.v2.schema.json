@@ -116,6 +116,21 @@
           "title": "Original Name",
           "type": "string"
         },
+        "pages": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pages"
+        },
         "sha256": {
           "title": "Sha256",
           "type": "string"

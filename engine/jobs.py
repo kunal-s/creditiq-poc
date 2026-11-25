@@ -91,6 +91,9 @@ def run_job(conn: sqlite3.Connection, root: Path, job: sqlite3.Row, client=None)
             pipeline.process_files(conn, root, job["id"], job["case_id"], payload["file_ids"], client)
         elif job["kind"] == "reextract":
             pipeline.reextract_document(conn, root, job["id"], job["case_id"], payload["document_id"], client)
+        elif job["kind"] == "retype_page":
+            pipeline.retype_page(conn, root, job["id"], job["case_id"], payload["document_id"], int(payload["page"]),
+                                 payload["type_id"], client)
         elif job["kind"] == "integrity":
             pipeline.recheck_integrity(conn, root, job["id"], job["case_id"], payload["file_id"], client)
         else:

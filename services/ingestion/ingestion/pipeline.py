@@ -112,8 +112,9 @@ def _unplaced(typing, unplaced: list[list[int]]) -> list[dict]:
     return out
 
 
-def run_id_for(case_ref: str, sha256: str, cfg: IngestionConfig) -> str:
-    return "RUN-" + sha256_hex(f"{case_ref}|{sha256}|{cfg.hash}|{ENGINE_VERSION}")[:12].upper()
+def run_id_for(case_ref: str, sha256: str, cfg: IngestionConfig, pages: list[int] | None = None) -> str:
+    part = f"|pages:{','.join(map(str, sorted(pages)))}" if pages else ""
+    return "RUN-" + sha256_hex(f"{case_ref}|{sha256}|{cfg.hash}|{ENGINE_VERSION}{part}")[:12].upper()
 
 
 @dataclass
@@ -182,7 +183,7 @@ class Ingestor:
         actual = sha256_hex(data)
         if actual != spec.sha256:
             return FileResult(**base, status="rejected", reject={"code": "sha_mismatch", "message": f"the bytes hash to {actual[:12]}, not {spec.sha256[:12]}"})
-        run_id = run_id_for(case_ref, spec.sha256, self.cfg)
+        run_id = run_id_for(case_ref, spec.sha256, self.cfg, spec.pages)
         # Files are read side by side; one run (the same file for the same case under the same configuration, say a
         # job's retry while its first attempt is still being read) is read once at a time, as its rows are one set.
         with _run_lock(run_id):
@@ -265,9 +266,14 @@ class Ingestor:
 
         def read():
             pages = read_document(data, gate.kind, cfg.quality, cfg.routing, self.ocr, self.store)
+            if spec.pages:
+                pages = [p for p in pages if p.no in set(spec.pages)]
             return pages, [{**p.summary(), "text_sha": sha256_hex(p.text())} for p in pages]
 
         pages: list[Page] = self._timed(tr, "read", read)
+        if spec.pages and not pages:
+            return FileResult(**base, status="rejected", run_id=run_id, reject={"code": "no_such_pages", "message": f"the file has none of pages {spec.pages}"},
+                              decision="reject", trace=tr.entries)
         self.store.save_pages(run_id, pages)
         # F-07A: now that the pages are read, place on them what the integrity
         # checks found in the bytes (a recovered figure is printed somewhere; an

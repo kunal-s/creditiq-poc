@@ -32,6 +32,8 @@ class IngestFile(_C):
     """A person's type assignment (F-09.5): classification is skipped and the file is read as this type."""
     case_type: CaseType | None = None
     """A person's case document type (F-09.8), instead of `assigned_type`."""
+    pages: list[int] | None = None
+    """Read only these pages of the file (Story 7.2); page numbers stay those of the file."""
 
 
 class CaseField(_C):

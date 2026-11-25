@@ -151,6 +151,8 @@ class Doc:
     """Of a type made for this appraisal (F-09.8): its values count once a person confirmed them (F-19.10)."""
     file_name: str | None = None
     """The name of the file the document was read from."""
+    period_key: str | None = None
+    """The period a person set for the document (Story 7.2), as an instance key: it wins over the period read."""
 
     @property
     def label(self) -> str:
@@ -242,6 +244,7 @@ def load_documents(conn: sqlite3.Connection, root: Path, case_id: str) -> list[D
                 edits=edits,
                 case_type=own,
                 file_name=row["file_name"],
+                period_key=row["instance_key"] if row["period"] and json.loads(row["period"]).get("source") == "person" else None,
             )
         )
     return docs

@@ -52,9 +52,20 @@ def _locate(raw: str, ids: list[str], by_id: dict[str, tuple[Page, Line]], ratio
             return by_id[i][1].text[hit[0]:hit[1]], spans
     joined = " ".join(by_id[i][1].text for i in ids)
     hit = printed.find(raw, joined, ratio)
-    if hit is None:
-        return None
-    return joined[hit[0]:hit[1]], {}
+    if hit is not None:
+        return joined[hit[0]:hit[1]], {}
+    # A value that wraps onto the next line, where the model named only the line it starts on.
+    for i in ids:
+        page, line = by_id[i]
+        lines = page.content_lines()
+        at = next((k for k, x in enumerate(lines) if x.id == line.id), None)
+        if at is None or at + 1 >= len(lines):
+            continue
+        both = f"{line.text} {lines[at + 1].text}"
+        hit = printed.find(raw, both, ratio)
+        if hit is not None:
+            return both[hit[0]:hit[1]], {}
+    return None
 
 
 def ground(val, ids: list[str], by_id: dict[str, tuple[Page, Line]], ratio: float = 90

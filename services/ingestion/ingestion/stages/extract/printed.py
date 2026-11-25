@@ -22,9 +22,10 @@ def find(raw: str, text: str, text_ratio: float) -> tuple[int, int] | None:
     if not raw or not text:
         return None
     low, needle = text.casefold(), re.sub(r"\s+", " ", raw).casefold()
-    at = re.sub(r"\s+", " ", low).find(needle)
-    if at >= 0 and re.sub(r"\s+", " ", low) == low:
-        return at, at + len(needle)
+    # As printed, whatever the spacing between its words.
+    exact = re.search(r"\s+".join(map(re.escape, needle.split())), text, re.IGNORECASE)
+    if exact:
+        return exact.start(), exact.end()
     if _NUMERIC.match(raw):
         want = to_number(raw)
         if want is not None:

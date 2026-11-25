@@ -44,3 +44,22 @@ def test_text_within_the_ratio_is_the_text_printed():
 
 def test_an_exact_match_is_kept_as_printed():
     assert shown("aaacb1234c", "PAN: AAACB1234C") == "AAACB1234C"
+
+
+def test_a_value_copied_as_printed_matches_whatever_the_spacing():
+    line = "on this   Eighteenth day of March  Two Thousand Sixteen."
+    assert shown("Eighteenth day of March Two Thousand Sixteen", line) == "Eighteenth day of March  Two Thousand Sixteen"
+
+
+def test_a_value_that_wraps_onto_the_next_line_is_found_from_the_line_it_starts_on():
+    from ingestion.pageindex import Line, Page, Word
+    from ingestion.stages.extract.llm_extract import ground
+
+    texts = ["I hereby certify that X PRIVATE LIMITED is incorporated on this Eighteenth day of",
+             "March Two Thousand Sixteen under the Companies Act."]
+    lines = [Line(1, i, t, [Word(t, 0, i * 12, 100, i * 12 + 10)], [(0, len(t))]) for i, t in enumerate(texts)]
+    page = Page(1, "text_layer", 600, 800, [w for l in lines for w in l.words], lines)
+    by_id = {l.id: (page, l) for l in lines}
+    got = ground("Eighteenth day of March Two Thousand Sixteen", [lines[0].id], by_id)
+    assert not isinstance(got, str) and got[3]["Eighteenth day of March Two Thousand Sixteen"] == \
+        "Eighteenth day of March Two Thousand Sixteen"

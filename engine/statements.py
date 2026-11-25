@@ -243,6 +243,28 @@ def lines(doc, cfg: StatementsSection, *, column: str | None = None) -> dict[str
     return _derive(doc, cfg, col, out)
 
 
+def _found_elsewhere(doc, cfg: StatementsSection, col: str, out: dict[str, Line], scale: float) -> None:
+    """A line the statement does not print, found for its year on another page of the case (Epic 6, stored on this
+    statement as "<line>@<year end>"): it stands as printed there, in the unit that page states, waiting for a
+    person until confirmed. Its evidence is the page that printed it."""
+    end = period_end(doc)
+    if end is None:
+        return
+    if col != cfg.column:
+        end = date(end.year - 1, end.month, end.day if not (end.month == 2 and end.day == 29) else 28)
+    for key in cfg.lines:
+        if key in out:
+            continue
+        v = doc.get(f"{key}@{end.isoformat()}")
+        number = _number(v)
+        if number is None:
+            continue
+        unit = str((v.evidence or {}).get("unit") or "").strip().lower().rstrip("s")
+        own = UNIT_SCALE.get(unit, scale) if unit else scale
+        out[key] = Line(number * own, doc.evidence(v), v.manual, [v.field_id], bool(getattr(v, "pending", False)),
+                        state="printed", key=key, raw=v.raw, printed=number, scale=own, column=col, document_id=doc.id)
+
+
 def _printed_lines(doc, cfg: StatementsSection, col: str) -> dict[str, Line]:
     """The canonical lines the statement prints, the configured nils and a person's edits; nothing derived.
 
@@ -262,6 +284,7 @@ def _printed_lines(doc, cfg: StatementsSection, col: str) -> dict[str, Line]:
             line.printed = number / scale if scale else number
             line.state = "nil" if (cell.raw or "").strip() in ("-", "–", "—") else "printed"
             out[key] = line
+    _found_elsewhere(doc, cfg, col, out, scale)
     for key in cfg.absent_is_nil:
         spec = cfg.lines.get(key)
         if key in out or not spec:

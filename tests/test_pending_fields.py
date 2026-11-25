@@ -183,3 +183,34 @@ def test_a_value_the_fill_found_reads_with_its_origin(client: TestClient, case, 
     assert fields.status_code == 200, fields.text
     cin = [f for f in fields.json() if f["document_id"] == afs and f["field"] == "cin"]
     assert cin and cin[0]["origin"] == "sweep" and cin[0]["status"] == "in_review"
+
+
+def test_a_yearly_figure_found_elsewhere_is_a_line_of_that_years_statements(case, published_data_root):
+    """Found on an unplaced page, in lakhs: it goes on FY 2025-26's statements, in rupees, waiting for a person."""
+    from engine import facts, statements
+    from engine.configstore import reader
+
+    root = published_data_root
+    afs = audited(root, case, "2026-03-31", set_rows={"Depreciation and amortisation": None})
+    _unplaced(root, case, page=2)
+    _on_disk(root, case)
+
+    class Lakhs(Service):
+        def fill(self, request, payload):
+            got = super().fill(request, payload)
+            for v in got["found"]:
+                v["unit"] = "lakh"
+            return got
+
+    service = Lakhs({("unknown", "depreciation", "2026-03-31"): (40.5, "40.50", 2)})
+    conn = db.connect(root)
+    try:
+        pending.fill(conn, root, case, AS_OF, service, "v")
+        d = next(x for x in facts.load_documents(conn, root, case) if x.id == afs)
+        lines = statements.lines(d, reader.load_statements(root))
+    finally:
+        conn.close()
+    dep = lines["depreciation"]
+    assert dep.value == pytest.approx(4_050_000) and dep.pending and dep.evidence[0].page == 2
+    assert dep.evidence[0].document_id != afs                     # the page that printed it
+    assert "ebitda" in lines                                       # what it stopped can be worked out

@@ -56,3 +56,16 @@ def test_the_sweep_does_not_read_a_file_that_never_names_the_field(cfg):
     model = ModelClient(FixtureProvider(cfg.llm, lambda req: calls.append(req) or {"fields": {}}), "record", Store())
     got = ask(cfg, [FillField(name="revenue_from_operations", period_end="2025-03-31")], [2, 3], model)
     assert got.found == [] and calls == [] and got.trace[-1]["skipped"]
+
+
+def test_an_amount_carries_the_unit_its_page_states(cfg):
+    from ingestion.config.models import NumberForms
+    from ingestion.fill import _page_unit
+    from ingestion.pageindex import Line, Page, Word
+
+    def page(texts):
+        lines = [Line(1, i, t, [Word(t, 0, i * 12, 100, i * 12 + 10)], [(0, len(t))]) for i, t in enumerate(texts)]
+        return Page(1, "text_layer", 600, 800, [w for l in lines for w in l.words], lines)
+
+    assert _page_unit(page(["Notes to accounts", "(All amounts in Rs. Lakhs)", "Revenue 2,317.85"]), cfg) == "lakh"
+    assert _page_unit(page(["Notes to accounts", "Revenue 2,317.85"]), cfg) is None

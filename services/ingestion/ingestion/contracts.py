@@ -451,6 +451,8 @@ class FillValue(C):
     page: int
     bbox: list[float] | None = None
     line: str | None = None
+    unit: str | None = None
+    """For an amount: the unit its page states (thousand, lakh, crore, million, rupee), or None where it states none."""
 
 
 class FillResult(C):

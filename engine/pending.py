@@ -158,6 +158,8 @@ def fill(conn: sqlite3.Connection, root: Path, case_id: str, as_of: date, client
 
     docs = _documents(conn, case_id)
     types = {t.id: t.name for t in reader.load_document_types(root).types}
+    hosts = _year_hosts(conn, root, case_id)
+    by_id = {d["id"]: d for d in docs}
     stored: list[dict] = []
     for stage in ("leftover", "sweep"):
         by_file: dict[str, list[sqlite3.Row]] = {}
@@ -195,8 +197,11 @@ def fill(conn: sqlite3.Connection, root: Path, case_id: str, as_of: date, client
                 doc = next((r for r in rows if int(v["page"]) in _pages(r)), None)
                 if doc is None:
                     continue
+                # A yearly figure goes on that year's statements, so the spread and the ratios read it as a line;
+                # its evidence stays the page that printed it.
+                host = by_id.get(hosts.get((frozenset(p.source_types), p.period_end), "")) if p.period_end else None
                 with transaction(conn):
-                    stored.append(_store(conn, case_id, doc, p, v, stage, types))
+                    stored.append(_store(conn, case_id, host or doc, p, v, stage, types, printed=doc))
                 todo.remove(p)
     if stored:
         log_decision(conn, at=now_iso(), actor="system", case_id=case_id, action="processing.fill",
@@ -205,13 +210,40 @@ def fill(conn: sqlite3.Connection, root: Path, case_id: str, as_of: date, client
     return stored
 
 
+def _year_hosts(conn: sqlite3.Connection, root: Path, case_id: str) -> dict[tuple[frozenset, str], str]:
+    """For each set of source types and year end, the statement a yearly figure found elsewhere goes on: that year's
+    own statement, else the next year's (whose comparative column is that year)."""
+    required = (reader.load_ingestion_section(root, "fields") or {}).get("required_fields") or {}
+    start = reader.load_alignment(root).financial_year_start_month
+    docs = facts_module.load_documents(conn, root, case_id)
+    out: dict[tuple[frozenset, str], str] = {}
+    for spec in required.values():
+        sources = spec.get("from") or []
+        if spec.get("per") != "financial_year" or not all(".line:" in s for s in sources):
+            continue
+        types = frozenset(s.split(".", 1)[0] for s in sources)
+        own: dict[str, str] = {}
+        comparative: dict[str, str] = {}
+        for d in docs:
+            end = statements.period_end(d) if set(d.types) & types else None
+            if end is None:
+                continue
+            year = facts_module.fy_of(end.year, end.month, start)
+            own.setdefault(facts_module.fy_end_date(year, start).isoformat(), d.id)
+            comparative.setdefault(facts_module.fy_end_date(year - 1, start).isoformat(), d.id)
+        for end, doc_id in {**comparative, **own}.items():
+            out[(types, end)] = doc_id
+    return out
+
+
 def _store(conn: sqlite3.Connection, case_id: str, doc: sqlite3.Row, p: Pending, v: dict, origin: str,
-           types: dict[str, str]) -> dict:
+           types: dict[str, str], printed: sqlite3.Row | None = None) -> dict:
     from .pipeline import effective_types
 
+    printed = printed or doc
     fv_id = stable_id("FV", doc["id"], f"fill:{p.field}")
-    evidence = {"document_id": doc["id"], "page": int(v["page"]), "bbox": v.get("bbox"),
-                **({"line": v["line"]} if v.get("line") else {})}
+    evidence = {"document_id": printed["id"], "page": int(v["page"]), "bbox": v.get("bbox"),
+                **({"line": v["line"]} if v.get("line") else {}), **({"unit": v["unit"]} if v.get("unit") else {})}
     conn.execute(
         """INSERT INTO field_values (id, case_id, document_id, field, value, raw, evidence, method, confidence,
                confidence_components, status, missing_reason, origin, label)
@@ -219,9 +251,9 @@ def _store(conn: sqlite3.Connection, case_id: str, doc: sqlite3.Row, p: Pending,
            ON CONFLICT(id) DO NOTHING""",
         (fv_id, case_id, doc["id"], p.field, json.dumps(v.get("value")), v.get("raw_text"), json.dumps(evidence),
          v.get("method") or "model", origin, p.label))
-    doc_types = effective_types(doc)
+    doc_types = effective_types(printed)
     where = " + ".join(types.get(t, t.replace("_", " ")) for t in doc_types) if doc_types else "Unplaced pages"
-    where += f" ({doc['original_name']})"
+    where += f" ({printed['original_name']})"
     raise_item(conn, case_id=case_id, kind="field", ref=f"field:{fv_id}",
                summary=f"{p.label} = {v.get('raw_text')} (source: {where}, page {v['page']}; please confirm)",
                detail={"document_id": doc["id"], "field_value_id": fv_id, "page": int(v["page"]), "origin": origin})

@@ -12,7 +12,7 @@ from .config.models import FieldDef, IngestionConfig, RequiredField
 from .contracts import FillRequest, FillResult, FillValue
 from .llm.recorder import ModelClient
 from .pageindex import Page
-from .stages.extract import llm_extract
+from .stages.extract import llm_extract, units
 from .stages.extract.fields import extract_scalar
 from .stages.extract.normalise import normalise, number_forms
 from .stages.extract.run import _finish, _kind, cue_pages, cue_scores
@@ -52,7 +52,7 @@ def _fill(cfg: IngestionConfig, req: FillRequest, pages: list[Page], model: Mode
                                    cfg.fields.identifier_reading)
             done = _finish(fdef, rule, found) if found else None
             if done and done["status"] == "found":
-                out.found.append(_value(f.name, f.period_end, done, "rules"))
+                out.found.append(_value(f.name, f.period_end, done, "rules", None))
                 continue
         if rule.llm is not False:
             pending[fdef.name] = (f, fdef, rule)
@@ -71,11 +71,18 @@ def _fill(cfg: IngestionConfig, req: FillRequest, pages: list[Page], model: Mode
             f, fdef, rule = pending[k]
             done = _finish(fdef, rule, got)
             if done["status"] == "found":
-                out.found.append(_value(f.name, f.period_end, done, "model"))
+                page = next((p for p in allowed if p.no == int((done.get("source") or {}).get("page") or 0)), None)
+                unit = _page_unit(page, cfg) if rule.kind == "amount" and page is not None else None
+                out.found.append(_value(f.name, f.period_end, done, "model", unit))
     return out
 
 
-def _value(name: str, period_end: str | None, done: dict, method: str) -> FillValue:
+def _page_unit(page: Page, cfg: IngestionConfig) -> str | None:
+    """The unit the page states its amounts in ("Amount in Rs. Lakhs"), the first it states; None where none."""
+    return next((u for line in page.content_lines() if (u := units.in_line(line.text, cfg.fields.units))), None)
+
+
+def _value(name: str, period_end: str | None, done: dict, method: str, unit: str | None) -> FillValue:
     src = done.get("source") or {}
     return FillValue(field=name, period_end=period_end, value=done["value"], raw_text=str(done["raw_text"]), method=method,
-                     page=int(src.get("page") or 0), bbox=src.get("bbox"), line=src.get("line"))
+                     page=int(src.get("page") or 0), bbox=src.get("bbox"), line=src.get("line"), unit=unit)

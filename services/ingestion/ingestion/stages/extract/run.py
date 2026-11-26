@@ -228,12 +228,18 @@ def _unit(cfg: IngestionConfig, td, rules, pages: list[Page], out_fields: dict, 
         from .. import keywords as K
         zones = {p.no: [l for l, z in K.line_zones(cfg.keywords, p) if z in ("title", "footer")] for p in pages}
     f = out_fields.get("amount_unit") or {}
+    # The unit the statements' own captions print (the lines above the tables read) comes first: it is the unit their
+    # figures are in. A unit the document states elsewhere (its field rules found it) counts when no caption states one;
+    # where the two differ the captions' stands and a person confirms it (a side table "in lakhs" in a report in crores).
+    caption = units.find(pages, cfg.fields.units, before, None) if before else None
+    elsewhere = None
     if f.get("status") == "found":
-        named = units.in_line(f"in {f.get('raw_text') or f.get('value')}", cfg.fields.units)
-        if named:
-            f["value"] = named
-        return
-    got = units.find(pages, cfg.fields.units, before, zones)
+        elsewhere = units.in_line(f"in {f.get('raw_text') or f.get('value')}", cfg.fields.units)
+        if caption is None:
+            if elsewhere:
+                f["value"] = elsewhere
+            return
+    got = caption or units.find(pages, cfg.fields.units, before, zones)
     if got is None:
         if td.document_type in cfg.fields.units.required:
             out_fields["amount_unit"] = {**f, "status": "missing", "reason": "unit_not_stated", "value": None}
@@ -244,6 +250,9 @@ def _unit(cfg: IngestionConfig, td, rules, pages: list[Page], out_fields: dict, 
     rule = (rules.fields.get("amount_unit") if rules else None) or FieldRule()
     fd = next(x for x in td.schema_.fields if x.name == "amount_unit")
     out_fields["amount_unit"] = {**_finish(fd, rule, found), "value": got.name}
+    if elsewhere and elsewhere != got.name:
+        out_fields["amount_unit"]["correction"] = (f'the statements print "{got.text}" (page {got.page}); the document also says '
+                                                   f'"{f.get("raw_text")}" (page {(f.get("source") or {}).get("page")}): please confirm')
 
 
 def _extract_case_type(cfg: IngestionConfig, ct: CaseType, pages: list[Page], model: ModelClient | None) -> dict:

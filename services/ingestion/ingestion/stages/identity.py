@@ -23,6 +23,7 @@ from ..config.models import IngestionConfig, KwIdentity
 from ..llm.provider import ModelError, ModelRequest
 from ..llm.recorder import ModelClient
 from ..pageindex import Page
+from . import furniture
 from . import keywords as K
 from .extract.identifiers import PATTERNS
 from .periods import Period, in_line, page_level, vocab
@@ -57,8 +58,23 @@ def _zone_lines(cfg: IngestionConfig, page: Page, zone: str) -> list[str]:
     return [l.text for l, z in K.line_zones(cfg.keywords, page) if z == zone]
 
 
-def _accepted(rule: KwIdentity, ps: list[Period]) -> list[Period]:
-    return [p for p in ps if p.kind in rule.period and p.kind != "columns"]
+def _one_year(p: Period, fy_start: int) -> bool:
+    """A range that is one financial year: from the first day of the year's first month to the day before it a year on."""
+    return (p.kind == "range" and p.start.day == 1 and p.start.month == fy_start
+            and (p.end.year, p.end.month) == (p.start.year + (1 if fy_start > 1 else 0), (fy_start - 2) % 12 + 1)
+            and p.end.day >= 28)
+
+
+def _accepted(rule: KwIdentity, ps: list[Period], fy_start: int | None = None) -> list[Period]:
+    """The periods the type accepts. A range that is one financial year ("for period 01/04/2023 to 31/03/2024") is that
+    year's end for a type that is read by its year end."""
+    out = []
+    for p in ps:
+        if p.kind in rule.period and p.kind != "columns":
+            out.append(p)
+        elif fy_start and {"year_end", "financial_year"} & set(rule.period) and _one_year(p, fy_start):
+            out.append(Period(p.start, p.end, "year_end", p.text))
+    return out
 
 
 def _reader(cfg: IngestionConfig):
@@ -68,26 +84,44 @@ def _reader(cfg: IngestionConfig):
 
 
 def _page_period(cfg: IngestionConfig, rule: KwIdentity, page: Page, zones=("title", "footer")) -> tuple[Period | None, str | None]:
+    """The period the page states. Its running header or footer (furniture.py) comes first: printed on every page of
+    the document, it says which period the document is, and a period a sentence near the top of a page mentions does
+    not override it. Then each zone's lines, in order."""
     fy, v = _reader(cfg)
+    for zone in [z for z in zones if z in ("title", "footer")]:
+        for line in furniture.lines(page, "top" if zone == "title" else "bottom"):
+            got = _accepted(rule, in_line(line.text, fy, v), fy)
+            if got:
+                return got[0], zone
     for zone in zones:
         lines = _zone_lines(cfg, page, zone)
         for line in lines:
-            got = _accepted(rule, in_line(line, fy, v))
+            got = _accepted(rule, in_line(line, fy, v), fy)
             if got:
                 return got[0], zone
-        got = _accepted(rule, page_level(lines, fy, v))
+        got = _accepted(rule, page_level(lines, fy, v), fy)
         if got:
             return got[0], zone
     return None, None
 
 
 def _columns(cfg: IngestionConfig, pages: list[Page]) -> tuple[Period | None, int | None]:
+    """The latest of the first year columns printed. Column headings may be stacked over lines, a range to a line: a
+    line of dates, a line of the range's joining words ("to  to"), a line of dates: the columns end on the last."""
     fy, v = _reader(cfg)
+    joiners = {j.casefold() for j in cfg.keywords.settings.periods.range_joiners}
     for p in pages:
-        for l in p.content_lines():
+        lines = p.content_lines()
+        for i, l in enumerate(lines):
             got = [x for x in in_line(l.text, fy, v) if x.kind == "columns"]
-            if got:
-                return got[0], p.no
+            if not got:
+                continue
+            nxt = lines[i + 1:i + 3]
+            if len(nxt) == 2 and nxt[0].text.split() and all(w.casefold() in joiners for w in nxt[0].text.split()):
+                ends = [x for x in in_line(nxt[1].text, fy, v) if x.kind == "columns"]
+                if ends:
+                    return ends[0], p.no
+            return got[0], p.no
     return None, None
 
 
@@ -133,7 +167,7 @@ def _key_of(cfg: IngestionConfig, rule: KwIdentity, page: Page) -> str | None:
 
 def _periods_named(cfg: IngestionConfig, rule: KwIdentity, page: Page) -> set[tuple]:
     fy, v = _reader(cfg)
-    return {(p.start, p.end) for l in page.content_lines() for p in _accepted(rule, in_line(l.text, fy, v))}
+    return {(p.start, p.end) for l in page.content_lines() for p in _accepted(rule, in_line(l.text, fy, v), fy)}
 
 
 def _part_index(cfg: IngestionConfig, order: list[str], page: Page) -> int | None:
@@ -311,7 +345,7 @@ def _ask(cfg: IngestionConfig, rule: KwIdentity, doc_type: str, pages: list[Page
         ident.trace.append({"model": ans, "outcome": "not on its line"})
         return None
     fy, v = _reader(cfg)
-    got = _accepted(rule, in_line(text, fy, v))
+    got = _accepted(rule, in_line(text, fy, v), fy)
     if not got:
         ident.trace.append({"model": ans, "outcome": "not a period this type accepts"})
         return None

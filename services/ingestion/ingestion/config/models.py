@@ -822,12 +822,25 @@ class KwType(KwWords):
     (audited statements: provisional and projected statements say what they are)."""
 
 
+class KwFurniture(Strict):
+    """A file's running header and footer (stages/furniture.py): a line near a page's top or bottom whose text, its
+    digits read as one mark ("Page 3 of 6"), repeats on enough of the file's pages."""
+
+    edge_lines: int = Field(default=3, ge=1, le=6)
+    """How many lines from a page's top and from its bottom may be furniture."""
+    min_share: float = Field(default=0.5, gt=0, le=1)
+    """The share of the file's pages a line must repeat on."""
+    min_pages: int = Field(default=3, ge=2)
+    """And at least this many pages: in a shorter file nothing is furniture."""
+
+
 class KwZones(Strict):
     header_band: float = Field(gt=0, lt=0.5)
     footer_band: float = Field(gt=0, lt=0.5)
     title_size_ratio: float = Field(gt=1)
     title_bold_share: float = Field(gt=0, le=1)
     title_height_ratio: float = Field(gt=1)
+    furniture: KwFurniture = Field(default_factory=KwFurniture)
 
 
 class KwFuzzy(Strict):

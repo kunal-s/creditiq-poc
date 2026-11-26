@@ -10,8 +10,10 @@ Each page, and each section of a page that a title opens, is typed on its own by
    every type, and its type's category joins the chosen ones. Where look-alike types share a part (audited and
    provisional statements share the balance sheet), the run of sections they share decides, by each type's own words.
 4. Continued. An untitled section at the head of a page continues the type the page before ended with (a table running
-   onto the next page; the closing pages of a document).
-5. Gap fill. An unplaced page between pages of one type, up to `max_gap` pages, takes that type.
+   onto the next page; the closing pages of a document), also when its words alone would place it as another type that
+   the page before's type shares words with (step 3b).
+5. Gap fill. An unplaced page between pages of one type, up to `max_gap` pages, takes that type; any number of
+   them do when they share the pages' running header or footer (furniture.py).
 6. The model, one page at a time, with the page's lines and the closed list; a title warning on the page for the type
    it names overrules it. Its answers are recorded and replayed like every model call.
 7. What is left stays unplaced, with its three best guesses.
@@ -218,6 +220,35 @@ def type_pages(cfg: IngestionConfig, pages: list[Page], model: ModelClient | Non
                 if t not in sec.types and any(K.within(cfg, u, t) for u in sec.types):
                     sec.types.append(t)
 
+    # 3b. Continuity: an untitled section at the head of a page that its words alone place as another type than the page
+    # before ended with continues the page before when that type's words are on it too, or when the page states no
+    # period, account or person of its own for the other type (a return's later pages print the tax columns another
+    # return also prints; a computation page follows its acknowledgement). A page opens another document by a title
+    # or an identity of its own.
+    from . import identity
+    scores = {id(sec): {r["type"]: r["score"] for r in ranked} for sec, _, ranked in secs}
+    by_page = {p.no: p for p in real}
+
+    def own_identity(page: Page, types: list[str]) -> bool:
+        """Whether the page states a period, account or person of its own for any of these types."""
+        return any(identity._key_of(cfg, identity.rule_of(cfg, t), page) for t in types)
+
+    last: list[str] = []
+    for no in sorted(out):
+        page_secs = out[no]
+        if not page_secs or page_secs[0].placed_by == "index":
+            last = []
+            continue
+        head = page_secs[0]
+        if (last and head.types and not head.titled and head.placed_by in ("keywords", "all_types")
+                and not set(head.types) & set(last)
+                and (any(scores.get(id(head), {}).get(t, 0) > 0 for t in last)
+                     or not own_identity(by_page[no], head.types))):
+            head.note = (f"continues the page before ({', '.join(last)}): no title of its own, though its words also "
+                         f"read as {', '.join(head.types)}")
+            head.types, head.placed_by = list(last), "continued"
+        last = next((x.types for x in reversed(page_secs) if x.types), last)
+
     # 4. Continued: an untitled section at a page's head takes the type the page before ended with.
     prev_last: list[str] = []
     for no in sorted(out):
@@ -230,20 +261,30 @@ def type_pages(cfg: IngestionConfig, pages: list[Page], model: ModelClient | Non
         else:
             prev_last = []
 
-    # 5. Gap fill: unplaced pages between pages of one type.
+    # 5. Gap fill: unplaced pages between pages of one type: up to `max_gap` of them, or any number when they and the
+    # pages either side print the same running header or footer (furniture.py): one document's pages.
+    from . import furniture
     nos = sorted(out)
+    page_of = {p.no: p for p in real}
+
+    def shared(lo: int, hi: int) -> bool:
+        common = None
+        for m in range(lo, hi + 1):
+            ks = furniture.keys(page_of[nos[m]]) if nos[m] in page_of else set()
+            common = ks if common is None else common & ks
+        return bool(common)
+
     for k, no in enumerate(nos):
         if any(x.types for x in out[no]) or out[no] and out[no][0].placed_by == "index":
             continue
         before = next((out[nos[m]] for m in range(k - 1, -1, -1)), None)
-        for g in range(1, s.max_gap + 1):
-            if k + g >= len(nos):
-                break
+        for g in range(1, len(nos) - k):
             after = out[nos[k + g]]
             if any(x.types for x in after):
                 left = next((x.types for x in reversed(before or []) if x.types), None)
                 right = next((x.types for x in after if x.types), None)
-                if left and left == right and all(not any(x.types for x in out[nos[m]]) for m in range(k, k + g)):
+                near = g <= s.max_gap or (k > 0 and shared(k - 1, k + g))
+                if near and left and left == right and all(not any(x.types for x in out[nos[m]]) for m in range(k, k + g)):
                     for m in range(k, k + g):
                         for x in out[nos[m]]:
                             x.types, x.placed_by = list(left), "gap"

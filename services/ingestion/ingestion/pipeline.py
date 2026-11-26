@@ -18,6 +18,7 @@ from .llm.calllog import call_context
 from .llm.recorder import ModelClient
 from .pageindex import Page
 from .readers.ocr import OcrEngine
+from .stages import furniture as furniture_stage
 from .stages import identity as identity_stage
 from .stages import pages as pages_stage
 from .stages import route as route_stage
@@ -272,6 +273,9 @@ class Ingestor:
             return FileResult(**base, status="rejected", run_id=run_id, reject={"code": "no_such_pages", "message": f"the file has none of pages {spec.pages}"},
                               decision="reject", trace=tr.entries)
         self.store.save_pages(run_id, pages)
+        if cfg.keywords:
+            # The file's running header and footer, from its own pages: what its pages say they are (furniture.py).
+            furniture_stage.mark(pages, cfg.keywords.settings.zones.furniture)
         # F-07A: now that the pages are read, place on them what the integrity
         # checks found in the bytes (a recovered figure is printed somewhere; an
         # image a later save added is drawn somewhere).

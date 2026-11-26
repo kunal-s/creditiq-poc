@@ -696,6 +696,15 @@ MIGRATIONS: list[str] = [
     """
     ALTER TABLE documents ADD COLUMN extra TEXT;
     """,
+    # 26: a value the service's fill read by its rules was stored with the service's word for it ("rules"), which the
+    # field contract does not know, and the case's field list could not be read; it is the engine's "deterministic".
+    """
+    UPDATE field_values SET method = 'deterministic' WHERE method = 'rules';
+    """,
+    # 27: 26 again, for the values an engine still running the code before 26 stored after 26 had run.
+    """
+    UPDATE field_values SET method = 'deterministic' WHERE method = 'rules';
+    """,
 ]
 
 

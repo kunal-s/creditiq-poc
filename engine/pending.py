@@ -238,7 +238,7 @@ def _year_hosts(conn: sqlite3.Connection, root: Path, case_id: str) -> dict[tupl
 
 def _store(conn: sqlite3.Connection, case_id: str, doc: sqlite3.Row, p: Pending, v: dict, origin: str,
            types: dict[str, str], printed: sqlite3.Row | None = None) -> dict:
-    from .pipeline import effective_types
+    from .pipeline import METHOD, effective_types
 
     printed = printed or doc
     fv_id = stable_id("FV", doc["id"], f"fill:{p.field}")
@@ -250,7 +250,7 @@ def _store(conn: sqlite3.Connection, case_id: str, doc: sqlite3.Row, p: Pending,
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, '{}', 'in_review', NULL, ?, ?)
            ON CONFLICT(id) DO NOTHING""",
         (fv_id, case_id, doc["id"], p.field, json.dumps(v.get("value")), v.get("raw_text"), json.dumps(evidence),
-         v.get("method") or "model", origin, p.label))
+         METHOD[v.get("method") or "model"], origin, p.label))
     doc_types = effective_types(printed)
     where = " + ".join(types.get(t, t.replace("_", " ")) for t in doc_types) if doc_types else "Unplaced pages"
     where += f" ({printed['original_name']})"

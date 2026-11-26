@@ -124,7 +124,7 @@ def test_a_store_whose_version_21_was_another_change_gets_the_model_log(tmp_path
 
     store = db.connect(tmp_path)
     try:
-        assert store.execute("PRAGMA user_version").fetchone()[0] == len(db.MIGRATIONS) == 25
+        assert store.execute("PRAGMA user_version").fetchone()[0] == len(db.MIGRATIONS) == 27
         columns = {r["name"] for r in store.execute("PRAGMA table_info(model_log)")}
         assert {"id", "at", "service", "source", "status", "kind"} <= columns
         model_log.write(store, {"at": "2026-11-13T10:00:00+00:00", "service": "cam", "task": "cam_section",

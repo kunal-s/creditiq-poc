@@ -40,7 +40,10 @@ from .util import dumps, now_iso, stable_id
 
 GRADE_ORDER = {"A": 0, "B": 1, "C": 2, "U": 3}
 ROUTE = {"text_layer": "text", "ocr": "ocr", "sheet": "sheet"}
-METHOD = {"identifier": "deterministic", "alias": "deterministic", "pattern": "deterministic", "model": "model"}
+# How the service read a value, as the engine records it. "rules" is the service's fill reading a value by its rules
+# (services/ingestion/ingestion/fill.py), the same kind of reading as an identifier, alias or pattern.
+METHOD = {"identifier": "deterministic", "alias": "deterministic", "pattern": "deterministic", "rules": "deterministic",
+          "model": "model"}
 
 
 @dataclass

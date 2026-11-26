@@ -266,12 +266,12 @@ def test_f07a_the_figures_read_are_served_apart_from_the_file_list(client, publi
     assert page.status_code == 200 and page.headers["content-type"] == "image/png"
 
 
-def test_store_migrates_to_version_25(published_data_root):
+def test_store_migrates_to_version_27(published_data_root):
     from engine import db
 
     conn = db.connect(published_data_root)
     try:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == len(db.MIGRATIONS) == 25
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == len(db.MIGRATIONS) == 27
         tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
         finding_columns = {r["name"] for r in conn.execute("PRAGMA table_info(findings)")}
         case_columns = {r["name"] for r in conn.execute("PRAGMA table_info(cases)")}

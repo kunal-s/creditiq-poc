@@ -20,8 +20,8 @@ CIN = "U17291TZ2016PTC027431"
 class Service:
     """Answers a fill request from `answers`: {(file name prefix, field, period_end): (value, raw, page)}."""
 
-    def __init__(self, answers: dict):
-        self.answers, self.requests = answers, []
+    def __init__(self, answers: dict, method: str = "model"):
+        self.answers, self.requests, self.method = answers, [], method
 
     def fill(self, request: dict, payload: bytes) -> dict:
         self.requests.append(request)
@@ -30,7 +30,7 @@ class Service:
         for f in request["fields"]:
             for (prefix, field, end), (value, raw, page) in self.answers.items():
                 if name.startswith(prefix) and field == f["name"] and end == f.get("period_end") and page in request["pages"]:
-                    found.append({"field": field, "period_end": end, "value": value, "raw_text": raw, "method": "model",
+                    found.append({"field": field, "period_end": end, "value": value, "raw_text": raw, "method": self.method,
                                   "page": page, "bbox": None, "line": raw})
         return {"found": found, "pages_read": request["pages"], "trace": []}
 
@@ -169,20 +169,23 @@ def test_scenario_21_no_depreciation_names_what_it_stops_and_the_case_needs_a_re
     assert any(g["label"] == f"Depreciation, {year}" for g in after["required_fields"])   # still on the list
 
 
-def test_a_value_the_fill_found_reads_with_its_origin(client: TestClient, case, published_data_root):
+@pytest.mark.parametrize(("read_by", "recorded"), [("model", "model"), ("rules", "deterministic")])
+def test_a_value_the_fill_found_reads_with_its_origin(client: TestClient, case, published_data_root, read_by, recorded):
+    """The service's fill reads a value by its rules or by the model; either way the case's field list reads it."""
     root = published_data_root
     add_doc(root, case, "certificate_of_incorporation", {"company_name": "Kestrel Tools Private Limited"})
     afs = audited(root, case, "2026-03-31")
     _on_disk(root, case)
     conn = db.connect(root)
     try:
-        pending.fill(conn, root, case, AS_OF, Service({("audited_financial_statements", "cin", None): (CIN, CIN, 1)}), "v")
+        pending.fill(conn, root, case, AS_OF,
+                     Service({("audited_financial_statements", "cin", None): (CIN, CIN, 1)}, method=read_by), "v")
     finally:
         conn.close()
     fields = client.get(f"/api/cases/{case}/fields", headers=sign_in(client, ANALYST))
     assert fields.status_code == 200, fields.text
     cin = [f for f in fields.json() if f["document_id"] == afs and f["field"] == "cin"]
-    assert cin and cin[0]["origin"] == "sweep" and cin[0]["status"] == "in_review"
+    assert cin and cin[0]["origin"] == "sweep" and cin[0]["status"] == "in_review" and cin[0]["method"] == recorded
 
 
 def test_a_yearly_figure_found_elsewhere_is_a_line_of_that_years_statements(case, published_data_root):

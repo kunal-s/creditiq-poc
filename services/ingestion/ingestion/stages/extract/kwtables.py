@@ -338,6 +338,18 @@ def candidates(cfg: IngestionConfig, spec: KwTable, defs: list[ColumnDef], pages
     return out
 
 
+def band_readings(cfg: IngestionConfig, spec: KwTable, defs: list[ColumnDef], pages: list[Page],
+                  others: list[KwTable] | None = None) -> list[TableResult]:
+    """The table read from where its figures line up, its headings naming the columns (bands.py)."""
+    from . import bands
+
+    label_type = next((d.type for d in defs if d.name == spec.label), None)
+    h = KwHeader(cfg, spec, cfg.routing.reading.column_gap, others, label_type)
+    for p in pages:
+        h._mark_titles(p)
+    return bands.readings(cfg, spec, defs, pages, h)
+
+
 def _split_signed(res: TableResult, spec: KwTable, cfg: IngestionConfig) -> None:
     """Each row's single amount put in its debit or credit column, by the row's marker (its own column, or printed
     with the figure) or else by its sign; the amount and marker columns are not reported."""

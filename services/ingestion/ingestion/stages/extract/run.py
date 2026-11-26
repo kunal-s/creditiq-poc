@@ -173,7 +173,9 @@ def _extract_instance(cfg: IngestionConfig, doc_type: str, pages: list[Page], mo
                 titled = kwtables.read(cfg, kt, t.columns, pages, others)
                 readings += [titled] if titled is not None else []
                 held = {tuple(titled.claimed[:3])} if titled is not None else set()
-                readings += [r for r in kwtables.candidates(cfg, kt, t.columns, pages, others)
+                # Read from where the figures line up first (bands.py), then from each header the headings name.
+                readings += [r for r in kwtables.band_readings(cfg, kt, t.columns, pages, others)
+                             + kwtables.candidates(cfg, kt, t.columns, pages, others)
                              if tuple(r.claimed[:3]) not in held and table_contract.holds_any(contract, r.rows)]
             for v in variants:
                 if (r := build_table(v, t.columns, pages, cfg.routing.reading)) is not None:
@@ -197,7 +199,7 @@ def _extract_instance(cfg: IngestionConfig, doc_type: str, pages: list[Page], mo
         src = {"sheet": res.sheet} if res.sheet else {"page_start": res.page_start, "page_end": res.page_end, "bbox": res.bbox}
         tables[t.name] = {"status": "found", "reason": None, "columns": res.columns, "rows": res.rows, "source": src, "repairs": res.repairs, "unparsed": res.unparsed, "method": res.method}
         if verdict is not None:
-            tables[t.name]["contract"] = {**verdict, "summary": table_contract.summary(verdict)}
+            tables[t.name]["contract"] = {**{k: v for k, v in verdict.items() if k != "unparsed"}, "summary": table_contract.summary(verdict)}
     _unit(cfg, td, rules, pages, out_fields, tables)
     extra, more = extra_data.collect(pages, claimed, cfg.routing.reading.column_gap, cfg.fields.extra_data, model,
                                      cfg.llm.prompts.get("describe_table"))

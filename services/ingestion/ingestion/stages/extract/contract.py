@@ -40,11 +40,14 @@ def _holds(label: str, alias: str) -> bool:
 
 
 def holds_any(contract: TableContract, rows: list[dict]) -> bool:
-    """Whether a reading holds at least one of the rows the table must have, with a figure: the evidence a reading
-    found without its part's title above it needs before it counts as the table at all."""
+    """Whether a reading holds at least one of the rows the table must have, with a figure, by a label that names it:
+    the evidence a reading found without its part's title above it needs before it counts as the table at all. A bare
+    label ("=total") says nothing about which table it is in, so it is not that evidence."""
     if not contract.must_have:
         return True
-    return len(evaluate(contract, rows)["missing"]) < len(contract.must_have)
+    named = contract.model_copy(update={"rows": {n: [a for a in aliases if not a.startswith("=")] or ["\x00"]
+                                                  for n, aliases in contract.rows.items()}})
+    return len(evaluate(named, rows)["missing"]) < len(contract.must_have)
 
 
 def _figure(v: object) -> float | None:
@@ -93,8 +96,9 @@ def evaluate(contract: TableContract, rows: list[dict]) -> dict:
 
 def rank(verdict: dict) -> tuple:
     """Higher is better: meets the contract; then fewer missing rows; then sums that hold over sums that fail; then
-    more rows."""
-    return (verdict["met"], -len(verdict["missing"]), verdict["passed"] - 2 * len(verdict["failed"]), verdict["rows"])
+    fewer cells it could not read; then more rows."""
+    return (verdict["met"], -len(verdict["missing"]), verdict["passed"] - 2 * len(verdict["failed"]),
+            -verdict.get("unparsed", 0), verdict["rows"])
 
 
 def choose(contract: TableContract, readings: list[TableResult]) -> tuple[TableResult | None, dict | None, list[dict]]:
@@ -103,7 +107,7 @@ def choose(contract: TableContract, readings: list[TableResult]) -> tuple[TableR
     best: tuple[TableResult, dict] | None = None
     seen: list[dict] = []
     for r in readings:
-        v = evaluate(contract, r.rows)
+        v = {**evaluate(contract, r.rows), "unparsed": r.unparsed}
         seen.append({"method": r.method, "page": r.page_start, "rows": v["rows"], "met": v["met"],
                      "missing": v["missing"], "failed": len(v["failed"]), "passed": v["passed"]})
         if best is None or rank(v) > rank(best[1]):

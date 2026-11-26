@@ -92,6 +92,8 @@ def decide(cfg: IngestionConfig, doc_grade: str, cls: dict, fields: dict, checks
             reasons.append({"kind": "table_missing", "table": n})
         elif t["status"] == "found" and t.get("method") == "model":
             reasons.append({"kind": "table_by_model", "table": n})
+        if t["status"] == "found" and t.get("contract") and not t["contract"]["met"]:
+            reasons.append({"kind": "table_contract", "table": n, "detail": t["contract"].get("summary", "")})
     if doc_grade in dc.reject_grades:
         decision = "reject"
     elif reasons:

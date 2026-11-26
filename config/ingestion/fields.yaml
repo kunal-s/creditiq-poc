@@ -270,6 +270,43 @@ types:
           previous_period: the figure for the year before (the comparative year)
       profit_and_loss: {<<: *statement_table, part: profit_and_loss}
       cash_flow: {<<: *statement_table, part: cash_flow, optional: true}   # a small company may file no cash flow
+    # What a right reading of each statement holds. Every reader proposes the statement (each header its headings name,
+    # each layout below, the model last) and the reading that meets this best is kept; one that does not is reported
+    # with what failed. A header found without the statement's title above it counts only when its reading holds a row
+    # the statement must have. A sum is checked only where all its rows are printed, so a statement that prints no
+    # "other income" line is not held to it.
+    table_contracts: &statement_contracts
+      profit_and_loss:
+        label: particulars
+        columns: [current_period, previous_period]
+        rows:
+          revenue_from_operations: [revenue from operations, income from operations, net sales, net revenue from operations, turnover]
+          other_income: [other income]
+          total_income: [total income, total revenue]
+          total_expenses: [total expenses, total expenditure]
+          profit_before_exceptional: [profit before exceptional]
+          profit_before_tax: [profit before tax, profit loss before tax]
+        must_have: [revenue_from_operations, total_expenses, profit_before_tax]
+        identities:
+          - total_income = revenue_from_operations + other_income
+          - profit_before_exceptional = total_income - total_expenses
+        min_rows: 8
+      balance_sheet:
+        label: particulars
+        columns: [current_period, previous_period]
+        rows:
+          total_assets: [total assets, "=total"]           # a statement that prints both totals as a bare "TOTAL"
+          total_equity_and_liabilities: [total equity and liabilities, total liabilities and equity]
+        must_have: [total_assets]
+        identities:
+          - total_assets = total_equity_and_liabilities
+      cash_flow:
+        label: particulars
+        columns: [current_period, previous_period]
+        rows:
+          net_cash_from_operating_activities: [operating activities]   # the section's net line: its heading prints no figure
+        must_have: [net_cash_from_operating_activities]
+        min_rows: 3
     fields:
       # Statements filed in XBRL print each value on a labelled line ("Name of audit firm  PRICE WATERHOUSE ..."); the hints
       # point the model at those lines, and the rule-read fields try the labelled line first.
@@ -435,6 +472,15 @@ types:
           paid_cash: [paid in cash, tax paid in cash]
           interest: [interest]
           late_fee: [late fee, late]
+    table_contracts:
+      # Table 3.1: its row (a) is the return's taxable turnover. Table 3.2 (inter-state supplies) has the same headings
+      # and no such row.
+      outward_supplies:
+        label: description
+        columns: [taxable_value]
+        rows:
+          outward_taxable: [outward taxable supplies other than zero rated]
+        must_have: [outward_taxable]
   gstr_1:
     extraction: model   # the model reads each field; code checks the value on its page; the rules below are the fallback without a model
     identity: {name: legal_name, gstin: gstin}
@@ -582,6 +628,7 @@ types:
       balance_sheet: {<<: *statement_table, part: balance_sheet}
       profit_and_loss: {<<: *statement_table, part: profit_and_loss}
       cash_flow: {<<: *statement_table, part: cash_flow, optional: true}   # a small company may file no cash flow
+    table_contracts: *statement_contracts
     fields:
       company_name: {llm_hint: 'the full legal name of the company whose statements these are, as printed'}
       period_from: {llm_hint: 'the first day of the period the statements cover, copied as printed; null if only the end is printed'}

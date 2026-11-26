@@ -224,6 +224,35 @@
       "title": "ConfigRef",
       "type": "object"
     },
+    "ContractFailure": {
+      "additionalProperties": false,
+      "properties": {
+        "column": {
+          "title": "Column",
+          "type": "string"
+        },
+        "identity": {
+          "title": "Identity",
+          "type": "string"
+        },
+        "left": {
+          "title": "Left",
+          "type": "number"
+        },
+        "right": {
+          "title": "Right",
+          "type": "number"
+        }
+      },
+      "required": [
+        "identity",
+        "column",
+        "left",
+        "right"
+      ],
+      "title": "ContractFailure",
+      "type": "object"
+    },
     "Defect": {
       "additionalProperties": false,
       "description": "A defect of the document, not of the extraction (F-13.3).",
@@ -1704,6 +1733,50 @@
       "title": "Source",
       "type": "object"
     },
+    "TableContractResult": {
+      "additionalProperties": false,
+      "description": "How the kept reading meets the table's contract (fields.yaml table_contracts).",
+      "properties": {
+        "failed": {
+          "items": {
+            "$ref": "#/$defs/ContractFailure"
+          },
+          "title": "Failed",
+          "type": "array"
+        },
+        "met": {
+          "title": "Met",
+          "type": "boolean"
+        },
+        "missing": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Missing",
+          "type": "array"
+        },
+        "passed": {
+          "default": 0,
+          "title": "Passed",
+          "type": "integer"
+        },
+        "rows": {
+          "default": 0,
+          "title": "Rows",
+          "type": "integer"
+        },
+        "summary": {
+          "default": "",
+          "title": "Summary",
+          "type": "string"
+        }
+      },
+      "required": [
+        "met"
+      ],
+      "title": "TableContractResult",
+      "type": "object"
+    },
     "TableResult": {
       "additionalProperties": false,
       "properties": {
@@ -1718,6 +1791,17 @@
           "default": 0.0,
           "title": "Confidence",
           "type": "number"
+        },
+        "contract": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TableContractResult"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "method": {
           "default": "rules",

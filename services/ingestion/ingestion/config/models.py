@@ -252,6 +252,65 @@ class ModelTable(Strict):
     """Text columns other than the label are mapped too (the model names their line and piece of text)."""
 
 
+_IDENTITY_TERM = re.compile(r"\s*([+-])?\s*([a-z][a-z0-9_]*)\s*")
+
+
+def parse_identity(text: str) -> tuple[str, list[tuple[int, str]]] | None:
+    """"total_income = revenue + other_income - x" as (left row, [(sign, row), ...]); None when it does not parse."""
+    left, eq, right = text.partition("=")
+    if not eq or not re.fullmatch(r"\s*[a-z][a-z0-9_]*\s*", left):
+        return None
+    terms: list[tuple[int, str]] = []
+    pos = 0
+    while pos < len(right):
+        m = _IDENTITY_TERM.match(right, pos)
+        if not m or m.end() == pos or (terms and not m.group(1)):
+            return None
+        terms.append((-1 if m.group(1) == "-" else 1, m.group(2)))
+        pos = m.end()
+    return (left.strip(), terms) if terms else None
+
+
+class TableContract(Strict):
+    """What a right reading of a table holds. Every reader proposes the table (its headings, wherever they are; each
+    configured layout; the model last); the reading that meets this best is kept, and one that does not meet it is
+    reported as such, naming what failed. The same contract holds for every document of the type."""
+
+    label: str
+    """The column of the row labels."""
+    columns: list[str]
+    """The figure columns the rows are read in and the identities are checked in (each one on its own)."""
+    rows: dict[str, list[str]] = Field(default_factory=dict)
+    """A row's name and the labels it is printed with. A label counts when it holds one of these as whole words, with
+    case, punctuation, "&" for "and" and a leading list marker ("I", "(a)", "1.") set aside; one written "=total" must be
+    the whole label. The first row that matches and prints a figure is the one used."""
+    must_have: list[str] = Field(default_factory=list)
+    """Rows the reading must hold, each with a figure in one of `columns`."""
+    identities: list[str] = Field(default_factory=list)
+    """Sums the printed figures make ("total_income = revenue_from_operations + other_income"), over row names. An
+    identity is checked in each column where all its rows have a figure; one whose rows are not printed is not checked."""
+    min_rows: int = Field(default=1, ge=1)
+    tolerance: float = Field(default=1.0, ge=0)
+    """How far apart the two sides may be, in the table's own unit (rounding of printed figures)."""
+    tolerance_ratio: float = Field(default=0.0005, ge=0, le=0.05)
+    """Or this share of the larger side, whichever is more."""
+
+    @model_validator(mode="after")
+    def _names(self) -> "TableContract":
+        problems = [f"must_have: unknown row {n}" for n in self.must_have if n not in self.rows]
+        for text in self.identities:
+            parsed = parse_identity(text)
+            if parsed is None:
+                problems.append(f"identities: cannot read {text!r} (write it as 'a = b + c - d' over row names)")
+                continue
+            left, terms = parsed
+            problems += [f"identities: unknown row {n} in {text!r}" for n in [left, *(n for _, n in terms)] if n not in self.rows]
+        problems += [f"rows.{n}: no labels" for n, labels in self.rows.items() if not labels]
+        if problems:
+            raise ValueError("; ".join(problems))
+        return self
+
+
 class TypeFields(Strict):
     extraction: Literal["rules", "model"] = "rules"
     """`model`: the model reads every field that has no identifier rule (and is not `llm: false`) from the first
@@ -267,6 +326,10 @@ class TypeFields(Strict):
     a fallback until the keyword reading reads every table they do."""
     model_tables: dict[str, ModelTable] = Field(default_factory=dict)
     """Tables the model maps when every layout above fails to find them (and a model is configured)."""
+    table_contracts: dict[str, TableContract] = Field(default_factory=dict)
+    """What a right reading of each table holds. A table with a contract is read by every reader that applies and the
+    reading that meets the contract best is kept; a table without one is read as above, the first reader that finds
+    it."""
 
 
 class IdentifierReading(Strict):
@@ -977,6 +1040,17 @@ class IngestionConfig(Strict):
                     _compile(rx, f"fields.{tid}.model_tables.{tname}.pages", problems)
                 if "table" not in self.llm.prompts:
                     problems.append("llm.prompts: missing 'table' (model_tables needs it)")
+            for tname, tc in tf.table_contracts.items():
+                if tname not in tnames:
+                    problems.append(f"fields.{tid}.table_contracts.{tname}: not in the type's schema")
+                    continue
+                cols = {c.name for c in tnames[tname].columns}
+                if tc.label not in cols:
+                    problems.append(f"fields.{tid}.table_contracts.{tname}.label: unknown column {tc.label}")
+                if set(tc.columns) - cols:
+                    problems.append(f"fields.{tid}.table_contracts.{tname}.columns: unknown columns {sorted(set(tc.columns) - cols)}")
+                if not (tname in tf.tables or tname in tf.table_keywords or tname in tf.model_tables):
+                    problems.append(f"fields.{tid}.table_contracts.{tname}: no reader is configured for the table")
         for r in self.validators.rules:
             for t in r.types:
                 if t not in types:

@@ -93,6 +93,24 @@ class IngestTableRow(_C):
     source: dict[str, Any]
 
 
+class IngestContractFailure(_C):
+    identity: str
+    column: str
+    left: float
+    right: float
+
+
+class IngestTableContract(_C):
+    """How the reading the service kept meets the table's contract (the service's fields.yaml table_contracts)."""
+
+    met: bool
+    missing: list[str] = Field(default_factory=list)
+    failed: list[IngestContractFailure] = Field(default_factory=list)
+    passed: int = 0
+    rows: int = 0
+    summary: str = ""
+
+
 class IngestTable(_C):
     status: Literal["found", "missing"]
     reason: str | None = None
@@ -105,6 +123,8 @@ class IngestTable(_C):
     method: Literal["rules", "layout", "keywords", "model"] = "rules"
     """rules: a configured layout read the table; model: the model mapped its rows when no layout found it, and
     every figure was read from the page."""
+    contract: IngestTableContract | None = None
+    """For a table with a contract: how the reading kept meets it. Absent for a table without one."""
 
 
 class IngestCheck(_C):

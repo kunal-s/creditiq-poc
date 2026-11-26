@@ -259,6 +259,35 @@
       "title": "IngestConfigRef",
       "type": "object"
     },
+    "IngestContractFailure": {
+      "additionalProperties": false,
+      "properties": {
+        "column": {
+          "title": "Column",
+          "type": "string"
+        },
+        "identity": {
+          "title": "Identity",
+          "type": "string"
+        },
+        "left": {
+          "title": "Left",
+          "type": "number"
+        },
+        "right": {
+          "title": "Right",
+          "type": "number"
+        }
+      },
+      "required": [
+        "identity",
+        "column",
+        "left",
+        "right"
+      ],
+      "title": "IngestContractFailure",
+      "type": "object"
+    },
     "IngestDocument": {
       "additionalProperties": false,
       "properties": {
@@ -1602,6 +1631,17 @@
           "title": "Confidence",
           "type": "number"
         },
+        "contract": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/IngestTableContract"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "method": {
           "default": "rules",
           "enum": [
@@ -1672,6 +1712,50 @@
         "columns"
       ],
       "title": "IngestTable",
+      "type": "object"
+    },
+    "IngestTableContract": {
+      "additionalProperties": false,
+      "description": "How the reading the service kept meets the table's contract (the service's fields.yaml table_contracts).",
+      "properties": {
+        "failed": {
+          "items": {
+            "$ref": "#/$defs/IngestContractFailure"
+          },
+          "title": "Failed",
+          "type": "array"
+        },
+        "met": {
+          "title": "Met",
+          "type": "boolean"
+        },
+        "missing": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Missing",
+          "type": "array"
+        },
+        "passed": {
+          "default": 0,
+          "title": "Passed",
+          "type": "integer"
+        },
+        "rows": {
+          "default": 0,
+          "title": "Rows",
+          "type": "integer"
+        },
+        "summary": {
+          "default": "",
+          "title": "Summary",
+          "type": "string"
+        }
+      },
+      "required": [
+        "met"
+      ],
+      "title": "IngestTableContract",
       "type": "object"
     },
     "IngestTableRow": {

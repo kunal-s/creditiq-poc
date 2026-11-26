@@ -55,6 +55,27 @@ class TableRow(C):
     source: dict[str, Any]
 
 
+class ContractFailure(C):
+    identity: str
+    column: str
+    left: float
+    right: float
+
+
+class TableContractResult(C):
+    """How the kept reading meets the table's contract (fields.yaml table_contracts)."""
+
+    met: bool
+    missing: list[str] = Field(default_factory=list)
+    """Rows the contract needs that the reading does not hold."""
+    failed: list[ContractFailure] = Field(default_factory=list)
+    """Sums the printed figures should make and do not, by column."""
+    passed: int = 0
+    rows: int = 0
+    summary: str = ""
+    """What failed, in words; empty when the contract is met."""
+
+
 class TableResult(C):
     status: Literal["found", "missing"]
     reason: str | None = None
@@ -67,6 +88,8 @@ class TableResult(C):
     method: Literal["rules", "layout", "keywords", "model"] = "rules"
     """rules: a configured layout read the table; model: the model mapped its rows when no layout found it, and
     every figure was read from the page."""
+    contract: TableContractResult | None = None
+    """For a table with a contract: how the reading kept meets it. Absent for a table without one."""
 
 
 class Check(C):

@@ -288,6 +288,56 @@ def read(cfg: IngestionConfig, spec: KwTable, defs: list[ColumnDef], pages: list
     return res
 
 
+class _At(KwHeader):
+    """The table's header reader, held at one header: the reading that starts there."""
+
+    def __init__(self, base: KwHeader, at: tuple[int, int, int, dict]):
+        self.__dict__.update(base.__dict__)
+        self._at = at
+
+    def find(self, pages: list[Page]):
+        return self._at
+
+
+def candidates(cfg: IngestionConfig, spec: KwTable, defs: list[ColumnDef], pages: list[Page],
+               others: list[KwTable] | None = None) -> list[TableResult]:
+    """Every reading the table's headings propose: each header they name, anywhere in the pages and whatever title is
+    above it, read as a table. A table contract chooses between them (contract.py), so no header is ruled out here:
+    not by a part's title, and not because another table's headings name the same line more fully."""
+    label_type = next((d.type for d in defs if d.name == spec.label), None)
+    base = KwHeader(cfg, spec, cfg.routing.reading.column_gap, others, label_type)
+    for p in pages:
+        base._mark_titles(p)
+    rule = _rule(spec, defs)
+    out: list[TableResult] = []
+    seen: set[tuple] = set()
+    for pi, p in enumerate(pages):
+        lines = p.content_lines()
+        below = -1
+        for i in range(len(lines)):
+            if i <= below:
+                continue                       # a line of the header just read (a heading that wraps)
+            got = base._block(lines, i)
+            if not got:
+                continue
+            _, extra, anchors = got
+            below = i + extra
+            res = build_table(rule, defs, pages, cfg.routing.reading, _At(base, (pi, i, extra, anchors)))
+            if res is None or not res.rows:
+                continue
+            key = tuple(res.claimed[:3]) or (res.page_start, len(res.rows))
+            if key in seen:
+                continue
+            seen.add(key)
+            res.method = "keywords"
+            if spec.signed:
+                _split_signed(res, spec, cfg)
+                if spec.repair and spec.repair.get("kind") == "running_balance":
+                    repair_running_balance(res, spec.repair, {d.name: d.type for d in defs})
+            out.append(res)
+    return out
+
+
 def _split_signed(res: TableResult, spec: KwTable, cfg: IngestionConfig) -> None:
     """Each row's single amount put in its debit or credit column, by the row's marker (its own column, or printed
     with the figure) or else by its sign; the amount and marker columns are not reported."""

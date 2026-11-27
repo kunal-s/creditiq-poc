@@ -62,3 +62,27 @@ def test_tan_din_udin_itr_formats():
     assert not ids.validate_din("1847362")
     assert ids.validate_itr_ack("274918365120725")
     assert ids.validate_udin("24051233AKQPTL4419")
+
+
+def test_llpin_is_three_letters_a_hyphen_and_four_digits():
+    from engine.identifiers import validate_llpin
+
+    assert validate_llpin("AAB-1234")
+    for bad in ("AB-1234", "AAB1234", "AAB-12345", "aab-1234", "AAB-12A4", ""):
+        assert not validate_llpin(bad), bad
+
+
+def test_an_identifier_is_judged_for_its_box_never_corrected():
+    from engine.intake_rules import identifier_error
+
+    assert identifier_error("pan", "abcpk1234f", holder="individual") is None
+    assert "fourth letter" in identifier_error("pan", "AABCK1234F", holder="individual")
+    assert identifier_error("pan", "AABCK1234F", holder="individual", holder_rule_lifted=True) is None
+    # An individual's PAN is a proprietorship's own, and stands until the constitution says otherwise.
+    assert identifier_error("pan", "ABCPK1234F", holder="entity", constitution="proprietorship") is None
+    assert identifier_error("pan", "ABCPK1234F", holder="entity", constitution="unknown") is None
+    assert identifier_error("pan", "ABCPK1234F", holder="entity", constitution="private_limited")
+    assert identifier_error("cin_or_llpin", "AAB-1234") is None
+    assert identifier_error("cin_or_llpin", "U28990MH2015PTC123456") is None
+    assert identifier_error("udyam", "UDYAM-MH-01-1234567") is None
+    assert identifier_error("text", "x" * 101)

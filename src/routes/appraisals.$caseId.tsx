@@ -1,3 +1,4 @@
+import { ProductChip } from "@/components/cases/ProductChip";
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { AlertTriangle, ArrowRight, ShieldCheck } from "lucide-react";
@@ -84,13 +85,14 @@ function CaseHeader({ c }: { c: CaseDetail }) {
         <CaseMoreMenu caseId={c.id} borrower={c.borrower} />
       </div>
       {/* A field with no value is left out, never written as "not recorded". */}
-      <p className="pr-10 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+      <p className="flex flex-wrap items-center gap-x-1.5 pr-10 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+        <ProductChip product={c.product} />
         <span data-testid="header-product">
           {labels.product(c.product)}
           {c.case_type ? ` · ${labels.caseType(c.case_type)}` : ""}
         </span>
         {" · "}
-        {labels.constitution(c.constitution)}
+        {labels.borrowerKind(c)}
       </p>
       <h1 className="mt-1 break-words text-[17px] font-semibold tracking-tight text-foreground">
         {c.borrower}

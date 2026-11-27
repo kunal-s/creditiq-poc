@@ -188,9 +188,13 @@ export function formatTokens(n: number): string {
   return n.toLocaleString("en-IN");
 }
 
+/** A case number: the product's prefix, the year and a six-digit sequence (BBG-2026-000021,
+ * LAP-2026-000001). */
+export const CASE_NUMBER = /^[A-Z]{2,4}-\d{4}-\d{6}$/;
+
 /** The case a call belongs to, when it names one the screens can open. */
 export function caseOf(c: ModelCall): string | null {
-  return c.case_ref && /^BBG-\d{4}-\d+$/.test(c.case_ref) ? c.case_ref : null;
+  return c.case_ref && CASE_NUMBER.test(c.case_ref) ? c.case_ref : null;
 }
 
 const key = (id: string) => id.replace(/[^A-Za-z0-9]+/g, "_");

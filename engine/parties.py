@@ -24,7 +24,9 @@ import sqlite3
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .config import load_app_config
+from . import intake
+from .config import ProductConfig, load_app_config
+from .config import product as product_config
 from .configstore import reader
 from .configstore.schema import PartyList
 from .contracts import Party
@@ -162,7 +164,9 @@ def build_party_set(conn: sqlite3.Connection, root: Path, case_id: str) -> list[
         parties.append(p)
 
     borrower_source = (header.get("borrower") or {}).get("source") or "person"
-    add(_Party(name=case["borrower"], role="borrower", source=borrower_source, pan=case["pan"]))
+    borrower = _Party(name=case["borrower"], role="borrower", source=borrower_source, pan=case["pan"])
+    add(borrower)
+    _add_intake_people(case, borrower, add, tol)
 
     type_defs = {t.id: t for t in reader.load_document_types(root).types}
     for doc in _active_documents(conn, case_id):
@@ -185,6 +189,54 @@ def build_party_set(conn: sqlite3.Connection, root: Path, case_id: str) -> list[
     for p in parties:
         p.id = stable_id("PTY", case_id, normalise_name(p.name))
     return parties
+
+
+def _add_intake_people(case: sqlite3.Row, borrower: _Party, add, tol: float) -> None:
+    """The people the intake form names, as parties with the form as their source. A loan against property
+    made to its primary applicant is one party, the borrower, whose own KYC is asked for and to whom personal
+    documents are attributed (the primary role); a borrower of another name (a business) keeps its own
+    party, and the applicant has theirs."""
+    for person in intake_people(_case_product(case), json.loads(case["intake_groups"] or "{}")):
+        if person["primary"] and similarity(person["name"], borrower.name) >= tol:
+            borrower.role = person["role"]
+            borrower.pan = borrower.pan or person["pan"]
+            continue
+        add(_Party(name=person["name"], role=person["role"], source="intake", pan=person["pan"], din=person["din"]))
+
+
+def _case_product(case: sqlite3.Row) -> ProductConfig:
+    """The case's product; a case from before products were recorded is of the default product."""
+    try:
+        return product_config(case["product"])
+    except KeyError:
+        return product_config(None)
+
+
+def _cell(row: dict, name: str) -> str | None:
+    value = (row.get(name) or {}).get("value")
+    text = str(value).strip() if value is not None else ""
+    return text or None
+
+
+def intake_people(product: ProductConfig, groups: dict) -> list[dict]:
+    """The people the intake form names, from its people sections (config/intake.yaml `people`): name,
+    role (the section's default role when the row gives none of its roles), PAN and DIN, in the form's
+    order. The primary applicant (engine/intake.py primary_row) is marked `primary`."""
+    primary = intake.primary_row(product, groups)
+    out: list[dict] = []
+    for section in intake.people_sections(product):
+        for row in groups.get(section["id"]) or []:
+            if not _cell(row, "name"):
+                continue
+            role = _cell(row, "role")
+            out.append({
+                "name": _cell(row, "name"),
+                "role": role if role in section["roles"] else section["default_role"],
+                "pan": (_cell(row, "pan") or "").upper() or None,
+                "din": _cell(row, "din"),
+                "primary": row is primary,
+            })
+    return out
 
 
 def _ident(pair) -> str | None:

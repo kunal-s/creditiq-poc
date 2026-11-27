@@ -24,6 +24,10 @@ import type {
   CaseProposal,
   CaseSummary,
   ConfigVersion,
+  IntakeCreated,
+  IntakeRefusal,
+  ProposalRequest,
+  ProposedField,
   CrossVerificationView,
   DocumentTypes,
   EditableSettings,
@@ -519,13 +523,18 @@ export class MockApi {
       ["GET", /^\/api\/users$/, () => ({ json: USERS })],
       ["GET", /^\/api\/audit$/, () => ({ json: AUDIT })],
       ["GET", /^\/api\/cases$/, () => ({ json: this.cases })],
-      ["POST", /^\/api\/cases\/proposals$/, () => ({ json: this.proposal })],
+      [
+        "POST",
+        /^\/api\/cases\/proposals$/,
+        (req) => ({ json: this.propose(req.postDataJSON() as ProposalRequest) }),
+      ],
       [
         "POST",
         /^\/api\/cases\/checklist-preview$/,
         (req) => ({ json: checklistPreview(req.postDataJSON() as ChecklistPreviewRequest) }),
       ],
       ["POST", /^\/api\/cases$/, (req) => this.create(req.postDataJSON() as CaseCreate)],
+      ["POST", /^\/api\/cases\/intake$/, (req) => this.intake(req)],
       [
         "GET",
         new RegExp(`^/api/cases/${id}$`),
@@ -1157,35 +1166,135 @@ export class MockApi {
     };
   }
 
+  /** A new case as engine/cases.py numbers it: a sequence per product prefix (BBG continues
+   * after the fixtures, at 31; LAP starts at 1). A loan against property with no borrower named
+   * takes its primary applicant's name; a business's facility lines give its facilities and
+   * amount when the case leaves them out. */
   private create(body: CaseCreate): Reply {
-    const n = 31 + this.cases.length - CASES.length;
+    const product = body.product ?? META.product_default ?? "bbg";
+    const prefix = META.products.find((p) => p.id === product)?.prefix ?? "BBG";
+    const made = this.cases.filter(
+      (c) => c.id.startsWith(`${prefix}-`) && !CASES.some((k) => k.id === c.id),
+    ).length;
+    const id = `${prefix}-2026-${String((prefix === "BBG" ? 31 : 1) + made).padStart(6, "0")}`;
+    const lines = body.groups?.["facilities"] ?? [];
+    const applicants = body.groups?.["applicants"] ?? [];
+    const primary =
+      applicants.find((r) => r["role"]?.value === "applicant") ?? applicants.find((r) => r["name"]);
+    const facilities = body.facilities?.length
+      ? body.facilities
+      : [...new Set(lines.map((r) => r["facility"]?.value ?? "").filter(Boolean))];
+    const amount =
+      body.amount_inr ||
+      lines.reduce((sum, r) => sum + (Number(r["amount_inr"]?.value ?? 0) || 0), 0);
     const s: CaseSummary = {
-      id: `BBG-2026-0000${n}`,
-      borrower: body.borrower,
-      constitution: body.constitution,
-      facilities: body.facilities,
-      amount_inr: body.amount_inr,
+      id,
+      borrower: body.borrower || primary?.["name"]?.value || "",
+      constitution: body.constitution ?? "unknown",
+      facilities,
+      amount_inr: amount,
       stage: "Intake",
       rm: this.user.name,
       created_at: "2026-09-29T09:00:00Z",
       open_review_items: 0,
       files_attention: 0,
       files_altered: 0,
+      product,
+      case_type: body.case_type ?? "unknown",
+      customer_type: body.customer_type ?? null,
+      bank_stage: body.bank_stage ?? "login",
     };
     this.cases.unshift(s);
     const d = detail(s, {
       pan: body.pan ?? null,
       gstin: body.gstin ?? null,
       header: body.header ?? {},
+      groups: body.groups ?? {},
+      tenure_months: body.tenure_months ?? null,
+      application_id: body.application_id ?? null,
     });
     this.details.set(s.id, d);
     return { status: 201, json: d };
+  }
+
+  /** POST /api/cases/intake as engine/api.py answers it: the case part and the files together,
+   * refused whole (422, an IntakeRefusal) when the case part is unreadable or fewer files than the
+   * product needs arrive. */
+  private intake(req: Request): Reply {
+    if (!this.can("case.create")) return this.denied("case.create");
+    if (!this.can("document.upload")) return this.denied("document.upload");
+    const { fields, files } = multipartBody(req);
+    const refuse = (detail: IntakeRefusal): Reply => ({ status: 422, json: { detail } });
+    let body: CaseCreate;
+    try {
+      body = JSON.parse(fields["case"] ?? "") as CaseCreate;
+    } catch {
+      return refuse({
+        code: "case_part",
+        message: "no case in the request (multipart field 'case')",
+      });
+    }
+    const product = body.product ?? META.product_default ?? "bbg";
+    const min = META.intake?.[product]?.start.documents.min_files ?? 1;
+    if (files.length < min)
+      return refuse({
+        code: "too_few_files",
+        message: `at least ${min} document needed to create the case; ${files.length} received as new documents`,
+        min_files: min,
+        registered: files.length,
+      });
+    const created = this.create(body).json as CaseDetail;
+    const upload = this.register(created.id, files);
+    const result: IntakeCreated = { case: this.details.get(created.id)!, upload };
+    return { status: 201, json: result };
+  }
+
+  /** POST /api/cases/proposals: the message read (the fixture proposal) when there is text, the
+   * typed values on top with their source (an identifier box, or the form), and the duplicate
+   * check, with or without a message. */
+  private propose(body: ProposalRequest): CaseProposal {
+    const product = body.product ?? META.product_default ?? "bbg";
+    const boxes = META.intake?.[product]?.start.identifiers ?? [];
+    const customerType = body.fields?.["customer_type"] ?? null;
+    const typed: Record<string, ProposedField> = {};
+    for (const [key, raw] of Object.entries(body.fields ?? {})) {
+      const value = (raw ?? "").trim();
+      if (!value) continue;
+      const box = boxes.find((b) => b.id === key);
+      const code = box ? box.type !== "text" : ["pan", "gstin", "cin", "udyam"].includes(key);
+      const v = code ? value.toUpperCase() : value;
+      const pan = box ? box.type === "pan" : key === "pan";
+      const lifted = (box?.unless?.["customer_type"] ?? []).includes(customerType ?? "");
+      const note = pan ? panProblem(v, lifted ? null : (box?.holder ?? null)) : null;
+      typed[key] = {
+        value: v,
+        status: note ? "invalid" : "found",
+        note,
+        source: box ? "identifier" : "person",
+        candidates: [],
+      };
+    }
+    const read: CaseProposal = body.text
+      ? this.proposal
+      : { text_sha256: null, fields: {}, stripped: [], duplicates: [], missing_minimum: [] };
+    const fields = { ...read.fields, ...typed };
+    return {
+      ...read,
+      duplicates: this.proposal.duplicates ?? [],
+      fields,
+      missing_minimum: minimumMissing(product, fields, body.groups ?? {}),
+    };
   }
 
   private upload(req: Request, rawId: string): Reply {
     const caseId = decodeURIComponent(rawId);
     const text = req.postDataBuffer()?.toString("latin1") ?? "";
     const names = Array.from(text.matchAll(/filename="([^"]+)"/g), (m) => m[1]!);
+    return { status: 202, json: this.register(caseId, names) };
+  }
+
+  /** Files received for a case, by name, as the engine registers them (archives list members). */
+  private register(caseId: string, names: string[]): UploadResult {
     const existing = this.files.get(caseId) ?? [];
     const added: FileRecord[] = names.flatMap((name, i) => {
       if (name.endsWith(".zip")) {
@@ -1215,8 +1324,7 @@ export class MockApi {
       ];
     });
     this.files.set(caseId, [...existing, ...added]);
-    const result: UploadResult = { files: added, job_id: "job-1" };
-    return { status: 202, json: result };
+    return { files: added, job_id: "job-1" };
   }
 
   /** A file taken off the case with its documents; its content no longer counts as received. */
@@ -1574,7 +1682,7 @@ export class MockApi {
     if (method === "OPTIONS") return route.fulfill({ status: 204, headers: cors() });
     let body: unknown = null;
     try {
-      body = req.postDataJSON();
+      body = isMultipart(req) ? multipartBody(req) : req.postDataJSON();
     } catch {
       body = null;
     }
@@ -1598,6 +1706,65 @@ export class MockApi {
       body: JSON.stringify({ detail: `no mock for ${method} ${url.pathname}` }),
     });
   }
+}
+
+function isMultipart(req: Request): boolean {
+  return (req.headers()["content-type"] ?? "").startsWith("multipart/form-data");
+}
+
+/** A multipart body as the engine reads it: its text fields, and the names of its files. */
+export function multipartBody(req: Request): { fields: Record<string, string>; files: string[] } {
+  const boundary = /boundary=(.+)$/.exec(req.headers()["content-type"] ?? "")?.[1];
+  const raw = req.postDataBuffer()?.toString("utf8") ?? "";
+  const fields: Record<string, string> = {};
+  const files: string[] = [];
+  if (!boundary) return { fields, files };
+  for (const part of raw.split(`--${boundary}`)) {
+    const at = part.indexOf("\r\n\r\n");
+    if (at < 0) continue;
+    const head = part.slice(0, at);
+    const name = /name="([^"]*)"/.exec(head)?.[1];
+    const filename = /filename="([^"]*)"/.exec(head)?.[1];
+    if (filename !== undefined) files.push(filename);
+    else if (name) fields[name] = part.slice(at + 4).replace(/\r\n$/, "");
+  }
+  return { fields, files };
+}
+
+/** engine/intake.py missing_minimum, as engine/proposal.py feeds it: the product's minimum still
+ * lacking among the values proposed or typed (not those found invalid) and the rows. */
+function minimumMissing(
+  product: string,
+  fields: Record<string, ProposedField>,
+  groups: NonNullable<ProposalRequest["groups"]>,
+): string[] {
+  const p = META.products.find((x) => x.id === product);
+  const value = (k: string) => {
+    const f = fields[k];
+    return f && f.value && f.status !== "invalid" && f.status !== "not_found" ? f.value : "";
+  };
+  const rows = (section: string, field: string) =>
+    (groups[section] ?? []).some((r) => (r[field]?.value ?? "").trim() !== "");
+  const applicant = (groups["applicants"] ?? []).some((r) => (r["name"]?.value ?? "").trim());
+  const present: Record<string, boolean> = {
+    borrower: value("borrower") !== "" || applicant,
+    facilities: value("facilities") !== "" || rows("facilities", "facility"),
+    amount_inr: Number(value("amount_inr").replace(/,/g, "")) > 0,
+    applicants: rows("applicants", "name"),
+    customer_type: (p?.customer_types ?? []).some((c) => c.id === value("customer_type")),
+    tenure_months: Number(value("tenure_months")) > 0,
+    properties: rows("properties", "property_type"),
+  };
+  return (p?.minimum ?? []).filter((name) => present[name] === false);
+}
+
+/** engine/intake.py's PAN check: the format, then an individual's fourth letter. */
+function panProblem(value: string, holder: string | null): string | null {
+  if (!/^[A-Z]{5}\d{4}[A-Z]$/.test(value))
+    return "Not a valid PAN (five letters, four digits, one letter).";
+  if (holder === "individual" && value[3] !== "P")
+    return "An individual's PAN has P as its fourth letter.";
+  return null;
 }
 
 function cors() {

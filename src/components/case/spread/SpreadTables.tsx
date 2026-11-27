@@ -318,7 +318,7 @@ export function StatementTable({
   onPick,
 }: {
   spread: Spread;
-  section: "profit_and_loss" | "balance_sheet";
+  section: SpreadRow["section"];
   selected: string;
   picked: string | null;
   onPick: (p: Picked) => void;

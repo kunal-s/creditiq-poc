@@ -1,3 +1,4 @@
+import { ProductChip } from "@/components/cases/ProductChip";
 import { Link } from "@tanstack/react-router";
 import { AlertTriangle } from "lucide-react";
 import type { CaseSummary, Stage } from "@/api/types";
@@ -110,7 +111,8 @@ export function CasesTable({ cases }: { cases: CaseSummary[] }) {
                 >
                   {c.borrower}
                 </Link>
-                <p className="mt-0.5 text-[11px] text-muted-foreground tabular">
+                <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground tabular">
+                  <ProductChip product={c.product} />
                   {c.id} · {caseKind(c)}
                 </p>
               </div>
@@ -165,8 +167,9 @@ export function CasesTable({ cases }: { cases: CaseSummary[] }) {
                   >
                     {c.borrower}
                   </Link>
-                  <div className="mt-0.5 text-[11px] text-muted-foreground">
-                    {c.id} · {labels.constitution(c.constitution)}
+                  <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+                    <ProductChip product={c.product} />
+                    {c.id} · {labels.borrowerKind(c)}
                   </div>
                   <div className="mt-0.5 text-[11px] text-muted-foreground" data-testid="case-kind">
                     {caseKind(c)}

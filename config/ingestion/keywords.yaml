@@ -390,6 +390,7 @@ parts:
       - computation of total income
       - computation of income
       - statement of total income
+      - statement of income        # the computation's heading on the ITR-6 "Statement of Income" page
     content:
       - {phrase: gross total income, weight: 2}
       - {phrase: deductions under chapter vi-a, weight: 2}

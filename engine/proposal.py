@@ -16,18 +16,14 @@ Nothing is stored (F-04.7).
 
 from __future__ import annotations
 
-import hashlib
 import re
-import sqlite3
 from dataclasses import dataclass, field
-from pathlib import Path
 
 from . import identifiers
-from .cases import find_duplicates
-from .config import load_app_config, option_default, option_list
-from .contracts import CaseProposal, ProposedCandidate, ProposedField, Span, StrippedSpan
+from .config import load_app_config, option_list
+from .config import product as product_config
+from .contracts import ProposedCandidate, ProposedField, Span, StrippedSpan
 from .names import normalise_name, similarity
-from .parties import name_tolerance
 from .util import format_inr
 
 # --- Normalisation ---
@@ -307,7 +303,8 @@ class Lexicon:
     roles: dict[str, list[str]]
 
     @classmethod
-    def load(cls) -> "Lexicon":
+    def load(cls, case_types: tuple[str, ...] | None = None) -> "Lexicon":
+        """`case_types`: the ids whose aliases are matched (a product's own); None matches every one."""
         cfg = load_app_config()
         p = cfg["proposal"]
         facilities = _alias_patterns(cfg["facilities"])
@@ -315,7 +312,8 @@ class Lexicon:
         suffix_alts = "|".join(re.escape(s) for s in sorted(suffixes, key=len, reverse=True))
         return cls(
             facilities=facilities,
-            case_types=_alias_patterns(option_list("case_types")),
+            case_types=_alias_patterns(
+                [o for o in option_list("case_types") if case_types is None or o["id"] in case_types]),
             branches=_alias_patterns(option_list("branches")),
             id_patterns={
                 key: re.compile(spec["pattern"]) if spec.get("pattern") else None
@@ -788,15 +786,11 @@ def _facilities_field(hits: list[Hit], zones: list[tuple[int, int]]) -> Proposed
     )
 
 
-# Case fields never read from the message: a new case takes the configured
-# default unless the RM chooses otherwise (T2.1), so they are never missing.
-DEFAULTED = {"product": "products", "bank_stage": "bank_stages"}
-
-FIELD_ALIASES = {"borrower": "borrower", "facilities": "facilities", "amount_inr": "amount_inr"}
-
-
-def parse(text: str) -> tuple[dict[str, ProposedField], list[StrippedSpan]]:
-    lex = Lexicon.load()
+def parse(text: str, *, product: str | None = None) -> tuple[dict[str, ProposedField], list[StrippedSpan]]:
+    """The message read by the rules. Only the product's own case types are matched (None is the default
+    product), so "balance transfer" is a takeover for business banking and a balance transfer for a loan
+    against property."""
+    lex = Lexicon.load(product_config(product).case_types)
     norm = normalise(text)
     masked = norm.masked
     zones = _existing_zones(masked, lex)
@@ -838,31 +832,3 @@ def parse(text: str) -> tuple[dict[str, ProposedField], list[StrippedSpan]]:
         "customer_id": _pattern_field(masked, lex.id_patterns.get("customer_id"), "customer ID"),
     }
     return fields, norm.stripped
-
-
-def propose(conn: sqlite3.Connection, root: Path, text: str) -> CaseProposal:
-    fields, stripped = parse(text)
-    threshold = name_tolerance(root)
-    names = []
-    if fields["borrower"].value:
-        names.append(fields["borrower"].value)
-    names += [c.value for c in fields["borrower"].candidates]
-    seen: dict[str, object] = {}
-    pan = fields["pan"].value if fields["pan"].status == "found" else None
-    gstin = fields["gstin"].value if fields["gstin"].status == "found" else None
-    for name in names or [None]:
-        for dup in find_duplicates(conn, pan=pan, gstin=gstin, borrower=name, name_threshold=threshold):
-            seen.setdefault(dup.id, dup)
-    minimum = load_app_config()["case_create_minimum"]
-    missing = [
-        name for name in minimum
-        if name not in DEFAULTED or option_default(DEFAULTED[name]) is None
-        if name not in fields or fields[name].value is None or fields[name].status in ("not_found", "invalid")
-    ]
-    return CaseProposal(
-        text_sha256=hashlib.sha256(text.encode("utf-8")).hexdigest(),
-        fields=fields,
-        duplicates=list(seen.values()),
-        missing_minimum=missing,
-        stripped=stripped,
-    )

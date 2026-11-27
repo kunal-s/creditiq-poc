@@ -17,61 +17,32 @@ import io
 import os
 import posixpath
 import re
+import shutil
 import sqlite3
 import uuid
 import zipfile
-from dataclasses import dataclass, field
 from pathlib import Path
 
-from python_multipart.multipart import MultipartParser, parse_options_header
-
 from . import filetypes, jobs
-from .config import load_app_config
 from .contracts import FileRecord, UploadResult
 from .db import log_decision, transaction
+from .multipart import (  # noqa: F401  (the upload's limits and receiver, as callers name them here)
+    MB,
+    Limits,
+    MultipartReceiver,
+    SpooledPart,
+    UploadError,
+    check_content_length,
+    limits,
+    secure_dir,
+)
 from .review_items import close_item, raise_item
 from .store import case_files_dir, cases_dir
 from .util import dumps, now_iso, stable_id
 
-MB = 1024 * 1024
 BIG_MEMBER = 1 * MB
 
-
-class UploadError(ValueError):
-    pass
-
-
-@dataclass
-class Limits:
-    max_file: int
-    max_archive: int
-    depth: int
-    ratio: float
-    max_entries: int
-    junk_names: set[str]
-    junk_prefixes: tuple[str, ...]
-    junk_folders: set[str]
-
-
-def limits() -> Limits:
-    cfg = load_app_config()["uploads"]
-    junk = cfg.get("junk", {})
-    return Limits(
-        max_file=int(cfg["max_file_mb"] * MB),
-        max_archive=int(cfg["max_archive_mb"] * MB),
-        depth=int(cfg["archive_depth"]),
-        ratio=float(cfg.get("max_compression_ratio", 100)),
-        max_entries=int(cfg.get("max_archive_entries", 5000)),
-        junk_names={n.lower() for n in junk.get("names", [])},
-        junk_prefixes=tuple(junk.get("prefixes", [])),
-        junk_folders={n.lower() for n in junk.get("folders", [])},
-    )
-
-
-def _secure_dir(path: Path) -> Path:
-    path.mkdir(parents=True, exist_ok=True, mode=0o700)
-    os.chmod(path, 0o700)
-    return path
+_secure_dir = secure_dir
 
 
 def label_hint(original_name: str, archive_path: str | None) -> str | None:
@@ -83,127 +54,6 @@ def label_hint(original_name: str, archive_path: str | None) -> str | None:
     words = [re.sub(r"[_\-.+()\[\]]+", " ", p).strip().lower() for p in [*folders, stem]]
     words = [re.sub(r"\s+", " ", w) for w in words if w]
     return " / ".join(words) or None
-
-
-# --- Streaming multipart ---
-
-
-@dataclass
-class SpooledPart:
-    original_name: str
-    path: Path
-    size: int = 0
-    sha256: str = ""
-    limit: int = 0
-    oversize: bool = False
-
-
-@dataclass
-class _PartState:
-    headers: dict[str, str] = field(default_factory=dict)
-    header_field: bytes = b""
-    header_value: bytes = b""
-    name: str | None = None
-    filename: str | None = None
-    fh: io.BufferedWriter | None = None
-    hasher: object = None
-    head: bytes = b""
-    part: SpooledPart | None = None
-    text: bytes = b""
-
-
-class MultipartReceiver:
-    """Feeds a multipart body through python-multipart's streaming parser,
-    spooling each part of field `files` to disk with its hash and cutting it
-    off at the size limit."""
-
-    def __init__(self, content_type: str, spool_dir: Path, lim: Limits) -> None:
-        ctype, params = parse_options_header(content_type or "")
-        if ctype != b"multipart/form-data" or b"boundary" not in params:
-            raise UploadError("expected multipart/form-data with a boundary")
-        self.spool_dir = _secure_dir(spool_dir)
-        self.limits = lim
-        self.parts: list[SpooledPart] = []
-        self.fields: dict[str, str] = {}
-        self._s = _PartState()
-        self.parser = MultipartParser(
-            params[b"boundary"],
-            {
-                "on_part_begin": self._part_begin,
-                "on_header_field": self._header_field,
-                "on_header_value": self._header_value,
-                "on_header_end": self._header_end,
-                "on_headers_finished": self._headers_finished,
-                "on_part_data": self._part_data,
-                "on_part_end": self._part_end,
-            },
-        )
-
-    def write(self, chunk: bytes) -> None:
-        self.parser.write(chunk)
-
-    def finish(self) -> None:
-        self.parser.finalize()
-
-    def _part_begin(self) -> None:
-        self._s = _PartState()
-
-    def _header_field(self, data: bytes, start: int, end: int) -> None:
-        self._s.header_field += data[start:end]
-
-    def _header_value(self, data: bytes, start: int, end: int) -> None:
-        self._s.header_value += data[start:end]
-
-    def _header_end(self) -> None:
-        s = self._s
-        s.headers[s.header_field.decode("latin-1").lower()] = s.header_value.decode("utf-8", "replace")
-        s.header_field, s.header_value = b"", b""
-
-    def _headers_finished(self) -> None:
-        s = self._s
-        _, params = parse_options_header(s.headers.get("content-disposition", ""))
-        s.name = params.get(b"name", b"").decode("utf-8", "replace")
-        filename = params.get(b"filename")
-        s.filename = filename.decode("utf-8", "replace") if filename is not None else None
-        if s.name == "files" and s.filename is not None:
-            path = self.spool_dir / uuid.uuid4().hex
-            fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-            s.fh = os.fdopen(fd, "wb")
-            s.hasher = hashlib.sha256()
-            # The browser may send a path ("KYC/pan.jpg"); keep only the name.
-            name = s.filename.replace("\\", "/").split("/")[-1] or "unnamed"
-            s.part = SpooledPart(original_name=name, path=path, limit=self.limits.max_archive)
-
-    def _part_data(self, data: bytes, start: int, end: int) -> None:
-        s = self._s
-        chunk = data[start:end]
-        if s.part is None:
-            if s.name and len(s.text) < 4096:
-                s.text += chunk
-            return
-        part = s.part
-        if len(s.head) < 8:
-            s.head += chunk[: 8 - len(s.head)]
-            if len(s.head) >= 4:
-                # An archive may be as large as the archive limit; anything else the file limit.
-                part.limit = self.limits.max_archive if filetypes.looks_like_zip(s.head) else self.limits.max_file
-        part.size += len(chunk)
-        if part.oversize:
-            return
-        if part.size > part.limit:
-            part.oversize = True
-            return
-        s.hasher.update(chunk)
-        s.fh.write(chunk)
-
-    def _part_end(self) -> None:
-        s = self._s
-        if s.part is not None:
-            s.fh.close()
-            s.part.sha256 = s.hasher.hexdigest()
-            self.parts.append(s.part)
-        elif s.name:
-            self.fields[s.name] = s.text.decode("utf-8", "replace")
 
 
 # --- Registration ---
@@ -219,7 +69,18 @@ def _unsafe_member(name: str) -> bool:
 class Registrar:
     """Turns received bytes into file records for one upload."""
 
-    def __init__(self, conn: sqlite3.Connection, root: Path, case_id: str, user_id: str, channel: str) -> None:
+    def __init__(
+        self,
+        conn: sqlite3.Connection,
+        root: Path,
+        case_id: str,
+        user_id: str,
+        channel: str,
+        *,
+        files_dir: Path | None = None,
+    ) -> None:
+        """`files_dir` stages the bytes somewhere other than the case's folder, for a case that does not
+        exist yet: `bind_case` then names it and the caller moves the folder into place."""
         self.conn = conn
         self.root = root
         self.case_id = case_id
@@ -229,9 +90,10 @@ class Registrar:
         self.now = now_iso()
         self.records: list[dict] = []
         self.exceptions: list[dict] = []
-        self.files_dir = case_files_dir(case_id, root)
-        _secure_dir(cases_dir(root))
-        _secure_dir(self.files_dir.parent)
+        self.files_dir = files_dir or case_files_dir(case_id, root)
+        if files_dir is None:
+            _secure_dir(cases_dir(root))
+            _secure_dir(self.files_dir.parent)
         _secure_dir(self.files_dir)
         # SHA-256 -> file id of every earlier file of the case whose bytes are held.
         self.seen: dict[str, str] = {
@@ -502,60 +364,82 @@ class Registrar:
         with open(part.path, "rb") as fh:
             head = fh.read(8)
         if filetypes.looks_like_zip(head):
-            with zipfile.ZipFile(part.path) if zipfile.is_zipfile(part.path) else _NoZip() as zf:
-                names = set(zf.namelist()) if zf else set()
-            if zf is not None and "xl/workbook.xml" not in names and "word/document.xml" not in names:
+            # An archive may be as large as the archive limit, so it is opened from disk, never read whole.
+            if not zipfile.is_zipfile(part.path):
+                self._refuse_spooled(part, filetypes.ZIP, "The archive is damaged and cannot be opened; not unpacked.")
+                return
+            with zipfile.ZipFile(part.path) as zf:
+                names = set(zf.namelist())
+            if "xl/workbook.xml" not in names and "word/document.xml" not in names:
                 self._unpack(str(part.path), part.original_name, 1, part.sha256, part.size)
                 return
+        if part.size > self.limits.max_file:
+            # A workbook or document (a ZIP inside) admitted at the archive limit while it streamed.
+            self._refuse_spooled(part, filetypes.OCTET, f"Larger than the {self.limits.max_file // MB} MB limit per file.")
+            return
         self.add_bytes(part.path.read_bytes(), part.original_name, None, 0)
 
+    def _refuse_spooled(self, part: SpooledPart, content_type: str, reason: str) -> None:
+        self._record(original_name=part.original_name, archive_path=None, sha256=part.sha256, size=part.size,
+                     content_type=content_type, status="rejected", reason=reason)
+
+    @property
+    def registered(self) -> int:
+        """Files received as new documents (not ignored, rejected, duplicate or in exception)."""
+        return sum(1 for r in self.records if r["status"] == "registered")
+
+    def bind_case(self, case_id: str, files_dir: Path) -> None:
+        """Name the case the files belong to and the folder they were moved to, for a Registrar that
+        staged them before the case existed."""
+        self.case_id = case_id
+        self.files_dir = files_dir
+        for r in self.records:
+            r["case_id"] = case_id
+
     def commit(self) -> UploadResult:
-        registered = [r["id"] for r in self.records if r["status"] == "registered"]
         with transaction(self.conn):
-            for r in self.records:
-                self.conn.execute(
-                    """INSERT INTO files (id, case_id, sha256, original_name, archive_path, content_type, size_bytes,
-                           channel, uploaded_by, uploaded_at, status, reason, duplicate_of, label_hint, stored_name,
-                           reason_code)
-                       VALUES (:id, :case_id, :sha256, :original_name, :archive_path, :content_type, :size_bytes,
-                           :channel, :uploaded_by, :uploaded_at, :status, :reason, :duplicate_of, :label_hint,
-                           :stored_name, :reason_code)""",
-                    r,
-                )
-            for r in self.exceptions:
-                raise_item(
-                    self.conn,
-                    case_id=self.case_id,
-                    kind="quality",
-                    ref=f"file:{r['id']}",
-                    summary=f"{r['original_name']}: {r['reason']}",
-                    detail={"file_id": r["id"], "reason_code": r["reason_code"]},
-                )
-            job_id = (
-                jobs.enqueue(self.conn, case_id=self.case_id, kind="process", payload={"file_ids": registered})
-                if registered
-                else None
+            return self.write()
+
+    def write(self) -> UploadResult:
+        """Record every file, raise the items for the exceptions and queue the processing job, inside the
+        transaction the caller holds (`commit` opens one; the one-request create shares the case's)."""
+        registered = [r["id"] for r in self.records if r["status"] == "registered"]
+        for r in self.records:
+            self.conn.execute(
+                """INSERT INTO files (id, case_id, sha256, original_name, archive_path, content_type, size_bytes,
+                       channel, uploaded_by, uploaded_at, status, reason, duplicate_of, label_hint, stored_name,
+                       reason_code)
+                   VALUES (:id, :case_id, :sha256, :original_name, :archive_path, :content_type, :size_bytes,
+                       :channel, :uploaded_by, :uploaded_at, :status, :reason, :duplicate_of, :label_hint,
+                       :stored_name, :reason_code)""",
+                r,
             )
-            counts: dict[str, int] = {}
-            for r in self.records:
-                counts[r["status"]] = counts.get(r["status"], 0) + 1
-            log_decision(
+        for r in self.exceptions:
+            raise_item(
                 self.conn,
-                at=self.now,
-                actor=self.user_id,
                 case_id=self.case_id,
-                action="files.uploaded",
-                detail=dumps({"counts": counts, "job_id": job_id, "files": [r["id"] for r in self.records]}),
+                kind="quality",
+                ref=f"file:{r['id']}",
+                summary=f"{r['original_name']}: {r['reason']}",
+                detail={"file_id": r["id"], "reason_code": r["reason_code"]},
             )
+        job_id = (
+            jobs.enqueue(self.conn, case_id=self.case_id, kind="process", payload={"file_ids": registered})
+            if registered
+            else None
+        )
+        counts: dict[str, int] = {}
+        for r in self.records:
+            counts[r["status"]] = counts.get(r["status"], 0) + 1
+        log_decision(
+            self.conn,
+            at=self.now,
+            actor=self.user_id,
+            case_id=self.case_id,
+            action="files.uploaded",
+            detail=dumps({"counts": counts, "job_id": job_id, "files": [r["id"] for r in self.records]}),
+        )
         return UploadResult(files=[FileRecord(**r) for r in self.records], job_id=job_id)
-
-
-class _NoZip:
-    def __enter__(self):
-        return None
-
-    def __exit__(self, *exc):
-        return False
 
 
 def register_parts(
@@ -579,6 +463,34 @@ def register_parts(
 
 def spool_dir(root: Path, case_id: str) -> Path:
     return cases_dir(root) / case_id / "incoming"
+
+
+#: Where the one-request create (POST /api/cases/intake) receives a case's files before the case exists.
+INTAKE_SPOOL = "intake-spool"
+
+
+def clear_intake_spool(root: Path) -> int:
+    """Remove what a stopped engine left in the intake spool (a request's files are only ever there while
+    the request runs). Returns how many folders were removed."""
+    spool = Path(root) / INTAKE_SPOOL
+    if not spool.is_dir():
+        return 0
+    removed = 0
+    for entry in spool.iterdir():
+        if entry.is_dir() and not entry.is_symlink():
+            shutil.rmtree(entry, ignore_errors=True)
+        else:
+            entry.unlink(missing_ok=True)
+        removed += 1
+    return removed
+
+
+def intake_staging(root: Path) -> Path:
+    """A new folder (mode 700) for one request's files until its case exists: `incoming` receives the
+    body as it streams, `files` holds the bytes registered. Outside the cases folder, so nothing that reads
+    a case's folder sees it; the caller removes it whatever happens."""
+    secure_dir(Path(root) / INTAKE_SPOOL)
+    return secure_dir(Path(root) / INTAKE_SPOOL / uuid.uuid4().hex)
 
 
 class ReadAgainError(ValueError):

@@ -241,7 +241,7 @@ def test_gstins_with_no_majority_are_grouped_and_every_value_is_named(client, an
     f = _card(client, analyst, root, case_id, "ID-02")
     assert f["outcome"] == "fail"
     assert _columns(f) == [("GSTR-3B", "27AAACK1234F1Z0", True), ("GSTR-3B", "29AAACK1234F1Z5", True),
-                           ("Sourcing message", "24AAACK1234F1Z9", True)]
+                           ("Declared at intake", "24AAACK1234F1Z9", True)]
     cols = f["columns"]
     # Typed on the case by a person, the value has no place in the sourcing message to point to.
     assert [c["coverage"] for c in cols] == ["2 documents", "2 documents", "Entered on the case"]
@@ -250,14 +250,14 @@ def test_gstins_with_no_majority_are_grouped_and_every_value_is_named(client, an
                                             for c, docs, named in zip(cols, (first, second),
                                                                       (("Apr 2025", "May 2025"), ("Jun 2025", "Jul 2025")))]
     # A value a person entered on the case has no page: its row and column cite none.
-    assert _rows(cols[2]) == [(["Sourcing message", "24AAACK1234F1Z9"], [])] and cols[2]["evidence"] == []
+    assert _rows(cols[2]) == [(["Declared at intake", "24AAACK1234F1Z9"], [])] and cols[2]["evidence"] == []
     assert all(c["row_columns"] == ["Document", "GSTIN"] for c in cols)
     assert f["reference"] is None
     assert f["mismatch"] == ("3 different values: 27AAACK1234F1Z0 (GSTR-3B); 29AAACK1234F1Z5 (GSTR-3B); "
-                             "24AAACK1234F1Z9 (Sourcing message).")
+                             "24AAACK1234F1Z9 (Declared at intake).")
     _no_amount(f)
     assert _lines(f) == [("GSTIN", [("GSTR-3B", "27AAACK1234F1Z0", True), ("GSTR-3B", "29AAACK1234F1Z5", True),
-                                    ("Sourcing message", "24AAACK1234F1Z9", True)], None)]
+                                    ("Declared at intake", "24AAACK1234F1Z9", True)], None)]
 
 
 def test_beyond_four_values_the_last_column_holds_the_rest_and_the_majority_keeps_its_own(client, analyst, published_data_root):
@@ -271,18 +271,18 @@ def test_beyond_four_values_the_last_column_holds_the_rest_and_the_majority_keep
     assert f["outcome"] == "fail"
     assert _columns(f) == [("GSTR-3B", "27AAACK1234F1Z0", True), ("Commercial bureau report", "29AAACK1234F1Z5", True),
                            ("GSTR-3B", "07AAACK1234F1Z2", False),
-                           ("Declaration of existing facilities and Sourcing message", "24AAACK1234F1Z9; 33AAACK1234F1Z1", True)]
+                           ("Declaration of existing facilities and Declared at intake", "24AAACK1234F1Z9; 33AAACK1234F1Z1", True)]
     kept, rest = f["columns"][2], f["columns"][3]
     # No month is known for any of the three returns, all on page 1: each row names its place among them.
     assert _rows(f["columns"][0]) == [(["GSTR-3B · 1 of 3", "27AAACK1234F1Z0"], [(odd, 1)])]
     assert _rows(kept) == [([f"GSTR-3B · {n} of 3", "07AAACK1234F1Z2"], [(d, 1)]) for n, d in zip((2, 3), majority)]
     assert _rows(rest) == [(["Declaration of existing facilities", "24AAACK1234F1Z9"], [(declared, 1)]),
-                           (["Sourcing message", "33AAACK1234F1Z1"], [])]
+                           (["Declared at intake", "33AAACK1234F1Z1"], [])]
     assert rest["sources"] == ["existing_facilities_declaration", "application_message"] and rest["provenance"] == ["declared"]
     assert rest["coverage"] == "1 document and an entry on the case"
     assert f["reference"] == "07AAACK1234F1Z2"
     assert f["mismatch"] == ("GSTR-3B gives 27AAACK1234F1Z0; Commercial bureau report gives 29AAACK1234F1Z5; "
-                             "Declaration of existing facilities gives 24AAACK1234F1Z9; Sourcing message gives 33AAACK1234F1Z1; "
+                             "Declaration of existing facilities gives 24AAACK1234F1Z9; Declared at intake gives 33AAACK1234F1Z1; "
                              "the other 2 sources give 07AAACK1234F1Z2.")
     _no_amount(f)
     # As many values as a card has columns, the majority first; the line says how many there are.
@@ -409,13 +409,13 @@ def test_a_cin_in_the_sourcing_message_against_two_documents(client, analyst, pu
     f = _card(client, analyst, root, case_id, "ID-05")
     assert f["outcome"] == "fail"
     assert _columns(f) == [("Certificate of incorporation", CIN, False), ("Memorandum and articles of association", CIN, False),
-                           ("Sourcing message", OTHER_CIN, True)]
+                           ("Declared at intake", OTHER_CIN, True)]
     # A person typed the CIN on the case: the column says so rather than point into the message.
     assert f["columns"][2]["coverage"] == "Entered on the case" and f["columns"][2]["provenance"] == ["declared"]
     assert f["columns"][2]["relies_on_manual"] and f["columns"][2]["evidence"] == []
     assert f["reference"] == CIN
-    assert f["mismatch"] == "Sourcing message gives U28990MH2015PTC123465; the other 2 sources give U28990MH2015PTC123456."
-    assert _lines(f) == [("CIN", [("2 documents", CIN, False), ("Sourcing message", OTHER_CIN, True)], None)]
+    assert f["mismatch"] == "Declared at intake gives U28990MH2015PTC123465; the other 2 sources give U28990MH2015PTC123456."
+    assert _lines(f) == [("CIN", [("2 documents", CIN, False), ("Declared at intake", OTHER_CIN, True)], None)]
 
 
 # --- Two documents of one type: told apart by what each covers, else by page ---
@@ -515,7 +515,7 @@ def test_promoters_across_three_sources_follow_the_rule_s_order_of_sources(clien
     kyc = add_doc(root, case_id, "director_kyc", {"person_name": TARUN, "din": TARUN_DIN, "pan": TARUN_PAN})
     f = _card(client, analyst, root, case_id, "ID-04")
     assert f["outcome"] == "fail"
-    assert _columns(f) == [("KYC received", TARUN, True), ("Sourcing message", f"{TARUN}; {LEELA}", True),
+    assert _columns(f) == [("KYC received", TARUN, True), ("Declared at intake", f"{TARUN}; {LEELA}", True),
                            ("Commercial bureau report", f"{TARUN}; {ISHITA}", True)]
     received, said, bureau = f["columns"]
     assert _rows(received) == [([TARUN, TARUN_DIN, TARUN_PAN], [(kyc, 1)])]
@@ -526,11 +526,11 @@ def test_promoters_across_three_sources_follow_the_rule_s_order_of_sources(clien
     assert [c["coverage"] for c in f["columns"]] == ["Page 1", "Entered on the case", "Page 1"]
     assert f["explanation"] == ("The promoters named differ between sources: Leela Varghese has no KYC on file "
                                 "and is not named in the commercial bureau report; Ishita Barve has no KYC on "
-                                "file and is not named in the sourcing message.")
+                                "file and is not named in the intake form.")
     assert f["mismatch"] == ("Leela Varghese is not in KYC received and Commercial bureau report; "
-                             "Ishita Barve is not in KYC received and Sourcing message.")
+                             "Ishita Barve is not in KYC received and Declared at intake.")
     assert _lines(f) == [("Promoters", [], "Leela Varghese is not in KYC received and Commercial bureau report; "
-                                           "Ishita Barve is not in KYC received and Sourcing message")]
+                                           "Ishita Barve is not in KYC received and Declared at intake")]
 
 
 def test_the_same_promoters_everywhere_pass(client, analyst, published_data_root):
@@ -540,7 +540,7 @@ def test_the_same_promoters_everywhere_pass(client, analyst, published_data_root
     second = add_doc(root, case_id, "director_kyc", {"person_name": ISHITA, "din": ISHITA_DIN, "pan": ISHITA_PAN})
     f = _card(client, analyst, root, case_id, "ID-04")
     assert f["outcome"] == "pass"
-    assert _columns(f) == [("KYC received", f"{TARUN}; {ISHITA}", False), ("Sourcing message", f"{TARUN}; {ISHITA}", False)]
+    assert _columns(f) == [("KYC received", f"{TARUN}; {ISHITA}", False), ("Declared at intake", f"{TARUN}; {ISHITA}", False)]
     received = f["columns"][0]
     assert _rows(received) == [([TARUN, TARUN_DIN, TARUN_PAN], [(first, 1)]), ([ISHITA, ISHITA_DIN, ISHITA_PAN], [(second, 1)])]
     assert received["coverage"] == "2 documents" and _pages(received["evidence"]) == [(first, 1), (second, 1)]
@@ -554,7 +554,7 @@ def test_promoters_named_only_in_the_sourcing_message_ask_for_the_kyc(client, an
     case_id = _case(client, analyst, root, header={"promoters": _person(f"{TARUN}; {ISHITA}")})
     f = _card(client, analyst, root, case_id, "ID-04")
     assert f["outcome"] == "incomplete" and f["missing"] == ["Director KYC"]
-    assert _columns(f) == [("Sourcing message", f"{TARUN}; {ISHITA}", False)]
+    assert _columns(f) == [("Declared at intake", f"{TARUN}; {ISHITA}", False)]
     assert f["request"] == "the director KYC" and f["mismatch"] is None
     _no_amount(f)
     assert _lines(f) == [("Promoters", [], "the director KYC needed")]
@@ -700,15 +700,15 @@ def test_a_director_in_the_memorandum_with_no_kyc_is_put_in_words(client, analys
     f = _card(client, analyst, root, case_id, "ID-08")
     assert f["outcome"] == "fail"
     assert _columns(f) == [("Memorandum and articles", f"{TARUN}; {SUNIL}", True), ("KYC received", TARUN, False),
-                           ("Sourcing message", f"{TARUN}; {LEELA}", False)]
+                           ("Declared at intake", f"{TARUN}; {LEELA}", False)]
     memorandum, received, said = f["columns"]
     assert _rows(memorandum) == [([TARUN, TARUN_DIN, None], [(moa, 1)]), ([SUNIL, SUNIL_DIN, None], [(moa, 1)])]
     assert _rows(received) == [([TARUN, TARUN_DIN, TARUN_PAN], [(kyc, 1)])]
     assert _rows(said) == [([TARUN, None, None], []), ([LEELA, None, None], [])]
     assert [c["provenance"] for c in f["columns"]] == [["borrower_supplied"], ["borrower_supplied"], ["declared"]]
-    assert f["mismatch"] == "Sunil Karve in the memorandum has no KYC and is not named in the sourcing message."
+    assert f["mismatch"] == "Sunil Karve in the memorandum has no KYC and is not named in the intake form."
     _no_amount(f)
-    assert _lines(f) == [("Directors in the memorandum", [], "Sunil Karve has no KYC and is not named in the sourcing message")]
+    assert _lines(f) == [("Directors in the memorandum", [], "Sunil Karve has no KYC and is not named in the intake form")]
 
 
 def test_directors_in_the_memorandum_with_no_kyc_are_put_in_words(client, analyst, published_data_root):
@@ -719,9 +719,9 @@ def test_directors_in_the_memorandum_with_no_kyc_are_put_in_words(client, analys
     f = _card(client, analyst, root, case_id, "ID-08")
     assert f["outcome"] == "fail"
     assert f["mismatch"] == ("Leela Varghese and Sunil Karve in the memorandum have no KYC and "
-                             "are not named in the sourcing message.")
+                             "are not named in the intake form.")
     assert _lines(f) == [("Directors in the memorandum", [],
-                          "Leela Varghese and Sunil Karve have no KYC and are not named in the sourcing message")]
+                          "Leela Varghese and Sunil Karve have no KYC and are not named in the intake form")]
 
 
 def test_a_director_named_in_two_memoranda_is_named_once(client, analyst, published_data_root):
@@ -736,7 +736,7 @@ def test_a_director_named_in_two_memoranda_is_named_once(client, analyst, publis
     assert _rows(memorandum) == [([TARUN, None, None], [(first, 1)]), ([SUNIL, None, None], [(first, 1)]),
                                  ([SUNIL, None, None], [(second, 2)])]
     assert memorandum["coverage"] == "2 documents" and _pages(memorandum["evidence"]) == [(first, 1), (second, 2)]
-    assert f["mismatch"] == "Sunil Karve in the memorandum has no KYC and is not named in the sourcing message."
+    assert f["mismatch"] == "Sunil Karve in the memorandum has no KYC and is not named in the intake form."
 
 
 def test_directors_accounted_for_pass_and_a_memorandum_alone_asks_for_the_kyc(client, analyst, published_data_root):
@@ -747,7 +747,7 @@ def test_directors_accounted_for_pass_and_a_memorandum_alone_asks_for_the_kyc(cl
     f = _card(client, analyst, root, case_id, "ID-08")
     assert f["outcome"] == "pass"
     assert _columns(f) == [("Memorandum and articles", f"{TARUN}; {ISHITA}", False), ("KYC received", TARUN, False),
-                           ("Sourcing message", ISHITA, False)]
+                           ("Declared at intake", ISHITA, False)]
     assert f["mismatch"] is None
     assert _lines(f) == [("Directors in the memorandum", [], "both accounted for")]
 
@@ -874,9 +874,9 @@ def test_a_line_names_two_people_and_counts_the_rest(client, analyst, published_
     add_doc(root, other, "director_kyc", {"person_name": TARUN})
     f = _card(client, analyst, root, other, "ID-08")
     assert f["mismatch"] == ("Leela Varghese, Sunil Karve and Ishita Barve in the memorandum have no KYC and "
-                             "are not named in the sourcing message.")
+                             "are not named in the intake form.")
     assert _lines(f) == [("Directors in the memorandum", [],
-                          "Leela Varghese, Sunil Karve and 1 other have no KYC and are not named in the sourcing message")]
+                          "Leela Varghese, Sunil Karve and 1 other have no KYC and are not named in the intake form")]
 
 
 # --- The guard: a card is presentation only ---

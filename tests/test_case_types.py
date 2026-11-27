@@ -90,16 +90,16 @@ def test_discovered_fields_wait_for_a_person(client, published_data_root):
 
 def test_a_type_is_checked_and_offered_on_its_own_case_only(client, published_data_root):
     rm, analyst, case_id = _case(client, published_data_root)
-    assert _make(client, rm, case_id, name="Rent agreement").status_code == 403
+    assert _make(client, rm, case_id, name="Leave and licence agreement").status_code == 403
     assert _make(client, analyst, case_id, name="  ").status_code == 422
     assert _make(client, analyst, case_id, name="company pan").status_code == 422  # a published type: assign it
-    assert _make(client, analyst, case_id, name="Rent agreement",
+    assert _make(client, analyst, case_id, name="Leave and licence agreement",
                  fields=[{"name": "Rent"}, {"name": "rent "}]).status_code == 422
-    assert _make(client, analyst, case_id, name="Rent agreement", fields=[{"name": "!!"}]).status_code == 422
+    assert _make(client, analyst, case_id, name="Leave and licence agreement", fields=[{"name": "!!"}]).status_code == 422
 
     other = make_case(client, rm, published_data_root, borrower="Other Borrower Pvt Ltd", facilities=["cash_credit"],
                       amount_inr=1000000, collateral_present=False)
-    foreign = _make(client, analyst, other, name="Rent agreement").json()
+    foreign = _make(client, analyst, other, name="Leave and licence agreement").json()
     item = _type_item(client, analyst, case_id)
     r = client.post(f"/api/review/{item['id']}/decision", json={"decision": "assign", "value": foreign["id"]},
                     headers=analyst)
@@ -108,8 +108,8 @@ def test_a_type_is_checked_and_offered_on_its_own_case_only(client, published_da
 
 def test_a_type_is_never_edited_in_place_and_its_making_is_logged(client, published_data_root):
     _, analyst, case_id = _case(client, published_data_root)
-    first = _make(client, analyst, case_id, name="Rent agreement").json()
-    second = _make(client, analyst, case_id, name="Rent agreement", fields=[{"name": "monthly rent"}],
+    first = _make(client, analyst, case_id, name="Leave and licence agreement").json()
+    second = _make(client, analyst, case_id, name="Leave and licence agreement", fields=[{"name": "monthly rent"}],
                    replaces=first["id"]).json()
     assert second["replaces"] == first["id"] and second["id"] != first["id"]
     assert _make(client, analyst, case_id, name="Lease", replaces="CDT-NOPE").status_code == 404
@@ -123,12 +123,12 @@ def test_a_type_is_never_edited_in_place_and_its_making_is_logged(client, publis
 
 def test_the_administrator_sees_proposals_without_any_appraisal(client, published_data_root):
     rm, analyst, case_id = _case(client, published_data_root)
-    t = _make(client, analyst, case_id, name="Rent agreement", fields=[{"name": "monthly rent"}]).json()
+    t = _make(client, analyst, case_id, name="Leave and licence agreement", fields=[{"name": "monthly rent"}]).json()
     _make(client, analyst, case_id, name="rent  agreement")
     admin = sign_in(client, ADMIN)
     assert client.get("/api/admin/case-document-types", headers=rm).status_code == 403
     [p] = client.get("/api/admin/case-document-types", headers=admin).json()
-    assert p["name"] == "Rent agreement" and p["cases"] == 1 and [f["name"] for f in p["fields"]] == ["monthly_rent"]
+    assert p["name"] == "Leave and licence agreement" and p["cases"] == 1 and [f["name"] for f in p["fields"]] == ["monthly_rent"]
     assert case_id not in str(p) and t["id"] not in str(p)
 
 

@@ -90,3 +90,54 @@ def test_no_published_item_requires_a_case_field_attribute_yet(published_data_ro
 
     for item in load_checklist_taxonomy(published_data_root).items:
         assert not any(a.startswith(("product_", "case_type_")) for a in item.requires_attributes), item.id
+
+
+# The loan against property items every case asks for, whatever its customer or case type
+# (tests/test_lap_checklist.py has the full matrix).
+LAP_COMMON = {
+    "lap_application_form", "lap_pan_or_form_60", "lap_identity_proof", "lap_signature_proof", "lap_address_proof",
+    "lap_bureau_report", "lap_property_title", "lap_property_completion", "lap_property_owner_kyc",
+    "lap_supporting_documents",
+}
+LAP_SALARIED = {"lap_salary_slips", "lap_salary_certificate", "lap_form_16", "lap_salary_bank_statements"}
+
+
+def _lap_ids(root: Path) -> set[str]:
+    from engine.configstore.reader import load_checklist_taxonomy
+
+    return {i.id for i in load_checklist_taxonomy(root).items if "lap" in i.products}
+
+
+def test_each_product_gets_only_its_own_items(published_data_root: Path):
+    """Products are a filter on the checklist, not an attribute: a business never gets a loan against
+    property item, and a loan against property, keyed by its customer type, gets its items whatever the
+    constitution (here, with no customer type, the items every customer needs)."""
+    attrs = CaseAttributes.from_request(facility_types=["cash_credit"], collateral_present=True, mpbf_applicable=True)
+    lap_items = _lap_ids(published_data_root)
+    for constitution in [*CONSTITUTIONS, "unknown"]:
+        lap = _ids(derive_checklist(published_data_root, constitution, attrs, product="lap"))
+        assert lap == LAP_COMMON, constitution
+        for product in ("bbg", None):
+            bbg = _ids(derive_checklist(published_data_root, constitution, attrs, product=product))
+            assert not bbg & lap_items, (constitution, product)
+
+
+def test_the_lap_items_are_drafts_awaiting_rbl(published_data_root: Path):
+    from engine.configstore.reader import load_checklist_taxonomy
+
+    items = {i.id: i for i in load_checklist_taxonomy(published_data_root).items}
+    lap_items = _lap_ids(published_data_root)
+    assert all(items[i].source == "provisional" and items[i].products == ["lap"] for i in lap_items)
+    assert items["lap_supporting_documents"].blocking is False
+    assert all(i.products == ["bbg"] for i in items.values() if i.id not in lap_items)
+
+
+def test_items_for_a_lap_case_are_provisional_until_its_customer_type(published_data_root: Path):
+    from engine.completeness import items_for
+
+    common = dict(constitution="unknown", facilities=[], amount_inr=4500000, collateral_present=True, product="lap")
+    unknown, provisional = items_for(published_data_root, **common)
+    chosen, settled = items_for(published_data_root, **common, customer_type="salaried")
+    assert provisional is True and settled is False
+    assert _ids(unknown) == LAP_COMMON
+    assert _ids(chosen) == LAP_COMMON | LAP_SALARIED

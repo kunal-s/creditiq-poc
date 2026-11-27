@@ -4,7 +4,9 @@ import { expect, test } from "@playwright/test";
 
 import {
   SOURCING_MESSAGE,
+  START_FILE,
   caseIdFromUrl,
+  fixtureFile,
   createCaseViaUi,
   deleteCaseViaUi,
   settleProposedFields,
@@ -17,12 +19,13 @@ test("paste, read, confirm and create: the engine proposes the fields it found",
   await signIn(page, "analyst");
   await page.goto("/appraisals/new");
 
-  // Nothing can be read before a channel and a message are given.
-  const read = page.getByRole("button", { name: "Read the message" });
-  await expect(read).toBeDisabled();
-
+  // Nothing can be read before a document is added (a case is created with its documents).
+  const read = page.getByTestId("start-continue");
   await page.getByTestId("channel-email").click();
   await page.getByTestId("message-input").fill(SOURCING_MESSAGE);
+  await expect(read).toHaveText("Read the message");
+  await expect(read).toBeDisabled();
+  await page.getByTestId("upload-input").setInputFiles([fixtureFile(START_FILE)]);
   await expect(read).toBeEnabled();
   await read.click();
 
@@ -69,9 +72,8 @@ test("paste, read, confirm and create: the engine proposes the fields it found",
   await expect(create).toBeEnabled();
   await create.click();
 
-  // The case exists; the screen goes straight on to Files, where the documents
-  // are added next (appraisals.new.tsx).
-  await expect(page).toHaveURL(/\/appraisals\/BBG-\d{4}-\d{6}\/documents$/, { timeout: 30_000 });
+  // The case exists with its document, and opens on its Overview.
+  await expect(page).toHaveURL(/\/appraisals\/BBG-\d{4}-\d{6}$/, { timeout: 30_000 });
   const caseId = caseIdFromUrl(page);
   await page.goto(`/appraisals/${caseId}`);
   await expect(page.getByTestId("case-header")).toContainText(borrower);
@@ -93,6 +95,7 @@ test("nothing is created while the message is only read", async ({ page }) => {
   await page.goto("/appraisals/new");
   await page.getByTestId("channel-email").click();
   await page.getByTestId("message-input").fill(SOURCING_MESSAGE);
+  await page.getByTestId("upload-input").setInputFiles([fixtureFile(START_FILE)]);
   await page.getByRole("button", { name: "Read the message" }).click();
   await expect(page.getByTestId("proposed-case")).toBeVisible();
 
@@ -106,6 +109,7 @@ test("a message without an amount says what is still needed", async ({ page }) =
   await page.goto("/appraisals/new");
   await page.getByTestId("channel-email").click();
   await page.getByTestId("message-input").fill("Client Vireo Castings Pvt Ltd is asking for CC.");
+  await page.getByTestId("upload-input").setInputFiles([fixtureFile(START_FILE)]);
   await page.getByRole("button", { name: "Read the message" }).click();
 
   await expect(page.getByTestId("proposed-case")).toBeVisible();
@@ -124,6 +128,7 @@ test("a second application for the same borrower is offered the existing one", a
     await page.goto("/appraisals/new");
     await page.getByTestId("channel-email").click();
     await page.getByTestId("message-input").fill(SOURCING_MESSAGE);
+    await page.getByTestId("upload-input").setInputFiles([fixtureFile(START_FILE)]);
     await page.getByRole("button", { name: "Read the message" }).click();
     await page.getByTestId("field-borrower").getByRole("textbox").fill(borrower);
     await settleProposedFields(page);
@@ -154,6 +159,7 @@ test("Discard clears the proposal and leaves the screen empty", async ({ page })
   await page.goto("/appraisals/new");
   await page.getByTestId("channel-email").click();
   await page.getByTestId("message-input").fill(SOURCING_MESSAGE);
+  await page.getByTestId("upload-input").setInputFiles([fixtureFile(START_FILE)]);
   await page.getByRole("button", { name: "Read the message" }).click();
   await expect(page.getByTestId("proposed-case")).toBeVisible();
 

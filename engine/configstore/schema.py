@@ -12,7 +12,7 @@ import ast
 import re
 from typing import Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, model_validator
 
 from ..units import DEFAULT_UNIT, DisplayUnit
 
@@ -134,6 +134,17 @@ class PolicySection(BaseModel):
     evaluated, {reason} (the memo's sentence saying why)."""
 
 
+def _authored_keys(model: type[BaseModel], data: object, info: ValidationInfo, where: str) -> None:
+    """A key the model does not define, refused only when the files are validated for a publish (the
+    writer passes the context `authored`): a misspelt rule would otherwise be dropped and the item would
+    apply to every case. A version published earlier is read as it is."""
+    if not (info.context or {}).get("authored") or not isinstance(data, dict):
+        return
+    unknown = sorted(set(data) - set(model.model_fields))
+    if unknown:
+        raise ValueError(f"{where}: unknown keys {unknown}")
+
+
 class CoverageRule(BaseModel):
     """What "complete" means for an item beyond presence (F-13.2), always
     measured from the case's fixed as_of date (principle 8)."""
@@ -152,6 +163,38 @@ class CoverageRule(BaseModel):
     statements: list[str] = Field(default_factory=list)
     """statements (and financial_year): sections that must be present, e.g.
     balance_sheet, profit_and_loss."""
+    named_in: list[str] = Field(default_factory=list)
+    """parties: only the people a field of the intake form names (`<section>.<field>`, a `parties`
+    field of a repeating section, e.g. properties.owners, whose names are joined by "; "). Empty means
+    every person on the case."""
+    what: str | None = None
+    """parties: what each person's document is, as the gap names it ("signature proof": "Signature proof
+    missing for 1 of 2: ..."). None names it KYC (PAN and address proof)."""
+
+    @model_validator(mode="before")
+    @classmethod
+    def _known_keys(cls, data: object, info: ValidationInfo) -> object:
+        _authored_keys(cls, data, info, "checklist_taxonomy coverage")
+        return data
+
+
+class ChecklistCondition(BaseModel):
+    """When an item applies beyond its product, customer type and case type: ANY one part is enough
+    (plan 2026-11-27 section 7.3). Each id is checked against config/app.yaml and the product's form in
+    config/intake.yaml when the configuration is published."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    case_types: list[str] = Field(default_factory=list)
+    """The case's confirmed case type is one of these."""
+    declared: list[str] = Field(default_factory=list)
+    """The intake form declares a value for one of these single fields (an identifier such as gstin, or a
+    declared figure): anything but empty, zero or "no"."""
+    rows: list[str] = Field(default_factory=list)
+    """The intake form has a row in one of these repeating sections (existing_loans)."""
+
+    def is_empty(self) -> bool:
+        return not (self.case_types or self.declared or self.rows)
 
 
 class ChecklistItemDef(BaseModel):
@@ -159,11 +202,26 @@ class ChecklistItemDef(BaseModel):
     name: str
     category: str
     constitutions: list[Literal["private_limited", "proprietorship", "partnership"]]
+    """The constitutions whose cases it applies to, for a product whose customers are businesses
+    (business banking). A product keyed by its own customer types (a loan against property) reads
+    `customer_types` instead."""
     why: str
     basis: str
     source: Source
     blocking: bool
     weight: int
+    products: list[str] = Field(default_factory=list)
+    """The products (config/app.yaml) whose cases the item applies to. Empty means the default product
+    only: a version published before products were named still loads, and gives no other product its
+    business items."""
+    customer_types: list[str] = Field(default_factory=list)
+    """Only for cases of these customer types (config/app.yaml, the item's products' lists). Empty means
+    every customer type; a case whose customer type is not yet known gets only such items."""
+    case_types: list[str] = Field(default_factory=list)
+    """Only for cases of these confirmed case types. Empty means every case type."""
+    when_any: ChecklistCondition | None = None
+    """Only when one of these holds of the case (a case type, a value declared, a repeating section
+    with rows). None means always."""
     requires_attributes: list[str] = Field(default_factory=list)
     """Only applies when the case sets all of these attributes true
     (e.g. `collateral_present`). Empty means it always applies to its listed
@@ -172,6 +230,13 @@ class ChecklistItemDef(BaseModel):
     """Completeness rule; None means one valid document suffices."""
     request: str | None = None
     """How to ask for it when missing, in plain language (F-14.2)."""
+
+    @model_validator(mode="before")
+    @classmethod
+    def _known_keys(cls, data: object, info: ValidationInfo) -> object:
+        where = f"checklist_taxonomy.{data.get('id')}" if isinstance(data, dict) else "checklist_taxonomy item"
+        _authored_keys(cls, data, info, where)
+        return data
 
 
 class ChecklistTaxonomySection(BaseModel):
@@ -703,6 +768,9 @@ class StatementLine(BaseModel):
     """Overrides the section's column (for example `previous_period`)."""
     label: str = "particulars"
     """The column that holds the row's printed label."""
+    excluding: list[str] = Field(default_factory=list)
+    """Wordings a label must not hold to be the line: "Profit before extraordinary items and tax" holds "extraordinary
+    items" but is not the line. Matched like the wordings, after numbering, case and punctuation are folded."""
 
     @model_validator(mode="after")
     def _one(self):
@@ -725,6 +793,35 @@ class GstLine(BaseModel):
     row: str | None = None
     column: str
     label: str = "description"
+
+
+class AnalysisRatio(BaseModel):
+    """A ratio the spread works out for every year from the statement lines, with no policy norm behind it
+    (the bank's spread template): its row shows the figure and its working, and nothing is assessed against it."""
+
+    key: str = Field(pattern=r"^[a-z][a-z0-9-]*$")
+    label: str
+    unit: Literal["x", "%", "days"]
+    expression: str
+    """Over statement lines and derived lines; + - * / and numbers."""
+    formula: str
+    """The working, in words, shown beside the ratio."""
+
+    @model_validator(mode="after")
+    def _parses(self):
+        try:
+            tree = ast.parse(self.expression, mode="eval")
+        except SyntaxError as exc:
+            raise ValueError(f"analysis ratio {self.key}: the expression does not parse: {exc.msg}") from exc
+        allowed = (ast.Expression, ast.BinOp, ast.UnaryOp, ast.USub, ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Name,
+                   ast.Load, ast.Constant)
+        bad = [type(n).__name__ for n in ast.walk(tree) if not isinstance(n, allowed)]
+        if bad:
+            raise ValueError(f"analysis ratio {self.key}: only lines, numbers and + - * / are allowed, not {bad[0]}")
+        return self
+
+    def names(self) -> list[str]:
+        return [n.id for n in ast.walk(ast.parse(self.expression, mode="eval")) if isinstance(n, ast.Name)]
 
 
 class StatementsSection(BaseModel):
@@ -763,6 +860,21 @@ class StatementsSection(BaseModel):
         default_factory=lambda: {"audited_financial_statements": "audited"})
     """Document type to the spread column it fills (F-22). A version published before this setting existed
     reads as audited statements only, which is what the spread filled then."""
+    analysis: list[AnalysisRatio] = Field(default_factory=list)
+    """Ratios the spread shows each year with no norm behind them (the bank's spread template). A version published
+    before this setting existed shows none."""
+
+    @model_validator(mode="after")
+    def _analysis_names_known_lines(self):
+        known = set(self.lines) | set(self.derived)
+        keys = [r.key for r in self.analysis]
+        if len(keys) != len(set(keys)):
+            raise ValueError("statements.analysis: each ratio needs a key of its own")
+        for ratio in self.analysis:
+            unknown = [n for n in ratio.names() if n not in known]
+            if unknown:
+                raise ValueError(f"analysis ratio {ratio.key} names {', '.join(unknown)}, which is not a statement line")
+        return self
 
 
 class MatrixAuthority(BaseModel):
@@ -885,9 +997,48 @@ SECTION_MODELS: dict[str, type[BaseModel]] = {
 }
 
 
+#: What a checklist item of each product may name, by product id (engine/intake.py `checklist_terms`):
+#: its customer_types, case_types, declared (the form's single fields), rows (its repeating sections) and
+#: named_in (its `parties` fields, as `<section>.<field>`).
+ChecklistTerms = dict[str, dict[str, set[str]]]
+
+
+def checklist_problems(checklist: ChecklistTaxonomySection, terms: ChecklistTerms | None) -> list[str]:
+    """Each item's section is one of the checklist's, and every id its applicability names is one its
+    products define (config/app.yaml and config/intake.yaml), when the caller has `terms`."""
+    problems = [f"checklist_taxonomy.{item.id}: category {item.category!r} is not one of the sections"
+                for item in checklist.items if item.category not in checklist.sections]
+    if terms is None:
+        return problems
+    for item in checklist.items:
+        where = f"checklist_taxonomy.{item.id}"
+        owners = [terms[p] for p in item.products if p in terms] or list(terms.values())
+
+        def known(kind: str) -> set[str]:
+            return set().union(*(o.get(kind, set()) for o in owners))
+
+        cond = item.when_any
+        named = item.coverage.named_in if item.coverage else []
+        checks = [("customer_types", item.customer_types, "unknown customer type"),
+                  ("case_types", [*item.case_types, *(cond.case_types if cond else [])], "unknown case type"),
+                  ("declared", cond.declared if cond else [], "declares unknown value"),
+                  ("rows", cond.rows if cond else [], "unknown repeating section"),
+                  ("named_in", named, "unknown parties field")]
+        for kind, ids, what in checks:
+            problems += [f"{where}: {what} {i!r}" for i in ids if i not in known(kind)]
+        if cond is not None and cond.is_empty():
+            problems.append(f"{where}: when_any names no condition")
+        if named and item.coverage.kind != "parties":
+            problems.append(f"{where}: named_in is for a parties coverage")
+    return problems
+
+
 def cross_check(sections: dict[str, BaseModel], ingestion: dict[str, dict] | None = None,
-                facilities: set[str] | None = None) -> list[str]:
-    """References between sections that must resolve. Returns problems."""
+                facilities: set[str] | None = None, products: set[str] | None = None,
+                checklist_terms: ChecklistTerms | None = None) -> list[str]:
+    """References between sections that must resolve. Returns problems. `facilities` and `products` are
+    the ids config/app.yaml defines, and `checklist_terms` what each product's checklist items may name,
+    when the caller has them."""
     problems: list[str] = []
     txn = sections.get("txn_classification")
     if isinstance(txn, TxnClassificationSection):
@@ -906,6 +1057,10 @@ def cross_check(sections: dict[str, BaseModel], ingestion: dict[str, dict] | Non
     types = sections["document_types"]
     assert isinstance(checklist, ChecklistTaxonomySection) and isinstance(types, DocumentTypesSection)
     item_ids = {item.id for item in checklist.items}
+    if products is not None:
+        problems += [f"checklist_taxonomy.{item.id}: unknown product {pid!r}"
+                     for item in checklist.items for pid in item.products if pid not in products]
+    problems += checklist_problems(checklist, checklist_terms)
     type_ids = [t.id for t in types.types]
     if len(type_ids) != len(set(type_ids)):
         problems.append("document_types: duplicate type ids")

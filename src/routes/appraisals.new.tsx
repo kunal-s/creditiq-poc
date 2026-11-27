@@ -1,49 +1,22 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import {
-  AlertTriangle,
-  ArrowRight,
-  Check,
-  ClipboardPaste,
-  Files,
-  KeyRound,
-  MessageSquareText,
-  Paperclip,
-  Pencil,
-  ShieldCheck,
-  X,
-} from "lucide-react";
-import { toast } from "sonner";
-import type { CaseProposal, CaseSummary, Meta } from "@/api/types";
-import { api, ApiError } from "@/api/client";
-import { PageHeader } from "@/components/shell/PageHeader";
-import { Panel, Chip } from "@/components/common/Panel";
-import { ErrorState } from "@/components/common/States";
-import { ProposedStatusChip } from "@/components/documents/chips";
-import { UploadZone } from "@/components/documents/UploadZone";
-import { IntakeDocuments } from "@/components/cases/IntakeDocuments";
-import { t } from "@/config/terminology";
-import { formatInr, useCases, useCreateCase, useMeta, useProposeCase } from "@/domain/cases";
-import { errorKind } from "@/domain/errors";
-import {
-  draftFrom,
-  fieldCells,
-  fieldKeys,
-  groupFields,
-  isDefaulted,
-  markRuns,
-  missingMinimum,
-  normalise,
-  optionsFor,
-  previewRequest,
-  toCaseCreate,
-  unsettled,
-  type Draft,
-  type Mark,
-} from "@/domain/proposal";
-import { formatBytes } from "@/domain/documents";
-import { useSession } from "@/domain/session";
+import { createFileRoute } from "@tanstack/react-router";
+import { useMemo } from "react";
 import { cn } from "@/lib/utils";
+import { ArrowLeft } from "lucide-react";
+import type { Meta } from "@/api/types";
+import { IntakeDocuments } from "@/components/cases/IntakeDocuments";
+import { ErrorState, LoadingBlock } from "@/components/common/States";
+import { CreateBar } from "@/components/intake/CreateBar";
+import { IntakeForm } from "@/components/intake/IntakeForm";
+import { MessagePanel } from "@/components/intake/MessagePanel";
+import { ProductChoice, type IntakeStep } from "@/components/intake/ProductChoice";
+import { ReviewPanel } from "@/components/intake/ReviewPanel";
+import { StartButton, StartPanel } from "@/components/intake/StartPanel";
+import { duplicatesIn, useNewApplication } from "@/components/intake/useNewApplication";
+import { PageHeader } from "@/components/shell/PageHeader";
+import { t } from "@/config/terminology";
+import { useMeta } from "@/domain/cases";
+import { previewRequest } from "@/domain/intakeCreate";
+import { withIntakeDefaults } from "@/domain/intakeMeta";
 
 export const Route = createFileRoute("/appraisals/new")({
   head: () => ({
@@ -52,867 +25,161 @@ export const Route = createFileRoute("/appraisals/new")({
   component: NewApplication,
 });
 
-/** How many matching applications the duplicate warning names; the rest are counted. */
-const SHOWN_DUPLICATES = 3;
-
-const inputClass =
-  "mt-1 h-9 w-full min-w-0 rounded border border-border bg-surface px-2.5 text-[13px] text-foreground outline-none placeholder:text-muted-foreground/70 focus:border-primary/60 focus:ring-1 focus:ring-ring";
-
+/** The product-first New appraisal (F-04; plan 2026-11-27): the product, the start boxes (a
+ * message and identifiers optional, documents required), the product's form, the review and
+ * Create — sections of one page. Nothing is stored until Create sends the case with its files. */
 function NewApplication() {
-  const navigate = useNavigate();
-  const meta = useMeta();
-  const session = useSession();
-  const propose = useProposeCase();
-  const create = useCreateCase();
-  const [channel, setChannel] = useState<string>("");
-  const [text, setText] = useState("");
-  const [ids, setIds] = useState("");
-  const [proposal, setProposal] = useState<CaseProposal | null>(null);
-  const [draft, setDraft] = useState<Draft | null>(null);
-  const [selected, setSelected] = useState<string | null>(null);
-  const [override, setOverride] = useState(false);
-  const [overrideReason, setOverrideReason] = useState("");
-  const [attachments, setAttachments] = useState<File[]>([]);
-  const [creating, setCreating] = useState(false);
-
-  const channelId = channel || meta.data?.channels[0]?.id || "";
-
-  // What is read: the message, with any identifiers typed on their own after it.
-  const combined = ids.trim()
-    ? text.trim()
-      ? `${text.trimEnd()}\n${ids.trim()}`
-      : ids.trim()
-    : text;
-
-  async function read() {
-    try {
-      setText(combined);
-      setIds("");
-      const result = await propose.mutateAsync({ channel: channelId, text: combined });
-      setProposal(result);
-      setDraft(draftFrom(result, meta.data, session?.user.branch));
-      setSelected(null);
-      setOverride(false);
-      setOverrideReason("");
-    } catch {
-      // Shown inline from the mutation's error state.
-    }
-  }
-
-  function discard() {
-    setProposal(null);
-    setDraft(null);
-    setSelected(null);
-    setText("");
-    setAttachments([]);
-    setOverride(false);
-    setOverrideReason("");
-    propose.reset();
-    create.reset();
-  }
-
-  async function submit() {
-    if (!proposal || !draft) return;
-    setCreating(true);
-    try {
-      const created = await create.mutateAsync(
-        toCaseCreate(proposal, draft, channelId, override ? overrideReason.trim() : null, text),
-      );
-      toast.success(t("newApplication.created", { id: created.id }));
-      if (attachments.length > 0) {
-        try {
-          await api.uploadFiles(created.id, attachments);
-        } catch (error) {
-          toast(t("newApplication.attachmentsLater"), {
-            description: t(`state.${errorKind(error)}.description`),
-          });
-        }
-        // Processing has started: the Overview shows it.
-        void navigate({ to: "/appraisals/$caseId", params: { caseId: created.id } });
-      } else {
-        void navigate({ to: "/appraisals/$caseId/documents", params: { caseId: created.id } });
-      }
-    } catch (error) {
-      // A duplicate found at creation (409) shows as the duplicate warning;
-      // anything else is shown inline from the mutation's error state.
-      const found = duplicatesIn(error);
-      if (found) {
-        const known = new Set((proposal.duplicates ?? []).map((d) => d.id));
-        setProposal({
-          ...proposal,
-          duplicates: [...(proposal.duplicates ?? []), ...found.filter((d) => !known.has(d.id))],
-        });
-        setOverride(false);
-      }
-    } finally {
-      setCreating(false);
-    }
-  }
+  const query = useMeta();
+  const meta = useMemo(
+    () => (query.data ? withIntakeDefaults(query.data) : undefined),
+    [query.data],
+  );
+  const app = useNewApplication(meta);
+  const blocked = Object.values(app.checks).some((c) => (Array.isArray(c) ? c.length > 0 : c));
+  const step: IntakeStep = !app.draft ? "start" : blocked ? "details" : "review";
 
   return (
-    <div className="pb-10">
+    <div>
       <PageHeader
         eyebrow={t("page.newApplication.eyebrow")}
         title={t("page.newApplication.title")}
         purpose={t("page.newApplication.purpose")}
         actions={
-          !proposal && (
-            <button
-              type="button"
-              disabled={!combined.trim() || propose.isPending || !channelId}
-              onClick={() => void read()}
-              className="flex h-9 items-center gap-1.5 rounded bg-primary px-3.5 text-[12.5px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
-            >
-              <ClipboardPaste className="h-3.5 w-3.5" />
-              {propose.isPending ? t("newApplication.reading") : t("newApplication.read")}
-            </button>
-          )
+          meta && app.form && !app.draft ? (
+            <StartButton
+              meta={meta}
+              form={app.form}
+              start={app.start}
+              reading={app.propose.isPending}
+              onContinue={app.continueFromStart}
+            />
+          ) : undefined
         }
       />
-
-      <div className="space-y-4 px-4 py-5 sm:px-6">
-        {!proposal && (
-          <IntakeStart
-            text={text}
-            onText={setText}
-            ids={ids}
-            onIds={setIds}
-            attachments={attachments}
-            onAttach={(files) => setAttachments((prev) => [...prev, ...files])}
-            onRemove={(i) => setAttachments((prev) => prev.filter((_, j) => j !== i))}
-            channels={meta.data?.channels ?? []}
-            channel={channelId}
-            onChannel={setChannel}
-            error={propose.isError ? propose.error : null}
-          />
-        )}
-
-        {proposal && draft && (
-          <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-            <div className="min-w-0 space-y-4">
-              <MessagePanel
-                text={text}
-                proposal={proposal}
-                draft={draft}
-                selected={selected}
-                onEdit={discardProposalKeepText}
-              />
-              {meta.data && (
-                <IntakeDocuments
-                  request={previewRequest(draft)}
-                  attachments={attachments}
-                  onAttach={(files) => setAttachments((prev) => [...prev, ...files])}
-                  onRemove={(i) => setAttachments((prev) => prev.filter((_, j) => j !== i))}
-                />
-              )}
-            </div>
-
-            {meta.data ? (
-              <ProposedCase
-                proposal={proposal}
-                draft={draft}
-                meta={meta.data}
-                selected={selected}
-                onSelect={setSelected}
-                onChange={setDraft}
-              />
-            ) : (
-              <Panel title={t("newApplication.proposed")}>
-                {meta.isError ? (
-                  <div className="p-4">
-                    <ErrorState error={meta.error} compact />
-                  </div>
-                ) : (
-                  <p className="px-4 py-8 text-center text-[12.5px] text-muted-foreground">
-                    {t("newApplication.proposedEmpty")}
-                  </p>
-                )}
-              </Panel>
-            )}
-          </div>
-        )}
-
-        {proposal && draft && meta.data && (
+      <div className="space-y-4 px-4 pt-5 pb-5 sm:px-6">
+        {query.isError ? (
+          <ErrorState error={query.error} onRetry={() => void query.refetch()} />
+        ) : !meta || !app.form ? (
+          <LoadingBlock rows={6} />
+        ) : (
           <>
-            {(proposal.duplicates ?? []).length > 0 && (
-              <div
-                className="rounded border border-flag/40 bg-flag-soft px-4 py-3"
-                data-testid="duplicate-warning"
-              >
-                <div className="flex flex-wrap items-start gap-2 text-[12.5px] text-flag-foreground">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                  <div className="min-w-0 flex-1 space-y-1.5">
-                    {(proposal.duplicates ?? []).slice(0, SHOWN_DUPLICATES).map((d) => (
-                      <p key={d.id} className="flex flex-wrap items-center gap-2">
-                        <span>
-                          {t("newApplication.duplicate", { id: d.id, borrower: d.borrower })}
-                        </span>
-                        <Link
-                          to="/appraisals/$caseId"
-                          params={{ caseId: d.id }}
-                          className="rounded border border-border bg-surface px-2 py-0.5 text-[12px] font-medium text-foreground hover:bg-muted"
-                        >
-                          {t("newApplication.openIt")}
-                        </Link>
-                      </p>
-                    ))}
-                    {(proposal.duplicates ?? []).length > SHOWN_DUPLICATES && (
-                      <p data-testid="more-duplicates">
-                        {t("newApplication.moreDuplicates", {
-                          n: (proposal.duplicates ?? []).length - SHOWN_DUPLICATES,
-                        })}
-                      </p>
-                    )}
-                  </div>
-                  {!override && (
-                    <button
-                      type="button"
-                      onClick={() => setOverride(true)}
-                      className="rounded border border-border bg-surface px-2 py-0.5 text-[12px] font-medium text-foreground hover:bg-muted"
-                    >
-                      {t("newApplication.createAnyway")}
-                    </button>
-                  )}
-                </div>
-                {override && (
-                  <label className="mt-2 block">
-                    <span className="field-label">{t("newApplication.overrideReason")}</span>
-                    <input
-                      className={inputClass}
-                      value={overrideReason}
-                      onChange={(e) => setOverrideReason(e.target.value)}
-                      data-testid="override-reason"
-                    />
-                  </label>
-                )}
-              </div>
-            )}
-
-            <CreateBar
-              proposal={proposal}
-              draft={draft}
-              meta={meta.data}
-              duplicateBlocked={
-                (proposal.duplicates ?? []).length > 0 && (!override || !overrideReason.trim())
-              }
-              creating={creating}
-              error={duplicatesIn(create.error) ? null : create.error}
-              onDiscard={discard}
-              onCreate={() => void submit()}
+            <ProductChoice
+              products={meta.products}
+              value={app.draft?.product ?? app.start.product}
+              pending={app.pending}
+              step={step}
+              onChoose={app.chooseProduct}
+              onConfirm={app.confirmSwitch}
+              onCancel={app.cancelSwitch}
+              disabled={app.propose.isPending}
             />
+            {app.draft ? (
+              <ApplicationView app={app} meta={meta} />
+            ) : (
+              <StartPanel
+                meta={meta}
+                form={app.form}
+                start={app.start}
+                onStart={app.patchStart}
+                error={app.propose.isError ? app.propose.error : null}
+              />
+            )}
           </>
         )}
       </div>
     </div>
   );
-
-  function discardProposalKeepText() {
-    setProposal(null);
-    setDraft(null);
-    setSelected(null);
-    propose.reset();
-  }
 }
 
-/** The duplicates a 409 from case creation carries (F-04.5), if any. */
-function duplicatesIn(error: unknown): CaseSummary[] | null {
-  if (!(error instanceof ApiError) || error.status !== 409) return null;
-  const detail = error.detail as { duplicates?: unknown } | null;
-  return Array.isArray(detail?.duplicates) ? (detail.duplicates as CaseSummary[]) : null;
-}
-
-function MessagePanel({
-  text,
-  proposal,
-  draft,
-  selected,
-  onEdit,
-}: {
-  text: string;
-  proposal: CaseProposal;
-  draft: Draft;
-  selected: string | null;
-  onEdit: () => void;
-}) {
-  const selectedRef = useRef<HTMLElement | null>(null);
-  const marks = useMemo(() => {
-    const out: Mark[] = (proposal.stripped ?? []).map((s) => ({ ...s.span, level: "stripped" }));
-    for (const [key, span] of Object.entries(draft.spans)) {
-      if (!span) continue;
-      out.push({ ...span, level: key === selected ? "selected" : "found" });
-    }
-    if (selected) {
-      for (const c of proposal.fields[selected]?.candidates ?? []) {
-        out.push({ ...c.span, level: "candidate" });
-      }
-    }
-    return out;
-  }, [draft.spans, proposal.fields, proposal.stripped, selected]);
-  const runs = markRuns(text, marks);
-
-  useEffect(() => {
-    selectedRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-  }, [selected]);
-
+/** Steps 3 to 5 once the start is done: the message beside the form (when there is one), then
+ * the review with the documents, then Create. */
+function ApplicationView({ app, meta }: { app: ReturnType<typeof useNewApplication>; meta: Meta }) {
+  const { draft, form, proposal, body } = app;
+  if (!draft || !form || !body) return null;
+  const files = app.start.files;
+  const reading = app.propose.isPending;
+  const next = meta.products.find((p) => p.id === (app.switching ?? app.start.product));
   return (
-    <Panel
-      title={t("newApplication.message")}
-      subtitle={t("newApplication.messageClickHelp")}
-      action={
-        <button
-          type="button"
-          onClick={onEdit}
-          className="flex h-7 items-center gap-1.5 rounded border border-border bg-surface px-2.5 text-[12px] font-medium text-foreground hover:bg-muted"
-        >
-          <Pencil className="h-3 w-3" /> {t("newApplication.editMessage")}
-        </button>
-      }
-    >
-      <pre
-        className="max-h-80 overflow-auto whitespace-pre-wrap break-words px-4 py-3 font-sans text-[12.5px] leading-relaxed text-foreground"
-        data-testid="message-view"
-      >
-        {runs.map((run) =>
-          run.level ? (
-            <mark
-              key={run.start}
-              ref={
-                run.level === "selected"
-                  ? (el) => {
-                      if (el) selectedRef.current = el;
-                    }
-                  : undefined
-              }
-              data-mark={run.level}
-              title={run.level === "stripped" ? t("newApplication.strippedHelp") : undefined}
-              className={cn(
-                "rounded-[2px] text-foreground",
-                run.level === "selected" && "bg-primary/25 ring-1 ring-primary",
-                run.level === "candidate" && "bg-flag/35 ring-1 ring-flag",
-                run.level === "found" && "bg-accent",
-                run.level === "stripped" && "bg-transparent text-muted-foreground/60",
-              )}
-            >
-              {run.text}
-            </mark>
-          ) : (
-            <span key={run.start}>{run.text}</span>
-          ),
-        )}
-      </pre>
-    </Panel>
-  );
-}
-
-function ProposedCase({
-  proposal,
-  draft,
-  meta,
-  selected,
-  onSelect,
-  onChange,
-}: {
-  proposal: CaseProposal;
-  draft: Draft;
-  meta: Meta;
-  selected: string | null;
-  onSelect: (key: string) => void;
-  onChange: (draft: Draft) => void;
-}) {
-  const keys = fieldKeys(proposal);
-  const pending = unsettled(proposal, draft);
-
-  const set = (key: string, value: string, span?: { start: number; end: number } | null) =>
-    onChange({
-      ...draft,
-      values: { ...draft.values, [key]: value },
-      spans: span !== undefined ? { ...draft.spans, [key]: span } : draft.spans,
-      settled: { ...draft.settled, [key]: true },
-    });
-  const settle = (key: string) =>
-    onChange({ ...draft, settled: { ...draft.settled, [key]: true } });
-
-  const groups = groupFields(keys);
-
-  return (
-    <Panel title={t("newApplication.proposed")} testId="proposed-case">
-      {groups.map((group) => (
-        <section key={group.id} data-testid={`group-${group.id}`} className="@container/fields">
-          <h3 className="border-b border-border bg-surface-muted/60 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            {t(`newApplication.group.${group.id}`)}
-          </h3>
-          <ul className="grid @min-[30rem]/fields:grid-cols-2">
-            {group.keys.map((key) => {
-              const cells = fieldCells(group.keys);
-              // Product and stage are never read from the message: they have no proposal of their own.
-              const f = proposal.fields[key] ?? null;
-              const value = draft.values[key] ?? "";
-              const needs = pending.includes(key);
-              const defaulted = isDefaulted(draft, key);
-              return (
-                <li
-                  key={key}
-                  data-field={key}
-                  data-testid={`field-${key}`}
-                  onClick={() => onSelect(key)}
-                  className={cn(
-                    "min-w-0 cursor-pointer border-b border-border px-4 py-2.5",
-                    cells[key] === "full" && "@min-[30rem]/fields:col-span-2",
-                    cells[key] === "left" && "@min-[30rem]/fields:border-r",
-                    selected === key ? "bg-primary/5" : "hover:bg-surface-muted/60",
-                    needs && "border-l-2 border-l-flag",
-                  )}
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-[12px] font-medium text-muted-foreground">
-                      {t(`proposalField.${key}`)}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      {f &&
-                        draft.settled[key] &&
-                        (f.status === "unclear" || f.status === "invalid") && (
-                          <Chip tone="positive">
-                            <Check className="h-3 w-3" /> {t("newApplication.confirmedByYou")}
-                          </Chip>
-                        )}
-                      {defaulted ? (
-                        <Chip tone="muted">
-                          <span data-testid="prefilled">
-                            {t(`newApplication.prefilled.${draft.defaults[key]!.source}`)}
-                          </span>
-                        </Chip>
-                      ) : f ? (
-                        <ProposedStatusChip status={f.status} />
-                      ) : null}
-                    </span>
-                  </div>
-                  <FieldEditor
-                    field={key}
-                    value={value}
-                    meta={meta}
-                    onChange={(v) => set(key, v)}
-                    onFocus={() => onSelect(key)}
-                  />
-                  {key === "amount_inr" && Number(value) > 0 && (
-                    <p className="mt-0.5 text-[11px] text-muted-foreground tabular">
-                      {formatInr(Number(value))}
-                    </p>
-                  )}
-                  {f?.note && <p className="mt-1 text-[11.5px] text-flag-foreground">{f.note}</p>}
-                  {f &&
-                    (f.status === "unclear" || f.status === "invalid") &&
-                    (f.candidates ?? []).length > 0 && (
-                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                        <span className="text-[11px] text-muted-foreground">
-                          {t("newApplication.candidates")}
-                        </span>
-                        {(f.candidates ?? []).map((c) => (
-                          <button
-                            key={`${c.span.start}-${c.value}`}
-                            type="button"
-                            data-testid="candidate"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onSelect(key);
-                              set(key, normalise(key, c.value, meta), c.span);
-                            }}
-                            className="rounded border border-flag/40 bg-surface px-1.5 py-0.5 text-[11.5px] font-medium text-foreground hover:bg-flag-soft"
-                          >
-                            {candidateLabel(key, c.value, meta)}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  {needs && (
-                    <button
-                      type="button"
-                      data-testid={`confirm-${key}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        settle(key);
-                      }}
-                      className="mt-1.5 inline-flex items-center gap-1 rounded border border-border bg-surface px-2 py-0.5 text-[11.5px] font-medium text-foreground hover:bg-muted"
-                    >
-                      <Check className="h-3 w-3" /> {t("newApplication.confirmValue")}
-                    </button>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ))}
-      {pending.length > 0 && (
+    <>
+      {reading && (
         <p
-          className="flex items-center gap-1.5 border-t border-border bg-flag-soft px-4 py-2 text-[12px] text-flag-foreground"
-          data-testid="needs-confirmation"
+          role="status"
+          data-testid="form-reading"
+          className="rounded border border-info/30 bg-info-soft px-4 py-2 text-[12px] text-info"
         >
-          <AlertTriangle className="h-3.5 w-3.5" />
-          {t("newApplication.needConfirmation", { n: pending.length })}
+          {t("intake.form.reading", { product: next?.label ?? "" })}
         </p>
       )}
-    </Panel>
-  );
-}
-
-/** A candidate as the RM reads it: a configured id shows its label. */
-function candidateLabel(field: string, value: string, meta: Meta): string {
-  return optionsFor(field, meta).find((o) => o.id === value)?.label ?? value.replace(/_/g, " ");
-}
-
-/** Lists a case cannot be created without (product, stage) offer no empty choice. */
-const ALWAYS_CHOSEN = new Set(["product", "bank_stage"]);
-
-function FieldEditor({
-  field,
-  value,
-  meta,
-  onChange,
-  onFocus,
-}: {
-  field: string;
-  value: string;
-  meta: Meta;
-  onChange: (value: string) => void;
-  onFocus: () => void;
-}) {
-  const label = t(`proposalField.${field}`);
-  const options = field === "facilities" ? [] : optionsFor(field, meta);
-  if (options.length > 0) {
-    return (
-      <select
-        aria-label={label}
-        className={inputClass}
-        value={value}
-        onFocus={onFocus}
-        onClick={(e) => e.stopPropagation()}
-        onChange={(e) => onChange(e.target.value)}
-      >
-        {!ALWAYS_CHOSEN.has(field) || value === "" ? (
-          <option value="">{t("term.notConfirmed")}</option>
-        ) : null}
-        {options
-          .filter((c) => c.id !== "unknown")
-          .map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.label}
-            </option>
-          ))}
-      </select>
-    );
-  }
-  if (field === "facilities") {
-    const ids = value.split(",").filter(Boolean);
-    return (
-      <div className="mt-1 flex flex-wrap gap-1.5" role="group" aria-label={label}>
-        {meta.facilities.map((f) => {
-          const on = ids.includes(f.id);
-          return (
-            <button
-              key={f.id}
-              type="button"
-              aria-pressed={on}
-              onClick={(e) => {
-                e.stopPropagation();
-                onFocus();
-                onChange((on ? ids.filter((i) => i !== f.id) : [...ids, f.id]).join(","));
-              }}
-              className={cn(
-                "rounded border px-2 py-0.5 text-[11.5px]",
-                on
-                  ? "border-primary/50 bg-primary/10 font-medium text-primary"
-                  : "border-border text-muted-foreground hover:bg-muted",
-              )}
-            >
-              {f.label}
-            </button>
-          );
-        })}
-      </div>
-    );
-  }
-  const numeric =
-    field === "amount_inr" || field === "declared_turnover_inr" || field === "proposed_emi_inr";
-  const upper = field === "pan" || field === "gstin" || field === "cin" || field === "udyam";
-  return (
-    <input
-      aria-label={label}
-      className={cn(inputClass, (numeric || upper) && "tabular", upper && "uppercase")}
-      value={value}
-      inputMode={numeric ? "numeric" : undefined}
-      onFocus={onFocus}
-      onChange={(e) =>
-        onChange(
-          numeric
-            ? e.target.value.replace(/[^\d]/g, "")
-            : upper
-              ? e.target.value.toUpperCase()
-              : e.target.value,
-        )
-      }
-    />
-  );
-}
-
-function CreateBar({
-  proposal,
-  draft,
-  meta,
-  duplicateBlocked,
-  creating,
-  error,
-  onDiscard,
-  onCreate,
-}: {
-  proposal: CaseProposal;
-  draft: Draft;
-  meta: Meta;
-  duplicateBlocked: boolean;
-  creating: boolean;
-  error: unknown;
-  onDiscard: () => void;
-  onCreate: () => void;
-}) {
-  const missing = missingMinimum(meta.case_create_minimum, draft, {
-    product: meta.product_default,
-    bank_stage: meta.bank_stage_default,
-  });
-  const pending = unsettled(proposal, draft);
-  const blocked = missing.length > 0 || pending.length > 0 || duplicateBlocked;
-
-  return (
-    <div className="space-y-2">
-      {error ? <ErrorState error={error} compact /> : null}
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        {blocked && (
-          <ul
-            className="mr-auto space-y-0.5 text-[12px] text-flag-foreground"
-            data-testid="create-blockers"
-          >
-            {missing.length > 0 && (
-              <li data-testid="missing-minimum">
-                {t("newApplication.stillNeeded", {
-                  fields: missing.map((k) => t(`proposalField.${k}`)).join(", "),
-                })}
-              </li>
-            )}
-            {pending.length > 0 && (
-              <li data-testid="pending-confirmation">
-                {t("newApplication.stillToConfirm", {
-                  fields: pending.map((k) => t(`proposalField.${k}`)).join(", "),
-                })}
-              </li>
-            )}
-            {duplicateBlocked && (
-              <li data-testid="duplicate-blocker">{t("newApplication.duplicateBlocker")}</li>
-            )}
-          </ul>
+      {app.propose.isError && <ErrorState error={app.propose.error} compact />}
+      <fieldset
+        disabled={reading}
+        aria-busy={reading || undefined}
+        className={cn(
+          "m-0 min-w-0 border-0 p-0",
+          proposal && "grid items-start gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]",
+          reading && "opacity-60",
         )}
-        <button
-          type="button"
-          onClick={onDiscard}
-          className="h-9 rounded border border-border bg-surface px-3 text-[12.5px] font-medium text-foreground hover:bg-muted"
-        >
-          {t("newApplication.discard")}
-        </button>
-        <button
-          type="button"
-          disabled={blocked || creating}
-          onClick={onCreate}
-          data-testid="create-application"
-          className="flex h-9 items-center gap-1.5 rounded bg-primary px-3.5 text-[12.5px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
-        >
-          {creating ? t("newApplication.creating") : t("newApplication.create")}
-          <ArrowRight className="h-3.5 w-3.5" />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/** The start of an application, as the original design: three ways in (paste the message, drop
- * the documents, type an identifier), where it came from, how reading works, and the borrowers
- * already on the desk. */
-function IntakeStart({
-  text,
-  onText,
-  ids,
-  onIds,
-  attachments,
-  onAttach,
-  onRemove,
-  channels,
-  channel,
-  onChannel,
-  error,
-}: {
-  text: string;
-  onText: (v: string) => void;
-  ids: string;
-  onIds: (v: string) => void;
-  attachments: File[];
-  onAttach: (files: File[]) => void;
-  onRemove: (i: number) => void;
-  channels: Meta["channels"];
-  channel: string;
-  onChannel: (id: string) => void;
-  error: unknown;
-}) {
-  const cases = useCases();
-  const recent = [...(cases.data ?? [])]
-    .sort((a, b) => b.created_at.localeCompare(a.created_at))
-    .slice(0, 4);
-  const step = (n: number, icon: ReactNode, title: string, help: string, body: ReactNode) => (
-    <div className="flex min-w-0 flex-col rounded border border-border bg-surface p-3">
-      <div className="flex items-start gap-2">
-        <span className="grid h-7 w-7 shrink-0 place-items-center rounded bg-accent text-primary">
-          {icon}
-        </span>
-        <div className="min-w-0">
-          <p className="text-[13px] font-semibold text-foreground">
-            {n}. {title}
-          </p>
-          <p className="text-[11.5px] text-muted-foreground">{help}</p>
-        </div>
-      </div>
-      <div className="mt-3 flex-1">{body}</div>
-    </div>
-  );
-  return (
-    <div className="grid items-start gap-4 @min-[60rem]/main:grid-cols-[minmax(0,1fr)_minmax(0,20rem)]">
-      <div className="min-w-0 space-y-4">
-        <div className="grid gap-3 @min-[42rem]/main:grid-cols-3">
-          {step(
-            1,
-            <MessageSquareText className="h-3.5 w-3.5" />,
-            t("newApplication.start.message"),
-            t("newApplication.messageHelp"),
-            <textarea
-              rows={8}
-              value={text}
-              onChange={(e) => onText(e.target.value)}
-              placeholder={t("newApplication.messagePlaceholder")}
-              aria-label={t("newApplication.message")}
-              data-testid="message-input"
-              className="h-full w-full resize-y rounded border border-border bg-surface p-2.5 text-[12.5px] leading-relaxed outline-none focus:ring-1 focus:ring-ring"
-            />,
-          )}
-          {step(
-            2,
-            <Files className="h-3.5 w-3.5" />,
-            t("newApplication.start.documents"),
-            t("newApplication.attachmentsHelp"),
-            <div className="space-y-2">
-              <UploadZone compact onFiles={onAttach} />
-              {attachments.length > 0 && (
-                <ul className="space-y-1 text-[12px]" data-testid="attachments">
-                  {attachments.map((f, i) => (
-                    <li key={`${f.name}-${i}`} className="flex items-center gap-2">
-                      <Paperclip className="h-3 w-3 shrink-0 text-muted-foreground" />
-                      <span className="min-w-0 flex-1 break-all">{f.name}</span>
-                      <button
-                        type="button"
-                        aria-label={t("action.remove")}
-                        onClick={() => onRemove(i)}
-                        className="rounded p-0.5 text-muted-foreground hover:bg-muted"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>,
-          )}
-          {step(
-            3,
-            <KeyRound className="h-3.5 w-3.5" />,
-            t("newApplication.start.identifiers"),
-            t("newApplication.start.identifiersHelp"),
-            <input
-              value={ids}
-              onChange={(e) => onIds(e.target.value)}
-              placeholder={t("newApplication.start.identifiersPlaceholder")}
-              aria-label={t("newApplication.start.identifiers")}
-              data-testid="identifiers-input"
-              className={inputClass}
-            />,
-          )}
-        </div>
-        <Panel
-          title={t("newApplication.start.provenance")}
-          subtitle={t("newApplication.start.provenanceHelp")}
-        >
-          <div className="px-4 py-3">
-            <p className="field-label">{t("newApplication.channel")}</p>
-            <div
-              className="mt-1.5 flex flex-wrap gap-1.5"
-              role="radiogroup"
-              aria-label={t("newApplication.channel")}
-            >
-              {channels.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={c.id === channel}
-                  onClick={() => onChannel(c.id)}
-                  data-testid={`channel-${c.id}`}
-                  className={cn(
-                    "rounded border px-2.5 py-1 text-[12px] font-medium transition-colors",
-                    c.id === channel
-                      ? "border-primary bg-accent text-primary"
-                      : "border-border bg-surface text-muted-foreground hover:bg-muted",
-                  )}
-                >
-                  {c.label}
-                </button>
-              ))}
-            </div>
-            <p className="mt-3 text-[11.5px] text-muted-foreground">
-              {t("newApplication.nothingStored")}
-            </p>
+      >
+        {proposal ? (
+          <div className="min-w-0 lg:sticky lg:top-4">
+            <MessagePanel
+              text={app.start.text}
+              proposal={proposal}
+              draft={draft}
+              selected={app.selected}
+              onEdit={app.backToStart}
+            />
           </div>
-        </Panel>
-        {error ? <ErrorState error={error} compact /> : null}
+        ) : (
+          <button
+            type="button"
+            onClick={app.backToStart}
+            data-testid="back-to-start"
+            className="mb-3 inline-flex h-8 items-center gap-1.5 rounded border border-border bg-surface px-2.5 text-[12px] font-medium text-foreground hover:bg-muted"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> {t("intake.form.backToStart")}
+          </button>
+        )}
+        <IntakeForm
+          form={form}
+          draft={draft}
+          proposal={proposal}
+          meta={meta}
+          selected={app.selected}
+          onSelect={app.setSelected}
+          onChange={app.setDraft}
+        />
+      </fieldset>
+      <h2 className="pt-1 text-[13px] font-semibold text-foreground">
+        {t("intake.reviewHeading")}
+      </h2>
+      <div className="grid items-start gap-4 @min-[56rem]/main:grid-cols-2">
+        <ReviewPanel
+          product={draft.product}
+          form={form}
+          body={body}
+          missing={app.checks.missing}
+          gaps={app.checks.gaps}
+          files={files}
+          onAttach={(added) => app.patchStart({ files: [...files, ...added] })}
+          onRemove={(i) => app.patchStart({ files: files.filter((_, j) => j !== i) })}
+          review={app.review}
+          fresh={app.fresh}
+          duplicates={app.duplicates}
+          override={app.override}
+          reason={app.reason}
+          onOverride={() => app.setOverride(true)}
+          onReason={app.setReason}
+        />
+        <IntakeDocuments request={previewRequest(meta, draft)} />
       </div>
-      <div className="min-w-0 space-y-4">
-        <div className="rounded border border-primary/20 bg-accent px-4 py-3">
-          <p className="flex items-center gap-1.5 text-[13px] font-semibold text-accent-foreground">
-            <ShieldCheck className="h-4 w-4" aria-hidden /> {t("newApplication.start.howTitle")}
-          </p>
-          <p className="mt-1.5 text-[12px] leading-relaxed text-muted-foreground">
-            {t("newApplication.start.how")}
-          </p>
-        </div>
-        <Panel
-          title={t("newApplication.start.recent")}
-          subtitle={t("newApplication.start.recentHelp")}
-        >
-          {recent.length === 0 ? (
-            <p className="px-4 py-3 text-[12px] text-muted-foreground">
-              {t("newApplication.start.recentNone")}
-            </p>
-          ) : (
-            <ul className="divide-y divide-border" data-testid="recent-borrowers">
-              {recent.map((c) => (
-                <li key={c.id} className="px-4 py-2.5">
-                  <Link
-                    to="/appraisals/$caseId"
-                    params={{ caseId: c.id }}
-                    className="text-[13px] font-medium text-foreground hover:text-primary hover:underline"
-                  >
-                    {c.borrower}
-                  </Link>
-                  <p className="tabular text-[11px] text-muted-foreground">
-                    {c.id} · {formatInr(c.amount_inr)} · {c.rm}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Panel>
-      </div>
-    </div>
+      <CreateBar
+        {...app.checks}
+        creating={app.create.isPending}
+        error={duplicatesIn(app.create.error) ? null : app.create.error}
+        onDiscard={app.discard}
+        onCreate={app.submit}
+      />
+    </>
   );
 }

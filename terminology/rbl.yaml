@@ -181,6 +181,7 @@ spreadPage:
     turnover: Turnover by year
     profit_and_loss: Profit and loss
     balance_sheet: Balance sheet
+    ratios: Ratios
     differing: "{n} outside tolerance"
     manual: "{n} relying on a person's entry"
   turnover:
@@ -201,6 +202,9 @@ spreadPage:
     balance_sheet:
       title: Balance sheet
       subtitle: "{unit} · as at the year end"
+    ratios:
+      title: Ratios
+      subtitle: Worked out each year from the statement lines; the policy norms are assessed on the Policy section
     manual: "{label} {fy} relies on a person's entry; confirm it against its document before the spread is relied on."
     manualPage: "{label} {fy} relies on a person's entry; confirm it against page {page} before the spread is relied on."
     footnote: Every figure is selectable; the source panel shows the page it was read from.
@@ -1191,7 +1195,7 @@ page:
   newApplication:
     eyebrow: Appraisals
     title: New appraisal
-    purpose: Paste the sourcing email or notes. CreditIQ proposes the application; nothing is created until you confirm it.
+    purpose: Choose the product, then add at least one document; the message and the identifiers are optional. Nothing is created until you confirm it.
   overview:
     title: Overview
     purpose: "Where the appraisal stands: the next step, each stage, what is still needed and what waits for a decision."
@@ -1204,7 +1208,7 @@ page:
     more: "{n} more"
   completeness:
     title: Document readiness
-    purpose: "Each document this constitution and facility need, where it stands, and the list to send the customer."
+    purpose: "Each document this case needs, where it stands, and the list to send the customer."
   checklist:
     title: Required document set
     purpose: The checklist derived from the case's constitution and facilities, with each item satisfied, insufficient or missing.
@@ -1385,12 +1389,11 @@ newApplication:
     message: Paste a message
     documents: Drop documents
     identifiers: Enter identifiers
-    identifiersHelp: PAN, GSTIN, CIN or Udyam; optional, read with the message.
-    identifiersPlaceholder: e.g. AAACK1234K
-    provenance: Provenance
-    provenanceHelp: Where the request came from; it is kept with the application.
+    identifiersHelp: Each is optional; a value typed here fills its field on the form.
+    provenance: Provenance and hints
+    provenanceHelp: Where the request came from, and the choices that bring up the right identifier boxes. Kept with the application.
     howTitle: How reading works
-    how: "CreditIQ proposes the borrower, the facilities, the amount and the identifiers it finds, each marked where it came from; a person confirms or corrects every value before anything is created. Documents dropped here are uploaded once the application is created."
+    how: "CreditIQ proposes the values it finds in the message, each marked where it came from; a person confirms or corrects every value before anything is created. The documents dropped here are stored with the application, in the same step, when it is created."
     recent: Recent borrowers
     recentHelp: Appraisals already on the desk.
     recentNone: No appraisal yet.
@@ -1407,35 +1410,28 @@ newApplication:
   proposedEmpty: The proposed application appears here once the message has been read.
   candidates: "Could be:"
   confirmValue: Confirm this value
-  group:
-    application: Application
-    borrower: Borrower
-    request: Request
-    identifiers: Identifiers
   documents:
     title: Documents
-    help: Attach what the RM has now; more can be added after the application is created.
+    help: The documents the application is created with; more can be added once it exists.
     attached: "Attached ({n})"
-    noneAttached: Nothing attached yet.
     needed: "Will need {n} documents"
     neededSome: "Will need {n} documents ({blocking} blocking)"
     acceptedAs: "Accepted as: {types}"
     neededLoading: Working out what this application will need…
-    provisionalHelp: Confirm the constitution to see the full list.
+    provisionalHelp: Confirm the constitution, or the customer type of a loan against property, to see the full list.
     notBlocking: Not blocking
     after: Files are read once the application is created; the Documents tab then shows what is still missing.
   prefilled:
     "default:config": Default
     "default:rm": Your branch
+    identifier: Identifier
   confirmedByYou: Confirmed by you
   needConfirmation: "To confirm before creating: {n}"
   duplicate: "An application for this borrower already exists: {id} · {borrower}"
   openIt: Open it
   createAnyway: Create anyway
   overrideReason: Reason for creating another application (required)
-  attachments: Attachments
-  attachmentsHelp: Optional. Files added here are uploaded to the application's documents once it is created.
-  attachmentsLater: The application was created; add the attachments from its Documents screen.
+  attachmentsHelp: Required. Files, several files or a ZIP archive; they are stored with the application when it is created.
   stillNeeded: "Still needed: {fields}"
   stillToConfirm: "Still to confirm: {fields}"
   duplicateBlocker: An application for this borrower already exists. Choose Create anyway above and give a reason, or open the existing one.
@@ -1444,6 +1440,251 @@ newApplication:
   create: Create application
   creating: Creating…
   created: "Application {id} created"
+
+# The product-first New appraisal (plan 2026-11-27): the product, the start boxes, the form of the
+# chosen product (config/intake.yaml) and the review before Create.
+intake:
+  # The step chips under the page title.
+  steps:
+    label: Steps
+    product: Product
+    start: Start
+    details: Details
+    review: Review
+  # Step 1: the product cards.
+  product:
+    title: Product
+    help: The form, the documents asked for and the application number follow the product.
+    name: "{label} ({prefix})"
+    selected: Selected
+    about:
+      lap: Individuals or businesses borrowing against residential, commercial or industrial property. Applicants, co-applicants, income and property.
+      bbg: Working capital, term loans and trade finance for businesses. Constitution, financials, GST, banking and facilities.
+    switchTitle: "Switch to {product}?"
+    switchHelp: The message, the identifiers and the documents are kept, with the fields both forms share; the rest of the form is cleared.
+    switch: Switch product
+    keep: "Keep {product}"
+  # Step 2: the three boxes and the button under them.
+  start:
+    optional: Optional
+    required: Required
+    messageHelp: The sourcing email, WhatsApp message or CRM note, as received. When pasted, it pre-fills the form.
+    documentsHelp: "At least {n} file. Files, several files or a ZIP archive."
+    documentsHelpMany: "At least {n} files. Files, several files or a ZIP archive."
+    suggested: "To start with: {documents}"
+    suggestedDoc:
+      applicant_kyc: KYC of the applicant
+      property_papers: property papers
+      income_proof: income proof (ITR or salary slips)
+      constitution_document: certificate of incorporation or constitution document
+      entity_pan: PAN of the entity
+      financial_statements: latest financial statements
+      gst_returns: GST returns
+      bank_statements: bank statements
+    files: "{n} file(s)"
+    moreBoxes: More boxes appear once the customer type or the case type is chosen.
+    continue: Continue
+    needDocuments: Add at least one document to continue
+    needDocumentsMany: "Add at least {n} documents to continue"
+  # The identifier boxes, by id; a product's own wording first (intake.identifier.<product>.<id>).
+  identifier:
+    pan: PAN
+    co_applicant_pan: Co-applicant PAN
+    gstin: GSTIN
+    cin: CIN or LLPIN
+    udyam: Udyam
+    application_id: LOS application ID
+    existing_loan_account: Existing loan account number
+    lap:
+      pan: Applicant PAN
+      gstin: Business GSTIN
+      udyam: Business Udyam
+    bbg:
+      pan: Entity PAN
+  # Format hints beside a field; the engine checks every value again on Create.
+  hint:
+    pan: "e.g. AAACK1234K"
+    panIndividual: "e.g. ABCPK1234F · P as the 4th letter"
+    gstin: "e.g. 27AAACK1234K1Z5"
+    cin_or_llpin: "21-character CIN, or LLPIN e.g. AAA-1234"
+    udyam: "e.g. UDYAM-MH-00-0000000"
+    pincode: 6 digits
+    digits: "{n} digits"
+    aadhaar: Last 4 digits only
+    number: Digits, up to 4 decimals
+    check: Check the format
+  form:
+    title: Application details
+    help: Each value shows where it came from; change any of them before creating.
+    backToStart: Back to the start
+    reading: "Reading the message again for {product}…"
+  reviewHeading: Review and create
+  # The form's sections, by id (config/intake.yaml).
+  section:
+    case: Case details
+    applicants: Applicants
+    business: Business
+    loan: Loan
+    properties: Property offered as security
+    existing_loans: Existing loans
+    declared_income: Declared income
+    borrower: Borrower
+    people: People
+    facilities: Facilities
+    security: Security
+    banking: Existing banking
+    declared: Declared figures
+    extras: Also in the message
+  sectionHelp:
+    applicants: At least the primary applicant; each becomes a party of the application.
+    properties: At least one property for a loan against property.
+    existing_loans: Optional. Declared figures, checked later against the bureau and the bank statements.
+    declared_income: Optional. Declared figures, not yet verified.
+    people: Promoters, directors, partners and guarantors; each becomes a party of the application.
+    facilities: At least one line; their total is the amount requested.
+    banking: Optional. The borrower's facilities with other lenders.
+    declared: Optional. Declared figures, not yet verified.
+    extras: The form has no field for these; they are kept with the application as read.
+  # One row of a repeating section.
+  row:
+    primary: Primary applicant
+    applicants: "Applicant {n}"
+    people: "Person {n}"
+    properties: "Property {n}"
+    facilities: "Facility line {n}"
+    existing_loans: "Existing loan {n}"
+    banking: "Lender {n}"
+    other: "Row {n}"
+  add:
+    applicants: Add co-applicant or guarantor
+    people: Add a person
+    properties: Add property
+    facilities: Add a facility line
+    existing_loans: Add an existing loan
+    banking: Add a lender
+    other: Add a row
+  remove: "Remove {row}"
+  rowField: "{row} – {field}"
+  removeShort: Remove
+  rupee: "₹"
+  empty:
+    existing_loans: No existing loan declared.
+    people: No one added yet.
+    banking: No existing banking declared.
+    properties: No property added yet.
+    other: Nothing added yet.
+  # Field labels, by field id (config/intake.yaml).
+  field:
+    customer_type: Customer type
+    case_type: Case type
+    program: Credit program
+    amount_inr: Amount requested (INR)
+    tenure_months: Tenure (months)
+    application_id: Application ID
+    customer_id: Customer ID
+    branch: Branch
+    bank_stage: Processing stage
+    channel: Channel received
+    name: Name
+    role: Role
+    relationship: Relationship
+    pan: PAN
+    form_60: Form 60 in place of PAN
+    aadhaar_last4: Aadhaar, last 4 digits
+    income_considered: Income considered
+    property_owner: Property owner
+    business_name: Business name
+    constitution: Constitution
+    gstin: GSTIN
+    udyam: Udyam
+    business_start_date: Business start date
+    nature_of_business: Nature of business
+    loan_purpose: Purpose of the loan
+    existing_lender: Existing lender
+    existing_loan_account: Existing loan account
+    existing_outstanding_inr: Outstanding on the existing loan (INR)
+    existing_emi_inr: Monthly instalment on the existing loan (INR)
+    property_type: Property type
+    occupancy: Occupancy
+    address: Address and city
+    pincode: PIN code
+    owners: Owners
+    declared_value_inr: Declared value (INR)
+    area_sqft: Area (sq ft)
+    construction: Construction
+    lender: Lender
+    loan_type: Loan type
+    outstanding_inr: Outstanding (INR)
+    emi_inr: Monthly instalment (INR)
+    to_be_closed: To be closed or transferred
+    declared_monthly_salary_inr: Monthly net salary (INR)
+    declared_annual_business_income_inr: Annual business income (INR)
+    declared_rental_income_inr: Rental income, yearly (INR)
+    declared_other_income_inr: Other income, yearly (INR)
+    borrower: Borrower
+    cin: CIN or LLPIN
+    incorporation_date: Date of incorporation
+    din: DIN
+    shareholding_pct: Shareholding (%)
+    facility: Facility
+    nature: Nature
+    purpose: Purpose
+    tenure: Tenure (months)
+    existing_limit_inr: Existing limit (INR)
+    collateral_present: Collateral offered
+    other_security: Other security
+    limit_inr: Limit (INR)
+    declared_turnover_inr: Declared turnover, last year (INR)
+    proposed_emi_inr: Proposed monthly instalment (INR)
+  answer:
+    "yes": "Yes"
+    "no": "No"
+  ownersNone: Name the applicants first.
+  typed: Typed
+  source:
+    message: Message
+    identifier: Identifier
+    default: Default
+  total: "Amount requested: {amount}"
+  totalNone: The amount requested is the total of the lines.
+  messageStates: "The message states {amount} in all."
+  # Step 4: what the application has, and what it still needs.
+  review:
+    title: Ready to create
+    help: What the application has, and what it still needs before it can be created.
+    neededTitle: Documents this case will need
+    neededHelp: From the product's checklist, for the values on the form; nothing is matched until the application exists.
+    addFiles: Add more documents
+    minimumMet: Every field this product needs is filled.
+    minimumChecking: Checking the fields this product needs…
+    minimumMissing: "Still needed: {fields}"
+    rowGap: "{row}: {field}"
+    files: "{n} document(s) go with the application."
+    filesNone: Add at least one document; an application is created with its documents.
+    checking: Looking for a matching application…
+    noDuplicate: No matching application (PAN, GSTIN, application ID, name).
+    duplicate: A matching application exists; see below.
+    checkUnavailable: The check for a matching application could not run; it runs again on Create.
+    identifier: "{field}: {note}"
+    sources: "Where the values came from: {counts}"
+    source:
+      message: "{n} from the message"
+      identifier: "{n} from identifiers"
+      default: "{n} defaults"
+      person: "{n} typed"
+  minimum:
+    borrower: Borrower
+    facilities: Facilities
+    amount_inr: Amount requested
+    applicants: Applicant
+    customer_type: Customer type
+    tenure_months: Tenure
+    properties: Property
+  create:
+    stillRows: "Still needed: {fields}"
+    needFiles: Add at least one document before creating the application.
+    checking: Checking the application…
+    uploadLater: The application was created, but its documents could not be stored. Add them from its Files screen.
 
 # Fields a pasted message can propose (FRD F-04.2).
 proposalField:
@@ -2191,6 +2432,9 @@ admin:
   checklist:
     gates: "An appraisal is ready for credit review at {review}% and for disbursement at {disbursement}%, and only when nothing blocking remains."
     appliesTo: "Applies to: {constitutions}"
+    appliesToScope: "Applies to: {scope}"
+    appliesToWhen: "Applies to: {scope}, when the case type or the application calls for it"
+    everyCustomerType: every customer type
   documents:
     count: "{n} document type(s)"
   documentGroup:
@@ -2444,6 +2688,7 @@ caseHeader:
 
 checklist:
   derivedFrom: "{n} requirements derived from the {constitution} constitution and the {facilities} ask. Blocking requirements stop credit review; the rest do not."
+  derivedFromCustomer: "{n} requirements derived from the customer type ({customerType}), the case type ({caseType}) and what the application declares. Blocking requirements stop credit review; the rest do not."
   provisional: provisional
   provisionalHelp: The constitution or facilities are not confirmed yet, so this checklist is provisional. It is derived again once they are.
   queryListLink: "Pre-login query list ({n})"

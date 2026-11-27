@@ -21,6 +21,7 @@ import yaml
 from pydantic import BaseModel
 
 from ..config import option_ids
+from ..intake import checklist_terms
 from .schema import SECTION_MODELS, cross_check
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -86,9 +87,11 @@ def load_authored_sections(private_dir: Path | None = None) -> dict[str, BaseMod
         path = _section_path(name, private_dir)
         if not path.is_file():
             raise FileNotFoundError(f"missing authored config section: {path}")
-        sections[name] = model.model_validate(_load_yaml(path))
+        # `authored`: a key a section's schema does not define is refused here, not dropped (schema.py).
+        sections[name] = model.model_validate(_load_yaml(path), context={"authored": True})
 
-    problems = cross_check(sections, load_ingestion_sections(), facilities=option_ids("facilities"))
+    problems = cross_check(sections, load_ingestion_sections(), facilities=option_ids("facilities"),
+                           products=option_ids("products"), checklist_terms=checklist_terms())
     if problems:
         raise ValueError("config cross-check failed:\n  " + "\n  ".join(problems))
     return sections
@@ -126,7 +129,8 @@ def publish_edited(*, data_root: Path, author: str, note: str, sections: dict[st
     models = {name: model.model_validate(dumps[name]) for name, model in SECTION_MODELS.items()}
     models.update(sections)
     ingestion = {name.removeprefix("ingestion."): data for name, data in dumps.items() if name.startswith("ingestion.")}
-    problems = cross_check(models, ingestion, facilities=option_ids("facilities"))
+    problems = cross_check(models, ingestion, facilities=option_ids("facilities"),
+                           products=option_ids("products"), checklist_terms=checklist_terms())
     if problems:
         raise ValueError("config cross-check failed:\n  " + "\n  ".join(problems))
     dumps.update({name: model.model_dump(mode="json") for name, model in sections.items()})

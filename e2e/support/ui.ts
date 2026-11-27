@@ -33,6 +33,9 @@ export const USERS = {
 } as const;
 export type Role = keyof typeof USERS;
 
+/** The document a case is created with when a spec names none (a case needs at least one). */
+export const START_FILE = "kestrel pan.pdf";
+
 /** A sourcing message that proposes the three fields a case needs at minimum. */
 export const SOURCING_MESSAGE = [
   "From: RM desk, Mumbai hub",
@@ -78,11 +81,23 @@ export async function navLinkNames(page: Page): Promise<string[]> {
  */
 export async function createCaseViaUi(
   page: Page,
-  opts: { message?: string; borrower?: string; channel?: string } = {},
+  opts: {
+    message?: string;
+    borrower?: string;
+    channel?: string;
+    product?: string;
+    /** Fixture documents to create the case with (at least one is required). */
+    files?: string[];
+  } = {},
 ): Promise<string> {
   await page.goto("/appraisals/new");
+  await page.getByTestId(`product-${opts.product ?? "bbg"}`).click();
   await page.getByTestId(`channel-${opts.channel ?? "email"}`).click();
   await page.getByTestId("message-input").fill(opts.message ?? SOURCING_MESSAGE);
+  // A case is created with its documents (at least one).
+  await page
+    .getByTestId("upload-input")
+    .setInputFiles((opts.files ?? [START_FILE]).map(fixtureFile));
   await page.getByRole("button", { name: "Read the message" }).click();
   await expect(page.getByTestId("proposed-case")).toBeVisible();
 
@@ -109,11 +124,8 @@ export async function createCaseViaUi(
 
   await create.click();
 
-  // With no attachment the screen goes straight to Files, so the next step
-  // (uploading) is in front of the RM; with one, it goes to the Overview.
-  await expect(page).toHaveURL(/\/appraisals\/BBG-\d{4}-\d{6}(\/documents)?$/, {
-    timeout: 30_000,
-  });
+  // The case is created with its files and opens on its Overview.
+  await expect(page).toHaveURL(/\/appraisals\/[A-Z]{2,4}-\d{4}-\d{6}$/, { timeout: 30_000 });
   return caseIdFromUrl(page);
 }
 
@@ -132,7 +144,7 @@ export async function settleProposedFields(page: Page): Promise<void> {
 }
 
 export function caseIdFromUrl(page: Page): string {
-  const match = /\/appraisals\/(BBG-\d{4}-\d{6})/.exec(page.url());
+  const match = /\/appraisals\/([A-Z]{2,4}-\d{4}-\d{6})/.exec(page.url());
   if (!match) throw new Error(`no case id in the url: ${page.url()}`);
   return match[1]!;
 }

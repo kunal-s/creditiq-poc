@@ -42,7 +42,7 @@ lines:
   long_term_provisions:    {table: balance_sheet, section: non_current_liabilities, wordings: [long term provisions, provisions non current, provisions]}
   net_fixed_assets:        {table: balance_sheet, section: non_current_assets, wordings: [property plant and equipment, tangible assets, fixed assets]}
   capital_work_in_progress: {table: balance_sheet, section: non_current_assets, wordings: [capital work in progress]}
-  intangible_assets:       {table: balance_sheet, section: non_current_assets, wordings: [intangible assets, other intangible assets]}
+  intangible_assets:       {table: balance_sheet, section: non_current_assets, wordings: [intangible assets, other intangible assets], excluding: [under development]}
   non_current_investments: {table: balance_sheet, section: non_current_assets, wordings: [non current investments, investments]}
   deferred_tax_asset:      {table: balance_sheet, section: non_current_assets, wordings: [deferred tax assets, deferred tax asset, deferred tax assets net]}
   long_term_loans_and_advances: {table: balance_sheet, section: non_current_assets, wordings: [long term loans and advances, loans non current, loans]}
@@ -55,7 +55,7 @@ lines:
   employee_benefits_expense: {table: profit_and_loss, section: expenses, wordings: [employee benefits expense, employee benefit expenses, employee benefits expenses, employee benefit expense]}
   other_expenses:          {table: profit_and_loss, section: expenses, wordings: [other expenses]}
   total_expenses:          {table: profit_and_loss, wordings: [total expenses]}
-  exceptional_items:       {table: profit_and_loss, wordings: [exceptional items, exceptional item]}
+  exceptional_items:       {table: profit_and_loss, wordings: [exceptional items, exceptional item], excluding: [profit, loss before]}
   tax_expense:             {table: profit_and_loss, wordings: [tax expense, total tax expense, tax expenses]}
   # Ind AS lines (statements filed in XBRL) that the older layout folds into another line: there, cash and bank
   # balances hold the bank balances, other current assets the other financial assets, and other current liabilities
@@ -65,6 +65,15 @@ lines:
   current_tax_assets:      {table: balance_sheet, section: current_assets, wordings: [current tax assets, current tax assets net]}
   other_current_financial_liabilities: {table: balance_sheet, section: current_liabilities, wordings: [other current financial liabilities, other financial liabilities]}
   current_tax_liabilities: {table: balance_sheet, section: current_liabilities, wordings: [current tax liabilities, current tax liabilities net]}
+  # Further lines of the bank's spread template (ITR-3 to 6 output report) that a statement prints on its face. A label
+  # that only names the item inside a profit line ("Profit before extraordinary items and tax") is not the item.
+  share_warrants_money:    {table: balance_sheet, section: equity, wordings: [money received against share warrants, share warrants]}
+  intangible_assets_under_development: {table: balance_sheet, section: non_current_assets, wordings: [intangible assets under development]}
+  extraordinary_items:     {table: profit_and_loss, wordings: [extraordinary items, extraordinary item], excluding: [profit, loss before]}
+  current_tax:             {table: profit_and_loss, wordings: [current tax, current income tax], excluding: [earlier years, previous years, prior years]}
+  deferred_tax:            {table: profit_and_loss, wordings: [deferred tax, deferred tax charge, deferred tax credit], excluding: [earlier years, previous years, prior years]}
+  interest_on_partners_capital: {table: profit_and_loss, wordings: [interest on partners capital, interest on capital, interest to partners, interest on capital to partners]}
+  partners_remuneration:   {table: profit_and_loss, wordings: [partners remuneration, remuneration to partners, partners salary, salary to partners, partners remuneration salary]}
   cash_flow_from_operations: {table: cash_flow, wordings: [net cash from operating activities, net cash generated from operating activities, net cash flow from operating activities, net cash flows from operating activities, net cash used in operating activities, net cash from used in operating activities, net cash generated from used in operating activities]}
 
 # Each statement table's sections in the order printed: the headings that open one, and its printed total, which the
@@ -89,7 +98,9 @@ tie_out_rounding: 0.5
 
 # Rows a statement may leave out when it has nothing to report; read as nil and marked not printed.
 absent_is_nil: [inventories, other_current_assets, current_investments, bank_balances_other_than_cash,
-                other_current_financial_assets, current_tax_assets, other_current_financial_liabilities, current_tax_liabilities]
+                other_current_financial_assets, current_tax_assets, other_current_financial_liabilities, current_tax_liabilities,
+                share_warrants_money, intangible_assets_under_development, extraordinary_items, interest_on_partners_capital,
+                partners_remuneration]
 
 derived:
   ebitda: profit_before_tax + finance_costs + depreciation
@@ -100,6 +111,36 @@ derived:
     + short_term_loans_and_advances + other_current_financial_assets + current_tax_assets + other_current_assets
   current_liabilities: short_term_borrowings + trade_payables + other_current_financial_liabilities + other_current_liabilities
     + short_term_provisions + current_tax_liabilities
+  # The bank's spread template: profit before interest and tax, cash profit, the net block, and the capital employed
+  # (total assets less current liabilities).
+  pbit: profit_before_tax + finance_costs
+  cash_profit: profit_after_tax + depreciation
+  fixed_assets_total: net_fixed_assets + intangible_assets + capital_work_in_progress + intangible_assets_under_development
+  capital_employed: total_assets - current_liabilities
+
+# Ratios the spread works out each year with no norm behind them, as the bank's spread template has them (its sheet
+# Ratios). The policy's ratios (policy.yaml) are not repeated here. A year that lacks a figure, or divides by nil,
+# shows no value and names what is missing. Sales is revenue from operations; equity is net worth.
+analysis:
+  - {key: operating-profit-ratio, label: Operating profit ratio, unit: "%", expression: pbit / revenue_from_operations * 100, formula: "PBIT ÷ Sales"}
+  - {key: cash-profit-margin, label: Cash profit margin, unit: "%", expression: cash_profit / revenue_from_operations * 100, formula: "(PAT + Depreciation) ÷ Sales"}
+  - {key: roe, label: Return on equity, unit: "%", expression: profit_after_tax / net_worth * 100, formula: "PAT ÷ Net worth"}
+  - {key: roi, label: Return on investment, unit: "%", expression: pbit / capital_employed * 100, formula: "PBIT ÷ Capital employed"}
+  - {key: roce, label: Return on capital employed, unit: "%", expression: (profit_after_tax + finance_costs) / capital_employed * 100, formula: "(PAT + Finance costs) ÷ Capital employed"}
+  - {key: roa, label: Return on assets, unit: "%", expression: profit_after_tax / total_assets * 100, formula: "PAT ÷ Total assets"}
+  - {key: equity-multiplier, label: Equity multiplier, unit: x, expression: total_assets / net_worth, formula: "Total assets ÷ Net worth"}
+  - {key: total-assets-turnover, label: Total assets turnover, unit: x, expression: revenue_from_operations / total_assets, formula: "Sales ÷ Total assets"}
+  - {key: fixed-assets-turnover, label: Fixed assets turnover, unit: x, expression: revenue_from_operations / fixed_assets_total, formula: "Sales ÷ Fixed assets"}
+  - {key: current-assets-turnover, label: Current assets turnover, unit: x, expression: revenue_from_operations / current_assets, formula: "Sales ÷ Current assets"}
+  - {key: capital-turnover, label: Capital turnover, unit: x, expression: revenue_from_operations / capital_employed, formula: "Sales ÷ Capital employed"}
+  - {key: quick-ratio, label: Quick ratio, unit: x, expression: (current_assets - inventories) / current_liabilities, formula: "(Current assets − Inventories) ÷ Current liabilities"}
+  - {key: quick-ratio-excluding-debtors, label: Quick ratio excluding debtors, unit: x, expression: (current_assets - trade_receivables) / current_liabilities, formula: "(Current assets − Trade receivables) ÷ Current liabilities"}
+  - {key: equity-ratio, label: Equity ratio, unit: x, expression: net_worth / capital_employed, formula: "Net worth ÷ Capital employed"}
+  - {key: debtor-days, label: Debtor days, unit: days, expression: trade_receivables / revenue_from_operations * 365, formula: "Trade receivables ÷ Sales × 365"}
+  - {key: current-assets-to-sales, label: Current assets to sales, unit: x, expression: current_assets / revenue_from_operations, formula: "Current assets ÷ Sales"}
+  - {key: total-assets-to-sales, label: Total assets to sales, unit: x, expression: total_assets / revenue_from_operations, formula: "Total assets ÷ Sales"}
+  - {key: material-costs-to-sales, label: Material costs to sales, unit: "%", expression: (cost_of_materials_consumed + purchases_of_stock_in_trade) / revenue_from_operations * 100, formula: "(Materials consumed + Purchases of stock-in-trade) ÷ Sales"}
+  - {key: employee-costs-to-sales, label: Employee costs to sales, unit: "%", expression: employee_benefits_expense / revenue_from_operations * 100, formula: "Employee benefits expense ÷ Sales"}
 
 # GST turnover from table 3.1 of each GSTR-3B: every matching row is summed.
 # (a) taxable, (b) zero rated and (c) nil rated or exempted outward supplies

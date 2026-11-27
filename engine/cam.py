@@ -54,6 +54,7 @@ from .contracts import (
     XvItem,
 )
 from .crosschecks import _mentions
+from .intake import declared_label, declared_phrase, declared_side, is_declared_label
 from .names import name_parts, normalise_name, same_by_parts, similarity
 from .units import money
 from .util import display_date, parse_date, ranges_label
@@ -405,9 +406,10 @@ def name_match(root: Path) -> float:
     return next((t.value for t in reader.load_tolerances(root).tolerances if t.key == "name_match"), 0.85)
 
 
-def type_names(root: Path) -> dict[str, str]:
-    """Each document type's name, as the case lists its documents."""
-    return {MESSAGE: "Sourcing message", **{t.id: t.name for t in reader.load_document_types(root).types}}
+def type_names(root: Path, has_message: bool = True) -> dict[str, str]:
+    """Each document type's name, as the case lists its documents; the case's own declaration is its
+    sourcing message, or what was declared at intake when it has none (config/app.yaml declared_sources)."""
+    return {MESSAGE: declared_label(has_message), **{t.id: t.name for t in reader.load_document_types(root).types}}
 
 
 def _origin(source: str, e: PersonEntry) -> set[str]:
@@ -526,7 +528,9 @@ class Draft:
         self.rules = {r.id: r for r in reader.load_crosschecks(root).rules}
         self.readiness, self.results = completeness.evaluate(conn, root, case)
         self.queries = [q for q in reads.query_items(conn, case.id) if not q.resolved]
-        self.type_names = type_names(root)
+        self.type_names = type_names(root, has_message=self.message_doc is not None)
+        # The case's own declaration inside a sentence: its sourcing message, or the intake form without one.
+        self.declared_in = declared_phrase(self.message_doc is not None)
         alignment = reader.load_alignment(root)
         self.noise = [w.lower() for w in alignment.name_noise_words]
         self.fy_start = alignment.financial_year_start_month
@@ -576,15 +580,18 @@ class Draft:
         return f", {side} the {bound} of {found[2]}" + (f" (a deviation{where})" if n.outcome == "deviation" else "")
 
     def header_evidence(self, name: str) -> list[Evidence]:
-        """Where a value of the case header came from: a document's page, else the sourcing message; a
-        value a person entered has no page."""
+        """Where a value of the case header came from: a document's page, or a span of the sourcing message
+        (cited as its page). A value a person typed, a default or an identifier typed at the start has
+        no page."""
         field = self.case.header.get(name)
-        if field is None or not field.value or field.source == "person":
+        if field is None or not field.value:
             return []
         found = re.fullmatch(r"document:(.+):p(\d+)", field.source or "")
         if found:
             return [Evidence(document_id=found[1], page=int(found[2]))]
-        return [Evidence(document_id=self.message_doc, page=1)] if self.message_doc else []
+        if (field.source or "").startswith("message:") and self.message_doc:
+            return [Evidence(document_id=self.message_doc, page=1)]
+        return []
 
     def identifier(self, variable: str, recorded: str | None) -> CamText:
         """An identifier as the case records it (else as a document gives it), cited to a document
@@ -832,7 +839,7 @@ class Draft:
             *([("Board resolution limit", limit)] if limit else []),
             ("Collateral offered", _t("Offered (case record; details not on file)" if c.collateral_present
                                       else "Not offered (case record)")),
-            ("Turnover declared in the sourcing message",
+            (f"Turnover {_lower(declared_side(self.message_doc is not None))}",
              _t(inr(declared.value), declared.evidence) if declared else _t("Not stated")),
             ("Relationship manager and branch", _t(", ".join(p for p in (c.rm, rm.get("branch")) if p) or NONE)),
             ("Approving authority", _t(self.authority_text())),
@@ -973,8 +980,9 @@ class Draft:
         names = _join([_lower(n) for n in self.facility_list()]) or "facilities"
         total = " in total" if len(c.facilities) > 1 else ""
         declared = self.declared_turnover()
-        turnover = (f" The sourcing message states annual turnover of {inr(declared.value)}." if declared
-                    else " The sourcing message does not state the turnover.")
+        source = self.declared_in[:1].upper() + self.declared_in[1:]
+        turnover = (f" {source} states annual turnover of {inr(declared.value)}." if declared
+                    else f" {source} does not state the turnover.")
         blocks = [_table(["Facility", "Product"], rows),
                   _paragraph(f"The proposal is for {names} of {inr(c.amount_inr)}{total}.{turnover}",
                              (f.requested_amount.evidence if f.requested_amount else [])
@@ -1460,12 +1468,12 @@ class Draft:
         """An account with no statement on file: where it is declared or named, and the transfers that
         show it."""
         declaration = self.type_names.get(facts_module.DECLARATION, "")
-        in_message = "Sourcing message" in a.sources
+        in_message = any(is_declared_label(s) for s in a.sources)
+        named = f"named in {self.declared_in}"
         if declaration in a.sources:
-            how = "declared in the declaration of existing facilities" + (
-                " and named in the sourcing message" if in_message else "")
+            how = "declared in the declaration of existing facilities" + (f" and {named}" if in_message else "")
         elif in_message:
-            how = "named in the sourcing message" + (" but not in the declaration" if self.facts.declaration else "")
+            how = named + (" but not in the declaration" if self.facts.declaration else "")
         else:
             how = "which was not declared"
         called = a.label if a.bank else _lower(a.label)
@@ -1587,7 +1595,7 @@ class Draft:
             if d:
                 declared_cell = owing(amount(d, "", "Declared"), d)
             elif named:
-                declared_cell = _t("In the sourcing message" + ("" if limited or not m else "; limit not on file"),
+                declared_cell = _t(f"In {self.declared_in}" + ("" if limited or not m else "; limit not on file"),
                                    f.declared_banking.evidence[:1] if f.declared_banking else [])
             else:
                 declared_cell = _t("Not declared" if f.declaration_received or message else "No declaration on file")
@@ -1696,7 +1704,7 @@ class Draft:
         else:
             shown = "no declaration of existing facilities or commercial bureau report is on file to confirm it"
         limit = "" if limited else "; its limit is not on file"
-        return (f"{called} is declared only in the sourcing message: {shown}{limit}.",
+        return (f"{called} is declared only in {self.declared_in}: {shown}{limit}.",
                 [e for x in found for e in x.evidence[:1]])
 
     def loan_disbursals(self) -> list[tuple[object, str | None, str, list[Evidence]]]:

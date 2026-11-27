@@ -984,7 +984,7 @@ class IngestionConfig(Strict):
         """Cross-section checks run at publish: every reference points at something real."""
         problems: list[str] = []
         types = self.document_types.by_id()
-        problems += self._check_keywords(set(types))
+        problems += self._check_keywords(set(types), self.document_types.enabled_ids())
         from ..stages.extract.identifiers import PATTERNS as IDENTIFIER_PATTERNS
         for gname, grule in self.fields.required_fields.items():
             where = f"fields.required_fields.{gname}"
@@ -1075,13 +1075,15 @@ class IngestionConfig(Strict):
             _compile(rx, "routing.reading.boilerplate", problems)
         return problems
 
-    def _check_keywords(self, type_ids: set[str]) -> list[str]:
-        """keywords.yaml: every document type is listed, every part and identifier it names exists, and no phrase
-        is both a keyword and a warning word of the same part or type (Story 1.9)."""
+    def _check_keywords(self, type_ids: set[str], enabled: set[str]) -> list[str]:
+        """keywords.yaml: every document type the classifier may choose (`enabled`) is listed, every type listed
+        exists, every part and identifier it names exists, and no phrase is both a keyword and a warning word of
+        the same part or type (Story 1.9). A switched-off type needs no entry: it is never offered to the
+        classifier, only assigned by a person."""
         from ..stages.extract.identifiers import PATTERNS as IDENTIFIER_PATTERNS
         kw = self.keywords
         assert kw is not None
-        out = [f"keywords: no entry for document type {t}" for t in sorted(type_ids - set(kw.types))]
+        out = [f"keywords: no entry for document type {t}" for t in sorted(enabled - set(kw.types))]
         out += [f"keywords: unknown document type {t}" for t in sorted(set(kw.types) - type_ids)]
         for where, words in [*((f"keywords.parts.{n}", p) for n, p in kw.parts.items()),
                              *((f"keywords.types.{n}", t) for n, t in kw.types.items())]:

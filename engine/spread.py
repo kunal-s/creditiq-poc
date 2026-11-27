@@ -42,15 +42,20 @@ from .util import parse_date
 PROFIT_AND_LOSS = [
     "revenue_from_operations", "other_income", "cost_of_materials_consumed", "purchases_of_stock_in_trade",
     "changes_in_inventories", "employee_benefits_expense", "other_expenses", "total_expenses", "ebitda", "depreciation",
-    "finance_costs", "exceptional_items", "profit_before_tax", "tax_expense", "profit_after_tax",
-    "cash_flow_from_operations",
+    "pbit", "finance_costs", "exceptional_items", "extraordinary_items", "interest_on_partners_capital",
+    "partners_remuneration", "profit_before_tax", "current_tax", "deferred_tax", "tax_expense", "profit_after_tax",
+    "cash_profit", "cash_flow_from_operations",
 ]
 BALANCE_SHEET = [
-    "share_capital", "reserves_and_surplus", "share_application_money", "net_worth", "long_term_borrowings",
-    "deferred_tax_liability", "other_long_term_liabilities", "long_term_provisions", "short_term_borrowings",
-    "total_borrowings", "trade_payables", "current_liabilities", "net_fixed_assets", "capital_work_in_progress",
-    "intangible_assets", "non_current_investments", "deferred_tax_asset", "long_term_loans_and_advances",
-    "other_non_current_assets", "current_investments", "inventories", "trade_receivables", "current_assets",
+    "share_capital", "reserves_and_surplus", "share_warrants_money", "share_application_money", "net_worth",
+    "long_term_borrowings", "deferred_tax_liability", "other_long_term_liabilities", "long_term_provisions",
+    "short_term_borrowings", "total_borrowings", "trade_payables", "other_current_financial_liabilities",
+    "other_current_liabilities", "short_term_provisions", "current_tax_liabilities", "current_liabilities",
+    "net_fixed_assets", "capital_work_in_progress", "intangible_assets", "intangible_assets_under_development",
+    "fixed_assets_total", "non_current_investments", "deferred_tax_asset", "long_term_loans_and_advances",
+    "other_non_current_assets", "current_investments", "inventories", "trade_receivables", "cash_and_bank_balances",
+    "bank_balances_other_than_cash", "short_term_loans_and_advances", "other_current_financial_assets",
+    "current_tax_assets", "other_current_assets", "current_assets", "total_assets", "capital_employed",
 ]
 # Lines many statements do not print (Schedule III detail): a row is shown only when some year prints it,
 # so a company without, say, share application money pending does not carry an empty row.
@@ -60,6 +65,10 @@ WHEN_PRINTED = {
     "share_application_money", "deferred_tax_liability", "other_long_term_liabilities", "long_term_provisions",
     "net_fixed_assets", "capital_work_in_progress", "intangible_assets", "non_current_investments", "deferred_tax_asset",
     "long_term_loans_and_advances", "other_non_current_assets", "current_investments",
+    "extraordinary_items", "interest_on_partners_capital", "partners_remuneration", "current_tax", "deferred_tax",
+    "share_warrants_money", "intangible_assets_under_development", "other_current_financial_liabilities",
+    "current_tax_liabilities", "bank_balances_other_than_cash", "other_current_financial_assets", "current_tax_assets",
+    "other_current_assets",
 }
 
 # Derived lines: key, label, section, unit, expression over the lines above.
@@ -221,8 +230,12 @@ def build(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> Spread:
     ratios = {r.key: r for r in policy.ratios}
     columns, groups = _columns(conn, root, case)
     cfg = reader.load_statements(root)
-    lines_by_column = [{name: _line([statements.lines(d, cfg) for d in docs], name, docs, name in cfg.lines)
-                        for name in PROFIT_AND_LOSS + BALANCE_SHEET} for docs in groups]
+    # Every line a row shows or an analysis ratio needs; each statement is read once per column.
+    wanted = list(dict.fromkeys(PROFIT_AND_LOSS + BALANCE_SHEET + [n for r in cfg.analysis for n in r.names()]))
+    lines_by_column = []
+    for docs in groups:
+        copies = [statements.lines(d, cfg) for d in docs]
+        lines_by_column.append({name: _line(copies, name, docs, name in cfg.lines) for name in wanted})
     rows: list[SpreadRow] = []
     for section, names in (("profit_and_loss", PROFIT_AND_LOSS), ("balance_sheet", BALANCE_SHEET)):
         for name in names:
@@ -250,6 +263,14 @@ def build(conn: sqlite3.Connection, root: Path, case: CaseDetail) -> Spread:
         rows.append(SpreadRow(key=ratio.key, label=ratio.label, section="ratios", kind="ratio",
                               unit=ratio.unit, formula=ratio.formula,
                               cells=[_derived(norm.expression, lines, "ratio") for lines in lines_by_column]))
+    # The analysis ratios (statements.yaml): worked out each year, with no norm to assess them against.
+    taken = {r.key for r in rows}
+    for ratio in cfg.analysis:
+        if ratio.key in taken:
+            continue
+        rows.append(SpreadRow(key=ratio.key, label=ratio.label, section="ratios", kind="ratio", unit=ratio.unit,
+                              formula=ratio.formula,
+                              cells=[_derived(ratio.expression, lines, "ratio") for lines in lines_by_column]))
     return Spread(case_id=case.id, columns=columns, rows=rows,
                   working_capital=_working_capital(root, case, columns, lines_by_column),
                   checks=reconcile.checks(columns, groups, cfg))

@@ -23,17 +23,21 @@ from __future__ import annotations
 import json
 import re
 import sqlite3
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 
-from .checklist import CaseAttributes, applies
-from .config import load_app_config
+from .checklist import CaseAttributes, applies, declared_names, row_sections
+from .config import load_app_config, option_default
+from .config import product as product_config
 from .configstore import reader
 from .configstore.schema import ChecklistItemDef
 from .contracts import CaseDetail, ChecklistItemState, Readiness
 from .facts import DECLARATION, MESSAGE_ACCOUNT, banking_named
-from .parties import field_map, table_rows
+from .intake import CASE_COLUMNS, row_value
+from .names import similarity
+from .parties import field_map, name_tolerance, table_rows
 from .pipeline import effective_types
 from .util import (
     assessment_year_start,
@@ -237,6 +241,7 @@ class Evaluator:
         ages = reader.load_document_ages(root)
         self.ages = {a.type_id: a for a in ages.ages}
         self.validity_rules = ages.validity
+        self.name_tolerance = name_tolerance(root)
 
     def type_name(self, type_id: str) -> str:
         t = self.types.get(type_id)
@@ -356,7 +361,7 @@ class Evaluator:
                 return f"{request} for {window} for every operative account ({names})"
             return f"{request} for {window} for every operative account"
         if cov.kind == "parties":
-            names = [p["name"] for p in self.data.parties]
+            names = [p["name"] for p in self.needed_parties(item)]
             return f"{request}" + (f": {', '.join(names)}" if names else "")
         return request
 
@@ -503,8 +508,22 @@ class Evaluator:
                 )
         return out
 
+    def needed_parties(self, item: ChecklistItemDef) -> list[sqlite3.Row]:
+        """The people a parties coverage asks about: every person on the case, or only those a field of
+        the intake form names (`named_in`, e.g. the owners of the properties), matched by name."""
+        cov = item.coverage
+        if cov is None or not cov.named_in:
+            return list(self.data.parties)
+        named = []
+        for ref in cov.named_in:
+            section, _, field_id = ref.partition(".")
+            for row in self.data.case.groups.get(section) or []:
+                named += [n.strip() for n in (row_value(row, field_id) or "").split(";") if n.strip()]
+        return [p for p in self.data.parties
+                if any(similarity(p["name"], n) >= self.name_tolerance for n in named)]
+
     def parties(self, item: ChecklistItemDef, docs: list[Doc]) -> list[Deficiency] | ItemResult:
-        needed = self.data.parties
+        needed = self.needed_parties(item)
         if not needed:
             return []
         have = {d.row["party_id"] for d in docs if d.row["party_id"]}
@@ -525,12 +544,14 @@ class Evaluator:
                 [],
                 missing,
             )
+        what = item.coverage.what if item.coverage else None
+        label = f"{what[:1].upper()}{what[1:]}" if what else "KYC"
         return [
             Deficiency(
                 "gap",
                 "parties",
-                f"KYC missing for {len(absent)} of {len(needed)}: {names}",
-                f"KYC (PAN and address proof) of {names}",
+                f"{label} missing for {len(absent)} of {len(needed)}: {names}",
+                f"{what or 'KYC (PAN and address proof)'} of {names}",
             )
         ]
 
@@ -661,10 +682,18 @@ class Evaluator:
         return out
 
 
+def case_declared(case: CaseDetail) -> set[str]:
+    """The fields the case's intake form declares a value for: its header, and the values it holds in
+    its own columns (its identifiers, its customer type and so on), which win over the header."""
+    columns = {name: getattr(case, name) for name in CASE_COLUMNS if name in CaseDetail.model_fields}
+    return declared_names({**case.header, **columns})
+
+
 def applicable_items(root: Path, case: CaseDetail, data: CaseData | None) -> tuple[list[ChecklistItemDef], bool]:
-    """F-12: the items for the case's constitution and attributes. While the
-    constitution is unknown, only the items every constitution needs (F-12.3).
-    Without the case's documents (`data` None), no facilities are taken as declared."""
+    """F-12: the items for the case's constitution and attributes, and for a loan against property its
+    customer type, case type and what its intake form declares. While the constitution (or the customer
+    type) is unknown, only the items every one needs (F-12.3). Without the case's documents (`data` None),
+    no facilities are taken as declared."""
     return items_for(
         root,
         constitution=case.constitution,
@@ -674,6 +703,9 @@ def applicable_items(root: Path, case: CaseDetail, data: CaseData | None) -> tup
         existing_facilities_declared=data.existing_facilities_declared if data else False,
         product=case.product,
         case_type=case.case_type,
+        customer_type=case.customer_type,
+        declared=case_declared(case),
+        rows=row_sections(case.groups),
     )
 
 
@@ -687,12 +719,25 @@ def items_for(
     existing_facilities_declared: bool = False,
     product: str | None = None,
     case_type: str | None = None,
+    customer_type: str | None = None,
+    declared: Iterable[str] = (),
+    rows: Iterable[str] = (),
 ) -> tuple[list[ChecklistItemDef], bool]:
     """The checklist items for a case described by its header, whether or not
-    the case exists yet: the New appraisal screen previews them (F-12)."""
+    the case exists yet: the New appraisal screen previews them (F-12).
+
+    A business's customer type is its constitution; a product whose customers are not
+    constitutions (a loan against property) is keyed by its customer type, and stays
+    provisional (only the items every customer type needs) until one is chosen. `declared`
+    names the fields the intake form declares a value for and `rows` the repeating sections
+    with rows (engine/checklist.py `declared_names` and `row_sections`)."""
     taxonomy = reader.load_checklist_taxonomy(root)
     policy = reader.load_policy(root)
     facility_sets = {f["id"]: f.get("sets") for f in load_app_config()["facilities"]}
+    chosen = product_config(product or option_default("products"))
+    product = chosen.id
+    if chosen.constitution_based and constitution not in ALL_CONSTITUTIONS and customer_type in ALL_CONSTITUTIONS:
+        constitution = customer_type
     attrs = CaseAttributes.from_case(
         facilities=facilities,
         amount_inr=amount_inr,
@@ -702,16 +747,17 @@ def items_for(
         existing_facilities_declared=existing_facilities_declared,
         product=product,
         case_type=case_type,
+        customer_type=constitution if chosen.constitution_based else customer_type,
+        declared=declared,
+        rows=rows,
     )
+    if not chosen.constitution_based:
+        items = [item for item in taxonomy.items if applies(item, constitution, attrs, product)]
+        return items, customer_type not in chosen.customer_types
     provisional = constitution not in ALL_CONSTITUTIONS
-    if provisional:
-        items = [
-            item
-            for item in taxonomy.items
-            if set(ALL_CONSTITUTIONS) <= set(item.constitutions) and all(attrs.has(a) for a in item.requires_attributes)
-        ]
-    else:
-        items = [item for item in taxonomy.items if applies(item, constitution, attrs)]
+    # While the constitution is unknown, the items every constitution needs (F-12.3).
+    constitutions = ALL_CONSTITUTIONS if provisional else (constitution,)
+    items = [item for item in taxonomy.items if all(applies(item, c, attrs, product) for c in constitutions)]
     return items, provisional
 
 

@@ -1,7 +1,7 @@
 """Indian identifier formats: validation and construction.
 
 Only GSTIN has a public checksum (implemented and enforced here). PAN, CIN,
-Udyam, DIN, IFSC, TAN and UDIN have no public check algorithm — format and
+LLPIN, Udyam, DIN, IFSC, TAN and UDIN have no public check algorithm — format and
 internal-consistency checks are as far as code can go. Invalid identifiers
 are flagged, never corrected (docs/functional-requirements.md F-04.4, F-15).
 """
@@ -29,6 +29,7 @@ PAN_FOURTH_CHAR = {
 
 _PAN_RE = re.compile(r"^[A-Z]{3}[ABCFGHJLPT][A-Z][0-9]{4}[A-Z]$")
 _CIN_RE = re.compile(r"^[LU][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}$")
+_LLPIN_RE = re.compile(r"^[A-Z]{3}-[0-9]{4}$")
 _UDYAM_RE = re.compile(r"^UDYAM-[A-Z]{2}-[0-9]{2}-[0-9]{7}$")
 _IFSC_RE = re.compile(r"^[A-Z]{4}0[A-Z0-9]{6}$")
 _TAN_RE = re.compile(r"^[A-Z]{4}[0-9]{5}[A-Z]$")
@@ -97,6 +98,11 @@ def validate_cin(cin: str, *, formed_year: int | None = None, roc: str | None = 
     if roc is not None and cin[6:8] != roc:
         return False
     return True
+
+
+def validate_llpin(llpin: str) -> bool:
+    """A limited liability partnership's identification number: three letters, a hyphen, four digits."""
+    return bool(_LLPIN_RE.fullmatch(llpin))
 
 
 def validate_udyam(udyam: str) -> bool:

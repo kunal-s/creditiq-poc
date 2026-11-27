@@ -68,7 +68,7 @@ function MyAppraisals() {
                     <StageLink c={c} />
                   </div>
                   <p className="tabular mt-0.5 text-[11px] text-muted-foreground">
-                    {c.id} · {labels.constitution(c.constitution)}
+                    {c.id} · {labels.borrowerKind(c)}
                   </p>
                   <p className="mt-0.5 text-[11px] text-muted-foreground" data-testid="case-kind">
                     {labels.caseKind(c)}

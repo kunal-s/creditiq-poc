@@ -42,7 +42,10 @@ import type {
   FieldValue,
   FileRecord,
   LogicalDocument,
+  IntakeField,
+  IntakeProduct,
   Meta,
+  ProductMeta,
   Party,
   PersonEntry,
   QueryItem,
@@ -156,44 +159,424 @@ export const ADMIN: SessionUser = {
   permissions: ["config.read", "config.publish", "audit.read", "model_usage.read"],
 };
 
+// --- Form metadata (GET /api/meta): config/app.yaml and config/intake.yaml, as the engine serves
+// them (engine/api.py, engine/intake.py): option lists resolved per product. ---
+
+const o = (id: string, label: string) => ({ id, label });
+
+const CHANNELS = [o("email", "Email"), o("whatsapp", "WhatsApp"), o("phone_note", "Phone note")];
+const CONSTITUTIONS = [
+  o("private_limited", "Private limited"),
+  o("partnership", "Partnership"),
+  o("proprietorship", "Proprietorship"),
+  o("unknown", "Not yet confirmed"),
+];
+const FACILITIES = [
+  o("cash_credit", "Cash credit"),
+  o("term_loan", "Term loan"),
+  o("bank_guarantee", "Bank guarantee"),
+];
+const CASE_TYPES = [
+  o("new", "New"),
+  o("renewal", "Renewal"),
+  o("enhancement", "Enhancement"),
+  o("takeover", "Takeover"),
+  o("balance_transfer", "Balance transfer"),
+  o("balance_transfer_top_up", "Balance transfer with top-up"),
+  o("top_up", "Top-up"),
+  o("unknown", "Not yet confirmed"),
+];
+const BRANCHES = [o("mumbai_hub", "Mumbai hub"), o("head_office", "Head office")];
+const STAGES = [
+  o("login", "Login"),
+  o("pd", "Personal discussion"),
+  o("sanction", "Sanction"),
+  o("post_sanction", "Post-sanction"),
+];
+const CUSTOMER_TYPES = [
+  o("salaried", "Salaried"),
+  o("self_employed_professional", "Self-employed professional"),
+  o("self_employed", "Self-employed (non-professional)"),
+  o("non_individual", "Non-individual"),
+];
+const PROGRAMS = [
+  o("income", "Income program"),
+  o("banking_surrogate", "Banking surrogate"),
+  o("gst_surrogate", "GST surrogate"),
+  o("rental", "Rental income"),
+];
+const pick = (list: { id: string; label: string }[], ids: string[]) =>
+  list.filter((x) => ids.includes(x.id));
+
+export const BBG_PRODUCT: ProductMeta = {
+  id: "bbg",
+  label: "Business banking",
+  prefix: "BBG",
+  case_types: pick(CASE_TYPES, ["new", "renewal", "enhancement", "takeover", "unknown"]),
+  stages: STAGES,
+  customer_types: pick(CONSTITUTIONS, ["private_limited", "partnership", "proprietorship"]),
+  programs: [],
+  minimum: ["borrower", "facilities", "amount_inr"],
+};
+
+export const LAP_PRODUCT: ProductMeta = {
+  id: "lap",
+  label: "Loan against property",
+  prefix: "LAP",
+  case_types: pick(CASE_TYPES, [
+    "new",
+    "balance_transfer",
+    "balance_transfer_top_up",
+    "top_up",
+    "unknown",
+  ]),
+  stages: STAGES,
+  customer_types: CUSTOMER_TYPES,
+  programs: PROGRAMS,
+  minimum: ["applicants", "customer_type", "amount_inr", "tenure_months", "properties"],
+};
+
+/** config/intake.yaml option_lists. */
+const LISTS = {
+  property_types: [
+    o("residential", "Residential"),
+    o("commercial", "Commercial"),
+    o("industrial", "Industrial"),
+    o("mixed", "Mixed use"),
+    o("plot", "Plot or land"),
+  ],
+  occupancies: [o("self_occupied", "Self-occupied"), o("rented", "Rented"), o("vacant", "Vacant")],
+  constructions: [o("complete", "Complete"), o("under_construction", "Under construction")],
+  party_roles_lap: [
+    o("applicant", "Applicant"),
+    o("co_applicant", "Co-applicant"),
+    o("guarantor", "Guarantor"),
+  ],
+  party_roles_bbg: [
+    o("promoter", "Promoter"),
+    o("director", "Director"),
+    o("partner", "Partner"),
+    o("proprietor", "Proprietor"),
+    o("guarantor", "Guarantor"),
+  ],
+  relationships: [
+    o("self", "Self"),
+    o("spouse", "Spouse"),
+    o("parent", "Parent"),
+    o("child", "Child"),
+    o("sibling", "Sibling"),
+    o("other", "Other"),
+  ],
+  loan_purposes: [
+    o("business_use", "Business use"),
+    o("personal_use", "Personal use"),
+    o("balance_transfer", "Balance transfer"),
+    o("top_up", "Top-up"),
+  ],
+  loan_types: [
+    o("home_loan", "Home loan"),
+    o("lap", "Loan against property"),
+    o("personal_loan", "Personal loan"),
+    o("business_loan", "Business loan"),
+    o("vehicle_loan", "Vehicle loan"),
+    o("credit_card", "Credit card"),
+    o("other", "Other"),
+  ],
+  facility_natures: [
+    o("fresh", "Fresh"),
+    o("renewal", "Renewal"),
+    o("enhancement", "Enhancement"),
+    o("takeover", "Takeover"),
+  ],
+};
+
+const BUSINESS = ["self_employed_professional", "self_employed", "non_individual"];
+const TRANSFER = ["balance_transfer", "balance_transfer_top_up"];
+
+function field(
+  id: string,
+  type: IntakeField["type"],
+  extra: Partial<IntakeField> = {},
+): IntakeField {
+  return {
+    id,
+    type,
+    required: false,
+    options: null,
+    length: null,
+    holder: null,
+    unless: null,
+    alternative: null,
+    from_section: null,
+    show_when: null,
+    ...extra,
+  };
+}
+const choice = (id: string, options: { id: string; label: string }[], extra = {}) =>
+  field(id, "choice", { options, ...extra });
+
+const LAP_FORM: IntakeProduct = {
+  start: {
+    message_required: false,
+    documents: {
+      required: true,
+      min_files: 1,
+      suggested: ["applicant_kyc", "property_papers", "income_proof"],
+    },
+    identifiers: [
+      {
+        id: "pan",
+        type: "pan",
+        holder: "individual",
+        unless: { customer_type: ["non_individual"] },
+      },
+      {
+        id: "co_applicant_pan",
+        type: "pan",
+        holder: "individual",
+        unless: { customer_type: ["non_individual"] },
+      },
+      { id: "gstin", type: "gstin", show_when: { customer_type: BUSINESS } },
+      { id: "udyam", type: "udyam", show_when: { customer_type: BUSINESS } },
+      { id: "application_id", type: "text" },
+      { id: "existing_loan_account", type: "text", show_when: { case_type: TRANSFER } },
+    ],
+  },
+  sections: [
+    {
+      id: "case",
+      repeat: null,
+      show_when: null,
+      fields: [
+        choice("customer_type", CUSTOMER_TYPES, { required: true }),
+        choice("case_type", LAP_PRODUCT.case_types),
+        choice("program", PROGRAMS),
+        field("amount_inr", "amount", { required: true }),
+        field("tenure_months", "months", { required: true }),
+        field("application_id", "text"),
+        field("customer_id", "text"),
+        choice("branch", BRANCHES),
+        choice("bank_stage", STAGES),
+        choice("channel", CHANNELS),
+      ],
+    },
+    {
+      id: "applicants",
+      repeat: { min: 1, max: 6 },
+      show_when: null,
+      fields: [
+        field("name", "text", { required: true }),
+        choice("role", LISTS.party_roles_lap, { required: true }),
+        choice("relationship", LISTS.relationships),
+        field("pan", "pan", {
+          holder: "individual",
+          unless: { customer_type: ["non_individual"] },
+          alternative: "form_60",
+        }),
+        field("form_60", "yes_no"),
+        field("aadhaar_last4", "digits", { length: 4 }),
+        field("income_considered", "yes_no"),
+        field("property_owner", "yes_no"),
+      ],
+    },
+    {
+      id: "business",
+      repeat: null,
+      show_when: { customer_type: BUSINESS },
+      fields: [
+        field("business_name", "text"),
+        choice("constitution", CONSTITUTIONS),
+        field("gstin", "gstin"),
+        field("udyam", "udyam"),
+        field("business_start_date", "date"),
+        field("nature_of_business", "text"),
+      ],
+    },
+    {
+      id: "loan",
+      repeat: null,
+      show_when: null,
+      fields: [
+        choice("loan_purpose", LISTS.loan_purposes),
+        field("existing_lender", "text", { show_when: { case_type: TRANSFER } }),
+        field("existing_loan_account", "text", { show_when: { case_type: TRANSFER } }),
+        field("existing_outstanding_inr", "amount", { show_when: { case_type: TRANSFER } }),
+        field("existing_emi_inr", "amount", { show_when: { case_type: TRANSFER } }),
+      ],
+    },
+    {
+      id: "properties",
+      repeat: { min: 1, max: 3 },
+      show_when: null,
+      fields: [
+        choice("property_type", LISTS.property_types, { required: true }),
+        choice("occupancy", LISTS.occupancies),
+        field("address", "text"),
+        field("pincode", "pincode"),
+        field("owners", "parties", { from_section: "applicants" }),
+        field("declared_value_inr", "amount"),
+        field("area_sqft", "number"),
+        choice("construction", LISTS.constructions),
+      ],
+    },
+    {
+      id: "existing_loans",
+      repeat: { min: 0, max: 10 },
+      show_when: null,
+      fields: [
+        field("lender", "text"),
+        choice("loan_type", LISTS.loan_types),
+        field("outstanding_inr", "amount"),
+        field("emi_inr", "amount"),
+        field("to_be_closed", "yes_no"),
+      ],
+    },
+    {
+      id: "declared_income",
+      repeat: null,
+      show_when: null,
+      fields: [
+        field("declared_monthly_salary_inr", "amount"),
+        field("declared_annual_business_income_inr", "amount"),
+        field("declared_rental_income_inr", "amount"),
+        field("declared_other_income_inr", "amount"),
+      ],
+    },
+  ],
+};
+
+const BBG_FORM: IntakeProduct = {
+  start: {
+    message_required: false,
+    documents: {
+      required: true,
+      min_files: 1,
+      suggested: [
+        "constitution_document",
+        "entity_pan",
+        "financial_statements",
+        "gst_returns",
+        "bank_statements",
+      ],
+    },
+    identifiers: [
+      { id: "pan", type: "pan", holder: "entity" },
+      { id: "gstin", type: "gstin" },
+      { id: "cin", type: "cin_or_llpin" },
+      { id: "udyam", type: "udyam" },
+      { id: "application_id", type: "text" },
+    ],
+  },
+  sections: [
+    {
+      id: "case",
+      repeat: null,
+      show_when: null,
+      fields: [
+        choice("case_type", BBG_PRODUCT.case_types),
+        field("application_id", "text"),
+        field("customer_id", "text"),
+        choice("branch", BRANCHES),
+        choice("bank_stage", STAGES),
+        choice("channel", CHANNELS),
+      ],
+    },
+    {
+      id: "borrower",
+      repeat: null,
+      show_when: null,
+      fields: [
+        field("borrower", "text", { required: true }),
+        choice("constitution", CONSTITUTIONS),
+        field("pan", "pan", { holder: "entity" }),
+        field("gstin", "gstin"),
+        field("cin", "cin_or_llpin"),
+        field("udyam", "udyam"),
+        field("incorporation_date", "date"),
+        field("nature_of_business", "text"),
+      ],
+    },
+    {
+      id: "people",
+      repeat: { min: 0, max: 20 },
+      show_when: null,
+      fields: [
+        field("name", "text", { required: true }),
+        choice("role", LISTS.party_roles_bbg),
+        field("pan", "pan"),
+        field("din", "digits", { length: 8 }),
+        field("shareholding_pct", "number"),
+      ],
+    },
+    {
+      id: "facilities",
+      repeat: { min: 1, max: 10 },
+      show_when: null,
+      fields: [
+        choice("facility", FACILITIES, { required: true }),
+        field("amount_inr", "amount", { required: true }),
+        choice("nature", LISTS.facility_natures),
+        field("purpose", "text"),
+        field("tenure_months", "months"),
+        field("existing_limit_inr", "amount"),
+      ],
+    },
+    {
+      id: "security",
+      repeat: null,
+      show_when: null,
+      fields: [field("collateral_present", "yes_no"), field("other_security", "text")],
+    },
+    {
+      id: "properties",
+      repeat: { min: 0, max: 3 },
+      show_when: null,
+      fields: [
+        choice("property_type", LISTS.property_types, { required: true }),
+        choice("occupancy", LISTS.occupancies),
+        field("address", "text"),
+        field("pincode", "pincode"),
+        field("owners", "text"),
+        field("declared_value_inr", "amount"),
+        field("area_sqft", "number"),
+        choice("construction", LISTS.constructions),
+      ],
+    },
+    {
+      id: "banking",
+      repeat: { min: 0, max: 10 },
+      show_when: null,
+      fields: [
+        field("lender", "text"),
+        field("facility", "text"),
+        field("limit_inr", "amount"),
+        field("outstanding_inr", "amount"),
+      ],
+    },
+    {
+      id: "declared",
+      repeat: null,
+      show_when: null,
+      fields: [field("declared_turnover_inr", "amount"), field("proposed_emi_inr", "amount")],
+    },
+  ],
+};
+
 export const META: Meta = {
-  channels: [
-    { id: "email", label: "Email" },
-    { id: "whatsapp", label: "WhatsApp" },
-    { id: "phone_note", label: "Phone note" },
-  ],
-  constitutions: [
-    { id: "private_limited", label: "Private limited" },
-    { id: "partnership", label: "Partnership" },
-    { id: "proprietorship", label: "Proprietorship" },
-    { id: "unknown", label: "Not yet confirmed" },
-  ],
-  facilities: [
-    { id: "cash_credit", label: "Cash credit" },
-    { id: "term_loan", label: "Term loan" },
-    { id: "bank_guarantee", label: "Bank guarantee" },
-  ],
-  products: [{ id: "bbg", label: "Business banking" }],
+  channels: CHANNELS,
+  constitutions: CONSTITUTIONS,
+  facilities: FACILITIES,
+  products: [BBG_PRODUCT, LAP_PRODUCT],
   product_default: "bbg",
-  case_types: [
-    { id: "new", label: "New" },
-    { id: "renewal", label: "Renewal" },
-    { id: "enhancement", label: "Enhancement" },
-    { id: "takeover", label: "Takeover" },
-    { id: "unknown", label: "Not yet confirmed" },
-  ],
-  branches: [
-    { id: "mumbai_hub", label: "Mumbai hub" },
-    { id: "head_office", label: "Head office" },
-  ],
-  bank_stages: [
-    { id: "login", label: "Login" },
-    { id: "pd", label: "Personal discussion" },
-    { id: "sanction", label: "Sanction" },
-    { id: "post_sanction", label: "Post-sanction" },
-  ],
+  customer_types: [...CONSTITUTIONS.filter((c) => c.id !== "unknown"), ...CUSTOMER_TYPES],
+  programs: PROGRAMS,
+  intake: { bbg: BBG_FORM, lap: LAP_FORM },
+  form_field_max_kb: 256,
+  case_types: CASE_TYPES,
+  branches: BRANCHES,
+  bank_stages: STAGES,
   bank_stage_default: "login",
-  case_create_minimum: ["borrower", "product", "facilities", "amount_inr"],
+  case_create_minimum: ["borrower", "facilities", "amount_inr"],
 };
 
 // --- Cases ---
@@ -815,9 +1198,94 @@ export function proposal(duplicates: CaseSummary[] = []): CaseProposal {
   };
 }
 
-/** What the New appraisal screen previews (F-12 at intake): the common items while the
- * constitution is unknown, the company items once it is a private limited company. */
+/** A loan against property's preview, a few items of the published LAP checklist in its wording:
+ * the application form, KYC and property papers for every customer (LAP_COMMON); the salary
+ * documents for a salaried customer, the business income documents for any other (until the
+ * customer type is given the preview is provisional and holds the common items only). */
+const LAP_COMMON: ChecklistPreviewItem[] = [
+  {
+    id: "lap_application_form",
+    name: "Application form, with declarations, consent and photographs",
+    category: "Application",
+    why: "The customer's own request for the loan.",
+    blocking: true,
+    document_types: ["Application form"],
+  },
+  {
+    id: "lap_pan_or_form_60",
+    name: "PAN or Form 60 of each applicant, co-applicant and guarantor",
+    category: "KYC and identity",
+    why: "The tax identifier every other document is checked against.",
+    blocking: true,
+    document_types: ["PAN card", "Form 60"],
+  },
+  {
+    id: "lap_property_title",
+    name: "Property ownership papers",
+    category: "Property and security",
+    why: "Establishes who owns the property offered as security.",
+    blocking: true,
+    document_types: ["Property title document"],
+  },
+];
+
+const LAP_SALARIED: ChecklistPreviewItem[] = [
+  {
+    id: "lap_salary_slips",
+    name: "Salary slips, last three months",
+    category: "Income and financials",
+    why: "The salary the loan is assessed on, month by month.",
+    blocking: true,
+    document_types: ["Salary slip"],
+  },
+  {
+    id: "lap_salary_bank_statements",
+    name: "Bank statements of the salary account, last six months",
+    category: "Banking",
+    why: "The salary credits and the account's conduct.",
+    blocking: true,
+    document_types: ["Bank statement"],
+  },
+];
+
+const LAP_BUSINESS: ChecklistPreviewItem[] = [
+  {
+    id: "lap_itr",
+    name: "Income Tax Return with computation, last two assessment years",
+    category: "Income and financials",
+    why: "Independent evidence of the income the loan is assessed on.",
+    blocking: true,
+    document_types: ["Income tax return"],
+  },
+  {
+    id: "lap_business_bank_statements",
+    name: "Bank statements of the business accounts, last twelve months",
+    category: "Banking",
+    why: "Independent evidence of the business's receipts and of the accounts' conduct.",
+    blocking: true,
+    document_types: ["Bank statement"],
+  },
+];
+
+/** What the New appraisal screen previews (F-12 at intake), for the product: business banking's
+ * common items while the constitution is unknown, the company items once it is a private limited
+ * company; a loan against property's items by customer type (LAP_COMMON and the rest). */
 export function checklistPreview(req: ChecklistPreviewRequest): ChecklistPreview {
+  if (req.product === "lap") {
+    const type = req.customer_type ?? null;
+    const income = type === null ? [] : type === "salaried" ? LAP_SALARIED : LAP_BUSINESS;
+    return {
+      provisional: type === null,
+      sections: [
+        "Application",
+        "KYC and identity",
+        "Income and financials",
+        "Banking",
+        "Property and security",
+      ],
+      items: [...LAP_COMMON, ...income],
+    };
+  }
   const common: ChecklistPreviewItem[] = [
     {
       id: "bank_statements",

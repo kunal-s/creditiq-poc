@@ -1,19 +1,42 @@
 // TC-01 (C3): a pasted message becomes a proposed case; every field is
 // found, unclear or not found with its span; nothing is created until the
-// RM confirms (FRD F-04).
-import { expect, test } from "@playwright/test";
-import type { CaseCreate } from "../src/api/types";
+// RM confirms (FRD F-04). The product comes first and a case is created with
+// its documents, in one request (plan 2026-11-27).
+import { expect, test, type Page } from "@playwright/test";
+import type { CaseCreate, CaseSummary } from "../src/api/types";
 import { CASES, EXISTING, MESSAGE, proposal, spanOf } from "./fixtures/data";
-import { MockApi, signedIn } from "./support/api";
-import type { CaseSummary } from "../src/api/types";
+import { MockApi, multipartBody, signedIn } from "./support/api";
+
+const FILE = {
+  name: "director1_pan.pdf",
+  mimeType: "application/pdf",
+  buffer: Buffer.from("%PDF-1.7"),
+};
+
+/** Paste the message, add a document and read it (business banking, the default product). */
+async function readMessage(page: Page) {
+  await page.goto("/appraisals/new");
+  await page.getByTestId("message-input").fill(MESSAGE);
+  await page.getByTestId("upload-input").setInputFiles([FILE]);
+  await page.getByRole("button", { name: "Read the message" }).click();
+  await expect(page.getByTestId("proposed-case")).toBeVisible();
+}
+
+/** The case part of the one-request create, and the files that went with it. */
+function created(api: MockApi, n = 0): { body: CaseCreate; files: string[] } {
+  const sent = api.called("POST", "/api/cases/intake")[n]!.body as ReturnType<typeof multipartBody>;
+  return { body: JSON.parse(sent.fields["case"]!) as CaseCreate, files: sent.files };
+}
+
+const line = (page: Page, n: number) => page.getByTestId("row-facilities").nth(n);
 
 test("TC-01: paste, verify every field, confirm, create", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api);
   await page.goto("/appraisals/new");
-
   await page.getByTestId("channel-email").click();
   await page.getByTestId("message-input").fill(MESSAGE);
+  await page.getByTestId("upload-input").setInputFiles([FILE]);
   await page.getByRole("button", { name: "Read the message" }).click();
 
   // Each field with its status.
@@ -25,15 +48,24 @@ test("TC-01: paste, verify every field, confirm, create", async ({ page }) => {
   await expect(page.getByTestId("field-borrower").getByRole("textbox")).toHaveValue(
     "Kestrel Polymers Pvt Ltd",
   );
-  await expect(page.getByTestId("field-amount_inr").getByRole("textbox")).toHaveValue("5000000");
+  // The facilities read from the message are its facility lines; the amount is on the first.
+  await expect(line(page, 0).getByTestId("cell-facility").getByRole("combobox")).toHaveValue(
+    "cash_credit",
+  );
+  await expect(line(page, 0).getByTestId("cell-amount_inr").getByRole("textbox")).toHaveValue(
+    "50,00,000",
+  );
+  await expect(line(page, 1).getByTestId("cell-facility").getByRole("combobox")).toHaveValue(
+    "term_loan",
+  );
+  await expect(line(page, 0).getByTestId("cell-source").first()).toHaveText("Message");
 
-  // The application group comes first (T2.1): a case type read from the message, product and
-  // stage at their configured defaults, the branch at the RM's own.
-  const app = page.getByTestId("group-application");
+  // The case details come first (T2.1): a case type read from the message, the stage at its
+  // configured default, the branch at the RM's own; the product was chosen above.
+  const app = page.getByTestId("group-case");
   await expect(app.getByTestId("field-case_type").getByRole("combobox")).toHaveValue("renewal");
   await expect(status("case_type")).toHaveText("Found");
-  await expect(app.getByTestId("field-product").getByRole("combobox")).toHaveValue("bbg");
-  await expect(app.getByTestId("field-product").getByTestId("prefilled")).toHaveText("Default");
+  await expect(page.getByTestId("product-bbg")).toHaveAttribute("aria-checked", "true");
   await expect(app.getByTestId("field-branch").getByRole("combobox")).toHaveValue("mumbai_hub");
   await expect(app.getByTestId("field-branch").getByTestId("prefilled")).toHaveText("Your branch");
   await expect(app.getByTestId("field-bank_stage").getByRole("combobox")).toHaveValue("login");
@@ -66,28 +98,36 @@ test("TC-01: paste, verify every field, confirm, create", async ({ page }) => {
   await page.getByTestId("confirm-declared_turnover_inr").click();
   await expect(page.getByTestId("needs-confirmation")).toHaveCount(0);
 
-  // The RM edits a proposed value: both values are kept.
-  await page.getByTestId("field-amount_inr").getByRole("textbox").fill("5500000");
+  // The term loan's line needs its amount before the case can be created.
+  await expect(page.getByTestId("row-gaps")).toContainText("Facility line 2");
+  await line(page, 1).getByTestId("cell-amount_inr").getByRole("textbox").fill("2000000");
 
-  expect(api.called("POST", "/api/cases")).toHaveLength(0);
+  // The RM edits a proposed value: both values are kept.
+  await line(page, 0).getByTestId("cell-amount_inr").getByRole("textbox").fill("5500000");
+  await expect(page.getByTestId("lines-total")).toContainText("75.00 lakh");
+
+  expect(api.called("POST", "/api/cases/intake")).toHaveLength(0);
   await page.getByTestId("create-application").click();
 
-  await expect(page).toHaveURL(/\/appraisals\/BBG-2026-000031\/documents$/);
-  const [create] = api.called("POST", "/api/cases");
-  const body = create!.body as CaseCreate;
+  // The case and its document were sent together; the case opens on its Overview.
+  await expect(page).toHaveURL(/\/appraisals\/BBG-2026-000031$/);
+  expect(api.called("POST", "/api/cases")).toHaveLength(0);
+  const { body, files } = created(api);
+  expect(files).toEqual(["director1_pan.pdf"]);
   expect(body.borrower).toBe("Kestrel Polymers Pvt Ltd");
   expect(body.constitution).toBe("private_limited");
   expect(body.facilities).toEqual(["cash_credit", "term_loan"]);
-  expect(body.amount_inr).toBe(5_500_000);
+  expect(body.amount_inr).toBe(7_500_000);
   expect(body.channel).toBe("email");
   expect(body.pan).toBe("AAACK1234K");
   expect(body.message_text).toBe(MESSAGE);
   const amount = spanOf("50L");
-  expect(body.header?.["amount_inr"]).toEqual({
+  expect(body.groups?.["facilities"]?.[0]?.["amount_inr"]).toEqual({
     value: "5500000",
     proposed: "5000000",
     source: `message:${amount.start}-${amount.end}`,
   });
+  expect(body.header?.["amount_inr"]).toMatchObject({ value: "7500000", proposed: "5000000" });
   expect(body.product).toBe("bbg");
   expect(body.case_type).toBe("renewal");
   expect(body.branch).toBe("mumbai_hub");
@@ -109,9 +149,7 @@ test("TC-01: paste, verify every field, confirm, create", async ({ page }) => {
 test("TC-01: nothing is created without confirmation", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api);
-  await page.goto("/appraisals/new");
-  await page.getByTestId("message-input").fill(MESSAGE);
-  await page.getByRole("button", { name: "Read the message" }).click();
+  await readMessage(page);
   await expect(page.getByTestId("create-application")).toBeDisabled();
 
   // Missing minimum fields also block creation.
@@ -120,7 +158,8 @@ test("TC-01: nothing is created without confirmation", async ({ page }) => {
 
   await page.getByRole("button", { name: "Discard" }).click();
   await expect(page.getByTestId("message-input")).toHaveValue("");
-  expect(api.called("POST", "/api/cases")).toHaveLength(0);
+  await expect(page.getByTestId("attachments")).toHaveCount(0);
+  expect(api.called("POST", "/api/cases/intake")).toHaveLength(0);
 });
 
 test("TC-01: a duplicate is offered, and creating anyway needs a reason", async ({ page }) => {
@@ -132,12 +171,11 @@ test("TC-01: a duplicate is offered, and creating anyway needs a reason", async 
     ),
   );
   await signedIn(page, api);
-  await page.goto("/appraisals/new");
-  await page.getByTestId("message-input").fill(MESSAGE);
-  await page.getByRole("button", { name: "Read the message" }).click();
+  await readMessage(page);
   for (const key of ["constitution", "declared_turnover_inr"]) {
     await page.getByTestId(`confirm-${key}`).click();
   }
+  await line(page, 1).getByTestId("cell-amount_inr").getByRole("textbox").fill("2000000");
 
   const warning = page.getByTestId("duplicate-warning");
   await expect(warning).toContainText(EXISTING);
@@ -149,6 +187,7 @@ test("TC-01: a duplicate is offered, and creating anyway needs a reason", async 
   await expect(warning.getByTestId("more-duplicates")).toHaveText(
     "and 2 more applications for this borrower",
   );
+  await expect(page.getByTestId("review-duplicates")).toHaveAttribute("data-state", "warn");
   // The disabled button says why: the only thing left is the duplicate.
   await expect(page.getByTestId("create-application")).toBeDisabled();
   await expect(page.getByTestId("create-blockers")).toHaveText(
@@ -160,48 +199,51 @@ test("TC-01: a duplicate is offered, and creating anyway needs a reason", async 
   await expect(page.getByTestId("create-blockers")).toHaveCount(0);
   await page.getByTestId("create-application").click();
 
-  await expect(page).toHaveURL(/\/appraisals\/BBG-2026-000031\/documents$/);
-  const body = api.called("POST", "/api/cases")[0]!.body as CaseCreate;
-  expect(body.duplicate_override_reason).toBe("Separate unit with its own GST registration");
+  await expect(page).toHaveURL(/\/appraisals\/BBG-2026-000031$/);
+  expect(created(api).body.duplicate_override_reason).toBe(
+    "Separate unit with its own GST registration",
+  );
 });
 
 test("TC-01: a duplicate found at creation (409) is offered the same way", async ({ page }) => {
   const api = new MockApi();
   const existing: CaseSummary = { ...CASES[0]!, id: EXISTING };
-  api.on("POST", /^\/api\/cases$/, (req) => {
-    const body = req.postDataJSON() as CaseCreate;
+  api.on("POST", /^\/api\/cases\/intake$/, (req) => {
+    const body = JSON.parse(multipartBody(req).fields["case"]!) as CaseCreate;
     if (!body.duplicate_override_reason) {
       return {
         status: 409,
         json: { detail: { message: "a case matches", duplicates: [existing] } },
       };
     }
-    return { status: 201, json: { ...existing, id: "BBG-2026-000031" } };
+    return {
+      status: 201,
+      json: { case: { ...existing, id: "BBG-2026-000031" }, upload: { files: [], job_id: null } },
+    };
   });
   await signedIn(page, api);
-  await page.goto("/appraisals/new");
-  await page.getByTestId("message-input").fill(MESSAGE);
-  await page.getByRole("button", { name: "Read the message" }).click();
+  await readMessage(page);
   await page.getByTestId("confirm-constitution").click();
   await page.getByTestId("confirm-declared_turnover_inr").click();
+  await line(page, 1).getByTestId("cell-amount_inr").getByRole("textbox").fill("2000000");
   await page.getByTestId("create-application").click();
 
+  // Nothing was created: the warning, and the document still on screen.
   const warning = page.getByTestId("duplicate-warning");
   await expect(warning).toContainText(EXISTING);
+  await expect(page.getByTestId("attachments")).toContainText("director1_pan.pdf");
   await expect(page.getByTestId("create-application")).toBeDisabled();
   await warning.getByRole("button", { name: "Create anyway" }).click();
   await page.getByTestId("override-reason").fill("Group company, separate borrower");
   await page.getByTestId("create-application").click();
-  await expect(page).toHaveURL(/\/appraisals\/BBG-2026-000031\/documents$/);
-  expect(api.called("POST", "/api/cases")).toHaveLength(2);
+  await expect(page).toHaveURL(/\/appraisals\/BBG-2026-000031$/);
+  expect(api.called("POST", "/api/cases/intake")).toHaveLength(2);
 });
 
 test("the documents the application will need follow the fields on screen", async ({ page }) => {
   const api = new MockApi();
   await signedIn(page, api);
-  await page.goto("/appraisals/new");
-  await page.getByTestId("message-input").fill(MESSAGE);
-  await page.getByRole("button", { name: "Read the message" }).click();
+  await readMessage(page);
 
   // The constitution is unclear: only what every application needs, marked provisional.
   const needed = page.getByTestId("documents-needed");

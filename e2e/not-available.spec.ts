@@ -18,6 +18,11 @@ test("501 from the Wave 1 endpoints reads as not available yet", async ({ page }
 
   await page.goto("/appraisals/new");
   await page.getByTestId("message-input").fill(MESSAGE);
+  await page.getByTestId("upload-input").setInputFiles({
+    name: "kyc.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.from("%PDF-1.7"),
+  });
   await page.getByRole("button", { name: "Read the message" }).click();
   await expect(page.getByTestId("state-notAvailable")).toContainText("Not available yet");
 

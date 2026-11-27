@@ -126,3 +126,48 @@ def test_provisional_statements_fill_the_provisional_column_from_configuration(c
     spread = _spread(client, analyst, case_id)
     assert [(c["fy"], c["basis"]) for c in spread["columns"]] == [("FY 2024-25", "audited"), ("FY 2025-26", "provisional")]
     assert _row(spread, "revenue_from_operations")["cells"][1]["value"] == round(118_000_000 * 0.75)
+
+
+def test_lines_read_for_the_totals_are_spread_rows(client: TestClient, published_data_root: Path):
+    analyst = sign_in(client, ANALYST)
+    case_id = make_case(client, analyst, published_data_root)
+    audited(published_data_root, case_id)
+    spread = _spread(client, analyst, case_id)
+    for key, value in (("other_current_liabilities", 3_000_000), ("short_term_provisions", 2_000_000),
+                       ("cash_and_bank_balances", 6_000_000), ("short_term_loans_and_advances", 4_000_000),
+                       ("total_assets", 94_000_000), ("pbit", 11_000_000), ("cash_profit", 10_400_000),
+                       ("capital_employed", 57_000_000)):
+        assert _row(spread, key)["cells"][0]["value"] == value, key
+    keys = [r["key"] for r in spread["rows"]]
+    assert keys.index("trade_payables") < keys.index("other_current_liabilities") < keys.index("current_liabilities")
+    assert keys.index("short_term_loans_and_advances") < keys.index("current_assets") < keys.index("total_assets")
+
+
+# Kestrel FY 2025-26: sales 11.8 cr, PBT 0.75 cr, finance costs 0.35 cr, depreciation 0.4 cr, PAT 0.64 cr; net worth
+# 4.2 cr, current liabilities 3.7 cr, total assets 9.4 cr, so capital employed 5.7 cr; fixed assets 3.5 cr, current
+# assets 5.9 cr, inventories 2.5 cr, receivables 2.4 cr, materials 8.0 cr, employee costs 1.2 cr.
+ANALYSIS = {
+    "operating-profit-ratio": 11.0 / 118 * 100, "cash-profit-margin": 10.4 / 118 * 100, "equity-multiplier": 94 / 42,
+    "roe": 6.4 / 42 * 100, "roi": 11.0 / 57 * 100, "roce": 9.9 / 57 * 100, "roa": 6.4 / 94 * 100,
+    "total-assets-turnover": 118 / 94, "fixed-assets-turnover": 118 / 35, "current-assets-turnover": 118 / 59,
+    "capital-turnover": 118 / 57, "quick-ratio": 34 / 37, "quick-ratio-excluding-debtors": 35 / 37,
+    "equity-ratio": 42 / 57, "current-assets-to-sales": 59 / 118, "total-assets-to-sales": 94 / 118,
+    "material-costs-to-sales": 80 / 118 * 100, "employee-costs-to-sales": 12 / 118 * 100, "debtor-days": 24 / 118 * 365,
+}
+
+
+def test_analysis_ratios_are_worked_out_each_year_from_configuration(client: TestClient, published_data_root: Path):
+    analyst = sign_in(client, ANALYST)
+    case_id = make_case(client, analyst, published_data_root)
+    audited(published_data_root, case_id)
+    spread = _spread(client, analyst, case_id)
+    for key, expected in ANALYSIS.items():
+        row = _row(spread, key)
+        assert row["section"] == "ratios" and row["kind"] == "ratio" and row["formula"], key
+        assert round(row["cells"][0]["value"], 2) == round(expected, 2), key
+    roce = _row(spread, "roce")
+    assert roce["unit"] == "%" and {i["key"] for i in roce["cells"][0]["working"]["inputs"]} == {
+        "profit_after_tax", "finance_costs", "capital_employed"}
+    assert _row(spread, "debtor-days")["unit"] == "days"
+    # The policy's ratios keep their rows, after the analysis is added.
+    assert _row(spread, "current-ratio")["section"] == "ratios"

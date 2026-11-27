@@ -488,7 +488,7 @@ def test_too_few_months_in_common_ask_for_returns_and_statements_for_the_same_mo
     # The declared turnover has neither audited statements nor a full year of returns to be held against.
     to4 = _card(found, "TO-04", "FY 2025-26")
     assert to4["outcome"] == "incomplete" and [c["label"] for c in to4["columns"]] == [
-        "Turnover declared in the sourcing message"]
+        "Turnover declared at intake"]
     assert to4["request"] == "audited financial statements for FY 2025-26"
     assert _lines(to4) == [("Declared against audited · FY 2025-26", [], "audited financial statements for FY 2025-26 needed")]
 

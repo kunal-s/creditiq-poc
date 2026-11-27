@@ -63,6 +63,20 @@ export type Span = S["Span"];
 export type StrippedSpan = S["StrippedSpan"];
 export type CoverageRule = S["CoverageRule"];
 export type UploadResult = S["UploadResult"];
+/** A product a case is opened under, with the lists a case of it carries (config/app.yaml). */
+export type ProductMeta = S["ProductMeta"];
+/** The New appraisal form of one product (config/intake.yaml): its start rules and sections. */
+export type IntakeProduct = S["IntakeProduct"];
+export type IntakeSection = S["IntakeSection"];
+export type IntakeField = S["IntakeField"];
+export type IntakeFieldType = IntakeField["type"];
+export type IntakeIdentifier = S["IntakeIdentifier"];
+/** POST /api/cases/intake: the case and its files, created together. */
+export type IntakeCreated = S["IntakeCreated"];
+/** Why POST /api/cases/intake created nothing (its 422 detail). */
+export type IntakeRefusal = S["IntakeRefusal"];
+/** One row of a repeating section: each field with its own provenance (F-01.2). */
+export type GroupRow = NonNullable<CaseCreate["groups"]>[string][number];
 export type Party = S["Party"];
 export type PartyRole = Party["role"];
 export type DocumentTypeDef = S["DocumentTypeDef"];

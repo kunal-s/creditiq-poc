@@ -106,3 +106,37 @@ def test_a_version_published_before_the_note_wording_and_the_download_labels_sti
     dscr = next(n for n in reader.load_policy(published_data_root).norms if n.id == "FR-03")
     assert dscr.pd_gap_question and "{reason}" in dscr.pd_gap_question
     assert "{request}" in reader.load_crosschecks(published_data_root).pd_incomplete
+
+
+def test_a_checklist_published_before_products_still_reads_as_the_default_products(published_data_root: Path):
+    """An item that names no product is the default product's only: a loan against property never
+    inherits a business's items from a version published before products were named."""
+    from engine.checklist import for_product
+
+    from engine.configstore.schema import ChecklistTaxonomySection
+
+    version = reader.published_version(published_data_root)["version"]
+    folder = published_data_root / "config_store" / "versions" / version
+    taxonomy = json.loads((folder / "checklist_taxonomy.json").read_text(encoding="utf-8"))
+    for item in taxonomy["items"]:
+        del item["products"]
+    older = ChecklistTaxonomySection.model_validate(taxonomy)
+    assert all(item.products == [] for item in older.items)
+    assert all(for_product(item, "bbg") and not for_product(item, "lap") for item in older.items)
+    # Today's file names the product of every item.
+    assert all(item.products for item in reader.load_checklist_taxonomy(published_data_root).items)
+
+
+def test_publishing_refuses_an_item_of_an_unknown_product(tmp_path: Path, monkeypatch):
+    import shutil
+
+    import pytest
+
+    config = tmp_path / "config"
+    shutil.copytree(writer.CONFIG_DIR, config)
+    path = config / "checklist_taxonomy.yaml"
+    path.write_text(path.read_text(encoding="utf-8").replace("products: [lap]", "products: [car_loan]", 1),
+                    encoding="utf-8")
+    monkeypatch.setattr(writer, "CONFIG_DIR", config)
+    with pytest.raises(ValueError, match="unknown product 'car_loan'"):
+        writer.publish(data_root=tmp_path / "a", author="t")

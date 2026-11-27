@@ -14,13 +14,16 @@ import json
 from datetime import date
 import logging
 import os
+import shutil
 import sqlite3
 from contextlib import asynccontextmanager
 from typing import Literal
 
+import anyio
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import ValidationError
 from python_multipart.exceptions import MultipartParseError
 
 from . import (
@@ -34,6 +37,8 @@ from . import (
     cam_copilot,
     cam_review,
     cam_templates,
+    case_create,
+    case_proposal,
     case_types,
     corrections,
     extra_data,
@@ -44,6 +49,7 @@ from . import (
     db,
     exports,
     facts,
+    intake,
     figure_edits,
     jobs,
     pages,
@@ -66,6 +72,8 @@ from . import (
     xv,
 )
 from .config import (
+    ProductConfig,
+    customer_type_options,
     feature_enabled,
     find_user_by_id,
     load_app_config,
@@ -75,6 +83,8 @@ from .config import (
     option_list,
     role_label,
 )
+from .config import product as config_product
+from .config import products as config_products
 from .configstore import reader as configstore_reader
 from .configstore.schema import ApprovalMatrixSection, ChecklistTaxonomySection, DocumentTypesSection, PolicySection
 from .contracts.case import CreateCaseRequest
@@ -121,6 +131,11 @@ from .contracts import (
     CaseProposal,
     ChecklistPreview,
     ChecklistPreviewRequest,
+    DuplicateConflict,
+    DuplicateConflictResponse,
+    IntakeCreated,
+    IntakeRefusal,
+    IntakeRefusalResponse,
     PdNote,
     PolicyAssessment,
     Spread,
@@ -163,6 +178,8 @@ from .store import data_root
 from .units import UNITS
 from .util import now_iso
 
+_log = logging.getLogger("creditiq.api")
+
 # Keys from git-ignored files (workflow/private/), where the environment does not carry them.
 keys.load()
 
@@ -170,7 +187,12 @@ keys.load()
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     """The processing worker runs beside the API (F-02.3); CREDITIQ_WORKER=0
-    leaves jobs to `creditiq jobs run`."""
+    leaves jobs to `creditiq jobs run`. The products (config/app.yaml) and their forms
+    (config/intake.yaml) are checked first, so a deployment file naming what is not defined stops
+    the engine at start rather than at the first new appraisal. What a stopped engine left in the
+    intake spool is removed."""
+    intake.schema()
+    uploads.clear_intake_spool(data_root())
     worker = None
     if os.environ.get("CREDITIQ_WORKER", "1") != "0":
         worker = jobs.Worker(data_root)
@@ -258,6 +280,23 @@ def logout(token: str = Depends(bearer_token), conn: sqlite3.Connection = Depend
     auth.logout(conn, token)
 
 
+def _options(items: list[dict], ids: tuple[str, ...] | None = None) -> list[dict]:
+    """Option lists as the screens take them, in the configured order; `ids` keeps only those named."""
+    return [{"id": o["id"], "label": o["label"]} for o in items if ids is None or o["id"] in ids]
+
+
+def _product_meta(p: ProductConfig) -> dict:
+    """A product with the lists a case of it may carry (config/app.yaml `products`)."""
+    return {
+        "id": p.id, "label": p.label, "prefix": p.prefix,
+        "case_types": _options(option_list("case_types"), (*p.case_types, "unknown")),
+        "stages": _options(option_list("bank_stages"), p.stages),
+        "customer_types": _options(customer_type_options(), p.customer_types),
+        "programs": _options(load_app_config().get("programs", []), p.programs),
+        "minimum": list(p.minimum),
+    }
+
+
 @app.get("/api/meta", response_model=Meta)
 def meta(_: dict = Depends(current_user)) -> dict:
     cfg = load_app_config()
@@ -265,8 +304,12 @@ def meta(_: dict = Depends(current_user)) -> dict:
         "channels": [{"id": c["id"], "label": c["label"]} for c in cfg["channels"]],
         "constitutions": [{"id": c["id"], "label": c["label"]} for c in cfg["constitutions"]],
         "facilities": [{"id": f["id"], "label": f["label"]} for f in cfg["facilities"]],
-        "products": [{"id": o["id"], "label": o["label"]} for o in option_list("products")],
+        "products": [_product_meta(p) for p in config_products()],
         "product_default": option_default("products"),
+        "customer_types": _options(customer_type_options()),
+        "programs": _options(cfg.get("programs", [])),
+        "intake": intake.schema(),
+        "form_field_max_kb": uploads.limits().max_case_part // 1024,
         "case_types": [{"id": o["id"], "label": o["label"]} for o in option_list("case_types")],
         "branches": [{"id": o["id"], "label": o["label"]} for o in option_list("branches")],
         "bank_stages": [{"id": o["id"], "label": o["label"]} for o in option_list("bank_stages")],
@@ -286,13 +329,15 @@ def list_cases(user: dict = Depends(require("case.read")), conn: sqlite3.Connect
     return cases.list_cases(conn, only_created_by=only)
 
 
-@app.post("/api/cases", response_model=CaseDetail, status_code=201)
+@app.post("/api/cases", response_model=CaseDetail, status_code=201,
+          responses={409: {"model": DuplicateConflictResponse,
+                           "description": "A matching case exists; give duplicate_override_reason to create anyway."}})
 def create_case(
     body: CaseCreate, user: dict = Depends(require("case.create")), conn: sqlite3.Connection = Depends(get_conn)
 ):
     root = data_root()
     try:
-        created = cases.create_case(
+        created = case_create.create_case(
             conn,
             body,
             created_by=user["id"],
@@ -302,17 +347,171 @@ def create_case(
         )
     except cases.DuplicateCase as e:
         # F-04.5: offer "Open it" or "Create anyway" (with a reason).
-        raise HTTPException(
-            status_code=409,
-            detail={"message": str(e), "duplicates": [d.model_dump() for d in e.duplicates]},
-        ) from e
+        raise _duplicate_conflict(e, user) from e
     except cases.CaseError as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
+    _refresh_after_create(conn, root, created.id)
+    return cases.get_case(conn, created.id) or created
+
+
+def _duplicate_conflict(e: cases.DuplicateCase, user: dict) -> HTTPException:
+    """409 for a duplicate (F-04.5): the matching cases this user may open in full, and of any other RM's
+    only the number and the RM, so the check does not disclose what the user may not read."""
+    visible, elsewhere = cases.split_duplicates(e.duplicates, e.owners, user)
+    detail = DuplicateConflict(message=str(e), duplicates=visible, duplicates_elsewhere=elsewhere)
+    return HTTPException(status_code=409, detail=detail.model_dump())
+
+
+def _refresh_after_create(conn: sqlite3.Connection, root, case_id: str) -> None:
+    """The created case's derived state (checklist, parties, ...). The case is committed whatever happens
+    here: a failure is logged and the next refresh builds it."""
     try:
-        pipeline.refresh_case(conn, root, created.id)
+        pipeline.refresh_case(conn, root, case_id)
     except configstore_reader.NoPublishedConfig:
         pass  # derived state is built once configuration is published
-    return created
+    except Exception:
+        _log.exception("case %s was created; its derived state was not rebuilt", case_id)
+
+
+_INTAKE_BODY = {
+    "requestBody": {
+        "required": True,
+        "content": {
+            "multipart/form-data": {
+                "schema": {
+                    "type": "object",
+                    "required": ["case", "files"],
+                    "properties": {
+                        "case": {
+                            "type": "string",
+                            "description": "The case to create: a CaseCreate as JSON, at most "
+                                           "uploads.max_form_field_kb (Meta.form_field_max_kb).",
+                        },
+                        "files": {"type": "array", "items": {"type": "string", "format": "binary"}},
+                        "channel": {"type": "string", "description": "How the files arrived; default upload."},
+                    },
+                },
+                "encoding": {"case": {"contentType": "application/json"}},
+            }
+        },
+    }
+}
+
+
+def _refuse(code: str, message: str, **extra) -> HTTPException:
+    """422 with an IntakeRefusal: nothing was created."""
+    return HTTPException(status_code=422, detail=IntakeRefusal(code=code, message=message, **extra).model_dump())
+
+
+def _intake_refusal(e: cases.CaseError) -> HTTPException:
+    """The IntakeRefusal for a case the engine would not create."""
+    if isinstance(e, case_create.MinimumMissing):
+        return _refuse("minimum_missing", str(e), missing=e.missing)
+    if isinstance(e, case_create.TooFewFiles):
+        return _refuse("too_few_files", str(e), min_files=e.min_files, registered=e.registered)
+    if isinstance(e, case_create.IdentifierInvalid):
+        return _refuse("identifier_invalid", str(e))
+    return _refuse("case_invalid", str(e))
+
+
+def _intake_case(receiver: uploads.MultipartReceiver) -> CaseCreate:
+    """The `case` part of the one-request create, refused whole when it is missing, larger than the
+    configured limit (never cut short) or not a valid CaseCreate."""
+    if "case" in receiver.oversize_fields:
+        kb = receiver.limits.max_case_part // 1024
+        raise _refuse("case_part", f"the case part is larger than the {kb} KB limit")
+    text = receiver.fields.get("case")
+    if text is None or not text.strip():
+        raise _refuse("case_part", "no case in the request (multipart field 'case')")
+    try:
+        return CaseCreate.model_validate_json(text)
+    except ValidationError as e:
+        problems = "; ".join(f"{'.'.join(str(p) for p in err['loc']) or 'case'}: {err['msg']}" for err in e.errors())
+        raise _refuse("case_part", f"the case part is not a valid case: {problems}") from None
+
+
+def _upload_channel(receiver: uploads.MultipartReceiver) -> str:
+    """How the files arrived: a configured channel, or "upload" when the request names none."""
+    if "channel" in receiver.oversize_fields:
+        raise uploads.UploadError(f"the channel field is larger than the {receiver.limits.max_form_field // 1024} KB limit")
+    channel = (receiver.fields.get("channel") or "").strip() or "upload"
+    if channel != "upload" and channel not in option_ids("channels"):
+        raise uploads.UploadError(f"unknown channel {channel!r}")
+    return channel
+
+
+async def _receive(request: Request, spool, lim: uploads.Limits, text_fields: dict[str, int] | None = None):
+    """The multipart body streamed to the spool under the request limits (UploadError, MultipartParseError);
+    on a refusal the files spooled so far are removed."""
+    uploads.check_content_length(request.headers.get("content-length"), lim)
+    receiver = uploads.MultipartReceiver(request.headers.get("content-type", ""), spool, lim, text_fields)
+    try:
+        async for chunk in request.stream():
+            await run_in_threadpool(receiver.write, chunk)
+        receiver.finish()
+    except BaseException:
+        receiver.discard()
+        raise
+    return receiver
+
+
+def _create_with_files(root, body: CaseCreate, user: dict, channel: str, receiver: uploads.MultipartReceiver,
+                       staging) -> tuple[CaseDetail, UploadResult]:
+    conn = db.connect(root)
+    try:
+        created, result = case_create.create_case_with_files(
+            conn, root, body, created_by=user["id"], config_version=_published_version(),
+            name_threshold=parties.name_tolerance(root), channel=channel, parts=receiver.parts, staging=staging,
+        )
+        _refresh_after_create(conn, root, created.id)
+        return cases.get_case(conn, created.id) or created, result
+    finally:
+        conn.close()
+
+
+async def _remove_staging(staging) -> None:
+    """The request's staging folder removed even when the request is cancelled part-way."""
+    with anyio.CancelScope(shield=True):
+        await run_in_threadpool(shutil.rmtree, staging, True)
+
+
+@app.post(
+    "/api/cases/intake",
+    response_model=IntakeCreated,
+    status_code=201,
+    openapi_extra=_INTAKE_BODY,
+    responses={409: {"model": DuplicateConflictResponse,
+                     "description": "A matching case exists; give duplicate_override_reason to create anyway."},
+               422: {"model": IntakeRefusalResponse, "description": "Nothing was created."}},
+)
+async def create_case_with_files(request: Request, user: dict = Depends(require("case.create"))):
+    """The New appraisal screen's Create: the case (multipart field `case`, a CaseCreate as JSON) and its
+    files (field `files`, repeatable; single files or ZIP archives) in one request, stored together or not
+    at all. Refused (422, an IntakeRefusal) when the body is over the request limits, the case part is
+    missing, too large or invalid, the product's minimum is not met, an identifier is not valid for its
+    box, or fewer files than the product needs are received as new documents; 409 on a duplicate without
+    an override reason. Needs document.upload as well as case.create."""
+    if "document.upload" not in user["permissions"]:
+        raise HTTPException(status_code=403, detail=f"role {user['role']!r} lacks 'document.upload'")
+    root, lim = data_root(), uploads.limits()
+    staging = await run_in_threadpool(uploads.intake_staging, root)
+    try:
+        try:
+            receiver = await _receive(request, staging / "incoming", lim,
+                                      {"case": lim.max_case_part, "channel": lim.max_form_field})
+            channel = _upload_channel(receiver)
+        except (uploads.UploadError, MultipartParseError) as e:
+            raise _refuse("bad_body", str(e)) from e
+        body = _intake_case(receiver)
+        try:
+            created, result = await run_in_threadpool(_create_with_files, root, body, user, channel, receiver, staging)
+        except cases.DuplicateCase as e:
+            raise _duplicate_conflict(e, user) from e
+        except cases.CaseError as e:
+            raise _intake_refusal(e) from e
+    finally:
+        await _remove_staging(staging)
+    return {"case": created, "upload": result}
 
 
 @app.get("/api/cases/{case_id}", response_model=CaseDetail)
@@ -922,7 +1121,6 @@ _DOWNLOAD = {200: {"description": "The file, as an attachment.",
                                for media in exports.MEDIA_TYPES.values()}}}
 _OUTPUTS = {"cam": "draft CAM", "pd_note": "PD note"}
 _FORMATS = {"docx": "Word", "pdf": "PDF", "xlsx": "Excel"}
-_log = logging.getLogger("creditiq.api")
 
 
 def _download(conn: sqlite3.Connection, user: dict, case: CaseDetail, output: str, fmt: str,
@@ -1008,26 +1206,42 @@ def review_queue(
 
 @app.post("/api/cases/proposals", response_model=CaseProposal)
 def propose_case(
-    body: ProposalRequest, _: dict = Depends(require("case.create")), conn: sqlite3.Connection = Depends(get_conn)
+    body: ProposalRequest, user: dict = Depends(require("case.create")), conn: sqlite3.Connection = Depends(get_conn)
 ):
-    """F-04: parse a pasted message into a proposed case. Stores nothing."""
+    """F-04: what the start screen has so far, as a proposed case: a pasted message read into fields (when
+    there is one), the values typed so far (they win), the duplicate check and the product's minimum still
+    missing. Stores nothing."""
     if body.channel not in option_ids("channels"):
         raise HTTPException(status_code=422, detail=f"unknown channel {body.channel!r}")
+    if body.product is not None and body.product not in option_ids("products"):
+        raise HTTPException(status_code=422, detail=f"unknown product {body.product!r}")
     try:
-        return proposal.propose(conn, data_root(), body.text)
+        proposed = case_proposal.propose(conn, data_root(), body.text, product=body.product, typed=body.fields,
+                                    groups=body.groups)
     except configstore_reader.NoPublishedConfig as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
+    # F-03: of another RM's matching case, an RM sees only its number and RM.
+    visible, elsewhere = cases.split_duplicates(proposed.duplicates, cases.owners_of(conn, proposed.duplicates), user)
+    return proposed.model_copy(update={"duplicates": visible, "duplicates_elsewhere": elsewhere})
 
 
 @app.post("/api/cases/checklist-preview", response_model=ChecklistPreview)
 def checklist_preview(body: ChecklistPreviewRequest, _: dict = Depends(require("case.create"))):
     """F-12 at intake: the documents the proposed application will need, from the
-    values on the New appraisal screen. Stores nothing; no case is needed."""
+    values on the New appraisal screen (its product, customer and case type, and what
+    its form declares). Stores nothing; no case is needed."""
+    from .checklist import declared_names, row_sections
     from .completeness import items_for
 
-    for value, key in ((body.constitution, "constitutions"), (body.product, "products"), (body.case_type, "case_types")):
-        if value is not None and value not in option_ids(key):
-            raise HTTPException(status_code=422, detail=f"unknown {key[:-1]} {value!r}")
+    if body.product is not None and body.product not in option_ids("products"):
+        raise HTTPException(status_code=422, detail=f"unknown product {body.product!r}")
+    chosen = config_product(body.product)
+    if body.constitution not in option_ids("constitutions"):
+        raise HTTPException(status_code=422, detail=f"unknown constitution {body.constitution!r}")
+    for value, allowed, label in ((body.case_type, (*chosen.case_types, "unknown"), "case type"),
+                                  (body.customer_type, chosen.customer_types, "customer type")):
+        if value is not None and value not in allowed:
+            raise HTTPException(status_code=422, detail=f"unknown {label} {value!r} for {chosen.label}")
     unknown = set(body.facilities) - option_ids("facilities")
     if unknown:
         raise HTTPException(status_code=422, detail=f"unknown facilities {sorted(unknown)}")
@@ -1039,8 +1253,11 @@ def checklist_preview(body: ChecklistPreviewRequest, _: dict = Depends(require("
             facilities=body.facilities,
             amount_inr=body.amount_inr,
             collateral_present=body.collateral_present,
-            product=body.product,
+            product=chosen.id,
             case_type=body.case_type,
+            customer_type=body.customer_type,
+            declared=declared_names(body.fields),
+            rows=row_sections(body.groups),
         )
         taxonomy = configstore_reader.load_checklist_taxonomy(root)
         types = configstore_reader.load_document_types(root).types
@@ -1115,17 +1332,12 @@ async def _receive_upload(case_id: str, request: Request, user: dict):
 
     await run_in_threadpool(check_case)
     try:
-        receiver = uploads.MultipartReceiver(
-            request.headers.get("content-type", ""), uploads.spool_dir(root, case_id), uploads.limits()
-        )
-        async for chunk in request.stream():
-            await run_in_threadpool(receiver.write, chunk)
-        receiver.finish()
+        receiver = await _receive(request, uploads.spool_dir(root, case_id), uploads.limits())
+        channel = _upload_channel(receiver)
     except (uploads.UploadError, MultipartParseError) as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
     if not receiver.parts:
         raise HTTPException(status_code=422, detail="no files in the upload (multipart field 'files')")
-    channel = (receiver.fields.get("channel") or "upload").strip()[:40] or "upload"
     return root, receiver, channel
 
 
@@ -1399,16 +1611,18 @@ async def edit_field(case_id: str, field_id: str, request: Request,
             conn.close()
 
     await run_in_threadpool(check_case)
+    lim = uploads.limits()
     try:
-        receiver = uploads.MultipartReceiver(
-            request.headers.get("content-type", ""), uploads.spool_dir(root, case_id), uploads.limits()
-        )
-        async for chunk in request.stream():
-            await run_in_threadpool(receiver.write, chunk)
-        receiver.finish()
+        receiver = await _receive(request, uploads.spool_dir(root, case_id), lim,
+                                  {"value": lim.max_form_field, "reason": lim.max_form_field})
     except (uploads.UploadError, MultipartParseError) as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
+    if receiver.oversize_fields:
+        receiver.discard()
+        raise HTTPException(status_code=422, detail=f"{', '.join(sorted(receiver.oversize_fields))} larger than "
+                                                    f"the {lim.max_form_field // 1024} KB limit")
     if len(receiver.parts) > 1:
+        receiver.discard()
         raise HTTPException(status_code=422, detail="attach one file to a change")
     part = receiver.parts[0] if receiver.parts else None
 

@@ -347,7 +347,7 @@ def memorandum_directors(ctx: Context, rule: CrossCheckRule, finding: Finding) -
     unaccounted = []
     if finding.outcome == "fail" and names:
         one = len(names) == 1
-        rest = f"{'has' if one else 'have'} no KYC and {'is' if one else 'are'} not named in the sourcing message"
+        rest = f"{'has' if one else 'have'} no KYC and {'is' if one else 'are'} not named in {ctx.declared_phrase}"
         finding.mismatch = f"{join(names)} in the memorandum {rest}."
         # The line names at most two of them.
         few = (join(names) if len(names) <= FEW

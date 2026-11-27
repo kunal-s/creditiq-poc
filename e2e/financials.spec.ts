@@ -71,6 +71,18 @@ const SPREAD: Spread = {
       ],
     },
     {
+      key: "roce",
+      label: "Return on capital employed",
+      section: "ratios",
+      kind: "ratio",
+      unit: "%",
+      formula: "(PAT + Finance costs) ÷ Capital employed",
+      cells: [
+        { value: 15.234, evidence: page14, relies_on_manual: false },
+        { value: 17.368, evidence: page14, relies_on_manual: false },
+      ],
+    },
+    {
       key: "ebitda_margin",
       label: "EBITDA margin",
       section: "profit_and_loss",
@@ -346,6 +358,26 @@ test("the tables sit behind tabs, turnover first, each badged with what needs a 
   await expect(page.getByTestId("spread-balance_sheet").locator("thead th").nth(1)).toHaveClass(
     /bg-info-soft/,
   );
+});
+
+test("the ratios tab lists every ratio year by year, with its working on the label", async ({
+  page,
+}) => {
+  await openFinancials(page);
+  await page.getByTestId("financials-tab-ratios").click();
+  const ratios = page.getByTestId("spread-ratios");
+  await expect(ratios).toContainText("Ratios");
+  const roce = ratios.locator('[data-row="roce"]');
+  await expect(roce).toContainText("Return on capital employed");
+  await expect(roce).toContainText("15.2%");
+  await expect(roce).toContainText("17.4%");
+  await expect(roce.locator("th")).toHaveAttribute(
+    "title",
+    "(PAT + Finance costs) ÷ Capital employed",
+  );
+  await expect(ratios.locator('[data-row="wc-cycle"]')).toContainText("87 days");
+  // The statements' tie-out belongs to the statements, not to the ratios.
+  await expect(page.getByTestId("spread-reconciliation")).toHaveCount(0);
 });
 
 test("an open turnover discrepancy heads the section and leads to Cross-checks", async ({

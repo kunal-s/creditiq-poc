@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
-import { api } from "@/api/client";
+import { api, ApiError } from "@/api/client";
 import type {
   CaseCreate,
   ChecklistPreviewRequest,
+  IntakeCreated,
   ProposalRequest,
   Stage,
   StageKey,
@@ -27,7 +28,6 @@ export function useMeta() {
   return useQuery({ queryKey: ["meta"], queryFn: api.meta, staleTime: Infinity });
 }
 
-/** F-04: parse a pasted message into a proposed case. Stores nothing. */
 /** What the proposed application will need (F-12), refreshed as its values change. */
 export function useChecklistPreview(body: ChecklistPreviewRequest | null) {
   return useQuery({
@@ -39,8 +39,23 @@ export function useChecklistPreview(body: ChecklistPreviewRequest | null) {
   });
 }
 
+/** F-04: parse a pasted message into a proposed case. Stores nothing. */
 export function useProposeCase() {
   return useMutation({ mutationFn: (body: ProposalRequest) => api.proposeCase(body) });
+}
+
+/** The review of a new application as it stands (F-04.5, F-04.6): the engine's duplicate check
+ * and identifier checks for the values on screen, with or without a message. Stores nothing;
+ * refreshed as the values change (the caller debounces the request). */
+export function useIntakeReview(body: ProposalRequest | null) {
+  return useQuery({
+    queryKey: ["intake-review", body],
+    queryFn: () => api.proposeCase(body!),
+    enabled: body !== null,
+    placeholderData: (previous) => previous,
+    staleTime: 30_000,
+    retry: false,
+  });
 }
 
 /** F-13: create the case, opening cross-verification, the policy checks and the outputs.
@@ -64,6 +79,40 @@ export function useCreateCase() {
   return useMutation({
     mutationFn: (body: CaseCreate) => api.createCase(body),
     onSuccess: () => client.invalidateQueries({ queryKey: ["cases"] }),
+  });
+}
+
+/** F-04.7: create the case with its files in one request (POST /api/cases/intake). Nothing is
+ * created when it fails, so the files stay on screen to try again. */
+export function useCreateCaseWithFiles() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      body,
+      files,
+    }: {
+      body: CaseCreate;
+      files: File[];
+    }): Promise<IntakeCreated & { uploadFailed?: boolean }> => {
+      try {
+        return await api.createCaseWithFiles(body, files);
+      } catch (error) {
+        // An engine without the one-request create: the case, then its files, as before.
+        if (!(error instanceof ApiError) || (error.status !== 404 && error.status !== 405))
+          throw error;
+        const created = await api.createCase(body);
+        try {
+          return { case: created, upload: await api.uploadFiles(created.id, files) };
+        } catch {
+          // The case exists: never offer a retry that would create it twice.
+          return { case: created, upload: { files: [], job_id: null }, uploadFailed: true };
+        }
+      }
+    },
+    onSuccess: (created) => {
+      client.setQueryData(["cases", created.case.id], created.case);
+      void client.invalidateQueries({ queryKey: ["cases"], exact: true });
+    },
   });
 }
 
@@ -113,8 +162,26 @@ export function useLabels() {
       c.case_type ? `${product(c.product)} · ${caseType(c.case_type)}` : product(c.product),
     [product, caseType],
   );
+  // A customer type's label (salaried, self-employed, ...), from the product that offers it.
+  const customerType = useCallback(
+    (id: string) =>
+      find(
+        meta?.products?.flatMap((p) => p.customer_types ?? []),
+        id,
+      ),
+    [meta],
+  );
+  // Who the borrower is, in the product's own terms: a loan against property's customer type
+  // when the case was opened with one, otherwise the constitution (business banking).
+  const borrowerKind = useCallback(
+    (c: { constitution: string; customer_type?: string | null }) =>
+      c.customer_type ? customerType(c.customer_type) : constitution(c.constitution),
+    [customerType, constitution],
+  );
   return {
     constitution,
+    customerType,
+    borrowerKind,
     facility,
     facilities,
     channel,

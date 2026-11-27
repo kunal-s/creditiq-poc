@@ -47,13 +47,19 @@ export function ChecklistPanel({
     <Panel
       title={t("page.checklist.title")}
       subtitle={
-        c
-          ? t("checklist.derivedFrom", {
-              n: items.length,
-              constitution: labels.constitution(c.constitution).toLowerCase(),
-              facilities: labels.facilities(c.facilities).toLowerCase(),
-            })
-          : undefined
+        !c
+          ? undefined
+          : c.customer_type
+            ? t("checklist.derivedFromCustomer", {
+                n: items.length,
+                customerType: labels.customerType(c.customer_type).toLowerCase(),
+                caseType: labels.caseType(c.case_type).toLowerCase(),
+              })
+            : t("checklist.derivedFrom", {
+                n: items.length,
+                constitution: labels.constitution(c.constitution).toLowerCase(),
+                facilities: labels.facilities(c.facilities).toLowerCase(),
+              })
       }
       testId="checklist"
     >

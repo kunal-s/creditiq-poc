@@ -46,7 +46,9 @@ def test_confirmed_values_are_stored_as_given(client: TestClient):
 
 def test_unknown_choices_are_refused(client: TestClient):
     rm = sign_in(client, RM)
-    for field, value in (("product", "lap"), ("case_type", "refinance"), ("branch", "pune"), ("bank_stage", "disbursal")):
+    for field, value in (("product", "car_loan"), ("case_type", "refinance"), ("branch", "pune"),
+                         ("bank_stage", "disbursal"), ("case_type", "top_up"), ("customer_type", "salaried"),
+                         ("program", "rental")):
         assert client.post("/api/cases", json=new_case(**{field: value}), headers=rm).status_code == 422, field
 
 
@@ -128,5 +130,50 @@ def test_preview_is_provisional_until_the_constitution_is_known(client: TestClie
 def test_preview_refuses_unknown_choices_and_needs_create_permission(client: TestClient):
     rm = sign_in(client, RM)
     assert client.post("/api/cases/checklist-preview", json={"facilities": ["mortgage"]}, headers=rm).status_code == 422
-    assert client.post("/api/cases/checklist-preview", json={"product": "lap"}, headers=rm).status_code == 422
+    assert client.post("/api/cases/checklist-preview", json={"product": "car_loan"}, headers=rm).status_code == 422
     assert client.post("/api/cases/checklist-preview", json={}).status_code == 401
+
+
+# --- Products (plan 2026-11-27 section 14) ---
+
+
+def test_a_case_of_another_product_takes_its_prefix_and_keeps_its_rows(client: TestClient):
+    rm = sign_in(client, RM)
+    cell = {"proposed": None, "source": "person"}
+    body = {
+        "product": "lap", "channel": "email", "customer_type": "self_employed", "amount_inr": 3000000,
+        "tenure_months": 120,
+        "groups": {"applicants": [{"name": {"value": "Kavita Joshi", **cell}, "role": {"value": "applicant", **cell}}],
+                   "properties": [{"property_type": {"value": "commercial", **cell}}]},
+    }
+    created = client.post("/api/cases", json=body, headers=rm)
+    assert created.status_code == 201, created.text
+    case = created.json()
+    assert case["id"].startswith("LAP-") and case["id"].endswith("-000001")
+    assert (case["borrower"], case["customer_type"], case["tenure_months"]) == ("Kavita Joshi", "self_employed", 120)
+    assert case["groups"]["properties"][0]["property_type"]["value"] == "commercial"
+    listed = next(c for c in client.get("/api/cases", headers=rm).json() if c["id"] == case["id"])
+    assert (listed["product"], listed["customer_type"]) == ("lap", "self_employed")
+    # Business banking numbering is its own.
+    assert client.post("/api/cases", json=new_case(), headers=rm).json()["id"].endswith("-000001")
+
+
+def test_a_business_customer_type_is_its_constitution(client: TestClient):
+    rm = sign_in(client, RM)
+    case = client.post("/api/cases", json=new_case(constitution="unknown", customer_type="partnership"),
+                       headers=rm).json()
+    assert (case["constitution"], case["customer_type"]) == ("partnership", "partnership")
+    clash = client.post("/api/cases", json=new_case(borrower="Other Works", customer_type="partnership"), headers=rm)
+    assert clash.status_code == 422   # new_case's constitution is private_limited
+
+
+def test_cases_from_before_products_get_the_new_columns_empty(tmp_path):
+    path = tmp_path / "creditiq.sqlite3"
+    conn = sqlite3.connect(path, isolation_level=None)
+    conn.row_factory = sqlite3.Row
+    for n, script in enumerate(db.MIGRATIONS[:27], start=1):
+        conn.executescript(f"BEGIN IMMEDIATE; {script}; PRAGMA user_version = {n}; COMMIT;")
+    conn.execute("INSERT INTO case_seq (year, last) VALUES (2026, 12)")
+    db.migrate(conn)
+    assert conn.execute("SELECT last FROM case_seq_prefix WHERE prefix = 'BBG' AND year = 2026").fetchone()[0] == 12
+    conn.close()

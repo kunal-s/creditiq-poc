@@ -37,17 +37,17 @@ import { WorkingCapital } from "./WorkingCapital";
 //   spread-period           the year picker; spread-period-<fy> each year
 //   spread-banner           an open turnover discrepancy, with the way to it on Cross-checks
 //   financials-tabs         the tables and the Banking view, one at a time: financials-tab-<turnover|
-//                           profit_and_loss|balance_sheet|banking> each, with financials-tab-count
+//                           profit_and_loss|balance_sheet|ratios|banking> each, with financials-tab-count
 //   spread-turnover         turnover by year: spread-turnover-row (data-source) and
 //                           spread-turnover-cell (data-fy, data-verdict)
-//   spread-profit_and_loss, spread-balance_sheet   the statements; spread-row (data-row)
+//   spread-profit_and_loss, spread-balance_sheet, spread-ratios   the statements and the ratios; spread-row (data-row)
 //   spread-figure           any figure (data-selected); spread-manual-note a person's entry
 //   working-capital         the assessment: wc-step each, wc-verdict
 //   spread-trends           spread-trend-turnover, spread-trend-cycle
 //   spread-status, spread-source   the rail
 
 /** The tables of the section, one per tab, in this order. */
-const TABS = ["turnover", "profit_and_loss", "balance_sheet", "banking"] as const;
+const TABS = ["turnover", "profit_and_loss", "balance_sheet", "ratios", "banking"] as const;
 
 export function FinancialsSection({
   caseId,
@@ -177,7 +177,7 @@ function FinancialsBody({
           <TabsContent value="banking">
             <BankingPanel caseId={caseId} />
           </TabsContent>
-          {(["profit_and_loss", "balance_sheet"] as const).map((section) => (
+          {(["profit_and_loss", "balance_sheet", "ratios"] as const).map((section) => (
             <TabsContent key={section} value={section}>
               <StatementTable
                 spread={spread}
@@ -189,7 +189,7 @@ function FinancialsBody({
             </TabsContent>
           ))}
         </Tabs>
-        {tab !== "banking" && tab !== "turnover" && (
+        {(tab === "profit_and_loss" || tab === "balance_sheet") && (
           <Reconciliation caseId={caseId} spread={spread} />
         )}
         <WorkingCapital caseId={caseId} spread={spread} />

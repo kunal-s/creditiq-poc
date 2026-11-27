@@ -105,7 +105,10 @@ def _find_all(doc, table: str, row_pattern, column: str, label_column: str = "pa
     return out
 
 
-_NUMBERING = re.compile(r"^\s*(?:\(?(?:[ivxlc]{1,6}|[a-z]|\d{1,2})[.)]|\((?:[ivxlc]{1,6}|[a-z]|\d{1,2})\))\s+", re.IGNORECASE)
+# Numbering is followed by a space, or runs straight into a capital ("II.ASSETS", "1.Share capital"); "1.5 per cent"
+# keeps its figure.
+_NUMBERING = re.compile(r"^\s*(?:\(?(?:[ivxlc]{1,6}|[a-z]|\d{1,2})[.)]|\((?:[ivxlc]{1,6}|[a-z]|\d{1,2})\))"
+                        r"(?:\s+|(?=(?-i:[A-Z])))", re.IGNORECASE)
 
 
 def fold_label(text: str) -> str:
@@ -126,6 +129,8 @@ def _match_rank(label: str, spec) -> int | None:
     """How well a folded label is the line: 0 it is a wording, 1 it begins with one, 2 it holds one; None not at all."""
     if spec.row:
         return 0 if re.search(spec.row, label, re.IGNORECASE) else None
+    if any(f" {fold_label(w)} " in f" {label} " for w in getattr(spec, "excluding", None) or [] if fold_label(w)):
+        return None
     best = None
     for w in spec.wordings:
         f = fold_label(w)
@@ -308,10 +313,19 @@ def _printed_lines(doc, cfg: StatementsSection, col: str) -> dict[str, Line]:
 
 
 def _derive(doc, cfg: StatementsSection, col: str, out: dict[str, Line]) -> dict[str, Line]:
+    """Every derived line whose parts are on the statement. A derived line may sum other derived lines (capital
+    employed: total assets less current liabilities), so each is worked out once its parts are, whatever order the
+    published configuration keeps them in (a published version stores them by name)."""
     scale = unit_scale(doc)
-    for key, expression in cfg.derived.items():
-        terms = _terms(expression)
-        if all(name in out for _, name in terms):
+    pending = {key: _terms(expression) for key, expression in cfg.derived.items()}
+    progress = True
+    while pending and progress:
+        progress = False
+        for key, terms in list(pending.items()):
+            if not all(name in out for _, name in terms):
+                continue
+            del pending[key]
+            progress = True
             out[key] = Line(
                 sum(sign * out[name].value for sign, name in terms),
                 [e for _, name in terms for e in out[name].evidence[:1]],

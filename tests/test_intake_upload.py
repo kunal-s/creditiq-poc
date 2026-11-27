@@ -357,3 +357,47 @@ def test_removing_a_file_needs_the_upload_permission(client, published_data_root
     [f] = upload(client, rm, case_id, [("statement.numbers", b"\x07\x13 not a document \x00\x01")]).json()["files"]
     headers = sign_in(client, who) if who else {}
     assert client.delete(f"/api/cases/{case_id}/files/{f['id']}", headers=headers).status_code == expected
+
+
+def test_registrar_writes_inside_the_callers_transaction(client: TestClient, published_data_root: Path):
+    """The one-request create records the files in the case's own transaction (Registrar.write); a
+    failure after it rolls the files back with the case."""
+    rm = sign_in(client, RM)
+    case_id = make_case(client, rm, published_data_root)
+    conn = db.connect(published_data_root)
+    try:
+        registrar = uploads.Registrar(conn, published_data_root, case_id, "u-rm-1", "upload")
+        registrar.add_bytes(fixture_file("kestrel pan.pdf"), "pan.pdf", None, 0)
+        assert registrar.registered == 1
+        with pytest.raises(RuntimeError):
+            with db.transaction(conn):
+                registrar.write()
+                raise RuntimeError("after the files, before the commit")
+        assert conn.execute("SELECT COUNT(*) FROM files WHERE case_id = ?", (case_id,)).fetchone()[0] == 0
+        assert conn.execute("SELECT COUNT(*) FROM jobs WHERE case_id = ?", (case_id,)).fetchone()[0] == 0
+        result = registrar.commit()
+        assert [f.status for f in result.files] == ["registered"] and result.job_id
+    finally:
+        conn.close()
+
+
+def test_a_text_field_over_the_limit_is_flagged_not_cut_short(tmp_path: Path):
+    lim = uploads.limits()
+    boundary = "XyZ"
+    big = "a" * (lim.max_case_part + 10)
+    body = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"case\"\r\n\r\n{big}\r\n"
+            f"--{boundary}\r\nContent-Disposition: form-data; name=\"channel\"\r\n\r\nemail\r\n--{boundary}--\r\n")
+    receiver = uploads.MultipartReceiver(f"multipart/form-data; boundary={boundary}", tmp_path / "in", lim,
+                                         {"case": lim.max_case_part, "channel": lim.max_form_field})
+    receiver.write(body.encode())
+    receiver.finish()
+    assert receiver.oversize_fields == {"case"} and "case" not in receiver.fields
+    assert receiver.fields["channel"] == "email"
+    assert stat.S_IMODE(os.stat(tmp_path / "in").st_mode) == 0o700
+
+
+def test_the_intake_staging_folder_is_private_and_outside_the_cases(tmp_path: Path):
+    staging = uploads.intake_staging(tmp_path)
+    assert staging.parent == tmp_path / uploads.INTAKE_SPOOL
+    assert stat.S_IMODE(os.stat(staging).st_mode) == 0o700
+    assert stat.S_IMODE(os.stat(staging.parent).st_mode) == 0o700

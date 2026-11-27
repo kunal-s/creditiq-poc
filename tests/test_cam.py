@@ -795,9 +795,9 @@ def test_a_facility_only_the_sourcing_message_declares_and_a_loan_no_facility_ex
     cam = _cam(client, analyst, root, case_id)
     obligations = _section(cam, "obligations")
     lotuscrest = next(r for r in _rows(_table(obligations)) if r[0] == "Lotuscrest Bank")
-    assert lotuscrest == ["Lotuscrest Bank", "Cash credit", "In the sourcing message; limit not on file", "—", "—", "—", "—"]
+    assert lotuscrest == ["Lotuscrest Bank", "Cash credit", "In the intake form; limit not on file", "—", "—", "—", "—"]
     paragraphs = _paragraphs(obligations)
-    assert ("The cash credit with Lotuscrest Bank (account ·5678) is declared only in the sourcing message: neither the "
+    assert ("The cash credit with Lotuscrest Bank (account ·5678) is declared only in the intake form: neither the "
             "declaration of existing facilities nor the commercial bureau report shows it; its limit is not on file."
             in paragraphs)
     disbursal = next(b["paragraph"] for b in _blocks(obligations, "paragraph")
@@ -806,7 +806,7 @@ def test_a_facility_only_the_sourcing_message_declares_and_a_loan_no_facility_ex
                                  "(TL DISBURSAL LN 778812); no facility on file matches it and no instalment for it "
                                  "appears in the statements.")
     assert _cited(disbursal) == {statement}
-    assert ("No statement has been received for Lotuscrest Bank ·5678 (cash credit), named in the sourcing message but "
+    assert ("No statement has been received for Lotuscrest Bank ·5678 (cash credit), named in the intake form but "
             "not in the declaration." in _paragraphs(_section(cam, "banking")))
 
 

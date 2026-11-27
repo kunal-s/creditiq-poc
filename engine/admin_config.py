@@ -28,6 +28,7 @@ from .configstore.schema import (
     TolerancesSection,
     cross_check,
 )
+from .intake import checklist_terms
 from .contracts.admin import (
     DisplayUnitOption,
     EditableDisplay,
@@ -170,7 +171,8 @@ def _apply(root: Path, changes: SettingsChanges) -> tuple[dict[str, BaseModel], 
     except ValidationError as e:
         return {}, out, [f"{'.'.join(str(p) for p in err['loc'])}: {err['msg']}" for err in e.errors()]
     sections = {**reader.published_sections(root), **edited}
-    problems = cross_check(sections, reader.published_ingestion_sections(root), facilities=option_ids("facilities"))
+    problems = cross_check(sections, reader.published_ingestion_sections(root), facilities=option_ids("facilities"),
+                           products=option_ids("products"), checklist_terms=checklist_terms())
     return edited, out, problems
 
 

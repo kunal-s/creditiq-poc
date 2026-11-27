@@ -24,39 +24,65 @@ class HeaderField(BaseModel):
     proposed: str | None = None
     source: str | None = None
     """"message:<start>-<end>" (a span in the pasted message),
-    "document:<document_id>:p<page>", "person", or a default the system
-    filled: "default:config" (the configured default) or "default:rm" (the
-    RM's own branch)."""
+    "document:<document_id>:p<page>", "person", "identifier" (typed in an
+    identifier box on the start screen), or a default the system filled:
+    "default:config" (the configured default) or "default:rm" (the RM's own
+    branch)."""
+
+
+GroupRow = dict[str, HeaderField]
+"""One row of a repeating section of the intake form (an applicant, a property, a facility line):
+each field of the row with its own provenance (F-01.2)."""
+
+
+#: Storage bounds of a case's figures (an integer column holds 18 digits); the form's own limits are
+#: config/intake.yaml `limits`.
+MAX_AMOUNT_INR = 999_999_999_999_999
+MAX_TENURE_MONTHS = 9_999
 
 
 class CaseCreate(BaseModel):
     """Create a case after the RM confirms (F-04.7). The proposal flow
     (F-04) fills `header` with sources; a direct create leaves it empty."""
 
-    borrower: str = Field(min_length=1)
+    borrower: str = Field(default="", max_length=500)
+    """Required for a product whose minimum names it (business banking); a loan against property takes
+    the primary applicant's name when it is left empty."""
     constitution: str = "unknown"
-    facilities: list[str] = Field(min_length=1)
-    amount_inr: int = Field(gt=0)
+    facilities: list[str] = Field(default_factory=list)
+    """Required for a product whose minimum names it (business banking)."""
+    amount_inr: int = Field(default=0, ge=0, le=MAX_AMOUNT_INR)
+    """Required (above zero) by every product's minimum; whole rupees, at most 15 digits."""
     channel: str
-    pan: str | None = None
-    gstin: str | None = None
-    cin: str | None = None
-    udyam: str | None = None
+    pan: str | None = Field(default=None, max_length=50)
+    gstin: str | None = Field(default=None, max_length=50)
+    cin: str | None = Field(default=None, max_length=50)
+    udyam: str | None = Field(default=None, max_length=50)
     collateral_present: bool = False
     product: str | None = None
     """A product id from config/app.yaml; None takes the configured default."""
     case_type: str = "unknown"
-    """new, renewal, enhancement or takeover; "unknown" until confirmed."""
-    application_id: str | None = None
+    """One of the product's case types; "unknown" until confirmed."""
+    customer_type: str | None = None
+    """One of the product's customer types (a constitution, or salaried, self-employed and so on)."""
+    program: str | None = None
+    """One of the product's credit programs."""
+    tenure_months: int | None = Field(default=None, ge=1, le=MAX_TENURE_MONTHS)
+    """Months; the form's own limit (config/intake.yaml limits.months_max) is checked too."""
+    groups: dict[str, list[GroupRow]] = Field(default_factory=dict)
+    """The rows of the intake form's repeating sections, by section id (applicants, properties,
+    facilities, people, existing_loans, banking). Kept apart from `header`, which holds single
+    values; checked against the product's form in config/intake.yaml."""
+    application_id: str | None = Field(default=None, max_length=100)
     """The application's identifier in the loan origination system."""
-    customer_id: str | None = None
+    customer_id: str | None = Field(default=None, max_length=100)
     """The customer's identifier in the bank's systems."""
     branch: str | None = None
     """A branch id from config/app.yaml; None takes the RM's branch."""
     bank_stage: str | None = None
     """A bank stage id from config/app.yaml; None takes the configured default."""
     header: dict[str, HeaderField] = Field(default_factory=dict)
-    duplicate_override_reason: str | None = None
+    duplicate_override_reason: str | None = Field(default=None, max_length=1000)
     """Required when the duplicate-case check matched and the RM creates anyway (F-04.5)."""
     message_text: str | None = None
     """The pasted message, unchanged, when the case comes from a proposal
@@ -82,6 +108,8 @@ class CaseSummary(BaseModel):
     product: str | None = None
     case_type: str | None = None
     """None for a case created before case types were recorded."""
+    customer_type: str | None = None
+    program: str | None = None
     bank_stage: str | None = None
     rm: str
     created_at: str
@@ -107,6 +135,9 @@ class CaseDetail(CaseSummary):
     created_by: str
     config_version: str | None
     header: dict[str, HeaderField]
+    tenure_months: int | None = None
+    groups: dict[str, list[GroupRow]] = Field(default_factory=dict)
+    """The intake form's repeating rows, by section id, each field with its provenance."""
     assessment_opened_at: str | None = None
     """When the case was created, opening cross-verification, policy and outputs (F-13 gate).
     None while the appraisal is still in intake."""

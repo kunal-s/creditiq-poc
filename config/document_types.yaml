@@ -21,14 +21,14 @@ types:
     group: constitution
     provenance: borrower_supplied
     description: Registrar of Companies certificate that a company is incorporated, with its CIN.
-    satisfies: [coi]
+    satisfies: [coi, lap_constitution_documents]
 
   - id: memorandum_articles_of_association
     name: Memorandum and articles of association
     group: constitution
     provenance: borrower_supplied
     description: The company's memorandum and articles of association, including its objects, capital and borrowing powers.
-    satisfies: [moa_aoa]
+    satisfies: [moa_aoa, lap_constitution_documents, lap_entity_people]
     party_list: {field: directors, name_key: name, din_key: din, role: director}
 
   - id: board_resolution_borrowing
@@ -36,7 +36,7 @@ types:
     group: constitution
     provenance: borrower_supplied
     description: Certified extract of a board resolution authorising the borrowing and the signatories.
-    satisfies: [board_resolution]
+    satisfies: [board_resolution, lap_authorised_person]
     party_list: {field: authorized_persons, din_field: authorized_person_dins, role: director}
 
   - id: company_pan
@@ -51,7 +51,7 @@ types:
     group: kyc
     provenance: borrower_supplied
     description: A director's or promoter's identity details and identity document.
-    satisfies: [kyc_promoters]
+    satisfies: [kyc_promoters, lap_pan_or_form_60, lap_identity_proof, lap_property_owner_kyc]
     instance_key: person
     personal: true
 
@@ -60,7 +60,7 @@ types:
     group: financials
     provenance: borrower_supplied
     description: Audited balance sheet, statement of profit and loss and cash flow statement for a financial year.
-    satisfies: [fs_fy_minus3, fs_fy_minus2, fs_fy_minus1]
+    satisfies: [fs_fy_minus3, fs_fy_minus2, fs_fy_minus1, lap_financials_latest, lap_financials_previous]
     instance_key: year
 
   - id: income_tax_return
@@ -68,7 +68,7 @@ types:
     group: tax
     provenance: borrower_supplied
     description: Income tax return acknowledgement with the computation of total income, for an assessment year.
-    satisfies: [itr]
+    satisfies: [itr, lap_itr]
     instance_key: year
 
   - id: gstr_3b
@@ -76,7 +76,7 @@ types:
     group: tax
     provenance: borrower_supplied
     description: Monthly GST summary return (GSTR-3B), one per tax period.
-    satisfies: [gst_returns]
+    satisfies: [gst_returns, lap_gst_returns]
     instance_key: period
 
   # The seller's own statement of outward supplies. On no checklist item: GSTR-3B is what the
@@ -93,13 +93,13 @@ types:
     group: banking
     provenance: borrower_supplied
     description: Statement of a current or cash credit account, with its transactions and balances.
-    satisfies: [bank_statements]
+    satisfies: [bank_statements, lap_salary_bank_statements, lap_business_bank_statements, lap_loan_emi_evidence, lap_rent_credits]
     instance_key: account
 
-  # Existing facilities and the bureau (TC-20, TC-23; docs/cross-verification-plan.md). On no
+  # Existing facilities and the bureau (TC-20, TC-23; docs/cross-verification-plan.md). On no business
   # checklist item: what is declared, sanctioned and reported is reconciled by the cross-checks
   # (OB-01, OB-02, BA-01, BA-02), and the bureau report is obtained by the bank, not asked of
-  # the customer.
+  # the customer. A loan against property asks for each existing loan's sanction letter and a bureau report.
   - id: existing_facilities_declaration
     name: Declaration of existing facilities
     group: banking
@@ -111,21 +111,24 @@ types:
     group: banking
     provenance: borrower_supplied
     description: A lender's letter sanctioning a credit facility to the borrower, with the amount and terms.
+    satisfies: [lap_loan_sanction_letter]
 
   - id: commercial_bureau_report
     name: Commercial bureau report
     group: bureau
     provenance: independent
     description: A credit information company's report on the borrower, with its credit facilities, credit rank and related parties.
+    satisfies: [lap_bureau_report]
     partner_output: true
     party_list: {field: related_parties, name_key: name, pan_key: pan, designation_key: relationship, role: director}
 
-  # Types added for the restructure (decision 14). They satisfy no checklist item until one is mapped.
+  # Types added for the restructure (decision 14). Those a loan against property asks for satisfy its items.
   - id: provisional_financial_statements
     name: Provisional financial statements
     group: financials
     provenance: borrower_supplied
     description: Unaudited or provisional balance sheet and statement of profit and loss for a part or whole year, often certified by a chartered accountant.
+    satisfies: [lap_provisional_financials]
     instance_key: period
 
   - id: projected_financial_statements
@@ -159,6 +162,7 @@ types:
     group: tax
     provenance: independent
     description: Annual tax statement of tax deducted and paid against a PAN, for an assessment year.
+    satisfies: [lap_tds_certificates]
     instance_key: year
 
   - id: itr_acknowledgement
@@ -173,6 +177,7 @@ types:
     group: constitution
     provenance: borrower_supplied
     description: The deed constituting a partnership firm, with its partners, their shares and capital.
+    satisfies: [lap_constitution_documents, lap_entity_people]
     party_list: {field: partners, name_key: name, role: partner}
 
   - id: udyam_registration
@@ -180,3 +185,219 @@ types:
     group: registration
     provenance: independent
     description: Certificate of registration of a micro, small or medium enterprise, with its Udyam number and classification.
+    satisfies: [lap_business_proof]
+
+  # Loan against property documents (RBL scope document section 2.2). Switched off for the classifier
+  # (config/ingestion/document_types.json `enabled: false`) until their keywords are written: a person
+  # assigns them, and each then counts towards the checklist items it satisfies.
+  - id: application_form
+    name: Application form
+    group: kyc
+    provenance: borrower_supplied
+    description: The customer's signed loan application, with its declarations, consent and the applicants' photographs.
+    satisfies: [lap_application_form]
+
+  - id: pan_card
+    name: PAN card
+    group: kyc
+    provenance: borrower_supplied
+    description: A person's permanent account number card issued by the Income Tax Department.
+    satisfies: [lap_pan_or_form_60, lap_property_owner_kyc]
+    instance_key: person
+    personal: true
+
+  - id: form_60
+    name: Form 60
+    group: kyc
+    provenance: borrower_supplied
+    description: The declaration in Form 60 of a person who has no permanent account number.
+    satisfies: [lap_pan_or_form_60, lap_property_owner_kyc]
+    instance_key: person
+    personal: true
+
+  - id: identity_proof
+    name: Identity proof
+    group: kyc
+    provenance: borrower_supplied
+    description: An officially valid document of a person's identity, such as an Aadhaar masked to its last four digits, a passport, a voter ID or a driving licence.
+    satisfies: [lap_identity_proof, lap_property_owner_kyc]
+    instance_key: person
+    personal: true
+
+  - id: signature_proof
+    name: Signature proof
+    group: kyc
+    provenance: borrower_supplied
+    description: A person's specimen signature, on a cancelled cheque or the bank's signature verification.
+    satisfies: [lap_signature_proof]
+    instance_key: person
+    personal: true
+
+  - id: address_proof
+    name: Address proof
+    group: kyc
+    provenance: borrower_supplied
+    description: Proof of a person's current or permanent address, such as an electricity or gas bill, a rent agreement for the residence or proof of owning it.
+    satisfies: [lap_address_proof]
+    instance_key: person
+    personal: true
+
+  - id: salary_slip
+    name: Salary slip
+    group: financials
+    provenance: borrower_supplied
+    description: An employer's monthly statement of an employee's salary, its parts and the deductions from it.
+    satisfies: [lap_salary_slips]
+    instance_key: period
+
+  - id: salary_certificate
+    name: Salary certificate
+    group: financials
+    provenance: borrower_supplied
+    description: An employer's certificate of a person's employment, designation and salary.
+    satisfies: [lap_salary_certificate]
+
+  - id: form_16
+    name: Form 16
+    group: tax
+    provenance: borrower_supplied
+    description: An employer's certificate of the salary paid to an employee and the tax deducted from it, for an assessment year.
+    satisfies: [lap_form_16]
+    instance_key: year
+
+  - id: tds_certificate
+    name: TDS certificate
+    group: tax
+    provenance: borrower_supplied
+    description: A certificate of tax deducted at source from a payment other than salary (Form 16A), for a quarter or a year.
+    satisfies: [lap_tds_certificates]
+    instance_key: period
+
+  - id: sales_purchase_register
+    name: Sales and purchase register
+    group: financials
+    provenance: borrower_supplied
+    description: A business's register or summary of its sales and purchases, or another business register, for a period.
+    satisfies: [lap_sales_purchase_records]
+    instance_key: period
+
+  - id: gst_registration
+    name: GST registration certificate
+    group: registration
+    provenance: borrower_supplied
+    description: The certificate of a business's registration under GST, with its GSTIN, legal name and place of business.
+    satisfies: [lap_business_proof]
+
+  - id: business_registration
+    name: Business registration certificate
+    group: registration
+    provenance: borrower_supplied
+    description: A certificate of a business's registration under the Shop and Establishment Act, a trade licence or another business registration.
+    satisfies: [lap_business_proof]
+
+  - id: professional_registration
+    name: Professional registration certificate
+    group: registration
+    provenance: borrower_supplied
+    description: A professional's registration with a professional body, or a qualification certificate, such as a medical registration.
+    satisfies: [lap_professional_registration]
+
+  - id: llp_agreement
+    name: LLP agreement
+    group: constitution
+    provenance: borrower_supplied
+    description: The agreement constituting a limited liability partnership, with its partners and their contributions.
+    satisfies: [lap_constitution_documents, lap_entity_people]
+
+  - id: directors_shareholders_list
+    name: List of directors, shareholders or partners
+    group: constitution
+    provenance: borrower_supplied
+    description: A business's list of its directors, shareholders or partners, with their holdings, as at a date.
+    satisfies: [lap_entity_people]
+
+  - id: authority_letter
+    name: Letter of authority
+    group: constitution
+    provenance: borrower_supplied
+    description: A firm's or partnership's letter naming the persons authorised to borrow and sign for it.
+    satisfies: [lap_authorised_person]
+
+  - id: consumer_bureau_report
+    name: Consumer bureau report
+    group: bureau
+    provenance: independent
+    description: A credit information company's report on a person, with their loans, repayment history and credit score.
+    satisfies: [lap_bureau_report]
+
+  - id: loan_agreement
+    name: Loan agreement
+    group: banking
+    provenance: borrower_supplied
+    description: The agreement between a lender and a borrower under which a loan is held, with its amount and terms.
+    satisfies: [lap_loan_agreement]
+
+  - id: loan_statement
+    name: Loan statement of account
+    group: banking
+    provenance: borrower_supplied
+    description: A lender's statement of a loan account, with its instalments, payments and the amount outstanding.
+    satisfies: [lap_loan_statement]
+
+  - id: repayment_schedule
+    name: Repayment schedule
+    group: banking
+    provenance: borrower_supplied
+    description: A lender's schedule of a loan's instalments, with the principal and interest of each.
+    satisfies: [lap_loan_repayment_schedule]
+
+  - id: loan_closure
+    name: Foreclosure letter
+    group: banking
+    provenance: borrower_supplied
+    description: A lender's letter stating the amount that closes a loan, or the list of the documents it holds for the loan.
+    satisfies: [lap_loan_closure]
+
+  - id: property_title
+    name: Property title documents
+    group: collateral
+    provenance: borrower_supplied
+    description: The documents of a property's ownership, such as a title deed, a sale or conveyance deed or an allotment letter.
+    satisfies: [lap_property_title]
+    instance_key: property
+
+  - id: property_completion
+    name: Property completion certificate
+    group: collateral
+    provenance: borrower_supplied
+    description: Evidence that a property is complete, such as a completion or occupancy certificate.
+    satisfies: [lap_property_completion]
+    instance_key: property
+
+  - id: rent_agreement
+    name: Rent agreement
+    group: financials
+    provenance: borrower_supplied
+    description: An agreement letting a property, with the landlord, the tenant, the rent and the term.
+    satisfies: [lap_rent_agreement]
+
+  - id: agricultural_income_proof
+    name: Agricultural land and income proof
+    group: financials
+    provenance: borrower_supplied
+    description: Records of agricultural land a person holds and of the income from it.
+    satisfies: [lap_agricultural_income]
+
+  - id: commission_certificate
+    name: Commission certificate
+    group: financials
+    provenance: borrower_supplied
+    description: A principal's certificate or slips of the commission paid to a person, with the tax deducted.
+    satisfies: [lap_commission_income]
+
+  - id: supporting_declaration
+    name: Affidavit or declaration
+    group: kyc
+    provenance: borrower_supplied
+    description: An affidavit, a discrepancy declaration or a customer's explanation, or an approval or waiver the case needs.
+    satisfies: [lap_supporting_documents]

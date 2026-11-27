@@ -1,6 +1,6 @@
 /// <reference types="node" />
 // TC-02: at phone width (375 px) an RM signs in, creates a case from a
-// message and uploads documents with the same result as on a desktop, and
+// message with its documents with the same result as on a desktop, and
 // no screen scrolls sideways (FRD F-06).
 import { expect, test } from "@playwright/test";
 import { KESTREL, MESSAGE, RM } from "./fixtures/data";
@@ -39,20 +39,27 @@ test("TC-02: create a case and upload documents at 375 px", async ({ page }) => 
   expect(await scrollsSideways(page)).toBe(false);
 
   await page.goto("/appraisals/new");
-  await page.getByTestId("message-input").fill(MESSAGE);
-  await page.getByRole("button", { name: "Read the message" }).click();
-  await expect(page.getByTestId("proposed-case")).toBeVisible();
   expect(await scrollsSideways(page)).toBe(false);
-  await page.getByTestId("confirm-constitution").click();
-  await page.getByTestId("confirm-declared_turnover_inr").click();
-
-  // Attach files before creating: they go to the new case, which opens on
-  // its Overview with processing under way.
+  // The documents come first: a case is created with them, in one request.
+  await page.getByTestId("message-input").fill(MESSAGE);
   await page.getByTestId("upload-input").setInputFiles([
     { name: "director1_pan.jpg", mimeType: "image/jpeg", buffer: Buffer.from("jpeg") },
     { name: "gst-returns.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.7") },
   ]);
   await expect(page.getByTestId("attachments").getByRole("listitem")).toHaveCount(2);
+  await page.getByRole("button", { name: "Read the message" }).click();
+  await expect(page.getByTestId("proposed-case")).toBeVisible();
+  expect(await scrollsSideways(page)).toBe(false);
+  await page.getByTestId("confirm-constitution").click();
+  await page.getByTestId("confirm-declared_turnover_inr").click();
+  await page
+    .getByTestId("row-facilities")
+    .nth(1)
+    .getByTestId("cell-amount_inr")
+    .getByRole("textbox")
+    .fill("2000000");
+  await expect(page.getByTestId("attachments").getByRole("listitem")).toHaveCount(2);
+  expect(await scrollsSideways(page)).toBe(false);
   await page.getByTestId("create-application").click();
 
   await expect(page).toHaveURL(/\/appraisals\/BBG-2026-000031$/);
@@ -62,7 +69,8 @@ test("TC-02: create a case and upload documents at 375 px", async ({ page }) => 
   await expect(page.getByTestId("tree-file")).toHaveCount(2);
   await expect(page.getByTestId("count-registered")).toHaveText("2");
   expect(await scrollsSideways(page)).toBe(false);
-  expect(api.called("POST", "/api/cases/BBG-2026-000031/files")).toHaveLength(1);
+  expect(api.called("POST", "/api/cases/intake")).toHaveLength(1);
+  expect(api.called("POST", "/api/cases/BBG-2026-000031/files")).toHaveLength(0);
 
   // The camera input is offered on a phone.
   await expect(page.getByRole("button", { name: "Take a photo" })).toBeVisible();

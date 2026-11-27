@@ -219,7 +219,7 @@ def test_account_cards_for_accounts_declared_in_the_sourcing_message(client, ana
     assert declared["label"] == "Declared accounts"
     assert declared["sources"] == ["existing_facilities_declaration", "application_message"]
     assert declared["provenance"] == ["declared"]
-    assert _rows(declared) == [(["Lotuscrest Bank ·1234", "Declaration of existing facilities; Sourcing message"],
+    assert _rows(declared) == [(["Lotuscrest Bank ·1234", "Declaration of existing facilities; Declared at intake"],
                                 [(decl, 2)])]
     assert _rows(_column(ba1, "statements")) == [(["Lotuscrest Bank ·1234", "Bank statement"], [(main, 3)])]
     assert _one(board, "BA-02")["outcome"] == "pass" and _one(board, "BA-02")["mismatch"] is None
@@ -234,10 +234,10 @@ def test_account_cards_for_accounts_declared_in_the_sourcing_message(client, ana
     ba1 = _one(_board(client, analyst, root, message), "BA-01")
     assert ba1["outcome"] == "pass"
     declared = _column(ba1, "declared")
-    assert declared["label"] == "Declared in the sourcing message" and declared["value"] == note
+    assert declared["label"] == "Declared at intake" and declared["value"] == note
     assert declared["sources"] == ["application_message"] and declared["provenance"] == ["declared"]
     assert declared["coverage"] == "1 account declared"
-    assert _rows(declared) == [(["Lotuscrest Bank ·1234", "Sourcing message"], [])]
+    assert _rows(declared) == [(["Lotuscrest Bank ·1234", "Declared at intake"], [])]
 
     # Two statements and nothing declared: BA-02 has nothing to hold them against, and says what it found.
     nothing = _case(client, analyst, root, borrower="Heronbay", duplicate_override_reason="A third scenario")
@@ -444,7 +444,7 @@ def test_a_note_typed_on_the_case_is_not_placed_in_the_sourcing_message(client, 
     assert f["outcome"] == "fail"
     declared = _column(f, "sourcing_message")
     assert (declared["label"], declared["value"], declared["coverage"]) == (
-        "Declared in the sourcing message", note, "Entered on the case")
+        "Declared at intake", note, "Entered on the case")
     assert declared["evidence"] == [] and declared["relies_on_manual"]
     assert _lines(f) == [("Tidewater Finance Limited", [], "not declared · INR 1.20 cr in the bureau report")]
 

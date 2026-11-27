@@ -1815,6 +1815,973 @@
         ],
         "tables": []
       }
+    },
+    {
+      "document_type": "application_form",
+      "display_name": "Application Form",
+      "category": "identity",
+      "priority": "optional",
+      "enabled": false,
+      "schema": {
+        "fields": [
+          {
+            "name": "applicant_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "application_date",
+            "type": "date",
+            "required": false
+          },
+          {
+            "name": "loan_amount",
+            "type": "number",
+            "required": false
+          },
+          {
+            "name": "pan",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "pan_card",
+      "display_name": "PAN Card",
+      "category": "identity",
+      "priority": "optional",
+      "enabled": false,
+      "schema": {
+        "fields": [
+          {
+            "name": "person_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "pan",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "father_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "date_of_birth",
+            "type": "date",
+            "required": false
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "form_60",
+      "display_name": "Form 60",
+      "category": "identity",
+      "priority": "optional",
+      "enabled": false,
+      "schema": {
+        "fields": [
+          {
+            "name": "person_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "declaration_date",
+            "type": "date",
+            "required": false
+          },
+          {
+            "name": "address",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "identity_proof",
+      "display_name": "Identity Proof",
+      "category": "identity",
+      "priority": "optional",
+      "enabled": false,
+      "schema": {
+        "fields": [
+          {
+            "name": "person_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "id_document_type",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "id_number",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "date_of_birth",
+            "type": "date",
+            "required": false
+          },
+          {
+            "name": "address",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "expiry_date",
+            "type": "date",
+            "required": false
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "signature_proof",
+      "display_name": "Signature Proof",
+      "category": "identity",
+      "priority": "optional",
+      "enabled": false,
+      "schema": {
+        "fields": [
+          {
+            "name": "person_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "bank_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "account_number",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "address_proof",
+      "display_name": "Address Proof",
+      "category": "identity",
+      "priority": "optional",
+      "enabled": false,
+      "schema": {
+        "fields": [
+          {
+            "name": "person_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "address_proof_type",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "address",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "document_date",
+            "type": "date",
+            "required": false
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "salary_slip",
+      "display_name": "Salary Slip",
+      "category": "financials",
+      "priority": "optional",
+      "enabled": false,
+      "schema": {
+        "fields": [
+          {
+            "name": "employee_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "employer_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "pay_period",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "gross_salary",
+            "type": "number",
+            "required": false
+          },
+          {
+            "name": "net_salary",
+            "type": "number",
+            "required": false
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "salary_certificate",
+      "display_name": "Salary Certificate",
+      "category": "financials",
+      "priority": "optional",
+      "enabled": false,
+      "schema": {
+        "fields": [
+          {
+            "name": "employee_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "employer_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "designation",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "certificate_date",
+            "type": "date",
+            "required": false
+          },
+          {
+            "name": "gross_monthly_salary",
+            "type": "number",
+            "required": false
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "form_16",
+      "display_name": "Form 16",
+      "category": "financials",
+      "priority": "optional",
+      "enabled": false,
+      "schema": {
+        "fields": [
+          {
+            "name": "employee_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "pan",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "employer_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "assessment_year",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "gross_salary",
+            "type": "number",
+            "required": false
+          },
+          {
+            "name": "tax_deducted",
+            "type": "number",
+            "required": false
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "tds_certificate",
+      "display_name": "TDS Certificate",
+      "category": "financials",
+      "priority": "optional",
+      "enabled": false,
+      "schema": {
+        "fields": [
+          {
+            "name": "deductee_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "pan",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "deductor_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "period",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "amount_paid",
+            "type": "number",
+            "required": false
+          },
+          {
+            "name": "tax_deducted",
+            "type": "number",
+            "required": false
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "sales_purchase_register",
+      "display_name": "Sales and Purchase Register",
+      "category": "financials",
+      "priority": "optional",
+      "enabled": false,
+      "schema": {
+        "fields": [
+          {
+            "name": "business_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "period",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "total_sales",
+            "type": "number",
+            "required": false
+          },
+          {
+            "name": "total_purchases",
+            "type": "number",
+            "required": false
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "gst_registration",
+      "display_name": "GST Registration Certificate",
+      "category": "identity",
+      "priority": "optional",
+      "enabled": false,
+      "schema": {
+        "fields": [
+          {
+            "name": "legal_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "gstin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "registration_date",
+            "type": "date",
+            "required": false
+          },
+          {
+            "name": "address",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "business_registration",
+      "display_name": "Business Registration Certificate",
+      "category": "identity",
+      "priority": "optional",
+      "enabled": false,
+      "schema": {
+        "fields": [
+          {
+            "name": "business_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "registration_number",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "registration_date",
+            "type": "date",
+            "required": false
+          },
+          {
+            "name": "valid_until",
+            "type": "date",
+            "required": false
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "professional_registration",
+      "display_name": "Professional Registration Certificate",
+      "category": "identity",
+      "priority": "optional",
+      "enabled": false,
+      "schema": {
+        "fields": [
+          {
+            "name": "person_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "qualification",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "registration_number",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "issuing_body",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "registration_date",
+            "type": "date",
+            "required": false
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "llp_agreement",
+      "display_name": "LLP Agreement",
+      "category": "identity",
+      "priority": "optional",
+      "enabled": false,
+      "schema": {
+        "fields": [
+          {
+            "name": "llp_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "llpin",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "agreement_date",
+            "type": "date",
+            "required": false
+          },
+          {
+            "name": "partners",
+            "type": "array",
+            "required": false,
+            "items": {
+              "type": "object",
+              "fields": [
+                {
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "name": "contribution",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "directors_shareholders_list",
+      "display_name": "List of Directors, Shareholders or Partners",
+      "category": "identity",
+      "priority": "optional",
+      "enabled": false,
+      "schema": {
+        "fields": [
+          {
+            "name": "entity_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "as_at_date",
+            "type": "date",
+            "required": false
+          },
+          {
+            "name": "people",
+            "type": "array",
+            "required": false,
+            "items": {
+              "type": "object",
+              "fields": [
+                {
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "name": "designation",
+                  "type": "string"
+                },
+                {
+                  "name": "holding_percent",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "authority_letter",
+      "display_name": "Letter of Authority",
+      "category": "identity",
+      "priority": "optional",
+      "enabled": false,
+      "schema": {
+        "fields": [
+          {
+            "name": "entity_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "letter_date",
+            "type": "date",
+            "required": false
+          },
+          {
+            "name": "authorised_persons",
+            "type": "array",
+            "required": false,
+            "items": {
+              "type": "string"
+            }
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "consumer_bureau_report",
+      "display_name": "Consumer Bureau Report",
+      "category": "banking",
+      "priority": "optional",
+      "enabled": false,
+      "schema": {
+        "fields": [
+          {
+            "name": "person_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "pan",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "report_date",
+            "type": "date",
+            "required": false
+          },
+          {
+            "name": "credit_score",
+            "type": "number",
+            "required": false
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "loan_agreement",
+      "display_name": "Loan Agreement",
+      "category": "banking",
+      "priority": "optional",
+      "enabled": false,
+      "schema": {
+        "fields": [
+          {
+            "name": "lender_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "borrower_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "loan_account_number",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "agreement_date",
+            "type": "date",
+            "required": false
+          },
+          {
+            "name": "loan_amount",
+            "type": "number",
+            "required": false
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "loan_statement",
+      "display_name": "Loan Statement of Account",
+      "category": "banking",
+      "priority": "optional",
+      "enabled": false,
+      "schema": {
+        "fields": [
+          {
+            "name": "lender_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "borrower_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "loan_account_number",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "statement_date",
+            "type": "date",
+            "required": false
+          },
+          {
+            "name": "outstanding_amount",
+            "type": "number",
+            "required": false
+          },
+          {
+            "name": "emi_amount",
+            "type": "number",
+            "required": false
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "repayment_schedule",
+      "display_name": "Repayment Schedule",
+      "category": "banking",
+      "priority": "optional",
+      "enabled": false,
+      "schema": {
+        "fields": [
+          {
+            "name": "lender_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "loan_account_number",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "emi_amount",
+            "type": "number",
+            "required": false
+          },
+          {
+            "name": "tenure",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "loan_closure",
+      "display_name": "Foreclosure Letter",
+      "category": "banking",
+      "priority": "optional",
+      "enabled": false,
+      "schema": {
+        "fields": [
+          {
+            "name": "lender_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "loan_account_number",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "letter_date",
+            "type": "date",
+            "required": false
+          },
+          {
+            "name": "foreclosure_amount",
+            "type": "number",
+            "required": false
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "property_title",
+      "display_name": "Property Title Documents",
+      "category": "identity",
+      "priority": "optional",
+      "enabled": false,
+      "schema": {
+        "fields": [
+          {
+            "name": "property_address",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "document_kind",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "registration_date",
+            "type": "date",
+            "required": false
+          },
+          {
+            "name": "owners",
+            "type": "array",
+            "required": false,
+            "items": {
+              "type": "string"
+            }
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "property_completion",
+      "display_name": "Property Completion Certificate",
+      "category": "identity",
+      "priority": "optional",
+      "enabled": false,
+      "schema": {
+        "fields": [
+          {
+            "name": "property_address",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "issuing_authority",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "certificate_date",
+            "type": "date",
+            "required": false
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "rent_agreement",
+      "display_name": "Rent Agreement",
+      "category": "financials",
+      "priority": "optional",
+      "enabled": false,
+      "schema": {
+        "fields": [
+          {
+            "name": "landlord_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "tenant_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "property_address",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "monthly_rent",
+            "type": "number",
+            "required": false
+          },
+          {
+            "name": "start_date",
+            "type": "date",
+            "required": false
+          },
+          {
+            "name": "end_date",
+            "type": "date",
+            "required": false
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "agricultural_income_proof",
+      "display_name": "Agricultural Land and Income Proof",
+      "category": "financials",
+      "priority": "optional",
+      "enabled": false,
+      "schema": {
+        "fields": [
+          {
+            "name": "person_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "land_details",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "annual_income",
+            "type": "number",
+            "required": false
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "commission_certificate",
+      "display_name": "Commission Certificate",
+      "category": "financials",
+      "priority": "optional",
+      "enabled": false,
+      "schema": {
+        "fields": [
+          {
+            "name": "person_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "issuer_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "period",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "commission_amount",
+            "type": "number",
+            "required": false
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "document_type": "supporting_declaration",
+      "display_name": "Affidavit or Declaration",
+      "category": "identity",
+      "priority": "optional",
+      "enabled": false,
+      "schema": {
+        "fields": [
+          {
+            "name": "person_name",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "declaration_date",
+            "type": "date",
+            "required": false
+          },
+          {
+            "name": "subject",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "tables": []
+      }
     }
   ]
 }

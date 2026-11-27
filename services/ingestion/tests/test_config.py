@@ -11,8 +11,10 @@ from .conftest import CONFIG
 def test_loads_every_type(cfg):
     # The nine of the PoC's first scope, then the declaration of existing facilities, the sanction
     # letter and the commercial bureau report (test plan TC-20, TC-23), then the nine added for the
-    # restructure (decision 14).
-    assert len(cfg.document_types.documents) == 22
+    # restructure (decision 14), then the 28 loan against property documents, switched off for the
+    # classifier (a person assigns them).
+    assert len(cfg.document_types.documents) == 50
+    assert len(cfg.document_types.enabled_ids()) == 22
     assert cfg.document_types.by_id()["director_kyc"].schema_.fields[1].name == "din"  # added 6 Oct
 
 
@@ -93,6 +95,16 @@ def test_a_type_without_keywords_is_rejected(tmp_path):
     d = _edited(tmp_path, "keywords.yaml", lambda x: x["types"].pop("gstr_3b"))
     with pytest.raises(ConfigError, match="no entry for document type gstr_3b"):
         load_dir(d)
+
+
+def test_a_type_switched_off_for_the_classifier_needs_no_keywords(cfg):
+    """A switched-off type is never offered to the classifier, so it has nothing to be recognised by: a
+    person assigns it. Switched on, it needs its keywords."""
+    off = next(d.document_type for d in cfg.document_types.documents if not d.enabled)
+    assert off not in cfg.keywords.types and cfg.check_consistency() == []
+    on = cfg.model_copy(deep=True)
+    next(d for d in on.document_types.documents if d.document_type == off).enabled = True
+    assert f"keywords: no entry for document type {off}" in on.check_consistency()
 
 
 def test_threshold_edit_changes_hash_and_behaviour(cfg, tmp_path):

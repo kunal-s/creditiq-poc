@@ -1,3 +1,4 @@
+/// <reference types="node" />
 // Every screen at phone width (375 px): nothing makes the page scroll sideways. Wide content
 // (tables, page images) may scroll inside its own box; the page itself must fit the screen.
 import { expect, test, type Page } from "@playwright/test";
@@ -24,6 +25,11 @@ type Screen = {
 };
 
 const CASE = `/appraisals/${KESTREL}`;
+const START_FILE = {
+  name: "kyc.pdf",
+  mimeType: "application/pdf",
+  buffer: Buffer.from("%PDF-1.7"),
+};
 export const SCREENS: Screen[] = [
   { name: "sign-in", path: "/sign-in", user: null },
   { name: "home", path: "/" },
@@ -87,7 +93,21 @@ export const SCREENS: Screen[] = [
     user: RM,
     open: async (page) => {
       await page.getByTestId("message-input").fill(MESSAGE);
+      await page.getByTestId("upload-input").setInputFiles([START_FILE]);
       await page.getByRole("button", { name: "Read the message" }).click();
+    },
+  },
+  {
+    name: "new-appraisal-lap-form",
+    path: "/appraisals/new",
+    user: RM,
+    open: async (page) => {
+      await page.getByTestId("product-lap").click();
+      await page.getByTestId("start-choice-customer_type").selectOption("self_employed");
+      await page.getByTestId("upload-input").setInputFiles([START_FILE]);
+      await page.getByTestId("start-continue").click();
+      await page.getByTestId("add-applicants").click();
+      await page.getByTestId("add-properties").click();
     },
   },
   {

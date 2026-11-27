@@ -2,16 +2,19 @@
 without a session, 403 without the permission (config/roles.yaml), and the
 permitted roles get through."""
 
+import json
+
 import pytest
 from fastapi.testclient import TestClient
 
-from tests.conftest import ANALYST, MANAGER, RM, fixture_file, make_case, run_jobs, sign_in
+from tests.conftest import ANALYST, MANAGER, RM, fixture_file, make_case, new_case, run_jobs, sign_in
 
 ROLES = {"rm": RM, "analyst": ANALYST, "credit-manager": MANAGER}
 
 # endpoint -> the roles config/roles.yaml grants its permission to.
 MATRIX = {
     "propose": {"rm", "analyst"},  # case.create
+    "intake": {"rm", "analyst"},  # case.create and document.upload
     "upload": {"rm", "analyst"},  # document.upload
     "page": {"rm", "analyst", "credit-manager"},  # case.read
     "parties": {"rm", "analyst", "credit-manager"},  # case.read
@@ -41,6 +44,14 @@ def _call(client: TestClient, name: str, world: dict, headers: dict):
     case_id = world["case_id"]
     if name == "propose":
         return client.post("/api/cases/proposals", json={"channel": "email", "text": "CC 50L"}, headers=headers)
+    if name == "intake":
+        case = new_case(borrower="Role Matrix Works", duplicate_override_reason="role matrix test")
+        return client.post(
+            "/api/cases/intake",
+            files=[("case", (None, json.dumps(case), "application/json")),
+                   ("files", ("pan.pdf", fixture_file("kestrel pan.pdf"), "application/pdf"))],
+            headers=headers,
+        )
     if name == "upload":
         return client.post(
             f"/api/cases/{case_id}/files",

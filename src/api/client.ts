@@ -40,6 +40,7 @@ import type {
   Recalculation,
   FileRecord,
   Finding,
+  IntakeCreated,
   LoginResponse,
   LogicalDocument,
   DisplayUnit,
@@ -198,6 +199,15 @@ export const api = {
     }),
   createCase: (body: CaseCreate) =>
     request<CaseDetail>("/api/cases", { method: "POST", body: JSON.stringify(body) }),
+  /** The New appraisal screen's Create: the case and its files in one request, stored together
+   * or not at all (a 422 IntakeRefusal or a 409 duplicate leaves nothing behind). */
+  createCaseWithFiles: (body: CaseCreate, files: File[]) => {
+    const form = new FormData();
+    // A text part (no file name): the engine reads it as the case, not as a document.
+    form.append("case", JSON.stringify(body));
+    for (const file of files) form.append("files", file, file.name);
+    return request<IntakeCreated>("/api/cases/intake", { method: "POST", body: form });
+  },
   /** F-13: create the case, opening cross-verification, policy checks and the outputs. */
   openAssessment: (id: string, reason?: string) =>
     request<CaseDetail>(`/api/cases/${q(id)}/assessment`, {

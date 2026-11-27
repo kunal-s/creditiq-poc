@@ -107,7 +107,7 @@ function MemoLibrary() {
                               {c.borrower}
                             </Link>
                             <p className="tabular text-[11px] text-muted-foreground">
-                              {c.id} · {labels.constitution(c.constitution)}
+                              {c.id} · {labels.borrowerKind(c)}
                             </p>
                           </td>
                           <td className="px-3 py-2.5">

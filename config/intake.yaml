@@ -1,0 +1,240 @@
+# The New appraisal form, per product (plan 2026-11-27 sections 3, 5 and 7). Deployment bootstrap
+# configuration, read directly like config/app.yaml (not a published section): changing it needs
+# no code change, only the engine's restart. Items marked "RBL to confirm" are placeholders
+# until RBL supplies its own lists.
+#
+# start:   the three boxes of the start screen.
+#   message     optional: a pasted message pre-fills the form.
+#   documents   `required` with `min_files`: a case never exists without them; the engine counts
+#               only files it registered (not junk, rejected or duplicate files).
+#   suggested   ids the screen words as hints under the drop area.
+#   identifiers each optional. `type` is pan, gstin, cin_or_llpin, udyam or text; `holder` is
+#               individual or entity (for a PAN); `unless` lifts the holder rule; `show_when`
+#               shows the box only for those customer or case types.
+# sections: the form's sections, in order. A section with `repeat` is a list of rows
+#   (min, max) whose values are kept per row (CaseCreate.groups); any other section holds single
+#   values. `show_when` hides a section or field for other customer or case types.
+#   Field types: text, amount, number, months, choice, yes_no, pan, gstin, cin_or_llpin, udyam,
+#   digits (`length`), pincode, date, parties.
+#   `options` of a choice names an `option_lists` entry here or a product list of app.yaml
+#   (case_types, programs, customer_types, stages, facilities, constitutions, channels, branches).
+#   A `parties` field names rows of its `from` section (names joined by "; ").
+#   `people` marks a section whose rows are the case's parties: the role a row without one takes
+#   (`default_role`), and the role of the row that is the borrower itself (`primary_role`).
+# A value for a field or identifier `show_when` hides is refused; so is a repeating section with
+# fewer rows than its `min` (the product's minimum, app.yaml, is checked first).
+
+# Lengths and ranges a value may have.
+limits:
+  text_max: 500           # a text field
+  short_text_max: 100     # an identifier typed as text, and every other value
+  months_max: 600         # a tenure
+
+option_lists:
+  property_types:
+    - {id: residential, label: Residential}
+    - {id: commercial, label: Commercial}
+    - {id: industrial, label: Industrial}
+    - {id: mixed, label: Mixed use}
+    - {id: plot, label: Plot or land}
+  occupancies:
+    - {id: self_occupied, label: Self-occupied}
+    - {id: rented, label: Rented}
+    - {id: vacant, label: Vacant}
+  constructions:
+    - {id: complete, label: Complete}
+    - {id: under_construction, label: Under construction}
+  party_roles_lap:
+    - {id: applicant, label: Applicant}
+    - {id: co_applicant, label: Co-applicant}
+    - {id: guarantor, label: Guarantor}
+  party_roles_bbg:
+    - {id: promoter, label: Promoter}
+    - {id: director, label: Director}
+    - {id: partner, label: Partner}
+    - {id: proprietor, label: Proprietor}
+    - {id: guarantor, label: Guarantor}
+  relationships:                       # RBL to confirm
+    - {id: self, label: Self}
+    - {id: spouse, label: Spouse}
+    - {id: parent, label: Parent}
+    - {id: child, label: Child}
+    - {id: sibling, label: Sibling}
+    - {id: other, label: Other}
+  loan_purposes:                       # RBL to confirm
+    - {id: business_use, label: Business use}
+    - {id: personal_use, label: Personal use}
+    - {id: balance_transfer, label: Balance transfer}
+    - {id: top_up, label: Top-up}
+  loan_types:                          # RBL to confirm
+    - {id: home_loan, label: Home loan}
+    - {id: lap, label: Loan against property}
+    - {id: personal_loan, label: Personal loan}
+    - {id: business_loan, label: Business loan}
+    - {id: vehicle_loan, label: Vehicle loan}
+    - {id: credit_card, label: Credit card}
+    - {id: other, label: Other}
+  facility_natures:
+    - {id: fresh, label: Fresh}
+    - {id: renewal, label: Renewal}
+    - {id: enhancement, label: Enhancement}
+    - {id: takeover, label: Takeover}
+
+lap:
+  start:
+    message: {required: false}
+    documents:
+      required: true
+      min_files: 1
+      suggested: [applicant_kyc, property_papers, income_proof]
+    identifiers:
+      - {id: pan, type: pan, holder: individual, unless: {customer_type: [non_individual]}}
+      - {id: co_applicant_pan, type: pan, holder: individual, unless: {customer_type: [non_individual]}}
+      - {id: gstin, type: gstin, show_when: {customer_type: [self_employed_professional, self_employed, non_individual]}}
+      - {id: udyam, type: udyam, show_when: {customer_type: [self_employed_professional, self_employed, non_individual]}}
+      - {id: application_id, type: text}
+      - {id: existing_loan_account, type: text, show_when: {case_type: [balance_transfer, balance_transfer_top_up]}}
+  sections:
+    - id: case
+      fields:
+        - {id: customer_type, type: choice, options: customer_types, required: true}
+        - {id: case_type, type: choice, options: case_types}
+        - {id: program, type: choice, options: programs}
+        - {id: amount_inr, type: amount, required: true}
+        - {id: tenure_months, type: months, required: true}
+        - {id: application_id, type: text}
+        - {id: customer_id, type: text}
+        - {id: branch, type: choice, options: branches}
+        - {id: bank_stage, type: choice, options: stages}
+        - {id: channel, type: choice, options: channels}
+    - id: applicants
+      repeat: {min: 1, max: 6}
+      people: {default_role: co_applicant, primary_role: applicant}
+      fields:
+        - {id: name, type: text, required: true}
+        - {id: role, type: choice, options: party_roles_lap, required: true}
+        - {id: relationship, type: choice, options: relationships}
+        - {id: pan, type: pan, holder: individual, unless: {customer_type: [non_individual]}, alternative: form_60}
+        - {id: form_60, type: yes_no}
+        - {id: aadhaar_last4, type: digits, length: 4}      # never the full number (RBL scope section 6)
+        - {id: income_considered, type: yes_no}
+        - {id: property_owner, type: yes_no}
+    - id: business
+      show_when: {customer_type: [self_employed_professional, self_employed, non_individual]}
+      fields:
+        - {id: business_name, type: text}
+        - {id: constitution, type: choice, options: constitutions}
+        - {id: gstin, type: gstin}
+        - {id: udyam, type: udyam}
+        - {id: business_start_date, type: date}
+        - {id: nature_of_business, type: text}
+    - id: loan
+      fields:
+        - {id: loan_purpose, type: choice, options: loan_purposes}            # RBL to confirm
+        - {id: existing_lender, type: text, show_when: {case_type: [balance_transfer, balance_transfer_top_up]}}
+        - {id: existing_loan_account, type: text, show_when: {case_type: [balance_transfer, balance_transfer_top_up]}}
+        - {id: existing_outstanding_inr, type: amount, show_when: {case_type: [balance_transfer, balance_transfer_top_up]}}
+        - {id: existing_emi_inr, type: amount, show_when: {case_type: [balance_transfer, balance_transfer_top_up]}}
+    - id: properties
+      repeat: {min: 1, max: 3}
+      fields:
+        - {id: property_type, type: choice, options: property_types, required: true}
+        - {id: occupancy, type: choice, options: occupancies}
+        - {id: address, type: text}
+        - {id: pincode, type: pincode}
+        - {id: owners, type: parties, from: applicants}
+        - {id: declared_value_inr, type: amount}
+        - {id: area_sqft, type: number}
+        - {id: construction, type: choice, options: constructions}
+    - id: existing_loans
+      repeat: {min: 0, max: 10}
+      fields:
+        - {id: lender, type: text}
+        - {id: loan_type, type: choice, options: loan_types}
+        - {id: outstanding_inr, type: amount}
+        - {id: emi_inr, type: amount}
+        - {id: to_be_closed, type: yes_no}
+    - id: declared_income
+      fields:
+        - {id: declared_monthly_salary_inr, type: amount}
+        - {id: declared_annual_business_income_inr, type: amount}
+        - {id: declared_rental_income_inr, type: amount}
+        - {id: declared_other_income_inr, type: amount}
+bbg:
+  start:
+    message: {required: false}
+    documents:
+      required: true
+      min_files: 1
+      suggested: [constitution_document, entity_pan, financial_statements, gst_returns, bank_statements]
+    identifiers:
+      - {id: pan, type: pan, holder: entity}
+      - {id: gstin, type: gstin}
+      - {id: cin, type: cin_or_llpin}
+      - {id: udyam, type: udyam}
+      - {id: application_id, type: text}
+  sections:
+    - id: case
+      fields:
+        - {id: case_type, type: choice, options: case_types}
+        - {id: application_id, type: text}
+        - {id: customer_id, type: text}
+        - {id: branch, type: choice, options: branches}
+        - {id: bank_stage, type: choice, options: stages}
+        - {id: channel, type: choice, options: channels}
+    - id: borrower
+      fields:
+        - {id: borrower, type: text, required: true}
+        - {id: constitution, type: choice, options: constitutions}
+        - {id: pan, type: pan, holder: entity}
+        - {id: gstin, type: gstin}
+        - {id: cin, type: cin_or_llpin}
+        - {id: udyam, type: udyam}
+        - {id: incorporation_date, type: date}
+        - {id: nature_of_business, type: text}
+    - id: people
+      repeat: {min: 0, max: 20}
+      people: {default_role: promoter}
+      fields:
+        - {id: name, type: text, required: true}
+        - {id: role, type: choice, options: party_roles_bbg}
+        - {id: pan, type: pan}
+        - {id: din, type: digits, length: 8}
+        - {id: shareholding_pct, type: number}
+    - id: facilities
+      # The facility lines are optional on a direct create: the case's `facilities` may name them, and
+      # the minimum (app.yaml) asks for one or the other.
+      repeat: {min: 0, max: 10}
+      fields:
+        - {id: facility, type: choice, options: facilities, required: true}
+        - {id: amount_inr, type: amount, required: true}
+        - {id: nature, type: choice, options: facility_natures}
+        - {id: purpose, type: text}
+        - {id: tenure_months, type: months}
+        - {id: existing_limit_inr, type: amount}
+    - id: security
+      fields:
+        - {id: collateral_present, type: yes_no}
+        - {id: other_security, type: text}
+    - id: properties                     # offered as security; the same rows as a loan against property
+      repeat: {min: 0, max: 3}
+      fields:
+        - {id: property_type, type: choice, options: property_types, required: true}
+        - {id: occupancy, type: choice, options: occupancies}
+        - {id: address, type: text}
+        - {id: pincode, type: pincode}
+        - {id: owners, type: text}
+        - {id: declared_value_inr, type: amount}
+        - {id: area_sqft, type: number}
+        - {id: construction, type: choice, options: constructions}
+    - id: banking
+      repeat: {min: 0, max: 10}
+      fields:
+        - {id: lender, type: text}
+        - {id: facility, type: text}
+        - {id: limit_inr, type: amount}
+        - {id: outstanding_inr, type: amount}
+    - id: declared
+      fields:
+        - {id: declared_turnover_inr, type: amount}
+        - {id: proposed_emi_inr, type: amount}

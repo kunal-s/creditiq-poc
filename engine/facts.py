@@ -58,6 +58,7 @@ from .contracts import (
     TurnoverFigure,
     TurnoverYear,
 )
+from .intake import declared_label, declared_side, source_kind
 from .names import normalise_name, similarity
 from . import statements
 from .parties import party_list_spec
@@ -400,27 +401,42 @@ class Build:
     def primary(self, d: Doc) -> str:
         return d.types[0]
 
+    @property
+    def declared_label(self) -> str:
+        """What the case's own declaration is called where it is cited: the sourcing message when the case
+        has one, else what was declared at intake (config/app.yaml declared_sources)."""
+        return declared_label(self.message_doc is not None)
+
+    @property
+    def declared_side(self) -> str:
+        return declared_side(self.message_doc is not None)
+
     def message_value(self, name: str) -> FactValue | None:
+        """A value of the case header, as the case declares it (the sourcing message, or the intake form
+        when the case has no message)."""
         h = self.header.get(name) or {}
         if not h.get("value"):
             return None
         return FactValue(
-            source="application_message",
-            label="Sourcing message",
+            source=MESSAGE,
+            label=self.declared_label,
             value=h["value"],
             evidence=self.header_evidence(h.get("source")),
-            relies_on_manual=h.get("source") == "person" or (h.get("proposed") not in (None, h["value"])),
+            # Typed by a person, on the form or in an identifier box, or changed from what was proposed.
+            relies_on_manual=source_kind(h.get("source")) in ("person", "identifier")
+            or (h.get("proposed") not in (None, h["value"])),
         )
 
     def header_evidence(self, source: str | None) -> list[Evidence]:
-        """Where a header value came from (HeaderField.source): a span in the sourcing message, a
-        document page, or a person, who has no page to cite."""
+        """Where a header value came from (HeaderField.source): a document page, or a span of the sourcing
+        message (cited as its page). A value a person typed, a default or an identifier typed at the
+        start has no page to cite."""
         found = re.fullmatch(r"document:(.+):p(\d+)", source or "")
         if found:
             return [Evidence(document_id=found[1], page=int(found[2]))]
-        if source == "person" or not self.message_doc:
-            return []
-        return [Evidence(document_id=self.message_doc, page=1)]
+        if (source or "").startswith("message:") and self.message_doc:
+            return [Evidence(document_id=self.message_doc, page=1)]
+        return []
 
 
 def _ident(value: object) -> str:
@@ -527,8 +543,8 @@ def _persons(b: Build) -> list[PersonSet]:
     if promoters:
         sets.append(
             PersonSet(
-                source="application_message",
-                label="Sourcing message",
+                source=MESSAGE,
+                label=b.declared_label,
                 names=[n.strip() for n in str(promoters.value).split(";") if n.strip()],
                 evidence=promoters.evidence,
                 relies_on_manual=promoters.relies_on_manual,
@@ -807,7 +823,7 @@ def _accounts(b: Build, txns: list[Txn]) -> tuple[list[AccountFact], bool]:
         named = {last4: (kind, bank) for kind, bank, last4 in banking_named(v.value) if last4}
         for m in MESSAGE_ACCOUNT.finditer(v.value):
             kind, bank = named.get(_last4(m[1]) or "", ("", ""))
-            add("", _last4(m[1]), "Sourcing message", v.evidence, declared=True, named=bank, kind=kind)
+            add("", _last4(m[1]), v.label, v.evidence, declared=True, named=bank, kind=kind)
     own = {k[1] for k in found if k[1]}
     for t in txns:
         for m in NARRATION_ACCOUNT.finditer(t.narration):
@@ -1000,7 +1016,8 @@ def _turnover(b: Build, credits_by_month: dict, coverage: dict[str, set[tuple[in
             value = float(str(declared.value).replace(",", ""))
         except ValueError:
             value = None
-        years[latest].append(TurnoverFigure(source="declared", label="Turnover declared in the sourcing message",
+        side = b.declared_side
+        years[latest].append(TurnoverFigure(source="declared", label=f"Turnover {side[:1].lower()}{side[1:]}",
                                             value=value, evidence=declared.evidence,
                                             relies_on_manual=declared.relies_on_manual))
 

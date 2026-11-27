@@ -153,10 +153,10 @@ def test_scenario_21_no_depreciation_names_what_it_stops_and_the_case_needs_a_re
     gaps = {g["label"]: g["stops"] for g in gate["required_fields"]}
     year = f"FY {int(end[:4]) - 1}-{end[2:4]}"
     assert "required_fields" in gate["blockers"]
-    assert gaps[f"Depreciation, {year}"] == ["EBITDA", "DSCR"]
+    assert gaps[f"Depreciation, {year}"] == ["Cash profit", "EBITDA", "DSCR"]
     queries = client.get(f"/api/cases/{case_id}/queries", headers=headers).json()
     texts = [q["text"] for q in (queries.get("items") if isinstance(queries, dict) else queries)]
-    assert any(t.startswith(f"Depreciation, {year} is not shown in the documents received; without it EBITDA and DSCR")
+    assert any(t.startswith(f"Depreciation, {year} is not shown in the documents received; without it Cash profit, EBITDA and DSCR")
                for t in texts), texts
 
     refused = client.post(f"/api/cases/{case_id}/assessment", headers=headers)

@@ -27,7 +27,17 @@ ADDED = {
     "provisional_financial_statements", "projected_financial_statements", "cma_data", "stock_statement", "gstr_9",
     "form_26as", "itr_acknowledgement", "partnership_deed", "udyam_registration",
 }
-TYPES = NINE | FACILITIES | SALES | ADDED
+# The loan against property documents (RBL scope document section 2.2), switched off for the classifier:
+# a person assigns them until their keywords are written.
+LAP = {
+    "application_form", "pan_card", "form_60", "identity_proof", "signature_proof", "address_proof", "salary_slip",
+    "salary_certificate", "form_16", "tds_certificate", "sales_purchase_register", "gst_registration",
+    "business_registration", "professional_registration", "llp_agreement", "directors_shareholders_list",
+    "authority_letter", "consumer_bureau_report", "loan_agreement", "loan_statement", "repayment_schedule",
+    "loan_closure", "property_title", "property_completion", "rent_agreement", "agricultural_income_proof",
+    "commission_certificate", "supporting_declaration",
+}
+TYPES = NINE | FACILITIES | SALES | ADDED | LAP
 
 SWITCHED_OFF = {"BR-01", "BR-02", "BR-03", "BR-04", "FS-01", "FS-02"}
 
@@ -38,8 +48,13 @@ def _cross(sections, **changes):
 def test_the_closed_list_is_the_document_types_and_the_sourcing_message(published_data_root: Path):
     types = reader.load_document_types(published_data_root).types
     assert {t.id for t in types} == TYPES | {"application_message"}
-    # The facility and bureau types are reconciled by the cross-checks, not asked for on the checklist.
-    assert all(not t.satisfies for t in types if t.id in FACILITIES | SALES)
+    # The facility and bureau types are reconciled by the cross-checks, not asked for on a business's
+    # checklist. The loan against property checklist asks for the sanction letters and a bureau report.
+    taxonomy = reader.load_checklist_taxonomy(published_data_root)
+    business = {i.id for i in taxonomy.items if not i.products or "bbg" in i.products}
+    assert all(not set(t.satisfies) & business for t in types if t.id in FACILITIES | SALES)
+    lap_only = {item for t in types if t.id in FACILITIES | SALES for item in t.satisfies}
+    assert lap_only <= {i.id for i in taxonomy.items if i.products == ["lap"]}
 
 
 def test_every_checklist_item_is_satisfied_by_some_document_type(published_data_root: Path):
@@ -52,7 +67,10 @@ def test_every_checklist_item_is_satisfied_by_some_document_type(published_data_
 def test_one_version_carries_the_engine_and_the_service_configuration(published_data_root: Path):
     ing = {n: reader.load_ingestion_section(published_data_root, n) for n in writer.INGESTION_SECTIONS}
     assert {d["document_type"] for d in ing["document_types"]["documents"]} == TYPES
-    assert set(ing["keywords"]["types"]) == TYPES and "reason_codes" in ing["quality"]
+    # A type switched off for the classifier has no keywords: a person assigns it.
+    assert set(ing["keywords"]["types"]) == TYPES - LAP and "reason_codes" in ing["quality"]
+    switched_off = {d["document_type"] for d in ing["document_types"]["documents"] if not d["enabled"]}
+    assert switched_off == LAP
     version = reader.published_version(published_data_root)
     assert {f"ingestion.{n}" for n in writer.INGESTION_SECTIONS} <= set(version["section_hashes"])
 
@@ -76,7 +94,7 @@ def test_the_service_accepts_the_published_configuration():
     out = subprocess.run([str(INGESTION_VENV), "-m", "ingestion.cli", "config-validate", str(ROOT / "config" / "ingestion")],
                          cwd=ROOT / "services" / "ingestion", env={"PYTHONPATH": "."}, capture_output=True, text=True)
     assert out.returncode == 0, out.stderr
-    assert "22 document types" in out.stdout
+    assert f"{len(TYPES)} document types" in out.stdout
 
 
 def test_cross_check_reports_a_dangling_reference():
@@ -215,12 +233,13 @@ def test_cross_check_reports_a_duplicate_norm_id():
     assert any("duplicate norm ids" in p for p in _cross(sections, policy=broken))
 
 
-def test_security_cover_waits_for_a_collateral_document_type(published_data_root: Path):
+def test_security_cover_waits_for_a_document_that_values_the_collateral(published_data_root: Path):
     families = {n.family for n in reader.load_policy(published_data_root).norms}
-    groups = {t.group for t in reader.load_document_types(published_data_root).types}
+    collateral = {t.id for t in reader.load_document_types(published_data_root).types if t.group == "collateral"}
     assert "security_cover" not in families
-    # When a collateral document type arrives, security-cover norms are owed (F-20.1).
-    assert "collateral" not in groups
+    # A loan against property's ownership and completion papers say nothing of the property's value. When a
+    # collateral document type that does (a valuation report) arrives, security-cover norms are owed (F-20.1).
+    assert collateral == {"property_title", "property_completion"}
 
 
 def test_approval_matrix_is_published_and_provisional(published_data_root: Path):

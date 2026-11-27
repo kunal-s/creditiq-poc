@@ -3,9 +3,10 @@
 # screens need; changing one needs no code change
 # (docs/functional-requirements.md F-01, F-03, F-04, F-05).
 
-# Case IDs (F-01.1). {year} is the creation year; {seq} a per-year sequence.
+# Case IDs (F-01.1). {prefix} is the product's `prefix`, {year} the creation year, {seq} a
+# sequence kept per prefix and year. BBG numbers already issued continue unchanged.
 case_id:
-  format: "BBG-{year}-{seq:06d}"
+  format: "{prefix}-{year}-{seq:06d}"
 
 # How a case arrived (F-04.1). Recorded as provenance, never integrated.
 channels:
@@ -61,17 +62,59 @@ facilities:
     sets: null
     aliases: [LC, L/C, ILC, FLC, letter of credit]
 
-# Products a case can be opened under. Only products the checklist, norms
-# and outputs support are listed; `default` is pre-selected on a new case.
+# Products a case can be opened under: the first choice on the New appraisal screen. Each
+# product lists what a case of that product may carry (the lists name ids defined below) and
+# the fields a case needs before it can be created (`minimum`, checked by the engine; what the
+# form asks is in config/intake.yaml). `default` is pre-selected. Placeholders marked
+# "RBL to confirm" are provisional until RBL supplies its own lists (plan 13, questions 1 to 5).
 products:
   default: bbg
   options:
-    - {id: bbg, label: Business banking}
+    - id: bbg
+      label: Business banking
+      prefix: BBG
+      case_types: [new, renewal, enhancement, takeover]
+      stages: [login, pd, sanction, post_sanction]
+      # A business's customer type is its constitution.
+      customer_types: [private_limited, partnership, proprietorship]
+      programs: []
+      minimum: [borrower, facilities, amount_inr]
+    - id: lap
+      label: Loan against property
+      prefix: LAP
+      case_types: [new, balance_transfer, balance_transfer_top_up, top_up]    # RBL to confirm
+      stages: [login, pd, sanction, post_sanction]                            # RBL to confirm
+      customer_types: [salaried, self_employed_professional, self_employed, non_individual]   # RBL to confirm
+      programs: [income, banking_surrogate, gst_surrogate, rental]            # placeholders; RBL to provide
+      minimum: [applicants, customer_type, amount_inr, tenure_months, properties]
 
-# Case types (new, renewal, enhancement, takeover). `aliases` are the words a
-# sourcing message uses for the type (F-04), matched like facility aliases:
-# an alias in capitals only matches as a whole word in capitals. A case whose
-# type is not yet confirmed carries "unknown". Provisional list.
+# Customer types other than constitutions (a loan against property is made to an individual or a
+# business). A product's `customer_types` name ids of `constitutions` or of this list.
+customer_types:
+  - {id: salaried, label: Salaried}
+  - {id: self_employed_professional, label: Self-employed professional}
+  - {id: self_employed, label: Self-employed (non-professional)}
+  - {id: non_individual, label: Non-individual}
+
+# Credit programs (a checklist dimension). Placeholders; RBL to provide.
+programs:
+  - {id: income, label: Income program}
+  - {id: banking_surrogate, label: Banking surrogate}
+  - {id: gst_surrogate, label: GST surrogate}
+  - {id: rental, label: Rental income}
+
+# What a value taken from the case header is called where it is cited (facts, cross-checks, the
+# appraisal). A case with a sourcing message names the message; one without names the intake form.
+# `label` names the source, `side` titles a cross-check's side, `phrase` is the source inside a sentence.
+declared_sources:
+  message: {label: Sourcing message, side: Declared in the sourcing message, phrase: the sourcing message}
+  intake: {label: Declared at intake, side: Declared at intake, phrase: the intake form}
+
+# Case types. A product lists the ones it uses (`products.options[].case_types`). `aliases` are
+# the words a sourcing message uses for the type (F-04), matched like facility aliases: an alias in
+# capitals only matches as a whole word in capitals, and only the product's own types are matched,
+# so "balance transfer" is a takeover for business banking and a balance transfer for a loan
+# against property. A case whose type is not yet confirmed carries "unknown". Provisional list.
 case_types:
   - id: new
     label: New
@@ -85,6 +128,15 @@ case_types:
   - id: takeover
     label: Takeover
     aliases: [takeover, take over, take-over, balance transfer, BT]
+  - id: balance_transfer                       # loan against property; RBL to confirm
+    label: Balance transfer
+    aliases: [balance transfer, BT, takeover, take over, take-over]
+  - id: balance_transfer_top_up                # loan against property; RBL to confirm
+    label: Balance transfer with top-up
+    aliases: [balance transfer with top up, balance transfer with top-up, BT with top up, BT with top-up, BT top-up, balance transfer and top up]
+  - id: top_up                                 # loan against property; RBL to confirm
+    label: Top-up
+    aliases: [top up, top-up, topup, additional loan]
   - id: unknown
     label: Not yet confirmed
     aliases: []
@@ -112,13 +164,21 @@ case_identifiers:
   application_id: {pattern: null}
   customer_id: {pattern: null}
 
-# Fields a case must have before it can be created (F-04.6).
+# Fields a business banking case must have before it can be created (F-04.6): kept for callers
+# that predate products. Each product's own minimum is `products.options[].minimum`.
 case_create_minimum: [borrower, product, facilities, amount_inr]
 
 # Upload limits (F-05.1, F-05.2). An archive is refused as a decompression
 # bomb when it expands beyond max_archive_mb, or when any member expands
 # more than max_compression_ratio times (members larger than 1 MB).
 uploads:
+  # The case's JSON part of the one-request create (POST /api/cases/intake), and any other text field
+  # an upload keeps (its channel). A larger one is refused, never cut short; other fields are dropped.
+  max_case_part_kb: 256
+  max_form_field_kb: 4
+  # One request in all: its parts (files and fields together) and its size, checked as it streams.
+  max_parts: 1000
+  max_request_mb: 1000
   max_file_mb: 50
   max_archive_mb: 500
   archive_depth: 3

@@ -254,9 +254,35 @@ export interface paths {
     /**
      * Checklist Preview
      * @description F-12 at intake: the documents the proposed application will need, from the
-     *     values on the New appraisal screen. Stores nothing; no case is needed.
+     *     values on the New appraisal screen (its product, customer and case type, and what
+     *     its form declares). Stores nothing; no case is needed.
      */
     post: operations["checklist_preview_api_cases_checklist_preview_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/cases/intake": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create Case With Files
+     * @description The New appraisal screen's Create: the case (multipart field `case`, a CaseCreate as JSON) and its
+     *     files (field `files`, repeatable; single files or ZIP archives) in one request, stored together or not
+     *     at all. Refused (422, an IntakeRefusal) when the body is over the request limits, the case part is
+     *     missing, too large or invalid, the product's minimum is not met, an identifier is not valid for its
+     *     box, or fewer files than the product needs are received as new documents; 409 on a duplicate without
+     *     an override reason. Needs document.upload as well as case.create.
+     */
+    post: operations["create_case_with_files_api_cases_intake_post"];
     delete?: never;
     options?: never;
     head?: never;
@@ -274,7 +300,9 @@ export interface paths {
     put?: never;
     /**
      * Propose Case
-     * @description F-04: parse a pasted message into a proposed case. Stores nothing.
+     * @description F-04: what the start screen has so far, as a proposed case: a pasted message read into fields (when
+     *     there is one), the values typed so far (they win), the duplicate check and the product's minimum still
+     *     missing. Stores nothing.
      */
     post: operations["propose_case_api_cases_proposals_post"];
     delete?: never;
@@ -2479,13 +2507,19 @@ export interface components {
      *     (F-04) fills `header` with sources; a direct create leaves it empty.
      */
     CaseCreate: {
-      /** Amount Inr */
+      /**
+       * Amount Inr
+       * @default 0
+       */
       amount_inr: number;
       /** Application Id */
       application_id?: string | null;
       /** Bank Stage */
       bank_stage?: string | null;
-      /** Borrower */
+      /**
+       * Borrower
+       * @default
+       */
       borrower: string;
       /** Branch */
       branch?: string | null;
@@ -2510,10 +2544,18 @@ export interface components {
       constitution: string;
       /** Customer Id */
       customer_id?: string | null;
+      /** Customer Type */
+      customer_type?: string | null;
       /** Duplicate Override Reason */
       duplicate_override_reason?: string | null;
       /** Facilities */
-      facilities: string[];
+      facilities?: string[];
+      /** Groups */
+      groups?: {
+        [key: string]: {
+          [key: string]: components["schemas"]["HeaderField"];
+        }[];
+      };
       /** Gstin */
       gstin?: string | null;
       /** Header */
@@ -2526,6 +2568,10 @@ export interface components {
       pan?: string | null;
       /** Product */
       product?: string | null;
+      /** Program */
+      program?: string | null;
+      /** Tenure Months */
+      tenure_months?: number | null;
       /** Udyam */
       udyam?: string | null;
     };
@@ -2573,6 +2619,8 @@ export interface components {
       created_by: string;
       /** Customer Id */
       customer_id?: string | null;
+      /** Customer Type */
+      customer_type?: string | null;
       /** Facilities */
       facilities: string[];
       /**
@@ -2585,6 +2633,12 @@ export interface components {
        * @default 0
        */
       files_attention: number;
+      /** Groups */
+      groups?: {
+        [key: string]: {
+          [key: string]: components["schemas"]["HeaderField"];
+        }[];
+      };
       /** Gstin */
       gstin: string | null;
       /** Header */
@@ -2599,6 +2653,8 @@ export interface components {
       pan: string | null;
       /** Product */
       product?: string | null;
+      /** Program */
+      program?: string | null;
       /** Rm */
       rm: string;
       /**
@@ -2614,6 +2670,8 @@ export interface components {
         | "Policy"
         | "Outputs"
         | "Completed";
+      /** Tenure Months */
+      tenure_months?: number | null;
       /** Udyam */
       udyam: string | null;
     };
@@ -2669,6 +2727,16 @@ export interface components {
       last_made: string;
       /** Name */
       name: string;
+    };
+    /**
+     * CaseElsewhere
+     * @description A matching case another RM holds, named without its details: the user may not read it (F-03).
+     */
+    CaseElsewhere: {
+      /** Id */
+      id: string;
+      /** Rm */
+      rm: string;
     };
     /** CaseFacts */
     CaseFacts: {
@@ -2736,6 +2804,8 @@ export interface components {
     CaseProposal: {
       /** Duplicates */
       duplicates?: components["schemas"]["CaseSummary"][];
+      /** Duplicates Elsewhere */
+      duplicates_elsewhere?: components["schemas"]["CaseElsewhere"][];
       /** Fields */
       fields: {
         [key: string]: components["schemas"]["ProposedField"];
@@ -2745,7 +2815,7 @@ export interface components {
       /** Stripped */
       stripped?: components["schemas"]["StrippedSpan"][];
       /** Text Sha256 */
-      text_sha256: string;
+      text_sha256?: string | null;
     };
     /**
      * CaseSummary
@@ -2764,6 +2834,8 @@ export interface components {
       constitution: string;
       /** Created At */
       created_at: string;
+      /** Customer Type */
+      customer_type?: string | null;
       /** Facilities */
       facilities: string[];
       /**
@@ -2782,6 +2854,8 @@ export interface components {
       open_review_items: number;
       /** Product */
       product?: string | null;
+      /** Program */
+      program?: string | null;
       /** Rm */
       rm: string;
       /**
@@ -2938,21 +3012,41 @@ export interface components {
       substituted?: string | null;
       target?: components["schemas"]["EditTarget"] | null;
     };
+    /**
+     * ChecklistCondition
+     * @description When an item applies beyond its product, customer type and case type: ANY one part is enough
+     *     (plan 2026-11-27 section 7.3). Each id is checked against config/app.yaml and the product's form in
+     *     config/intake.yaml when the configuration is published.
+     */
+    ChecklistCondition: {
+      /** Case Types */
+      case_types?: string[];
+      /** Declared */
+      declared?: string[];
+      /** Rows */
+      rows?: string[];
+    };
     /** ChecklistItemDef */
     ChecklistItemDef: {
       /** Basis */
       basis: string;
       /** Blocking */
       blocking: boolean;
+      /** Case Types */
+      case_types?: string[];
       /** Category */
       category: string;
       /** Constitutions */
       constitutions: ("private_limited" | "proprietorship" | "partnership")[];
       coverage?: components["schemas"]["CoverageRule"] | null;
+      /** Customer Types */
+      customer_types?: string[];
       /** Id */
       id: string;
       /** Name */
       name: string;
+      /** Products */
+      products?: string[];
       /** Request */
       request?: string | null;
       /** Requires Attributes */
@@ -2965,6 +3059,7 @@ export interface components {
         "published_policy" | "regulatory" | "industry_standard" | "provisional" | "rbl_supplied";
       /** Weight */
       weight: number;
+      when_any?: components["schemas"]["ChecklistCondition"] | null;
       /** Why */
       why: string;
     };
@@ -3043,8 +3138,20 @@ export interface components {
        * @default unknown
        */
       constitution: string;
+      /** Customer Type */
+      customer_type?: string | null;
       /** Facilities */
       facilities?: string[];
+      /** Fields */
+      fields?: {
+        [key: string]: string | null;
+      };
+      /** Groups */
+      groups?: {
+        [key: string]: {
+          [key: string]: components["schemas"]["HeaderField"];
+        }[];
+      };
       /** Product */
       product?: string | null;
     };
@@ -3253,6 +3360,8 @@ export interface components {
        * @default 0
        */
       months: number;
+      /** Named In */
+      named_in?: string[];
       /**
        * Offset
        * @default 0
@@ -3260,6 +3369,8 @@ export interface components {
       offset: number;
       /** Statements */
       statements?: string[];
+      /** What */
+      what?: string | null;
     };
     /**
      * CreateCaseRequest
@@ -3441,6 +3552,26 @@ export interface components {
     DocumentTypesSection: {
       /** Types */
       types: components["schemas"]["DocumentTypeDef"][];
+    };
+    /**
+     * DuplicateConflict
+     * @description 409 from a create: a matching case exists (F-04.5). Send `duplicate_override_reason` to create
+     *     anyway; the reason covers the matches listed here.
+     */
+    DuplicateConflict: {
+      /** Duplicates */
+      duplicates: components["schemas"]["CaseSummary"][];
+      /** Duplicates Elsewhere */
+      duplicates_elsewhere?: components["schemas"]["CaseElsewhere"][];
+      /** Message */
+      message: string;
+    };
+    /**
+     * DuplicateConflictResponse
+     * @description The body of a 409 from a create.
+     */
+    DuplicateConflictResponse: {
+      detail: components["schemas"]["DuplicateConflict"];
     };
     /**
      * EditTarget
@@ -4322,6 +4453,172 @@ export interface components {
       start: number;
     };
     /**
+     * IntakeCreated
+     * @description POST /api/cases/intake: the case and its files, created together.
+     */
+    IntakeCreated: {
+      case: components["schemas"]["CaseDetail"];
+      upload: components["schemas"]["UploadResult"];
+    };
+    /** IntakeDocuments */
+    IntakeDocuments: {
+      /** Min Files */
+      min_files: number;
+      /** Required */
+      required: boolean;
+      /** Suggested */
+      suggested?: string[];
+    };
+    /**
+     * IntakeField
+     * @description One field of the form (config/intake.yaml).
+     */
+    IntakeField: {
+      /** Alternative */
+      alternative?: string | null;
+      /** From Section */
+      from_section?: string | null;
+      /** Holder */
+      holder?: ("individual" | "entity") | null;
+      /** Id */
+      id: string;
+      /** Length */
+      length?: number | null;
+      /** Options */
+      options?: components["schemas"]["Option"][] | null;
+      /**
+       * Required
+       * @default false
+       */
+      required: boolean;
+      /** Show When */
+      show_when?: {
+        [key: string]: string[];
+      } | null;
+      /**
+       * Type
+       * @enum {string}
+       */
+      type:
+        | "text"
+        | "amount"
+        | "number"
+        | "months"
+        | "choice"
+        | "yes_no"
+        | "pan"
+        | "gstin"
+        | "cin_or_llpin"
+        | "udyam"
+        | "digits"
+        | "pincode"
+        | "date"
+        | "parties";
+      /** Unless */
+      unless?: {
+        [key: string]: string[];
+      } | null;
+    };
+    /**
+     * IntakeIdentifier
+     * @description An identifier box on the start screen: always optional.
+     */
+    IntakeIdentifier: {
+      /** Holder */
+      holder?: ("individual" | "entity") | null;
+      /** Id */
+      id: string;
+      /** Show When */
+      show_when?: {
+        [key: string]: string[];
+      } | null;
+      /**
+       * Type
+       * @enum {string}
+       */
+      type: "pan" | "gstin" | "cin_or_llpin" | "udyam" | "text";
+      /** Unless */
+      unless?: {
+        [key: string]: string[];
+      } | null;
+    };
+    /**
+     * IntakePeople
+     * @description A section whose rows are the case's parties.
+     */
+    IntakePeople: {
+      /** Default Role */
+      default_role: string;
+      /** Primary Role */
+      primary_role?: string | null;
+    };
+    /** IntakeProduct */
+    IntakeProduct: {
+      /** Sections */
+      sections: components["schemas"]["IntakeSection"][];
+      start: components["schemas"]["IntakeStart"];
+    };
+    /**
+     * IntakeRefusal
+     * @description Why POST /api/cases/intake created nothing (422): `code` says which rule, `message` says it in
+     *     words. No case and no file is left behind.
+     */
+    IntakeRefusal: {
+      /**
+       * Code
+       * @enum {string}
+       */
+      code:
+        | "bad_body"
+        | "case_part"
+        | "case_invalid"
+        | "minimum_missing"
+        | "identifier_invalid"
+        | "too_few_files";
+      /** Message */
+      message: string;
+      /** Min Files */
+      min_files?: number | null;
+      /** Missing */
+      missing?: string[];
+      /** Registered */
+      registered?: number | null;
+    };
+    /**
+     * IntakeRefusalResponse
+     * @description The body of a 422 from POST /api/cases/intake.
+     */
+    IntakeRefusalResponse: {
+      detail: components["schemas"]["IntakeRefusal"];
+    };
+    /** IntakeSection */
+    IntakeSection: {
+      /** Fields */
+      fields: components["schemas"]["IntakeField"][];
+      /** Id */
+      id: string;
+      people?: components["schemas"]["IntakePeople"] | null;
+      /** Repeat */
+      repeat?: {
+        [key: string]: number;
+      } | null;
+      /** Show When */
+      show_when?: {
+        [key: string]: string[];
+      } | null;
+    };
+    /** IntakeStart */
+    IntakeStart: {
+      documents: components["schemas"]["IntakeDocuments"];
+      /** Identifiers */
+      identifiers: components["schemas"]["IntakeIdentifier"][];
+      /**
+       * Message Required
+       * @default false
+       */
+      message_required: boolean;
+    };
+    /**
      * IntegrityReview
      * @description F-07A: a person's conclusion on a file, after looking at its evidence. Never set by
      *     the checks; the latest recorded is shown, every one is kept.
@@ -4521,13 +4818,26 @@ export interface components {
       channels: components["schemas"]["Option"][];
       /** Constitutions */
       constitutions: components["schemas"]["Option"][];
+      /** Customer Types */
+      customer_types?: components["schemas"]["Option"][];
       /** Facilities */
       facilities: components["schemas"]["Option"][];
       features?: components["schemas"]["Features"];
+      /**
+       * Form Field Max Kb
+       * @default 256
+       */
+      form_field_max_kb: number;
+      /** Intake */
+      intake?: {
+        [key: string]: components["schemas"]["IntakeProduct"];
+      };
       /** Product Default */
       product_default?: string | null;
       /** Products */
-      products: components["schemas"]["Option"][];
+      products: components["schemas"]["ProductMeta"][];
+      /** Programs */
+      programs?: components["schemas"]["Option"][];
     };
     /**
      * ModelCall
@@ -5001,7 +5311,15 @@ export interface components {
        * Role
        * @enum {string}
        */
-      role: "borrower" | "director" | "partner" | "proprietor" | "guarantor" | "promoter";
+      role:
+        | "borrower"
+        | "director"
+        | "partner"
+        | "proprietor"
+        | "guarantor"
+        | "promoter"
+        | "applicant"
+        | "co_applicant";
       /** Source */
       source: string;
     };
@@ -5427,12 +5745,50 @@ export interface components {
       /** Label */
       label: string;
     };
-    /** ProposalRequest */
+    /**
+     * ProductMeta
+     * @description A product a case can be opened under, with the lists a case of it may carry (config/app.yaml).
+     */
+    ProductMeta: {
+      /** Case Types */
+      case_types: components["schemas"]["Option"][];
+      /** Customer Types */
+      customer_types: components["schemas"]["Option"][];
+      /** Id */
+      id: string;
+      /** Label */
+      label: string;
+      /** Minimum */
+      minimum: string[];
+      /** Prefix */
+      prefix: string;
+      /** Programs */
+      programs: components["schemas"]["Option"][];
+      /** Stages */
+      stages: components["schemas"]["Option"][];
+    };
+    /**
+     * ProposalRequest
+     * @description What the start screen has so far. Every part is optional: with no text nothing is read, and
+     *     the answer is only the duplicate check and what the product's minimum still lacks.
+     */
     ProposalRequest: {
       /** Channel */
       channel: string;
+      /** Fields */
+      fields?: {
+        [key: string]: string | null;
+      };
+      /** Groups */
+      groups?: {
+        [key: string]: {
+          [key: string]: components["schemas"]["HeaderField"];
+        }[];
+      };
+      /** Product */
+      product?: string | null;
       /** Text */
-      text: string;
+      text?: string | null;
     };
     /** ProposedCandidate */
     ProposedCandidate: {
@@ -5449,6 +5805,8 @@ export interface components {
       candidates?: components["schemas"]["ProposedCandidate"][];
       /** Note */
       note?: string | null;
+      /** Source */
+      source?: string | null;
       span?: components["schemas"]["Span"] | null;
       /**
        * Status
@@ -7092,6 +7450,15 @@ export interface operations {
           "application/json": components["schemas"]["CaseDetail"];
         };
       };
+      /** @description A matching case exists; give duplicate_override_reason to create anyway. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DuplicateConflictResponse"];
+        };
+      };
       /** @description Validation Error */
       422: {
         headers: {
@@ -7134,6 +7501,56 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  create_case_with_files_api_cases_intake_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        authorization?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "multipart/form-data": {
+          /** @description The case to create: a CaseCreate as JSON, at most uploads.max_form_field_kb (Meta.form_field_max_kb). */
+          case: string;
+          /** @description How the files arrived; default upload. */
+          channel?: string;
+          files: string[];
+        };
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IntakeCreated"];
+        };
+      };
+      /** @description A matching case exists; give duplicate_override_reason to create anyway. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DuplicateConflictResponse"];
+        };
+      };
+      /** @description Nothing was created. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IntakeRefusalResponse"];
         };
       };
     };
@@ -7320,7 +7737,11 @@ export interface operations {
       };
       cookie?: never;
     };
-    requestBody?: never;
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["CreateCaseRequest"] | null;
+      };
+    };
     responses: {
       /** @description Successful Response */
       200: {
@@ -7353,11 +7774,7 @@ export interface operations {
       };
       cookie?: never;
     };
-    requestBody?: {
-      content: {
-        "application/json": components["schemas"]["CreateCaseRequest"] | null;
-      };
-    };
+    requestBody?: never;
     responses: {
       /** @description Successful Response */
       200: {

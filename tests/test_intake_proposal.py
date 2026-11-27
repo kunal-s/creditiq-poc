@@ -238,6 +238,27 @@ def test_tc01_without_confirmation_no_case_exists(client: TestClient, published_
     assert client.get("/api/cases", headers=rm).json() == []
 
 
+def test_a_proposal_needs_no_message(client: TestClient, published_data_root: Path):
+    """The start screen may have only documents and identifiers: nothing is read, the duplicate check and
+    the product's minimum still run, and nothing is stored."""
+    rm = sign_in(client, RM)
+    existing = client.post("/api/cases", json={"borrower": "Kestrel Fabricators Pvt Ltd", "facilities": ["cash_credit"],
+                                               "amount_inr": 5000000, "channel": "email", "pan": "AAACK1234F"},
+                           headers=rm).json()
+    r = client.post("/api/cases/proposals", json={"channel": "email", "fields": {"pan": "AAACK1234F"}}, headers=rm)
+    assert r.status_code == 200, r.text
+    p = r.json()
+    assert p["text_sha256"] is None and p["stripped"] == []
+    assert set(p["fields"]) == {"pan"} and p["fields"]["pan"]["source"] == "identifier"
+    assert [d["id"] for d in p["duplicates"]] == [existing["id"]]
+    assert p["missing_minimum"] == ["borrower", "facilities", "amount_inr"]
+    conn = db.connect(published_data_root)
+    try:
+        assert conn.execute("SELECT COUNT(*) FROM cases").fetchone()[0] == 1
+    finally:
+        conn.close()
+
+
 def test_tc01_proposal_permissions(client: TestClient):
     body = {"channel": "email", "text": "CC 50L"}
     assert client.post("/api/cases/proposals", json=body).status_code == 401

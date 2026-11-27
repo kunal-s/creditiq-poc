@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from ..intake import declared_sides, is_declared_label
 from ..contracts import AccountFact, Evidence, Finding, FindingSide, SourceColumn, XvHighlight
 from ..crosschecks import DECLARATION, YES
 from . import builds, column, column_from_side, highlight, plural, row, sentence, wanted
@@ -26,12 +27,14 @@ if TYPE_CHECKING:
     from ..configstore.schema import CrossCheckRule
     from ..crosschecks import Context
 
-# Where the account set says an account appears (engine/facts.py _accounts).
-MESSAGE = "Sourcing message"
+# Where the account set says an account appears (engine/facts.py _accounts): the case's own declaration
+# is named as config/app.yaml `declared_sources` words it (the sourcing message, or the intake form).
 TRANSFER = "Transfer in "
 # The rule's sides (engine/crosschecks.py _declared_accounts_side, _statements_side, _evidenced_accounts).
-SIDES = {"Declared accounts": "declared", "Declared in the sourcing message": "declared",
-         "Statements on file": "statements", "Seen in transfers": "transfers"}
+def _sides() -> dict[str, str]:
+    """Each side's title, and the column it fills."""
+    return {"Declared accounts": "declared", **{side: "declared" for side in declared_sides()},
+            "Statements on file": "statements", "Seen in transfers": "transfers"}
 ROW_COLUMNS = ["Account", "Where it appears"]
 BA_01 = "declared_accounts_with_statements"
 
@@ -88,7 +91,7 @@ def _pages(ctx: Context, a: AccountFact, declarations: set[str]) -> dict[str, li
     if a.has_statement and rest:
         pages["statements"].append(rest.pop(0))
     banking = ctx.facts.declared_banking
-    message = banking.evidence[:1] if banking and MESSAGE in a.sources else []
+    message = banking.evidence[:1] if banking and any(is_declared_label(s) for s in a.sources) else []
     in_declaration = any(_in_declaration(ctx, s) for s in a.sources)
     for e in rest:
         if in_declaration and e.document_id in declarations:
@@ -106,7 +109,7 @@ def _pages(ctx: Context, a: AccountFact, declarations: set[str]) -> dict[str, li
 def _where(ctx: Context, a: AccountFact, kind: str) -> str:
     """Where the account appears, for the column it is shown in."""
     def declares(s: str) -> bool:
-        return s == MESSAGE or _in_declaration(ctx, s)
+        return is_declared_label(s) or _in_declaration(ctx, s)
 
     if kind == "declared":
         found = [s for s in a.sources if declares(s)]
@@ -182,7 +185,8 @@ def _account_lines(rule: CrossCheckRule, finding: Finding) -> list[XvHighlight]:
     n = sum(1 for r in rows if r.cells[1:2] == [YES])
     if not n:
         return [highlight(finding, "Accounts on file", note="none named in the documents")]
-    if any(SIDES.get(s.label) == "declared" for s in finding.sides):
+    sides = _sides()
+    if any(sides.get(s.label) == "declared" for s in finding.sides):
         note = "each declared" if n > 1 else "declared"
     else:
         note = "no other account in the documents"
@@ -192,8 +196,9 @@ def _account_lines(rule: CrossCheckRule, finding: Finding) -> list[XvHighlight]:
 @builds(BA_01, "evidenced_accounts_declared")
 def accounts_card(ctx: Context, rule: CrossCheckRule, finding: Finding) -> None:
     declarations = _declaration_documents(ctx)
+    sides = _sides()
     finding.columns = [
-        _accounts_column(ctx, side, SIDES[side.label], declarations) if side.label in SIDES
+        _accounts_column(ctx, side, sides[side.label], declarations) if side.label in sides
         else column_from_side(ctx, side, f"side-{i}")
         for i, side in enumerate(finding.sides)
     ]

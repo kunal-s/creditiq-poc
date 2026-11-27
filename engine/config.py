@@ -8,6 +8,8 @@ never import (CLAUDE.md rule 4).
 
 from __future__ import annotations
 
+import re
+from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
@@ -85,3 +87,99 @@ def branch_for_label(label: str | None) -> str | None:
         return None
     needle = label.strip().lower()
     return next((b["id"] for b in option_list("branches") if b["label"].lower() == needle), None)
+
+
+# --- Products (config/app.yaml `products`) and the form per product (config/intake.yaml) ---
+
+
+class ConfigError(ValueError):
+    """A deployment file names something that is not defined."""
+
+
+@dataclass(frozen=True)
+class ProductConfig:
+    """What a case of one product may carry and needs before it can be created."""
+
+    id: str
+    label: str
+    prefix: str
+    case_types: tuple[str, ...]
+    stages: tuple[str, ...]
+    customer_types: tuple[str, ...]
+    programs: tuple[str, ...]
+    minimum: tuple[str, ...]
+
+    @property
+    def constitution_based(self) -> bool:
+        """The product's customer types are constitutions (a business), not the separate list."""
+        return set(self.customer_types) <= option_ids("constitutions")
+
+
+#: The fields a product's `minimum` can name, and what each one means (engine/intake.py `missing_minimum`).
+MINIMUM_FIELDS = ("borrower", "facilities", "amount_inr", "applicants", "customer_type", "tenure_months", "properties")
+
+
+@lru_cache
+def load_intake_config() -> dict:
+    path = REPO_ROOT / "config" / "intake.yaml"
+    return yaml.safe_load(path.read_text(encoding="utf-8"))
+
+
+def customer_type_options() -> list[dict]:
+    """Every customer type a product may use: the constitutions and the separate list."""
+    cfg = load_app_config()
+    return [*cfg.get("constitutions", []), *cfg.get("customer_types", [])]
+
+
+def _check_product(raw: dict, cfg: dict) -> ProductConfig:
+    pid = raw["id"]
+    known = {
+        "case_types": {o["id"] for o in cfg["case_types"]},
+        "stages": {o["id"] for o in cfg["bank_stages"]["options"]},
+        "customer_types": {o["id"] for o in customer_type_options()},
+        "programs": {o["id"] for o in cfg.get("programs", [])},
+    }
+    for key, ids in known.items():
+        unknown = [v for v in raw.get(key) or [] if v not in ids]
+        if unknown:
+            raise ConfigError(f"products.{pid}.{key}: unknown {unknown}")
+    bad = [m for m in raw.get("minimum") or [] if m not in MINIMUM_FIELDS]
+    if bad:
+        raise ConfigError(f"products.{pid}.minimum: unknown fields {bad}")
+    if not raw.get("prefix") or not re.fullmatch(r"[A-Z]{2,4}", raw["prefix"]):
+        raise ConfigError(f"products.{pid}.prefix must be 2 to 4 capital letters")
+    return ProductConfig(
+        id=pid, label=raw["label"], prefix=raw["prefix"],
+        case_types=tuple(raw.get("case_types") or ()), stages=tuple(raw.get("stages") or ()),
+        customer_types=tuple(raw.get("customer_types") or ()), programs=tuple(raw.get("programs") or ()),
+        minimum=tuple(raw.get("minimum") or ()),
+    )
+
+
+def products() -> list[ProductConfig]:
+    """The configured products, validated: every list names ids that are defined, prefixes are unique,
+    the default is a product, and every product has a form in config/intake.yaml."""
+    cfg = load_app_config()
+    found = [_check_product(raw, cfg) for raw in cfg["products"]["options"]]
+    ids = [p.id for p in found]
+    if len(ids) != len(set(ids)):
+        raise ConfigError("products: duplicate ids")
+    prefixes = [p.prefix for p in found]
+    if len(prefixes) != len(set(prefixes)):
+        raise ConfigError("products: duplicate prefixes")
+    if cfg["products"].get("default") not in ids:
+        raise ConfigError("products.default is not a product")
+    intake = load_intake_config()
+    missing = [i for i in ids if i not in intake]
+    if missing:
+        raise ConfigError(f"config/intake.yaml has no form for {missing}")
+    return found
+
+
+def product(product_id: str | None) -> ProductConfig:
+    """A product by id; None is the configured default."""
+    wanted = product_id or option_default("products")
+    for p in products():
+        if p.id == wanted:
+            return p
+    raise KeyError(f"unknown product id {product_id!r}")

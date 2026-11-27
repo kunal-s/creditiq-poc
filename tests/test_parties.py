@@ -158,3 +158,36 @@ def test_a_parallel_din_list_gives_each_named_person_a_din_only_when_counts_agre
     # One person without a printed DIN: the lists cannot be paired, so none is trusted.
     del fields["authorized_person_dins[1]"]
     assert [e["din"] for e in party_entries(fields, spec)] == [None, None]
+
+
+def test_people_named_on_the_form_are_parties_of_the_case(client, published_data_root):
+    """F-10.2: the intake form's people (a business's directors, a loan against property's applicants) are
+    parties with the form as their source; a document naming one of them adds to that party."""
+    cell = {"proposed": None, "source": "person"}
+    rm = sign_in(client, RM)
+    case_id = make_case(client, rm, published_data_root, borrower="Heronbay Polymers Pvt Ltd",
+                        groups={"people": [{"name": {"value": "Tarun Velankar", **cell},
+                                            "role": {"value": "director", **cell}},
+                                           {"name": {"value": "Ishita Barve", **cell}}]})
+    upload(client, rm, case_id, [("kyc tarun velankar heronbay.pdf", fixture_file("kyc tarun velankar heronbay.pdf"))])
+    run_jobs(published_data_root)
+    parties = client.get(f"/api/cases/{case_id}/parties", headers=rm).json()
+    tarun = [p for p in parties if "Velankar" in p["name"]]
+    assert len(tarun) == 1 and tarun[0]["role"] == "director" and tarun[0]["source"] == "intake"
+    assert tarun[0]["kyc_document_ids"]
+    ishita = next(p for p in parties if p["name"] == "Ishita Barve")
+    assert ishita["role"] == "promoter"   # no role given: the people section's default
+
+
+def test_intake_people_marks_the_primary_applicant():
+    from engine.config import product
+    from engine.parties import intake_people
+
+    def row(name, role=None):
+        return {"name": {"value": name}, **({"role": {"value": role}} if role else {})}
+
+    people = intake_people(product("lap"), {"applicants": [row("Asha Rao", "co_applicant"),
+                                                            row("Vikram Rao", "applicant"), row("  "),
+                                                            row("Neel Rao", "uncle")]})
+    assert [(p["name"], p["role"], p["primary"]) for p in people] == [
+        ("Asha Rao", "co_applicant", False), ("Vikram Rao", "applicant", True), ("Neel Rao", "co_applicant", False)]

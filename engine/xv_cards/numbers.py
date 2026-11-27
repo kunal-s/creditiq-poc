@@ -189,7 +189,8 @@ def _figure_column(ctx: Context, year: TurnoverYear, f: TurnoverFigure, finding:
         ay = f"AY {tax.assessment_year}" if tax else year.fy
         return _line_column(ctx, "itr", "Income tax return", [ITR], "Turnover as per the return", ay, f.value,
                             coverage=f"{ay} · for {year.fy}", **flags)
-    return _line_column(ctx, "declared", "Turnover declared in the sourcing message", [CASE_RECORD],
+    side = ctx.declared_side
+    return _line_column(ctx, "declared", f"Turnover {side[:1].lower()}{side[1:]}", [CASE_RECORD],
                         "Declared turnover", year.fy, f.value, coverage=f"Declared for {year.fy}", **flags)
 
 

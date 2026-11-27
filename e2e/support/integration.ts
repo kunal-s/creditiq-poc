@@ -11,7 +11,7 @@ import { resolve } from "node:path";
 
 import { expect, type Page } from "@playwright/test";
 
-import { REPO_ROOT, caseIdFromUrl, settleProposedFields } from "./ui";
+import { REPO_ROOT, START_FILE, caseIdFromUrl, fixtureFile, settleProposedFields } from "./ui";
 
 /** The frozen date every age and window rule in these specs reads (principle 5). */
 export const AS_OF = "2026-09-29";
@@ -45,8 +45,11 @@ export function sourcingMessage(borrower: string): string {
  */
 export async function createCase(page: Page, borrower: string): Promise<string> {
   await page.goto("/appraisals/new");
+  await page.getByTestId("product-bbg").click();
   await page.getByTestId("channel-email").click();
   await page.getByTestId("message-input").fill(sourcingMessage(borrower));
+  // A case is created with its documents: at least one file before reading.
+  await page.getByTestId("upload-input").setInputFiles([fixtureFile(START_FILE)]);
   const read = page.getByRole("button", { name: "Read the message" });
   await expect(read).toBeEnabled();
   await read.click();
@@ -72,10 +75,8 @@ export async function createCase(page: Page, borrower: string): Promise<string> 
   }).toPass({ timeout: 30_000, intervals: [300, 700, 1500] });
 
   await create.click();
-  // With no attachment the screen goes straight to Files (appraisals.new.tsx).
-  await expect(page).toHaveURL(/\/appraisals\/BBG-\d{4}-\d{6}(\/documents)?$/, {
-    timeout: 30_000,
-  });
+  // The case is created with its files and opens on its Overview.
+  await expect(page).toHaveURL(/\/appraisals\/[A-Z]{2,4}-\d{4}-\d{6}$/, { timeout: 30_000 });
   return caseIdFromUrl(page);
 }
 

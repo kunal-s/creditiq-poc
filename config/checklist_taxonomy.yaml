@@ -1,21 +1,49 @@
-# Document checklist taxonomy: what's required, by constitution and by case
-# attribute. Items are those the nine configured document types can satisfy (AD-2a);
-# an item is added here together with a type that satisfies it. Consumed by engine/checklist.py's deriver, never read directly
-# by the checklist screens — those go through the published config store.
+# Document checklist taxonomy: what's required, by product, by constitution (a business) or customer
+# type, case type and case attribute, and by what the intake form declares. Items are those the configured
+# document types can satisfy (AD-2a); an item is added here together with a type that satisfies it.
+# Consumed by engine/checklist.py's deriver, never read directly by the checklist screens — those go
+# through the published config store. A key, or an id an item names, that is not defined is refused at
+# publish (engine/configstore/schema.py).
 #
 # coverage: what "complete" means beyond presence (F-13.2), measured from
-# the case's as_of date. request: how to ask for the item when it is
+# the case's as_of date; a parties coverage may name only the people an intake field lists (`named_in`)
+# and say what each one's document is (`what`). request: how to ask for the item when it is
 # missing, in plain language for the pre-login query list (F-14.2).
 
 sections:
   - "Constitution and KYC"
   - Financials
   - "Banking and operations"
+  # A loan against property's sections: the document categories of RBL's LAP input documents
+  # (scope document section 2.2). RBL to confirm.
+  - Application
+  - "KYC and identity"
+  - "Address and residence"
+  - "Business and constitution"
+  - "Income and financials"
+  - Banking
+  - "Bureau and loans"
+  - "Property and security"
+  - "Professional and qualification"
+  - "Other income"
+  - "Supporting and exception"
 
 section_weight:
   "Constitution and KYC": 20
   Financials: 30
   "Banking and operations": 30
+  # A loan against property's: RBL to confirm.
+  Application: 5
+  "KYC and identity": 15
+  "Address and residence": 5
+  "Business and constitution": 10
+  "Income and financials": 25
+  Banking: 15
+  "Bureau and loans": 10
+  "Property and security": 15
+  "Professional and qualification": 5
+  "Other income": 5
+  "Supporting and exception": 0      # as applicable: never weighs against readiness
 
 review_gate_threshold: 85
 disbursement_gate_threshold: 100
@@ -26,6 +54,7 @@ items:
     name: Certificate of incorporation
     category: "Constitution and KYC"
     constitutions: [private_limited]
+    products: [bbg]
     why: Establishes legal existence and the date from which the borrowing entity has existed.
     basis: Companies Act constitution requirement.
     source: published_policy
@@ -37,6 +66,7 @@ items:
     name: Memorandum and Articles of Association
     category: "Constitution and KYC"
     constitutions: [private_limited]
+    products: [bbg]
     why: Establishes the objects clause and borrowing powers.
     basis: Companies Act constitution requirement.
     source: published_policy
@@ -48,6 +78,7 @@ items:
     name: Board resolution authorising the facility
     category: "Constitution and KYC"
     constitutions: [private_limited]
+    products: [bbg]
     why: Evidences the company's authority to borrow and who may sign.
     basis: Companies Act, delegation of powers.
     source: published_policy
@@ -59,6 +90,7 @@ items:
     name: Entity PAN
     category: "Constitution and KYC"
     constitutions: [private_limited, proprietorship, partnership]
+    products: [bbg]
     why: Primary tax identifier; cross-checked against every other filing.
     basis: RBL KYC policy.
     source: published_policy
@@ -70,6 +102,7 @@ items:
     name: KYC of directors, partners or proprietor
     category: "Constitution and KYC"
     constitutions: [private_limited, proprietorship, partnership]
+    products: [bbg]
     why: Identity and address verification of the people behind the borrower.
     basis: RBL KYC policy.
     source: published_policy
@@ -83,6 +116,7 @@ items:
     name: Audited financial statements, third-latest year
     category: Financials
     constitutions: [private_limited, proprietorship, partnership]
+    products: [bbg]
     why: Completes the three-year trend behind the latest audited year.
     basis: RBL credit policy, minimum audited history.
     source: published_policy
@@ -95,6 +129,7 @@ items:
     name: Audited financial statements, second-latest year
     category: Financials
     constitutions: [private_limited, proprietorship, partnership]
+    products: [bbg]
     why: Establishes the trend line behind the latest audited year.
     basis: RBL credit policy, minimum audited history.
     source: published_policy
@@ -107,6 +142,7 @@ items:
     name: Audited financial statements, latest year
     category: Financials
     constitutions: [private_limited, proprietorship, partnership]
+    products: [bbg]
     why: The primary basis for the spread and ratio assessment.
     basis: RBL credit policy, minimum audited history.
     source: published_policy
@@ -119,6 +155,7 @@ items:
     name: Income Tax Return with computation, last three assessment years
     category: Financials
     constitutions: [private_limited, proprietorship, partnership]
+    products: [bbg]
     why: Independent corroboration of profit and tax paid.
     basis: RBL credit policy.
     source: published_policy
@@ -132,6 +169,7 @@ items:
     name: Bank statements, twelve months, all operative accounts
     category: "Banking and operations"
     constitutions: [private_limited, proprietorship, partnership]
+    products: [bbg]
     why: Independent evidence of turnover and conduct.
     basis: RBL credit policy.
     source: published_policy
@@ -144,6 +182,7 @@ items:
     name: GSTR-3B, twelve months
     category: "Banking and operations"
     constitutions: [private_limited, proprietorship, partnership]
+    products: [bbg]
     why: Independent evidence of turnover, cross-checked against books and bank credits.
     basis: RBL credit policy.
     source: published_policy
@@ -151,3 +190,515 @@ items:
     weight: 8
     coverage: {kind: monthly_periods, months: 12}
     request: GST returns (GSTR-3B)
+
+  # --- Loan against property (RBL scope document section 2.2, "LAP - Input Documents") ---
+  # Every item is provisional (source: provisional) and every one is RBL to confirm: which documents,
+  # which apply when, which block, and the periods. "Based on RBL-provided product, customer type and
+  # checklist applicability rules, the solution will check only the documents applicable to the
+  # selected LAP case": each item names its product, and where it is not for every case,
+  #   customer_types  the case's customer type is one of these (config/app.yaml); none for every type,
+  #   case_types      its confirmed case type is one of these; none for every case type,
+  #   when_any        any one of: its case type is one of `case_types`, its intake form declares a
+  #                   value for one of `declared` (anything but empty, zero or "no"), or has a row in
+  #                   one of the repeating sections `rows` (config/intake.yaml).
+  # `constitutions` lists every constitution: a loan against property is keyed by its customer type.
+  # Legal and valuation documents of the property are added in a later stage.
+
+  # Application documents. RBL to confirm.
+  - id: lap_application_form
+    name: Application form, with declarations, consent and photographs
+    category: Application
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    why: The customer's own request for the loan, with the declarations, the consent to check the details given and the photographs of each applicant.
+    basis: RBL loan against property checklist (provisional).
+    source: provisional
+    blocking: true
+    weight: 3
+    request: Signed application form with the declarations, the customer's consent and the photographs of each applicant
+
+  # KYC and identity documents, for each applicant, co-applicant and guarantor. RBL to confirm.
+  - id: lap_pan_or_form_60
+    name: PAN or Form 60 of each applicant, co-applicant and guarantor
+    category: "KYC and identity"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    why: The tax identifier every other document is checked against, or the declaration of a person who has none.
+    basis: RBL KYC policy (provisional).
+    source: provisional
+    blocking: true
+    weight: 4
+    coverage: {kind: parties, what: PAN or Form 60}
+    request: PAN card, or Form 60 where the person has no PAN
+
+  - id: lap_identity_proof
+    name: Identity proof of each applicant, co-applicant and guarantor
+    category: "KYC and identity"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    why: An officially valid document establishing who each person is.
+    basis: RBL KYC policy (provisional).
+    source: provisional
+    blocking: true
+    weight: 4
+    coverage: {kind: parties, what: identity proof}
+    request: An officially valid identity document (Aadhaar masked to its last four digits, passport, voter ID or driving licence)
+
+  - id: lap_signature_proof
+    name: Signature proof of each applicant, co-applicant and guarantor
+    category: "KYC and identity"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    why: The specimen against which each person's signature on the loan documents is checked.
+    basis: RBL KYC policy (provisional).
+    source: provisional
+    blocking: true
+    weight: 2
+    coverage: {kind: parties, what: signature proof}
+    request: Signature proof (a cancelled cheque or the bank's signature verification)
+
+  - id: lap_authorised_person
+    name: "Authorised-person documents: board resolution or letter of authority"
+    category: "KYC and identity"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    customer_types: [non_individual]
+    why: Who may borrow and sign for the business, and on what authority.
+    basis: RBL KYC policy (provisional).
+    source: provisional
+    blocking: false
+    weight: 2
+    request: Board resolution or letter of authority naming the persons who may borrow and sign
+
+  # Address and residence documents. RBL to confirm.
+  - id: lap_address_proof
+    name: Current and permanent address proof of each applicant, co-applicant and guarantor
+    category: "Address and residence"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    why: Where each person lives now and permanently, for contact and recovery.
+    basis: RBL KYC policy (provisional).
+    source: provisional
+    blocking: true
+    weight: 3
+    coverage: {kind: parties, what: address proof}
+    request: Current and permanent address proof (an electricity or gas bill, a rent agreement, or proof of owning the residence)
+
+  # Business and constitution documents. RBL to confirm.
+  - id: lap_business_proof
+    name: "Business proof: GST registration, Udyam or Shop Act registration"
+    category: "Business and constitution"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    customer_types: [self_employed_professional, self_employed, non_individual]
+    why: Establishes that the business exists and how long it has run.
+    basis: RBL loan against property checklist (provisional).
+    source: provisional
+    blocking: false
+    weight: 2
+    request: GST registration certificate, Udyam registration, or a Shop Act or other business registration
+
+  - id: lap_constitution_documents
+    name: "Constitution documents: certificate of incorporation, MOA and AOA, or partnership or LLP deed"
+    category: "Business and constitution"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    customer_types: [non_individual]
+    # The business is itself the borrower: its constitution documents are its KYC, so blocking. RBL to confirm.
+    why: Establishes the borrowing business's legal existence and its powers.
+    basis: RBL KYC policy (provisional).
+    source: provisional
+    blocking: true
+    weight: 4
+    request: Certificate of incorporation with the memorandum and articles of association, or the partnership or LLP deed
+
+  - id: lap_entity_people
+    name: Details of directors, shareholders or partners
+    category: "Business and constitution"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    customer_types: [non_individual]
+    why: The people who own and run the borrowing business.
+    basis: RBL KYC policy (provisional).
+    source: provisional
+    blocking: false
+    weight: 2
+    request: List of directors, shareholders or partners, with their holdings
+
+  # Financial documents. Salaried: RBL to confirm.
+  - id: lap_salary_slips
+    name: Salary slips, last three months
+    category: "Income and financials"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    customer_types: [salaried]
+    why: The salary the loan is assessed on, month by month.
+    basis: RBL credit policy (provisional).
+    source: provisional
+    blocking: true
+    weight: 5
+    coverage: {kind: monthly_periods, months: 3}
+    request: Salary slips
+
+  - id: lap_salary_certificate
+    name: Salary certificate
+    category: "Income and financials"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    customer_types: [salaried]
+    why: The employer's statement of the employment and the salary.
+    basis: RBL credit policy (provisional).
+    source: provisional
+    blocking: true
+    weight: 3
+    request: Salary certificate from the employer
+
+  - id: lap_form_16
+    name: Form 16, last two years
+    category: "Income and financials"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    customer_types: [salaried]
+    why: The employer's certificate of the salary paid and the tax deducted from it.
+    basis: RBL credit policy (provisional).
+    source: provisional
+    blocking: true
+    weight: 4
+    coverage: {kind: assessment_years, count: 2}
+    request: Form 16
+
+  # Financial documents. Self-employed (professional or not) and non-individual: RBL to confirm.
+  - id: lap_itr
+    name: Income Tax Return with computation, last two assessment years
+    category: "Income and financials"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    customer_types: [self_employed_professional, self_employed, non_individual]
+    why: Independent evidence of the income the loan is assessed on.
+    basis: RBL credit policy (provisional).
+    source: provisional
+    blocking: true
+    weight: 5
+    coverage: {kind: assessment_years, count: 2}
+    request: Income-tax return acknowledgement with computation of income
+
+  - id: lap_financials_latest
+    name: Profit and loss statement and balance sheet with schedules and audit report, latest year
+    category: "Income and financials"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    customer_types: [self_employed_professional, self_employed, non_individual]
+    why: The business income the loan is assessed on.
+    basis: RBL credit policy (provisional).
+    source: provisional
+    blocking: true
+    weight: 5
+    coverage: {kind: financial_year, offset: 1, statements: [balance_sheet, profit_and_loss]}
+    request: Profit and loss statement and balance sheet, with the schedules and the audit report
+
+  - id: lap_financials_previous
+    name: Profit and loss statement and balance sheet with schedules and audit report, second-latest year
+    category: "Income and financials"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    customer_types: [self_employed_professional, self_employed, non_individual]
+    why: The trend behind the latest year's income.
+    basis: RBL credit policy (provisional).
+    source: provisional
+    blocking: true
+    weight: 4
+    coverage: {kind: financial_year, offset: 2, statements: [balance_sheet, profit_and_loss]}
+    request: Profit and loss statement and balance sheet, with the schedules and the audit report
+
+  - id: lap_provisional_financials
+    name: Provisional financial statements
+    category: "Income and financials"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    customer_types: [self_employed_professional, self_employed, non_individual]
+    why: The current year's income, before the audit.
+    basis: RBL credit policy (provisional).
+    source: provisional
+    blocking: false
+    weight: 1
+    request: Provisional financial statements for the current year
+
+  - id: lap_gst_returns
+    name: GST returns, last twelve months
+    category: "Income and financials"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    customer_types: [self_employed_professional, self_employed, non_individual]
+    when_any: {declared: [gstin]}          # only a business with a GSTIN files them
+    why: Independent evidence of turnover, cross-checked against the books and the bank credits.
+    basis: RBL credit policy (provisional).
+    source: provisional
+    blocking: true
+    weight: 4
+    coverage: {kind: monthly_periods, months: 12}
+    request: GST returns (GSTR-3B)
+
+  - id: lap_tds_certificates
+    name: TDS certificates
+    category: "Income and financials"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    customer_types: [self_employed_professional, self_employed, non_individual]
+    why: The tax deducted from the receipts, which corroborates them.
+    basis: RBL credit policy (provisional).
+    source: provisional
+    blocking: false
+    weight: 1
+    request: TDS certificates (Form 16A) or Form 26AS
+
+  - id: lap_sales_purchase_records
+    name: Sales and purchase records and business registers
+    category: "Income and financials"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    customer_types: [self_employed_professional, self_employed, non_individual]
+    why: The business's own record of what it sells and buys.
+    basis: RBL credit policy (provisional).
+    source: provisional
+    blocking: false
+    weight: 1
+    request: Sales and purchase records and the business registers
+
+  # Banking documents. RBL to confirm.
+  - id: lap_salary_bank_statements
+    name: Bank statements of the salary account, last six months
+    category: Banking
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    customer_types: [salaried]
+    why: Independent evidence of the salary credited and of the account's conduct.
+    basis: RBL credit policy (provisional).
+    source: provisional
+    blocking: true
+    weight: 5
+    coverage: {kind: account_months, months: 6}
+    request: Bank statements of the salary account
+
+  - id: lap_business_bank_statements
+    name: Bank statements of the business accounts, last twelve months
+    category: Banking
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    customer_types: [self_employed_professional, self_employed, non_individual]
+    why: Independent evidence of the business's receipts and of the accounts' conduct.
+    basis: RBL credit policy (provisional).
+    source: provisional
+    blocking: true
+    weight: 5
+    coverage: {kind: account_months, months: 12}
+    request: Bank statements of every business account
+
+  - id: lap_loan_emi_evidence
+    name: "EMI evidence: bank statements of the account the EMIs are paid from"
+    category: Banking
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    when_any: {case_types: [balance_transfer, balance_transfer_top_up, top_up], rows: [existing_loans]}
+    why: Independent evidence that the existing loans are repaid on time.
+    basis: RBL credit policy (provisional).
+    source: provisional
+    blocking: false
+    weight: 2
+    request: Bank statements of the account the EMIs of the existing loans are paid from
+
+  # Bureau and loan documents. Existing loans: when the form lists one, or the case takes over or tops
+  # up a loan. RBL to confirm.
+  - id: lap_bureau_report
+    name: Credit bureau report
+    category: "Bureau and loans"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    why: Independent record of the applicants' existing loans and repayment history.
+    basis: RBL credit policy (provisional).
+    source: provisional
+    blocking: false
+    weight: 2
+    request: Credit bureau report of each applicant
+
+  - id: lap_loan_sanction_letter
+    name: Sanction letter of each existing loan
+    category: "Bureau and loans"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    when_any: {case_types: [balance_transfer, balance_transfer_top_up, top_up], rows: [existing_loans]}
+    why: The amount and terms of each loan the customer already has.
+    basis: RBL credit policy (provisional).
+    source: provisional
+    blocking: false
+    weight: 2
+    request: Sanction letter of each existing loan
+
+  - id: lap_loan_agreement
+    name: Loan agreement of each existing loan
+    category: "Bureau and loans"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    when_any: {case_types: [balance_transfer, balance_transfer_top_up, top_up], rows: [existing_loans]}
+    why: The terms each existing loan is held on.
+    basis: RBL credit policy (provisional).
+    source: provisional
+    blocking: false
+    weight: 1
+    request: Loan agreement of each existing loan
+
+  - id: lap_loan_statement
+    name: Statement of account of each existing loan
+    category: "Bureau and loans"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    when_any: {case_types: [balance_transfer, balance_transfer_top_up, top_up], rows: [existing_loans]}
+    why: What is outstanding on each existing loan and how it has been repaid.
+    basis: RBL credit policy (provisional).
+    source: provisional
+    blocking: false
+    weight: 2
+    request: Statement of account of each existing loan
+
+  - id: lap_loan_repayment_schedule
+    name: Repayment schedule of each existing loan
+    category: "Bureau and loans"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    when_any: {case_types: [balance_transfer, balance_transfer_top_up, top_up], rows: [existing_loans]}
+    why: The instalments still to be paid on each existing loan.
+    basis: RBL credit policy (provisional).
+    source: provisional
+    blocking: false
+    weight: 1
+    request: Repayment schedule of each existing loan
+
+  - id: lap_loan_closure
+    name: Foreclosure letter or list of documents of the loan taken over
+    category: "Bureau and loans"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    case_types: [balance_transfer, balance_transfer_top_up]
+    why: The amount that closes the loan taken over, and the documents its lender holds.
+    basis: RBL credit policy (provisional).
+    source: provisional
+    blocking: false
+    weight: 2
+    request: Foreclosure letter, with the list of documents the lender holds, of the loan to be taken over
+
+  # Property and security documents. RBL to confirm.
+  - id: lap_property_title
+    name: Property ownership papers
+    category: "Property and security"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    why: Establishes who owns the property offered as security.
+    basis: RBL credit policy (provisional).
+    source: provisional
+    blocking: true
+    weight: 5
+    request: Ownership papers of the property offered (title deed, sale or conveyance deed, or allotment letter)
+
+  - id: lap_property_completion
+    name: Property completion evidence
+    category: "Property and security"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    why: Establishes that the property offered is complete.
+    basis: RBL credit policy (provisional).
+    source: provisional
+    blocking: false
+    weight: 2
+    request: Evidence that the property is complete (a completion or occupancy certificate)
+
+  - id: lap_property_owner_kyc
+    name: KYC of the property owners
+    category: "Property and security"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    why: Identity of every owner of the property offered, each of whom must join the mortgage.
+    basis: RBL KYC policy (provisional).
+    source: provisional
+    blocking: false
+    weight: 3
+    coverage: {kind: parties, named_in: [properties.owners]}
+    request: KYC of every owner named on the property
+
+  # Professional and qualification documents. RBL to confirm.
+  - id: lap_professional_registration
+    name: Professional registration or qualification proof
+    category: "Professional and qualification"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    customer_types: [self_employed_professional]
+    why: The qualification the professional's income rests on.
+    basis: RBL credit policy (provisional).
+    source: provisional
+    blocking: false
+    weight: 2
+    request: Professional registration or qualification certificate (for a doctor, the medical registration)
+
+  # Other income documents: only when the form declares the income. RBL to confirm.
+  - id: lap_rent_agreement
+    name: Rent agreement of the property let out
+    category: "Other income"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    when_any: {declared: [declared_rental_income_inr]}
+    why: The rent declared as income, and its terms.
+    basis: RBL credit policy (provisional).
+    source: provisional
+    blocking: false
+    weight: 2
+    request: Rent agreement of each property let out
+
+  - id: lap_rent_credits
+    name: "Rent-credit evidence: bank statements showing the rent received"
+    category: "Other income"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    when_any: {declared: [declared_rental_income_inr]}
+    why: Independent evidence that the rent declared is received.
+    basis: RBL credit policy (provisional).
+    source: provisional
+    blocking: false
+    weight: 2
+    request: Bank statements of the account the rent is credited to
+
+  - id: lap_agricultural_income
+    name: Agricultural land and income proof
+    category: "Other income"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    when_any: {declared: [declared_other_income_inr]}
+    why: The agricultural income declared, and the land it comes from.
+    basis: RBL credit policy (provisional).
+    source: provisional
+    blocking: false
+    weight: 1
+    request: Proof of the agricultural land held and of the income from it
+
+  - id: lap_commission_income
+    name: Commission certificate or slips, with the related tax evidence
+    category: "Other income"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    when_any: {declared: [declared_other_income_inr]}
+    why: The commission income declared, and the tax deducted from it.
+    basis: RBL credit policy (provisional).
+    source: provisional
+    blocking: false
+    weight: 1
+    request: Commission certificate or slips, with the TDS certificates for the commission
+
+  # Supporting and exception documents: as the case needs them. RBL to confirm.
+  - id: lap_supporting_documents
+    name: Supporting and exception documents, as applicable
+    category: "Supporting and exception"
+    constitutions: [private_limited, proprietorship, partnership]
+    products: [lap]
+    why: Affidavits, discrepancy declarations and explanations that settle a difference between documents, and any approval or waiver the checklist needs.
+    basis: RBL loan against property checklist (provisional).
+    source: provisional
+    blocking: false
+    weight: 1
+    request: Affidavits, discrepancy declarations or explanations, and any approval or waiver the case needs

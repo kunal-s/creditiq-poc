@@ -111,3 +111,64 @@ def test_tc_09_an_absent_line_is_not_nil_when_the_expenses_do_not_tie_out(cfg):
     rows = [r if r[0] != "Total expenses (IV)" else ("Total expenses (IV)", 4450) for r in PL]   # 150 printed nowhere
     got = statements.lines(statement("profit_and_loss", rows), cfg)
     assert "finance_costs" not in got and "ebitda" not in got
+
+
+# Lines of the bank's spread template (ITR-3 to 6 output report) the statements print on their face.
+
+def test_share_warrants_and_intangibles_under_development_are_lines_of_their_own(cfg):
+    rows = [("Shareholders' funds", None), ("(a) Share capital", 100), ("(b) Reserves and surplus", 400),
+            ("(c) Money received against share warrants", 25), ("Total shareholders' funds", 525),
+            ("Non-current assets", None), ("Property, plant and equipment", 300), ("Intangible assets under development", 40),
+            ("Total non-current assets", 340)]
+    got = statements.lines(statement("balance_sheet", rows), cfg)
+    assert got["share_warrants_money"].value == 25
+    assert got["intangible_assets_under_development"].value == 40
+    # Intangible assets the statement does not print are not read from the line under development.
+    assert got["intangible_assets"].value == 0 and got["intangible_assets"].state == "not_printed"
+    assert got["fixed_assets_total"].value == 340
+
+
+def test_extraordinary_items_tax_split_and_partners_lines_are_read(cfg):
+    rows = [("Revenue from operations", 5000), ("Total expenses", 4300),
+            ("Profit before exceptional and extraordinary items and tax", 700), ("Exceptional items", 20),
+            ("Profit before extraordinary items and tax", 680), ("Extraordinary items", 30),
+            ("Interest on partners' capital", 50), ("Remuneration to partners", 60),
+            ("Profit before tax", 540), ("Tax expense", None), ("(1) Current tax", 120), ("(2) Deferred tax", -10),
+            ("Profit for the year", 430)]
+    got = statements.lines(statement("profit_and_loss", rows), cfg)
+    assert (got["exceptional_items"].value, got["extraordinary_items"].value) == (20, 30)
+    assert (got["current_tax"].value, got["deferred_tax"].value) == (120, -10)
+    assert (got["interest_on_partners_capital"].value, got["partners_remuneration"].value) == (50, 60)
+
+
+@pytest.mark.parametrize(("key", "label"), [("extraordinary_items", "Profit before extraordinary items and tax"),
+                                            ("exceptional_items", "Profit before exceptional items and tax"),
+                                            ("current_tax", "Excess provision of current tax of earlier years")])
+def test_a_profit_line_that_names_an_item_is_not_the_item(cfg, key, label):
+    got = statements.lines(statement("profit_and_loss", [("Revenue from operations", 5000), (label, 680)]), cfg)
+    assert key not in got or got[key].value != 680
+
+
+def test_an_analysis_ratio_names_only_lines_the_statements_give():
+    with open("config/statements.yaml") as fh:
+        raw = yaml.safe_load(fh)
+    raw["analysis"] = [*raw.get("analysis", []), {"key": "made-up", "label": "Made up", "unit": "x",
+                                                  "expression": "revenue_from_operations / imaginary_line",
+                                                  "formula": "Sales / Imaginary"}]
+    with pytest.raises(ValueError, match="imaginary_line"):
+        StatementsSection.model_validate(raw)
+
+
+@pytest.mark.parametrize("heading", ["II.ASSETS", "II. ASSETS", "2.ASSETS"])
+def test_a_heading_numbered_without_a_space_still_opens_its_group(cfg, heading):
+    rows = [("I. EQUITY AND LIABILITIES", None), ("(a) Share capital", 100), ("Total Equity & Liabilities", 100),
+            (heading, None), ("(a) Fixed Assets", 100), ("Total Assets", 100)]
+    got = statements.lines(statement("balance_sheet", rows), cfg)
+    assert got["total_assets"].value == 100
+
+
+@pytest.mark.parametrize(("label", "folded"), [("II.ASSETS", "assets"), ("1.Share capital", "share capital"),
+                                               ("1.5 per cent debentures", "1 5 per cent debentures"),
+                                               ("Civil works", "civil works")])
+def test_numbering_is_folded_off_only_where_it_is_numbering(label, folded):
+    assert statements.fold_label(label) == folded

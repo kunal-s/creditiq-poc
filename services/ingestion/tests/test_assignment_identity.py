@@ -32,6 +32,20 @@ def test_a_persons_assignment_skips_classification(cfg):
     assert len(r.documents) == 1 and r.documents[0].document_type == "audited_financial_statements"
 
 
+def test_a_person_may_assign_a_type_switched_off_for_the_classifier(cfg):
+    """A loan against property document is switched off for the classifier until its keywords are written: a
+    person's assignment reads the file as that type all the same."""
+    from .docgen import make_pdf
+
+    assert not next(d for d in cfg.document_types.documents if d.document_type == "salary_slip").enabled
+    b = make_pdf([[[(72, "Salary slip for the month of August 2026")], [(72, "Employee: Example Person")],
+                   [(72, "Net pay"), (400, "85,000", "r")]]])
+    s = spec("p.pdf", b).model_copy(update={"assigned_type": "salary_slip"})
+    r = Ingestor(cfg, Store(), None, None).process_file("C", s, b)
+    assert r.status == "processed" and r.classification.type == "salary_slip" and r.classification.tier == "person"
+    assert r.documents and all(d.document_type == "salary_slip" for d in r.documents)
+
+
 def test_an_assignment_to_an_unknown_type_is_refused(cfg):
     b = fixture_doc(FS)
     r = Ingestor(cfg, Store(), None, None).process_file("C", spec("p.pdf", b).model_copy(update={"assigned_type": "nope"}), b)

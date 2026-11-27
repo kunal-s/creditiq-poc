@@ -48,6 +48,7 @@ from .contracts import (
     TurnoverFigure,
 )
 from .db import transaction
+from .intake import declared_label, declared_phrase, declared_side
 from .names import compare_name_parts, name_parts, same_by_parts, normalise_name, similarity
 from .review_items import raise_item
 from .util import display_date, dumps, parse_date, parse_period, ranges_label, stable_id
@@ -108,7 +109,11 @@ class Context:
         self.rules = reader.load_crosschecks(root).enabled_rules
         types = reader.load_document_types(root).types
         self.type_names = {t.id: t.name for t in types}
-        self.type_names[CASE_RECORD] = "Sourcing message"
+        # The case's own declaration: its sourcing message, or the intake form when it has none.
+        has_message = CASE_RECORD in facts.types_on_file
+        self.type_names[CASE_RECORD] = declared_label(has_message)
+        self.declared_side = declared_side(has_message)
+        self.declared_phrase = declared_phrase(has_message)
         self.type_names[facts_module.CASE_DOCUMENTS] = "Documents typed on this appraisal"
         self.provenance = {t.id: t.provenance for t in types if t.provenance}
         items = {i.id for i in applicable_items(root, case, None)[0]}
@@ -456,10 +461,12 @@ def _best_matches(ctx: Context, name: str, entries: list[PersonEntry]) -> list[i
     return [i for i, s in enumerate(scores) if s and s == top]
 
 
-def _not_named(person: str, absent: list[PersonSet]) -> str:
-    """ID-04: what a source lacks for a person, in words."""
+def _not_named(person: str, absent: list[PersonSet], declared: str = "") -> str:
+    """ID-04: what a source lacks for a person, in words; the case's own declaration is `declared` (the
+    sourcing message, or the intake form)."""
     parts = ["has no KYC on file"] if any(p.source == "director_kyc" for p in absent) else []
-    others = [f"the {_lower(p.label)}" for p in absent if p.source != "director_kyc"]
+    others = [declared if p.source == CASE_RECORD and declared else f"the {_lower(p.label)}"
+              for p in absent if p.source != "director_kyc"]
     if others:
         parts.append(f"is not named in {_join(others)}")
     return f"{person} {' and '.join(parts)}"
@@ -481,7 +488,7 @@ def _promoter_set(ctx: Context, rule: CrossCheckRule) -> list[Finding]:
         absent = [p for p, ok in zip(sets, named) if not ok]
         short |= {p.label for p in absent}
         if absent:
-            gaps.append(_not_named(person, absent))
+            gaps.append(_not_named(person, absent, ctx.declared_phrase))
         rows.append((person, [YES if ok else NO for ok in named], bool(absent)))
     sides = [_people_side(p.label, p.entries, differs=p.label in short, sources=[p.source]) for p in sets]
     detail = _rows([p.label for p in sets], rows)
@@ -539,7 +546,7 @@ def _memorandum_directors(ctx: Context, rule: CrossCheckRule) -> list[Finding]:
     sides = [s for s in (
         _people_side("Memorandum and articles", moa, sources=["memorandum_articles_of_association"]) if moa else None,
         _people_side("KYC received", kyc, sources=["director_kyc"]) if kyc else None,
-        _people_side("Sourcing message", message, sources=[CASE_RECORD]) if message else None) if s]
+        _people_side(ctx.type_names[CASE_RECORD], message, sources=[CASE_RECORD]) if message else None) if s]
     if not moa or not (kyc or message):
         return [_absent(ctx, rule, sides, note="Nothing to hold the memorandum's directors against.")]
     # A KYC or a name in the message accounts for the director it matches best: two directors with
@@ -552,7 +559,7 @@ def _memorandum_directors(ctx: Context, rule: CrossCheckRule) -> list[Finding]:
         if not (in_kyc or in_message):
             unaccounted.append(e.name)
         rows.append((e.name, [YES if in_kyc else NO, YES if in_message else NO], not (in_kyc or in_message)))
-    detail = _rows(["KYC received", "Sourcing message"], rows)
+    detail = _rows(["KYC received", ctx.type_names[CASE_RECORD]], rows)
     if unaccounted:
         sides[0].differs = True
         return [_finding(ctx, rule, "fail", sides, detail=detail, items=_join(unaccounted))]
@@ -768,7 +775,7 @@ def _turnover(ctx: Context, rule: CrossCheckRule) -> list[Finding]:
         years.append((y, by.get(left_key), right))
     if left_key == "declared" and not any(lf for _, lf, _ in years):
         # Nothing was declared: there is nothing to hold the evidence against.
-        return [_finding(ctx, rule, "not_applicable", [], note="No turnover was declared in the sourcing message.")]
+        return [_finding(ctx, rule, "not_applicable", [], note=f"No turnover was declared in {ctx.declared_phrase}.")]
     both = [(y, lf, rf) for y, lf, rf in years if lf and rf]
     if not both:
         present = [(y, lf, rf) for y, lf, rf in years if lf or rf]
@@ -1043,8 +1050,9 @@ def _year_end_balance(ctx: Context, rule: CrossCheckRule) -> list[Finding]:
 def _declared_accounts(ctx: Context, rule: CrossCheckRule) -> list[Finding]:
     declared = [a for a in ctx.facts.accounts if a.declared]
     if not declared:
-        note = ("The sourcing message names no account numbers." if ctx.facts.declared_banking
-                else "No accounts were declared in the sourcing message.")
+        named = ctx.declared_phrase[:1].upper() + ctx.declared_phrase[1:]
+        note = (f"{named} names no account numbers." if ctx.facts.declared_banking
+                else f"No accounts were declared in {ctx.declared_phrase}.")
         return [_finding(ctx, rule, "not_applicable", [], note=note)]
     without = [a for a in declared if not a.has_statement]
     sides = [_declared_accounts_side(ctx, declared), _statements_side(ctx, differs=bool(without))]
@@ -1059,7 +1067,7 @@ def _declared_accounts_side(ctx: Context, declared: list) -> FindingSide:
     message = ctx.facts.declared_banking
     by_declaration = any(ctx.type_names[DECLARATION] in a.sources for a in declared)
     if message and not by_declaration:
-        return _fact_side(message, "Declared in the sourcing message")
+        return _fact_side(message, ctx.declared_side)
     return _side("Declared accounts", ", ".join(a.label for a in declared) or None,
                  [e for a in declared for e in a.evidence[:1]],
                  sources=[DECLARATION] + ([CASE_RECORD] if message else []))
@@ -1154,7 +1162,7 @@ def _emis_declared(ctx: Context, rule: CrossCheckRule) -> list[Finding]:
     if declaration is not None:
         sides.append(_fact_side(declaration, "Declaration of existing facilities"))
     if text:
-        sides.append(_fact_side(message, "Declared in the sourcing message"))
+        sides.append(_fact_side(message, ctx.declared_side))
     if undeclared:
         return [_finding(ctx, rule, "fail", sides, detail=detail, items="; ".join(line(o) for o in undeclared),
                          lenders=_join([o.lender for o in undeclared]))]
@@ -1191,7 +1199,7 @@ def _facilities_reconcile(ctx: Context, rule: CrossCheckRule) -> list[Finding]:
                          note=f"The facilities on file cannot be held against a declaration: the {_lower(name)} "
                               "is not on file.")]
     declared_side = (_fact_side(declaration, "Declaration of existing facilities") if declaration is not None
-                     else _fact_side(message, "Declared in the sourcing message"))
+                     else _fact_side(message, ctx.declared_side))
     if not evidence_on_file:
         names = [ctx.type_names[SANCTION], ctx.type_names[BUREAU]]
         return [_finding(ctx, rule, "incomplete", [declared_side], missing=names,

@@ -106,7 +106,9 @@ def test_parse_shows_what_the_extractor_will_read(tmp_path, dev_config):
 
 def test_types_are_listed_read_only(tmp_path, dev_config):
     r = client(tmp_path, dev_config).get("/v1/types").json()
-    assert len(r["types"]) == 22 and r["config"]["version"] == "dev"
+    assert len(r["types"]) == 50 and r["config"]["version"] == "dev"
+    # The loan against property types are listed too, switched off for the classifier (a person assigns them).
+    assert sum(t["enabled"] for t in r["types"]) == 22
 
 
 def test_stream_emits_stage_events_then_the_result(tmp_path, dev_config):

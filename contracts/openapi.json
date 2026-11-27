@@ -2334,13 +2334,16 @@
         "description": "Create a case after the RM confirms (F-04.7). The proposal flow\n(F-04) fills `header` with sources; a direct create leaves it empty.",
         "properties": {
           "amount_inr": {
-            "exclusiveMinimum": 0.0,
+            "default": 0,
+            "maximum": 999999999999999.0,
+            "minimum": 0.0,
             "title": "Amount Inr",
             "type": "integer"
           },
           "application_id": {
             "anyOf": [
               {
+                "maxLength": 100,
                 "type": "string"
               },
               {
@@ -2361,7 +2364,8 @@
             "title": "Bank Stage"
           },
           "borrower": {
-            "minLength": 1,
+            "default": "",
+            "maxLength": 500,
             "title": "Borrower",
             "type": "string"
           },
@@ -2388,6 +2392,7 @@
           "cin": {
             "anyOf": [
               {
+                "maxLength": 50,
                 "type": "string"
               },
               {
@@ -2409,6 +2414,7 @@
           "customer_id": {
             "anyOf": [
               {
+                "maxLength": 100,
                 "type": "string"
               },
               {
@@ -2417,9 +2423,21 @@
             ],
             "title": "Customer Id"
           },
+          "customer_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Type"
+          },
           "duplicate_override_reason": {
             "anyOf": [
               {
+                "maxLength": 1000,
                 "type": "string"
               },
               {
@@ -2432,13 +2450,26 @@
             "items": {
               "type": "string"
             },
-            "minItems": 1,
             "title": "Facilities",
             "type": "array"
+          },
+          "groups": {
+            "additionalProperties": {
+              "items": {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/HeaderField"
+                },
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "title": "Groups",
+            "type": "object"
           },
           "gstin": {
             "anyOf": [
               {
+                "maxLength": 50,
                 "type": "string"
               },
               {
@@ -2468,6 +2499,7 @@
           "pan": {
             "anyOf": [
               {
+                "maxLength": 50,
                 "type": "string"
               },
               {
@@ -2487,9 +2519,34 @@
             ],
             "title": "Product"
           },
+          "program": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Program"
+          },
+          "tenure_months": {
+            "anyOf": [
+              {
+                "maximum": 9999.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tenure Months"
+          },
           "udyam": {
             "anyOf": [
               {
+                "maxLength": 50,
                 "type": "string"
               },
               {
@@ -2500,9 +2557,6 @@
           }
         },
         "required": [
-          "borrower",
-          "facilities",
-          "amount_inr",
           "channel"
         ],
         "title": "CaseCreate",
@@ -2656,6 +2710,17 @@
             ],
             "title": "Customer Id"
           },
+          "customer_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Type"
+          },
           "facilities": {
             "items": {
               "type": "string"
@@ -2672,6 +2737,19 @@
             "default": 0,
             "title": "Files Attention",
             "type": "integer"
+          },
+          "groups": {
+            "additionalProperties": {
+              "items": {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/HeaderField"
+                },
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "title": "Groups",
+            "type": "object"
           },
           "gstin": {
             "anyOf": [
@@ -2721,6 +2799,17 @@
             ],
             "title": "Product"
           },
+          "program": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Program"
+          },
           "rm": {
             "title": "Rm",
             "type": "string"
@@ -2738,6 +2827,17 @@
             ],
             "title": "Stage",
             "type": "string"
+          },
+          "tenure_months": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tenure Months"
           },
           "udyam": {
             "anyOf": [
@@ -2919,6 +3019,25 @@
           "last_made"
         ],
         "title": "CaseDocumentTypeProposal",
+        "type": "object"
+      },
+      "CaseElsewhere": {
+        "description": "A matching case another RM holds, named without its details: the user may not read it (F-03).",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "rm": {
+            "title": "Rm",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "rm"
+        ],
+        "title": "CaseElsewhere",
         "type": "object"
       },
       "CaseFacts": {
@@ -3132,6 +3251,13 @@
             "title": "Duplicates",
             "type": "array"
           },
+          "duplicates_elsewhere": {
+            "items": {
+              "$ref": "#/components/schemas/CaseElsewhere"
+            },
+            "title": "Duplicates Elsewhere",
+            "type": "array"
+          },
           "fields": {
             "additionalProperties": {
               "$ref": "#/components/schemas/ProposedField"
@@ -3154,12 +3280,18 @@
             "type": "array"
           },
           "text_sha256": {
-            "title": "Text Sha256",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text Sha256"
           }
         },
         "required": [
-          "text_sha256",
           "fields"
         ],
         "title": "CaseProposal",
@@ -3206,6 +3338,17 @@
             "title": "Created At",
             "type": "string"
           },
+          "customer_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Type"
+          },
           "facilities": {
             "items": {
               "type": "string"
@@ -3241,6 +3384,17 @@
               }
             ],
             "title": "Product"
+          },
+          "program": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Program"
           },
           "rm": {
             "title": "Rm",
@@ -3731,6 +3885,35 @@
         "title": "CellWorking",
         "type": "object"
       },
+      "ChecklistCondition": {
+        "additionalProperties": false,
+        "description": "When an item applies beyond its product, customer type and case type: ANY one part is enough\n(plan 2026-11-27 section 7.3). Each id is checked against config/app.yaml and the product's form in\nconfig/intake.yaml when the configuration is published.",
+        "properties": {
+          "case_types": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Case Types",
+            "type": "array"
+          },
+          "declared": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Declared",
+            "type": "array"
+          },
+          "rows": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Rows",
+            "type": "array"
+          }
+        },
+        "title": "ChecklistCondition",
+        "type": "object"
+      },
       "ChecklistItemDef": {
         "properties": {
           "basis": {
@@ -3740,6 +3923,13 @@
           "blocking": {
             "title": "Blocking",
             "type": "boolean"
+          },
+          "case_types": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Case Types",
+            "type": "array"
           },
           "category": {
             "title": "Category",
@@ -3767,6 +3957,13 @@
               }
             ]
           },
+          "customer_types": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Customer Types",
+            "type": "array"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -3774,6 +3971,13 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "products": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Products",
+            "type": "array"
           },
           "request": {
             "anyOf": [
@@ -3807,6 +4011,16 @@
           "weight": {
             "title": "Weight",
             "type": "integer"
+          },
+          "when_any": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChecklistCondition"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "why": {
             "title": "Why",
@@ -4009,12 +4223,54 @@
             "title": "Constitution",
             "type": "string"
           },
+          "customer_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Type"
+          },
           "facilities": {
             "items": {
               "type": "string"
             },
             "title": "Facilities",
             "type": "array"
+          },
+          "fields": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "maxLength": 500,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "maxProperties": 100,
+            "title": "Fields",
+            "type": "object"
+          },
+          "groups": {
+            "additionalProperties": {
+              "items": {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/HeaderField"
+                },
+                "type": "object"
+              },
+              "maxItems": 50,
+              "type": "array"
+            },
+            "maxProperties": 20,
+            "title": "Groups",
+            "type": "object"
           },
           "product": {
             "anyOf": [
@@ -4527,6 +4783,13 @@
             "title": "Months",
             "type": "integer"
           },
+          "named_in": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Named In",
+            "type": "array"
+          },
           "offset": {
             "default": 0,
             "title": "Offset",
@@ -4538,6 +4801,17 @@
             },
             "title": "Statements",
             "type": "array"
+          },
+          "what": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "What"
           }
         },
         "required": [
@@ -5012,6 +5286,48 @@
           "types"
         ],
         "title": "DocumentTypesSection",
+        "type": "object"
+      },
+      "DuplicateConflict": {
+        "description": "409 from a create: a matching case exists (F-04.5). Send `duplicate_override_reason` to create\nanyway; the reason covers the matches listed here.",
+        "properties": {
+          "duplicates": {
+            "items": {
+              "$ref": "#/components/schemas/CaseSummary"
+            },
+            "title": "Duplicates",
+            "type": "array"
+          },
+          "duplicates_elsewhere": {
+            "items": {
+              "$ref": "#/components/schemas/CaseElsewhere"
+            },
+            "title": "Duplicates Elsewhere",
+            "type": "array"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "duplicates"
+        ],
+        "title": "DuplicateConflict",
+        "type": "object"
+      },
+      "DuplicateConflictResponse": {
+        "description": "The body of a 409 from a create.",
+        "properties": {
+          "detail": {
+            "$ref": "#/components/schemas/DuplicateConflict"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "DuplicateConflictResponse",
         "type": "object"
       },
       "EditTarget": {
@@ -7427,6 +7743,460 @@
         "title": "IngestIntegrityRevision",
         "type": "object"
       },
+      "IntakeCreated": {
+        "description": "POST /api/cases/intake: the case and its files, created together.",
+        "properties": {
+          "case": {
+            "$ref": "#/components/schemas/CaseDetail"
+          },
+          "upload": {
+            "$ref": "#/components/schemas/UploadResult"
+          }
+        },
+        "required": [
+          "case",
+          "upload"
+        ],
+        "title": "IntakeCreated",
+        "type": "object"
+      },
+      "IntakeDocuments": {
+        "properties": {
+          "min_files": {
+            "title": "Min Files",
+            "type": "integer"
+          },
+          "required": {
+            "title": "Required",
+            "type": "boolean"
+          },
+          "suggested": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Suggested",
+            "type": "array"
+          }
+        },
+        "required": [
+          "required",
+          "min_files"
+        ],
+        "title": "IntakeDocuments",
+        "type": "object"
+      },
+      "IntakeField": {
+        "description": "One field of the form (config/intake.yaml).",
+        "properties": {
+          "alternative": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alternative"
+          },
+          "from_section": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Section"
+          },
+          "holder": {
+            "anyOf": [
+              {
+                "enum": [
+                  "individual",
+                  "entity"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holder"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "length": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Length"
+          },
+          "options": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/Option"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Options"
+          },
+          "required": {
+            "default": false,
+            "title": "Required",
+            "type": "boolean"
+          },
+          "show_when": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Show When"
+          },
+          "type": {
+            "enum": [
+              "text",
+              "amount",
+              "number",
+              "months",
+              "choice",
+              "yes_no",
+              "pan",
+              "gstin",
+              "cin_or_llpin",
+              "udyam",
+              "digits",
+              "pincode",
+              "date",
+              "parties"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "unless": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unless"
+          }
+        },
+        "required": [
+          "id",
+          "type"
+        ],
+        "title": "IntakeField",
+        "type": "object"
+      },
+      "IntakeIdentifier": {
+        "description": "An identifier box on the start screen: always optional.",
+        "properties": {
+          "holder": {
+            "anyOf": [
+              {
+                "enum": [
+                  "individual",
+                  "entity"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holder"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "show_when": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Show When"
+          },
+          "type": {
+            "enum": [
+              "pan",
+              "gstin",
+              "cin_or_llpin",
+              "udyam",
+              "text"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "unless": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unless"
+          }
+        },
+        "required": [
+          "id",
+          "type"
+        ],
+        "title": "IntakeIdentifier",
+        "type": "object"
+      },
+      "IntakePeople": {
+        "description": "A section whose rows are the case's parties.",
+        "properties": {
+          "default_role": {
+            "title": "Default Role",
+            "type": "string"
+          },
+          "primary_role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Role"
+          }
+        },
+        "required": [
+          "default_role"
+        ],
+        "title": "IntakePeople",
+        "type": "object"
+      },
+      "IntakeProduct": {
+        "properties": {
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/IntakeSection"
+            },
+            "title": "Sections",
+            "type": "array"
+          },
+          "start": {
+            "$ref": "#/components/schemas/IntakeStart"
+          }
+        },
+        "required": [
+          "start",
+          "sections"
+        ],
+        "title": "IntakeProduct",
+        "type": "object"
+      },
+      "IntakeRefusal": {
+        "description": "Why POST /api/cases/intake created nothing (422): `code` says which rule, `message` says it in\nwords. No case and no file is left behind.",
+        "properties": {
+          "code": {
+            "enum": [
+              "bad_body",
+              "case_part",
+              "case_invalid",
+              "minimum_missing",
+              "identifier_invalid",
+              "too_few_files"
+            ],
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "min_files": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Files"
+          },
+          "missing": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing",
+            "type": "array"
+          },
+          "registered": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registered"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "IntakeRefusal",
+        "type": "object"
+      },
+      "IntakeRefusalResponse": {
+        "description": "The body of a 422 from POST /api/cases/intake.",
+        "properties": {
+          "detail": {
+            "$ref": "#/components/schemas/IntakeRefusal"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "IntakeRefusalResponse",
+        "type": "object"
+      },
+      "IntakeSection": {
+        "properties": {
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/IntakeField"
+            },
+            "title": "Fields",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "people": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IntakePeople"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "repeat": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repeat"
+          },
+          "show_when": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Show When"
+          }
+        },
+        "required": [
+          "id",
+          "fields"
+        ],
+        "title": "IntakeSection",
+        "type": "object"
+      },
+      "IntakeStart": {
+        "properties": {
+          "documents": {
+            "$ref": "#/components/schemas/IntakeDocuments"
+          },
+          "identifiers": {
+            "items": {
+              "$ref": "#/components/schemas/IntakeIdentifier"
+            },
+            "title": "Identifiers",
+            "type": "array"
+          },
+          "message_required": {
+            "default": false,
+            "title": "Message Required",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "documents",
+          "identifiers"
+        ],
+        "title": "IntakeStart",
+        "type": "object"
+      },
       "IntegrityReview": {
         "description": "F-07A: a person's conclusion on a file, after looking at its evidence. Never set by\nthe checks; the latest recorded is shown, every one is kept.",
         "properties": {
@@ -7901,6 +8671,13 @@
             "title": "Constitutions",
             "type": "array"
           },
+          "customer_types": {
+            "items": {
+              "$ref": "#/components/schemas/Option"
+            },
+            "title": "Customer Types",
+            "type": "array"
+          },
           "facilities": {
             "items": {
               "$ref": "#/components/schemas/Option"
@@ -7910,6 +8687,18 @@
           },
           "features": {
             "$ref": "#/components/schemas/Features"
+          },
+          "form_field_max_kb": {
+            "default": 256,
+            "title": "Form Field Max Kb",
+            "type": "integer"
+          },
+          "intake": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/IntakeProduct"
+            },
+            "title": "Intake",
+            "type": "object"
           },
           "product_default": {
             "anyOf": [
@@ -7924,9 +8713,16 @@
           },
           "products": {
             "items": {
-              "$ref": "#/components/schemas/Option"
+              "$ref": "#/components/schemas/ProductMeta"
             },
             "title": "Products",
+            "type": "array"
+          },
+          "programs": {
+            "items": {
+              "$ref": "#/components/schemas/Option"
+            },
+            "title": "Programs",
             "type": "array"
           }
         },
@@ -9297,7 +10093,9 @@
               "partner",
               "proprietor",
               "guarantor",
-              "promoter"
+              "promoter",
+              "applicant",
+              "co_applicant"
             ],
             "title": "Role",
             "type": "string"
@@ -10447,21 +11245,134 @@
         "title": "ProductGroup",
         "type": "object"
       },
+      "ProductMeta": {
+        "description": "A product a case can be opened under, with the lists a case of it may carry (config/app.yaml).",
+        "properties": {
+          "case_types": {
+            "items": {
+              "$ref": "#/components/schemas/Option"
+            },
+            "title": "Case Types",
+            "type": "array"
+          },
+          "customer_types": {
+            "items": {
+              "$ref": "#/components/schemas/Option"
+            },
+            "title": "Customer Types",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "minimum": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Minimum",
+            "type": "array"
+          },
+          "prefix": {
+            "title": "Prefix",
+            "type": "string"
+          },
+          "programs": {
+            "items": {
+              "$ref": "#/components/schemas/Option"
+            },
+            "title": "Programs",
+            "type": "array"
+          },
+          "stages": {
+            "items": {
+              "$ref": "#/components/schemas/Option"
+            },
+            "title": "Stages",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "prefix",
+          "case_types",
+          "stages",
+          "customer_types",
+          "programs",
+          "minimum"
+        ],
+        "title": "ProductMeta",
+        "type": "object"
+      },
       "ProposalRequest": {
+        "description": "What the start screen has so far. Every part is optional: with no text nothing is read, and\nthe answer is only the duplicate check and what the product's minimum still lacks.",
         "properties": {
           "channel": {
             "title": "Channel",
             "type": "string"
           },
+          "fields": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "maxLength": 500,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "maxProperties": 100,
+            "title": "Fields",
+            "type": "object"
+          },
+          "groups": {
+            "additionalProperties": {
+              "items": {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/HeaderField"
+                },
+                "type": "object"
+              },
+              "maxItems": 50,
+              "type": "array"
+            },
+            "maxProperties": 20,
+            "title": "Groups",
+            "type": "object"
+          },
+          "product": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product"
+          },
           "text": {
-            "minLength": 1,
-            "title": "Text",
-            "type": "string"
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
           }
         },
         "required": [
-          "channel",
-          "text"
+          "channel"
         ],
         "title": "ProposalRequest",
         "type": "object"
@@ -10503,6 +11414,17 @@
               }
             ],
             "title": "Note"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
           },
           "span": {
             "anyOf": [
@@ -14575,6 +15497,16 @@
             },
             "description": "Successful Response"
           },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateConflictResponse"
+                }
+              }
+            },
+            "description": "A matching case exists; give duplicate_override_reason to create anyway."
+          },
           "422": {
             "content": {
               "application/json": {
@@ -14591,7 +15523,7 @@
     },
     "/api/cases/checklist-preview": {
       "post": {
-        "description": "F-12 at intake: the documents the proposed application will need, from the\nvalues on the New appraisal screen. Stores nothing; no case is needed.",
+        "description": "F-12 at intake: the documents the proposed application will need, from the\nvalues on the New appraisal screen (its product, customer and case type, and what\nits form declares). Stores nothing; no case is needed.",
         "operationId": "checklist_preview_api_cases_checklist_preview_post",
         "parameters": [
           {
@@ -14646,9 +15578,102 @@
         "summary": "Checklist Preview"
       }
     },
+    "/api/cases/intake": {
+      "post": {
+        "description": "The New appraisal screen's Create: the case (multipart field `case`, a CaseCreate as JSON) and its\nfiles (field `files`, repeatable; single files or ZIP archives) in one request, stored together or not\nat all. Refused (422, an IntakeRefusal) when the body is over the request limits, the case part is\nmissing, too large or invalid, the product's minimum is not met, an identifier is not valid for its\nbox, or fewer files than the product needs are received as new documents; 409 on a duplicate without\nan override reason. Needs document.upload as well as case.create.",
+        "operationId": "create_case_with_files_api_cases_intake_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "encoding": {
+                "case": {
+                  "contentType": "application/json"
+                }
+              },
+              "schema": {
+                "properties": {
+                  "case": {
+                    "description": "The case to create: a CaseCreate as JSON, at most uploads.max_form_field_kb (Meta.form_field_max_kb).",
+                    "type": "string"
+                  },
+                  "channel": {
+                    "description": "How the files arrived; default upload.",
+                    "type": "string"
+                  },
+                  "files": {
+                    "items": {
+                      "format": "binary",
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "case",
+                  "files"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntakeCreated"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateConflictResponse"
+                }
+              }
+            },
+            "description": "A matching case exists; give duplicate_override_reason to create anyway."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntakeRefusalResponse"
+                }
+              }
+            },
+            "description": "Nothing was created."
+          }
+        },
+        "summary": "Create Case With Files"
+      }
+    },
     "/api/cases/proposals": {
       "post": {
-        "description": "F-04: parse a pasted message into a proposed case. Stores nothing.",
+        "description": "F-04: what the start screen has so far, as a proposed case: a pasted message read into fields (when\nthere is one), the values typed so far (they win), the duplicate check and the product's minimum still\nmissing. Stores nothing.",
         "operationId": "propose_case_api_cases_proposals_post",
         "parameters": [
           {
@@ -14978,6 +16003,23 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/CreateCaseRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {
@@ -15034,23 +16076,6 @@
             }
           }
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "anyOf": [
-                  {
-                    "$ref": "#/components/schemas/CreateCaseRequest"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ],
-                "title": "Body"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "content": {
